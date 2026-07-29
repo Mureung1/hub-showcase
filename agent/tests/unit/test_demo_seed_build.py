@@ -851,7 +851,7 @@ def test_derive_posting_scopes_does_not_add_analysis_claims() -> None:
 
 
 def test_check_posting_scopes_catches_a_wrong_output_count() -> None:
-    """허용된 5건·9건 전환 규모가 아니면 사유를 밝힌다."""
+    """허용된 15건·30건 전환 규모가 아니면 사유를 밝힌다."""
     parts = {"demo": _demo_part()}
     build_seed.derive_posting_scopes(parts, ["demo"])
     problems = build_seed.check_posting_scopes(parts, ["demo"])
@@ -860,28 +860,85 @@ def test_check_posting_scopes_catches_a_wrong_output_count() -> None:
 
 def test_output_counts_follow_the_posting_scope_formula() -> None:
     """공고 범위 수에서 직무별 산출물 수를 결정적으로 계산한다."""
-    assert build_seed.expected_output_counts(5) == {
-        "statistics": 1,
-        "interpretation": 12,
-        "strategy": 12,
-        "roadmap": 12,
-    }
     assert build_seed.expected_output_counts(9) == {
         "statistics": 1,
         "interpretation": 16,
         "strategy": 16,
         "roadmap": 16,
     }
-    assert build_seed.expected_output_total(5) == 37
+    assert build_seed.expected_output_counts(30) == {
+        "statistics": 1,
+        "interpretation": 37,
+        "strategy": 37,
+        "roadmap": 37,
+    }
     assert build_seed.expected_output_total(9) == 49
+    assert build_seed.expected_output_total(30) == 112
 
 
-def test_final_gate_accepts_only_nine_posting_outputs() -> None:
-    """전환이 끝난 뒤에는 recent 9건 산출물만 허용한다."""
+def test_transition_gate_accepts_fifteen_or_thirty_posting_states() -> None:
+    """병렬 전환 중에는 기존 15건과 목표 30건 상태만 허용한다."""
     assert build_seed.posting_count_problem("demo", 9) is None
+    assert build_seed.posting_count_problem("demo", 30) is None
     assert build_seed.posting_count_problem("demo", 5) == (
-        "demo: posting 범위 interpretation 이 5행이다 (기대값 9)"
+        "demo: posting 범위 interpretation 이 5행이다 (전환 중 허용값 9·30)"
     )
+    assert build_seed.posting_count_problem("demo", 30, allow_transition=False) is None
+    assert build_seed.posting_count_problem("demo", 9, allow_transition=False) == (
+        "demo: posting 범위 interpretation 이 9행이다 (최종 기대값 30)"
+    )
+    assert build_seed.parse_args(["--check", "--final"]).final is True
+
+
+def test_target_posting_inventory_has_period_cluster_and_status_balance() -> None:
+    """30건은 기간·기업군·진행 상태가 목표 분포와 정확히 맞아야 한다."""
+    versions: list[dict[str, Any]] = []
+    outputs: list[dict[str, Any]] = []
+    number = 1
+    for cluster in range(6):
+        for offset in range(3):
+            posting_id = f"dp_demo_{number:02d}"
+            versions.append(
+                {
+                    "posting_id": posting_id,
+                    "posted_at": f"2026-0{cluster + 1}-{offset + 1:02d}T10:00:00+09:00",
+                    "closed_at": r"\N" if offset == 0 else "2026-06-30T18:00:00+09:00",
+                }
+            )
+            outputs.append(
+                {
+                    "scope_level": "posting",
+                    "scope_id": posting_id,
+                    "output_type": "interpretation",
+                    "payload": {"scope": {"cluster_tag": f"cluster-{cluster}"}},
+                }
+            )
+            number += 1
+        for offset in range(2):
+            posting_id = f"dp_demo_{number:02d}"
+            versions.append(
+                {
+                    "posting_id": posting_id,
+                    "posted_at": f"2025-0{cluster + 1}-{offset + 1:02d}T10:00:00+09:00",
+                    "closed_at": "2025-11-30T18:00:00+09:00",
+                }
+            )
+            outputs.append(
+                {
+                    "scope_level": "posting",
+                    "scope_id": posting_id,
+                    "output_type": "interpretation",
+                    "payload": {"scope": {"cluster_tag": f"cluster-{cluster}"}},
+                }
+            )
+            number += 1
+
+    tables = {"posting_versions": versions, "analysis_outputs": outputs}
+    assert build_seed.check_posting_inventory("demo", tables) == []
+
+    versions[0]["closed_at"] = "2026-06-30T18:00:00+09:00"
+    problems = build_seed.check_posting_inventory("demo", tables)
+    assert any("진행 중 5건" in problem for problem in problems)
 
 
 def test_check_posting_scopes_catches_a_mismatched_check_row_set() -> None:
@@ -945,7 +1002,7 @@ def test_check_posting_scopes_catches_two_identical_payloads_in_one_cluster() ->
     reason="아직 build_demo_seed.py 를 돌리지 않았다",
 )
 def test_built_analysis_outputs_carry_posting_scoped_strategy_and_roadmap() -> None:
-    """전환 중인 실제 CSV 가 직무별 5건·9건 규모와 공고 산출물을 정확히 맞춘다."""
+    """전환 중인 실제 CSV 가 직무별 15건·30건 상태와 공고 산출물을 정확히 맞춘다."""
     csv.field_size_limit(1 << 30)
     path = AGENT_ROOT / "data" / "demo_seed" / "analysis_outputs.csv"
     with path.open(encoding="utf-8", newline="") as handle:
@@ -954,7 +1011,7 @@ def test_built_analysis_outputs_carry_posting_scoped_strategy_and_roadmap() -> N
         mine = [row for row in rows if row["job_role_id"] == job]
         postings = {row["scope_id"] for row in mine
                     if row["output_type"] == "interpretation" and row["scope_level"] == "posting"}
-        assert len(postings) == build_seed.EXPECTED_POSTING_OUTPUT_COUNT
+        assert len(postings) in build_seed.ALLOWED_POSTING_OUTPUT_COUNTS
         expected = build_seed.expected_output_counts(len(postings))
         assert len(mine) == build_seed.expected_output_total(len(postings))
         counted = {

@@ -766,6 +766,51 @@ def expand_postings(
 POSTINGS = expand_postings(POSTINGS)
 
 
+def _expanded_posting(
+    nn: str,
+    source_nn: str,
+    period: str,
+    posted_at: str,
+    entry_label: str,
+) -> dict[str, Any]:
+    """기존 기업군의 요구 구성을 재사용해 16~30번 독립 표본을 만든다."""
+    source = next(posting for posting in POSTINGS if posting["nn"] == source_nn)
+    label_source = next(
+        posting for posting in POSTINGS if posting["entry_label"] == entry_label
+    )
+    return {
+        **source,
+        "nn": nn,
+        "period": period,
+        "posted_at": posted_at,
+        "entry_label": entry_label,
+        "entry_label_raw": label_source["entry_label_raw"],
+        "career_label_raw": label_source["career_label_raw"],
+        "title": f"{source['title']} (확장 표본 {nn})",
+        "summary": "",
+        "summary_ratio": "",
+    }
+
+
+POSTINGS += (
+    _expanded_posting("16", "01", RECENT, "2026-01-05T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("17", "02", RECENT, "2026-01-19T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("18", "03", RECENT, "2026-02-23T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("19", "04", RECENT, "2026-03-09T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("20", "04", RECENT, "2026-03-23T10:00:00+09:00", "experienced"),
+    _expanded_posting("21", "05", RECENT, "2026-04-13T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("22", "05", RECENT, "2026-04-27T10:00:00+09:00", "experienced"),
+    _expanded_posting("23", "08", RECENT, "2026-05-25T10:00:00+09:00", "experienced"),
+    _expanded_posting("24", "08", RECENT, "2026-06-22T10:00:00+09:00", "experienced"),
+    _expanded_posting("25", "01", PRIOR, "2024-05-13T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("26", "04", PRIOR, "2024-09-09T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("27", "03", PRIOR, "2025-02-10T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("28", "02", PRIOR, "2025-05-12T10:00:00+09:00", "experienced"),
+    _expanded_posting("29", "05", PRIOR, "2025-08-11T10:00:00+09:00", "experienced"),
+    _expanded_posting("30", "08", PRIOR, "2025-11-10T10:00:00+09:00", "experienced"),
+)
+
+
 # ============================================================ 4. 식별자 helper
 def posting_id(nn: str) -> str:
     return f"dp_{JOB_ROLE_ID}_{nn}"
@@ -781,6 +826,15 @@ def source_id(nn: str) -> str:
 
 def posting_version_id(nn: str) -> str:
     return f"pv_demo_{JOB_ROLE_ID}_{nn}"
+
+
+def closed_at(posting: dict[str, Any]) -> str | None:
+    """2026년 진행 중 6건을 제외한 공고의 결정적 마감 시각."""
+    if posting["nn"] in {"01", "02", "03", "04", "05", "06"}:
+        return None
+    if posting["period"] == RECENT:
+        return "2026-07-01T18:00:00+09:00"
+    return "2025-12-01T18:00:00+09:00"
 
 
 def chunk_id(nn: str, k: int) -> str:
@@ -2288,7 +2342,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
             "snapshot_id": snapshot_id(nn), "title": p["title"],
             "career_label_raw": p["career_label_raw"], "edu_label_raw": p["edu_label_raw"],
             "entry_label_raw": p["entry_label_raw"], "entry_label": p["entry_label"],
-            "posted_at": p["posted_at"], "closed_at": None,
+            "posted_at": p["posted_at"], "closed_at": closed_at(p),
             "dataset_version": DATASET_VERSION,
         })
     t["sources"] = sources
@@ -2710,7 +2764,7 @@ def _build_outputs(
     t: dict[str, list[dict[str, Any]]], paths: list[dict[str, Any]]
 ) -> dict[str, list[dict[str, Any]]]:
     """33~43 산출물·주장·체크리스트·로드맵·검증."""
-    # --- 33 분석 산출물 27행
+    # --- 33 분석 산출물 52행
     outputs: list[dict[str, Any]] = []
 
     def add_output(output_type: str, agent: str, scope_level: str, scope_id: str,
@@ -2738,7 +2792,7 @@ def _build_outputs(
             "interpretation", "interpretation", "cluster", cid,
             interpretation_payload("cluster", cid), cid,
         )
-    for p in RECENT_POSTINGS:
+    for p in POSTINGS:
         pid = posting_id(p["nn"])
         intp_outputs[pid] = add_output(
             "interpretation", "interpretation", "posting", pid,
@@ -3326,7 +3380,7 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
         if missing:
             problems.append(f"{row['claim_id']}: confidence_components {missing} 없음")
     counts = Counter(row["output_type"] for row in tables["analysis_outputs"])
-    expected = {"statistics": 1, "interpretation": 16, "strategy": 7, "roadmap": 7}
+    expected = {"statistics": 1, "interpretation": 37, "strategy": 7, "roadmap": 7}
     for output_type, n in expected.items():
         if counts.get(output_type, 0) != n:
             problems.append(f"analysis_outputs: {output_type} {counts.get(output_type, 0)}행 (기대 {n})")
@@ -3366,13 +3420,13 @@ def check_posting_population(tables: dict[str, list[dict[str, Any]]]) -> list[st
     problems: list[str] = []
     expected_clusters = set(CLUSTER_ORDER)
     period_spec = {
-        RECENT: (9, "2026-01-01", "2026-06-30", {"entry_junior": 5, "experienced": 4}),
-        PRIOR: (6, "2024-03-01", "2025-11-30", {"entry_junior": 3, "experienced": 3}),
+        RECENT: (18, "2026-01-01", "2026-06-30", {"entry_junior": 10, "experienced": 8}),
+        PRIOR: (12, "2024-03-01", "2025-11-30", {"entry_junior": 6, "experienced": 6}),
     }
-    if len(POSTINGS) != 15 or len(tables["postings"]) != 15:
-        problems.append(f"공고 수 {len(POSTINGS)}/{len(tables['postings'])} != 15/15")
+    if len(POSTINGS) != 30 or len(tables["postings"]) != 30:
+        problems.append(f"공고 수 {len(POSTINGS)}/{len(tables['postings'])} != 30/30")
 
-    expected_ids = {posting_id(f"{n:02d}") for n in range(1, 16)}
+    expected_ids = {posting_id(f"{n:02d}") for n in range(1, 31)}
     actual_ids = {row["posting_id"] for row in tables["postings"]}
     if actual_ids != expected_ids:
         problems.append(f"공고 식별자 차이 {sorted(actual_ids ^ expected_ids)}")
@@ -3395,11 +3449,23 @@ def check_posting_population(tables: dict[str, list[dict[str, Any]]]) -> list[st
                 problems.append(f"{posting['nn']}: 게시일 {posting['posted_at']} 범위 밖")
 
     recent_clusters = Counter(p["cluster"] for p in RECENT_POSTINGS)
-    if sorted(recent_clusters.values()) != [1, 1, 1, 2, 2, 2]:
-        problems.append(f"recent 기업군 분포 {dict(recent_clusters)} != 2·2·2·1·1·1")
+    if set(recent_clusters.values()) != {3} or set(recent_clusters) != expected_clusters:
+        problems.append(f"recent 기업군 분포 {dict(recent_clusters)} != 기업군별 3건")
     prior_clusters = Counter(p["cluster"] for p in PRIOR_POSTINGS)
-    if set(prior_clusters.values()) != {1}:
-        problems.append(f"prev 기업군 분포 {dict(prior_clusters)} != 기업군별 1건")
+    if set(prior_clusters.values()) != {2} or set(prior_clusters) != expected_clusters:
+        problems.append(f"prev 기업군 분포 {dict(prior_clusters)} != 기업군별 2건")
+
+    versions = tables["posting_versions"]
+    ongoing = [row for row in versions if row["closed_at"] is None]
+    closed = [row for row in versions if row["closed_at"] is not None]
+    if len(ongoing) != 6 or len(closed) != 24:
+        problems.append(f"공고 상태 진행 {len(ongoing)}건/마감 {len(closed)}건 != 6/24")
+    prior_ids = {posting_version_id(posting["nn"]) for posting in PRIOR_POSTINGS}
+    if any(row["posting_version_id"] in prior_ids for row in ongoing):
+        problems.append("prev 공고에 진행 중 상태가 있다")
+    for row in closed:
+        if row["closed_at"] <= row["posted_at"]:
+            problems.append(f"{row['posting_version_id']}: 마감일이 게시일 이후가 아니다")
 
     for slug in DIM_SLUGS:
         companies = {
@@ -3411,20 +3477,20 @@ def check_posting_population(tables: dict[str, list[dict[str, Any]]]) -> list[st
 
 
 def check_output_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
-    """검사 7 — 모듈 산출물 31행과 recent 공고 해석 9행을 확인한다."""
+    """검사 7 — 모듈 산출물 52행과 전체 공고 해석 30행을 확인한다."""
     outputs = tables["analysis_outputs"]
     problems: list[str] = []
     counts = Counter(row["output_type"] for row in outputs)
-    expected = {"statistics": 1, "interpretation": 16, "strategy": 7, "roadmap": 7}
-    if len(outputs) != 31 or counts != expected:
-        problems.append(f"산출물 {len(outputs)}행, 종류별 {dict(counts)} != 31행, {expected}")
+    expected = {"statistics": 1, "interpretation": 37, "strategy": 7, "roadmap": 7}
+    if len(outputs) != 52 or counts != expected:
+        problems.append(f"산출물 {len(outputs)}행, 종류별 {dict(counts)} != 52행, {expected}")
     posting_interpretations = {
         row["scope_id"] for row in outputs
         if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
     }
-    recent_ids = {posting_id(p["nn"]) for p in RECENT_POSTINGS}
-    if posting_interpretations != recent_ids:
-        problems.append(f"공고 해석 범위 차이 {sorted(posting_interpretations ^ recent_ids)}")
+    posting_ids = {posting_id(p["nn"]) for p in POSTINGS}
+    if posting_interpretations != posting_ids:
+        problems.append(f"공고 해석 범위 차이 {sorted(posting_interpretations ^ posting_ids)}")
     return problems
 
 

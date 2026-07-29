@@ -19,7 +19,10 @@ const CLUSTERS = [
 
 const POSTINGS = {
   'backend|bigtech_platform': [
-    { posting_id: 'dp_backend_02', company: '카카오', title: '백엔드 개발자', posted_at: '2026-01-12T10:00:00+09:00' },
+    {
+      posting_id: 'dp_backend_02', company: '카카오', title: '백엔드 개발자',
+      posted_at: '2026-01-12T10:00:00+09:00', closed_at: null, status: 'open',
+    },
   ],
   'backend|startup': [],
 }
@@ -29,11 +32,13 @@ const POSTINGS_FOR_JOB = {
   backend: [
     {
       posting_id: 'dp_backend_02', company: '카카오', title: '백엔드 개발자',
-      posted_at: '2026-01-12T10:00:00+09:00', cluster_id: 'bigtech_platform', cluster_tag: '빅테크·플랫폼',
+      posted_at: '2026-01-12T10:00:00+09:00', closed_at: null, status: 'open',
+      cluster_id: 'bigtech_platform', cluster_tag: '빅테크·플랫폼',
     },
     {
       posting_id: 'dp_backend_07', company: '토스랩', title: '서버 개발자',
-      posted_at: '2026-01-05T10:00:00+09:00', cluster_id: 'startup', cluster_tag: '스타트업',
+      posted_at: '2026-01-05T10:00:00+09:00', closed_at: '2026-02-05T18:00:00+09:00', status: 'closed',
+      cluster_id: 'startup', cluster_tag: '스타트업',
     },
   ],
 }
@@ -153,6 +158,7 @@ describe('조회 라우트', () => {
     expect(body).toEqual(POSTINGS_FOR_JOB.backend)
     // 기업군이 서로 다른 공고가 한 목록에 함께 나온다 — 기업군을 먼저 고를 필요가 없다.
     expect(body.map((p) => p.cluster_tag)).toEqual(['빅테크·플랫폼', '스타트업'])
+    expect(body.map((p) => p.status)).toEqual(['open', 'closed'])
   })
 
   test('GET /api/postings 는 목록에 없는 직무를 400 으로 낸다', async () => {

@@ -180,7 +180,7 @@ def test_success_verifies_before_commit_and_keeps_one_copy_per_table(
         ("dataset_versions", Path("dataset_versions.csv")),
         ("postings", Path("postings.csv")),
     ]
-    counts = {"dataset_versions": 1, "postings": 135}
+    counts = {"dataset_versions": 1, "postings": 270}
     monkeypatch.setattr(load_seed, "_connect", lambda: conn)
     monkeypatch.setattr(load_seed, "validate_all", lambda _: (counts, []))
     monkeypatch.setattr(load_seed, "csv_paths", lambda _: files)
@@ -243,9 +243,27 @@ def test_commit_verification_contract_contains_all_required_gates() -> None:
         "postings per job",
         "recent postings per job",
         "previous postings per job",
+        "recent cluster postings per job",
+        "previous cluster postings per job",
+        "open postings per job",
+        "closed postings per job",
+        "recent open postings per job",
+        "recent closed postings per job",
+        "previous closed postings per job",
         "analysis outputs",
+        "analysis outputs per job",
+        "posting scoped outputs per job",
+        "posting output coverage",
         "active analysis versions",
     }
+    checks = {label: " ".join(sql.split()) for label, sql, _ in load_seed.REPLACEMENT_CHECKS}
+    assert "COUNT(*) = 270" in checks["posting total"]
+    assert "MIN(n) = 30" in checks["postings per job"]
+    assert "MIN(n) = 18" in checks["recent postings per job"]
+    assert "MIN(n) = 12" in checks["previous postings per job"]
+    assert "COUNT(*) = 1008" in checks["analysis outputs"]
+    assert "MIN(n) = 112" in checks["analysis outputs per job"]
+    assert "COUNT(*) = 27" in checks["posting scoped outputs per job"]
 
 
 def test_trigger_modes_are_restored_exactly() -> None:

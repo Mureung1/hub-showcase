@@ -2,21 +2,23 @@
 function TopBar({ step, label, job, backTo, backLabel, go }) {
   return (
     <header className="top-bar">
-      <button className="top-bar__brand" onClick={() => go('select')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-        <span className="top-bar__mark">CS</span>
-        <span>
-          <span className="top-bar__name">CareerSignal</span>
-          <span className="top-bar__tagline">채용공고 기반 진로탐색 에이전트</span>
-        </span>
-      </button>
-      <div className="top-bar__meta">
-        {job && <span className="top-bar__job">분석 직무: <strong>{job}</strong></span>}
-        <span className="top-bar__step">STEP <strong>{step}</strong> / 5 · {label}</span>
-        {backTo && (
-          <button className="top-bar__link" onClick={() => go(backTo)} style={{ cursor: 'pointer' }}>
-            {backLabel}
-          </button>
-        )}
+      <div className="top-bar__inner">
+        <button className="top-bar__brand" onClick={() => go('select')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+          <span className="top-bar__mark">CS</span>
+          <span>
+            <span className="top-bar__name">CareerSignal</span>
+            <span className="top-bar__tagline">채용공고 기반 진로탐색 에이전트</span>
+          </span>
+        </button>
+        <div className="top-bar__meta">
+          {job && <span className="top-bar__job">분석 직무: <strong>{job}</strong></span>}
+          <span className="top-bar__step">STEP <strong>{step}</strong> / 5 · {label}</span>
+          {backTo && (
+            <button className="top-bar__link" onClick={() => go(backTo)} style={{ cursor: 'pointer' }}>
+              {backLabel}
+            </button>
+          )}
+        </div>
       </div>
     </header>
   )

@@ -36,7 +36,7 @@ import importlib
 import json
 import re
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -535,14 +535,17 @@ DERIVED_TABLES: tuple[str, ...] = (
 )
 """파생이 행을 더하는 표. `analysis_claims` 는 늘리지 않는다."""
 
-EXPECTED_POSTING_OUTPUT_COUNT = 9
-"""15건 구성에서 요구하는 recent 공고 해석 수."""
+TARGET_POSTING_COUNT = 30
+TARGET_POSTING_OUTPUT_COUNT = 30
+ALLOWED_POSTING_COUNTS: frozenset[int] = frozenset({15, TARGET_POSTING_COUNT})
+ALLOWED_POSTING_OUTPUT_COUNTS: frozenset[int] = frozenset({9, TARGET_POSTING_OUTPUT_COUNT})
+"""병렬 전환 중 허용하는 기존 15건·목표 30건 상태와 공고 범위 해석 수."""
 
 
 def expected_output_counts(posting_count: int) -> dict[str, int]:
-    """recent 공고 수에서 직무별 산출물 종류별 계약 행 수를 계산한다.
+    """공고 범위 수에서 직무별 산출물 종류별 계약 행 수를 계산한다.
 
-    직무 조각은 overall 1행·기업군 6행을 공통으로 만들고, recent 공고마다
+    직무 조각은 overall 1행·기업군 6행을 공통으로 만들고, 대상 공고마다
     interpretation 1행을 만든다. 합치기는 같은 공고마다 strategy·roadmap 1행씩을
     파생하므로 세 종류의 행 수가 모두 ``7 + posting_count`` 다.
     """
@@ -556,18 +559,98 @@ def expected_output_counts(posting_count: int) -> dict[str, int]:
 
 
 def expected_output_total(posting_count: int) -> int:
-    """recent 공고 수에 대응하는 직무별 `analysis_outputs` 전체 행 수."""
+    """공고 범위 수에 대응하는 직무별 `analysis_outputs` 전체 행 수."""
     return sum(expected_output_counts(posting_count).values())
 
 
-def posting_count_problem(job: str, posting_count: int) -> str | None:
-    """직무별 recent 공고 범위가 최종 목표와 다르면 실패 사유를 낸다."""
-    if posting_count == EXPECTED_POSTING_OUTPUT_COUNT:
+def posting_count_problem(
+    job: str, posting_count: int, *, allow_transition: bool = True
+) -> str | None:
+    """직무별 공고 범위가 전환 중 허용 상태와 다르면 실패 사유를 낸다."""
+    allowed_counts = (
+        ALLOWED_POSTING_OUTPUT_COUNTS
+        if allow_transition
+        else frozenset({TARGET_POSTING_OUTPUT_COUNT})
+    )
+    if posting_count in allowed_counts:
         return None
+    if not allow_transition:
+        return (
+            f"{job}: posting 범위 interpretation 이 {posting_count}행이다 "
+            f"(최종 기대값 {TARGET_POSTING_OUTPUT_COUNT})"
+        )
+    allowed = "·".join(str(value) for value in sorted(allowed_counts))
     return (
         f"{job}: posting 범위 interpretation 이 {posting_count}행이다 "
-        f"(기대값 {EXPECTED_POSTING_OUTPUT_COUNT})"
+        f"(전환 중 허용값 {allowed})"
     )
+
+
+def check_posting_inventory(
+    job: str, tables: Mapping[str, Sequence[Mapping[str, Any]]]
+) -> list[str]:
+    """30건 목표 상태의 기간·기업군·진행 상태와 공고 산출물 대응을 검사한다."""
+    versions = list(tables.get("posting_versions", ()))
+    if not versions:
+        return []
+    if len(versions) not in ALLOWED_POSTING_COUNTS:
+        allowed = "·".join(str(value) for value in sorted(ALLOWED_POSTING_COUNTS))
+        return [f"{job}: 공고가 {len(versions)}건이다 (전환 중 허용값 {allowed})"]
+    if len(versions) == 15:
+        return []
+
+    recent = [
+        row
+        for row in versions
+        if "2026-01-01" <= str(row["posted_at"])[:10] <= "2026-06-30"
+    ]
+    previous = [
+        row
+        for row in versions
+        if "2024-03-01" <= str(row["posted_at"])[:10] <= "2025-11-30"
+    ]
+    def is_open(row: Mapping[str, Any]) -> bool:
+        return row.get("closed_at") in (None, "", r"\N")
+
+    open_rows = [row for row in versions if is_open(row)]
+    recent_open = [row for row in recent if is_open(row)]
+
+    problems: list[str] = []
+    expected_counts = (
+        ("recent", len(recent), 18),
+        ("prev", len(previous), 12),
+        ("진행 중", len(open_rows), 6),
+        ("마감", len(versions) - len(open_rows), 24),
+        ("recent 진행 중", len(recent_open), 6),
+        ("recent 마감", len(recent) - len(recent_open), 12),
+        ("prev 마감", sum(not is_open(row) for row in previous), 12),
+    )
+    for label, actual, expected in expected_counts:
+        if actual != expected:
+            problems.append(f"{job}: {label} {actual}건이다 ({expected}건이어야 한다)")
+
+    interpretations = {
+        str(row["scope_id"]): str(row.get("payload", {}).get("scope", {}).get("cluster_tag"))
+        for row in tables.get("analysis_outputs", ())
+        if row.get("output_type") == "interpretation" and row.get("scope_level") == "posting"
+    }
+    version_ids = {str(row["posting_id"]) for row in versions}
+    if set(interpretations) != version_ids:
+        problems.append(
+            f"{job}: 공고 30건과 posting interpretation 식별자 집합이 다르다"
+        )
+
+    for label, rows, expected_per_cluster in (
+        ("recent", recent, 3),
+        ("prev", previous, 2),
+    ):
+        clusters = Counter(interpretations.get(str(row["posting_id"])) for row in rows)
+        if len(clusters) != 6 or set(clusters.values()) != {expected_per_cluster}:
+            problems.append(
+                f"{job}: {label} 기업군 분포가 {dict(clusters)}다 "
+                f"(6개 기업군 각각 {expected_per_cluster}건이어야 한다)"
+            )
+    return problems
 
 _STEP_LABEL = re.compile(r"STEP\s*0*(\d+)")
 """`STEP 01 · 3주` 처럼 단계 번호를 품은 라벨에서 번호를 집는 무늬."""
@@ -948,6 +1031,8 @@ def derive_posting_scopes(
 def check_posting_scopes(
     parts: Mapping[str, Mapping[str, Sequence[Mapping[str, Any]]]],
     order: Sequence[str] = JOB_PARTS,
+    *,
+    allow_transition: bool = True,
 ) -> list[str]:
     """파생 결과가 계약과 맞는지 스스로 본다. 어긋난 사유를 그대로 돌려준다."""
     problems: list[str] = []
@@ -955,13 +1040,16 @@ def check_posting_scopes(
 
     for job in jobs:
         tables = parts[job]
+        problems.extend(check_posting_inventory(job, tables))
         outputs = list(tables.get("analysis_outputs", ()))
         posting_count = sum(
             1
             for row in outputs
             if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
         )
-        count_problem = posting_count_problem(job, posting_count)
+        count_problem = posting_count_problem(
+            job, posting_count, allow_transition=allow_transition
+        )
         if count_problem:
             problems.append(count_problem)
         expected_counts = expected_output_counts(posting_count)
@@ -1092,6 +1180,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="파일을 쓰지 않고 합치기와 중복 검사만 한다",
     )
+    parser.add_argument(
+        "--final",
+        action="store_true",
+        help="15건 전환 상태를 허용하지 않고 직무별 30건·산출물 112행만 검사한다",
+    )
     return parser.parse_args(argv)
 
 
@@ -1145,7 +1238,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 if table != "analysis_outputs"
             )
         )
-    derived_problems = check_posting_scopes(parts, [part for part in order if part in JOB_PARTS])
+    derived_problems = check_posting_scopes(
+        parts,
+        [part for part in order if part in JOB_PARTS],
+        allow_transition=not args.final,
+    )
     if derived_problems:
         print(f"\n[실패] 공고 범위 파생 자기검사 {len(derived_problems)}건")
         for line in derived_problems[:20]:

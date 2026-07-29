@@ -18,6 +18,7 @@ import { fetchJson } from './apiFetch'
 // 반환: { postings, status } — status 는 loading | ready | empty | error
 export default function usePostings(jobRoleId) {
   const [result, setResult] = useState({ job: null, postings: [], status: 'loading' })
+  const [requestVersion, setRequestVersion] = useState(0)
 
   useEffect(() => {
     if (!jobRoleId) return undefined
@@ -35,9 +36,14 @@ export default function usePostings(jobRoleId) {
         setResult({ job: jobRoleId, postings: [], status: 'error' })
       })
     return () => controller.abort()
-  }, [jobRoleId])
+  }, [jobRoleId, requestVersion])
 
-  if (!jobRoleId) return { postings: [], status: 'empty' }
-  if (result.job !== jobRoleId) return { postings: [], status: 'loading' }
-  return { postings: result.postings, status: result.status }
+  const retry = () => {
+    setResult({ job: jobRoleId, postings: [], status: 'loading' })
+    setRequestVersion((version) => version + 1)
+  }
+
+  if (!jobRoleId) return { postings: [], status: 'empty', retry }
+  if (result.job !== jobRoleId) return { postings: [], status: 'loading', retry }
+  return { postings: result.postings, status: result.status, retry }
 }
