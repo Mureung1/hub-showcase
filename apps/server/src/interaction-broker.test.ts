@@ -221,6 +221,10 @@ test('Interaction Broker projects an AY-authored citation for a binary PDF and r
 
 test('invalid citation paths are all-or-nothing and do not publish a card', async () => {
   const fixture = await createFixture()
+  await writeFile(
+    path.join(fixture.workspaceRoot, 'notes.txt'),
+    'workspace source',
+  )
   await mkdir(path.join(fixture.workspaceRoot, 'directory.txt'))
   await writeFile(path.join(fixture.outsideRoot, 'secret.txt'), 'secret')
   await symlink(
@@ -237,7 +241,26 @@ test('invalid citation paths are all-or-nothing and do not publish a card', asyn
 
   try {
     await acceptHandshake(server, broker)
+    const mixedRequest = requestWithCitation({
+      relativePath: 'notes.txt',
+      excerpt: 'workspace source',
+    })
     for (const request of [
+      {
+        ...mixedRequest,
+        changes: [
+          {
+            ...mixedRequest.changes[0],
+            citations: [
+              ...mixedRequest.changes[0].citations,
+              {
+                relativePath: 'missing.txt',
+                excerpt: '없는 파일',
+              },
+            ],
+          },
+        ],
+      },
       requestWithCitation({
         relativePath: 'escaped.txt',
         excerpt: '외부 파일',

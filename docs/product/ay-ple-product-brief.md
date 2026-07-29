@@ -121,7 +121,7 @@ Action을 workspace-local Skill과 file/text input으로 compose하는 exact con
 - Pending Review는 AY Chat의 inline card 하나로 표시하고 composer·steer를 잠근다. Modal·별도 approval page와 입력 queue는 만들지 않는다.
 - Card에는 capability action만 두며 전체 Turn interrupt는 Review result와 분리된 native conversation control로 유지한다.
 - Settled card는 read-only로 남기고 fresh call은 새 card로 append한다. 기존 card를 교체·재개하지 않으며 별도 App Review ledger를 만들지 않는다.
-- Optional `SourceCitation`은 active SemesterWorkspace 안에 실제 존재하는 regular non-symlink file의 relative path, AY가 제시한 excerpt와 optional location hint를 card에 투영한다. App은 path safety만 확인하고 excerpt를 parse·인증하지 않으며, 하나라도 invalid citation이면 partial Review 없이 call 전체를 실패시킨다.
+- Optional `SourceCitation`은 AY가 active SemesterWorkspace의 어느 file 부분을 근거로 해석했는지 card에 보여 준다. 사용자는 current source preview와 비교해 판단하며, App이 AY의 인용이나 해석을 인증했다는 뜻은 아니다. 정확한 field와 검증 경계는 [InteractionCapability 아키텍처](../architecture/ay-app-interaction-capabilities.md)가 소유한다.
 - Pending request와 response를 장기 학업 event로 저장하지 않는다.
 - 일반 clarification은 built-in `request_user_input`을 사용할 수 있다.
 - 하나의 Review 결정을 custom MCP와 built-in `request_user_input`에 이중으로 걸치지 않는다.
@@ -129,7 +129,7 @@ Action을 workspace-local Skill과 file/text input으로 compose하는 exact con
 
 첫 capability인 `propose_state_patch`의 의미는 변경을 App이 적용하라는 명령이 아니다. AY가 사용자에게 변경안을 보여주고 다음 행동을 결정하기 위한 transient Review request다.
 
-공개 request는 Assignment·Course schema나 raw Git diff에 결합하지 않는다. 사람이 이해할 설명과 순서가 있는 semantic change를 사용하고, 각 change는 label·설명, before/after와 선택적인 `SourceCitation { relativePath, excerpt, locationHint? }`을 가진다.
+공개 request는 Assignment·Course schema나 raw Git diff에 결합하지 않는다. 사람이 이해할 설명과 순서가 있는 semantic change를 사용하고, 필요한 change에는 사용자가 source와 비교할 수 있는 `SourceCitation`을 함께 보여 준다. 정확한 protocol mapping은 [InteractionCapability 아키텍처](../architecture/ay-app-interaction-capabilities.md)를 따른다.
 
 ## SemesterWorkspace와 상태 소유권
 
