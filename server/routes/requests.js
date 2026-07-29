@@ -228,10 +228,10 @@ router.get('/', async (req, res) => {
   const userIds = [...new Set([me?.user_id, ...rooms.map((r) => r.user_id), ...allMemberUserIds].filter(Boolean))]
   const { data: userRows } = await supabase
     .from('users')
-    .select('id, gender, name, nickname, college, avatar_url, rating, noshow_count')
+    .select('id, gender, name, nickname, college, avatar_url, rating, rating_count, noshow_count')
     .in('id', userIds.length ? userIds : [''])
   const genderById = Object.fromEntries((userRows ?? []).map((u) => [u.id, u.gender]))
-  const ratingById = Object.fromEntries((userRows ?? []).map((u) => [u.id, u.rating]))
+  const userById = Object.fromEntries((userRows ?? []).map((u) => [u.id, u]))
   const profileById = Object.fromEntries(
     (userRows ?? []).map((u) => [
       u.id,
@@ -240,6 +240,7 @@ router.get('/', async (req, res) => {
         college: u.college,
         avatar_url: u.avatar_url,
         rating: u.rating,
+        ratingCount: u.rating_count,
         noshow_count: u.noshow_count,
       },
     ])
@@ -247,17 +248,18 @@ router.get('/', async (req, res) => {
 
   const withExtras = (room) => {
     const profile = profileById[room.user_id] ?? null
-    const memberRatings = room.memberIds
-      .map((id) => ratingById[userIdByRequestId[id]])
-      .filter((r) => typeof r === 'number')
-    const groupRatingAvg = memberRatings.length
-      ? Math.round((memberRatings.reduce((a, b) => a + b, 0) / memberRatings.length) * 10) / 10
-      : null
+    const members = room.memberIds.map((id) => userById[userIdByRequestId[id]]).filter(Boolean)
+    // 실제로 평가받은 적이 있는 멤버만 가중 평균 (한 번도 평가 못 받은 사람의 기본값 5점이 평균을 왜곡하지 않도록)
+    const totalCount = members.reduce((sum, u) => sum + (u.rating_count ?? 0), 0)
+    const weightedSum = members.reduce((sum, u) => sum + u.rating * (u.rating_count ?? 0), 0)
+    const groupRatingAvg = totalCount > 0 ? Math.round((weightedSum / totalCount) * 10) / 10 : null
 
     return {
       ...room,
       activity: describeActivity(room.last_seen_at),
-      profile: profile ? { ...profile, rating: groupRatingAvg ?? profile.rating } : null,
+      profile: profile
+        ? { ...profile, rating: groupRatingAvg ?? profile.rating, ratingCount: totalCount }
+        : null,
     }
   }
 

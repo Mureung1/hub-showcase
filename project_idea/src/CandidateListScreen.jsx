@@ -9,6 +9,14 @@ function formatTime(t) {
   return t ? t.slice(0, 5) : "";
 }
 
+// 한 번도 평가받은 적 없으면 기본값 5점 대신 NEW 배지로 보여줌
+function RatingBadge({ rating, ratingCount }) {
+  if (!ratingCount) {
+    return <span style={{ fontSize: 11, color: "#2F8F5B", fontWeight: 700 }}>NEW</span>;
+  }
+  return <span style={{ fontSize: 11, color: "#C98A1F", fontWeight: 600 }}>★ {rating.toFixed(1)}</span>;
+}
+
 function CandidateListScreen({ myRequest, myProfile, existingJoin, onBack, onJoin }) {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -192,7 +200,10 @@ function CandidateListScreen({ myRequest, myProfile, existingJoin, onBack, onJoi
                 </div>
               )}
               <div style={{ flex: 1, textAlign: "left" }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>{myProfile?.nickname || myProfile?.name || "내 방"}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                  {myProfile?.nickname || myProfile?.name || "내 방"}
+                  <RatingBadge rating={myProfile?.rating} ratingCount={myProfile?.rating_count} />
+                </div>
                 {myProfile?.college && (
                   <div style={{ fontSize: 12, color: "#8A7A76" }}>{myProfile.college}</div>
                 )}
@@ -277,9 +288,7 @@ function CandidateListScreen({ myRequest, myProfile, existingJoin, onBack, onJoi
                 {c.activity?.isActive && (
                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2F8F5B", display: "inline-block" }} />
                 )}
-                {typeof c.profile?.rating === "number" && (
-                  <span style={{ fontSize: 11, color: "#C98A1F", fontWeight: 600 }}>★ {c.profile.rating.toFixed(1)}</span>
-                )}
+                <RatingBadge rating={c.profile?.rating} ratingCount={c.profile?.ratingCount} />
                 {c.profile?.noshow_count > 0 && (
                   <span style={{ fontSize: 11, color: "#C8102E", fontWeight: 700 }}>⚠️ 노쇼 {c.profile.noshow_count}회</span>
                 )}
