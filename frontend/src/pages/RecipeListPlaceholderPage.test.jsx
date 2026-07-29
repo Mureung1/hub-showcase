@@ -1121,6 +1121,131 @@ describe("RecipeListPlaceholderPage", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("전달 코드를 수락해 저장한 레시피를 새로고침 없이 목록에 표시한다", async () => {
+    const receivedInfo = {
+      originalOwner: {
+        name: "김민지",
+        profileImageUrl: null,
+      },
+      senderDisplayName: "엄마",
+      relationshipLabel: "어머니의 레시피",
+      receivedAt: "2026-07-26T12:30:00.000Z",
+      canReshare: false,
+    };
+    const recipeSummary = {
+      id: "received-recipe-id",
+      type: "RECEIVED",
+      title: "엄마의 김치찌개",
+      description: null,
+      source: null,
+      receivedInfo,
+      createdAt: "2026-07-26T12:30:00.000Z",
+    };
+    const recipeDetail = {
+      ...recipeSummary,
+      ownerId: "user-id",
+      servings: "2인분",
+      cookingTimeMinutes: 30,
+      ingredients: [],
+      steps: [],
+      memo: null,
+      updatedAt: "2026-07-26T12:30:00.000Z",
+    };
+    const preview = {
+      invitationId: "invitation-id",
+      recipe: {
+        title: "엄마의 김치찌개",
+        description: null,
+        servings: "2인분",
+        cookingTimeMinutes: 30,
+        ingredients: [],
+        steps: [],
+        source: null,
+      },
+      originalOwner: {
+        name: "김민지",
+        profileImageUrl: null,
+      },
+      expiresAt: "2026-08-02T14:00:00.000Z",
+      canReshare: false,
+    };
+    let listRequestCount = 0;
+    const fetchMock = vi.fn().mockImplementation((path) => {
+      let data;
+      let status = 200;
+
+      if (path === "/api/recipes") {
+        listRequestCount += 1;
+        data = listRequestCount === 1 ? [] : [recipeSummary];
+      } else if (path === "/api/transfer-invitations/by-code") {
+        data = preview;
+      } else if (
+        path === "/api/transfer-invitations/invitation-id/accept"
+      ) {
+        data = { recipeId: "received-recipe-id", type: "RECEIVED" };
+        status = 201;
+      } else if (path === "/api/recipes/received-recipe-id") {
+        data = recipeDetail;
+      } else {
+        throw new Error(`Unexpected request: ${path}`);
+      }
+
+      return Promise.resolve(
+        new Response(JSON.stringify({ data }), {
+          status,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = {
+      displayName: "요리사",
+      getIdToken: vi.fn().mockResolvedValue("firebase-token"),
+    };
+
+    render(
+      <AuthContext.Provider value={{ user }}>
+        <MemoryRouter initialEntries={["/transfer-invitations"]}>
+          <Routes>
+            <Route
+              path="/transfer-invitations"
+              element={<RecipeListPlaceholderPage />}
+            />
+            <Route
+              path="/recipes/:recipeId"
+              element={<RecipeListPlaceholderPage />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </AuthContext.Provider>,
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "전달 코드로 레시피 받기",
+    });
+    fireEvent.change(within(dialog).getByLabelText("전달 코드"), {
+      target: { value: "ABCD-1234" },
+    });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "코드 확인" }),
+    );
+    fireEvent.click(
+      await within(dialog).findByRole("button", { name: "수락" }),
+    );
+    fireEvent.change(within(dialog).getByLabelText("전해준 사람"), {
+      target: { value: "엄마" },
+    });
+    fireEvent.change(within(dialog).getByLabelText("관계 라벨"), {
+      target: { value: "어머니의 레시피" },
+    });
+    fireEvent.click(within(dialog).getByRole("button", { name: "저장" }));
+
+    expect(
+      await screen.findByRole("link", { name: /엄마의 김치찌개/ }),
+    ).toBeInTheDocument();
+    expect(listRequestCount).toBe(2);
+  });
+
   it("조리 중 보기에서 본문을 유지하고 관리 동작만 숨긴 뒤 기존 초대를 복원한다", async () => {
     const { fetchMock, user } = renderRecipeDetail();
     const detailRegion = await screen.findByRole("region", {

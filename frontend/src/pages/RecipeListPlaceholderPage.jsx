@@ -534,7 +534,10 @@ function RecipeListPlaceholderPage() {
                 />
               </svg>
             </button>
-            <TransferInvitationPage isDialog />
+            <TransferInvitationPage
+              isDialog
+              onRecipeSaved={() => setLoadVersion((value) => value + 1)}
+            />
           </section>
         </div>
       ) : null}
