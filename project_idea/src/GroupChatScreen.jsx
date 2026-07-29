@@ -96,6 +96,14 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
 
   const me = members.find((m) => m.id === myRequestId);
   const matchedMembers = members.filter((m) => m.status === "matched");
+
+  // 실시간 폴링으로 알게 된 인원수를 App.jsx의 candidate에도 반영해, '이전'으로 돌아가도 최신 값이 보이게 함
+  useEffect(() => {
+    if (matchedMembers.length > 0) {
+      onUpdateCandidate?.({ groupCount: matchedMembers.length });
+    }
+  }, [matchedMembers.length]);
+
   const pendingOthers = members.filter((m) => m.status === "pending" && m.id !== myRequestId);
   const iAmPending = me?.status === "pending";
 
