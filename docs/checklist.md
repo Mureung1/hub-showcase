@@ -38,6 +38,12 @@
 - [ ] `showcase.json`에 `demoVideoUrl` 추가
 - [ ] PR에 포함
 
+## 기능 보완 (수)
+- [x] 배포 재확인 (Render `/api/health`, Vercel FE 둘 다 정상)
+- [x] Episodes 사이드바를 실제 `messages` 데이터에 연결 (TDD로 `groupMessagesIntoEpisodes` 구현)
+- [x] 로컬 + 배포 환경 양쪽에서 확인
+- [x] 작업 과정(오류·요청·검토·성공 확인) 기록 → [docs/work-log.md](work-log.md)
+
 ## 데모 준비 (목~금)
 - [ ] 서비스 소개·시연 순서 정리
 - [ ] Agent·Skill·규칙 문서 관계를 그림으로 정리
