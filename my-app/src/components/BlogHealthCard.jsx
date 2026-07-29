@@ -52,7 +52,9 @@ function BlogHealthCard({ score, level, daysSinceLastPost, visitorCount, onDetai
         <div className="w-full space-y-xs mb-lg">
           <div className="flex justify-between items-center py-xs border-b border-surface-variant">
             <span className="text-body-sm text-on-surface-variant">최근 게시물</span>
-            <span className="text-body-sm font-semibold">{daysSinceLastPost}일 전</span>
+            <span className="text-body-sm font-semibold">
+              {daysSinceLastPost === null ? "정보 없음" : `${daysSinceLastPost}일 전`}
+            </span>
           </div>
           <div className="flex justify-between items-center py-xs border-b border-surface-variant">
             <span className="text-body-sm text-on-surface-variant">최근 방문자 수</span>

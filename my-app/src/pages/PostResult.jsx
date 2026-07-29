@@ -1,4 +1,5 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import PageTopBar from "../components/PageTopBar";
 import AISummaryCard from "../components/post-result/AISummaryCard";
 import TagListCard from "../components/post-result/TagListCard";
@@ -14,8 +15,20 @@ function toContentBlocks(content) {
 
 function PostResult() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const { data: post, error } = usePostResult(id);
+  const photoFile = location.state?.photoFile ?? null;
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
+
+  // 인터뷰에서 업로드한 사진은 서버에 저장되지 않고 이 화면까지 router state로만
+  // 전달된다(새로고침하면 사라짐) — 백엔드 이미지 업로드가 아직 없어서다.
+  useEffect(() => {
+    if (!photoFile) return undefined;
+    const url = URL.createObjectURL(photoFile);
+    setPhotoPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [photoFile]);
 
   if (error) {
     return (
@@ -47,7 +60,12 @@ function PostResult() {
           <TagListCard title="추천 키워드" icon="trending_up" variant="seo" tags={post.seoKeywords} />
           <TagListCard title="추천 해시태그" variant="hashtag" tags={post.hashtags} />
           <ThumbnailCard
-            thumbnail={{ url: post.thumbnailUrl, note: "사진을 업로드하면 추천 썸네일을 보여드려요." }}
+            thumbnail={{
+              url: photoPreviewUrl ?? post.thumbnailUrl,
+              note: photoPreviewUrl
+                ? "업로드한 사진이에요. 네이버에 게시할 때 본문과 함께 복사됩니다."
+                : "사진을 업로드하면 추천 썸네일을 보여드려요.",
+            }}
           />
         </aside>
 
@@ -55,7 +73,7 @@ function PostResult() {
           title={post.title}
           content={toContentBlocks(post.content)}
           onRegenerate={() => {}}
-          onSchedule={() => navigate(`/posts/promotion/schedule/${post.id}`)}
+          onSchedule={() => navigate(`/posts/promotion/schedule/${post.id}`, { state: { photoFile } })}
         />
       </main>
     </div>

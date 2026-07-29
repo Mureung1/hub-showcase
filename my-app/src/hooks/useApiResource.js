@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "../api/client";
 
 export function useApiResource(path) {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refetchIndex, setRefetchIndex] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -29,7 +30,9 @@ export function useApiResource(path) {
     return () => {
       cancelled = true;
     };
-  }, [path]);
+  }, [path, refetchIndex]);
 
-  return { data, isLoading, error };
+  const refetch = useCallback(() => setRefetchIndex((i) => i + 1), []);
+
+  return { data, isLoading, error, refetch };
 }

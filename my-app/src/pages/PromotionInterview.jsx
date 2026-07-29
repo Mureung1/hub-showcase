@@ -180,6 +180,7 @@ function PromotionInterview() {
   const navigate = useNavigate();
   const [stepIndex, setStepIndex] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [photoFile, setPhotoFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
@@ -201,7 +202,17 @@ function PromotionInterview() {
       setSubmitError(null);
       try {
         const post = await apiClient.post("/posts/promotion", answers);
-        navigate(`/posts/promotion/result/${post.id}`);
+        if (photoFile) {
+          try {
+            await apiClient.uploadImage(`/posts/${post.id}/images`, photoFile);
+          } catch {
+            // 사진 업로드가 실패해도 글 자체는 이미 만들어졌으니 결과 화면으로는 계속 진행한다
+          }
+        }
+        // photoFile도 함께 넘겨서, 결과 화면이 업로드 URL을 다시 불러오기 전
+        // 잠깐이라도 사진을 바로 보여줄 수 있게 한다(업로드가 진짜 저장소이고,
+        // 이건 그 사이 사용자 경험을 위한 보조 수단일 뿐).
+        navigate(`/posts/promotion/result/${post.id}`, { state: { photoFile } });
       } catch (err) {
         setSubmitError(err.message);
         setIsSubmitting(false);
@@ -292,7 +303,11 @@ function PromotionInterview() {
               />
             )}
             {step.type === "photo" && (
-              <PhotoQuestion value={currentAnswer} onChange={handleAnswerChange} />
+              <PhotoQuestion
+                value={currentAnswer}
+                onChange={handleAnswerChange}
+                onFileSelect={setPhotoFile}
+              />
             )}
             {step.type === "date" && (
               <DateQuestion value={currentAnswer} onChange={handleAnswerChange} />
