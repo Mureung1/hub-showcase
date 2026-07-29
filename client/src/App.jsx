@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import MapScreen from './screens/MapScreen.jsx';
+import ThemeScreen from './screens/ThemeScreen.jsx';
 import ListScreen from './screens/ListScreen.jsx';
 import RouteScreen from './screens/RouteScreen.jsx';
 import MyPageScreen from './screens/MyPageScreen.jsx';
@@ -28,6 +29,7 @@ export default function App() {
               타이밍과 얽혀 지도 쪽에서 예외가 날 위험이 커서 공수 대비 효과가 낮다고 판단. */}
           <Routes>
             <Route path="/" element={<MapScreen />} />
+            <Route path="/themes" element={<ThemeScreen />} />
             <Route path="/list" element={<ListScreen />} />
             <Route path="/route" element={<RouteScreen />} />
             <Route path="/mypage" element={<MyPageScreen />} />

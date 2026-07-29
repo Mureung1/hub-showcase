@@ -116,3 +116,24 @@ export const CheckCircleIcon = (props) => (
     <polyline points="8 12.5 10.5 15 16 9" />
   </svg>
 );
+
+export const ChevronDownIcon = (props) => (
+  <svg {...base} {...props}>
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+export const ExternalLinkIcon = (props) => (
+  <svg {...base} {...props}>
+    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
+
+export const PlusIcon = (props) => (
+  <svg {...base} {...props}>
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <line x1="5" y1="12" x2="19" y2="12" />
+  </svg>
+);

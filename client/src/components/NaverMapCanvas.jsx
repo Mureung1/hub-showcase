@@ -17,11 +17,13 @@ function bounceMarker(el) {
   el.classList.add('marker-bounce');
 }
 
-// 클릭 → onToggleSelect → selectedIds 변경 → 이 마커의 content DOM이 통째로 새로 만들어지는
-// 흐름이라(선택 표시를 바꾸려면 아이콘을 다시 그려야 해서), bounceMarker로 붙인 클래스가 곧바로
-// 갈아치워져 버린다. 그래서 "방금 클릭된 빵집 id"를 새로 만드는 엘리먼트에 처음부터 반영해준다
-// (justClicked=true면 태어날 때부터 marker-bounce를 달고 나와서, 새 엘리먼트에서도 애니메이션이 그대로 재생됨).
-function buildMarkerContent(bakery, { selected, dim, justClicked }) {
+// 클릭 → onMarkerClick → 상세정보 팝업 오픈(selectedIds가 바뀌는 건 팝업 안의 "트레이에 담기"
+// 버튼을 눌렀을 때뿐) → 어느 쪽이든 selectedIds/searchQuery가 바뀌면 이 마커의 content DOM이
+// 통째로 새로 만들어지는 흐름이라(선택 표시를 바꾸려면 아이콘을 다시 그려야 해서), bounceMarker로
+// 붙인 클래스가 곧바로 갈아치워져 버린다. 그래서 "방금 클릭된 빵집 id"를 새로 만드는 엘리먼트에
+// 처음부터 반영해준다(justClicked=true면 태어날 때부터 marker-bounce를 달고 나와서, 새 엘리먼트에서도
+// 애니메이션이 그대로 재생됨).
+function buildMarkerContent(bakery, { selected, dim, justClicked, isNew, popDelay }) {
   const el = document.createElement('div');
   el.className = `map-marker${selected ? ' selected' : ''}${dim ? ' dim' : ''}${justClicked ? ' marker-bounce' : ''}`;
   el.addEventListener('click', () => bounceMarker(el));
@@ -38,7 +40,11 @@ function buildMarkerContent(bakery, { selected, dim, justClicked }) {
   }
 
   const dot = document.createElement('span');
-  dot.className = 'dot';
+  // isNew(마커가 처음 만들어지는 순간)일 때만 pop-in — setIcon으로 매번 새로 그려지는 다른
+  // 경우(선택/검색 변경)에도 계속 재생되면 클릭할 때마다 지도 전체가 팝핑돼 산만해지므로,
+  // "새로 생긴 마커"에서만 순서대로 살짝 어긋나게(popDelay) 튀어나오도록 한다.
+  dot.className = `dot${isNew ? ' marker-pop' : ''}`;
+  if (isNew) dot.style.animationDelay = `${popDelay}s`;
   el.appendChild(dot);
 
   const label = document.createElement('span');
@@ -75,7 +81,10 @@ export default function NaverMapCanvas({
   bakeries,
   selectedIds,
   searchQuery,
-  onToggleSelect,
+  onMarkerClick,
+  focusId,
+  onFocusPosition,
+  onMapInteraction,
   userLocation,
   userLocationLabel,
   onMapClick,
@@ -85,16 +94,18 @@ export default function NaverMapCanvas({
   const markersRef = useRef(new Map());
   const userMarkerRef = useRef(null);
   const [status, setStatus] = useState(CLIENT_ID ? 'loading' : 'missing-key');
-  // 방금 클릭한 빵집 id. 클릭 → onToggleSelect → 리렌더로 마커 아이콘이 통째로 새로 그려지는
+  // 방금 클릭한 빵집 id. 클릭 → onMarkerClick → 리렌더로 마커 아이콘이 통째로 새로 그려지는
   // 흐름이라, 클릭 피드백(marker-bounce)을 "새로 만드는 엘리먼트"에 처음부터 실어 보내는 용도.
   const justClickedIdRef = useRef(null);
 
-  // 지도 클릭 리스너는 마운트 시 한 번만 붙기 때문에, 매 렌더마다 바뀔 수 있는 콜백은
+  // 지도 클릭/팬/줌 리스너는 마운트 시 한 번만 붙기 때문에, 매 렌더마다 바뀔 수 있는 콜백은
   // ref로 최신값을 참조해서 stale closure를 피한다.
   const onMapClickRef = useRef(onMapClick);
+  const onMapInteractionRef = useRef(onMapInteraction);
   useEffect(() => {
     onMapClickRef.current = onMapClick;
-  }, [onMapClick]);
+    onMapInteractionRef.current = onMapInteraction;
+  }, [onMapClick, onMapInteraction]);
 
   // 인증 실패는 지도가 'ready'로 표시된 다음에야 비동기로 도착할 수 있다(아래 참고).
   // 그 사이에 만들어진 마커는 인증되지 않은 반쪽짜리 지도 인스턴스에 붙어 있어 내부 상태가 일부 null이라,
@@ -144,8 +155,14 @@ export default function NaverMapCanvas({
         // 빵집 마커 클릭은 각 마커 자체 리스너가 처리하고 지도 배경 클릭까지는 전파되지 않으므로,
         // 여기서는 "빈 지도를 클릭 = 내 위치를 직접 지정"으로 다뤄도 안전하다.
         naverMaps.Event.addListener(mapRef.current, 'click', (e) => {
+          onMapInteractionRef.current?.();
           onMapClickRef.current?.({ lat: e.coord.lat(), lng: e.coord.lng() });
         });
+        // 마커 클릭 상세정보 박스는 클릭 시점의 화면 좌표에 한 번만 위치를 맞추고(아래 focusId
+        // 이펙트), 지도를 옮기거나 확대/축소하면 그 좌표가 더 이상 마커 위치와 맞지 않게 되므로
+        // 좌표를 계속 추적하는 대신 팝업을 그냥 닫아버린다(더 단순하고 견고함).
+        naverMaps.Event.addListener(mapRef.current, 'dragstart', () => onMapInteractionRef.current?.());
+        naverMaps.Event.addListener(mapRef.current, 'zoom_changed', () => onMapInteractionRef.current?.());
         setStatus('ready');
       })
       .catch(() => {
@@ -163,15 +180,15 @@ export default function NaverMapCanvas({
     if (status !== 'ready' || !mapRef.current) return;
     const naverMaps = window.naver.maps;
 
-    bakeries.forEach((b) => {
+    bakeries.forEach((b, i) => {
       const selected = selectedIds.has(b.id);
       const dim = !matchesSearch(b, searchQuery);
       const justClicked = justClickedIdRef.current === b.id;
+      const existing = markersRef.current.get(b.id);
       const icon = {
-        content: buildMarkerContent(b, { selected, dim, justClicked }),
+        content: buildMarkerContent(b, { selected, dim, justClicked, isNew: !existing, popDelay: (i % 12) * 0.025 }),
         anchor: new naverMaps.Point(13, 26),
       };
-      const existing = markersRef.current.get(b.id);
 
       if (existing) {
         existing.setIcon(icon);
@@ -183,14 +200,24 @@ export default function NaverMapCanvas({
         });
         naverMaps.Event.addListener(marker, 'click', () => {
           justClickedIdRef.current = b.id;
-          onToggleSelect(b.id);
+          onMarkerClick(b.id);
         });
         markersRef.current.set(b.id, marker);
       }
     });
     // 이번 렌더에 반영했으니 리셋 — 안 그러면 이후 무관한 재렌더(검색어 변경 등)에서도 계속 튄다.
     justClickedIdRef.current = null;
-  }, [status, bakeries, selectedIds, searchQuery, onToggleSelect]);
+  }, [status, bakeries, selectedIds, searchQuery, onMarkerClick]);
+
+  // 마커 클릭(또는 좌측 리스트에서 항목 클릭)으로 focusId가 바뀔 때마다, 그 마커의 현재 화면 픽셀
+  // 좌표를 계산해 올려보낸다 — 상세정보 박스를 "그 마커 위치"에 띄우기 위함(MapScreen.jsx 참고).
+  useEffect(() => {
+    if (status !== 'ready' || !mapRef.current || focusId == null) return;
+    const marker = markersRef.current.get(focusId);
+    if (!marker) return;
+    const point = mapRef.current.getProjection().fromCoordToOffset(marker.getPosition());
+    onFocusPosition?.({ x: point.x, y: point.y });
+  }, [status, focusId, onFocusPosition]);
 
   // 내 위치 마커는 userLocation이 바뀔 때마다 위치/라벨을 갱신 (빵집 마커와 별도 관리)
   useEffect(() => {
