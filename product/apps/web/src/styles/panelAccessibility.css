@@ -41,6 +41,28 @@
   gap: 6px;
 }
 
+.scene-experiment-trigger {
+  border-color: #b7ddc2;
+  color: #176f3a;
+  background: linear-gradient(135deg, #f4fbf5, #e8f7ec);
+  box-shadow: 0 3px 10px rgba(36, 128, 70, 0.08);
+}
+
+.scene-experiment-trigger:hover {
+  border-color: #7fbd91;
+  background: #e3f4e7;
+}
+
+.scene-experiment-trigger small {
+  padding: 2px 4px;
+  border-radius: 4px;
+  color: #ffffff;
+  background: #248346;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
 .header-text-size-control {
   display: inline-flex;
   align-items: center;
@@ -348,6 +370,18 @@
     padding: 0;
     border-color: transparent;
     background: transparent;
+  }
+
+  .scene-experiment-trigger {
+    display: inline-flex;
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .scene-experiment-label,
+  .scene-experiment-trigger small {
+    display: none;
   }
 
   .panel-text-size-control {

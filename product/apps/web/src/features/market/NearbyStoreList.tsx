@@ -5,6 +5,7 @@ import { categoryClass } from "./model";
 import type { MarketStore } from "./types";
 
 type NearbyStoreListProps = {
+  categoryName: string;
   stores: MarketStore[];
   selectedStoreName: string | null;
   state: NearbyStoreState;
@@ -13,6 +14,7 @@ type NearbyStoreListProps = {
 };
 
 export function NearbyStoreList({
+  categoryName,
   stores,
   selectedStoreName,
   state,
@@ -28,17 +30,17 @@ export function NearbyStoreList({
   return (
     <>
       <div className="store-list-heading">
-        <span>주변 점포</span>
+        <span>상권 내 {categoryName}</span>
         <strong>{stores.length}개</strong>
       </div>
       {state === "loading" && (
         <p className="nearby-state" role="status">
-          주변 점포를 조회하고 있습니다.
+          상권 안의 점포를 조회하고 있습니다.
         </p>
       )}
       {state === "empty" && (
         <p className="nearby-state" role="status">
-          선택 반경 안에 조회 가능한 점포가 없습니다.
+          선택 상권 안에 조회 가능한 점포가 없습니다.
         </p>
       )}
       {state === "unsupported" && (
@@ -48,7 +50,7 @@ export function NearbyStoreList({
       )}
       {state === "error" && (
         <div className="nearby-state is-error" role="alert">
-          <span>주변 점포를 불러오지 못했습니다.</span>
+          <span>상권 안의 점포를 불러오지 못했습니다.</span>
           <button type="button" onClick={onRetry}>
             다시 시도
           </button>
@@ -59,7 +61,7 @@ export function NearbyStoreList({
           {stores.length}개 중 {visibleCount}개 표시
         </p>
       )}
-      <div className="store-list" aria-label="주변 점포 목록">
+      <div className="store-list" aria-label={`상권 내 ${categoryName} 목록`}>
         {displayedStores.map((store) => (
           <button
             key={store.id ?? store.name}

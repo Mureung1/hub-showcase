@@ -143,7 +143,8 @@ export function InspectorDecisionSummary({
   selected: MarketStore | null;
   topic: AnalysisTopic;
 }) {
-  if (categorySelection.coverage !== "full" || analysis === null || topic !== "overview") return null;
+  if (categorySelection.coverage !== "full" || analysis === null || topic !== "overview")
+    return null;
 
   const summary = analysis.score.decision_summary;
   const fallback = fallbackDecision(analysis);
@@ -268,7 +269,7 @@ export function InspectorScoreAndCompetition({
             </div>
             <div>
               <Target aria-hidden="true" />
-              <span>동일 업종 경쟁</span>
+              <span>현재 동일 업종 점포</span>
               <b>{sameCategoryCount}개</b>
             </div>
             <div>
@@ -290,7 +291,7 @@ export function InspectorScoreAndCompetition({
         <section className="metric-section">
           <div className="section-title">
             <span>경쟁 현황</span>
-            <small>서울시 상권 경계</small>
+            <small>최신 점포 위치 · 서울시 상권 경계</small>
           </div>
           <div className="competition-chart">
             <div className="competition-stat">
@@ -485,20 +486,28 @@ export function InspectorStoreTrend({
       <div className="trend-summary" role="status">
         <span>개업 {opening}개</span>
         <span>폐업 {closure}개</span>
-        <b>순증 {net > 0 ? "+" : ""}{net}개</b>
+        <b>
+          순증 {net > 0 ? "+" : ""}
+          {net}개
+        </b>
       </div>
       <div className="trend-list">
         {trend.points.map((point) => (
           <div key={point.period}>
             <b>{formatQuarterPeriod(point.period)}</b>
-            <span>개업 {point.opening_count} · 폐업 {point.closure_count}</span>
-            <strong>순증 {point.net_opening_count > 0 ? "+" : ""}{point.net_opening_count}</strong>
+            <span>
+              개업 {point.opening_count} · 폐업 {point.closure_count}
+            </span>
+            <strong>
+              순증 {point.net_opening_count > 0 ? "+" : ""}
+              {point.net_opening_count}
+            </strong>
           </div>
         ))}
       </div>
       <p className="metric-note">
-        여러 분기를 고르면 개업·폐업·순증만 합산합니다. 분기별 점포 수와 매출·유동인구는 서로
-        다른 시점의 값이므로 합산하지 않습니다.
+        여러 분기를 고르면 개업·폐업·순증만 합산합니다. 분기별 점포 수와 매출·유동인구는 서로 다른
+        시점의 값이므로 합산하지 않습니다.
       </p>
     </section>
   );
@@ -612,8 +621,12 @@ export function InspectorFlow({
   if (flowState === "loading") {
     return (
       <section className="metric-section">
-        <div className="section-title"><span>시간대별 활동성</span></div>
-        <p className="metric-note" role="status">시간대별 유동인구를 불러오는 중입니다.</p>
+        <div className="section-title">
+          <span>시간대별 활동성</span>
+        </div>
+        <p className="metric-note" role="status">
+          시간대별 유동인구를 불러오는 중입니다.
+        </p>
       </section>
     );
   }
@@ -621,8 +634,12 @@ export function InspectorFlow({
   if (flowState === "error") {
     return (
       <section className="metric-section">
-        <div className="section-title"><span>시간대별 활동성</span></div>
-        <p className="metric-note" role="alert">시간대별 유동인구를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        <div className="section-title">
+          <span>시간대별 활동성</span>
+        </div>
+        <p className="metric-note" role="alert">
+          시간대별 유동인구를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+        </p>
       </section>
     );
   }
@@ -630,9 +647,12 @@ export function InspectorFlow({
   if (flowState === "unavailable" || analysis === null) {
     return (
       <section className="metric-section">
-        <div className="section-title"><span>시간대별 활동성</span></div>
+        <div className="section-title">
+          <span>시간대별 활동성</span>
+        </div>
         <p className="metric-note" role="status">
-          선택한 분기에는 시간대별 유동인구 자료가 없습니다. 다른 분기를 선택하면 확인할 수 있습니다.
+          선택한 분기에는 시간대별 유동인구 자료가 없습니다. 다른 분기를 선택하면 확인할 수
+          있습니다.
         </p>
       </section>
     );
@@ -686,7 +706,8 @@ export function InspectorFlow({
           </strong>
         </div>
         <p className="metric-note">
-          서울 길단위인구의 선택 분기 집계입니다. 막대 높이는 이 상권 안에서 시간대끼리 비교한 상대값입니다.
+          서울 길단위인구의 선택 분기 집계입니다. 막대 높이는 이 상권 안에서 시간대끼리 비교한
+          상대값입니다.
           {flowState === "partial" ? " 일부 시간대 자료는 아직 없습니다." : ""}
         </p>
       </section>
@@ -825,7 +846,8 @@ export function InspectorPopulation({
                 </span>
                 <b>{background.resident_population.value.toLocaleString("ko-KR")}명</b>
                 <small>
-                  {background.resident_population.rank}/{background.resident_population.peer_count}위
+                  {background.resident_population.rank}/{background.resident_population.peer_count}
+                  위
                 </small>
               </div>
               <div>
@@ -851,8 +873,8 @@ export function InspectorPopulation({
             </div>
           </details>
           <p className="population-boundary-note">
-            상권과 동네의 경계가 서로 달라요. 그래서 {background.admin_area_name} 전체 인구를 이 상권의
-            인구라고 계산하지 않고, 상권 숫자와 동네 숫자를 따로 보여드립니다.
+            상권과 동네의 경계가 서로 달라요. 그래서 {background.admin_area_name} 전체 인구를 이
+            상권의 인구라고 계산하지 않고, 상권 숫자와 동네 숫자를 따로 보여드립니다.
           </p>
           <div className="population-evidence-list">
             {background.evidence

@@ -1,13 +1,8 @@
-import { useMemo } from "react";
-
-import { categoryMatchesSelection, storeCategorySelection } from "../market/categorySelection";
-import { categoryFocusCode } from "../market/categorySemantics";
 import { MarketFilters } from "../market/MarketFilters";
 import { MarketInspector } from "../market/MarketInspector";
 import { MarketQuickMetrics } from "../market/MarketQuickMetrics";
 import { MarketMapCanvas } from "../map/MarketMapCanvas";
 import { MarketMapPanel } from "../map/MarketMapPanel";
-import type { SelectedStorefront } from "../map/storefronts/SelectedStorefrontLayer";
 import { MarketSearch } from "../search/MarketSearch";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 import type { PanelTextSize } from "./usePanelTextSize";
@@ -39,42 +34,15 @@ export function WorkspaceLayout({
   useWorkspaceUrlPersistence(model);
 
   const selectedStore = storefronts.storeSelection.selected;
-  const selectedCategoryStores = useMemo(
-    () =>
-      storefronts.visibleStores.filter((store) =>
-        categoryMatchesSelection(store.category, selection.categorySelection),
-      ),
-    [selection.categorySelection, storefronts.visibleStores],
-  );
-  const selectedFocusStorefront = useMemo<SelectedStorefront | null>(
-    () =>
-      viewport.presentationMode === "storefront3d" &&
-      !viewport.storefront3dUnavailable &&
-      selectedStore
-        ? {
-            id:
-              selectedStore.id ??
-              `${selectedStore.name}:${selectedStore.longitude}:${selectedStore.latitude}`,
-            longitude: selectedStore.longitude,
-            latitude: selectedStore.latitude,
-            categoryCode: categoryFocusCode(selectedStore.category, selectedStore.categoryCode),
-            placementMode: "selected-focus",
-            building: null,
-          }
-        : null,
-    [selectedStore, viewport.presentationMode, viewport.storefront3dUnavailable],
-  );
 
   function selectAndFocusStore(storeKey: string) {
     const store = storefronts.visibleStores.find(
-      (candidate) =>
-        (candidate.id ?? candidate.name) === storeKey || candidate.name === storeKey,
+      (candidate) => (candidate.id ?? candidate.name) === storeKey || candidate.name === storeKey,
     );
     if (!store) return;
     viewport.setStorefront3dUnavailable(false);
     storefronts.storeSelection.selectListedStore(store.id ?? store.name);
     panels.setInspectorOpen(true);
-    selection.applyCategorySelection(storeCategorySelection(store.category, store.categoryCode));
     viewport.focusCenter([store.longitude, store.latitude], true);
   }
 
@@ -138,7 +106,6 @@ export function WorkspaceLayout({
         }
         mapBody={
           <MarketMapCanvas
-            key={catalogState.marketIdByKey[selection.marketKey]}
             market={market}
             marketKey={selection.marketKey}
             marketId={catalogState.marketIdByKey[selection.marketKey]}
@@ -146,20 +113,20 @@ export function WorkspaceLayout({
             onVisibleCenterChange={viewport.updateVisibleCenter}
             onVisibleBoundsChange={viewport.updateVisibleBounds}
             presentationMode={viewport.presentationMode}
+            marketTransitionActive={viewport.marketTransitionActive}
             baseBuildingsRendered={viewport.baseBuildingsRendered}
             layer={selection.layer}
             selectedCategoryName={selection.categorySelection.name}
             boundaryVisible={selection.boundaryVisible}
             storesVisible={selection.storesVisible}
-            storefrontBuildings3d={selectedFocusStorefront ? [selectedFocusStorefront] : []}
+            storefrontBuildings3d={storefronts.storefrontBuildings3d}
             onStorefrontUnavailable={() => viewport.setStorefront3dUnavailable(true)}
             flowPeople={storefronts.flowPeople}
             activeHour={selection.activeHour}
             activeDemandLabel={storefronts.activeDemandLabel}
-            mapStores={selectedCategoryStores}
+            mapStores={storefronts.mapStores}
             selected={selectedStore}
             score={storefronts.score}
-            sameCategoryCount={storefronts.sameCategoryCount}
             onSelectStore={selectAndFocusStore}
             visibleSupportedRegion={viewport.visibleSupportedRegion !== undefined}
             onEvidenceOpen={() => panels.setEvidenceOpen(true)}

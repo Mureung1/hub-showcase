@@ -62,13 +62,13 @@ function PartialCompetitionSummary({
     <section className="metric-section partial-competition-summary" aria-label="경쟁 현황">
       <div className="section-title">
         <span>경쟁 현황</span>
-        <small>현재 상권 기준</small>
+        <small>최신 점포 위치 기준</small>
       </div>
       <div className="competition-chart">
         <div className="competition-stat">
           <span>같은 업종 점포</span>
           <b>{sameCategoryCount.toLocaleString("ko-KR")}곳</b>
-          <small>{categorySelection.name} 점포 위치 집계</small>
+          <small>{categorySelection.name} 최신 점포 위치 집계</small>
         </div>
         <div className="legend-list">
           <span>
