@@ -29,16 +29,16 @@ test('경계값 4500원이면 아직 아메리카노 한 잔 값이다', () => {
   expect(describeCostByAmount(4500)).toEqual({ icon: '☕', label: '아메리카노 한 잔 값' })
 })
 
-test('5000원이면 삼각김밥+음료 값이다', () => {
-  expect(describeCostByAmount(5000)).toEqual({ icon: '🍙', label: '삼각김밥+음료 값' })
+test('5000원이면 샌드위치 한 개 값이다', () => {
+  expect(describeCostByAmount(5000)).toEqual({ icon: '🥪', label: '샌드위치 한 개 값' })
 })
 
-test('7000원이면 햄버거 세트 값이다', () => {
-  expect(describeCostByAmount(7000)).toEqual({ icon: '🍔', label: '햄버거 세트 값' })
+test('7000원이면 햄버거 한 개 값이다', () => {
+  expect(describeCostByAmount(7000)).toEqual({ icon: '🍔', label: '햄버거 한 개 값' })
 })
 
-test('9000원이면 편의점 도시락+음료 값이다', () => {
-  expect(describeCostByAmount(9000)).toEqual({ icon: '🍱', label: '편의점 도시락+음료 값' })
+test('9000원이면 도시락 한 개 값이다', () => {
+  expect(describeCostByAmount(9000)).toEqual({ icon: '🍱', label: '도시락 한 개 값' })
 })
 
 test('11000원이면 짜장면 한 그릇 값이다', () => {
