@@ -4,6 +4,7 @@
   "summary": "서울 동네 상권을 지도와 공공데이터로 함께 읽어, 예비 창업자가 입지를 비교할 수 있게 돕는 설명 가능한 분석 도구입니다.",
   "githubUser": "HyunKN(정현우)",
   "demoUrl": "https://localtwin-product.vercel.app/",
+  "demoVideoUrl": "https://drive.google.com/drive/folders/1nc4SzlU1rAdfG6_4Vtu9OiZUPTEHUxad?usp=sharing",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/market-analysis.webp",
