@@ -183,10 +183,10 @@ function createSelectedStoreFocus(categoryCode: string) {
 
   const markerPivot = new THREE.Group();
   markerPivot.name = "selected-store-marker-pivot";
-  markerPivot.position.y = 5.9;
+  markerPivot.position.y = 6.05;
   const marker = createStorefrontCategoryMarker(variant);
   marker.name = "selected-store-category-object";
-  marker.scale.setScalar(1.16);
+  marker.scale.setScalar(1.24);
   marker.traverse(makeFocusObjectVisible);
   markerPivot.add(marker);
   focus.add(markerPivot);
@@ -209,7 +209,7 @@ function selectedFocusMatrix(input: StorefrontMapLayerInput, focus: THREE.Group)
   const dimensions = modelDimensions(focus);
   const localFootprint = Math.max(dimensions.x, dimensions.z, 0.001);
   const plotSizeMeters = input.building?.plotSizeMeters ?? 8;
-  const targetFootprintMeters = Math.max(5.2, Math.min(7.4, plotSizeMeters * 0.7));
+  const targetFootprintMeters = Math.max(7.2, Math.min(10.4, plotSizeMeters * 0.95));
   const uniformScale = targetFootprintMeters / localFootprint;
 
   return new THREE.Matrix4()
