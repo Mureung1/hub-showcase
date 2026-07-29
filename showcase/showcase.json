@@ -3,7 +3,7 @@
   "title": "AI 분리배출 도우미",
   "summary": "사진 한 장으로 한국의 올바른 분리배출 방법을 공식 데이터와 AI를 통해 쉽고 정확하게 안내하는 서비스입니다.",
   "githubUser": "ymina25 (Yin Min Aye)",
-  "demoUrl": "",
+  "demoUrl": "https://app.notion.com/p/AI-ConfiSort-3acd5e0c1add80519fe3f6aaaa0cd919",
   "thumbnail": "screenshots/thumbnail.png",
   "screenshots": [
     "screenshots/home.png",
@@ -26,7 +26,7 @@
   "featureTags": [
     "사진 인식 혹은 품목 검색",
     "지역별 분리배출 규정",
-    "다국어 지원"
+    "영어 지원"
   ],
   "techStack": [
     "React",
@@ -57,6 +57,11 @@
         "type": "skill",
         "name": "confisort-design-system Skill",
         "purpose": "컬러 토큰·타이포그래피·간격 등 디자인 시스템 규칙을 참고해 새 화면이 기존 프로토타입과 시각적으로 일치하도록 만듭니다."
+      },
+      {
+        "type": "agent",
+        "name": "점검 (감사 전담 에이전트)",
+        "purpose": "코드를 직접 고치지 않고 CLAUDE.md 핵심 원칙·백엔드 계층 분리·프론트 컨벤션·디자인 시스템 토큰·다국어 토글 규칙·TASK.md 체크박스 정합성을 파일:라인 근거와 함께 점검·보고합니다."
       }
     ],
     "workflows": [
@@ -68,7 +73,8 @@
           "Plan-Agent에게 아키텍처 제약 기반 태스크 분해 요청",
           "백엔드 API·서비스 레이어 우선 구현",
           "프론트엔드 실데이터 연동",
-          "수동 e2e 테스트 및 에러 핸들링 점검"
+          "수동 e2e 테스트 및 에러 핸들링 점검",
+          "점검 에이전트로 CLAUDE.md 원칙·백엔드 계층 분리·컨벤션·디자인 시스템·TASK.md 정합성 감사"
         ]
       }
     ]
