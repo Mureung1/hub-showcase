@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("./features/market/useProductCatalog", () => ({
   useProductCatalog: () => ({
     state: "ready",
+    remoteState: "ready",
     retry: vi.fn(),
     catalog: {
       markets: [
@@ -36,6 +37,7 @@ vi.mock("./features/market/useProductCatalog", () => ({
         { name: "편의점", codes: ["CS300002"] },
       ],
       radii: [100, 300, 500],
+      ranking_basis: "supported_market_unique_store_count",
     },
   }),
 }));
@@ -80,12 +82,23 @@ describe("App", () => {
     expect(screen.getByText("서울 상권분석 공식 데이터를 불러오는 중입니다.")).toBeInTheDocument();
   });
 
-  it("starts without an implicit store selection or a generated query string", () => {
+  it("starts without an implicit store selection and persists default workspace state", () => {
     render(<App />);
 
     expect(document.querySelector(".selected-location")).not.toBeInTheDocument();
     expect(screen.getByText("카페 · 상권 분석")).toBeInTheDocument();
-    expect(window.location.search).toBe("");
+
+    const parameters = new URLSearchParams(window.location.search);
+    expect(parameters.get("market")).toBe("연남");
+    expect(parameters.get("category")).toBe("카페");
+    expect(parameters.get("selectedCategory")).toBe("카페");
+    expect(parameters.get("radius")).toBe("300");
+    expect(parameters.get("hour")).toBe("0");
+    expect(parameters.get("layer")).toBe("density");
+    expect(parameters.get("topic")).toBe("overview");
+    expect(parameters.get("view")).toBe("analysis");
+    expect(parameters.has("store")).toBe(false);
+    expect(parameters.has("storeName")).toBe(false);
   });
 
   it("closes evidence with Escape and returns focus to its trigger", async () => {
@@ -403,10 +416,14 @@ describe("App", () => {
         expect.any(Object),
       ),
     );
-    expect(window.location.search).toBe("");
 
-    expect(document.querySelector(".selected-location")).toBeNull();
+    const parameters = new URLSearchParams(window.location.search);
+    expect(parameters.get("selectedCategory")).toBe("꽃집");
+    expect(parameters.get("categoryCode")).toBe("G21501");
+    expect(parameters.get("store")).toBe("FLOWER-1");
+    expect(parameters.get("storeName")).toBe("연남 꽃 작업실");
+
+    expect(document.querySelector(".selected-location")).toBeInTheDocument();
     expect(document.querySelector("main")).toHaveAttribute("data-storefront-3d-state", "idle");
-    expect(window.location.search).toBe("");
   });
 });
