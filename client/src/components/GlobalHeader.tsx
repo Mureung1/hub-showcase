@@ -34,8 +34,8 @@ function GlobalHeader({ lang, setLang, currentView, setCurrentView }: GlobalHead
         >
           My Library
         </button>
-        <button className="nav-item">Discover</button>
-        <button className="nav-item">Settings</button>
+        <button className="nav-item" onClick={() => alert(lang === 'KO' ? '준비 중인 기능입니다.' : 'Coming soon.')}>Discover</button>
+        <button className="nav-item" onClick={() => alert(lang === 'KO' ? '준비 중인 기능입니다.' : 'Coming soon.')}>Settings</button>
       </nav>
       
       <div className="header-right">
@@ -64,7 +64,7 @@ function GlobalHeader({ lang, setLang, currentView, setCurrentView }: GlobalHead
               className="auth-btn"
               onClick={signOut}
             >
-              로그아웃
+              {lang === 'KO' ? '로그아웃' : 'Logout'}
             </button>
           </div>
         ) : (
@@ -72,7 +72,7 @@ function GlobalHeader({ lang, setLang, currentView, setCurrentView }: GlobalHead
             className="auth-btn"
             onClick={signInWithGoogle}
           >
-            Google 로그인
+            {lang === 'KO' ? 'Google 로그인' : 'Sign in with Google'}
           </button>
         )}
       </div>
