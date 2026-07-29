@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { MarketStore } from "../market/types";
-import { groupStoreMarkers, STORE_MARKER_DETAIL_ZOOM } from "./storeMarkerLod";
+import {
+  groupStoreMarkers,
+  isStoreMarkerDeemphasized,
+  STORE_MARKER_DETAIL_ZOOM,
+} from "./storeMarkerLod";
 
 const stores: MarketStore[] = [
   {
@@ -63,5 +67,12 @@ describe("store marker level of detail", () => {
       { store: stores[0], count: 1 },
       { store: stores[1], count: 1 },
     ]);
+  });
+
+  it("de-emphasizes only surrounding markers after a 3D store is selected", () => {
+    expect(isStoreMarkerDeemphasized(stores[0], "카페 A", "storefront3d")).toBe(false);
+    expect(isStoreMarkerDeemphasized(stores[1], "카페 A", "storefront3d")).toBe(true);
+    expect(isStoreMarkerDeemphasized(stores[1], "카페 A", "analysis")).toBe(false);
+    expect(isStoreMarkerDeemphasized(stores[1], null, "storefront3d")).toBe(false);
   });
 });

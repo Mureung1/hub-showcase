@@ -18,6 +18,14 @@ function storeIdentity(store: MarketStore) {
   return store.id ?? `${store.name}:${store.longitude}:${store.latitude}`;
 }
 
+export function isStoreMarkerDeemphasized(
+  store: MarketStore,
+  selectedName: string | null,
+  mode: StoreMarkerGroupingMode,
+) {
+  return mode === "storefront3d" && selectedName !== null && selectedName !== store.name;
+}
+
 export function groupStoreMarkers(
   stores: MarketStore[],
   zoom: number,

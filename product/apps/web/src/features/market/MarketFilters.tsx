@@ -106,6 +106,35 @@ function CategoryOptions({
   });
 }
 
+function CategoryLoadingState({ selected }: { selected: Category }) {
+  const { icon: Icon, tone } = categoryPresentation[selected] ?? fallbackCategoryPresentation;
+  return (
+    <div className="category-loading-state" role="status" aria-label="업종 순위를 불러오는 중">
+      <div className="category-option is-selected is-loading-selection">
+        <span className="category-rank" aria-hidden="true">
+          —
+        </span>
+        <span className={`category-icon ${tone}`}>
+          <Icon size={15} />
+        </span>
+        <span className="category-option-main">
+          <span className="category-option-name">{selected}</span>
+          <small>선택 상태 유지 중</small>
+        </span>
+        <small className="category-support-badge is-loading">불러오는 중</small>
+        <span className="check" aria-hidden="true">
+          ✓
+        </span>
+      </div>
+      <div className="category-loading-skeleton" aria-hidden="true">
+        {Array.from({ length: 4 }, (_, index) => (
+          <span key={index} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type MarketFiltersProps = {
   marketKey: MarketKey;
   markets: Record<MarketKey, Market>;
@@ -161,6 +190,9 @@ export function MarketFilters({
   onStoresVisibleChange,
   onStoreChange,
 }: MarketFiltersProps) {
+  const catalogLabel =
+    catalogState === "ranked" ? "데이터 기준" : catalogState === "connecting" ? "불러오는 중" : "기본 목록";
+
   return (
     <aside className="filter-panel">
       <div className="panel-heading">
@@ -219,11 +251,12 @@ export function MarketFilters({
             어떤 가게인가요?
             <TermHelp term="업종" description="카페, 음식점처럼 가게가 제공하는 상품이나 서비스의 종류입니다." />
           </p>
-          <span>{catalogState === "ranked" ? "데이터 기준" : "기본 목록"}</span>
+          <span>{catalogLabel}</span>
         </div>
         <div className={`catalog-status is-${catalogState}`} role="status">
           {catalogState === "ranked" && "세 상권의 고유 점포 수가 많은 업종입니다."}
-          {catalogState === "connecting" && "기본 업종 4개를 먼저 보여드리며 데이터 연결을 기다리고 있습니다."}
+          {catalogState === "connecting" &&
+            "선택한 업종을 유지한 채 데이터 기반 업종 순위를 불러오고 있습니다."}
           {catalogState === "bootstrap" && "기본 업종 목록입니다. 실제 순위 데이터는 아직 준비되지 않았습니다."}
           {catalogState === "error" && (
             <>
@@ -234,12 +267,16 @@ export function MarketFilters({
             </>
           )}
         </div>
-        <div className="category-list" aria-label="분석 업종 선택">
-          <CategoryOptions
-            categories={supportedCategories}
-            selected={category}
-            onChange={onCategoryChange}
-          />
+        <div className="category-list" aria-label="분석 업종 선택" aria-busy={catalogState === "connecting"}>
+          {catalogState === "connecting" ? (
+            <CategoryLoadingState selected={categorySelection.name} />
+          ) : (
+            <CategoryOptions
+              categories={supportedCategories}
+              selected={category}
+              onChange={onCategoryChange}
+            />
+          )}
         </div>
         <div className={`category-coverage is-${categorySelection.coverage}`} role="status">
           <div>

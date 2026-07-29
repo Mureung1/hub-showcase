@@ -28,6 +28,7 @@
     0 4px 10px rgba(25, 55, 34, 0.15);
   transition:
     opacity 140ms ease,
+    filter 140ms ease,
     transform 140ms ease,
     box-shadow 140ms ease;
 }
@@ -52,6 +53,26 @@
     0 0 0 2px rgba(255, 255, 255, 0.82),
     0 0 0 5px rgba(39, 139, 86, 0.16),
     0 7px 16px rgba(25, 55, 34, 0.24);
+}
+
+.live-map .map-marker.is-storefront-fallback.is-deemphasized {
+  opacity: 0.18;
+  filter: saturate(0.72);
+  transform: scale(0.9);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.4),
+    0 3px 8px rgba(25, 55, 34, 0.1);
+}
+
+.live-map .map-marker.is-storefront-fallback.is-deemphasized:hover,
+.live-map .map-marker.is-storefront-fallback.is-deemphasized:focus-visible {
+  opacity: 0.82;
+  filter: none;
+  transform: scale(1);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.78),
+    0 0 0 4px rgba(39, 139, 86, 0.12),
+    0 6px 14px rgba(25, 55, 34, 0.2);
 }
 
 .selected-store-focus-anchor {
