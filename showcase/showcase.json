@@ -7,8 +7,10 @@
   "demoVideoUrl": "https://youtu.be/Gy70h9Bd3eM",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
-    "screenshots/home.webp",
-    "screenshots/categories.webp"
+    "screenshots/home-latest.jpg",
+    "screenshots/categories-latest.jpg",
+    "screenshots/ai-summary-latest.jpg",
+    "screenshots/archive-latest.jpg"
   ],
   "problem": "다시 보고 싶은 링크와 이미지를 여러 곳에 저장하면 내용과 저장 이유를 잊기 쉽고, 항목이 쌓일수록 원하는 자료를 다시 찾기 어렵습니다.",
   "targetUsers": [
