@@ -2,7 +2,7 @@ import {
   EMOTION_ANALYSIS_LIMITS
 } from "../../../../../shared/contracts/emotionAnalysisContract";
 
-const DEFAULT_API_BASE_URL = "http://127.0.0.1:3000";
+const DEFAULT_API_BASE_URL = "";
 const configuredApiBaseUrl =
   import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL;
 
@@ -57,10 +57,13 @@ export function createEmotionAnalysisApi({
   );
   const endpoint = `${normalizedBaseUrl}/api/emotion-analyses`;
 
-  async function createEmotionAnalysis(payload, { signal } = {}) {
+  async function createEmotionAnalysis(payload, { signal, guestKey } = {}) {
     const result = await requestJson(fetchImpl, endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(guestKey ? { "X-Guest-Key": guestKey } : {})
+      },
       body: JSON.stringify(payload),
       signal
     });
@@ -80,17 +83,16 @@ export function createEmotionAnalysisApi({
   }
 
   async function listEmotionAnalyses(
-    sessionId,
-    { limit = EMOTION_ANALYSIS_LIMITS.historyLimit, signal } = {}
+    { limit = EMOTION_ANALYSIS_LIMITS.historyLimit, signal, guestKey } = {}
   ) {
-    const searchParams = new URLSearchParams({
-      sessionId,
-      limit: String(limit)
-    });
+    const searchParams = new URLSearchParams({ limit: String(limit) });
     const result = await requestJson(
       fetchImpl,
       `${endpoint}?${searchParams}`,
-      { signal }
+      {
+        signal,
+        headers: guestKey ? { "X-Guest-Key": guestKey } : {}
+      }
     );
     const emotionAnalyses = result.data?.emotionAnalyses;
 

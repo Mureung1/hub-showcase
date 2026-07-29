@@ -1,4 +1,5 @@
 import React from "react";
+import ProgressBar from "../../../shared/components/ProgressBar";
 import useFaceLandmarker from "../hooks/useFaceLandmarker";
 
 const cameraStatusMessages = {
@@ -106,20 +107,13 @@ export default function FaceCamera({
             <ul className="face-feature-list">
               {displayedResult.features.map((feature) => (
                 <li key={feature.name}>
-                  <div className="face-feature-label">
-                    <span>{featureLabels[feature.name] || feature.name}</span>
-                    <span>{Math.round(feature.score * 100)}%</span>
-                  </div>
-                  <div
-                    className="face-feature-track"
+                  <ProgressBar
+                    label={featureLabels[feature.name] || feature.name}
+                    value={Math.round(feature.score * 100)}
                     role="meter"
-                    aria-label={featureLabels[feature.name] || feature.name}
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                    aria-valuenow={Math.round(feature.score * 100)}
-                  >
-                    <span style={{ width: `${Math.round(feature.score * 100)}%` }} />
-                  </div>
+                    tone="signal"
+                    size="compact"
+                  />
                 </li>
               ))}
             </ul>

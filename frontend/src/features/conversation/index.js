@@ -1,3 +1,6 @@
 export { default as ConversationPanel } from "./components/ConversationPanel";
-export { mockMessages } from "./data/mockMessages";
-export { generateMockResponse } from "./utils/generateMockResponse";
+export { welcomeMessages } from "./data/welcomeMessages";
+export {
+  createAiChatApi,
+  generateAiResponse
+} from "./api/aiChatApi";

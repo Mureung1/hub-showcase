@@ -37,7 +37,8 @@ export const EMOTION_ANALYSIS_LIMITS = {
   analysisResultBytes: 20_000,
   cameraEvidenceCount: 3,
   historyLimit: 20,
-  maximumHistoryLimit: 100
+  maximumHistoryLimit: 100,
+  maximumStoredRecords: 200
 };
 
 export const FACE_SIGNAL_HEURISTIC_VERSION = "v1";

@@ -12,7 +12,7 @@ export function getOrCreateBrowserSessionId() {
   if (inMemorySessionId) return inMemorySessionId;
 
   try {
-    const storedSessionId = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    const storedSessionId = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
 
     if (storedSessionId && UUID_PATTERN.test(storedSessionId)) {
       inMemorySessionId = storedSessionId;
@@ -20,7 +20,7 @@ export function getOrCreateBrowserSessionId() {
     }
 
     inMemorySessionId = createSessionId();
-    window.localStorage.setItem(SESSION_STORAGE_KEY, inMemorySessionId);
+    window.sessionStorage.setItem(SESSION_STORAGE_KEY, inMemorySessionId);
     return inMemorySessionId;
   } catch {
     inMemorySessionId = createSessionId();

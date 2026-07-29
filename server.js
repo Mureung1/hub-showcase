@@ -12,7 +12,16 @@ import {
   createEmotionAnalysisRouter
 } from "./backend/features/emotion-analyses/emotionAnalysisRoutes.js";
 import { RequestValidationError } from "./backend/features/emotion-analyses/emotionAnalysisValidation.js";
-import { SupabaseRepositoryError } from "./backend/repositories/emotionAnalysisRepository.js";
+import {
+  GuestStorageLimitError,
+  SupabaseRepositoryError
+} from "./backend/repositories/emotionAnalysisRepository.js";
+import {
+  createGuestSessionRouter,
+  mapGuestSessionError
+} from "./backend/features/guest-sessions/guestSessionRoutes.js";
+import { createAiChatRouter } from "./backend/features/ai-chat/aiChatRoutes.js";
+import { AiGenerationError } from "./backend/features/ai-chat/aiChatService.js";
 
 dotenv.config({ quiet: true });
 
@@ -22,9 +31,23 @@ const allowedOrigins = new Set(serverConfig.allowedOrigins);
 export function createApp({
   createAnalysis,
   listAnalyses,
-  rateLimitOptions = {}
+  authenticateGuest,
+  generateAiResponse,
+  consumeAiQuota,
+  guestAuthenticationOptions,
+  guestSessionOptions,
+  trustProxy = serverConfig.trustProxy,
+  healthStatus = () => ({
+    databaseConfigured: isSupabaseConfigured(),
+    guestSessionsConfigured:
+      typeof process.env.GUEST_KEY_PEPPER === "string" &&
+      process.env.GUEST_KEY_PEPPER.length >= 32
+  }),
+  rateLimitOptions = {},
+  aiRateLimitOptions = {}
 } = {}) {
   const app = express();
+  app.set("trust proxy", trustProxy);
   const apiRateLimiter = rateLimit({
     windowMs: serverConfig.rateLimitWindowMs,
     limit: serverConfig.rateLimitMaximum,
@@ -41,10 +64,41 @@ export function createApp({
     },
     ...rateLimitOptions
   });
+  const aiRateLimiter = rateLimit({
+    windowMs: serverConfig.rateLimitWindowMs,
+    limit: serverConfig.aiRateLimitMaximum,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    handler(request, response) {
+      response.status(429).json({
+        success: false,
+        error: {
+          code: "AI_RATE_LIMIT_EXCEEDED",
+          message: "Too many AI response requests. Please try again later."
+        }
+      });
+    },
+    ...aiRateLimitOptions
+  });
 
   app.disable("x-powered-by");
   app.use(helmet());
   app.use(express.json({ limit: serverConfig.jsonBodyLimit }));
+  app.get("/health", (request, response) => {
+    const checks = healthStatus();
+    const ready =
+      checks.databaseConfigured === true &&
+      checks.guestSessionsConfigured === true;
+
+    response.status(ready ? 200 : 503).json({
+      status: ready ? "ok" : "not_ready"
+    });
+  });
+  app.use("/api", (request, response, next) => {
+    response.set("Cache-Control", "no-store");
+    response.set("Pragma", "no-cache");
+    next();
+  });
   app.use(
   "/api",
   cors({
@@ -59,15 +113,40 @@ export function createApp({
       error.status = 403;
       callback(error);
     },
-    methods: ["GET", "POST"],
-    allowedHeaders: ["Content-Type"]
+    methods: ["GET", "POST", "DELETE"],
+    allowedHeaders: ["Content-Type", "X-Guest-Key"]
   }),
   apiRateLimiter
 );
 
   app.use(
+    "/api/guest-sessions",
+    createGuestSessionRouter(guestSessionOptions)
+  );
+
+  app.use(
     "/api/emotion-analyses",
-    createEmotionAnalysisRouter({ createAnalysis, listAnalyses })
+    createEmotionAnalysisRouter({
+      createAnalysis,
+      listAnalyses,
+      authenticateGuest,
+      guestAuthenticationOptions
+    })
+  );
+
+  app.use(
+    "/api/ai-chat",
+    aiRateLimiter,
+    createAiChatRouter({
+      authenticateGuest,
+      guestAuthenticationOptions,
+      consumeQuota: consumeAiQuota,
+      quotaOptions: {
+        limit: serverConfig.aiRateLimitMaximum,
+        windowSeconds: Math.ceil(serverConfig.rateLimitWindowMs / 1000)
+      },
+      generateResponse: generateAiResponse
+    })
   );
 
   app.use((request, response) => {
@@ -109,6 +188,10 @@ export function createApp({
     return;
   }
 
+  if (mapGuestSessionError(error, response)) {
+    return;
+  }
+
   if (error instanceof SupabaseConfigurationError) {
     console.error(error.message);
     response.status(503).json({
@@ -128,6 +211,28 @@ export function createApp({
       error: {
         code: error.code,
         message: "The database operation failed."
+      }
+    });
+    return;
+  }
+
+  if (error instanceof GuestStorageLimitError) {
+    response.status(error.status).json({
+      success: false,
+      error: {
+        code: error.code,
+        message: error.message
+      }
+    });
+    return;
+  }
+
+  if (error instanceof AiGenerationError) {
+    response.status(error.status).json({
+      success: false,
+      error: {
+        code: error.code,
+        message: error.message
       }
     });
     return;
@@ -160,12 +265,22 @@ export function createApp({
 const app = createApp();
 
 if (process.env.NODE_ENV !== "test") {
-  app.listen(serverConfig.port, () => {
+  const server = app.listen(serverConfig.port, () => {
     console.log(`Express server listening on http://localhost:${serverConfig.port}`);
     console.log(
       `Supabase configuration: ${isSupabaseConfigured() ? "ready" : "not configured"}`
     );
   });
+
+  const shutdown = (signal) => {
+    console.log(`${signal} received; stopping the HTTP server.`);
+    server.close((error) => {
+      process.exitCode = error ? 1 : 0;
+    });
+  };
+
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  process.once("SIGINT", () => shutdown("SIGINT"));
 }
 
 export default app;

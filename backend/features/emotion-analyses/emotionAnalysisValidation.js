@@ -7,9 +7,6 @@ import {
   VOICE_SIGNALS
 } from "../../../shared/contracts/emotionAnalysisContract.js";
 
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 const ALLOWED_FACE_SIGNALS = new Set(FACE_SIGNALS);
 const ALLOWED_VOICE_SIGNALS = new Set(VOICE_SIGNALS);
 const ALLOWED_SCENARIOS = new Set(SCENARIOS);
@@ -150,17 +147,12 @@ export function validateCreateEmotionAnalysis(body) {
   }
 
   const errors = [];
-  const sessionId = readTrimmedString(body, "sessionId", errors);
   const situationText = readTrimmedString(body, "situationText", errors);
   const voiceSignal = readTrimmedString(body, "voiceSignal", errors);
   const selectedScenario = readTrimmedString(body, "selectedScenario", errors);
   const aiResponse = readTrimmedString(body, "aiResponse", errors);
   const faceSignalMetadata = readFaceSignalMetadata(body, errors);
   const faceSignal = readFaceSignal(body, faceSignalMetadata.source, errors);
-
-  if (sessionId && !UUID_PATTERN.test(sessionId)) {
-    errors.push({ field: "sessionId", message: "sessionId must be a valid UUID." });
-  }
 
   if (situationText.length > EMOTION_ANALYSIS_LIMITS.situationTextLength) {
     errors.push({
@@ -207,7 +199,6 @@ export function validateCreateEmotionAnalysis(body) {
   }
 
   return {
-    session_id: sessionId,
     situation_text: situationText,
     face_signal: faceSignal,
     face_signal_source: faceSignalMetadata.source,
@@ -223,12 +214,6 @@ export function validateCreateEmotionAnalysis(body) {
 
 export function validateListEmotionAnalyses(query) {
   const errors = [];
-  const sessionId = readTrimmedString(query, "sessionId", errors);
-
-  if (sessionId && !UUID_PATTERN.test(sessionId)) {
-    errors.push({ field: "sessionId", message: "sessionId must be a valid UUID." });
-  }
-
   let limit = EMOTION_ANALYSIS_LIMITS.historyLimit;
 
   if (query.limit !== undefined) {
@@ -253,5 +238,5 @@ export function validateListEmotionAnalyses(query) {
     throw new RequestValidationError(errors);
   }
 
-  return { sessionId, limit };
+  return { limit };
 }

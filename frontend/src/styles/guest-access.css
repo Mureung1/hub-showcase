@@ -1,0 +1,80 @@
+.guest-access {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.guest-access p {
+  margin: 0.2rem 0 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.guest-access__actions,
+.guest-access__actions form,
+.guest-access__actions form div,
+.guest-key-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.guest-access__actions label {
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.guest-access input {
+  min-width: 16rem;
+  padding: 0.58rem 0.7rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+
+.guest-access button {
+  padding: 0.58rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.guest-access--active {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.guest-key-notice {
+  flex-wrap: wrap;
+}
+
+.guest-key-notice code {
+  padding: 0.45rem 0.6rem;
+  border-radius: 7px;
+  background: #dbeafe;
+  font-weight: 700;
+}
+
+.guest-access__error {
+  color: #b91c1c !important;
+}
+
+@media (max-width: 900px) {
+  .guest-access,
+  .guest-access__actions,
+  .guest-access__actions form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .guest-access input {
+    min-width: 0;
+    width: 100%;
+  }
+}

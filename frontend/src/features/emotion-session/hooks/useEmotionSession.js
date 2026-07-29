@@ -1,8 +1,9 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
-  mockMessages
+  generateAiResponse,
+  welcomeMessages
 } from "../../conversation";
-import { analyzeMockContext } from "../../emotion-analysis";
+import { analyzeEmotionContext } from "../../emotion-analysis";
 import { scenarioPresets } from "../../scenario-simulation";
 import {
   buildMessagesFromEmotionAnalyses,
@@ -18,6 +19,7 @@ import useEmotionHistory from "./useEmotionHistory";
 import {
   createEmotionAnalysisSubmission
 } from "../services/createEmotionAnalysisSubmission";
+import { createEmotionAnalysis } from "../api/emotionAnalysisApi";
 import { SESSION_ERROR_MESSAGES } from "../constants/sessionMessages";
 import {
   createInitialWorkflowState,
@@ -27,18 +29,22 @@ import {
 const defaultScenario = scenarioPresets.normal;
 
 function createInitialResult() {
-  return analyzeMockContext({
+  return analyzeEmotionContext({
     selectedScenario: defaultScenario.value,
     faceSignal: defaultScenario.faceSignal,
     voiceSignal: defaultScenario.voiceSignal
   });
 }
 
-export default function useEmotionSession() {
+export default function useEmotionSession({
+  guestKey = "",
+  aiGuestKey = guestKey
+} = {}) {
   const [sessionId] = useState(getOrCreateBrowserSessionId);
-  const [messages, setMessages] = useState(mockMessages);
+  const [messages, setMessages] = useState(welcomeMessages);
   const [selectedScenario, setSelectedScenario] = useState(defaultScenario);
   const [emotionResult, setEmotionResult] = useState(createInitialResult);
+  const [liveEmotionResult, setLiveEmotionResult] = useState(null);
   const [faceSignalMetadata, setFaceSignalMetadata] = useState(
     createManualFaceSignalMetadata
   );
@@ -64,7 +70,7 @@ export default function useEmotionSession() {
     records: restoredRecords,
     isLoading: isHistoryLoading,
     error: historyError
-  } = useEmotionHistory(sessionId);
+  } = useEmotionHistory(guestKey);
   const lastAnalysisInputRef = useRef({
     situationText: "",
     faceSignal: defaultScenario.faceSignal,
@@ -101,13 +107,16 @@ export default function useEmotionSession() {
         voiceSignal: latestRecord.voiceSignal,
         selectedScenario: latestRecord.selectedScenario
       };
+    } else if (Array.isArray(restoredRecords)) {
+      setMessages(welcomeMessages);
     }
   }, [historyError, restoredRecords]);
 
   const runAnalysis = (input = lastAnalysisInputRef.current, recentMessages = messages) =>
-    analyzeMockContext({
+    analyzeEmotionContext({
       inputText: input.situationText,
       faceSignal: input.faceSignal,
+      faceFeatures: input.faceFeatures,
       voiceSignal: input.voiceSignal,
       recentMessages,
       selectedScenario: input.selectedScenario
@@ -124,6 +133,7 @@ export default function useEmotionSession() {
       selectedScenario: scenario.value
     };
     setSelectedScenario(nextScenario);
+    setLiveEmotionResult(null);
     setFaceSignalMetadata(createManualFaceSignalMetadata());
     lastAnalysisInputRef.current = nextInput;
 
@@ -146,6 +156,7 @@ export default function useEmotionSession() {
     faceSignalConfidence = null,
     faceSignalEvidence = [],
     faceSignalHeuristicVersion = null,
+    faceFeatures = [],
     voiceSignal
   }) => {
     if (
@@ -164,9 +175,11 @@ export default function useEmotionSession() {
       faceSignalConfidence,
       faceSignalEvidence,
       faceSignalHeuristicVersion,
+      faceFeatures,
       voiceSignal,
       selectedScenario: selectedScenario.value
     };
+    setLiveEmotionResult(null);
 
     let nextResult;
     try {
@@ -192,8 +205,23 @@ export default function useEmotionSession() {
       const { createdRecord } = await createEmotionAnalysisSubmission({
         sessionId,
         analysisInput,
-        analysisResult: nextResult,
-        signal: controller.signal
+        previewAnalysisResult: nextResult,
+        recentMessages: messages,
+        signal: controller.signal,
+        generateResponse: aiGuestKey
+          ? (input, options) =>
+              generateAiResponse(input, {
+                ...options,
+                guestKey: aiGuestKey
+              })
+          : undefined,
+        saveAnalysis: guestKey
+          ? (record, options) =>
+              createEmotionAnalysis(record, {
+                ...options,
+                guestKey
+              })
+          : undefined
       });
 
       if (!isMounted()) return false;
@@ -217,7 +245,10 @@ export default function useEmotionSession() {
 
       dispatchWorkflow({
         type: "FAILED",
-        error: SESSION_ERROR_MESSAGES.save
+        error:
+          typeof error?.code === "string" && error.code.startsWith("AI_")
+            ? SESSION_ERROR_MESSAGES.ai
+            : SESSION_ERROR_MESSAGES.save
       });
       return false;
     } finally {
@@ -248,12 +279,35 @@ export default function useEmotionSession() {
     }
   };
 
+  const handleLiveFaceSignalChange = (faceResult) => {
+    if (!faceResult?.features?.length) {
+      setLiveEmotionResult(null);
+      return;
+    }
+
+    try {
+      const nextResult = runAnalysis({
+        ...lastAnalysisInputRef.current,
+        faceSignal: faceResult.legacySignal || "neutral",
+        faceFeatures: faceResult.features
+      });
+
+      setLiveEmotionResult({
+        ...nextResult,
+        isLivePreview: true,
+        liveFaceConfidence: faceResult.confidence
+      });
+    } catch {
+      setLiveEmotionResult(null);
+    }
+  };
+
   return {
     messages,
     aiStatus,
     selectedScenario,
     analysisStatus,
-    emotionResult,
+    emotionResult: liveEmotionResult || emotionResult,
     faceSignalMetadata,
     analysisError,
     observation: selectedScenario.observation,
@@ -264,6 +318,7 @@ export default function useEmotionSession() {
       isSaving,
     handleScenarioChange,
     handleAnalyze,
-    handleAnalyzeAgain
+    handleAnalyzeAgain,
+    handleLiveFaceSignalChange
   };
 }

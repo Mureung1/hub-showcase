@@ -11,7 +11,9 @@ export default function EmotionInputForm({
   scenarioPreset,
   faceSignalMetadata,
   disabled = false,
-  onAnalyze
+  usesGenerativeAi = false,
+  onAnalyze,
+  onLiveFaceSignalChange
 }) {
   const [situationText, setSituationText] = useState("");
   const [faceInputMode, setFaceInputMode] = useState(
@@ -77,6 +79,7 @@ export default function EmotionInputForm({
       faceSignalHeuristicVersion: usesCameraResult
         ? FACE_SIGNAL_HEURISTIC_VERSION
         : null,
+      faceFeatures: usesCameraResult ? detectedFaceResult.features || [] : [],
       voiceSignal
     });
     if (accepted !== false) setSituationText("");
@@ -97,6 +100,16 @@ export default function EmotionInputForm({
   const handleSituationChange = (nextValue) => {
     setSituationText(nextValue);
     if (validationError) setValidationError("");
+  };
+
+  const handleFaceInputModeChange = (mode) => {
+    setFaceInputMode(mode);
+    if (mode === "manual") onLiveFaceSignalChange?.(null);
+  };
+
+  const handleCameraSignalChange = (result) => {
+    setDetectedFaceResult(result);
+    onLiveFaceSignalChange?.(result);
   };
 
   return (
@@ -122,6 +135,12 @@ export default function EmotionInputForm({
         <span id="situation-input-description" className="sr-only">
           Enter 키로 분석하고 전송하며 Shift와 Enter 키를 함께 누르면 줄을 바꿉니다.
         </span>
+        {usesGenerativeAi && (
+          <p className="ai-data-notice">
+            AI 대화에서는 입력 문장과 감정 요약을 외부 생성형 AI로 보내 답변을
+            만듭니다. 카메라 영상과 얼굴 좌표는 전송하지 않습니다.
+          </p>
+        )}
       </div>
 
       <div className="signal-grid">
@@ -133,7 +152,7 @@ export default function EmotionInputForm({
                 type="button"
                 className={faceInputMode === "manual" ? "active" : ""}
                 aria-pressed={faceInputMode === "manual"}
-                onClick={() => setFaceInputMode("manual")}
+                onClick={() => handleFaceInputModeChange("manual")}
                 disabled={disabled}
               >
                 수동 선택
@@ -142,7 +161,7 @@ export default function EmotionInputForm({
                 type="button"
                 className={faceInputMode === "camera" ? "active" : ""}
                 aria-pressed={faceInputMode === "camera"}
-                onClick={() => setFaceInputMode("camera")}
+                onClick={() => handleFaceInputModeChange("camera")}
                 disabled={disabled}
               >
                 자동 감지
@@ -161,7 +180,7 @@ export default function EmotionInputForm({
           ) : (
             <>
               <FaceCamera
-                onSignalChange={setDetectedFaceResult}
+                onSignalChange={handleCameraSignalChange}
                 initialResult={detectedFaceResult}
                 disabled={disabled}
               />

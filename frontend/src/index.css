@@ -1,7 +1,8 @@
 @import "./styles/base.css";
-@import "./styles/layout.css";
-@import "./styles/sidebar.css";
+@import "./styles/shared-components.css";
+@import "./styles/guest-access.css";
 @import "./styles/emotion-result.css";
 @import "./styles/conversation.css";
 @import "./styles/emotion-input.css";
 @import "./styles/face-camera.css";
+@import "./styles/emotion-ui.css";

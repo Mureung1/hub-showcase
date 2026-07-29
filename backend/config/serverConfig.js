@@ -8,7 +8,9 @@ export const SERVER_DEFAULTS = Object.freeze({
   allowedOrigins: DEFAULT_ALLOWED_ORIGINS,
   rateLimitWindowMs: 15 * 60 * 1000,
   rateLimitMaximum: 100,
-  jsonBodyLimit: "100kb"
+  aiRateLimitMaximum: 10,
+  jsonBodyLimit: "100kb",
+  trustProxy: false
 });
 
 function readPositiveInteger(value, fallback) {
@@ -27,7 +29,7 @@ function readBodyLimit(value) {
     : SERVER_DEFAULTS.jsonBodyLimit;
 }
 
-function readAllowedOrigins(value) {
+function readAllowedOrigins(value, { includeLocalOrigins = true } = {}) {
   const configuredOrigins =
     typeof value === "string"
       ? value
@@ -47,16 +49,27 @@ function readAllowedOrigins(value) {
           .filter(Boolean)
       : [];
 
-  return [...new Set([...DEFAULT_ALLOWED_ORIGINS, ...configuredOrigins])];
+  return [
+    ...new Set([
+      ...(includeLocalOrigins ? DEFAULT_ALLOWED_ORIGINS : []),
+      ...configuredOrigins
+    ])
+  ];
 }
 
 export function createServerConfig(environment = {}) {
+  const isProduction = environment.NODE_ENV === "production";
+  const productionTrustProxy =
+    isProduction ? 1 : SERVER_DEFAULTS.trustProxy;
+
   return {
     port: readPositiveInteger(
       environment.PORT ?? environment.SERVER_PORT,
       SERVER_DEFAULTS.port
     ),
-    allowedOrigins: readAllowedOrigins(environment.CLIENT_URL),
+    allowedOrigins: readAllowedOrigins(environment.CLIENT_URL, {
+      includeLocalOrigins: !isProduction
+    }),
     rateLimitWindowMs: readPositiveInteger(
       environment.API_RATE_LIMIT_WINDOW_MS,
       SERVER_DEFAULTS.rateLimitWindowMs
@@ -65,6 +78,14 @@ export function createServerConfig(environment = {}) {
       environment.API_RATE_LIMIT_MAX,
       SERVER_DEFAULTS.rateLimitMaximum
     ),
-    jsonBodyLimit: readBodyLimit(environment.JSON_BODY_LIMIT)
+    aiRateLimitMaximum: readPositiveInteger(
+      environment.AI_RATE_LIMIT_MAX,
+      SERVER_DEFAULTS.aiRateLimitMaximum
+    ),
+    jsonBodyLimit: readBodyLimit(environment.JSON_BODY_LIMIT),
+    trustProxy: readPositiveInteger(
+      environment.TRUST_PROXY_HOPS,
+      productionTrustProxy
+    )
   };
 }

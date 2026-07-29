@@ -8,15 +8,25 @@ import {
   validateCreateEmotionAnalysis,
   validateListEmotionAnalyses
 } from "./emotionAnalysisValidation.js";
+import { authenticateGuestSession } from "../../security/authenticateGuestSession.js";
 
 export function createEmotionAnalysisRouter({
   createAnalysis = createEmotionAnalysis,
-  listAnalyses = listEmotionAnalysesBySession
+  listAnalyses = listEmotionAnalysesBySession,
+  authenticateGuest = authenticateGuestSession,
+  guestAuthenticationOptions
 } = {}) {
   const router = Router();
 
   router.post("/", async (request, response) => {
-    const record = validateCreateEmotionAnalysis(request.body);
+    const { session } = await authenticateGuest(
+      request,
+      guestAuthenticationOptions
+    );
+    const record = {
+      ...validateCreateEmotionAnalysis(request.body),
+      guest_session_id: session.id
+    };
     const createdRecord = await createAnalysis(record);
 
     response.status(201).json({
@@ -28,8 +38,12 @@ export function createEmotionAnalysisRouter({
   });
 
   router.get("/", async (request, response) => {
-    const { sessionId, limit } = validateListEmotionAnalyses(request.query);
-    const records = await listAnalyses(sessionId, limit);
+    const { session } = await authenticateGuest(
+      request,
+      guestAuthenticationOptions
+    );
+    const { limit } = validateListEmotionAnalyses(request.query);
+    const records = await listAnalyses(session.id, limit);
 
     response.status(200).json({
       success: true,

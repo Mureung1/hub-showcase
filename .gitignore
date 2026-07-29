@@ -1,9 +1,11 @@
 node_modules/
 dist/
 build/
+.vercel/
+PROJECT_HANDOFF.md
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 *.log
 .vscode/
 .idea/
