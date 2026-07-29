@@ -7,6 +7,8 @@ export const DISH_TYPES = [
   "riceBowl",
   "soup",
   "stew",
+  "steamed",
+  "braised",
   "noodle",
   "salad",
   "sandwich",
@@ -24,6 +26,8 @@ export const COOKING_TECHNIQUES = [
   "boil",
   "stew",
   "grill",
+  "steam",
+  "braise",
   "other",
 ];
 export const MEAL_COMPONENT_ROLES = ["staple", "main", "side", "dessert"];
@@ -38,7 +42,7 @@ const futurePreferenceSchema = z.array(z.string().trim().min(1).max(100)).max(20
 
 export const recommendationRequestSchema = z.object({
   mode: z.enum(RECOMMENDATION_MODES).default("quick"),
-  maxMissingIngredients: z.union([z.literal(0), z.literal(1), z.literal(2)]).default(0),
+  maxMissingIngredients: z.number().int().min(0).max(5).default(3),
   batchSize: z.literal(3).default(3),
   batchNumber: z.number().int().min(1).max(5).default(1),
   excludedRecipeFingerprints: z.array(z.string().regex(/^[a-f0-9]{64}$/)).max(12).default([]),
@@ -160,7 +164,7 @@ export const generatedRecommendationSchema = z.object({
 export const recommendationRecipeSchema = generatedRecipeSchema.extend({
   id: z.string().startsWith("recipe-"),
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
-  missingIngredients: z.array(z.string().trim().min(1).max(100)).max(2),
+  missingIngredients: z.array(z.string().trim().min(1).max(100)).max(5),
 }).strict();
 
 export const recommendationRecipesSchema = z.array(recommendationRecipeSchema).max(3);
@@ -198,6 +202,7 @@ export const geminiRecommendationJsonSchema = {
   properties: {
     recipes: {
       type: "array",
+      maxItems: 3,
       items: {
         type: "object",
         properties: {

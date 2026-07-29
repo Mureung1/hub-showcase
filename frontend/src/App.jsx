@@ -91,7 +91,7 @@ function App() {
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [savedRecipes, setSavedRecipes] = useState(() => readSavedRecipes());
   const [selectedMood, setSelectedMood] = useState("expiryFirst");
-  const [missingIngredientLimit, setMissingIngredientLimit] = useState(1);
+  const [missingIngredientLimit, setMissingIngredientLimit] = useState(3);
   const [isRecipeLoading, setIsRecipeLoading] = useState(false);
   const [editingIngredientId, setEditingIngredientId] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -436,7 +436,9 @@ function App() {
   return (
     <div className="app-shell" data-current-date={todayKey}>
       <header className={`site-header ${activeMainTab === "fridge" ? "fridge-context" : ""}`}>
-        <div className="header-spacer" aria-hidden="true" />
+        <div className="brand-mark" aria-label="서비스 이름 있는대로">
+          있는대로
+        </div>
         <nav className="header-nav" aria-label="상단 메뉴">
           <button type="button">서비스 소개</button>
           {mainTabs.map(([id, label]) => <button key={id} type="button" className={activeMainTab === id ? "active" : ""} aria-current={activeMainTab === id ? "page" : undefined} onClick={() => (id === "recommend" ? showRecommendations() : setActiveMainTab(id))}>{label}</button>)}
@@ -588,7 +590,7 @@ function RecommendWorkspace({ recipes, savedRecipes, meta, isLoading, isLoadingM
     </section>}
 
     <section className="recommendation-section" aria-labelledby="recommendation-title">
-      <div className="recommendation-section-heading"><div><p className="eyebrow">For You</p><h2 id="recommendation-title">지금 고르기 좋은 메뉴</h2></div><label className="one-missing-toggle">부족 재료 허용<select value={missingIngredientLimit} onChange={(event) => setMissingIngredientLimit(Number(event.target.value))}><option value={0}>없음</option><option value={1}>최대 1개</option><option value={2}>최대 2개</option></select></label></div>
+      <div className="recommendation-section-heading"><div><p className="eyebrow">For You</p><h2 id="recommendation-title">지금 고르기 좋은 메뉴</h2></div><label className="one-missing-toggle">부족 재료 허용<select value={missingIngredientLimit} onChange={(event) => setMissingIngredientLimit(Number(event.target.value))}><option value={0}>없음</option><option value={1}>최대 1개</option><option value={2}>최대 2개</option><option value={3}>최대 3개</option><option value={4}>최대 4개</option><option value={5}>최대 5개</option></select></label></div>
       {isLoading && <div className="recommendation-status" role="status">보유 재료로 레시피를 추천하고 있어요...</div>}
       {!isLoading && error && <RecommendationError message={error} hasRecipes={recipes.length > 0} onRetry={onRetry} />}
       {!isLoading && recipes.length > 0 && <div className="recipe-recommendation-grid">{recipes.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} label="오늘 추천" isSaved={isRecipeSaved(recipe, savedRecipes)} onSelect={() => onSelectRecipe(recipe)} onToggleSaved={() => onToggleSaved(recipe)} />)}</div>}
