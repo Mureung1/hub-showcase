@@ -66,7 +66,9 @@ Render 서비스에 다음 변수를 설정합니다.
 | `DB_SSL_REJECT_UNAUTHORIZED` | 외부 DB TLS 인증서 검증 | 공개 가능 |
 | `BACKGROUND_JOB_INTERVAL_MS` | 도착 기한 만료 작업 주기 | 공개 가능 |
 
-`DEVELOPMENT_PATIENT_PASSWORD`, `DEVELOPMENT_STAFF_PASSWORD`, `DEVELOPMENT_PLATFORM_PASSWORD`는 개발 시드 전용입니다. production 환경변수에 등록하지 않습니다.
+`DEVELOPMENT_PATIENT_PASSWORD`, `DEVELOPMENT_STAFF_PASSWORD`,
+`DEVELOPMENT_PLATFORM_PASSWORD`, `DEVELOPMENT_GUEST_PASSWORD`는 개발 시드
+전용입니다. production 환경변수에 등록하지 않습니다.
 
 첫 배포의 Render Health Check Path에는 `/api/health/live`를 사용합니다. 배포 후
 `/api/health/ready`를 직접 열어 Supabase 연결도 별도로 확인합니다.

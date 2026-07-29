@@ -1672,13 +1672,15 @@ button:disabled {
 }
 
 .notification-preview-modal {
-  width: min(100% - 32px, 460px);
+  width: min(100% - 32px, 520px);
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
   padding: var(--bj-space-7);
-  text-align: center;
   background: var(--bj-color-surface);
   border: 1px solid var(--bj-color-border);
   border-radius: var(--bj-radius-lg);
   box-shadow: var(--bj-shadow-lg);
+  text-align: center;
 }
 
 .notification-preview-icon {
@@ -1713,9 +1715,111 @@ button:disabled {
   text-decoration: none;
 }
 
+.alimtalk-preview {
+  margin-top: var(--bj-space-5);
+  overflow: hidden;
+  color: #241f18;
+  background: #fff8d6;
+  border: 1px solid #eadb98;
+  border-radius: var(--bj-radius-lg);
+  text-align: left;
+  box-shadow: var(--bj-shadow-sm);
+}
+
+.alimtalk-preview__header {
+  padding: var(--bj-space-4) var(--bj-space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bj-space-3);
+  background: #ffe56f;
+  border-bottom: 1px solid #ead36c;
+}
+
+.alimtalk-preview__header span {
+  font-size: var(--bj-font-size-sm);
+  color: #5e4a05;
+}
+
+.alimtalk-preview__header strong {
+  font-size: var(--bj-font-size-sm);
+  color: #2d2508;
+}
+
+.alimtalk-preview__body {
+  padding: var(--bj-space-5);
+  display: grid;
+  gap: var(--bj-space-3);
+}
+
+.alimtalk-preview__body p {
+  margin: 0;
+  color: #4c421a;
+}
+
+.alimtalk-preview__title {
+  font-size: var(--bj-font-size-lg);
+  font-weight: var(--bj-font-weight-semibold);
+  color: #241f18 !important;
+}
+
+.alimtalk-preview__link {
+  min-height: 44px;
+  padding: 0 var(--bj-space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bj-space-2);
+  color: white;
+  background: #3a3120;
+  border-radius: var(--bj-radius-md);
+  font-weight: var(--bj-font-weight-semibold);
+  text-decoration: none;
+}
+
+.alimtalk-preview__meta {
+  margin: 0;
+  padding: var(--bj-space-4) var(--bj-space-5);
+  display: grid;
+  gap: var(--bj-space-2);
+  background: rgba(255, 255, 255, 0.45);
+  border-top: 1px solid #eadb98;
+}
+
+.alimtalk-preview__meta div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bj-space-3);
+}
+
+.alimtalk-preview__meta dt {
+  color: #75662b;
+  font-size: var(--bj-font-size-xs);
+}
+
+.alimtalk-preview__meta dd {
+  margin: 0;
+  color: #332a12;
+  font-size: var(--bj-font-size-sm);
+  font-weight: var(--bj-font-weight-semibold);
+  word-break: break-all;
+  text-align: right;
+}
+
 @media (max-width: 480px) {
   .notification-preview-actions {
     grid-template-columns: 1fr;
+  }
+
+  .alimtalk-preview__header,
+  .alimtalk-preview__meta div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .alimtalk-preview__meta dd {
+    text-align: left;
   }
 }
 

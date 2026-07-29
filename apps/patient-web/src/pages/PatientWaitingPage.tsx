@@ -1,6 +1,15 @@
-import { Clock3, Info, MapPinCheck, PauseCircle, TriangleAlert, UsersRound } from "lucide-react";
+import {
+  BellRing,
+  Clock3,
+  Info,
+  MapPinCheck,
+  MessageCircleMore,
+  PauseCircle,
+  TriangleAlert,
+  UsersRound,
+} from "lucide-react";
 import { formatPatientCounts, type QueuePosition } from "@baro-jinryo/shared";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppHeader } from "../components/AppHeader";
 
@@ -12,6 +21,14 @@ interface PatientWaitingPageProps {
 
 export function PatientWaitingPage({ waiting, onCancel, onDefer }: PatientWaitingPageProps) {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [dismissedNotificationKey, setDismissedNotificationKey] = useState<string | null>(null);
+  const mockNotification =
+    waiting && waiting.entry.status !== "cancelled" ? createMockNotification(waiting) : null;
+
+  useEffect(() => {
+    setDismissedNotificationKey(null);
+  }, [mockNotification?.key]);
+
   if (!waiting || waiting.entry.status === "cancelled") {
     return (
       <div className="app-shell">
@@ -181,7 +198,84 @@ export function PatientWaitingPage({ waiting, onCancel, onDefer }: PatientWaitin
             </section>
           </div>
         )}
+        {mockNotification && dismissedNotificationKey !== mockNotification.key && (
+          <div className="mock-alimtalk-toast" role="status" aria-live="polite">
+            <section
+              className={`mock-alimtalk-card mock-alimtalk-card--${mockNotification.tone}`}
+              aria-label={`${mockNotification.title} mock 알림톡`}
+            >
+              <div className="mock-alimtalk-card__header">
+                <span>
+                  <MessageCircleMore size={18} />
+                  카카오톡 알림 mock
+                </span>
+                <strong>바로진료</strong>
+              </div>
+              <div className="mock-alimtalk-card__body">
+                <div className="mock-alimtalk-card__icon">
+                  <BellRing size={22} />
+                </div>
+                <div>
+                  <p className="mock-alimtalk-card__title">{mockNotification.title}</p>
+                  <h2>{mockNotification.headline}</h2>
+                  <p>{mockNotification.body}</p>
+                </div>
+              </div>
+              <button
+                className="mock-alimtalk-card__button"
+                type="button"
+                onClick={() => setDismissedNotificationKey(mockNotification.key)}
+              >
+                {mockNotification.buttonLabel}
+              </button>
+            </section>
+          </div>
+        )}
       </main>
     </div>
   );
+}
+
+interface MockNotificationView {
+  key: string;
+  title: string;
+  headline: string;
+  body: string;
+  buttonLabel: string;
+  tone: "prepare" | "urgent";
+}
+
+function createMockNotification(
+  waiting: QueuePosition,
+): MockNotificationView | null {
+  const isEntryRequested = waiting.entry.status === "entry_requested";
+  const isPreparation =
+    waiting.entry.status === "remote_waiting" && (waiting.position ?? 99) <= 6;
+  const positionText = waiting.position ? `${waiting.position}번째` : "순서 확인 중";
+  const estimatedText =
+    waiting.estimatedMinutes === null ? "예상 시간 확인 중" : `예상 약 ${waiting.estimatedMinutes}분`;
+
+  if (isEntryRequested) {
+    return {
+      key: `${waiting.entry.id}:entry_requested`,
+      title: "입장 요청 알림",
+      headline: "데스크 접수를 진행해 주세요",
+      body: `현재 ${positionText}입니다. 20분 안에 병원 데스크에서 접수하지 않으면 순서가 뒤로 밀릴 수 있습니다.`,
+      buttonLabel: "입장 안내 확인",
+      tone: "urgent",
+    };
+  }
+
+  if (isPreparation) {
+    return {
+      key: `${waiting.entry.id}:preparation`,
+      title: "방문 준비 알림",
+      headline: "병원 방문을 준비해 주세요",
+      body: `현재 ${positionText}이며 ${estimatedText}입니다. 이동 준비를 시작해 주세요.`,
+      buttonLabel: "준비 안내 확인",
+      tone: "prepare",
+    };
+  }
+
+  return null;
 }

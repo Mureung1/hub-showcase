@@ -913,6 +913,108 @@ button:disabled {
   width: 100%;
 }
 
+.mock-alimtalk-toast {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  left: max(16px, env(safe-area-inset-left));
+  z-index: var(--bj-z-modal);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.mock-alimtalk-card {
+  width: min(100%, 420px);
+  overflow: hidden;
+  color: #241f18;
+  background: #fff8d6;
+  border: 1px solid #eadb98;
+  border-radius: var(--bj-radius-lg);
+  box-shadow: var(--bj-shadow-overlay);
+  pointer-events: auto;
+}
+
+.mock-alimtalk-card--urgent {
+  border-color: color-mix(in srgb, var(--bj-color-warning) 42%, #eadb98);
+}
+
+.mock-alimtalk-card__header {
+  padding: var(--bj-space-3) var(--bj-space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bj-space-3);
+  background: #ffe56f;
+  border-bottom: 1px solid #ead36c;
+}
+
+.mock-alimtalk-card__header span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bj-space-2);
+  color: #5e4a05;
+  font-size: var(--bj-font-size-sm);
+  font-weight: var(--bj-font-weight-semibold);
+}
+
+.mock-alimtalk-card__header strong {
+  color: #2d2508;
+  font-size: var(--bj-font-size-sm);
+}
+
+.mock-alimtalk-card__body {
+  padding: var(--bj-space-4);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--bj-space-3);
+}
+
+.mock-alimtalk-card__icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  color: white;
+  background: #3a3120;
+  border-radius: var(--bj-radius-md);
+}
+
+.mock-alimtalk-card__body h2,
+.mock-alimtalk-card__body p {
+  margin: 0;
+}
+
+.mock-alimtalk-card__title {
+  color: #75662b;
+  font-size: var(--bj-font-size-xs);
+  font-weight: var(--bj-font-weight-semibold);
+}
+
+.mock-alimtalk-card__body h2 {
+  margin-top: var(--bj-space-1);
+  color: #241f18;
+  font-size: var(--bj-font-size-lg);
+}
+
+.mock-alimtalk-card__body p:last-child {
+  margin-top: var(--bj-space-2);
+  color: #4c421a;
+  font-size: var(--bj-font-size-sm);
+}
+
+.mock-alimtalk-card__button {
+  width: calc(100% - var(--bj-space-8));
+  min-height: 44px;
+  margin: 0 var(--bj-space-4) var(--bj-space-4);
+  color: white;
+  background: #3a3120;
+  border: 0;
+  border-radius: var(--bj-radius-md);
+  font-weight: var(--bj-font-weight-semibold);
+  cursor: pointer;
+}
+
 .patient-empty-state {
   min-height: 360px;
   display: flex;
@@ -1427,9 +1529,6 @@ button:disabled {
 
   .topbar-actions {
     gap: var(--bj-space-2);
-  }
-  .login-button {
-    display: none;
   }
 
   .registration-page,
