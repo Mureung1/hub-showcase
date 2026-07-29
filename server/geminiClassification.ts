@@ -104,10 +104,26 @@ export function validateGeminiClassification(value: unknown): ContentAnalysis | 
       summary,
     };
   }
-  if (typeof candidate.categorySub !== "string") return null;
+  if (typeof candidate.categorySub !== "string") {
+    return {
+      categoryMain: candidate.categoryMain,
+      categorySub: null,
+      displayTitle,
+      summary,
+    };
+  }
   const categorySub = candidate.categorySub.trim();
-  if (categorySub.length > MAX_SUBCATEGORY_LENGTH || !koreanSubcategoryPattern.test(categorySub)) {
-    return null;
+  if (
+    !categorySub ||
+    categorySub.length > MAX_SUBCATEGORY_LENGTH ||
+    !koreanSubcategoryPattern.test(categorySub)
+  ) {
+    return {
+      categoryMain: candidate.categoryMain,
+      categorySub: null,
+      displayTitle,
+      summary,
+    };
   }
   return {
     categoryMain: candidate.categoryMain,
