@@ -2,9 +2,9 @@ FROM node:24-slim
 
 WORKDIR /app
 
-COPY backend/package.json backend/package-lock.json ./
+COPY package.json package-lock.json ./
 RUN npm install
 
-COPY backend/ .
+COPY . .
 
 CMD ["npm", "start"]
