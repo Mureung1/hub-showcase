@@ -24,12 +24,29 @@ const POSTINGS = {
   'backend|startup': [],
 }
 
+// 로드맵 재조합을 볼 수 있는 최소 payload. 규칙 자체의 대조는 recompose.test.js 가 한다.
+const ROADMAP = {
+  job: 'backend',
+  scope: { level: 'cluster', cluster_tag: '빅테크·플랫폼', posting_id: null },
+  project_steps: [
+    { n: 1, phase: 'STEP 01 · 3주', priority: 'vhigh', title: '첫 단계', fills: [{ item_id: 'cc_backend_api' }] },
+    { n: 2, phase: 'STEP 02 · 2주', priority: 'high', title: '둘째 단계', fills: [{ item_id: 'cc_backend_db' }] },
+  ],
+  study_tracks: [{ phase: 'STEP 01~02와 병행', priority: 'high', title: '이론', fills: [] }],
+  check_rows: [
+    { item_id: 'cc_backend_api', source_step: 'STEP 01' },
+    { item_id: 'cc_backend_db', source_step: 'STEP 02' },
+  ],
+}
+
 const OUTPUTS = {
   'an_demo_backend|overall|backend|statistics': { job: 'backend', kpi: {}, items: [], error: null },
   'an_demo_backend|overall|backend|interpretation': { job: 'backend', scope: { level: 'overall', cluster_tag: null, posting_id: null }, baseline: ['b'] },
+  'an_demo_backend|overall|backend|strategy': { job: 'backend', scope: { level: 'overall', cluster_tag: null, posting_id: null }, checklist: [] },
+  'an_demo_backend|overall|backend|roadmap': { job: 'backend', scope: { level: 'overall', cluster_tag: null, posting_id: null }, project_steps: [] },
   'an_demo_backend|posting|dp_backend_02|interpretation': { job: 'backend', scope: { level: 'posting', cluster_tag: '빅테크·플랫폼', posting_id: 'dp_backend_02' }, baseline: ['p'] },
   'an_demo_backend|cluster|bigtech_platform|strategy': { job: 'backend', scope: { level: 'cluster', cluster_tag: '빅테크·플랫폼', posting_id: null }, checklist: [{ item_id: 'cc_backend_api' }] },
-  'an_demo_backend|cluster|bigtech_platform|roadmap': { job: 'backend', scope: { level: 'cluster', cluster_tag: '빅테크·플랫폼', posting_id: null }, project_steps: ['s1'] },
+  'an_demo_backend|cluster|bigtech_platform|roadmap': ROADMAP,
 }
 
 function makeDb(overrides = {}) {
@@ -39,6 +56,9 @@ function makeDb(overrides = {}) {
     getPostingsInCluster: async (job, clusterId) => POSTINGS[`${job}|${clusterId}`] || [],
     getActiveAnalysis: async (job) => (job === 'security' ? null : `an_demo_${job}`),
     getOutput: async (version, level, scopeId, type) => OUTPUTS[`${version}|${level}|${scopeId}|${type}`] || null,
+    // 기본은 캐시 미적중이다. 적중을 보는 시험이 이 둘을 갈아 끼운다.
+    getUserPostingByHash: async () => null,
+    getUserPostingAnalyses: async () => [],
     getLegacyPostingSamples: async () => [],
     ...overrides,
   }
@@ -206,16 +226,24 @@ describe('GET /api/stats 의 평면 표 폴백', () => {
 
 // ---- 로드맵 재조합 -------------------------------------------------------
 
+// 재조합은 Express 소관이다(docs/architecture.md 4장·9장). 두 경로 모두 FastAPI 를 부르지 않는다.
+
 describe('POST /api/roadmap', () => {
-  test('체크가 비면 저장된 payload 를 그대로 낸다. 에이전트를 부르지 않는다', async () => {
-    let called = false
-    const app = await startApp({
-      db: makeDb(),
-      fetch: async () => {
-        called = true
+  // 어떤 요청에서도 에이전트를 부르지 않는다는 것을 함께 본다.
+  function noAgent() {
+    const calls = []
+    return {
+      calls,
+      fetch: async (url) => {
+        calls.push(url)
         return { ok: true, status: 200, json: async () => ({}) }
       },
-    })
+    }
+  }
+
+  test('체크가 비면 저장된 payload 를 그대로 낸다. 에이전트를 부르지 않는다', async () => {
+    const agent = noAgent()
+    const app = await startApp({ db: makeDb(), fetch: agent.fetch })
     const { status, body } = await post(app.base, '/api/roadmap', {
       job: 'backend',
       scope: { level: 'cluster', cluster_tag: '빅테크·플랫폼' },
@@ -224,21 +252,14 @@ describe('POST /api/roadmap', () => {
     await app.close()
 
     expect(status).toBe(200)
-    expect(called).toBe(false)
-    expect(body.project_steps).toEqual(['s1'])
+    expect(agent.calls).toEqual([])
+    expect(body.project_steps).toEqual(ROADMAP.project_steps)
     expect(body.postings_in_cluster).toEqual(POSTINGS['backend|bigtech_platform'])
   })
 
-  test('체크가 있으면 저장된 전략과 함께 FastAPI 로 넘긴다', async () => {
-    let sent = null
-    const app = await startApp({
-      db: makeDb(),
-      agentUrl: 'http://agent.test',
-      fetch: async (url, init) => {
-        sent = { url, body: JSON.parse(init.body) }
-        return { ok: true, status: 200, json: async () => ({ job: 'backend', project_steps: ['recombined'] }) }
-      },
-    })
+  test('체크가 있으면 Express 가 재조합한다. 에이전트를 부르지 않는다', async () => {
+    const agent = noAgent()
+    const app = await startApp({ db: makeDb(), agentUrl: 'http://agent.test', fetch: agent.fetch })
     const { status, body } = await post(app.base, '/api/roadmap', {
       job: 'backend',
       scope: { level: 'cluster', cluster_tag: '빅테크·플랫폼' },
@@ -247,11 +268,32 @@ describe('POST /api/roadmap', () => {
     await app.close()
 
     expect(status).toBe(200)
-    expect(sent.url).toBe('http://agent.test/roadmap')
-    expect(sent.body.checks).toEqual({ cc_backend_api: true })
-    expect(sent.body.conditions).toEqual(OUTPUTS['an_demo_backend|cluster|bigtech_platform|strategy'])
-    expect(body.project_steps).toEqual(['recombined'])
+    expect(agent.calls).toEqual([])
+    // 보유한 개념을 채우는 STEP 01 이 뒤로 밀리고 우선순위가 한 칸 내려간다.
+    expect(body.project_steps.map((step) => [step.n, step.title, step.priority])).toEqual([
+      [1, '둘째 단계', 'high'],
+      [2, '첫 단계', 'high'],
+    ])
+    // 남은 단계가 1 부터 다시 번호를 받고 phase 의 번호가 함께 움직인다.
+    expect(body.project_steps.map((step) => step.phase)).toEqual(['STEP 01 · 2주', 'STEP 02 · 3주'])
+    expect(body.study_tracks[0].phase).toBe('STEP 02~02와 병행')
+    expect(body.check_rows).toEqual([
+      { item_id: 'cc_backend_api', source_step: '보유' },
+      { item_id: 'cc_backend_db', source_step: 'STEP 01' },
+    ])
     expect(body.postings_in_cluster).toEqual(POSTINGS['backend|bigtech_platform'])
+  })
+
+  test('재조합이 저장된 payload 를 고치지 않는다', async () => {
+    const app = await startApp({ db: makeDb() })
+    const before = JSON.stringify(ROADMAP)
+    await post(app.base, '/api/roadmap', {
+      job: 'backend',
+      scope: { level: 'cluster', cluster_tag: '빅테크·플랫폼' },
+      checks: { cc_backend_api: true },
+    })
+    await app.close()
+    expect(JSON.stringify(ROADMAP)).toBe(before)
   })
 })
 
@@ -260,7 +302,84 @@ describe('POST /api/roadmap', () => {
 describe('POST /api/postings/analyze', () => {
   const longText = '백엔드 개발자를 모집합니다. '.repeat(20)
 
-  test('정규화한 원문과 해시를 FastAPI 로 넘긴다', async () => {
+  // 캐시 적중용 가짜 저장소. `user_postings` 한 행과 결과 세 행을 흉내 낸다.
+  const CACHED_POSTING = { user_posting_id: 'up_demo01', job_role_id: 'backend' }
+  const CACHED_ROWS = [
+    { user_posting_id: 'up_demo01', analysis_version: 'an_demo_backend', output_type: 'interpretation', payload: { baseline: ['cached-b'] } },
+    { user_posting_id: 'up_demo01', analysis_version: 'an_demo_backend', output_type: 'strategy', payload: { checklist: ['cached-c'] } },
+    { user_posting_id: 'up_demo01', analysis_version: 'an_demo_backend', output_type: 'roadmap', payload: { project_steps: ['cached-s'] } },
+  ]
+
+  function cacheHitDb(rows = CACHED_ROWS) {
+    return makeDb({
+      getUserPostingByHash: async () => CACHED_POSTING,
+      getUserPostingAnalyses: async () => rows,
+    })
+  }
+
+  test('캐시가 적중하면 Express 가 직접 답한다. 에이전트를 부르지 않는다', async () => {
+    const calls = []
+    const app = await startApp({
+      db: cacheHitDb(),
+      fetch: async (url) => {
+        calls.push(url)
+        return { ok: true, status: 200, json: async () => ({}) }
+      },
+    })
+    const { status, body } = await post(app.base, '/api/postings/analyze', { job: 'backend', raw_text: longText })
+    await app.close()
+
+    expect(status).toBe(200)
+    expect(calls).toEqual([])
+    expect(body.job).toBe('backend')
+    expect(body.matched).toBe(true)
+    expect(body.source).toBe('cache')
+    expect(body.interpretation.baseline).toEqual(['cached-b'])
+    expect(body.strategy.checklist).toEqual(['cached-c'])
+    expect(body.roadmap.project_steps).toEqual(['cached-s'])
+    // payload 의 source 도 응답 사실에 맞춘다.
+    expect(body.interpretation.source).toBe('cache')
+  })
+
+  test('세 종이 한 벌로 갖춰지지 않으면 캐시 적중으로 보지 않는다', async () => {
+    let sent = null
+    const app = await startApp({
+      db: cacheHitDb(CACHED_ROWS.slice(0, 2)),
+      agentUrl: 'http://agent.test',
+      fetch: async (url) => {
+        sent = url
+        return { ok: true, status: 200, json: async () => ({ job: 'backend', matched: false, source: 'agent' }) }
+      },
+    })
+    const { status, body } = await post(app.base, '/api/postings/analyze', { job: 'backend', raw_text: longText })
+    await app.close()
+
+    expect(status).toBe(200)
+    expect(sent).toBe('http://agent.test/postings/analyze')
+    expect(body.source).toBe('agent')
+  })
+
+  test('에이전트에 닿지 못하면 직무 일반 결과를 함께 실어 안내한다', async () => {
+    const app = await startApp({
+      db: makeDb(),
+      fetch: async () => {
+        throw new Error('connect ECONNREFUSED')
+      },
+    })
+    const { status, body } = await post(app.base, '/api/postings/analyze', { job: 'backend', raw_text: longText })
+    await app.close()
+
+    // 502 로 끝내지 않는다. 화면이 안내를 띄우고 직무 일반 결과를 보여 줄 수 있어야 한다.
+    expect(status).toBe(503)
+    expect(body.error.code).toBe('ONDEMAND_UNAVAILABLE')
+    expect(body.matched).toBe(false)
+    expect(body.source).toBe('unavailable')
+    expect(body.interpretation.baseline).toEqual(['b'])
+    expect(body.strategy).not.toBeNull()
+    expect(body.roadmap).not.toBeNull()
+  })
+
+  test('미적중일 때만 정규화한 원문과 해시를 FastAPI 로 넘긴다', async () => {
     let sent = null
     const app = await startApp({
       db: makeDb(),

@@ -2,15 +2,23 @@
 //
 // 화면 조회는 활성 분석 버전의 `analysis_outputs.payload` 를 그대로 돌려준다(CONTRACT 4장).
 // Express 는 집계하지 않고 해석·전략·로드맵 조회에서 에이전트를 부르지 않는다.
+//
+// 준비 현황·로드맵 조합기와 사용자 공고 캐시 조회는 Express 소관이다
+// (docs/architecture.md 4장 구성요소 표·9장 시퀀스·11장). 그래서 체크 상태 재조합과
+// 캐시가 적중하는 공고 입력은 FastAPI 없이 끝난다.
+//
 // FastAPI 를 부르는 곳은 두 군데뿐이다.
-//   - `POST /api/roadmap` 의 체크 상태 재조합
-//   - `POST /api/postings/analyze` 와 `POST /api/extract` (사용자 입력 경로)
+//   - `POST /api/postings/analyze` 의 **캐시 미적중** 온디맨드 분석
+//   - `POST /api/extract`
+// 경로별 의존은 server/README.md 에 표로 있다.
 
 const path = require('node:path')
 const express = require('express')
 const { aggregate } = require('./stats')
 const { loadPayload, SCOPE_LEVELS } = require('./outputs')
 const { normalizeAndHash } = require('./normalize')
+const { recompose } = require('./recompose')
+const { createCors } = require('./cors')
 const database = require('./db')
 
 // 폴백 집계에만 쓰는 백엔드 전용 라벨 표. 활성 분석 버전의 payload 는 라벨을 자기 안에 담는다.
@@ -21,6 +29,13 @@ const MIN_POSTING_CHARS = 200
 const MAX_POSTING_CHARS = 12000
 const RATE_LIMIT_WINDOW_MS = 60 * 1000
 const RATE_LIMIT_MAX = 5
+
+// 사용자 입력 공고 응답의 산출물 세 종. 키 순서는 CONTRACT 6.3 이 정한다.
+const USER_POSTING_OUTPUTS = ['interpretation', 'strategy', 'roadmap']
+
+// 응답 payload 의 `source` 값(CONTRACT 5장 B).
+const SOURCE_CACHE = 'cache'
+const SOURCE_UNAVAILABLE = 'unavailable'
 
 // --- 응답 도우미 ---------------------------------------------------------
 
@@ -100,6 +115,65 @@ function withPostingsInCluster(payload, resolved) {
   return { ...payload, postings_in_cluster: resolved.postings }
 }
 
+// --- 사용자 입력 공고 캐시 -------------------------------------------------
+
+/**
+ * 분석 결과 행에서 온전한 한 벌을 고른다.
+ *
+ * 한 벌은 세 종이 모두 같은 분석 버전에서 나온 것이다. 종류마다 다른 버전을 섞으면
+ * 해석이 말한 편차 번호를 전략이 모르고 로드맵이 채우지 못한다.
+ *
+ * 활성 버전을 먼저 본다. 활성 버전에 한 벌이 없으면 남은 버전 가운데 온전한 벌을 낸다.
+ * 행이 최신 생성 순으로 들어오므로 먼저 만난 버전이 더 최근이다. 온전한 벌이 없으면 null 이다.
+ * 규칙은 파이썬 `repositories/user_postings.py` 의 `select_analysis_set` 과 같다.
+ */
+function selectAnalysisSet(rows, preferredVersion) {
+  const byVersion = new Map()
+  for (const row of rows || []) {
+    const version = row.analysis_version
+    if (!byVersion.has(version)) byVersion.set(version, new Map())
+    const payloads = byVersion.get(version)
+    if (!payloads.has(row.output_type)) payloads.set(row.output_type, row.payload)
+  }
+
+  const candidates = [...byVersion.keys()]
+  if (byVersion.has(preferredVersion)) {
+    candidates.splice(candidates.indexOf(preferredVersion), 1)
+    candidates.unshift(preferredVersion)
+  }
+
+  for (const version of candidates) {
+    const payloads = byVersion.get(version)
+    if (USER_POSTING_OUTPUTS.every((type) => payloads.has(type))) {
+      return Object.fromEntries(USER_POSTING_OUTPUTS.map((type) => [type, payloads.get(type)]))
+    }
+  }
+  return null
+}
+
+/**
+ * payload 의 `source` 와 `job` 을 응답 사실에 맞춘다.
+ *
+ * 저장된 payload 는 만들어질 때의 값을 담고 있다. 같은 payload 가 캐시로 나갈 때와
+ * 직무 일반 결과로 나갈 때 화면이 붙이는 꼬리표가 달라야 하므로, 내보내는 자리에서
+ * 한 번 덮어쓴다. payload 를 제자리에서 고치지 않고 복사한다.
+ */
+function stampPayload(payload, job, source) {
+  if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) return payload
+  const stamped = { ...payload, source }
+  if (stamped.job === undefined) stamped.job = job
+  return stamped
+}
+
+// 응답 본문. 키 이름과 순서는 CONTRACT 6.3 이 정한다.
+function userPostingResponse(job, matched, source, payloads) {
+  const body = { job, matched, source }
+  for (const type of USER_POSTING_OUTPUTS) {
+    body[type] = stampPayload((payloads || {})[type] ?? null, job, source)
+  }
+  return body
+}
+
 // --- 빈도 제한 -----------------------------------------------------------
 
 // IP 당 분당 5회. 인스턴스 메모리에만 둔다. 여러 인스턴스로 늘리면 공유 저장소가 필요하다.
@@ -138,6 +212,9 @@ function createApp(options = {}) {
   const legacyLabels = options.legacyLabels || null
 
   const app = express()
+  // CORS 를 가장 앞에 둔다. 프리플라이트(OPTIONS)에는 본문이 없으므로 본문 파서보다
+  // 먼저 답해야 하고, 오류 응답에도 허용 헤더가 붙어야 화면이 오류 코드를 읽을 수 있다.
+  app.use(createCors({ allowedOrigins: options.allowedOrigins }))
   app.use(express.json({ limit: '1mb' }))
 
   // 직무가 화면 선택지에 있는지 본다. 목록은 저장소가 정하고 서버는 하드코딩하지 않는다.
@@ -145,6 +222,17 @@ function createApp(options = {}) {
     if (!job) return null
     const roles = await db.getJobRoles()
     return roles.find((role) => role.job_role_id === job) || null
+  }
+
+  // 활성 분석 버전의 직무 일반(overall) 산출물 세 종.
+  // 온디맨드 분석을 열 수 없을 때 대신 내보내는 값이다. 활성 버전이 없으면 빈 벌이다.
+  async function overallOutputs(job) {
+    const analysisVersion = await db.getActiveAnalysis(job)
+    if (!analysisVersion) return {}
+    const entries = await Promise.all(
+      USER_POSTING_OUTPUTS.map(async (type) => [type, await db.getOutput(analysisVersion, 'overall', job, type)])
+    )
+    return Object.fromEntries(entries.filter(([, payload]) => payload))
   }
 
   app.get('/api/health', (req, res) => {
@@ -235,33 +323,26 @@ function createApp(options = {}) {
     }
   })
 
-  // 로드맵 조회와 조합.
-  // 체크가 비어 있으면 저장된 payload 를 그대로 낸다. 체크가 있으면 재조합은 판단이므로
-  // FastAPI `POST /roadmap` 에 넘긴다. Express 는 순서를 다시 매기지 않는다.
+  // 로드맵 조회와 조합. 준비 현황·로드맵 조합기는 Express 소관이다
+  // (docs/architecture.md 4장 구성요소 표, 9장 시퀀스의 `API->>API`).
+  //
+  // 체크가 비어 있으면 저장된 payload 를 그대로 낸다. 체크가 있으면 저장된 payload 에
+  // `recompose` 를 적용한다. 재조합은 순수 함수이므로 에이전트를 부르지 않는다 —
+  // 체크를 켜고 끄는 상호작용은 FastAPI 가 꺼져 있어도 동작한다.
   app.post('/api/roadmap', async (req, res) => {
-    const { job, scope, checks } = req.body || {}
+    const { job, checks } = req.body || {}
     try {
       const context = await prepare(res, req.body)
       if (!context) return
       const roadmap = await loadPayload(db.getOutput, context.analysisVersion, 'roadmap', context.resolved)
       const hasChecks = checks && typeof checks === 'object' && Object.keys(checks).length > 0
-      if (!hasChecks) {
-        return res.json(withPostingsInCluster(roadmap.payload, context.resolved))
-      }
-      const strategy = await loadPayload(db.getOutput, context.analysisVersion, 'strategy', context.resolved)
-      const response = await httpFetch(`${agentUrl}/roadmap`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ job, scope, conditions: strategy.payload, checks }),
-      })
-      const data = await response.json()
-      if (!response.ok) return res.status(response.status).json(data)
-      res.json(withPostingsInCluster(data, context.resolved))
+      const payload = hasChecks ? recompose(roadmap.payload, checks) : roadmap.payload
+      res.json(withPostingsInCluster(payload, context.resolved))
     } catch (e) {
       if (sendKnownError(res, job, e)) return
-      res.status(502).json({
+      res.status(500).json({
         job: job || null,
-        error: { code: 'AGENT_UNAVAILABLE', message: '에이전트 서비스(FastAPI)에 연결하지 못했습니다' },
+        error: { code: 'ROADMAP_FAILED', message: '로드맵 결과 조회에 실패했습니다' },
       })
     }
   })
@@ -288,19 +369,46 @@ function createApp(options = {}) {
       if (char_length < MIN_POSTING_CHARS || char_length > MAX_POSTING_CHARS) {
         return fail(res, 400, job, 'INVALID_LENGTH', `공고 원문은 ${MIN_POSTING_CHARS}자 이상 ${MAX_POSTING_CHARS}자 이하여야 합니다`)
       }
+
+      // 원문 해시와 버전 조합으로 동일 분석 캐시를 조회한다(docs/architecture.md 11장).
+      // 캐시 조회는 저장소 조회이므로 Express 가 직접 한다.
+      const activeVersion = await db.getActiveAnalysis(job)
+      const posting = await db.getUserPostingByHash(content_hash)
+      if (posting) {
+        const rows = await db.getUserPostingAnalyses(posting.user_posting_id)
+        const cached = selectAnalysisSet(rows, activeVersion)
+        if (cached) {
+          const cachedJob = posting.job_role_id || job
+          return res.json(userPostingResponse(cachedJob, true, SOURCE_CACHE, cached))
+        }
+      }
+
+      // 미적중일 때만 FastAPI 온디맨드 분석으로 넘긴다. 응답은 그대로 중계한다 —
+      // 온디맨드 불가(503)에도 FastAPI 가 직무 일반 결과를 함께 싣는다(CONTRACT 7장).
       const response = await httpFetch(`${agentUrl}/postings/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content_hash, normalized_text, job_role_id: job }),
       })
       const data = await response.json()
-      res.status(response.status).json(data)
+      return res.status(response.status).json(data)
     } catch (e) {
       if (sendKnownError(res, job, e)) return
-      res.status(502).json({
-        job: job || null,
-        error: { code: 'AGENT_UNAVAILABLE', message: '에이전트 서비스(FastAPI)에 연결하지 못했습니다' },
-      })
+      // 에이전트가 없거나 실패해도 502 로 끝내지 않는다. 그 직무의 overall 결과를 함께
+      // 실어 화면이 "이 공고만의 해석은 없고 직무 일반 결과를 본다" 는 안내를 띄우게 한다.
+      // 상태 부호와 오류 코드는 FastAPI 의 온디맨드 불가 응답과 같게 맞춘다(CONTRACT 7장).
+      try {
+        return res.status(503).json({
+          error: {
+            code: 'ONDEMAND_UNAVAILABLE',
+            message: '온디맨드 분석을 실행할 수 없습니다. 직무 일반 결과를 대신 냅니다',
+          },
+          ...userPostingResponse(job || null, false, SOURCE_UNAVAILABLE, await overallOutputs(job)),
+        })
+      } catch (fallbackError) {
+        if (sendKnownError(res, job, fallbackError)) return
+        return fail(res, 503, job, 'ONDEMAND_UNAVAILABLE', '온디맨드 분석을 실행할 수 없습니다')
+      }
     }
   })
 
@@ -331,4 +439,11 @@ if (require.main === module) {
   })
 }
 
-module.exports = { createApp, createRateLimiter, resolveScope, withPostingsInCluster }
+module.exports = {
+  createApp,
+  createRateLimiter,
+  resolveScope,
+  withPostingsInCluster,
+  selectAnalysisSet,
+  userPostingResponse,
+}

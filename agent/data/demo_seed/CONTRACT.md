@@ -44,7 +44,8 @@
 | Wiki 페이지 | `wp_demo_<job>_<slug>` | |
 | Wiki 개정 | `wr_demo_<job>_<slug>_1` | |
 
-`<scope>` 는 `overall` 또는 기업군 `cluster_id` 다.
+`<scope>` 는 `overall` · 기업군 `cluster_id` · 공고 `posting_id` 다.
+공고 범위는 `strategy`·`roadmap` 과 그 정규화 표에만 쓴다 (4장).
 
 ## 2. 직무 아홉 종
 
@@ -103,20 +104,43 @@ React → Express /api/{stats,reverse,conditions,roadmap}
 | `interpretation` | `interpretation` | `overall` | `<job_role_id>` | 5절 B (기준선만) |
 | `interpretation` | `interpretation` | `cluster` | `<cluster_id>` | 5절 B (기준선 + 편차) |
 | `interpretation` | `interpretation` | `posting` | `<posting_id>` | 5절 B (기준선 + 편차 + posting) |
-| `strategy` | `strategy` | `overall` / `cluster` | | 5절 C |
-| `roadmap` | `roadmap` | `overall` / `cluster` | | 5절 D |
+| `strategy` | `strategy` | `overall` | `<job_role_id>` | 5절 C |
+| `strategy` | `strategy` | `cluster` | `<cluster_id>` | 5절 C |
+| `strategy` | `strategy` | `posting` | `<posting_id>` | 5절 C (기업군 바탕 + 공고 편차) |
+| `roadmap` | `roadmap` | `overall` | `<job_role_id>` | 5절 D |
+| `roadmap` | `roadmap` | `cluster` | `<cluster_id>` | 5절 D |
+| `roadmap` | `roadmap` | `posting` | `<posting_id>` | 5절 D (기업군 바탕 + 공고 편차) |
 
 **직무당 필수 행 수**
 
 - `statistics` 1행 (overall)
 - `interpretation` 1 + 6 + 5 = 12행 (overall, 기업군 6, recent 공고 5)
-- `strategy` 1 + 6 = 7행
-- `roadmap` 1 + 6 = 7행
+- `strategy` 1 + 6 + 5 = 12행 (overall, 기업군 6, recent 공고 5)
+- `roadmap` 1 + 6 + 5 = 12행 (overall, 기업군 6, recent 공고 5)
 
-합계 27행 × 9직무 = 243행.
+합계 37행 × 9직무 = 333행.
 
-posting 범위의 `strategy`·`roadmap` 은 만들지 않는다. Express 는 posting 범위 요청에서
-그 공고가 속한 기업군 행으로 떨어뜨린다(폴백 규칙, B13).
+**posting 범위의 `strategy`·`roadmap` 파생 (B17)**
+
+공고 범위 전략·로드맵은 직무 조각(`scripts/demo_seed/<job>.py`)이 아니라 조각을 합치는
+`scripts/build_demo_seed.py` 가 한 번에 만든다. 규칙을 아홉 직무 모듈에 흩어 두면 직무마다
+달라진다. 재료는 그 공고가 속한 기업군의 전략·로드맵 payload(바탕), 그 공고
+`interpretation` payload 의 `deviations`(차별점), 그 공고의 회사명·제목이다.
+
+- `strategy` 는 기업군 payload 를 복사한 뒤 편차에 해당하는 체크리스트 항목을 앞으로
+  끌어올리고 `is_deviation`·`dev_n` 을 그 공고 해석에 맞춘다. 편차 항목의 `reason` 은 그
+  공고를 근거로 다시 쓴다. 편차와 무관한 항목은 그대로 두며 항목을 지우지 않는다.
+- `roadmap` 은 편차를 채우는 단계를 앞으로 당기고 `n` 과 `phase` 의 `STEP nn` 을 다시 매긴다.
+  `check_rows` 의 `item_id` 집합은 같은 공고 `strategy` 의 `checklist[].item_id` 집합과 같고
+  `source_step` 은 새 단계 번호를 가리킨다.
+- `scope` 는 `{"level":"posting","cluster_tag":"<기업군 표시명>","posting_id":"<dp_...>"}`.
+- `output_id` 는 `out_demo_<job>_strat_<posting_id>` · `out_demo_<job>_road_<posting_id>`,
+  `generated_at` 과 `verification_status` 는 바탕이 된 기업군 행의 값을 그대로 쓴다(재실행 결정성).
+- `checklist_items`·`roadmap_items`·`roadmap_item_fills`·`study_tracks` 에 같은 범위
+  (`scope_level='posting'`, `scope_id=<posting_id>`)의 행을 함께 만든다. `analysis_claims` 는 늘리지 않는다.
+
+Express 의 폴백 규칙(posting 범위 요청을 그 공고가 속한 기업군 행으로 떨어뜨린다, B13)은
+안전망으로 남긴다. 정상 경로에서는 아홉 직무 전부 posting 범위 행이 있으므로 닿지 않는다.
 
 평면 `postings` 표를 읽던 경로는 `legacy_posting_samples` 로 이름을 바꿔 폴백으로 남긴다.
 `agent/migrations/` 의 `postings` 는 정규화 표이며 평면 표와 이름이 겹치므로 그대로 두면 안 된다.
@@ -371,30 +395,36 @@ agent/data/demo_seed/parts/user_postings/<table>.csv     A10
 `load_demo_seed.py` 는 아래 순서로 테이블당 `COPY` 를 한 번씩 실행한다.
 CSV 헤더의 컬럼 순서는 이 표와 정확히 같아야 한다.
 
+순서는 외래키가 정한다. `COPY` 는 한 테이블을 통째로 넣으므로 참조 대상 테이블이
+참조하는 테이블보다 앞에 있어야 한다. 실행 봉투(`analysis_versions`·`agent_runs`)가
+원본보다 앞에 오는 이유는 `source_assessments.assessed_by_run_id` 가 `agent_runs` 를
+참조하기 때문이다. 이 순서는 `tests/unit/test_demo_seed_build.py` 가 마이그레이션의
+외래키에서 다시 계산해 검사한다. 되돌리기는 이 표의 역순이다.
+
 | # | 테이블 | 컬럼 순서 |
 | --- | --- | --- |
 | 1 | `dataset_versions` | `dataset_version, job_role_id, as_of_date, note, sealed_at` |
-| 2 | `sources` | `source_id, source_type, url, publisher, author, robots_policy, license_note, job_role_ids, company_id, first_seen_at` |
-| 3 | `source_snapshots` | `snapshot_id, source_id, content_hash, raw_content, published_at, fetched_at, dataset_version, supersedes_snapshot_id` |
-| 4 | `source_observations` | `observation_id, snapshot_id, observed_at, fetch_status, canonical_url, http_status, notes` |
-| 5 | `source_assessments` | `assessment_id, snapshot_id, source_tier, allowed_uses, reliability_score, assessment_version, assessed_at, assessed_by_run_id` |
-| 6 | `postings` | `posting_id, source_id, company_id, job_role_id, first_posted_at` |
-| 7 | `posting_versions` | `posting_version_id, posting_id, snapshot_id, title, career_label_raw, edu_label_raw, entry_label_raw, entry_label, posted_at, closed_at, dataset_version` |
-| 8 | `source_chunks` | `chunk_id, snapshot_id, section, ordinal, text, context, embedding_text, token_count, dataset_version` |
-| 9 | `requirement_taxonomies` | `taxonomy_id, job_role_id` |
-| 10 | `requirement_taxonomy_versions` | `taxonomy_version_id, taxonomy_id, version_number, taxonomy_policy_version, published_at, superseded_at` |
-| 11 | `analysis_versions` | `analysis_version, job_role_id, dataset_version, taxonomy_version_id, knowledge_version, model_version, prompt_version, retrieval_policy_version, metric_policy_version, scope_spec, status, tokens, cost, started_at, ended_at` |
-| 12 | `agent_runs` | `agent_run_id, analysis_version, agent_name, objective_id, iteration, stop_reason, tokens, cost, started_at, ended_at` |
-| 13 | `requirement_dimensions` | `dimension_id, taxonomy_id, dimension_kind` |
-| 14 | `requirement_dimension_versions` | `dimension_version_id, dimension_id, taxonomy_version_id, internal_canonical_label, display_label, definition, lifecycle_status, standard_mapping_status, standard_id, mapping_confidence, mapping_evidence, review_status, role_boundary_eligible` |
-| 15 | `requirement_aliases` | `alias_id, dimension_id, taxonomy_version_id, alias_text, alias_source` |
-| 16 | `requirement_dimension_relations` | `relation_id, taxonomy_version_id, src_dimension_id, dst_dimension_id, relation_type` |
-| 17 | `capabilities` | `capability_id, job_role_id, canonical_label, definition, is_active` |
-| 18 | `capability_dimension_links` | `capability_id, dimension_id, taxonomy_version_id` |
-| 19 | `requirement_mentions` | `mention_id, posting_version_id, snapshot_id, chunk_id, raw_expression, evidence_span_start, evidence_span_end, stated_requiredness, section, extraction_confidence, extraction_run_id, dataset_version` |
-| 20 | `chunk_extractions` | `chunk_id, dataset_version, extraction_run_id, mention_count, extracted_at` |
-| 21 | `posting_requirement_assignments` | `assignment_id, mention_id, taxonomy_version_id, dimension_id, normalized_label, requiredness, depth_level, assignment_confidence, assignment_method, verifier_status` |
-| 22 | `knowledge_versions` | `knowledge_version, job_role_id, taxonomy_version_id, published_at` |
+| 2 | `requirement_taxonomies` | `taxonomy_id, job_role_id` |
+| 3 | `requirement_taxonomy_versions` | `taxonomy_version_id, taxonomy_id, version_number, taxonomy_policy_version, published_at, superseded_at` |
+| 4 | `knowledge_versions` | `knowledge_version, job_role_id, taxonomy_version_id, published_at` |
+| 5 | `analysis_versions` | `analysis_version, job_role_id, dataset_version, taxonomy_version_id, knowledge_version, model_version, prompt_version, retrieval_policy_version, metric_policy_version, scope_spec, status, tokens, cost, started_at, ended_at` |
+| 6 | `agent_runs` | `agent_run_id, analysis_version, agent_name, objective_id, iteration, stop_reason, tokens, cost, started_at, ended_at` |
+| 7 | `sources` | `source_id, source_type, url, publisher, author, robots_policy, license_note, job_role_ids, company_id, first_seen_at` |
+| 8 | `source_snapshots` | `snapshot_id, source_id, content_hash, raw_content, published_at, fetched_at, dataset_version, supersedes_snapshot_id` |
+| 9 | `source_observations` | `observation_id, snapshot_id, observed_at, fetch_status, canonical_url, http_status, notes` |
+| 10 | `source_assessments` | `assessment_id, snapshot_id, source_tier, allowed_uses, reliability_score, assessment_version, assessed_at, assessed_by_run_id` |
+| 11 | `postings` | `posting_id, source_id, company_id, job_role_id, first_posted_at` |
+| 12 | `posting_versions` | `posting_version_id, posting_id, snapshot_id, title, career_label_raw, edu_label_raw, entry_label_raw, entry_label, posted_at, closed_at, dataset_version` |
+| 13 | `source_chunks` | `chunk_id, snapshot_id, section, ordinal, text, context, embedding_text, token_count, dataset_version` |
+| 14 | `requirement_dimensions` | `dimension_id, taxonomy_id, dimension_kind` |
+| 15 | `requirement_dimension_versions` | `dimension_version_id, dimension_id, taxonomy_version_id, internal_canonical_label, display_label, definition, lifecycle_status, standard_mapping_status, standard_id, mapping_confidence, mapping_evidence, review_status, role_boundary_eligible` |
+| 16 | `requirement_aliases` | `alias_id, dimension_id, taxonomy_version_id, alias_text, alias_source` |
+| 17 | `requirement_dimension_relations` | `relation_id, taxonomy_version_id, src_dimension_id, dst_dimension_id, relation_type` |
+| 18 | `capabilities` | `capability_id, job_role_id, canonical_label, definition, is_active` |
+| 19 | `capability_dimension_links` | `capability_id, dimension_id, taxonomy_version_id` |
+| 20 | `requirement_mentions` | `mention_id, posting_version_id, snapshot_id, chunk_id, raw_expression, evidence_span_start, evidence_span_end, stated_requiredness, section, extraction_confidence, extraction_run_id, dataset_version` |
+| 21 | `chunk_extractions` | `chunk_id, dataset_version, extraction_run_id, mention_count, extracted_at` |
+| 22 | `posting_requirement_assignments` | `assignment_id, mention_id, taxonomy_version_id, dimension_id, normalized_label, requiredness, depth_level, assignment_confidence, assignment_method, verifier_status` |
 | 23 | `dimension_metric_applicability` | `taxonomy_version_id, dimension_id, metric_family, applicable, reason` |
 | 24 | `statistics_facts` | `fact_id, analysis_version, metric_family, metric_policy_version, scope_level, scope_id, entry_segment, period_id, dimension_id, secondary_dimension_id, measure, numerator, denominator, value, sample_size, sample_status, uncertainty` |
 | 25 | `capability_depth_profiles` | `profile_id, capability_id, taxonomy_version_id, scope_level, scope_id, entry_segment, period_id, depth_distribution, expected_depth, sample_size, evidence_support, confidence, analysis_version` |
