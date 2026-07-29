@@ -483,6 +483,30 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 
 ---
 
+## Issue 7. 경로 최적화 DB/서비스/API 연동
+
+**요구사항**
+Issue 6에서 만든 위상 정렬 그래프 알고리즘(`pathfinder` 패키지)이 DB/서비스/API/화면 어디에도 연결되지 않은 채 남아있었음. 기획서 FR-4가 아직 실제로 동작하는 걸 보여주지 못하는 유일한 핵심 기능이라, `pathfinder`를 실제 자격증 데이터와 REST API, 프론트 화면까지 끝까지 연결.
+
+**핵심 사실 확인 및 범위 결정**
+시드된 7종 자격증(산업안전기사/품질경영기사/위험물산업기사/정보처리기사/컴퓨터활용능력1급/SQLD/리눅스마스터1급) 사이에는 실제로 검증 가능한 공식 선수조건이 없음 — 서로 다른 분야의 독립적인 기사/1급 등급 자격증들이라, 산업기사→기사 같은 등급 체계 내 선후관계도 이 목록엔 없음. Issue 6이 이미 "지어낸 데이터를 넣지 않는다"고 결정했던 문제가 그대로라, **사용자 확인 결과 `certification_prerequisite` 테이블은 만들되 시드 데이터는 비워둠** — 배관(선택한 자격증 → 그래프 계산 → 순서 반환)이 실제로 끝까지 동작하는 걸 증명하는 게 목표. 지금은 "선수조건 없음 → 제약 없이 정렬(id 오름차순)"로 정직하게 반영. 나중에 검증된 선수조건을 알게 되면 그때 데이터만 추가하면 되는 구조.
+
+**작업 단계**
+- [x] `V7__certification_prerequisite.sql` — 빈 시드로 테이블만 생성
+- [x] `domain/CertificationPrerequisite.java`, `repository/jpa/CertificationPrerequisiteRepository.java`
+- [x] `service/CertificationPathService.computeOrder(List<Long>)` — 선택한 자격증 id로 `CertificationNode` 구성, 선택 범위 안의 선수조건만 필터링해 `PrerequisiteGraph`/`TopologicalSorter` 재사용
+- [x] `api/CertificationPathResponse.java`(`order`/`stuckCertifications`/`hasCycle`), `api/CertificationPathController.java` — `GET /api/certification-path?certificationIds=`
+- [x] `CertificationPathServiceTest` — 선수조건 0건, 선택 범위 내 엣지 반영, 선택 범위 밖 엣지 무시, 순환 참조 탐지, 존재하지 않는 id 예외 5케이스. 컨트롤러 테스트는 만들지 않음(백엔드 전체에 컨트롤러 테스트가 없는 기존 컨벤션 유지, 수동 curl로 검증)
+- [x] 프론트: `useCertificationPath` 훅, `CertPathPlanner`/`PathResult` 컴포넌트, `App.jsx`에 "경로 최적화" 탭 추가, `PathResult.test.jsx`
+
+**완료 기준**
+- [x] `./gradlew test` 전체 통과
+- [x] `npm run test` 전체 통과 (신규 `PathResult.test.jsx` 포함)
+- [x] 실제 `bootRun` 기동 후 `curl "http://localhost:8080/api/certification-path?certificationIds=1,2,3"` 확인 — 선수조건 0건 상태이므로 `hasCycle:false`, `order`가 id 오름차순으로 반환됨을 실측 확인
+- [x] 존재하지 않는 자격증 id 요청 시 404 확인(`CertificationNotFoundException` 재사용)
+
+---
+
 ## 백로그 (다음 슬라이스 이후, 우선순위순)
 
 | Task | 설명 | 우선순위 | 예상 시점 | 상태 |
@@ -497,7 +521,7 @@ Feign/Java 인코딩 문제가 전혀 아니었다. ALIO 검색 폼(`recrutInqui
 | Kafka 파이프라인 분리 | `jobposting.collected` 토픽·컨슈머 뼈대, docker-compose 인프라 | P1 | - | Done (Issue 10) |
 | Java 그래프 알고리즘 (경로 최적화) | 선수조건 그래프 구성, 위상정렬, 순환탐지 | P1 | - | Done (Issue 6) |
 | 진행 상황 대시보드 (QueryDsl 동적 필터) | 자격증 단위 완료/준비중/예정 추적, QueryDsl 첫 실사용 | P1 | - | Done (Issue 9) |
-| Issue 7. 경로 최적화 DB/서비스/API 연동 | `certification_prerequisite` 테이블, 엔티티, `CertificationPathService`, `CertificationPathController` — pathfinder 결과를 실제 DB 데이터와 연결. 완성되면 Issue 9의 `target_date`를 경로 기반 스케줄과 연동 검토 | P1 | 다음 슬라이스 | Todo |
+| 경로 최적화 DB/서비스/API 연동 | `certification_prerequisite` 테이블(빈 시드)/엔티티/서비스/API/화면까지 pathfinder를 실전 연동. 선수조건 데이터는 검증된 게 없어 의도적으로 비워둠 — 나중에 Issue 9의 `target_date`를 경로 기반 스케줄과 연동하는 건 향후 과제로 남음 | P1 | - | Done (Issue 7) |
 | `CertificationMentionMapperTest` 시드 픽스처 충돌 근본 해결 | "반도체 품질관리"/"전산직" job_title이 V2 시드 픽스처이면서 동시에 NCS 코드 기반 실제 수집 대상이라 실수집할 때마다 테스트가 깨짐(Issue 12에서 반복 확인) — 전용 픽스처 job_title(`테스트직무-mention랭킹A/B`)로 분리, 실수집 재현 후에도 테스트 통과 확인 | P0 | - | Done |
 | ALIO 수집 결과 job_title 회귀 테스트 | Issue 12의 NCS 코드 전환 경로(`AlioJobTitleNcsMapping`, `searchByNcsCodes` 병합·중복제거)에 대한 JUnit 테스트 — 이번 슬라이스는 데이터 양 확보 우선으로 명시적으로 미룸 | P1 | 다음 슬라이스 | Todo |
 | 랭킹 API에 essential/preferred 가중합 반영 | Issue 13에서 저장만 해둔 문맥 기반 강조도(essential/preferred)를 `CertificationRankingService`의 `EmphasisLevel`(언급률 임계치 기반)과 통합할지 재설계 — 정규화(가중합/total_posting_count) 방식부터 다시 정해야 하는 별도 설계 결정이라 의도적으로 분리 | P1 | 다음 슬라이스 | Todo |
