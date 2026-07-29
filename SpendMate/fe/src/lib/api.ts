@@ -331,6 +331,10 @@ export async function login(email: string, password: string): Promise<AuthUser> 
   return res.json()
 }
 
+export async function logout(): Promise<void> {
+  await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+}
+
 /** 새로고침 시 세션이 아직 살아있는지 확인. 로그인 안 된 상태면 null을 반환한다 (에러를 던지지 않음). */
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const res = await apiFetch('/api/auth/me')

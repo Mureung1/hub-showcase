@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Bell, ChevronRight, TrendingUp, TrendingDown, Coffee, ShoppingCart, Utensils, Zap, Package, X, Search } from 'lucide-react'
 import SurvivalModeScreen from './SurvivalModeScreen'
+import { getNextBillingInfo } from './MyPageScreen'
 import { getCategoryMeta } from '../lib/categoryMeta'
 import {
   getBudget, getPrediction, getSubscriptions, getDailyExpenses, getRecentExpenses, getDailyCalendar, getContext,
@@ -401,6 +402,7 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings, onGoToStat
   const { cells, today, month } = buildCalendar()
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [showAllExpenses, setShowAllExpenses] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
 
   const [budgetTotal, setBudgetTotal] = useState<number | null>(null)
   const [prediction, setPrediction] = useState<Prediction | null>(null)
@@ -431,6 +433,12 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings, onGoToStat
   for (const d of monthlyDaily) {
     if (d.amount != null) spendByDay[d.day] = spendLevel(d.amount)
   }
+
+  // 결제일이 7일 이내로 다가온 구독 — 홈 알림 벨의 실제 알림 내용으로 쓴다 (마이페이지의 "결제일 임박" 배너와 같은 기준).
+  const dueSoonSubscriptions = subscriptions
+    .map(s => ({ ...s, ...getNextBillingInfo(s.billingDay) }))
+    .filter(s => s.dday <= 7)
+    .sort((a, b) => a.dday - b.dday)
 
   const realTodayForFilter = new Date()
   const selectedDayExpenses = selectedDay
@@ -480,9 +488,14 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings, onGoToStat
             <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)', fontWeight: 500 }}>안녕하세요, {user?.nickname ?? '사용자'}님 👋</p>
             <h1 style={{ margin: '2px 0 0', fontSize: 22, fontWeight: 800, color: 'var(--foreground)' }}>SpendMate</h1>
           </div>
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: 8, minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button
+            onClick={() => setShowNotifications(true)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', padding: 8, minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
             <Bell size={22} color="var(--foreground)" />
-            <div style={{ position: 'absolute', top: 8, right: 8, width: 8, height: 8, background: '#FF6B6B', borderRadius: '50%', border: '2px solid var(--background)' }} />
+            {dueSoonSubscriptions.length > 0 && (
+              <div style={{ position: 'absolute', top: 8, right: 8, width: 8, height: 8, background: '#FF6B6B', borderRadius: '50%', border: '2px solid var(--background)' }} />
+            )}
           </button>
         </div>
 
@@ -703,6 +716,57 @@ export default function HomeScreen({ survivalModeOff, onGoToSettings, onGoToStat
           }}
         />
       )}
+      {showNotifications && (
+        <NotificationsModal dueSoonSubscriptions={dueSoonSubscriptions} onClose={() => setShowNotifications(false)} />
+      )}
     </>
+  )
+}
+
+type DueSoonSubscription = Subscription & { label: string; dday: number }
+
+/* ── 알림 모달 — 구독 결제 임박 알림을 보여준다 (실제 구독 데이터 기반, D-7 이내) ── */
+function NotificationsModal({ dueSoonSubscriptions, onClose }: { dueSoonSubscriptions: DueSoonSubscription[]; onClose: () => void }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
+      <div style={{ position: 'relative', width: 393, maxHeight: '80%', background: 'var(--background)', borderRadius: '28px 28px 0 0', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 4, flexShrink: 0 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 99, background: 'var(--border)' }} />
+        </div>
+        <div style={{ padding: '8px 20px 40px', overflowY: 'auto' }} className="no-scrollbar">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: 'var(--foreground)' }}>알림</h2>
+            <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: 99, background: '#F3F4F6', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <X size={16} color="var(--muted)" />
+            </button>
+          </div>
+          {dueSoonSubscriptions.length === 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 0', gap: 8 }}>
+              <Bell size={36} color="var(--muted)" />
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--foreground)' }}>아직 알림이 없어요</p>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>구독 결제일이 다가오면 여기에 표시돼요</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {dueSoonSubscriptions.map(s => (
+                <div key={s.id} style={{ background: 'white', borderRadius: 16, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, border: '1px solid var(--border)' }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 13, background: '#FFF8E8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Zap size={18} color="#FFC857" />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--foreground)' }}>{s.name} 결제 예정</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--muted)' }}>{s.label} · {s.price.toLocaleString()}원</p>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: s.dday <= 3 ? '#FF6B6B' : '#FFC857' }}>
+                    {s.dday === 0 ? '오늘' : `D-${s.dday}`}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }

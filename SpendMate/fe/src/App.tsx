@@ -6,7 +6,7 @@ import AICoachScreen, { INITIAL_COACH_MESSAGES, type Message } from './screens/A
 import AddExpenseScreen from './screens/AddExpenseScreen'
 import MyPageScreen from './screens/MyPageScreen'
 import AuthScreen from './screens/AuthScreen'
-import { getCurrentUser, type AuthUser } from './lib/api'
+import { getCurrentUser, logout, type AuthUser } from './lib/api'
 
 type Tab = 'home' | 'stats' | 'add' | 'coach' | 'mypage'
 export type MyPageIntent = 'survival' | 'subscriptions' | null
@@ -60,6 +60,14 @@ export default function App() {
     setActiveTab('mypage')
   }
 
+  const handleLogout = async () => {
+    await logout()
+    setCurrentUser(null)
+    setAuthed(false)
+    setActiveTab('home')
+    setCoachMessages(INITIAL_COACH_MESSAGES)
+  }
+
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div
@@ -107,6 +115,7 @@ export default function App() {
                   onUserUpdated={setCurrentUser}
                   openIntent={mypageIntent}
                   onIntentHandled={() => setMypageIntent(null)}
+                  onLogout={handleLogout}
                 />
               )}
             </>

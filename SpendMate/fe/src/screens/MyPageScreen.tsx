@@ -416,13 +416,15 @@ interface MyPageScreenProps {
   onUserUpdated: (user: AuthUser) => void
   openIntent?: 'survival' | 'subscriptions' | null
   onIntentHandled?: () => void
+  onLogout: () => void
 }
 
-export default function MyPageScreen({ survivalModeOff, onToggleSurvivalMode, user, onUserUpdated, openIntent, onIntentHandled }: MyPageScreenProps) {
+export default function MyPageScreen({ survivalModeOff, onToggleSurvivalMode, user, onUserUpdated, openIntent, onIntentHandled, onLogout }: MyPageScreenProps) {
   const [showSurvival, setShowSurvival] = useState(false)
   const [showProfileEdit, setShowProfileEdit] = useState(false)
   const [showBudgetEdit, setShowBudgetEdit] = useState(false)
 const [showSubManage, setShowSubManage] = useState(false)
+  const [comingSoon, setComingSoon] = useState<string | null>(null)
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [prediction, setPrediction] = useState<Prediction | null>(null)
   const [savingsMissions, setSavingsMissions] = useState<SavingsMissionResponse | null>(null)
@@ -623,6 +625,7 @@ useEffect(() => {
             return (
               <button
                 key={item.label}
+                onClick={() => item.label === '로그아웃' ? onLogout() : setComingSoon(item.label)}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', padding: '16px 18px',
                   borderTop: i > 0 ? '1px solid var(--border)' : 'none',
@@ -659,6 +662,32 @@ useEffect(() => {
           onClose={() => setShowSubManage(false)}
         />
       )}
+      {comingSoon && <ComingSoonModal label={comingSoon} onClose={() => setComingSoon(null)} />}
     </>
+  )
+}
+
+/* ── 아직 구현 안 된 메뉴용 안내 모달 ── */
+function ComingSoonModal({ label, onClose }: { label: string; onClose: () => void }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 500, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }} onClick={onClose} />
+      <div style={{ position: 'relative', width: 393, background: 'var(--background)', borderRadius: '28px 28px 0 0', boxShadow: '0 -8px 40px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12, paddingBottom: 4 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 99, background: 'var(--border)' }} />
+        </div>
+        <div style={{ padding: '24px 20px 40px', textAlign: 'center' }}>
+          <p style={{ fontSize: 40, margin: '0 0 12px' }}>🛠️</p>
+          <h2 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 900, color: 'var(--foreground)' }}>{label}</h2>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--muted)' }}>아직 준비 중인 기능이에요. 곧 만나볼 수 있어요!</p>
+          <button
+            onClick={onClose}
+            style={{ marginTop: 24, width: '100%', height: 48, borderRadius: 14, border: 'none', cursor: 'pointer', background: '#EBF2FF', color: '#4F8EF7', fontSize: 15, fontWeight: 700, fontFamily: 'Pretendard' }}
+          >
+            확인
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
