@@ -1,14 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   PortfolioDraft,
+  PortfolioCodeSnippet,
+  PortfolioImplementationStep,
   ReflectionAnalysis,
   RepositoryAnalysisResult,
   TechnicalChallengeEvidenceReference,
 } from "@ptop/contracts";
 import { saveReflectionDraft, type ReflectionDraft } from "./reflection";
-import { loadReflectionDraftFromApi } from "./reflectionApi";
+import {
+  loadReflectionDraftFromApi,
+  type ReflectionDraftSaveResponse,
+} from "./reflectionApi";
 import {
   getPortfolioDraftLoadingSteps,
+  getPortfolioPdfFileName,
   normalizeDraftListItems,
 } from "./portfolioDraftView";
 
@@ -16,7 +22,11 @@ type ReflectionWorkspaceProps = {
   result: RepositoryAnalysisResult;
   initialDraft: ReflectionDraft;
   reflectionAnalysis?: ReflectionAnalysis | null;
-  onSave?: (draft: ReflectionDraft) => Promise<void>;
+  onSave?: (draft: ReflectionDraft) => Promise<ReflectionDraftSaveResponse | void>;
+  onPortfolioDraftCreated?: (
+    analysis: ReflectionAnalysis,
+    draft: ReflectionDraft,
+  ) => Promise<void>;
 };
 
 const reflectionQuestion =
@@ -27,6 +37,7 @@ export function ReflectionWorkspace({
   initialDraft,
   reflectionAnalysis,
   onSave,
+  onPortfolioDraftCreated,
 }: ReflectionWorkspaceProps) {
   const [draft, setDraft] = useState(initialDraft);
   const [loadedReflectionAnalysis, setLoadedReflectionAnalysis] =
@@ -35,11 +46,33 @@ export function ReflectionWorkspace({
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const [saveMessage, setSaveMessage] = useState("");
+  const [hasRequestedPortfolioDraft, setHasRequestedPortfolioDraft] =
+    useState(false);
   const generatedAnalysis = reflectionAnalysis ?? loadedReflectionAnalysis;
+  const portfolioDraftSectionRef = useRef<HTMLDivElement | null>(null);
+  const previousSaveStatusRef = useRef(saveStatus);
 
   useEffect(() => {
     saveReflectionDraft(result.repository.url, draft);
   }, [draft, result.repository.url]);
+
+  useEffect(() => {
+    if (previousSaveStatusRef.current === saveStatus) {
+      return;
+    }
+
+    previousSaveStatusRef.current = saveStatus;
+    if (saveStatus !== "saving" && saveStatus !== "saved") {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      portfolioDraftSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, [saveStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -84,13 +117,29 @@ export function ReflectionWorkspace({
     );
 
     try {
+      let portfolioSaveFailed = false;
       if (onSave) {
-        await onSave(nextDraft);
+        const response = await onSave(nextDraft);
+        const resolvedAnalysis = response?.reflectionAnalysis ?? generatedAnalysis;
+        if (resolvedAnalysis?.portfolioDraft && onPortfolioDraftCreated) {
+          try {
+            await onPortfolioDraftCreated(resolvedAnalysis, nextDraft);
+          } catch (error) {
+            portfolioSaveFailed = true;
+            setSaveMessage(
+              error instanceof Error
+                ? `회고는 저장되었지만 ${error.message}`
+                : "회고는 저장되었지만 작업실 저장에 실패했습니다.",
+            );
+          }
+        }
       }
       setSaveStatus("saved");
-      setSaveMessage(
-        "회고가 저장되었습니다. 아래에서 AI가 다듬은 초안을 확인해보세요.",
-      );
+      if (!portfolioSaveFailed) {
+        setSaveMessage(
+          "회고가 저장되었습니다. 아래에서 AI가 다듬은 초안을 확인해보세요.",
+        );
+      }
     } catch (error) {
       setSaveStatus("error");
       setSaveMessage(
@@ -206,7 +255,10 @@ export function ReflectionWorkspace({
             disabled={
               !draft.postAnalysisReflection.trim() || saveStatus === "saving"
             }
-            onClick={() => void saveAnswer()}
+            onClick={() => {
+              setHasRequestedPortfolioDraft(true);
+              void saveAnswer();
+            }}
           >
             {saveStatus === "saving"
               ? "초안 만드는 중"
@@ -215,16 +267,26 @@ export function ReflectionWorkspace({
         </div>
       </article>
 
-      {saveStatus === "saving" ? (
-        <PortfolioDraftLoading />
-      ) : generatedAnalysis?.portfolioDraft ? (
-        <PortfolioDraftPreview
-          draft={generatedAnalysis.portfolioDraft}
-          evidence={generatedAnalysis.matchedChallengeEvidence}
-        />
-      ) : generatedAnalysis ? (
-        <AlignmentNotice analysis={generatedAnalysis} />
-      ) : null}
+      <div ref={portfolioDraftSectionRef} className="scroll-mt-24">
+        {hasRequestedPortfolioDraft && (
+          <>
+            {saveStatus === "saving" ? (
+              <PortfolioDraftLoading />
+            ) : generatedAnalysis?.portfolioDraft ? (
+              <PortfolioDraftPreview
+                draft={generatedAnalysis.portfolioDraft}
+                evidence={generatedAnalysis.matchedChallengeEvidence}
+                pdfFileName={getPortfolioPdfFileName(
+                  result.repository.owner,
+                  result.repository.name,
+                )}
+              />
+            ) : generatedAnalysis ? (
+              <AlignmentNotice analysis={generatedAnalysis} />
+            ) : null}
+          </>
+        )}
+      </div>
     </section>
   );
 }
@@ -275,6 +337,8 @@ function PortfolioDraftLoading() {
 }
 
 function SelectedChallenges({ titles }: { titles: string[] }) {
+  const selectedTitle = titles[0];
+
   return (
     <div className="grid gap-3 rounded-xl border border-ptop-line bg-white p-4 shadow-ptop-surface">
       <div>
@@ -284,14 +348,13 @@ function SelectedChallenges({ titles }: { titles: string[] }) {
         <strong>선택한 기술적 도전</strong>
       </div>
       <div className="flex flex-wrap gap-2">
-        {titles.map((title) => (
+        {selectedTitle && (
           <span
             className="rounded-full bg-ptop-mint-soft px-3 py-1.5 text-sm font-bold text-ptop-mint-dark"
-            key={title}
           >
-            {title}
+            {selectedTitle}
           </span>
-        ))}
+        )}
       </div>
       <p className="m-0 text-sm leading-[1.6] text-ptop-muted">
         선택한 후보와 나의 한 문장 회고를 근거 중심으로 연결합니다.
@@ -300,12 +363,14 @@ function SelectedChallenges({ titles }: { titles: string[] }) {
   );
 }
 
-function PortfolioDraftPreview({
+export function PortfolioDraftPreview({
   draft,
   evidence,
+  pdfFileName,
 }: {
   draft: PortfolioDraft;
   evidence: TechnicalChallengeEvidenceReference[];
+  pdfFileName: string;
 }) {
   const visualReferences = evidence.flatMap((item) =>
     (item.imageUrls ?? []).map((url) => ({
@@ -335,7 +400,20 @@ function PortfolioDraftPreview({
           <button
             className="rounded-full border border-ptop-line bg-white px-4 py-2 text-sm font-bold text-ptop-mint-dark transition hover:-translate-y-px hover:border-ptop-mint-dark"
             type="button"
-            onClick={() => window.print()}
+            onClick={() => {
+              const previousTitle = document.title;
+              const restoreTitle = () => {
+                document.title = previousTitle;
+                window.removeEventListener("afterprint", restoreTitle);
+              };
+
+              document.title = pdfFileName;
+              window.addEventListener("afterprint", restoreTitle, {
+                once: true,
+              });
+              window.print();
+              window.setTimeout(restoreTitle, 1000);
+            }}
           >
             PDF로 저장
           </button>
@@ -359,6 +437,21 @@ function PortfolioDraftPreview({
       <PortfolioVisuals references={visualReferences} />
       <DraftSection label="Problem" value={draft.problem} />
       <DraftSection label="Solution" value={draft.solution} />
+      {draft.codeSnippets && draft.codeSnippets.length > 0 && (
+        <DraftCodeSnippets snippets={draft.codeSnippets} />
+      )}
+      {draft.implementationSteps && draft.implementationSteps.length > 0 && (
+        <DraftImplementationSteps steps={draft.implementationSteps} />
+      )}
+      {draft.decisionRationale && draft.decisionRationale.length > 0 && (
+        <DraftListSection label="Why I chose this approach" items={draft.decisionRationale} />
+      )}
+      {draft.tradeoffs && draft.tradeoffs.length > 0 && (
+        <DraftListSection label="Trade-offs" items={draft.tradeoffs} />
+      )}
+      {draft.validation && draft.validation.length > 0 && (
+        <DraftListSection label="Validation" items={draft.validation} />
+      )}
       <DraftSection label="My contribution" value={draft.contribution} />
       {draft.keyDecisions && draft.keyDecisions.length > 0 && (
         <DraftListSection label="Key decisions" items={draft.keyDecisions} />
@@ -412,6 +505,76 @@ function PortfolioDraftPreview({
         </p>
       )}
     </article>
+  );
+}
+
+function DraftCodeSnippets({ snippets }: { snippets: PortfolioCodeSnippet[] }) {
+  return (
+    <section className="grid gap-3 border-y border-ptop-line py-5">
+      <div className="grid gap-1">
+        <h5 className="m-0 text-sm font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">
+          Core code
+        </h5>
+        <p className="m-0 text-xs leading-5 text-ptop-muted">
+          선택한 기술적 도전과 연결되는 실제 Repository 코드 일부입니다.
+        </p>
+      </div>
+      <div className="grid gap-4">
+        {snippets.map((snippet, index) => (
+          <article className="grid gap-2" key={`${snippet.filePath}-${index}`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {snippet.sourceUrl ? (
+                <a
+                  className="font-mono text-xs font-bold text-ptop-mint-dark underline decoration-ptop-mint/40 underline-offset-2"
+                  href={snippet.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {snippet.filePath} ↗
+                </a>
+              ) : (
+                <code className="text-xs font-bold text-ptop-mint-dark">{snippet.filePath}</code>
+              )}
+              <span className="rounded-full bg-ptop-soft-paper px-2 py-1 text-[0.68rem] font-bold text-ptop-muted">
+                {snippet.language}
+              </span>
+            </div>
+            <pre className="m-0 max-h-64 overflow-auto rounded-xl bg-[#17211e] p-4 text-xs leading-6 text-[#d9ffe8] print:max-h-none print:break-inside-avoid">
+              <code>{snippet.code}</code>
+            </pre>
+            <p className="m-0 text-sm leading-6 text-ptop-muted">{snippet.explanation}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DraftImplementationSteps({ steps }: { steps: PortfolioImplementationStep[] }) {
+  return (
+    <section className="grid gap-3">
+      <h5 className="m-0 text-sm font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">
+        Implementation details
+      </h5>
+      <ol className="m-0 grid list-none gap-3 p-0">
+        {steps.map((step, index) => (
+          <li className="grid gap-1 border-l-2 border-ptop-mint pl-4 text-sm leading-7 text-ptop-ink" key={`${step.summary}-${index}`}>
+            <strong>{step.summary}</strong>
+            {step.filePath && (
+              <code className="w-fit rounded bg-ptop-soft-paper px-2 py-0.5 text-xs text-ptop-mint-dark">
+                {step.filePath}
+              </code>
+            )}
+            <span>{step.rationale}</span>
+            {step.evidenceRefs.length > 0 && (
+              <span className="text-xs leading-5 text-ptop-muted">
+                근거: {step.evidenceRefs.join(", ")}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -501,16 +664,32 @@ function splitEvidenceSummary(value: string): string[] {
 }
 
 function AlignmentNotice({ analysis }: { analysis: ReflectionAnalysis }) {
+  const isMismatched = analysis.alignment === "mismatched";
+  const isPartial = analysis.alignment === "partial";
+
   return (
     <div
-      className="grid gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"
-      role="status"
+      className={`grid gap-2 rounded-xl border p-4 text-sm leading-6 ${
+        isMismatched
+          ? "border-rose-200 bg-rose-50 text-rose-900"
+          : isPartial
+            ? "border-amber-200 bg-amber-50 text-amber-900"
+            : "border-amber-200 bg-amber-50 text-amber-900"
+      }`}
+      role="alert"
     >
-      <strong>아직 포트폴리오 초안을 만들지 못했습니다.</strong>
+      <strong>
+        {isMismatched
+          ? "선택한 후보와 회고가 일치하지 않습니다."
+          : isPartial
+            ? "회고와 후보가 일부만 연결되었습니다."
+            : "아직 포트폴리오 초안을 만들지 못했습니다."}
+      </strong>
       <p className="m-0">{analysis.message}</p>
       <p className="m-0">
-        Repository 근거와 나의 실제 경험이 일치하는지 확인한 뒤 다시
-        시도해주세요.
+        {isMismatched
+          ? "선택한 기술적 도전과 실제로 경험한 작업이 연결되도록 회고를 다시 작성해 주세요."
+          : "Repository 근거와 나의 실제 경험이 연결되는지 확인한 뒤 다시 시도해 주세요."}
       </p>
     </div>
   );

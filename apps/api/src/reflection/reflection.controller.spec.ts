@@ -43,7 +43,7 @@ describe("ReflectionDraftController", () => {
     await expect(controller.save("analysis-id", { draft })).resolves.toEqual(
       expect.objectContaining({ analysisResultId: "analysis-id" }),
     );
-    expect(service.save).toHaveBeenCalledWith("analysis-id", draft, undefined);
+    expect(service.save).toHaveBeenCalledWith("analysis-id", draft, undefined, undefined);
   });
 
   it("maps invalid drafts to a stable 400 response", async () => {

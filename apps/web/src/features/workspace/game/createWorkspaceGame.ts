@@ -42,5 +42,6 @@ export function createWorkspaceGame(
     destroy: () => game.destroy(true),
     focus: () => game.canvas.focus(),
     setInputEnabled: (isEnabled) => scene.setInputEnabled(isEnabled),
+    setRepositoryInteractions: (interactions) => scene.setRepositoryInteractions(interactions),
   };
 }

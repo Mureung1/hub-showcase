@@ -8,16 +8,22 @@ import type {
 type WorkspaceGameProps = {
   isInputEnabled: boolean;
   onOpenNewAnalysis: () => void;
+  repositoryInteractions?: WorkspaceInteraction[];
+  onOpenRepository?: (repositoryId: string) => void;
 };
 
 export function WorkspaceGame({
   isInputEnabled,
   onOpenNewAnalysis,
+  repositoryInteractions = [],
+  onOpenRepository,
 }: WorkspaceGameProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<WorkspaceGameHandle | null>(null);
   const openAnalysisRef = useRef(onOpenNewAnalysis);
   const inputEnabledRef = useRef(isInputEnabled);
+  const repositoryInteractionsRef = useRef(repositoryInteractions);
+  const openRepositoryRef = useRef(onOpenRepository);
   const [interaction, setInteraction] = useState<WorkspaceInteraction | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [loadError, setLoadError] = useState("");
@@ -25,6 +31,15 @@ export function WorkspaceGame({
   useEffect(() => {
     openAnalysisRef.current = onOpenNewAnalysis;
   }, [onOpenNewAnalysis]);
+
+  useEffect(() => {
+    repositoryInteractionsRef.current = repositoryInteractions;
+    gameRef.current?.setRepositoryInteractions(repositoryInteractions);
+  }, [repositoryInteractions]);
+
+  useEffect(() => {
+    openRepositoryRef.current = onOpenRepository;
+  }, [onOpenRepository]);
 
   useEffect(() => {
     if (!mountRef.current) {
@@ -48,9 +63,14 @@ export function WorkspaceGame({
           if (event.type === "open-new-analysis") {
             openAnalysisRef.current();
           }
+
+          if (event.type === "open-repository") {
+            openRepositoryRef.current?.(event.repositoryId);
+          }
         });
         gameRef.current = game;
         game.setInputEnabled(inputEnabledRef.current);
+        game.setRepositoryInteractions(repositoryInteractionsRef.current);
         game.focus();
       })
       .catch(() => {
@@ -77,7 +97,7 @@ export function WorkspaceGame({
 
   return (
     <div className="absolute inset-0 z-0 h-full w-full bg-ptop-mint-soft">
-      <div ref={mountRef} className="h-full w-full [&_canvas]:block [&_canvas]:h-full [&_canvas]:w-full [&_canvas]:[image-rendering:pixelated] [&_canvas:focus-visible]:outline-3 [&_canvas:focus-visible]:outline-ptop-mint-dark [&_canvas:focus-visible]:-outline-offset-5" />
+      <div ref={mountRef} className="h-full w-full [&_canvas]:block [&_canvas]:h-full [&_canvas]:w-full [&_canvas:focus-visible]:outline-3 [&_canvas:focus-visible]:outline-ptop-mint-dark [&_canvas:focus-visible]:-outline-offset-5" />
       {loadError && (
         <div className="absolute inset-0 z-10 grid place-content-center justify-items-center gap-3 bg-white/[0.92] text-ptop-ink" role="alert">
           <strong className="text-sm">{loadError}</strong>

@@ -27,7 +27,7 @@ type RepositoryAnalyzerProps = {
 };
 
 const terminalInputClassName =
-  "min-h-14 w-full border-2 border-[var(--terminal-border)] bg-[var(--terminal-panel)] px-4 text-base text-[var(--terminal-ink)] outline-none transition placeholder:text-[var(--terminal-subtle)] placeholder:opacity-50 focus:border-[var(--terminal-accent)] focus:ring-4 focus:ring-[var(--terminal-accent)]/15";
+  "min-h-14 w-full rounded-xl border-2 border-[var(--terminal-border)] bg-[var(--terminal-panel)] px-4 text-base text-[var(--terminal-ink)] outline-none transition placeholder:text-[var(--terminal-subtle)] placeholder:opacity-50 focus:border-[var(--terminal-accent)] focus:ring-4 focus:ring-[var(--terminal-accent)]/15";
 
 const terminalInputStyle = {
   backgroundColor: "var(--terminal-panel)",
@@ -142,6 +142,7 @@ export function RepositoryAnalyzer({
                       undefined,
                       undefined,
                       pendingAnalysisResult.analysis.technicalChallenges,
+                      pendingAnalysisResult.analysis.codeReferences ?? [],
                     ).then((response) => {
                       setReflectionAnalysis(response.reflectionAnalysis ?? null);
                     })
@@ -262,13 +263,13 @@ export function RepositoryAnalyzer({
 
             <div className="flex flex-wrap items-center gap-4">
               <button
-                className="min-h-12 border-2 border-[var(--terminal-border)] border-b-4 bg-[var(--terminal-accent)] px-8 font-bold text-[#00210c] transition hover:-translate-y-px hover:bg-[#8affae] focus-visible:outline-2 focus-visible:outline-[var(--terminal-accent)] focus-visible:outline-offset-2 disabled:cursor-wait disabled:opacity-60"
+                className="min-h-12 rounded-xl border-2 border-[var(--terminal-border)] border-b-4 bg-[var(--terminal-accent)] px-8 font-bold text-[#00210c] transition hover:-translate-y-px hover:bg-[#8affae] focus-visible:outline-2 focus-visible:outline-[var(--terminal-accent)] focus-visible:outline-offset-2 disabled:cursor-wait disabled:opacity-60"
                 type="submit"
               >
                 분석 시작
               </button>
               <button
-                className="min-h-12 border-2 border-[var(--terminal-border)] bg-[#16202e] px-8 font-bold text-[#c7d2df] transition hover:border-[var(--terminal-accent)] hover:text-white focus-visible:outline-2 focus-visible:outline-[var(--terminal-accent)] focus-visible:outline-offset-2"
+                className="min-h-12 rounded-xl border-2 border-[var(--terminal-border)] bg-[#16202e] px-8 font-bold text-[#c7d2df] transition hover:border-[var(--terminal-accent)] hover:text-white focus-visible:outline-2 focus-visible:outline-[var(--terminal-accent)] focus-visible:outline-offset-2"
                 type="button"
                 onClick={onCancel}
               >
@@ -279,7 +280,7 @@ export function RepositoryAnalyzer({
 
           {analysisError && (
             <div
-              className={`mt-6 grid gap-1 border-2 px-4 py-3 ${statusToneClassName}`}
+              className={`mt-6 grid gap-1 rounded-xl border-2 px-4 py-3 ${statusToneClassName}`}
               role="status"
               aria-live="polite"
             >

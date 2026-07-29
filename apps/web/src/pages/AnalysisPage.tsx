@@ -3,11 +3,13 @@ import type {
   RepositoryAnalysisResult,
   TechnicalChallengeCandidate,
 } from "@ptop/contracts";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnalysisResult, ReportSteps } from "../features/repository-analysis/AnalysisResult";
 import { ReflectionWorkspace } from "../features/reflection/ReflectionWorkspace";
 import type { ReflectionDraft } from "../features/reflection/reflection";
 import { saveReflectionDraftToApi } from "../features/reflection/reflectionApi";
+import { useAuth } from "../features/auth/useAuth";
+import { savePortfolioProject } from "../features/portfolio-library/portfolioLibraryApi";
 
 type AnalysisPageProps = {
   result: RepositoryAnalysisResult;
@@ -17,12 +19,16 @@ type AnalysisPageProps = {
 };
 
 export function AnalysisPage({ result, reflectionDraft, reflectionAnalysis, onBackToWorkspace }: AnalysisPageProps) {
+  const { user } = useAuth();
   const [currentReflectionAnalysis, setCurrentReflectionAnalysis] = useState(reflectionAnalysis);
   // 후보 선택은 이 결과 화면에서 직접 시작한다. 분석 중 초안이나 이전
   // Repository별 저장값을 초기 선택으로 사용하지 않는다.
   const [selectedChallengeTitles, setSelectedChallengeTitles] = useState<string[]>([]);
   const [activeStep, setActiveStep] = useState<1 | 2>(1);
   const [selectionToast, setSelectionToast] = useState("");
+  const reflectionSectionRef = useRef<HTMLElement | null>(null);
+  const previousStepRef = useRef<1 | 2>(activeStep);
+  const activeStepRef = useRef<1 | 2>(activeStep);
   const [analysisCandidates, setAnalysisCandidates] = useState<TechnicalChallengeCandidate[]>(
     mergeTechnicalChallenges(
       result.analysis.technicalChallenges,
@@ -51,6 +57,64 @@ export function AnalysisPage({ result, reflectionDraft, reflectionAnalysis, onBa
     setActiveStep(step);
   };
 
+  useEffect(() => {
+    activeStepRef.current = activeStep;
+  }, [activeStep]);
+
+  useEffect(() => {
+    const currentState = window.history.state;
+    if (!currentState?.ptopAnalysisGuard) {
+      window.history.pushState(
+        { ...(currentState ?? {}), ptopAnalysisGuard: true },
+        "",
+        window.location.href,
+      );
+    }
+
+    const handleBrowserBack = () => {
+      window.history.pushState(
+        { ...(window.history.state ?? {}), ptopAnalysisGuard: true },
+        "",
+        window.location.href,
+      );
+      setSelectionToast(
+        activeStepRef.current === 2
+          ? "회고 작성을 끝내려면 상단의 ‘작업실로 돌아가기’를 눌러주세요."
+          : "분석 결과를 나가려면 상단의 ‘작업실로 돌아가기’를 눌러주세요.",
+      );
+    };
+
+    window.addEventListener("popstate", handleBrowserBack);
+    return () => window.removeEventListener("popstate", handleBrowserBack);
+  }, [onBackToWorkspace]);
+
+  const leaveAnalysis = () => {
+    window.history.replaceState(
+      {
+        ...(window.history.state ?? {}),
+        ptopAnalysisGuard: false,
+        ptopWorkspaceEntry: true,
+      },
+      "",
+      window.location.href,
+    );
+    onBackToWorkspace();
+  };
+
+  useEffect(() => {
+    if (previousStepRef.current === activeStep) {
+      return;
+    }
+
+    previousStepRef.current = activeStep;
+    requestAnimationFrame(() => {
+      reflectionSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  }, [activeStep]);
+
   const reflectionDraftWithSelection: ReflectionDraft = {
     ...reflectionDraft,
     customChallengeTitle: customChallenge.title,
@@ -60,7 +124,7 @@ export function AnalysisPage({ result, reflectionDraft, reflectionAnalysis, onBa
 
   return (
     <section className="min-h-screen" aria-label="Repository 분석 결과 페이지">
-      <button className="mb-6 inline-flex min-h-10 items-center gap-2 rounded-full border border-ptop-line bg-white px-4 text-sm font-bold text-ptop-ink transition hover:-translate-y-px hover:border-ptop-mint-dark" type="button" onClick={onBackToWorkspace}>
+      <button className="mb-6 inline-flex min-h-10 items-center gap-2 rounded-full border border-ptop-line bg-white px-4 text-sm font-bold text-ptop-ink transition hover:-translate-y-px hover:border-ptop-mint-dark" type="button" onClick={leaveAnalysis}>
         <span aria-hidden="true">←</span>
         작업실로 돌아가기
       </button>
@@ -85,14 +149,21 @@ export function AnalysisPage({ result, reflectionDraft, reflectionAnalysis, onBa
           onSelectionBlocked={setSelectionToast}
         />
       ) : (
-        <section className="grid gap-6 rounded-[1.75rem] bg-[#f3f5f4] p-4 text-[#17211e] sm:p-6 lg:p-8" aria-label="회고 작성 단계">
+        <section ref={reflectionSectionRef} className="scroll-mt-24 grid gap-6 rounded-[1.75rem] bg-[#f3f5f4] p-4 text-[#17211e] sm:p-6 lg:p-8" aria-label="회고 작성 단계">
           <ReportSteps activeStep={activeStep} onStepChange={handleStepChange} />
           <ReflectionWorkspace
             result={result}
             initialDraft={reflectionDraftWithSelection}
             reflectionAnalysis={currentReflectionAnalysis}
             onSave={(draft) =>
-              saveReflectionDraftToApi(result.id, draft, undefined, undefined, analysisCandidates).then((response) => {
+              saveReflectionDraftToApi(
+                result.id,
+                draft,
+                undefined,
+                undefined,
+                analysisCandidates,
+                result.analysis.codeReferences ?? [],
+              ).then((response) => {
                 setCurrentReflectionAnalysis(response.reflectionAnalysis ?? null);
                 setAnalysisCandidates((current) =>
                   mergeTechnicalChallenges(
@@ -100,8 +171,18 @@ export function AnalysisPage({ result, reflectionDraft, reflectionAnalysis, onBa
                     response.reflectionAnalysis?.suggestedChallenges ?? [],
                   ),
                 );
+                return response;
               })
             }
+            onPortfolioDraftCreated={async (analysis, draft) => {
+              if (!user) return;
+              await savePortfolioProject({
+                userId: user.id,
+                result,
+                reflectionDraft: draft,
+                reflectionAnalysis: analysis,
+              });
+            }}
           />
         </section>
       )}

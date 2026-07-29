@@ -31,6 +31,7 @@ test("creates an empty reflection draft with the common prompt fields", () => {
     motivation: "",
     role: "",
     memorableProblem: "",
+    postAnalysisReflection: "",
     attempts: "",
     improvement: "",
     customChallengeTitle: "",
@@ -67,12 +68,11 @@ test("ignores invalid reflection data saved in storage", () => {
   );
 });
 
-test("keeps at most two selected technical challenge candidates", () => {
+test("keeps exactly one selected technical challenge candidate", () => {
   const draft = createEmptyReflectionDraft();
 
   assert.deepEqual(addSelectedChallenge(draft, "API 안정성"), ["API 안정성"]);
   assert.deepEqual(addSelectedChallenge({ ...draft, selectedChallengeTitles: ["API 안정성"] }, "상태 관리"), [
-    "API 안정성",
     "상태 관리",
   ]);
   assert.deepEqual(
@@ -80,7 +80,7 @@ test("keeps at most two selected technical challenge candidates", () => {
       { ...draft, selectedChallengeTitles: ["API 안정성", "상태 관리"] },
       "성능 개선",
     ),
-    ["API 안정성", "상태 관리"],
+    ["성능 개선"],
   );
   assert.deepEqual(
     addSelectedChallenge(
@@ -89,4 +89,5 @@ test("keeps at most two selected technical challenge candidates", () => {
     ),
     ["상태 관리"],
   );
+  assert.deepEqual(addSelectedChallenge({ ...draft, selectedChallengeTitles: ["API 안정성"] }, "API 안정성"), []);
 });

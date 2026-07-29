@@ -18,6 +18,11 @@ export type WorkspaceInteraction =
       position: WorkspacePoint;
       activationRadius: number;
       repositoryId: string;
+      repositoryOwner?: string;
+      repositoryName?: string;
+      challengeTitle?: string;
+      updatedAt?: string;
+      workspaceSlot?: number | null;
     };
 
 export type WorkspaceEvent =
@@ -39,4 +44,5 @@ export type WorkspaceGameHandle = {
   destroy: () => void;
   focus: () => void;
   setInputEnabled: (isEnabled: boolean) => void;
+  setRepositoryInteractions: (interactions: WorkspaceInteraction[]) => void;
 };

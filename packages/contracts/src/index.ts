@@ -5,6 +5,7 @@ export type {
   RepositoryAnalysisDetails,
   RepositoryAnalysisEvidence,
   RepositoryAnalysisEvidenceType,
+  RepositoryCodeReference,
   RepositoryAnalysisRequest,
   RepositoryAnalysisResult,
   RepositoryCommit,
@@ -20,6 +21,8 @@ export type {
   ReflectionAlignment,
   ReflectionAnalysis,
   PortfolioDraft,
+  PortfolioCodeSnippet,
+  PortfolioImplementationStep,
   ReflectionDraftSaveRequest,
   ReflectionDraftSaveResponse,
 } from "./reflection";
