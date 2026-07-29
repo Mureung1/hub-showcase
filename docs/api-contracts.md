@@ -289,6 +289,20 @@ Fallback reasons:
 - `LLM_PROVIDER_ERROR`
 - `INVALID_LLM_OUTPUT`
 - `RATE_LIMITED`
+- `CLIENT_THROTTLED`
+
+### POST /api/manager/quest-suggestion
+
+Use this route only when the user asks for a new quest recommendation. The route should turn the long-term profile goal into one concrete next action for today.
+
+Rules:
+
+- `title` must be a small action, not a copy of the long-term goal.
+- `type` must be `time`, `quantity`, or `action`.
+- `amount` should follow `questSize` and `dailyMinutes`: `tiny` usually `5..10` minutes or `1..3` items, `balanced` usually `15..25` minutes or `3..7` items, `challenge` usually `30..45` minutes or `8..15` items.
+- `difficulty` must be `easy`, `normal`, or `hard`; `hard` is reserved for challenge-sized work, long focus blocks, or concrete deliverables.
+- `rewardExp` must match the selected difficulty range: `easy=5..15`, `normal=16..35`, `hard=36..60`.
+- If the provider returns a copied broad goal title or an out-of-range reward, the server returns `INVALID_LLM_OUTPUT` rule fallback.
 
 ### POST /api/manager/difficulty-evaluation
 

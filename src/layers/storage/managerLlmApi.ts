@@ -57,7 +57,7 @@ export interface ManagerLlmOutput {
   statEvaluation?: ManagerStatEvaluation;
   behaviorIntent?: ManagerBehaviorIntent;
   source: "llm" | "rule_fallback";
-  fallbackReason?: "LLM_DISABLED" | "LLM_PROVIDER_ERROR" | "INVALID_LLM_OUTPUT" | "RATE_LIMITED";
+  fallbackReason?: "LLM_DISABLED" | "LLM_PROVIDER_ERROR" | "INVALID_LLM_OUTPUT" | "RATE_LIMITED" | "CLIENT_THROTTLED";
   promptVersion: typeof managerLlmPromptVersion;
 }
 
@@ -84,6 +84,14 @@ const routeByKind: Record<ManagerLlmOutputKind, string> = {
   statEvaluation: "/api/manager/stat-evaluation",
   behaviorIntent: "/api/manager/behavior-intent",
 };
+
+const defaultClientThrottleMs = 60_000;
+const lastOutputByKind: Partial<Record<ManagerLlmOutputKind, { requestedAtMs: number; output: ManagerLlmOutput }>> = {};
+
+export interface ManagerLlmClientOptions {
+  nowMs?: number;
+  throttleMs?: number;
+}
 
 export async function requestManagerBehaviorIntentViaApi(input: ManagerLlmRequest, fetchFn: typeof fetch = fetch) {
   const output = await requestManagerLlmOutputViaApi({ ...input, outputKind: "behaviorIntent" }, fetchFn);
@@ -115,7 +123,22 @@ export async function requestManagerStatEvaluationViaApi(input: ManagerLlmReques
   return { ...output, statEvaluation: output.statEvaluation };
 }
 
-export async function requestManagerLlmOutputViaApi(input: ManagerLlmRequest, fetchFn: typeof fetch = fetch): Promise<ManagerLlmOutput> {
+export async function requestManagerLlmOutputViaApi(
+  input: ManagerLlmRequest,
+  fetchFn: typeof fetch = fetch,
+  options: ManagerLlmClientOptions = {},
+): Promise<ManagerLlmOutput> {
+  const nowMs = options.nowMs ?? Date.now();
+  const throttleMs = options.throttleMs ?? defaultClientThrottleMs;
+  const previous = lastOutputByKind[input.outputKind];
+  if (previous && nowMs >= previous.requestedAtMs && nowMs - previous.requestedAtMs < throttleMs) {
+    return {
+      ...previous.output,
+      source: "rule_fallback",
+      fallbackReason: "CLIENT_THROTTLED",
+    };
+  }
+
   const response = await fetchFn(routeByKind[input.outputKind], {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -127,5 +150,6 @@ export async function requestManagerLlmOutputViaApi(input: ManagerLlmRequest, fe
     throw new Error(payload.ok ? "Manager LLM request failed." : payload.error.message);
   }
 
+  lastOutputByKind[input.outputKind] = { requestedAtMs: nowMs, output: payload.data };
   return payload.data;
 }

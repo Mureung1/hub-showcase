@@ -150,6 +150,58 @@ describe("manager LLM provider", () => {
     });
   });
 
+  it("instructs quest suggestions to decompose the long-term goal into a small next action", async () => {
+    let capturedBody: unknown;
+    const fetchFn: typeof fetch = async (_url, init) => {
+      capturedBody = init?.body ? JSON.parse(String(init.body)) : null;
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                tool_calls: [
+                  {
+                    function: {
+                      arguments: JSON.stringify({
+                        questSuggestion: {
+                          title: "Read DB index cards for 15 min",
+                          type: "time",
+                          amount: 15,
+                          unit: "min",
+                          difficulty: "normal",
+                          deadline: "today 23:59",
+                          rewardExp: 20,
+                        },
+                      }),
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    };
+    const runtime = createManagerLlmRuntimeFromEnv(
+      (name) => {
+        if (name === managerLlmEnvNames.enabled) return "true";
+        if (name === managerLlmEnvNames.apiKey) return "test-key";
+        return undefined;
+      },
+      fetchFn,
+    );
+
+    await runtime.provider?.generate({ ...request, outputKind: "questSuggestion" });
+
+    const messages = (capturedBody as { messages: Array<{ content: string }> }).messages.map((message) => message.content).join("\n");
+    expect(messages).toContain("Decompose the long-term goal");
+    expect(messages).toContain("Do not copy the goal verbatim");
+    expect(messages).toContain("tiny next action");
+    expect(messages).toContain("Quest size policy");
+    expect(messages).toContain("Difficulty policy");
+  });
+
   it("applies the minimum interval per output kind", () => {
     const now = new Date("2026-07-29T00:00:00.000Z");
     const limiter = createInMemoryManagerLlmRateLimiter({

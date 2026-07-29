@@ -130,7 +130,23 @@ function createSystemPrompt(outputKind: ManagerLlmOutputKind): string {
     "Return only the required tool call. Never mention API keys, tokens, database credentials, files, DOM, sprite paths, or hidden implementation details.",
     "Use short, gentle Korean suitable for an XP desktop pet manager. Do not blame the user for failure.",
     `Requested output kind: ${outputKind}.`,
+    ...createOutputKindInstructions(outputKind),
   ].join("\n");
+}
+
+function createOutputKindInstructions(outputKind: ManagerLlmOutputKind): string[] {
+  if (outputKind !== "questSuggestion") return [];
+
+  return [
+    "Decompose the long-term goal into one tiny next action the user can complete today.",
+    "Do not copy the goal verbatim as the quest title. The title must be a concrete action, not a broad goal label.",
+    "Prefer a short Korean verb phrase such as 'DB 개념 3개 카드 정리' or '포트폴리오 문장 1개 다듬기'.",
+    "Choose type, amount, unit, difficulty, deadline, and rewardExp from profile, persona, questState, and recentEvents. Do not reuse fixed defaults.",
+    "Quest size policy: tiny = 5-10 minutes or 1-3 items; balanced = 15-25 minutes or 3-7 items; challenge = 30-45 minutes or 8-15 items.",
+    "Difficulty policy: easy for restart, recovery, failure, tiny, or short review; normal for a balanced daily task; hard only for challenge, 45+ minutes, or a concrete deliverable.",
+    "Reward policy: easy 5-15 EXP, normal 16-35 EXP, hard 36-60 EXP.",
+    "For study or certificate goals, select one subtopic or action from the goal/context; if no subtopic exists, pick a small first step.",
+  ];
 }
 
 function toPromptInput(request: ManagerLlmRequest) {
@@ -152,7 +168,7 @@ function createOutputSchema(outputKind: ManagerLlmOutputKind) {
       additionalProperties: false,
       required: ["managerLine"],
       properties: {
-        managerLine: { type: "string", description: "A short Korean manager line, max 180 characters." },
+        managerLine: { type: "string", description: "A short Korean manager line. Use one or two short lines, max 96 characters total." },
       },
     };
   }
@@ -170,7 +186,7 @@ function createOutputSchema(outputKind: ManagerLlmOutputKind) {
           properties: {
             behaviorStyle: { type: "string", enum: ["balanced", "adventurous", "shy"] },
             tone: { type: "string", enum: ["calm", "friendly", "firm"] },
-            line: { type: "string" },
+            line: { type: "string", description: "A short Korean manager line. Use one or two short lines, max 96 characters total." },
             suggestedBehaviorBias: {
               type: "array",
               items: {
@@ -275,13 +291,33 @@ function createOutputSchema(outputKind: ManagerLlmOutputKind) {
         additionalProperties: false,
         required: ["title", "type", "amount", "unit", "difficulty", "deadline", "rewardExp"],
         properties: {
-          title: { type: "string" },
-          type: { type: "string", enum: ["time", "quantity", "action"] },
-          amount: { type: "integer", minimum: 1 },
+          title: {
+            type: "string",
+            description: "Concrete next action in Korean, max 48 characters. Do not copy the long-term goal verbatim.",
+          },
+          type: {
+            type: "string",
+            enum: ["time", "quantity", "action"],
+            description: "Use time for focused minutes, quantity for countable items, action for one concrete task.",
+          },
+          amount: {
+            type: "integer",
+            minimum: 1,
+            description: "Adjust to questSize and dailyMinutes. tiny 5-10min/1-3 items, balanced 15-25min/3-7 items, challenge 30-45min/8-15 items.",
+          },
           unit: { type: "string" },
-          difficulty: { type: "string", enum: ["easy", "normal", "hard"] },
+          difficulty: {
+            type: "string",
+            enum: ["easy", "normal", "hard"],
+            description: "easy for tiny/recovery, normal for balanced daily work, hard only for challenge or concrete deliverables.",
+          },
           deadline: { type: "string" },
-          rewardExp: { type: "integer", minimum: 0 },
+          rewardExp: {
+            type: "integer",
+            minimum: 5,
+            maximum: 60,
+            description: "Must match difficulty: easy 5-15, normal 16-35, hard 36-60.",
+          },
         },
       },
     },

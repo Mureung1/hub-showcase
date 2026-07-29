@@ -8,6 +8,10 @@ import type {
 
 export function createManagerLlmFallback(request: ManagerLlmRequest): ManagerLlmOutputFallback {
   const managerLine = createFallbackManagerLine(request);
+  const questSuggestion = request.questState.currentQuest ?? {
+    ...createFallbackQuestSuggestion(request),
+    title: createFallbackQuestTitle(request),
+  };
 
   return {
     managerLine,
@@ -18,7 +22,7 @@ export function createManagerLlmFallback(request: ManagerLlmRequest): ManagerLlm
       eventType: getFallbackGrowthEventType(request),
       difficulty: request.questState.currentQuest?.difficulty ?? "normal",
     }),
-    questSuggestion: createFallbackQuestSuggestion(request),
+    questSuggestion,
   };
 }
 
@@ -109,6 +113,14 @@ function createFallbackQuestSuggestion(request: ManagerLlmRequest): ManagerLlmQu
 function getFallbackGrowthQuestType(request: ManagerLlmRequest) {
   if (request.questState.status === "recovery") return "recovery";
   return request.questState.currentQuest?.type ?? "time";
+}
+
+function createFallbackQuestTitle(request: ManagerLlmRequest): string {
+  if (request.profile.category === "study") return "개념 3개 카드 정리";
+  if (request.profile.category === "exercise") return "가벼운 루틴 한 번 실행";
+  if (request.profile.category === "hobby") return "작은 샘플 하나 만들기";
+  if (request.profile.category === "career") return "결과 문장 1개 다듬기";
+  return "루틴 첫 단계 실행";
 }
 
 function getFallbackGrowthEventType(request: ManagerLlmRequest) {

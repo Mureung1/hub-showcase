@@ -43,9 +43,19 @@ export function normalizeManagerBehaviorIntent(input: unknown, fallback: Manager
   return {
     behaviorStyle: input.behaviorStyle,
     tone: isTone(input.tone) ? input.tone : fallback.tone,
-    line: typeof input.line === "string" ? input.line : fallback.line,
+    line: typeof input.line === "string" ? normalizeManagerLine(input.line) : fallback.line,
     suggestedBehaviorBias: Array.isArray(input.suggestedBehaviorBias) ? input.suggestedBehaviorBias.flatMap(normalizeBehaviorBias) : [],
   };
+}
+
+function normalizeManagerLine(value: string): string {
+  return value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((line) => line.slice(0, 48))
+    .join("\n");
 }
 
 function normalizeBehaviorBias(input: unknown): ManagerBehaviorBias[] {

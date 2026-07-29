@@ -141,11 +141,14 @@ export function resolveManagerLlmOutput(input: {
   outputKind: ManagerLlmOutputKind;
   rawOutput: unknown;
   fallback: ManagerLlmOutputFallback;
+  request?: ManagerLlmRequest;
 }): ManagerLlmResponse {
   const resolved = getResolvedOutput(input.outputKind, input.rawOutput, input.fallback);
   return {
     ok: true,
-    data: resolved ?? createFallbackOutput(input.outputKind, input.fallback, "INVALID_LLM_OUTPUT"),
+    data: resolved && isResolvedOutputAcceptable(input.outputKind, resolved, input.request)
+      ? resolved
+      : createFallbackOutput(input.outputKind, input.fallback, "INVALID_LLM_OUTPUT"),
   };
 }
 
@@ -171,7 +174,7 @@ function getResolvedOutput(
   const base = { source: "llm" as const, promptVersion: managerLlmPromptVersion };
 
   if (outputKind === "managerLine") {
-    const managerLine = boundedString(rawOutput.managerLine, 180);
+    const managerLine = boundedManagerLine(rawOutput.managerLine);
     return managerLine ? { managerLine, ...base } : null;
   }
 
@@ -192,6 +195,16 @@ function getResolvedOutput(
 
   const questSuggestion = parseQuest(rawOutput.questSuggestion);
   return questSuggestion ? { questSuggestion, ...base } : null;
+}
+
+function isResolvedOutputAcceptable(
+  outputKind: ManagerLlmOutputKind,
+  output: ManagerLlmOutputData,
+  request: ManagerLlmRequest | undefined,
+): boolean {
+  if (outputKind !== "questSuggestion" || !output.questSuggestion) return true;
+  if (!isRewardExpInDifficultyRange(output.questSuggestion.difficulty, output.questSuggestion.rewardExp)) return false;
+  return !request || !isQuestTitleTooCloseToGoal(output.questSuggestion.title, request.profile.goal);
 }
 
 function parseDifficultyEvaluation(value: unknown): ManagerLlmDifficultyEvaluation | null {
@@ -281,6 +294,7 @@ function parseQuest(value: unknown): ManagerLlmQuestInput | null {
   const rewardExp = Number(value.rewardExp);
   if (!title || !unit || !deadline || !isQuestType(value.type) || !isDifficulty(value.difficulty)) return null;
   if (!Number.isInteger(amount) || amount < 1 || !Number.isInteger(rewardExp) || rewardExp < 0) return null;
+  if (!isRewardExpInDifficultyRange(value.difficulty, rewardExp)) return null;
   return {
     title,
     type: value.type,
@@ -292,11 +306,38 @@ function parseQuest(value: unknown): ManagerLlmQuestInput | null {
   };
 }
 
+function isQuestTitleTooCloseToGoal(title: string, goal: string): boolean {
+  const normalizedTitle = normalizeComparableText(title);
+  const normalizedGoal = normalizeComparableText(goal);
+  if (!normalizedTitle || !normalizedGoal) return false;
+  if (normalizedTitle === normalizedGoal) return true;
+
+  const genericSuffixes = ["corereview", "summary", "study", "practice", "nextstep", "핵심정리", "정리", "공부", "연습", "다음단계"];
+  return genericSuffixes.some((suffix) => normalizedTitle === `${normalizedGoal}${suffix}`);
+}
+
+function normalizeComparableText(value: string): string {
+  return value.toLowerCase().replace(/[\s:;,.!?\-_/()[\]{}'"`]+/g, "");
+}
+
 function boundedString(value: unknown, maxLength: number): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
   return trimmed.slice(0, maxLength);
+}
+
+function boundedManagerLine(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const lines = value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((line) => line.slice(0, 48));
+  const trimmed = lines.join("\n").trim();
+  if (!trimmed) return null;
+  return trimmed;
 }
 
 function nullableBoundedString(value: unknown, maxLength: number): string | null {

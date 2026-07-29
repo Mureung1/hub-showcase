@@ -146,6 +146,19 @@ describe("manager LLM contract", () => {
     });
   });
 
+  it("limits manager lines to two short display lines", () => {
+    const result = resolveManagerLlmOutput({
+      outputKind: "managerLine",
+      rawOutput: {
+        managerLine: "First line is intentionally long and should still fit inside the manager window without spilling too far.\nSecond line is enough.\nThird line should be removed.",
+      },
+      fallback,
+    });
+
+    expect(result.data.managerLine?.split("\n")).toHaveLength(2);
+    expect(result.data.managerLine?.length).toBeLessThanOrEqual(96);
+  });
+
   it("falls back when rewardExp is outside the selected difficulty range", () => {
     expect(
       resolveManagerLlmOutput({
@@ -163,6 +176,90 @@ describe("manager LLM contract", () => {
       ok: true,
       data: {
         difficultyEvaluation: fallback.difficultyEvaluation,
+        source: "rule_fallback",
+        fallbackReason: "INVALID_LLM_OUTPUT",
+        promptVersion: managerLlmPromptVersion,
+      },
+    });
+  });
+
+  it("falls back when a quest suggestion copies the long-term goal as the title", () => {
+    expect(
+      resolveManagerLlmOutput({
+        outputKind: "questSuggestion",
+        rawOutput: {
+          questSuggestion: {
+            title: "Backend Engineer Portfolio",
+            type: "time",
+            amount: 20,
+            unit: "min",
+            difficulty: "normal",
+            deadline: "today 23:59",
+            rewardExp: 20,
+          },
+        },
+        fallback,
+        request: {
+          promptVersion: managerLlmPromptVersion,
+          outputKind: "questSuggestion",
+          managerContext: {
+            currentMood: "waiting",
+            recentEventCount: 0,
+            lastQuestResult: null,
+            memorySummary: "no events",
+            rewardHints: [],
+          },
+          profile: {
+            nickname: "Lucas",
+            goal: "Backend Engineer Portfolio",
+            category: "career",
+            dailyMinutes: 30,
+            questSize: "balanced",
+            managerTone: "friendly",
+          },
+          persona: {
+            petId: "pink-manager",
+            tone: "friendly",
+            questStyle: "balanced",
+            feedbackStyle: "playful",
+            behaviorStyle: "balanced",
+          },
+          questState: { status: "draft" },
+          recentEvents: [],
+        },
+      }),
+    ).toEqual({
+      ok: true,
+      data: {
+        questSuggestion: fallback.questSuggestion,
+        source: "rule_fallback",
+        fallbackReason: "INVALID_LLM_OUTPUT",
+        promptVersion: managerLlmPromptVersion,
+      },
+    });
+  });
+
+  it("falls back when a quest suggestion reward is outside the selected difficulty range", () => {
+    expect(
+      resolveManagerLlmOutput({
+        outputKind: "questSuggestion",
+        rawOutput: {
+          questSuggestion: {
+            title: "Draft one portfolio bullet",
+            type: "quantity",
+            amount: 1,
+            unit: "bullet",
+            difficulty: "normal",
+            deadline: "today 23:59",
+            rewardExp: 50,
+          },
+        },
+        fallback,
+      }),
+    ).toEqual({
+      ok: true,
+      data: {
+        questSuggestion: fallback.questSuggestion,
         source: "rule_fallback",
         fallbackReason: "INVALID_LLM_OUTPUT",
         promptVersion: managerLlmPromptVersion,

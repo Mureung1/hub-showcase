@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   managerLlmPromptVersion,
+  requestManagerLlmOutputViaApi,
   requestManagerBehaviorIntentViaApi,
   requestManagerDifficultyEvaluationViaApi,
   requestManagerLineViaApi,
@@ -119,5 +120,35 @@ describe("manager LLM API client", () => {
       "/api/manager/stat-evaluation",
       "/api/manager/difficulty-evaluation",
     ]);
+  });
+
+  it("falls back locally instead of repeatedly calling the same output kind inside the client throttle window", async () => {
+    const capturedUrls: string[] = [];
+    const first = await requestManagerLlmOutputViaApi(
+      { ...baseRequest, outputKind: "managerLine" },
+      createFetchResponse({
+        managerLine: "fresh line",
+        source: "llm",
+        promptVersion: managerLlmPromptVersion,
+      }, capturedUrls),
+      { nowMs: 10_000, throttleMs: 60_000 },
+    );
+    const second = await requestManagerLlmOutputViaApi(
+      { ...baseRequest, outputKind: "managerLine" },
+      createFetchResponse({
+        managerLine: "should not call",
+        source: "llm",
+        promptVersion: managerLlmPromptVersion,
+      }, capturedUrls),
+      { nowMs: 20_000, throttleMs: 60_000 },
+    );
+
+    expect(first.source).toBe("llm");
+    expect(second).toMatchObject({
+      source: "rule_fallback",
+      fallbackReason: "CLIENT_THROTTLED",
+      managerLine: "fresh line",
+    });
+    expect(capturedUrls).toEqual(["/api/manager/line"]);
   });
 });

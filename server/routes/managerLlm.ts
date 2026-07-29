@@ -66,7 +66,7 @@ export function registerManagerLlmRoutes(app: Hono, runtime: ManagerLlmRuntime =
 
       try {
         const rawOutput = await runtime.provider.generate(parsed.data);
-        return context.json(resolveManagerLlmOutput({ outputKind: route.outputKind, rawOutput, fallback }));
+        return context.json(resolveManagerLlmOutput({ outputKind: route.outputKind, rawOutput, fallback, request: parsed.data }));
       } catch {
         return context.json({
           ok: true,
