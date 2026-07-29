@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
+import chatbotIcon from '../assets/chatbot.webp';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 const CHAT_URL = `${API_BASE_URL}/api/chat`;
@@ -59,6 +60,9 @@ function ChatPage({ goalTotal, goalMajor, goalGeneral, progressSubmitted, basket
 
   return (
     <div className="chat-page">
+      <div className="chat-page-avatar">
+        <img src={chatbotIcon} alt="그래디" />
+      </div>
       <div className="section-title">
         <h2>그래디 Grady</h2>
         <span>궁금한 걸 물어보면 계산 엔진을 호출해 정확한 답을 드려요!</span>
