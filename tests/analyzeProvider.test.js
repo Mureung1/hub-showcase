@@ -101,6 +101,33 @@ test("세 조건이 충족되면 Gemini 서비스 결과를 반환한다", async
   assert.equal(result.fallbackUsed, false);
 });
 
+test("Gemini가 공고 기반 태스크를 반환하면 고정 템플릿으로 덮어쓰지 않는다", async () => {
+  setEnvironment({
+    AI_PROVIDER: "gemini",
+    ALLOW_LIVE_GEMINI: "true",
+    GEMINI_API_KEY: "test-key",
+  });
+
+  const result = await analyzeOpportunity(payload, {
+    geminiAnalyzeOpportunity: async () => ({
+      ...sampleAnalysisResults[0],
+      mode: "gemini",
+      tasks: [{
+        id: "project-plan",
+        title: "프로젝트 계획서 초안 작성",
+        dueDate: "2026-08-20",
+        status: "todo",
+      }],
+    }),
+  });
+
+  assert.deepEqual(result.tasks, [{
+    id: "project-plan",
+    title: "프로젝트 계획서 초안 작성",
+    dueDate: "2026-08-20",
+    status: "todo",
+  }]);
+});
 test("Gemini 호출 실패 시 서버가 죽지 않고 명시적인 mock fallback을 반환한다", async () => {
   setEnvironment({
     AI_PROVIDER: "gemini",

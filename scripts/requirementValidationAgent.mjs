@@ -139,7 +139,7 @@ const requirementGroups = [
     id: "RQ-14",
     title: "마감 태스크 생성과 날짜 경계 처리",
     runner: "vitest",
-    tests: ["tests/vitest/createTasks.test.js"],
+    tests: ["tests/vitest/createTasks.test.js", "tests/vitest/taskSchedule.test.js"],
   },
 ];
 

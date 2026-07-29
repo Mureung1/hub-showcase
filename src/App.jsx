@@ -27,7 +27,7 @@ import {
   MATCH_STATUS_LABELS,
 } from "./constants/opportunity.js";
 import { analyzeOpportunity } from "./services/analyzeOpportunity.js";
-import { createTasks } from "./services/createTasks.js";
+import { sortTasksByUpcomingDate } from "./utils/taskSchedule.js";
 import {
   MAX_ALL_NOTICES_PER_SOURCE,
   mergeSourceNoticeLinks,
@@ -49,7 +49,6 @@ import {
   noticeBriefFields,
 } from "./agents/noticeBriefAgent.js";
 import {
-  expansionRoadmap,
   opportunityCategories,
   defaultNoticeSources,
 } from "./data/noticeSources.js";
@@ -280,7 +279,7 @@ function AnalysisResultCard({ canSave, isSaving, onSave, result, saveError, save
     { title: "다음 행동", items: match.nextActions },
     {
       title: "준비 태스크",
-      items: result.tasks.map((task) => task.dueDate ? `${task.title} (${task.dueDate})` : task.title),
+      items: sortTasksByUpcomingDate(result.tasks).map((task) => task.dueDate ? `${task.title} (${task.dueDate})` : task.title),
     },
   ];
 
@@ -640,71 +639,6 @@ function ConfigPanel({
   );
 }
 
-function PipelinePanel({ config, isRunning, scan }) {
-  const resolvedUrl = resolveTargetUrl(config.targetUrl);
-  const isBatch = scan?.isBatch;
-  const steps = [
-    {
-      copy: isBatch ? `${scan.sourceCount}개 저장 출처` : config.sourceName || resolvedUrl || "출처 대기",
-      state: resolvedUrl || isBatch ? "done" : "idle",
-      title: "출처 설정",
-    },
-    {
-      copy: isBatch ? "저장된 출처 일괄 요청" : config.sourceMode === "live" ? "서버 프록시 요청" : "입력 HTML 사용",
-      state: isRunning ? "active" : scan ? "done" : "idle",
-      title: "HTML 확보",
-    },
-    {
-      copy: `${scan?.allLinks.length ?? 0}개 발견`,
-      state: scan ? "done" : "idle",
-      title: "링크 추출",
-    },
-    {
-      copy: `${scan?.latestLinks.length ?? 0}개 남김`,
-      state: scan ? "done" : "idle",
-      title: "최신 필터",
-    },
-  ];
-
-  return (
-    <aside className="pipeline-panel" aria-label="에이전트 처리 흐름">
-      <div className="panel-heading">
-        <p className="eyebrow">Agent Flow</p>
-        <h2>처리 흐름</h2>
-      </div>
-      <ol className="pipeline-list">
-        {steps.map((step, index) => (
-          <li key={step.title} className={`pipeline-step step-${step.state}`}>
-            <span>{index + 1}</span>
-            <div>
-              <strong>{step.title}</strong>
-              <p>{step.copy}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </aside>
-  );
-}
-
-function RoadmapPanel() {
-  return (
-    <section className="roadmap-section" aria-labelledby="roadmap-title">
-      <div className="section-heading compact-heading">
-        <p className="eyebrow">Expansion</p>
-        <h2 id="roadmap-title">확장 가능한 에이전트 단계</h2>
-      </div>
-      <div className="roadmap-list">
-        {expansionRoadmap.map((item) => (
-          <article key={item.id} className={`roadmap-item roadmap-${item.status}`}>
-            <span>{item.label}</span>
-            <strong>{item.title}</strong>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 function Metrics({ knownLinks, scan }) {
   const metrics = [
@@ -1718,16 +1652,13 @@ function OpportunityAgentWorkbench() {
 
     setPendingLinkAction({ action: "taskify", url: link.url });
     try {
-      const result = await getOrAnalyzeNoticeLink(link);
+      const result = await analyzeNoticeLink(link, {
+        autoSave: false,
+        scrollToAnalysis: false,
+      });
       if (!result) return;
 
-      const taskReadyResult = result.tasks?.length
-        ? result
-        : {
-          ...result,
-          tasks: createTasks(result.opportunity, result.match),
-        };
-      const savedItem = await handleSaveAnalysis(taskReadyResult);
+      const savedItem = await handleSaveAnalysis(result);
       if (!savedItem) return;
 
       setSelectedSavedAnalysisId(savedItem.storageId || savedItem.id);
@@ -2215,11 +2146,11 @@ function OpportunityAgentWorkbench() {
   const selectedSavedAnalysis = savedAnalyses.find(
     (item) => (item.storageId || item.id) === selectedSavedAnalysisId,
   ) || null;
-  const savedTasks = savedAnalyses.flatMap((item) => item.tasks.map((task) => ({
+  const savedTasks = sortTasksByUpcomingDate(savedAnalyses.flatMap((item) => item.tasks.map((task) => ({
     ...task,
     opportunityId: item.storageId || item.id,
     opportunityTitle: item.opportunity.title || "공고명 확인 필요",
-  })));
+  }))));
 
   return (
     <main className="app-shell">
@@ -2265,11 +2196,7 @@ function OpportunityAgentWorkbench() {
                   scan={scan}
                   sourceOptions={sourceOptions}
                 />
-                <div className="side-stack">
-                  <ProfileSummaryPanel onEdit={handleBeginProfileEdit} profile={activeUserProfile} />
-                  <PipelinePanel config={config} isRunning={isRunning} scan={scan} />
-                  <RoadmapPanel />
-                </div>
+                <ProfileSummaryPanel onEdit={handleBeginProfileEdit} profile={activeUserProfile} />
               </section>
 
               <AnalysisDemoPanel
@@ -2391,7 +2318,7 @@ function OpportunityAgentWorkbench() {
                 <div>
                   <p className="eyebrow">Task summary</p>
                   <h2>저장 공고의 준비 태스크</h2>
-                  <p>저장된 분석 결과에서 생성된 태스크를 공고별로 확인합니다.</p>
+                  <p>미완료 예정 태스크를 가까운 날짜 순으로 표시합니다.</p>
                 </div>
               </div>
               {savedTasks.length ? (

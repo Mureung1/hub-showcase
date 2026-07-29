@@ -149,15 +149,9 @@ h2 {
   align-items: start;
 }
 
-.side-stack {
-  display: grid;
-  gap: 18px;
-}
 
 .config-panel,
 .analysis-panel,
-.pipeline-panel,
-.roadmap-section,
 .result-table,
 .notice-brief-panel,
 .metrics-row {
@@ -337,98 +331,8 @@ textarea:disabled {
   color: #991b1b;
 }
 
-.pipeline-panel,
-.roadmap-section {
-  padding: 20px;
-}
 
-.panel-heading,
-.compact-heading {
-  margin-bottom: 16px;
-}
 
-.pipeline-list,
-.roadmap-list {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.pipeline-step {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-}
-
-.pipeline-step > span {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border-radius: 999px;
-  background: #e2e8f0;
-  color: #475569;
-  font-size: 0.86rem;
-  font-weight: 900;
-}
-
-.pipeline-step strong {
-  display: block;
-  color: #172033;
-  font-size: 0.95rem;
-}
-
-.pipeline-step p {
-  margin-top: 4px;
-  color: #64748b;
-  font-size: 0.86rem;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-}
-
-.step-done > span {
-  background: #d1fae5;
-  color: #047857;
-}
-
-.step-active > span {
-  background: #fed7aa;
-  color: #c2410c;
-}
-
-.roadmap-item {
-  display: grid;
-  gap: 8px;
-  border-left: 4px solid #cbd5e1;
-  border-radius: 7px;
-  padding: 12px 12px 12px 14px;
-  background: #f8fafc;
-}
-
-.roadmap-item span {
-  color: #64748b;
-  font-size: 0.78rem;
-  font-weight: 900;
-}
-
-.roadmap-item strong {
-  color: #172033;
-  font-size: 0.94rem;
-  line-height: 1.38;
-}
-
-.roadmap-active {
-  border-left-color: #0f766e;
-  background: #ecfdf5;
-}
-
-.roadmap-next {
-  border-left-color: #d97706;
-  background: #fff7ed;
-}
 
 .result-section {
   display: grid;
@@ -1457,10 +1361,8 @@ h2 {
 
 .config-panel,
 .analysis-panel,
-.pipeline-panel,
 .profile-summary-panel,
 .saved-analysis-panel,
-.roadmap-section,
 .result-table,
 .notice-brief-panel,
 .metrics-row {
