@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 
 const GRADE_OPTIONS = ['1학년', '2학년', '3학년', '4학년', '5학년 이상', '졸업유예'];
+// gpa는 "3.8 / 4.5"처럼 표기하는 경우도 있어 숫자만 있는지가 아니라 숫자를 포함하는지만 확인한다.
+const HAS_DIGIT_PATTERN = /\d/;
 
 function InfoInput({ onSubmit, isSubmitting, submitError }) {
   const [university, setUniversity] = useState('');
@@ -13,11 +15,11 @@ function InfoInput({ onSubmit, isSubmitting, submitError }) {
   const [certificates, setCertificates] = useState([{ id: 1, value: '' }]);
   const [experience, setExperience] = useState('');
   const [errors, setErrors] = useState({
-    university: false,
-    grade: false,
-    major: false,
-    earnedCredits: false,
-    gpa: false,
+    university: '',
+    grade: '',
+    major: '',
+    earnedCredits: '',
+    gpa: '',
   });
   const nextCertificateId = useRef(2);
 
@@ -37,11 +39,21 @@ function InfoInput({ onSubmit, isSubmitting, submitError }) {
     event.preventDefault();
 
     const nextErrors = {
-      university: university.trim() === '',
-      grade: grade === '',
-      major: major.trim() === '',
-      earnedCredits: earnedCredits.trim() === '',
-      gpa: gpa.trim() === '',
+      university: university.trim() === '' ? '필수 항목입니다' : '',
+      grade: grade === '' ? '필수 항목입니다' : '',
+      major: major.trim() === '' ? '필수 항목입니다' : '',
+      earnedCredits:
+        earnedCredits.trim() === ''
+          ? '필수 항목입니다'
+          : !HAS_DIGIT_PATTERN.test(earnedCredits.trim())
+            ? '숫자를 포함해 입력해주세요'
+            : '',
+      gpa:
+        gpa.trim() === ''
+          ? '필수 항목입니다'
+          : !HAS_DIGIT_PATTERN.test(gpa.trim())
+            ? '숫자를 포함해 입력해주세요'
+            : '',
     };
     setErrors(nextErrors);
 
@@ -153,7 +165,7 @@ function InfoInput({ onSubmit, isSubmitting, submitError }) {
             value={earnedCredits}
             onChange={(event) => setEarnedCredits(event.target.value)}
           />
-          {errors.earnedCredits && <p className="error-text">필수 항목입니다</p>}
+          {errors.earnedCredits && <p className="error-text">{errors.earnedCredits}</p>}
         </div>
 
         <div className={`field${errors.gpa ? ' field-error' : ''}`}>
@@ -166,7 +178,7 @@ function InfoInput({ onSubmit, isSubmitting, submitError }) {
             value={gpa}
             onChange={(event) => setGpa(event.target.value)}
           />
-          {errors.gpa && <p className="error-text">필수 항목입니다</p>}
+          {errors.gpa && <p className="error-text">{errors.gpa}</p>}
         </div>
 
         <div className="field">
