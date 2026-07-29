@@ -13,6 +13,20 @@
   --color-success: #10b981;
   --color-border: #e5e7eb;
 
+  /* 우선순위 단계 색. 배지와 D-day 표시가 같은 뜻에 같은 색을 써야 해서 토큰으로 뺐다.
+     전에는 App.css 에 hex 로 흩어져 있어서, 한쪽만 고치면 뜻이 어긋났다.
+     연한 배경 위에 올리는 글자색은 본래 색보다 진하게 잡는다(#ef4444 는 #fee2e2 위에서 3.08:1). */
+  --color-high-bg: #fee2e2;
+  --color-high-text: #b91c1c;
+  --color-medium-bg: #fef3c7;
+  --color-medium-text: #b45309;
+  --color-low-bg: #d1fae5;
+  --color-low-text: #047857;
+
+  /* 카드가 배경(#f8fafc)과 거의 같은 흰색이라 경계가 안 보였다.
+     선을 더 그리면 화면이 복잡해지므로 아주 옅은 그림자로 띄운다. */
+  --shadow-card: 0 1px 2px rgba(17, 24, 39, 0.04), 0 4px 12px rgba(17, 24, 39, 0.05);
+
   /* 폰트 크기 */
   --font-title: 32px;
   --font-heading: 24px;
@@ -23,6 +37,8 @@
      읽히는 쪽이 기준보다 중요해서 13px 을 쓰고, design-skill.md 도 13px 으로 맞춰두었다. */
   --font-caption: 13px;
   --font-score: 22px;
+  /* 추천 카드의 점수. 이 서비스의 결론이라 목록의 점수보다 크게 둔다. */
+  --font-score-hero: 40px;
 
   /* 여백 */
   --space-sm: 8px;
