@@ -57,6 +57,20 @@
 
 다만 **설치하지 않는 이유는 비용이 아니라 표현력이다.** 지금 자막이 쓰는 둥근 pill·반투명 배경·`backdrop-filter: blur`·페이드는 ASS 로 재현이 안 되거나 조잡해진다. libass 의 유일한 이점(재녹화 없이 자막만 교체)은 `record.mjs` 가 남아 있어 실익이 작다. 자세한 비교는 [demo-video-script.md](../demo-video-script.md) §3.
 
+### 비주얼 변형 — Apple 판 추가 제작
+
+같은 큐시트·자막·타이밍으로 **CSS 만 바꿔** 한 벌 더 만들었다(`~/Downloads/hub-demo-apple.mp4`, 4:50.6). 영상의 픽셀이 전부 HTML/CSS 에서 나오기 때문에 가능한 일이다 — 스타일 교체는 mp4 편집이 아니라 CSS 수정 + 재렌더다.
+
+- 팔레트 `#f5f5f7` ↔ `#000000` 이분법, 악센트는 Apple Blue 하나만(`#0071e3`/`#2997ff`)
+- 헤드라인 weight 600(800 아님) · 음수 트래킹(-0.374px) · line-height 1.09
+- 씬 리듬 light → dark → light(앱) → dark → light → dark → light
+- 마무리는 980px pill CTA(filled + outlined), 섀도우는 `3px 5px 30px rgba(0,0,0,.22)` 한 가지만
+- 자막은 Apple 머티리얼(차콜 frosted + hairline) — 순수 검정 위에서도 경계가 산다
+
+폰트는 `system-ui`. macOS 에서 이게 SF Pro Display/Text + Apple SD Gothic Neo 로 해석된다. `"SF Pro Display"` 는 웹 콘텐츠에서 패밀리명 접근이 막혀 있고(캔버스 폭 측정으로 확인), Pretendard 는 미설치다. 토큰 전체는 [demo-video-script.md](../demo-video-script.md) §5-1.
+
+> 앱 화면 구간(0:54–3:08, 영상의 46%)은 배포된 실제 앱이라 손대지 않았다. 그 앱의 확정 디자인은 빈티지 에디토리얼이므로 **슬라이드와 톤이 갈린다** — 앱을 고치지 않는 한 없앨 수 없는 차이다. 어느 판을 제출할지는 사용자 판단.
+
 ## 2. Gemini 키 반영 확인
 
 ```

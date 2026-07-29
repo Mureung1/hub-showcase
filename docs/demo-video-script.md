@@ -212,6 +212,33 @@ headless Chrome ─ CDP 로 배포된 앱 조작 ─ Page.startScreencast 프레
 
 ---
 
+## 5-1. 비주얼 변형 두 가지
+
+큐시트·자막·타이밍은 **완전히 동일**하고 `slides.html`·`overlay.mjs` 의 CSS 만 다르다. 영상의 픽셀은 전부 HTML/CSS 에서 나오므로, 스타일 교체는 mp4 를 손대는 게 아니라 CSS 를 바꾸고 다시 렌더하는 일이다(스크립트 한 번, 약 5분).
+
+| | 빈티지 에디토리얼 | Apple |
+|---|---|---|
+| 파일 | `~/Downloads/hub-demo.mp4` | `~/Downloads/hub-demo-apple.mp4` |
+| 배경 | 크림 `#f2ede1` 단일 | `#f5f5f7` ↔ `#000000` 이분법 |
+| 악센트 | 잉크블루 `#3d5a99` + 레드·골드 | **Apple Blue 하나만** (`#0071e3` / `#2997ff`) |
+| 헤드라인 | weight 800, 40px | **weight 600**, 54px (히어로 62px) |
+| 씬 리듬 | 없음(전부 라이트) | light → dark → light(앱) → dark → light → dark → light |
+| 앱 화면(0:54–3:08) | 동일 — 배포된 실제 앱이라 손대지 않는다 | |
+
+**Apple 판 디자인 토큰** (`slides.html` `:root`)
+
+```
+--light:#f5f5f7  --dark:#000  --ink:#1d1d1f  --ink-2:#6e6e73  --ink-3:#86868b
+--on-dark:#f5f5f7  --on-dark-2:#86868b  --blue:#0071e3  --blue-d:#2997ff
+--shadow: 3px 5px 30px rgba(0,0,0,.22)   ← 섀도우는 이 한 가지만
+--pill: 980px   --card: 18px
+letter-spacing: 헤드라인 -0.374px / 본문 -0.28px,  line-height 1.09~1.19
+```
+
+> **폰트**: `system-ui` 를 쓴다. macOS 에서 `system-ui` 는 라틴 SF Pro Display/Text + 한글 Apple SD Gothic Neo 로 해석되는 **Apple 정품 페어링**이다. `"SF Pro Display"` 는 웹 콘텐츠에서 패밀리명으로 접근할 수 없고(측정으로 확인), Pretendard 는 이 맥에 설치돼 있지 않다. 웹폰트로 Pretendard 를 불러오면 한글이 오히려 Apple 에서 멀어지고 녹화 중 로드 타이밍 리스크가 생긴다.
+
+> **남는 이질감**: 영상의 46%(0:54–3:08)는 배포된 실제 앱 화면이고, 그 앱의 확정 디자인은 빈티지 에디토리얼(크림·블루잉크)이다. 슬라이드를 Apple 로 바꾸면 이 구간과 톤이 갈린다. 앱을 고치지 않는 한 없앨 수 없는 차이라, 씬 리듬에서 앱 구간을 "light" 로 취급해 충격을 줄였다.
+
 ## 6. 업로드
 
 업로드와 `showcase/showcase.json`의 `demoVideoUrl` 추가는 **영상 확정 후 별도로** 한다. 스키마상 `demoVideoUrl`은 `^$|^https://` 패턴이라 로컬 파일 경로는 넣을 수 없다. YouTube(비공개 업로드 가능) 또는 Drive 등 영상 확인 URL이면 된다.
