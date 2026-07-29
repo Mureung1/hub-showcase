@@ -6,7 +6,7 @@
 // youtubeId: 만드는 법을 보여주는 유튜브 영상 ID (레시피 상세 화면의 "만드는 법 보기" 링크에 사용).
 // ingredients: 재료 상세 화면에서 쓰는 대략적인 재료 목록 (실제 시세 연동 전까지는 참고용).
 function youtubeThumbnail(youtubeId) {
-  return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`
+  return `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`
 }
 
 export const mockRecipes = [
