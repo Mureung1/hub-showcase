@@ -31,6 +31,7 @@ React
 - Spotify Client ID와 Secret은 Express 환경변수에만 존재합니다.
 - Spotify 사용자 token은 서버에서 AES-256-GCM으로 암호화하며 브라우저와 일반 Supabase 사용자는 읽을 수 없습니다.
 - React는 Spotify Web API를 직접 호출하지 않습니다.
+- 화면 테마 설정은 서버나 사용자 프로필에 저장하지 않고 브라우저 `localStorage`의 `swim-theme` 키로 관리합니다.
 
 ## 데이터 모델
 
@@ -42,6 +43,7 @@ React
 | `likes` | `(user_id, record_id)` | 사용자별 음악 기록 좋아요 |
 | `spotify_oauth_states` | `state_hash` | 10분 유효 일회용 OAuth state |
 | `spotify_connections` | `user_id` | 암호화된 Spotify 사용자 token |
+| `spotify_playlist_exports` | `user_id`, `recap_year`, `recap_month` | 월별 내보내기 결과와 Spotify 링크 |
 
 닉네임은 `lower(btrim(nickname))` 기준 고유 인덱스로 공개 식별자의 중복을 방지합니다. API는 사용자 검색·팔로우·피드에서 Auth UUID를 공개하지 않습니다.
 음악 기록은 `(user_id, record_date)` 부분 고유 인덱스로 인증 사용자당 하루 한 건만 허용합니다. 공개 다이어리의 지난 기록은 `record_date`, `created_at`, `id` 내림차순 keyset cursor로 페이지를 나눕니다.
@@ -87,6 +89,8 @@ React
 React의 `MonthlyRecap`은 현재 월을 기본값으로 요청하고 월 변경 시 진행 중인 요청을 취소합니다. API 응답을 별도 중복 저장하지 않고 한 화면 상태에서 대표 앨범, 요약, 첫·마지막 기록과 타임라인으로 표현합니다.
 
 Spotify 검색은 기존 Client Credentials를 유지합니다. 사용자 계정 연결만 Authorization Code Flow를 사용하며 `playlist-modify-private` 최소 scope를 요청합니다. connect 단계에서 난수 state의 SHA-256 해시만 저장하고 callback에서 한 번 삭제해 재사용을 막습니다. callback 이후 token은 서버 전용 암호화 키로 보호하며 만료 1분 전부터 refresh합니다.
+
+Recap 플레이리스트 내보내기는 인증 사용자의 월간 `music_records`만 조회해 날짜별 `spotify_track_id`를 URI로 변환합니다. Express가 사용자 OAuth token으로 비공개 플레이리스트를 만든 뒤 곡을 100개 단위로 추가합니다. `(user_id, recap_year, recap_month)` 기본 키와 생성 lease로 동시 중복 생성을 막습니다. playlist ID와 URL은 Spotify 생성 직후 보존하며, 부분 실패나 만료된 `creating` 상태의 재시도에서는 기존 플레이리스트의 첫 배치를 교체한 뒤 나머지를 추가해 중복 곡 없이 복구합니다.
 
 ## SQL 적용 순서
 

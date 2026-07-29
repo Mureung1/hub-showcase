@@ -10,6 +10,7 @@ interface SpotifyConnectionProps {
   apiBaseUrl: string;
   accessToken: string;
   onNavigate?: (url: string) => void;
+  onConnectionChange?: (connected: boolean) => void;
 }
 
 type SpotifyCallbackResult = "connected" | "cancelled" | "error" | null;
@@ -38,6 +39,7 @@ export function SpotifyConnection({
   apiBaseUrl,
   accessToken,
   onNavigate = (url) => window.location.assign(url),
+  onConnectionChange,
 }: SpotifyConnectionProps) {
   const [connection, setConnection] = useState<SpotifyConnectionState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,8 +49,11 @@ export function SpotifyConnection({
   const [retryKey, setRetryKey] = useState(0);
 
   const loadConnection = useCallback((signal?: AbortSignal) => (
-    getSpotifyConnection(apiBaseUrl, accessToken, signal).then(setConnection)
-  ), [accessToken, apiBaseUrl]);
+    getSpotifyConnection(apiBaseUrl, accessToken, signal).then((nextConnection) => {
+      setConnection(nextConnection);
+      onConnectionChange?.(nextConnection.connected);
+    })
+  ), [accessToken, apiBaseUrl, onConnectionChange]);
 
   useEffect(() => {
     removeCallbackParameters();
@@ -86,6 +91,7 @@ export function SpotifyConnection({
     try {
       await disconnectSpotify(apiBaseUrl, accessToken);
       setConnection({ connected: false, displayName: null, scope: null, tokenExpiresAt: null });
+      onConnectionChange?.(false);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Spotify 연결을 해제하지 못했어요.");
     } finally {

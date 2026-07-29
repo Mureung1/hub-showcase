@@ -5,6 +5,7 @@ import {
   type RecapTrack,
 } from "../services/recapsService";
 import { SpotifyConnection } from "./SpotifyConnection";
+import { SpotifyPlaylistExport } from "./SpotifyPlaylistExport";
 
 interface MonthlyRecapProps {
   apiBaseUrl: string;
@@ -64,6 +65,7 @@ export function MonthlyRecap({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [retryKey, setRetryKey] = useState(0);
+  const [isSpotifyConnected, setIsSpotifyConnected] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -117,7 +119,11 @@ export function MonthlyRecap({
         </label>
       </div>
 
-      <SpotifyConnection apiBaseUrl={apiBaseUrl} accessToken={accessToken} />
+      <SpotifyConnection
+        apiBaseUrl={apiBaseUrl}
+        accessToken={accessToken}
+        onConnectionChange={setIsSpotifyConnected}
+      />
 
       {isLoading ? (
         <div className="recap-state" role="status">한 달의 음악을 모으는 중...</div>
@@ -137,6 +143,14 @@ export function MonthlyRecap({
         </div>
       ) : (
         <div className="recap-content">
+          {isSpotifyConnected && (
+            <SpotifyPlaylistExport
+              apiBaseUrl={apiBaseUrl}
+              accessToken={accessToken}
+              year={recap.year}
+              month={recap.month}
+            />
+          )}
           <div className="recap-hero">
             {representativeTrack && (
               <TrackCover track={representativeTrack} className="recap-hero-cover" />

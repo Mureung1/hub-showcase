@@ -3,7 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b0d0e" />
+    <meta name="theme-color" content="#f7f8f8" />
+    <script>
+      (() => {
+        try {
+          const saved = localStorage.getItem("swim-theme");
+          const preference = ["light", "dark", "system"].includes(saved) ? saved : "system";
+          const dark = preference === "dark"
+            || (preference === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+          const theme = dark ? "dark" : "light";
+          document.documentElement.dataset.theme = theme;
+          document.querySelector('meta[name="theme-color"]').content =
+            theme === "dark" ? "#101619" : "#f7f8f8";
+        } catch {
+          const theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          document.documentElement.dataset.theme = theme;
+          document.querySelector('meta[name="theme-color"]').content =
+            theme === "dark" ? "#101619" : "#f7f8f8";
+        }
+      })();
+    </script>
     <title>SWIM - Music Diary</title>
   </head>
   <body>

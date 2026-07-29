@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MonthlyRecap } from "./MonthlyRecap";
 
 vi.mock("./SpotifyConnection", () => ({
-  SpotifyConnection: () => <div data-testid="spotify-connection" />,
+  SpotifyConnection: ({ onConnectionChange }: { onConnectionChange?: (connected: boolean) => void }) => (
+    <button type="button" data-testid="spotify-connection" onClick={() => onConnectionChange?.(true)}>
+      mock Spotify connection
+    </button>
+  ),
 }));
 
 function response(body: unknown, ok = true) {
@@ -106,6 +110,22 @@ describe("MonthlyRecap", () => {
         signal: expect.any(AbortSignal),
       },
     );
+  });
+
+  it("offers playlist export after Spotify connection is confirmed", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(response({ data: julyRecap }));
+    render(
+      <MonthlyRecap
+        apiBaseUrl="http://localhost:3000"
+        accessToken="valid-token"
+        initialMonth="2026-07"
+      />,
+    );
+    await screen.findByText("3일의 기억");
+
+    fireEvent.click(screen.getByTestId("spotify-connection"));
+
+    expect(screen.getByRole("button", { name: "비공개 플레이리스트 만들기" })).toBeInTheDocument();
   });
 
   it("loads a newly selected month", async () => {

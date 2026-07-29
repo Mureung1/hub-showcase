@@ -36,6 +36,8 @@ function response(body: unknown, ok = true) {
 describe("app authentication flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    delete document.documentElement.dataset.theme;
     authMocks.subscribeToAuthChanges.mockReturnValue(vi.fn());
     window.history.replaceState({}, "", "/");
   });
@@ -65,6 +67,9 @@ describe("app authentication flow", () => {
     expect(await screen.findByText("고요한수영")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Create Record" })).toBeInTheDocument();
     expect(authMocks.getProfile).toHaveBeenCalledWith("user-1");
+    const logoutButton = screen.getByRole("button", { name: "로그아웃" });
+    const themeButton = screen.getByRole("button", { name: "시스템 테마" });
+    expect(logoutButton.closest(".app-header")).toBe(themeButton.closest(".app-header"));
   });
 
   it("includes the restored session token when loading music records", async () => {
@@ -135,9 +140,19 @@ describe("app authentication flow", () => {
     authMocks.getProfile.mockResolvedValue({ id: "user-1", nickname: "고요한수영", bio: "", avatarUrl: null });
     authMocks.signOut.mockResolvedValue(undefined);
     render(<App initialRecords={[]} />);
-    fireEvent.click(await screen.findByRole("button", { name: "로그아웃" }));
+    const logoutButton = await screen.findByRole("button", { name: "로그아웃" });
+    const darkThemeButton = document.querySelector<HTMLButtonElement>(
+      ".theme-control button:nth-of-type(2)",
+    );
+    expect(darkThemeButton).not.toBeNull();
+    fireEvent.click(darkThemeButton!);
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+
+    fireEvent.click(logoutButton);
     await waitFor(() => expect(authMocks.signOut).toHaveBeenCalledTimes(1));
     expect(await screen.findByRole("heading", { name: "로그인" })).toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+    expect(localStorage.getItem("swim-theme")).toBe("dark");
   });
 
   it("persists a like from the authenticated user's music card", async () => {
@@ -195,6 +210,7 @@ describe("app authentication flow", () => {
   });
 
   it("restores the nickname search after returning from a public profile", async () => {
+    localStorage.setItem("swim-theme", "dark");
     authMocks.getCurrentSession.mockResolvedValue(session);
     authMocks.getProfile.mockResolvedValue({
       id: "user-1",
@@ -235,17 +251,20 @@ describe("app authentication flow", () => {
     }));
 
     render(<App initialRecords={[]} />);
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
     const searchInput = await screen.findByLabelText("닉네임으로 찾기");
     fireEvent.change(searchInput, { target: { value: "blue" } });
     fireEvent.click(await screen.findByRole("button", { name: /BlueWave/ }));
     expect(await screen.findByRole("heading", { name: "BlueWave" })).toBeInTheDocument();
     expect(new URLSearchParams(window.location.search).get("profile")).toBe("BlueWave");
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
 
     fireEvent.click(screen.getByRole("button", { name: "← 음악 피드로 돌아가기" }));
 
     expect(new URLSearchParams(window.location.search).has("profile")).toBe(false);
     expect(await screen.findByLabelText("닉네임으로 찾기")).toHaveValue("blue");
     expect(await screen.findByRole("button", { name: /BlueWave/ })).toBeInTheDocument();
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
     expect(fetch).toHaveBeenCalledWith(
       "http://localhost:3000/api/users?q=blue",
       {

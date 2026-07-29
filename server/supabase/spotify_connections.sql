@@ -33,3 +33,48 @@ comment on table public.spotify_oauth_states is
 
 comment on table public.spotify_connections is
   'Server-only encrypted Spotify user OAuth tokens.';
+create table if not exists public.spotify_playlist_exports (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  recap_year integer not null check (recap_year between 2000 and 9999),
+  recap_month integer not null check (recap_month between 1 and 12),
+  spotify_playlist_id text,
+  spotify_playlist_url text,
+  track_count integer not null check (track_count > 0),
+  status text not null default 'creating',
+  constraint spotify_playlist_exports_status_check
+    check (status in ('creating', 'completed', 'failed')),
+  constraint spotify_playlist_exports_playlist_pair_check
+    check (
+      (spotify_playlist_id is null and spotify_playlist_url is null)
+      or (spotify_playlist_id is not null and spotify_playlist_url is not null)
+    ),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, recap_year, recap_month)
+);
+
+alter table public.spotify_playlist_exports
+  add column if not exists updated_at timestamptz not null default now();
+
+alter table public.spotify_playlist_exports
+  drop constraint if exists spotify_playlist_exports_status_check;
+
+alter table public.spotify_playlist_exports
+  drop constraint if exists spotify_playlist_exports_check;
+
+alter table public.spotify_playlist_exports
+  drop constraint if exists spotify_playlist_exports_playlist_pair_check;
+
+alter table public.spotify_playlist_exports
+  add constraint spotify_playlist_exports_status_check
+  check (status in ('creating', 'completed', 'failed'));
+
+alter table public.spotify_playlist_exports
+  add constraint spotify_playlist_exports_playlist_pair_check
+  check (
+    (spotify_playlist_id is null and spotify_playlist_url is null)
+    or (spotify_playlist_id is not null and spotify_playlist_url is not null)
+  );
+
+alter table public.spotify_playlist_exports enable row level security;
+revoke all on table public.spotify_playlist_exports from public, anon, authenticated;

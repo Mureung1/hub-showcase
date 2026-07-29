@@ -21,5 +21,13 @@ describe("Spotify connection SQL", () => {
     assert.doesNotMatch(sql, /create policy/);
     assert.match(sql, /access_token_encrypted text not null/);
     assert.match(sql, /refresh_token_encrypted text not null/);
+    assert.match(sql, /primary key \(user_id, recap_year, recap_month\)/);
+    assert.match(sql, /alter table public\.spotify_playlist_exports enable row level security/);
+    assert.match(
+      sql,
+      /revoke all on table public\.spotify_playlist_exports from public, anon, authenticated/,
+    );
+    assert.match(sql, /status in \('creating', 'completed', 'failed'\)/);
+    assert.match(sql, /updated_at timestamptz not null default now\(\)/);
   });
 });

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { createSpotifyController } from "../controllers/spotifyController.js";
 import { createSpotifyOAuthController } from "../controllers/spotifyOAuthController.js";
+import { createSpotifyPlaylistController } from "../controllers/spotifyPlaylistController.js";
 import { createRequireAuth } from "../middleware/requireAuth.js";
 
 export function createSpotifyRouter(options = {}) {
@@ -10,6 +11,7 @@ export function createSpotifyRouter(options = {}) {
     : options;
   const spotifyController = createSpotifyController(normalizedOptions.searchSpotifyTracks);
   const oauthController = createSpotifyOAuthController(normalizedOptions);
+  const playlistController = createSpotifyPlaylistController(normalizedOptions);
   const requireAuth = createRequireAuth(normalizedOptions.getSupabase);
 
   router.get("/tracks/search", spotifyController.search);
@@ -18,6 +20,7 @@ export function createSpotifyRouter(options = {}) {
   router.get("/connect", requireAuth, oauthController.connect);
   router.get("/connection", requireAuth, oauthController.connection);
   router.delete("/connection", requireAuth, oauthController.disconnect);
+  router.post("/playlists", requireAuth, playlistController.create);
 
   return router;
 }
