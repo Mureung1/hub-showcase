@@ -561,6 +561,21 @@ router.post('/:id/leave', async (req, res) => {
   res.json({ ok: true })
 })
 
+router.post('/:id/consent', async (req, res) => {
+  const { id } = req.params
+
+  const { error } = await supabase
+    .from('matching_requests')
+    .update({ consent: true })
+    .eq('id', id)
+
+  if (error) {
+    return res.status(500).json({ error: error.message })
+  }
+
+  res.json({ ok: true })
+})
+
 router.post('/:id/board', async (req, res) => {
   const { id } = req.params
 

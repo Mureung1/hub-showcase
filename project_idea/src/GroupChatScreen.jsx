@@ -14,17 +14,11 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(!!groupId);
   const [leaving, setLeaving] = useState(false);
-  // '이전'으로 나갔다가 돌아와도 이 화면 상태가 초기화되지 않도록, App.jsx의 candidate 객체에 백업해둔 값에서 복원함
-  const [confirmed, setConfirmedState] = useState(candidate?.confirmed ?? false);
   const [respondError, setRespondError] = useState(null);
   const [boarding, setBoarding] = useState(false);
+  // '이전'으로 나갔다가 돌아와도 이 화면 상태가 초기화되지 않도록, App.jsx의 candidate 객체에 백업해둔 값에서 복원함
   const [boardingResult, setBoardingResultState] = useState(candidate?.boardingResult ?? null);
   const [boardingError, setBoardingError] = useState(null);
-
-  function setConfirmed(value) {
-    setConfirmedState(value);
-    onUpdateCandidate?.({ confirmed: value });
-  }
 
   function setBoardingResult(value) {
     setBoardingResultState(value);
@@ -107,9 +101,20 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
 
   const count = matchedMembers.length || candidate?.groupCount || 1;
   const isFull = count >= 4;
-  const canBoard = isFull || confirmed;
+  const myConsent = me?.consent ?? false;
+  const consentCount = matchedMembers.filter((m) => m.consent).length;
+  const allConsented = count > 0 && consentCount === count;
+  const canBoard = isFull || allConsented;
   const cost = estimateCost(count, candidate?.cityHub);
   const costInfo = describeCostByAmount(cost);
+
+  async function handleConsent() {
+    if (myConsent) return;
+    try {
+      await fetch(`${API_BASE}/api/requests/${myRequestId}/consent`, { method: "POST" });
+      setMembers((prev) => prev.map((m) => (m.id === myRequestId ? { ...m, consent: true } : m)));
+    } catch {}
+  }
 
   async function respond(requestId, accept) {
     setRespondError(null);
@@ -223,7 +228,7 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
       </div>
 
       <h1 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 4px" }}>
-        {iAmPending ? "수락을 기다리는 중이에요" : isFull || confirmed ? "그룹이 확정됐어요" : "동행자를 모으는 중이에요"}
+        {iAmPending ? "수락을 기다리는 중이에요" : isFull || allConsented ? "그룹이 확정됐어요" : "동행자를 모으는 중이에요"}
       </h1>
 
       {iAmPending && (
@@ -330,25 +335,26 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
         </button>
       </div>
 
-      {!iAmPending && !isFull && !confirmed && (
+      {!iAmPending && !isFull && !allConsented && (
         <div style={{ background: "#FCE4E2", borderRadius: 14, padding: 14, marginBottom: 16 }}>
           <p style={{ fontSize: 13, fontWeight: 700, margin: "0 0 10px" }}>정원이 다 차지 않았어요</p>
           <button
-            onClick={() => setConfirmed(true)}
+            onClick={handleConsent}
+            disabled={myConsent}
             className="btn-primary"
             style={{
               width: "100%",
               padding: 12,
-              background: "#C8102E",
-              color: "#fff",
+              background: myConsent ? "#EFE7E3" : "#C8102E",
+              color: myConsent ? "#8A7A76" : "#fff",
               border: "none",
               borderRadius: 999,
               fontSize: 13,
               fontWeight: 700,
-              cursor: "pointer",
+              cursor: myConsent ? "default" : "pointer",
             }}
           >
-            동의하고 출발 확정
+            {myConsent ? `동의 완료, 기다리는 중 (${consentCount}/${count})` : `동의하고 출발 확정 (${consentCount}/${count})`}
           </button>
         </div>
       )}
