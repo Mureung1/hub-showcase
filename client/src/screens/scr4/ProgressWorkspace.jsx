@@ -3,11 +3,10 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Avatar } from '../../components/identity/Avatar.jsx'
 import { Icon } from '../../components/decor/Icon.jsx'
 import { Chip } from '../../components/forms/Chip.jsx'
-import { Checkbox } from '../../components/forms/Checkbox.jsx'
 import { Button } from '../../components/forms/Button.jsx'
 import { EmptyState } from '../../components/feedback/EmptyState.jsx'
 import { NAV_ITEMS } from '../../mocks/mockData.js'
-import { getLetterByToken, getResponses, getRoles, updateRole } from '../../lib/api.js'
+import { getLetterByToken, getResponses, getRoles } from '../../lib/api.js'
 import bgVineWash from '../../assets/bg-vine-wash.jpg'
 import laceDoily from '../../assets/vintage-lace-doily.png'
 import laceTrimStrip from '../../assets/vintage-lace-trim-strip.png'
@@ -103,19 +102,6 @@ export function ProgressWorkspace() {
       cancelled = true
     }
   }, [token])
-
-  function toggleDone(role) {
-    const nextDone = !role.done
-    setRoles((prev) => prev.map((r) => (r.id === role.id ? { ...r, done: nextDone } : r)))
-    updateRole(token, role.id, { done: nextDone }).then((result) => {
-      if (result.error) {
-        // 저장 실패 — 서버 재조회로 되돌린다.
-        getRoles(token).then((r) => {
-          if (!r.error) setRoles(r.data ?? [])
-        })
-      }
-    })
-  }
 
   const total = roles.length
   const doneCount = roles.filter(isRoleDone).length
@@ -324,25 +310,23 @@ export function ProgressWorkspace() {
                   <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>{current.reason}</div>
                 ) : null}
                 {(current.role_tasks?.length ?? 0) > 0 ? (
-                  <>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-                      <FlowerProgressBar pct={Math.round((current.role_tasks.filter((t) => t.done).length / current.role_tasks.length) * 100)} />
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--ink-soft)' }}>
-                        {`${current.role_tasks.filter((t) => t.done).length}/${current.role_tasks.length} 진행 중`}
-                      </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+                    <FlowerProgressBar pct={Math.round((current.role_tasks.filter((t) => t.done).length / current.role_tasks.length) * 100)} />
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--ink-soft)' }}>
+                      {`${current.role_tasks.filter((t) => t.done).length}/${current.role_tasks.length} 진행 중`}
                     </div>
-                    <Button
-                      variant="accent"
-                      size="sm"
-                      onClick={() => navigate(`/scr4/checklist?token=${token}&roleId=${current.id}`)}
-                      style={{ alignSelf: 'flex-start', marginTop: '8px' }}
-                    >
-                      체크리스트 열기
-                    </Button>
-                  </>
-                ) : (
-                  <Checkbox checked={Boolean(current.done)} onChange={() => toggleDone(current)} label="완료" style={{ marginTop: '8px' }} />
-                )}
+                  </div>
+                ) : null}
+                {/* 업무가 0개여도 체크리스트 화면에서 AI 추천·직접 추가로 업무를 만들 수 있어야 하므로
+                    항상 진입 가능하게 한다 — 업무 없이 역할만 완료 처리하는 체크박스는 그 화면으로 옮겼다. */}
+                <Button
+                  variant="accent"
+                  size="sm"
+                  onClick={() => navigate(`/scr4/checklist?token=${token}&roleId=${current.id}`)}
+                  style={{ alignSelf: 'flex-start', marginTop: '8px' }}
+                >
+                  체크리스트 열기
+                </Button>
               </div>
 
               <Button variant="primary" size="sm" disabled={atEnd} onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}>
