@@ -39,7 +39,7 @@ function randomInt(min, max) {
 function generateMockAnalysis() {
   const positive_ratio = randomInt(60, 85);
   const negative_ratio = 100 - positive_ratio;
-  const total_reviews = randomInt(5, 30);
+  const total_reviews = randomInt(2, 30);
   const positive = Math.round((total_reviews * positive_ratio) / 100);
   const negative = total_reviews - positive;
 
@@ -63,6 +63,54 @@ function generateMockAnalysis() {
 const SUMMARY_GOOD_POINTS = ["친절한 응대", "접근성 좋음", "다양한 메뉴"];
 const SUMMARY_BAD_POINTS = ["웨이팅 김", "주차 불편", "협소한 좌석"];
 const SUMMARY_AVG_POSITIVE_RATIO = 68;
+
+// ─────────────────────────────────────────────────────────
+// 경쟁업체 목록 정렬 + 정렬 연동 종합 분석 계산 (순수 함수)
+// ─────────────────────────────────────────────────────────
+const LOW_SAMPLE_THRESHOLD = 5;      // 리뷰 5건 미만이면 표본 부족
+const MIN_KEYWORD_SAMPLE = 4;        // 차별화 키워드 계산에 필요한 최소 업체 수
+const KEYWORD_RATIO_THRESHOLD = 1.5; // 상위 그룹이 하위 그룹 대비 이 배수 이상이면 차별화 키워드
+const MAX_DIFF_KEYWORDS = 4;
+
+// 정렬 모드에 따라 목록 순서를 만든다. 긍정률순일 때는 표본 부족 업체를 뒤로 뺀다.
+function sortCompetitors(competitors, sortMode) {
+  if (sortMode === "positive") {
+    const eligible = competitors.filter((c) => c.total_reviews >= LOW_SAMPLE_THRESHOLD);
+    const lowSample = competitors.filter((c) => c.total_reviews < LOW_SAMPLE_THRESHOLD);
+    const sortedEligible = [...eligible].sort((a, b) => b.positive_ratio - a.positive_ratio);
+    return { ordered: [...sortedEligible, ...lowSample], lowSampleCount: lowSample.length };
+  }
+  return { ordered: [...competitors].sort((a, b) => a.distance - b.distance), lowSampleCount: 0 };
+}
+
+// 긍정률 상위 50% vs 하위 50% 그룹의 키워드 등장 횟수를 비교해 차별화 키워드를 추출.
+// 반환: null(표본 부족) | 문자열 배열(빈 배열이면 "차이 나는 키워드 없음")
+function computeDifferentiatingKeywords(competitors) {
+  const eligible = competitors.filter((c) => c.total_reviews >= LOW_SAMPLE_THRESHOLD);
+  if (eligible.length < MIN_KEYWORD_SAMPLE) return null;
+
+  const sorted = [...eligible].sort((a, b) => b.positive_ratio - a.positive_ratio);
+  const topSize = Math.ceil(sorted.length / 2);
+  const topGroup = sorted.slice(0, topSize);
+  const bottomGroup = sorted.slice(topSize);
+
+  const tally = (group) => {
+    const counts = {};
+    group.forEach((c) => {
+      (c.detail?.keyword_ranking || []).forEach(({ keyword, count }) => {
+        counts[keyword] = (counts[keyword] || 0) + count;
+      });
+    });
+    return counts;
+  };
+  const topCounts = tally(topGroup);
+  const bottomCounts = tally(bottomGroup);
+
+  return Object.keys(topCounts)
+    .filter((k) => topCounts[k] >= (bottomCounts[k] || 0) * KEYWORD_RATIO_THRESHOLD)
+    .sort((a, b) => (topCounts[b] - (bottomCounts[b] || 0)) - (topCounts[a] - (bottomCounts[a] || 0)))
+    .slice(0, MAX_DIFF_KEYWORDS);
+}
 
 // ─────────────────────────────────────────────────────────
 // 1단계: 이용 방법 안내 (3단계 아이콘 플로우)
@@ -315,9 +363,40 @@ function SummaryInsight() {
 }
 
 // ─────────────────────────────────────────────────────────
+// 3단계: 주변 상권 종합 분석 (긍정률순 — competitors 데이터로 계산)
+// ─────────────────────────────────────────────────────────
+function TopKeywordInsight({ competitors }) {
+  const diffKeywords = computeDifferentiatingKeywords(competitors);
+  return (
+    <div style={{ backgroundColor: BG_REPORT, border: `1px solid ${BORDER_REPORT}`, borderRadius: 16, padding: 20, marginBottom: 20 }}>
+      <p style={{ fontSize: 12, color: GREEN, fontWeight: 700, margin: "0 0 14px" }}>긍정률 상위 가게들의 공통점</p>
+      {diffKeywords === null ? (
+        <p style={{ fontSize: 13, color: TEXT_SECONDARY, margin: 0 }}>아직 비교할 데이터가 부족합니다.</p>
+      ) : diffKeywords.length === 0 ? (
+        <p style={{ fontSize: 13, color: TEXT_SECONDARY, margin: 0 }}>뚜렷하게 차이 나는 키워드를 찾지 못했습니다.</p>
+      ) : (
+        <>
+          <p style={{ fontSize: 13, color: TEXT_SECONDARY, margin: "0 0 10px" }}>상위 가게들에서 유독 자주 언급되는 특징</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {diffKeywords.map((k) => (
+              <span key={k} style={{ fontSize: 13, fontWeight: 700, color: GREEN, backgroundColor: BG_CARD, border: `1px solid ${BORDER_REPORT}`, borderRadius: 999, padding: "6px 12px" }}>
+                #{k}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
+      <p style={{ fontSize: 11, color: TEXT_MUTED, margin: "14px 0 0" }}>
+        이 요약은 예시 데이터를 기반으로 계산됩니다. 실제 리뷰 분석이 연동되면 더 정확한 인사이트를 제공합니다.
+      </p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────
 // 3단계: 경쟁업체 카드
 // ─────────────────────────────────────────────────────────
-function CompetitorCard({ competitor, onClick }) {
+function CompetitorCard({ competitor, onClick, lowSample }) {
   const c = competitor;
   const analyzed = c.positive_ratio !== undefined && c.positive_ratio !== null;
   return (
@@ -325,7 +404,14 @@ function CompetitorCard({ competitor, onClick }) {
       style={{ backgroundColor: BG_CARD, borderRadius: 16, padding: 18, border: `1px solid ${BORDER}`, cursor: "pointer" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
         <div>
-          <p style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>{c.name}</p>
+          <p style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>
+            {c.name}
+            {lowSample && (
+              <span style={{ fontSize: 10, fontWeight: 700, color: TEXT_MUTED, backgroundColor: BG_CARD_ALT, borderRadius: 999, padding: "2px 8px", marginLeft: 8, verticalAlign: "middle" }}>
+                표본 부족
+              </span>
+            )}
+          </p>
           <p style={{ fontSize: 12, color: TEXT_SECONDARY, margin: "4px 0 0" }}>{c.distance}km · {c.address}</p>
         </div>
         <span style={{ fontSize: 11, color: TEXT_MUTED }}>자세히 ›</span>
@@ -521,6 +607,7 @@ export default function Dashboard() {
   const [region, setRegion] = useState("");
   const [regionAttempts, setRegionAttempts] = useState(0);
   const [candidateNote, setCandidateNote] = useState("");
+  const [sortMode, setSortMode] = useState("distance");
 
   // 브라우저 뒤로가기/앞으로가기 지원: 화면이 바뀔 때마다 그 시점의 상태를 기록해두고,
   // popstate가 발생하면 기록해둔 상태로 그대로 복원한다. URL 자체는 바꾸지 않는다.
@@ -596,6 +683,7 @@ export default function Dashboard() {
     setSelectedStore(candidate);
     setSelectedCompetitor(null);
     setCompetitors(null);
+    setSortMode("distance");
     setLoading(true);
     setError(null);
     try {
@@ -643,6 +731,7 @@ export default function Dashboard() {
     setRegion("");
     setRegionAttempts(0);
     setCandidateNote("");
+    setSortMode("distance");
     pushHistory({
       storeName: "", region: "", regionAttempts: 0, candidateNote: "",
       candidates: null, selectedStore: null, competitors: null, selectedCompetitor: null,
@@ -686,8 +775,6 @@ export default function Dashboard() {
             <h2 style={{ fontSize: 20, fontWeight: 700, margin: "0 0 4px" }}>{selectedStore.name}</h2>
             <p style={{ fontSize: 12, color: TEXT_SECONDARY, margin: "0 0 20px" }}>{selectedStore.address}</p>
 
-            <SummaryInsight />
-
             {loading && (
               <p style={{ fontSize: 13, color: TEXT_MUTED, textAlign: "center", padding: "20px 0" }}>불러오는 중...</p>
             )}
@@ -696,6 +783,25 @@ export default function Dashboard() {
             )}
             {!loading && !error && competitors && (
               <>
+                {competitors.length > 0 && (
+                  <>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                      {[{ key: "distance", label: "거리순" }, { key: "positive", label: "긍정률순" }].map((opt) => (
+                        <button key={opt.key} onClick={() => setSortMode(opt.key)}
+                          style={{
+                            fontSize: 13, fontWeight: 700, padding: "8px 16px", borderRadius: 999,
+                            border: `1px solid ${sortMode === opt.key ? GREEN : BORDER}`,
+                            backgroundColor: sortMode === opt.key ? BG_REPORT : BG_CARD,
+                            color: sortMode === opt.key ? GREEN : TEXT_SECONDARY,
+                            cursor: "pointer",
+                          }}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    {sortMode === "distance" ? <SummaryInsight /> : <TopKeywordInsight competitors={competitors} />}
+                  </>
+                )}
                 <p style={{ fontSize: 12, color: TEXT_MUTED, margin: "0 0 12px" }}>
                   반경 2km 내 가게 {competitors.length}곳
                 </p>
@@ -704,11 +810,28 @@ export default function Dashboard() {
                     반경 2km 내 가게가 없습니다.
                   </p>
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {competitors.map((c) => (
-                      <CompetitorCard key={c.id} competitor={c} onClick={() => handleSelectCompetitor(c)} />
-                    ))}
-                  </div>
+                  (() => {
+                    const { ordered, lowSampleCount } = sortCompetitors(competitors, sortMode);
+                    const lowSampleStart = ordered.length - lowSampleCount;
+                    return (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {ordered.map((c, i) => (
+                          <div key={c.id}>
+                            {sortMode === "positive" && lowSampleCount > 0 && i === lowSampleStart && (
+                              <p style={{ fontSize: 11, color: TEXT_MUTED, margin: "4px 0 12px" }}>
+                                표본 부족 (리뷰 5건 미만) — 순위에서 제외
+                              </p>
+                            )}
+                            <CompetitorCard
+                              competitor={c}
+                              onClick={() => handleSelectCompetitor(c)}
+                              lowSample={sortMode === "positive" && c.total_reviews < LOW_SAMPLE_THRESHOLD}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()
                 )}
               </>
             )}
