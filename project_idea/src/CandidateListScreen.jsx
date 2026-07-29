@@ -9,7 +9,15 @@ function formatTime(t) {
   return t ? t.slice(0, 5) : "";
 }
 
-function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
+// 한 번도 평가받은 적 없으면 기본값 5점 대신 NEW 배지로 보여줌
+function RatingBadge({ rating, ratingCount }) {
+  if (!ratingCount) {
+    return <span style={{ fontSize: 11, color: "#2F8F5B", fontWeight: 700 }}>NEW</span>;
+  }
+  return <span style={{ fontSize: 11, color: "#C98A1F", fontWeight: 600 }}>★ {rating.toFixed(1)}</span>;
+}
+
+function CandidateListScreen({ myRequest, myProfile, existingJoin, onBack, onJoin }) {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -129,7 +137,7 @@ function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
         </button>
         <h1 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 4px" }}>매칭 후보</h1>
         <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 12px" }}>
-          같은 방향 · 희망 시간 ±15분 이내로 조회된 실제 등록 데이터예요
+          같은 방향 · 희망 시간 ±10분 이내로 조회된 실제 등록 데이터예요
         </p>
         <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
           {fareTiers.map((tier) => (
@@ -148,13 +156,95 @@ function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
 
         {joinError && <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 10px" }}>{joinError}</p>}
 
-        {!loading && !error && candidates.length === 0 && (
+        {!loading && !error && candidates.length === 0 && !alreadyJoined && (
           <p style={{ fontSize: 13, color: "#8A7A76", textAlign: "center", margin: "40px 0" }}>
             아직 같은 방향·시간대에 등록한 학생이 없어요
           </p>
         )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {alreadyJoined && (
+            <div
+              style={{
+                background: "#fff",
+                border: "1px solid rgba(36,21,18,0.08)",
+                borderRadius: 14,
+                padding: 14,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              {myProfile?.avatar_url ? (
+                <img
+                  src={myProfile.avatar_url}
+                  alt=""
+                  style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    background: AVATAR_COLORS[0],
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {myProfile?.nickname ? myProfile.nickname[0] : myProfile?.name ? myProfile.name[0] : "?"}
+                </div>
+              )}
+              <div style={{ flex: 1, textAlign: "left" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                  {myProfile?.nickname || myProfile?.name || "내 방"}
+                  <RatingBadge rating={myProfile?.rating} ratingCount={myProfile?.rating_count} />
+                </div>
+                {myProfile?.college && (
+                  <div style={{ fontSize: 12, color: "#8A7A76" }}>{myProfile.college}</div>
+                )}
+                <div style={{ fontSize: 12, color: "#8A7A76" }}>
+                  {cityHub} · {formatTime(myRequest.time)} 출발
+                </div>
+                <div style={{ fontSize: 12, color: "#8A7A76" }}>도착 소요시간 {myRequest.arrival}</div>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    background: (existingJoin.groupCount ?? 1) >= 2 ? "#FCE4E2" : "rgba(36,21,18,0.06)",
+                    color: (existingJoin.groupCount ?? 1) >= 2 ? "#8C0E22" : "#8A7A76",
+                  }}
+                >
+                  {existingJoin.groupCount ?? 1}/4
+                </span>
+                <button
+                  className="btn-primary"
+                  onClick={resumeChat}
+                  style={{
+                    padding: "6px 12px",
+                    borderRadius: 999,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    border: "none",
+                    background: "#2F8F5B",
+                    color: "#fff",
+                    cursor: "pointer",
+                  }}
+                >
+                  채팅방 보기
+                </button>
+              </div>
+            </div>
+          )}
+
           {candidates.map((c, i) => (
           <div
             key={c.id}
@@ -197,6 +287,10 @@ function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
                 {c.profile?.name ?? "동행 대기 중인 학생"}
                 {c.activity?.isActive && (
                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2F8F5B", display: "inline-block" }} />
+                )}
+                <RatingBadge rating={c.profile?.rating} ratingCount={c.profile?.ratingCount} />
+                {c.profile?.noshow_count > 0 && (
+                  <span style={{ fontSize: 11, color: "#C8102E", fontWeight: 700 }}>⚠️ 노쇼 {c.profile.noshow_count}회</span>
                 )}
               </div>
               {c.profile?.college && (
@@ -247,12 +341,12 @@ function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
       </div>
 
       <div style={{ padding: "16px 20px 28px", textAlign: "center", flexShrink: 0 }}>
-        <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 10px" }}>
-          마음에 드는 방이 없다면, 직접 새로 만들어서 다른 사람을 기다릴 수 있어요
+        <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 10px", whiteSpace: "nowrap" }}>
+          마음에 드는 방이 없다면 새로 만들어보세요
         </p>
         <button
-          onClick={() => (joinedId === myRequest.id ? resumeChat() : handleStartNew())}
-          disabled={joinedId !== null && joinedId !== myRequest.id}
+          onClick={handleStartNew}
+          disabled={joinedId !== null}
           style={{
             width: "100%",
             padding: 14,
@@ -260,12 +354,12 @@ function CandidateListScreen({ myRequest, existingJoin, onBack, onJoin }) {
             fontSize: 14,
             fontWeight: 700,
             border: "1px solid #C8102E",
-            background: joinedId === myRequest.id ? "#2F8F5B" : "transparent",
-            color: joinedId === myRequest.id ? "#fff" : joinedId !== null ? "#8A7A76" : "#C8102E",
-            cursor: joinedId === myRequest.id || joinedId === null ? "pointer" : "default",
+            background: "transparent",
+            color: joinedId !== null ? "#8A7A76" : "#C8102E",
+            cursor: joinedId !== null ? "default" : "pointer",
           }}
         >
-          {joinedId === myRequest.id ? "채팅방 보기" : "새로 방 만들기"}
+          새로 방 만들기
         </button>
       </div>
     </div>

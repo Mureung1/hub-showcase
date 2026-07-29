@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest'
-import { passesGenderFilter, sortByArrivalPriority, describeActivity, classifyBoarding } from './matching.js'
+import { passesGenderFilter, sortByArrivalPriority, describeActivity, classifyBoarding, isRoomStale, isOverdueForAutoRating, applyRating } from './matching.js'
 
 test('둘 다 genderOnly가 false면 성별이 달라도 보여준다', () => {
   const me = { gender: 'female', genderOnly: false }
@@ -133,4 +133,64 @@ test('6분 늦으면 지각이다', () => {
 test('30분 늦으면 지각이고 늦은 분을 그대로 보여준다', () => {
   const boardedAt = new Date('2026-07-27T21:00:00Z')
   expect(classifyBoarding('20:30:00', REFERENCE_DATE, boardedAt)).toEqual({ status: 'late', minutesLate: 30 })
+})
+
+test('마지막 활동이 1시간 전이면 아직 안 오래됐다', () => {
+  const lastSeenAt = new Date('2026-07-23T11:00:00Z').toISOString()
+  expect(isRoomStale(lastSeenAt, NOW)).toBe(false)
+})
+
+test('경계값 정확히 2시간 전이면 아직 안 오래됐다', () => {
+  const lastSeenAt = new Date('2026-07-23T10:00:00Z').toISOString()
+  expect(isRoomStale(lastSeenAt, NOW)).toBe(false)
+})
+
+test('2시간 1분 전이면 오래된 방이다', () => {
+  const lastSeenAt = new Date('2026-07-23T09:59:00Z').toISOString()
+  expect(isRoomStale(lastSeenAt, NOW)).toBe(true)
+})
+
+test('활동 기록이 없으면 오래된 것으로 취급하지 않는다', () => {
+  expect(isRoomStale(null, NOW)).toBe(false)
+})
+
+test('기준 시간을 직접 지정할 수 있다', () => {
+  const lastSeenAt = new Date('2026-07-23T11:50:00Z').toISOString() // 10분 전
+  expect(isRoomStale(lastSeenAt, NOW, 5)).toBe(true)
+  expect(isRoomStale(lastSeenAt, NOW, 15)).toBe(false)
+})
+
+test('탑승 30분 후면 아직 자동 평가 대상이 아니다', () => {
+  const boardedAt = new Date('2026-07-23T11:30:00Z').toISOString()
+  expect(isOverdueForAutoRating(boardedAt, NOW)).toBe(false)
+})
+
+test('경계값 탑승 정확히 1시간 후면 아직 자동 평가 대상이 아니다', () => {
+  const boardedAt = new Date('2026-07-23T11:00:00Z').toISOString()
+  expect(isOverdueForAutoRating(boardedAt, NOW)).toBe(false)
+})
+
+test('탑승 1시간 1분 후면 자동 평가 대상이다', () => {
+  const boardedAt = new Date('2026-07-23T10:59:00Z').toISOString()
+  expect(isOverdueForAutoRating(boardedAt, NOW)).toBe(true)
+})
+
+test('탑승 기록이 없으면 자동 평가 대상이 아니다', () => {
+  expect(isOverdueForAutoRating(null, NOW)).toBe(false)
+})
+
+test('첫 평점은 이전 평점을 무시하고 새 값 그대로다', () => {
+  expect(applyRating(5, 0, 3)).toEqual({ rating: 3, count: 1 })
+})
+
+test('기존 평점에 새 평점을 더해 평균을 낸다', () => {
+  expect(applyRating(4, 1, 5)).toEqual({ rating: 4.5, count: 2 })
+})
+
+test('여러 번 누적되면 가중 평균이 된다', () => {
+  expect(applyRating(4, 3, 5)).toEqual({ rating: 4.3, count: 4 })
+})
+
+test('낮은 평점(노쇼 등)이 들어오면 평균이 내려간다', () => {
+  expect(applyRating(5, 2, 1)).toEqual({ rating: 3.7, count: 3 })
 })
