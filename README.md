@@ -10,6 +10,7 @@ Scholar-Sync AI는 매일 쏟아지는 방대한 논문 데이터베이스 속�
 * **[개발 백로그 스프레드시트](https://docs.google.com/spreadsheets/d/1k5W1fF0SV-dF4GKP585a6TxhkL57EeBVBypdSdcgCDs/edit?usp=sharing)**: 주차별 세부 개발 일정, 수직 슬라이스 관리 및 Task Breakdown
 * **[2주차 일별 대시보드](https://docs.google.com/spreadsheets/d/1AiwgA11tw1gZcz_hsqH0iV2EjA77c9et_VEEjgog3ak/edit?usp=sharing)**: 2주차 일일 진행 상황 모니터링 및 버닝다운 차트 관리
 * **[3주차 일별 대시보드](https://docs.google.com/spreadsheets/d/1KOr7yJ7yiS-P5uJ1jNALG-gzISh6O1KyQ8HssnlXCco/edit?usp=sharing)**: 3주차 일일 진행 상황 모니터링 및 버닝다운 차트 관리
+* **[4주차 일별 대시보드](https://docs.google.com/spreadsheets/d/1x9ZpKtLThYl13JutPyPuNL73rSW2YC6hzomMkaHqdok/edit?usp=sharing)**: 4주차 일일 진행 상황 모니터링 및 버닝다운 차트 관리
 
 ## 핵심 기능 요약
 - **지능형 논문 큐레이션:** 사용자 프로필(전공/키워드) 임베딩 벡터 유사도를 분석하여 맞춤형 '관련도 점수(%)' 매칭
@@ -23,7 +24,7 @@ flowchart TD
     %% 1. 프론트엔드 레이어 (Top)
     subgraph Frontend ["Frontend (React)"]
         Auth[("Supabase Auth\n(JWT Session)")]
-        Store{"Global Store\n(Zustand / Context)"}
+        Store{"Global State\n(Context API & State Lifting)"}
         CW["Curation Workspace"]
         ML["My Library"]
 
@@ -40,24 +41,24 @@ flowchart TD
 
     %% 3. 인프라 및 외부망 레이어 (Bottom)
     subgraph External ["External Services"]
+        AcadDB["Academic DBs\n(arXiv, IEEE, etc.)"]
         Gemini["Google Gemini\n(AI Agent Brain)"]
-        AcadDB["Academic DBs\n(arXiv, IEEE)"]
     end
 
     subgraph Database ["Database"]
-        DB[("saved_papers\n(Composite PK)")]
+        DB[("saved_papers\n(Supabase PostgreSQL)")]
     end
 
-    %% 코어 큐레이션 흐름 (Agentic Flow)
+    %% 코어 큐레이션 흐름 (2-Phase RAG Flow)
     CW ==>|"1. Context & Query"| API_Cur
-    API_Cur -->|"2. Delegate Task"| Gemini
-    Gemini -.->|"3. Tool Call (Search)"| AcadDB
-    AcadDB -.->|"4. Candidates"| Gemini
-    Gemini -.->|"5. Curate & Summarize"| API_Cur
+    API_Cur -->|"2. Phase 1: Retrieval (Search)"| AcadDB
+    AcadDB -.->|"3. Raw Candidates"| API_Cur
+    API_Cur -->|"4. Phase 2: RAG Prompting (Docs + Query)"| Gemini
+    Gemini -.->|"5. Curated JSON (Score, Summary)"| API_Cur
     API_Cur -.->|"6. Final Result"| CW
 
-    %% 서재 관리 흐름
-    CW -->|"7. Save"| API_Lib
-    ML -->|"8. View/Delete"| API_Lib
-    API_Lib ==>|"9. Query"| DB
+    %% 서재 관리 흐름 (양방향으로 수정)
+    CW <-->|"7. Save & Sync"| API_Lib
+    ML <-->|"8. Fetch/Delete"| API_Lib
+    API_Lib <==>|"9. Query & Result"| DB
 ```

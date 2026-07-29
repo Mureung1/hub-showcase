@@ -1,21 +1,83 @@
 {
   "schemaVersion": 1,
   "title": "Scholar-Sync AI",
-  "summary": "Scholar-Sync AI",
+  "summary": "연구자와 학생을 위한 2-Phase RAG 기반 맞춤형 학술 논문 큐레이션 및 서재 관리 플랫폼입니다.",
   "githubUser": "Alexarius(김지욱)",
-  "demoUrl": "",
-  "thumbnail": "showcase/thumbnail.png",
-  "screenshots": [],
-  "problem": "Flood of Academic papers",
-  "targetUsers": [],
-  "features": ["match% curation", "abstract summary"],
-  "featureTags": ["match% curation", "abstract summary"],
-  "techStack": [],
-  "techHighlights": [],
-  "developmentWithAI": "Vertical slice TDD with Antigravity CLI",
+  "demoUrl": "https://scholar-sync-ai-seven.vercel.app",
+  "demoVideoUrl": "https://drive.google.com/file/d/1y2oMvAHKn7RR0jJGL__WRQA1aRNO_JUT/view?usp=sharing",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/initial_screen.webp",
+    "screenshots/curation.webp",
+    "screenshots/library.webp"
+  ],
+  "problem": "방대한 학술 DB에서 본인의 연구 주제와 정확히 일치하는 핵심 논문을 찾고, 그 인사이트를 요약하여 한곳에서 관리하기가 매우 어렵고 시간이 오래 걸립니다.",
+  "targetUsers": [
+    "문헌 조사가 필요한 대학원생 및 연구원",
+    "최신 기술 동향을 파악하려는 개발자 및 엔지니어"
+  ],
+  "features": [
+    "자연어 쿼리를 분석하여 관련 학술 채널에서 논문을 실시간으로 검색합니다.",
+    "AI 에이전트가 검색된 논문과 쿼리의 연관성을 평가(Match Score)하고 3줄 핵심 인사이트를 요약합니다.",
+    "큐레이션 된 논문을 내 서재(My Library)에 안전하게 보관하고 원문을 열람할 수 있습니다."
+  ],
+  "featureTags": [
+    "AI 큐레이션",
+    "논문 요약",
+    "RAG 검색",
+    "서재 관리"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Express.js",
+    "Google Gemini API",
+    "Supabase PostgreSQL"
+  ],
+  "techHighlights": [
+    "2-Phase RAG 아키텍처: 백엔드에서 학술 DB를 검색(Phase 1)한 후, 결과를 Gemini 컨텍스트에 주입하여 JSON 응답으로 정형화(Phase 2)합니다.",
+    "CSS Flexbox Scroll Ambiguity 및 Chromium Repaint 버그를 CSS Containment(격리) 설계로 완벽하게 방어하여 무결점 렌더링을 구현했습니다.",
+    "Supabase Auth(JWT)와 State Lifting을 활용하여 로그인 세션과 검색 쿼리 상태를 뷰 전환 시에도 영구적으로 보존합니다."
+  ],
+  "developmentWithAI": "제가 전체 시스템 아키텍처와 로직의 방향(기획/설계)을 통제하고, AI Agent는 주니어/시니어 페르소나로 분리되어 코드 초안 작성, 에러 디버깅, Git 분할 커밋 전략을 수행하는 페어 프로그래밍 방식으로 개발했습니다.",
   "agent": {
-    "summary": "",
-    "agentTools": [],
-    "workflows": []
+    "summary": "AI를 단순한 코드 생성기가 아닌, 아키텍처를 논의하고 크리티컬 피드백을 주고받는 '시니어/주니어 파트너'로 활용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Micro-Planning Agent",
+        "purpose": "구현해야 할 기능을 작은 단위(Micro Plan)로 분할하고 실행 순서를 제안합니다."
+      },
+      {
+        "type": "skill",
+        "name": "Atomic Commit Skill",
+        "purpose": "스파게티 커밋을 방지하기 위해 파일의 성격에 따라 논리적으로 Git을 분할하여 커밋합니다."
+      },
+      {
+        "type": "skill",
+        "name": "Critical Review Skill",
+        "purpose": "작성된 코드의 비효율성(Anti-Pattern)이나 브라우저 렌더링 버그(Paint Drop)의 근본 원인을 진단하고 타격합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "시니어-주니어 페어 프로그래밍 Workflow",
+        "steps": [
+          "요구사항 및 디버깅 단서 제공 (Human)",
+          "원인 분석 및 마이크로 계획 수립 (AI Junior)",
+          "계획서에 대한 크리티컬 리뷰 및 승인 (Human / AI Senior)",
+          "코드 반영 및 3분할 원자적 커밋 배포 (AI)"
+        ]
+      },
+      {
+        "name": "2-Phase RAG 백엔드 통합 Workflow",
+        "steps": [
+          "Express API Mockup 설계",
+          "Gemini 시스템 프롬프트 엔지니어링",
+          "Zod / JSON Schema 기반 DTO 규격화",
+          "API 연동 및 다국어(KO/EN) 제어 로직 검증"
+        ]
+      }
+    ]
   }
 }

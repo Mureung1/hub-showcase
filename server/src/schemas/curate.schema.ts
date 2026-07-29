@@ -3,7 +3,8 @@ import { z } from 'zod';
 export const curateSchema = z.object({
   major: z.string().trim().optional().default('computer science AI'),
   keywords: z.array(z.string().trim()).optional().default([]),
-  query: z.string().trim().min(2, { message: '연구 질문(Query)은 최소 2글자 이상 입력해야 합니다.' })
+  query: z.string().trim().min(2, { message: '연구 질문(Query)은 최소 2글자 이상 입력해야 합니다.' }),
+  lang: z.enum(['KO', 'EN']).optional().default('KO')
 });
 
 export const queryTransformZodSchema = z.object({
