@@ -5,8 +5,9 @@ import { Chip } from '../../components/forms/Chip.jsx'
 import { Icon } from '../../components/decor/Icon.jsx'
 import { InfoCard } from '../../components/cards/InfoCard.jsx'
 import { EmptyState } from '../../components/feedback/EmptyState.jsx'
+import { Button } from '../../components/forms/Button.jsx'
 import { NAV_ITEMS } from '../../mocks/mockData.js'
-import { getLetterByToken, getResponses } from '../../lib/api.js'
+import { getLetterByToken, getResponses, closeResponses } from '../../lib/api.js'
 import { countResponded, getSelectedSlotIds, isResponded } from '../../lib/participantStatus.js'
 import bgVineWash from '../../assets/bg-vine-wash.jpg'
 import laceDoily from '../../assets/vintage-lace-doily.png'
@@ -27,6 +28,8 @@ export function ParticipantsStatus() {
   const [letter, setLetter] = useState(null)
   const [participants, setParticipants] = useState([])
   const [slotLabelById, setSlotLabelById] = useState({})
+  const [closeStatus, setCloseStatus] = useState('idle') // idle | closing | error
+  const [closeErrorMsg, setCloseErrorMsg] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -61,9 +64,23 @@ export function ParticipantsStatus() {
     }
   }, [token])
 
+  async function handleClose() {
+    setCloseStatus('closing')
+    setCloseErrorMsg('')
+    const result = await closeResponses(token)
+    if (result.error) {
+      setCloseStatus('error')
+      setCloseErrorMsg(result.error)
+      return
+    }
+    setLetter(result.data)
+    setCloseStatus('idle')
+  }
+
   const total = participants.length
   const respondedCount = countResponded(participants)
   const pct = total ? Math.round((respondedCount / total) * 100) : 0
+  const waitingCount = total - respondedCount
 
   return (
     <div
@@ -250,6 +267,42 @@ export function ParticipantsStatus() {
                 {`${total}명 중 ${respondedCount}명 응답 완료`}
               </div>
             </div>
+
+            <div
+              style={{
+                background: 'var(--cream)',
+                border: '1px solid var(--line)',
+                borderRadius: 'var(--radius-lg)',
+                padding: '16px 20px',
+                boxSizing: 'border-box',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px',
+              }}
+            >
+              {letter.responses_closed ? (
+                <>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>응답을 마감했어요</div>
+                  <Link to={`/scr3/confirm${token ? `?token=${token}` : ''}`} style={{ textDecoration: 'none' }}>
+                    <Button variant="primary" size="sm">조율 화면으로</Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>
+                    {waitingCount > 0 ? `${waitingCount}명이 아직 응답하지 않았어요` : '모두 응답했어요'}
+                  </div>
+                  <Button variant="primary" size="sm" soundType="finish" disabled={closeStatus === 'closing'} onClick={handleClose}>
+                    {closeStatus === 'closing' ? '마감하는 중…' : '응답 마감하기'}
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {closeStatus === 'error' ? (
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>{closeErrorMsg}</div>
+            ) : null}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {participants.map((p, i) => {
