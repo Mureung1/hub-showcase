@@ -4,6 +4,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { pool } from '../src/db/pool.js'
 import { withTransaction } from '../src/db/withTransaction.js'
+import { printTarget } from './targetInfo.js'
 
 /*
  * 부하 테스트 픽스처 (T-15).
@@ -32,6 +33,8 @@ function arg(name, fallback) {
 }
 
 async function seedLoad() {
+  printTarget()
+
   const stock = arg('stock', 5)
   const users = arg('users', 50)
 

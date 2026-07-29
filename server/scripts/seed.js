@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import { pool } from '../src/db/pool.js'
 import { withTransaction } from '../src/db/withTransaction.js'
+import { printTarget } from './targetInfo.js'
 
 /*
  * 데모 시딩 (T-02) — 분당 정자동 클러스터 기준 (기준점: 네이버 1784, 정자일로 95)
@@ -146,6 +147,8 @@ const POOL_BASE = {
 }
 
 async function seed() {
+  printTarget()
+
   const counts = await withTransaction(async (client) => {
     await client.query(`
       TRUNCATE users, stores, user_interest_categories, favorites,
