@@ -7,7 +7,7 @@ import json
 import uuid
 from datetime import datetime
 import threading
-import socket  # 내부 IP 감지를 위한 라이브러리
+import socket
 
 # 사용자 정의 모듈 (기존 유지)
 try:
@@ -19,37 +19,23 @@ except ImportError as e:
     print(f"⚠️ 모듈 임포트 오류 (테스트 환경에 따라 무시 가능): {e}")
     
     class DocumentGenerator: 
-        def generate(self, t, d): 
-            return f"별표 배경 {t} 초안"
-            
+        def generate(self, t, d): return f"별표 배경 {t} 초안"
     class LegalAIAgent: 
         def __init__(self): 
             self.is_llm_active = False
             self.retriever = None
-            
-        def extract_live_facts(self, q): 
-            return {"case_type": "더미 사건"}
-            
-        def get_institutions(self, q):
-            return []
-            
-        def ask(self, q, c): 
-            return {"response": "더미 답변", "extracted_data": {}, "strategy_guide_list": []}
-            
+        def extract_live_facts(self, q): return {"case_type": "더미 사건"}
+        def get_institutions(self, q): return []
+        def ask(self, q, c): return {"response": "더미 답변", "extracted_data": {}, "strategy_guide_list": []}
     class Retriever: 
-        def search(self, q): 
-            return []
-            
-    def start_scheduler(): 
-        pass
+        def search(self, q): return []
+    def start_scheduler(): pass
 
 # ==============================================================================
 # 상대 경로 설정 및 네트워크 자동화 로직
 # ==============================================================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
-BACKEND_ENV_PATH = os.path.join(BASE_DIR, ".env")
 REACT_DIR = os.path.join(BASE_DIR, "frontend")
-REACT_ENV_PATH = os.path.join(REACT_DIR, ".env")
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 os.makedirs(LOG_DIR, exist_ok=True)
 CASES_FILE = os.path.join(LOG_DIR, "cases_log.json")
@@ -66,35 +52,17 @@ def get_current_ip():
         return "127.0.0.1"
 
 def update_react_env(ip, port=8000):
-    api_url = f"http://{ip}:{port}"
     print("\n" + "="*60)
-    print(f"📡 [Network] 환경 변화 감지. 현재 IP: {ip}")
-    if not os.path.exists(REACT_DIR):
-        print(f"❌ [Error] React 폴더를 찾을 수 없습니다: {REACT_DIR}")
-        return
-    try:
-        with open(REACT_ENV_PATH, "w", encoding="utf-8") as f:
-            f.write(f"REACT_APP_API_URL={api_url}\n")
-        print(f"✅ [System] React .env 자동 업데이트 완료: {api_url}")
-    except Exception as e:
-        print(f"❌ [Error] .env 파일 쓰기 실패: {e}")
+    print(f"📡 [Network] 현재 네트워크 IP 감지: {ip}")
+    print(f"✅ [System] 프론트엔드가 {port}번 포트 백엔드를 자동 추적하도록 설정되어 있습니다.")
     print("="*60 + "\n")
 
 # ==============================================================================
 
-app = FastAPI(
-    title="Civil Litigation AI Agent API",
-    description="진화형 법률 AI 에이전트 통합 API 서버 (위치 기반 기관 안내 적용)",
-    version="3.2"
-)
+app = FastAPI(title="Civil Litigation AI Agent API", version="3.3")
 
-# 프론트엔드가 어디서 배포되든 접근할 수 있게 CORS 정책 허용
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],            
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],
 )
 
 doc_gen = DocumentGenerator()
@@ -106,16 +74,15 @@ def startup_event():
     def run_scheduler_in_background():
         try:
             start_scheduler()
-            print("✅ [System] 스케줄러가 백그라운드에 안전하게 등록되었습니다.")
-        except Exception as e:
-            print(f"⚠️ [System] 스케줄러 등록 중 오류 발생 (무시하고 서버 구동): {e}")
+            print("✅ [System] 스케줄러 등록 완료.")
+        except: pass
+    threading.Thread(target=run_scheduler_in_background, daemon=True).start()
 
-    scheduler_thread = threading.Thread(target=run_scheduler_in_background, daemon=True)
-    scheduler_thread.start()
-
+# 유저 구분을 위한 user_id 추가 
 class ChatRequest(BaseModel):
     query: str
     case_type: str = ""
+    user_id: str = "default_user"
 
 class DocumentRequest(BaseModel):
     doc_type: str
@@ -131,6 +98,7 @@ class DocumentRequest(BaseModel):
     deadline: str = ""
     related_laws: list = []
     strategy_guide: str = ""
+    user_id: str = "default_user"
 
 class CaseLog(BaseModel):
     query: str
@@ -138,16 +106,19 @@ class CaseLog(BaseModel):
     doc_type: str
     document_content: str
     related_laws: list = []
+    user_id: str = "default_user"
 
 class FeedbackData(BaseModel):
     case_id: str
     rating: int
     comment: str
+    user_id: str = "default_user"
 
 class CardFeedbackData(BaseModel):
     law_title: str
     is_useful: bool
     is_cancel: bool = False 
+    user_id: str = "default_user"
 
 def load_weights():
     default_data = {"references": {}, "overall_stats": {"total_feedbacks": 0, "sum_rating": 0}}
@@ -155,11 +126,9 @@ def load_weights():
         try:
             with open(WEIGHTS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                if "references" not in data:
-                    return default_data
+                if "references" not in data: return default_data
                 return data
-        except:
-            return default_data
+        except: return default_data
     return default_data
 
 def save_weights(weights):
@@ -168,58 +137,34 @@ def save_weights(weights):
 
 @app.post("/api/analyze")
 def analyze_live(request: ChatRequest):
-    try:
-        facts = ai_agent.extract_live_facts(request.query)
-        return {"status": "success", "facts": facts}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    try: return {"status": "success", "facts": ai_agent.extract_live_facts(request.query)}
+    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/ask")
 def ask_agent(request: ChatRequest):
     try:
-        query = request.query
-        case_type = request.case_type
-        searched_context = []
-        enhanced_search_query = f"{case_type} {query}" if case_type else query
-        
-        print(f"\n{'-'*50}")
-        print(f"🚀 [{datetime.now().strftime('%H:%M:%S')}] 새로운 요청: '{query}'")
-        
-        if ai_agent.retriever:
-            searched_context = ai_agent.retriever.search(enhanced_search_query)
-            
+        query, case_type = request.query, request.case_type
+        searched_context = ai_agent.retriever.search(f"{case_type} {query}" if case_type else query) if ai_agent.retriever else []
         agent_result = ai_agent.ask(query, searched_context)
-        
-        # 🚀 [추가] 웹 검색을 통한 관할 기관 및 연락처 추출
         institutions = ai_agent.get_institutions(query)
         
-        strategy_list = agent_result.get('strategy_guide', [])
-        if isinstance(strategy_list, str):
-            strategy_list = [strategy_list]
-            
-        final_response_text = f"⚖️ **[승소 리스크 분석]**\n{agent_result.get('win_probability', '전략을 분석할 수 없습니다.')}"
+        s_list = agent_result.get('strategy_guide', [])
+        strategy_list = [s_list] if isinstance(s_list, str) else s_list
+        final_res = f"⚖️ **[승소 리스크 분석]**\n{agent_result.get('win_probability', '전략을 분석할 수 없습니다.')}"
 
         return {
-            "status": "success",
-            "response": final_response_text,
-            "extracted_data": agent_result.get("extracted_data"),
-            "strategy_guide_list": strategy_list,
-            "institutions": institutions, # 🚀 프론트엔드로 기관 정보 전달
-            "related_laws": searched_context 
+            "status": "success", "response": final_res, "extracted_data": agent_result.get("extracted_data"),
+            "strategy_guide_list": strategy_list, "institutions": institutions, "related_laws": searched_context 
         }
-    except Exception as e:
-        print(f"❌ API Ask Error 발생: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/generate-document")
 def generate_document(request: DocumentRequest):
     try:
         doc_data = request.dict()
         doc_data['date'] = datetime.now().strftime("%Y년 %m월 %d일")
-        rendered_document = doc_gen.generate(doc_data["doc_type"], doc_data)
-        return {"status": "success", "document_content": rendered_document}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"문서 렌더링 실패: {e}")
+        return {"status": "success", "document_content": doc_gen.generate(doc_data["doc_type"], doc_data)}
+    except Exception as e: raise HTTPException(status_code=500, detail=f"문서 렌더링 실패: {e}")
 
 @app.post("/api/cases")
 def save_case(case: CaseLog):
@@ -227,111 +172,92 @@ def save_case(case: CaseLog):
     case_data["id"] = str(uuid.uuid4())
     case_data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     case_data["rating"] = 0
-    case_data["comment"] = ""
-
+    
     cases = []
     if os.path.exists(CASES_FILE):
-        with open(CASES_FILE, "r", encoding="utf-8") as f:
-            cases = json.load(f)
-    
+        with open(CASES_FILE, "r", encoding="utf-8") as f: cases = json.load(f)
     cases.append(case_data)
-    with open(CASES_FILE, "w", encoding="utf-8") as f:
-        json.dump(cases, f, ensure_ascii=False, indent=2)
-        
+    with open(CASES_FILE, "w", encoding="utf-8") as f: json.dump(cases, f, ensure_ascii=False, indent=2)
     return {"status": "success", "id": case_data["id"]}
 
 @app.get("/api/cases")
-def get_cases():
+def get_cases(user_id: str = "default_user"):
+    # ⭐ [멀티유저 필터링 핵심] 나(user_id)의 사건만 골라서 프론트엔드로 보내줌
     if os.path.exists(CASES_FILE):
         with open(CASES_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            cases = json.load(f)
+            return [c for c in cases if c.get("user_id", "default_user") == user_id]
     return []
 
 @app.delete("/api/cases/{case_id}")
-def delete_case(case_id: str):
-    if not os.path.exists(CASES_FILE):
-        return {"status": "error"}
+def delete_case(case_id: str, user_id: str = "default_user"):
+    if not os.path.exists(CASES_FILE): return {"status": "error"}
+    with open(CASES_FILE, "r", encoding="utf-8") as f: cases = json.load(f)
         
-    with open(CASES_FILE, "r", encoding="utf-8") as f:
-        cases = json.load(f)
-        
-    target_case = next((c for c in cases if c.get("id") == case_id), None)
-    
+    target_case = next((c for c in cases if c.get("id") == case_id and c.get("user_id") == user_id), None)
     if target_case and target_case.get("rating", 0) > 0:
         weights = load_weights()
         rating = target_case["rating"]
         weights["overall_stats"]["total_feedbacks"] = max(0, weights["overall_stats"].get("total_feedbacks", 1) - 1)
         weights["overall_stats"]["sum_rating"] = max(0, weights["overall_stats"].get("sum_rating", rating) - rating)
         
-        point_change = 0
-        if rating == 5: point_change = 2
-        elif rating == 4: point_change = 1
-        elif rating <= 2: point_change = -2
-        
-        if point_change != 0 and "related_laws" in target_case:
+        p_change = 2 if rating == 5 else (1 if rating == 4 else (-2 if rating <= 2 else 0))
+        if p_change != 0 and "related_laws" in target_case:
             for idx, law in enumerate(target_case["related_laws"]):
-                law_title = law.get("title", "")
-                if law_title in weights["references"]:
-                    boost = int(point_change * (1.0 if idx == 0 else 0.5))
-                    weights["references"][law_title]["direct_score"] -= boost
+                ltitle = law.get("title", "")
+                if ltitle in weights["references"]:
+                    weights["references"][ltitle]["direct_score"] -= int(p_change * (1.0 if idx == 0 else 0.5))
         save_weights(weights)
 
-    cases = [c for c in cases if c.get("id") != case_id]
-    with open(CASES_FILE, "w", encoding="utf-8") as f:
-        json.dump(cases, f, ensure_ascii=False, indent=2)
+    cases = [c for c in cases if c.get("id") != case_id] # 본인것만 삭제 로직 타도록
+    with open(CASES_FILE, "w", encoding="utf-8") as f: json.dump(cases, f, ensure_ascii=False, indent=2)
     return {"status": "success"}
 
 @app.post("/api/card-feedback")
 def update_card_feedback(feedback: CardFeedbackData):
     weights = load_weights()
-    if feedback.law_title not in weights["references"]:
-        weights["references"][feedback.law_title] = {"direct_score": 0, "picked_count": 0}
-    point_change = 10 if feedback.is_useful else -10
+    ltitle = feedback.law_title
+    if ltitle not in weights["references"]: weights["references"][ltitle] = {"direct_score": 0, "picked_count": 0}
+    p_change = 10 if feedback.is_useful else -10
     
     if feedback.is_cancel:
-        weights["references"][feedback.law_title]["direct_score"] -= point_change
-        weights["references"][feedback.law_title]["picked_count"] = max(0, weights["references"][feedback.law_title]["picked_count"] - 1)
+        weights["references"][ltitle]["direct_score"] -= p_change
+        weights["references"][ltitle]["picked_count"] = max(0, weights["references"][ltitle]["picked_count"] - 1)
     else:
-        weights["references"][feedback.law_title]["direct_score"] += point_change
-        weights["references"][feedback.law_title]["picked_count"] += 1
+        weights["references"][ltitle]["direct_score"] += p_change
+        weights["references"][ltitle]["picked_count"] += 1
     save_weights(weights)
     return {"status": "success"}
 
 @app.post("/api/feedback")
 def update_feedback(feedback: FeedbackData):
-    if not os.path.exists(CASES_FILE):
-        return {"status": "error"}
-    with open(CASES_FILE, "r", encoding="utf-8") as f:
-        cases = json.load(f)
+    if not os.path.exists(CASES_FILE): return {"status": "error"}
+    with open(CASES_FILE, "r", encoding="utf-8") as f: cases = json.load(f)
         
     target_case = None
     for case in cases:
-        if case.get("id") == feedback.case_id:
+        # 본인 사건만 평가 가능
+        if case.get("id") == feedback.case_id and case.get("user_id", "default_user") == feedback.user_id:
             case["rating"] = feedback.rating
             case["comment"] = feedback.comment
             target_case = case
             break
             
-    with open(CASES_FILE, "w", encoding="utf-8") as f:
-        json.dump(cases, f, ensure_ascii=False, indent=2)
+    with open(CASES_FILE, "w", encoding="utf-8") as f: json.dump(cases, f, ensure_ascii=False, indent=2)
+
+    if not target_case: return {"status": "error", "message": "권한 없음"}
 
     weights = load_weights()
     weights["overall_stats"]["total_feedbacks"] += 1
     weights["overall_stats"]["sum_rating"] += feedback.rating
 
-    point_change = 0
-    if feedback.rating == 5: point_change = 2
-    elif feedback.rating == 4: point_change = 1
-    elif feedback.rating <= 2: point_change = -2
-
-    if point_change != 0 and target_case and "related_laws" in target_case:
+    p_change = 2 if feedback.rating == 5 else (1 if feedback.rating == 4 else (-2 if feedback.rating <= 2 else 0))
+    if p_change != 0 and "related_laws" in target_case:
         for idx, law in enumerate(target_case["related_laws"]):
-            law_title = law.get("title", "")
-            if not law_title: continue
-            if law_title not in weights["references"]:
-                weights["references"][law_title] = {"direct_score": 0, "picked_count": 0}
-            boost = int(point_change * (1.0 if idx == 0 else 0.5))
-            weights["references"][law_title]["direct_score"] += boost
+            ltitle = law.get("title", "")
+            if not ltitle: continue
+            if ltitle not in weights["references"]: weights["references"][ltitle] = {"direct_score": 0, "picked_count": 0}
+            weights["references"][ltitle]["direct_score"] += int(p_change * (1.0 if idx == 0 else 0.5))
 
     save_weights(weights)
     return {"status": "success"}
@@ -343,66 +269,44 @@ def get_agent_stats():
     total_fb = stats.get("total_feedbacks", 0)
     sum_rating = stats.get("sum_rating", 0)
     
-    # 1. 정확도: 무조건 70을 깔지 않고, 순수 누적된 별점의 평균 (데이터가 없으면 0%)
     accuracy = int((sum_rating / (total_fb * 5)) * 100) if total_fb > 0 else 0
-    
-    # 2. 신속성: 서버 스펙 기준 (고정 88%)
     speed = 88 
     
     references = weights.get("references", {})
     law_scores = [v.get("direct_score", 0) for k, v in references.items() if "법령" in k]
     prec_scores = [v.get("direct_score", 0) for k, v in references.items() if "판례" in k]
     
-    law_sum = sum(law_scores)
-    prec_sum = sum(prec_scores)
+    statute_reliability = min(100, max(0, 50 + int(sum(law_scores) * 1.5)))
+    precedent_match = min(100, max(0, 50 + int(sum(prec_scores) * 1.5)))
     
-    # 3 & 4. 법령 신뢰도 / 판례 적합성: 
-    # 기본 50점에서 시작. 피드백 가중치 총합에 따라 천천히 증감 (삭제 시 감점 반영)
-    statute_reliability = min(100, max(0, 50 + int(law_sum * 1.5)))
-    precedent_match = min(100, max(0, 50 + int(prec_sum * 1.5)))
-    
-    # 5. 문제 해결력: 실제 DB에 저장된 '생성된 문서(사건)' 개수에 비례 (기본 20점)
     cases_count = 0
     if os.path.exists(CASES_FILE):
         try:
-            with open(CASES_FILE, "r", encoding="utf-8") as f:
-                cases_count = len(json.load(f))
-        except:
-            pass
+            with open(CASES_FILE, "r", encoding="utf-8") as f: cases_count = len(json.load(f))
+        except: pass
     resolution_power = min(100, 20 + (cases_count * 5))
     
-    # 6. 진화 지수: 문서 피드백 횟수 + 카드 투표 횟수를 종합하여 성장
     total_card_votes = sum(v.get("picked_count", 0) for v in references.values())
     evolution_index = min(100, (total_fb + total_card_votes) * 3)
 
     return {
-        "accuracy": accuracy,
-        "speed": speed,
-        "precedent_match": precedent_match,
-        "statute_reliability": statute_reliability,
-        "resolution_power": resolution_power,
-        "evolution_index": evolution_index
+        "accuracy": accuracy, "speed": speed, "precedent_match": precedent_match,
+        "statute_reliability": statute_reliability, "resolution_power": resolution_power, "evolution_index": evolution_index
     }
 
 if __name__ == "__main__": 
-    # Render 등의 클라우드 환경에서는 PORT 환경변수가 주어집니다. 없으면 8000.
     port = int(os.environ.get("PORT", 8000))
-    
-    # 클라우드 환경인지 판별 (RENDER 환경변수 등이 있으면 클라우드로 간주)
     is_cloud = os.environ.get("RENDER") is not None or os.environ.get("PORT") is not None
     
     if not is_cloud:
-        # 💻 로컬 개발 환경: 기존처럼 내 IP를 찾고 React .env를 동적으로 수정
         current_ip = get_current_ip()
         update_react_env(current_ip, port)
-        
         print("\n" + "="*60)
         print("🚀 [System] FastAPI 법률 AI 에이전트 로컬 서버 가동!")
         print(f"🔗 [Local Connection] http://127.0.0.1:{port}")
         print(f"📡 [External/Mobile] http://{current_ip}:{port}")
         print("="*60 + "\n")
     else:
-        # ☁️ 클라우드 배포 환경: 로컬 파일 수정 등을 건너뜀
         print("\n" + "="*60)
         print(f"☁️ [System] 클라우드 배포 환경에서 서버 가동! (Port: {port})")
         print("="*60 + "\n")
