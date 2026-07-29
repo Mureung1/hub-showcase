@@ -18,6 +18,10 @@
 - [아맞다! 프로젝트](https://github.com/users/ppre1ude/projects/3) - 작업 상태, 우선순위, 순서와 의존성
 - [GitHub 이슈](https://github.com/ppre1ude/hub/issues) - 작업별 사용자 결과, 범위와 완료 기준
 
+### 개발 방식
+
+- [AI Agent Workflow](docs/ai-development-workflow.md) - 프로젝트를 개발하며 AI 도구가 맡은 역할과 확인 방식
+
 ### 구현
 
 - [작업 컨텍스트](CONTEXT.md) - 에이전트가 지켜야 할 제품 언어와 현재 제약
