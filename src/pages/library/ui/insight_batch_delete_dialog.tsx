@@ -41,8 +41,8 @@ export function InsightBatchDeleteDialog({
       className="insight-batch-delete-dialog"
       description={
         libraryWide
-          ? `인사이트 ${selectedCount}개가 모두 사라지고 되돌릴 수 없어요. 계속하려면 아래에 ‘삭제’를 입력해 주세요.`
-          : `선택한 인사이트 ${selectedCount}개가 보관함에서 사라지고 되돌릴 수 없어요.`
+          ? '삭제하면 보관함의 모든 인사이트가 사라지고 되돌릴 수 없어요. 계속하려면 아래에 삭제를 입력해 주세요.'
+          : '삭제하면 보관함에서 사라지고 되돌릴 수 없어요.'
       }
       footer={
         <>
@@ -72,8 +72,8 @@ export function InsightBatchDeleteDialog({
       size="small"
       title={
         libraryWide
-          ? '보관함의 모든 인사이트를 삭제할까요?'
-          : '선택한 인사이트를 삭제할까요?'
+          ? `보관함의 인사이트 ${selectedCount}개를 모두 삭제할까요?`
+          : `선택한 인사이트 ${selectedCount}개를 삭제할까요?`
       }
     >
       <div className="insight-batch-delete-dialog__content">
@@ -94,8 +94,8 @@ export function InsightBatchDeleteDialog({
 
         {failed ? (
           <p className="insight-batch-delete-dialog__error" role="alert">
-            인사이트를 삭제하지 못했어요. 인사이트와 선택은 그대로 두었어요.
-            다시 시도하거나 닫아 주세요.
+            선택한 인사이트를 삭제하지 못했어요. 인사이트와 선택은 그대로
+            두었어요. 다시 시도하거나 닫아 주세요.
           </p>
         ) : null}
       </div>

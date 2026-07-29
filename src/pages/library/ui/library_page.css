@@ -110,6 +110,10 @@
   gap: var(--spacing-3);
 }
 
+.library-page__result-row .ui-button {
+  min-height: 44px;
+}
+
 .library-page__import-action {
   min-height: 44px;
 }

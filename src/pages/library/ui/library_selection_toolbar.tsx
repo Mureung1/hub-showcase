@@ -27,6 +27,7 @@ export function LibrarySelectionToolbar({
     >
       <strong>{selectedCount}개 선택됨</strong>
       <Button
+        className="library-selection-toolbar__all"
         disabled={deleting}
         hierarchy="secondary"
         onClick={onToggleAll}
@@ -38,6 +39,7 @@ export function LibrarySelectionToolbar({
           : `현재 목록 ${currentResultCount}개 모두 선택`}
       </Button>
       <Button
+        className="library-selection-toolbar__clear"
         disabled={deleting || selectedCount === 0}
         hierarchy="ghost"
         onClick={onClear}
@@ -47,6 +49,8 @@ export function LibrarySelectionToolbar({
         선택 해제
       </Button>
       <Button
+        className="library-selection-toolbar__delete"
+        data-library-selection-delete
         disabled={deleting || selectedCount === 0}
         hierarchy="primary"
         onClick={onDelete}

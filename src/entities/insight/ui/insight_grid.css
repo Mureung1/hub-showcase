@@ -25,6 +25,10 @@
   position: relative;
 }
 
+.insight-card--selection .insight-card__body {
+  padding-left: calc(var(--spacing-4) + 40px);
+}
+
 .insight-card__selection-button {
   position: absolute;
   z-index: 2;

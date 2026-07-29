@@ -115,10 +115,18 @@ export function LibraryPage({
 
     if (restoreFocus) {
       setTimeout(() => {
-        document
+        const selectionTrigger = document
           .querySelector<HTMLButtonElement>(
             '[data-library-selection-trigger]'
-          )
+          );
+
+        if (selectionTrigger) {
+          selectionTrigger.focus();
+          return;
+        }
+
+        document
+          .querySelector<HTMLButtonElement>('.library-page__content button')
           ?.focus();
       });
     }
@@ -233,6 +241,11 @@ export function LibraryPage({
 
     setDeleteDialogOpen(false);
     setDeleteFailed(false);
+    setTimeout(() => {
+      document
+        .querySelector<HTMLButtonElement>('[data-library-selection-delete]')
+        ?.focus();
+    });
   }
 
   async function confirmBatchDeletion() {
@@ -359,15 +372,17 @@ export function LibraryPage({
             <p className="library-page__result-count" role="status">
               {resultCountLabel}
             </p>
-            {!selectionMode && insights.length > 0 ? (
+            {insights.length > 0 ? (
               <Button
                 data-library-selection-trigger
                 hierarchy="secondary"
-                onClick={beginSelection}
+                onClick={
+                  selectionMode ? () => endSelection() : beginSelection
+                }
                 size="small"
                 type="button"
               >
-                선택
+                {selectionMode ? '선택 끝내기' : '선택'}
               </Button>
             ) : null}
           </div>

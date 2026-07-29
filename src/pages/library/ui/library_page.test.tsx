@@ -378,6 +378,9 @@ describe('LibraryPage', () => {
 
     await user.click(screen.getByRole('button', { name: '선택' }));
     expect(screen.getByText('0개 선택됨')).not.toBeNull();
+    expect(
+      screen.getByRole('button', { name: '선택 끝내기' })
+    ).not.toBeNull();
     expect(screen.queryByRole('link', { name: '원문 열기' })).toBeNull();
 
     await user.click(
@@ -385,6 +388,11 @@ describe('LibraryPage', () => {
     );
     await user.click(screen.getByRole('button', { name: '삭제' }));
     expect(onDeleteInsights).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole('heading', {
+        name: '보관함의 인사이트 2개를 모두 삭제할까요?',
+      })
+    ).not.toBeNull();
 
     const confirmation = screen.getByRole('textbox', { name: '확인 문구' });
     await user.type(confirmation, '삭제');

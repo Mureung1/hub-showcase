@@ -23,15 +23,34 @@
     right: 50%;
     bottom: calc(76px + env(safe-area-inset-bottom, 0px));
     width: min(420px, calc(100% - var(--spacing-6)));
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     transform: translateX(50%);
   }
 
   .library-selection-toolbar strong {
-    width: 100%;
+    margin-right: 0;
+    grid-column: 1;
+    grid-row: 1;
   }
 
   .library-selection-toolbar .ui-button {
     min-height: 44px;
+  }
+
+  .library-selection-toolbar__delete {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .library-selection-toolbar__all {
+    min-width: 0;
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .library-selection-toolbar__clear {
+    grid-column: 2;
+    grid-row: 2;
   }
 }
