@@ -1,153 +1,139 @@
 ---
 name: ay-ple-e2e-smoke
-description: Run AY-PLE through an actual prepared SemesterWorkspace, live Codex Runtime, workspace Skill and Interaction MCP, and the in-app Browser. Use when smoke-testing SemesterModeling, reproducing a live product-path failure, or verifying that a runtime change survives a realistic browser session.
+description: Run a short, comprehensive AY-PLE product smoke through an actual prepared SemesterWorkspace and the in-app Browser. Use when checking a development build, reproducing a live product failure, or verifying source browsing, Chat, SemesterModeling, Review, and workspace safety together.
 ---
 
 # AY-PLE E2E Smoke
 
-Run this Skill only when the user explicitly requests a live smoke test. It
-uses the configured provider and can incur real model work.
+Run this Skill only on explicit request. It uses the configured provider and
+performs real model work.
 
-Default to `review-only` mode: exercise the complete product path through a
-pending semantic Review, keep it alive through the lifecycle soak, then reject
-the proposal and prove that the SemesterWorkspace did not change. Use
-`apply` mode only when the user explicitly asks to accept and persist the
-reviewed proposal in a disposable workspace.
+Default to `review-only`: exercise state-changing intent through Review, then
+reject it and prove that the SemesterWorkspace stayed unchanged. Use `apply`
+only when the user explicitly requests persistence in a disposable workspace.
 
 ## Inputs
 
 - An explicit absolute prepared SemesterWorkspace path.
-- A named scenario or explicit workspace-relative source paths.
-- `review-only` or `apply`. Omit this input to use `review-only`.
+- A named scenario or explicit workspace-relative source paths and read-only
+  Chat prompt.
+- `review-only` or `apply`; default to `review-only`.
 
-For the repository's representative SemesterModeling scenario, read
-[`references/semester-modeling-fixture.md`](references/semester-modeling-fixture.md).
-Do not load that reference for an unrelated scenario.
+For the repository's representative smoke, read
+[`references/default-fixture.md`](references/default-fixture.md). Do not load
+that reference for an unrelated workspace.
 
 ## Workflow
 
-### 1. Preserve the starting point
-
-Before starting AY-PLE:
+### 1. Fix the starting point and launch AY-PLE
 
 - Resolve the workspace to its real absolute path.
-- Confirm it is a prepared Git SemesterWorkspace and that each selected source
-  is a regular file inside it.
-- Confirm `.agents/skills/ay-ple-semester-modeling/SKILL.md` exists.
-- Capture `HEAD`, the complete Git status, and the SHA-256 of
-  `workspace-state.json`. A dirty fixture is allowed; preserve its exact
-  baseline rather than requiring a clean tree.
-- Check whether AY-PLE already owns its development ports. Reuse an existing
-  healthy process only when it targets this exact workspace. When that exact
-  process is already unhealthy and the user requested a fresh smoke run,
-  capture its failure and restart it gracefully. Do not kill or replace a
-  different process.
+- Confirm it is a prepared Git SemesterWorkspace, every scenario source is a
+  regular file inside it, and
+  `.agents/skills/ay-ple-semester-modeling/SKILL.md` exists.
+- Capture its `HEAD`, complete Git status, and `workspace-state.json` SHA-256.
+  Preserve a dirty fixture as-is.
+- Reuse a healthy AY-PLE process only when it targets this exact workspace.
+  For an unhealthy matching process, capture the failure and restart it
+  gracefully. Never replace a process for another workspace.
+- Otherwise start the App from the hub and retain its terminal output:
 
-If any preflight check fails, report `BLOCKED · preflight` with the concrete
-evidence and stop.
+  ```bash
+  npm run dev -- --workspace "<absolute-workspace>"
+  ```
 
-### 2. Establish live readiness
+Wait for `/api/product/bootstrap` to report
+`workspaceLifecycle.state: "active"`. A listening port or rendered shell alone
+is not readiness.
 
-Start AY-PLE from the hub when it is not already running:
-
-```bash
-npm run dev -- --workspace "<absolute-workspace>"
-```
-
-Keep the process interactive and retain its terminal output. Wait for
-`/api/product/bootstrap` to report `workspaceLifecycle.state: "active"` and
-record that observation as elapsed time zero. A listening port or rendered
-shell alone is not readiness.
-
-If readiness fails, collect the bootstrap payload and relevant terminal output,
-report `RED · readiness`, and stop without attempting UI actions.
-
-### 3. Drive the product through the in-app Browser
+### 2. Exercise the Browser shell
 
 Use `browser:control-in-app-browser` and its supported browser-client setup.
-Do not substitute standalone Playwright, Chrome, Computer Use, direct action
-HTTP requests, or synthetic UI event dispatch.
+Drive the actual UI with fresh DOM-backed locators; do not replace a browser
+step with a direct product-action HTTP request or synthetic event.
 
-Open or claim `http://127.0.0.1:4173/`, then use current DOM-backed locators to:
+Open or claim `http://127.0.0.1:4173/`, then verify:
 
-1. Verify the active semester label and source explorer.
-2. Find each selected source exactly once by its full workspace-relative
-   accessible name.
-3. Optionally open each preview to prove that the actual PDF route renders.
-4. Select every source through its checkbox.
-5. Verify the action button count, then invoke
-   `선택한 자료로 학기 정보 정리하기`.
+- the active semester label and source explorer;
+- the Chat panel can close and reopen through its labeled toggle;
+- the message composer and Codex setting controls are present; and
+- the Browser console has no product errors.
 
-Keep the chat tab open. Do not navigate or reload it while an operation or
-Review is pending.
+Restore Chat to its open state before continuing.
 
-### 4. Observe AY rather than impersonating it
+### 3. Exercise source browsing and selection
 
-Wait for the real Runtime to process the action. The required E2E checkpoint is
-a pending Browser Review produced by `propose_state_patch`; transcript text
-alone is not enough.
+- Reload the source list through `자료 다시 불러오기`.
+- Locate every scenario source exactly once by its full workspace-relative
+  accessible name.
+- Open representative previews and verify each expected preview kind renders.
+- Select one source, verify the action count, clear that selection, and verify
+  the count returns to zero.
+- Select all scenario sources and verify the final action count.
 
-If the operation completes without that Review, record `RED · review`. When it
-is safe to leave the App idle, continue passive lifecycle sampling through the
-330-second boundary so an independent Runtime-longevity failure is not hidden;
-do not invoke the action a second time.
+Use the visible controls for these transitions. Do not infer success only from
+the source API.
 
-If AY asks a clarification that only determines how absent facts should be
-represented, tell it to preserve them as `unknown` and continue without
-inventing values. Do not answer a substantive academic ambiguity on the
-student's behalf. Report such a case as `BLOCKED · clarification` if Review
-cannot safely be reached.
+### 4. Exercise read-only Chat
 
-Inspect the Review semantically. It must:
+Clear the action selection so Chat is the only active intent. Send the
+scenario's read-only prompt through the message composer and verify:
 
-- concern the selected academic sources and the current SemesterModel;
-- keep unrelated snapshot facts out of scope;
-- make uncertainty visible instead of inventing missing dates, relationships,
-  or course facts; and
-- remain pending until the lifecycle soak finishes.
+- the user message and a real AY response appear in the transcript;
+- the operation reaches a terminal UI state without a transport error;
+- AY answers the requested workspace question rather than returning only a
+  generic plan; and
+- no Review or workspace mutation is introduced.
 
-Do not require exact prose, field names, object counts, or evidence locators
-unless the named scenario declares them. AY retains judgment within these
-guardrails.
+Do not judge exact prose. Judge whether the response is grounded in the active
+SemesterWorkspace and satisfies the prompt.
 
-### 5. Prove runtime longevity
+### 5. Exercise SemesterModeling and Review
 
-Keep the live session running until at least 330 seconds have elapsed since the
-first active bootstrap observation. Sample `/api/product/bootstrap` and the
-visible operation state at intervals no longer than 45 seconds; never hide the
-soak behind one blocking wait longer than 60 seconds.
+Select all scenario sources again and invoke
+`선택한 자료로 학기 정보 정리하기`. Verify the Action transcript contains
+every selected path and wait for a pending Browser Review from
+`propose_state_patch`; transcript-only advice is not that checkpoint.
 
-The Runtime must remain `active`, the Browser must remain usable, and the
-pending Review must remain settleable throughout the soak. At the first
-transition to `recovery_required`, capture elapsed time, bootstrap payload,
-Browser state, console errors, and terminal output, then report
-`RED · lifecycle`.
+If AY asks only how to represent an absent fact, direct it to preserve
+`unknown` without inventing a value. Stop for user input when a substantive
+academic ambiguity would change the proposal.
 
-### 6. Settle and verify
+Inspect the Review semantically:
 
-In `review-only` mode, click `거절` after the soak. Verify the Review resolves
-as rejected, the app remains active, `workspace-state.json` has the original
-SHA-256, and Git status exactly matches the captured baseline.
+- it concerns the selected sources and current SemesterModel;
+- it excludes unrelated snapshot facts; and
+- it exposes uncertainty instead of inventing dates, relationships, or course
+  facts.
 
-In explicit `apply` mode, inspect the proposal before clicking `수락`. Then
-verify that only the reviewed snapshot change was written, the
-SemesterWorkspaceState envelope identity was preserved, and any Git checkpoint
-contains only intended paths.
+Open one evidence target when the Review supplies one and verify it navigates
+back to the relevant source. Do not require evidence when AY reasonably omitted
+it.
 
-Stop only a development process started by this run. Follow the Browser Skill's
-tab cleanup rules.
+In `review-only`, click `거절` and verify the Review resolves as rejected. In
+explicit `apply`, click `수락`, then verify only the reviewed snapshot change
+was written and the SemesterWorkspaceState envelope identity stayed intact.
+
+### 6. Verify postconditions
+
+- Confirm the App is still active and representative controls remain usable.
+- In `review-only`, require the original state SHA-256, `HEAD`, and complete Git
+  status.
+- In `apply`, inspect the exact diff and any resulting checkpoint.
+- Inspect Browser console and terminal output for hidden failures.
+- Stop only a development process started by this run and follow the Browser
+  Skill's tab cleanup rules.
+
+Move through the journeys as soon as each real interaction settles. Treat any
+unexpected recovery during the run as a product failure.
 
 ## Report
 
-Lead with exactly one outcome:
+Lead with `PASS`, `RED · <stage>`, or `BLOCKED · <stage>`. Report coverage for
+readiness, Browser shell, sources, Chat, SemesterModeling, Review, and workspace
+postconditions. Include the smallest useful Browser and terminal evidence and
+separate product failures from harness failures.
 
-- `PASS` when every required checkpoint and postcondition succeeds.
-- `RED · <stage>` for a product failure.
-- `BLOCKED · <stage>` for unavailable credentials, unsafe ambiguity, or an
-  invalid test fixture.
-
-Include the workspace, mode, sources, elapsed soak time, Review outcome,
-before/after state digest, Git delta, and the smallest useful terminal and
-Browser evidence. Separate product failures from test-harness failures. Do not
-fix the product during the same smoke run unless the user separately requests
-the fix.
+After a failure, continue only independent, safe checks that add coverage.
+Preserve the first failure and do not fix the product during the smoke run
+unless the user separately requests it.
