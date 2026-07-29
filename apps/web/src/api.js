@@ -3,7 +3,10 @@
    mock/api.js를 대체하여 진짜 서버와 통신한다.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const API_BASE = 'http://localhost:3000/api'
+// 환경변수에서 API URL 읽기 (Vite는 import.meta.env 사용)
+// 로컬: http://localhost:3000/api
+// 배포: https://your-render-app.onrender.com/api
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // fetchSpaces — 공간 목록 조회

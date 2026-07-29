@@ -4,8 +4,33 @@ import { supabase } from './db.js'
 import sessionsRouter from './routes/sessions.js'
 
 const app = express()
-app.use(cors({ origin: /http:\/\/localhost:517[0-9]/ }))
 const PORT = process.env.PORT || 3000
+
+// CORS 설정 — 환경변수로 허용 도메인 설정
+const allowedOrigins = [
+  /http:\/\/localhost:517[0-9]/,  // 로컬 개발
+]
+
+// 배포된 FE 주소 추가 (Vercel)
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL)
+}
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // 서버-서버 요청 (origin 없음) 허용
+    if (!origin) return callback(null, true)
+
+    // 정규식 또는 문자열 매칭
+    const allowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) return allowed.test(origin)
+      return allowed === origin
+    })
+
+    if (allowed) return callback(null, true)
+    callback(new Error('CORS not allowed'))
+  }
+}))
 
 app.use(express.json())
 
