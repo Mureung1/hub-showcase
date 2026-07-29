@@ -224,7 +224,7 @@ function throwDatabaseError(operation, error) {
     throw new TeamFlowConflictError('AI Agent 할 일의 진행 상태는 실행 흐름에서 자동으로 변경됩니다.')
   }
   if (message.includes('AI_TASK_LOCKED')) {
-    throw new TeamFlowConflictError('AI 작업이 진행 중이거나 결과가 반영된 할 일은 변경하거나 삭제할 수 없습니다.')
+    throw new TeamFlowConflictError('시작 전이 아닌 AI 할 일은 변경하거나 삭제할 수 없습니다.')
   }
   if (error?.code === '23514') {
     throw new TeamFlowValidationError(undefined, { body: '입력값이 데이터 제약조건을 충족하지 않습니다.' })

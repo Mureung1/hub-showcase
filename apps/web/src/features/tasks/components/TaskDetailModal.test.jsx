@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, test, vi } from 'vitest'
+import { describe, expect, test } from 'vitest'
 
 import { testTeamFlowRepository } from '../../../test/createTestTeamFlowRepository.js'
 import { renderAuthenticatedApp as renderApp } from '../../../test/renderTeamFlowApp.jsx'
@@ -53,12 +53,10 @@ describe('task detail editing', () => {
     expect(within(dialog).getByRole('button', { name: '시작 전' })).toBeDisabled()
   })
 
-  test('allows editing a rejected AI task without sending a manual status change', async () => {
+  test('locks editing and deletion after an AI task has been rejected', async () => {
     const user = userEvent.setup()
-    const updateTask = vi.fn(async (taskId, patch) => ({ taskId, patch }))
     const repository = {
       ...testTeamFlowRepository,
-      updateTask,
       async load() {
         const loaded = await testTeamFlowRepository.load()
         return {
@@ -75,14 +73,36 @@ describe('task detail editing', () => {
     await screen.findByRole('heading', { name: '할 일 관리' })
     await user.click(screen.getByRole('button', { name: '유사 서비스 레퍼런스 분석 상세 보기' }))
     const dialog = screen.getByRole('dialog', { name: '할 일 상세' })
-    await user.click(within(dialog).getByRole('button', { name: '수정' }))
 
-    expect(within(dialog).getByText('AI Agent가 담당한 할 일의 진행 상태는 실행 흐름에서 자동으로 변경됩니다.')).toBeInTheDocument()
+    expect(within(dialog).getByText('시작된 AI 할 일은 수정하거나 삭제할 수 없습니다.')).toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: '수정' })).not.toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: /할 일 삭제/ })).not.toBeInTheDocument()
     expect(within(dialog).getByRole('button', { name: '시작 전' })).toBeDisabled()
-    await user.click(within(dialog).getByRole('button', { name: '변경사항 저장' }))
+  })
 
-    expect(updateTask).toHaveBeenCalledTimes(1)
-    expect(updateTask.mock.calls[0][1]).not.toHaveProperty('status')
+  test('allows editing and deletion before an AI task has started', async () => {
+    const user = userEvent.setup()
+    const repository = {
+      ...testTeamFlowRepository,
+      async load() {
+        const loaded = await testTeamFlowRepository.load()
+        return {
+          ...loaded,
+          tasks: loaded.tasks.map((task) => task.id === '5'
+            ? { ...task, status: 'not_started' }
+            : task),
+          aiRuns: [],
+        }
+      },
+    }
+    renderApp('/projects/1/tasks', repository)
+
+    await screen.findByRole('heading', { name: '할 일 관리' })
+    await user.click(screen.getByRole('button', { name: '유사 서비스 레퍼런스 분석 상세 보기' }))
+    const dialog = screen.getByRole('dialog', { name: '할 일 상세' })
+
+    expect(within(dialog).getByRole('button', { name: '수정' })).toBeEnabled()
+    expect(within(dialog).getByRole('button', { name: /할 일 삭제/ })).toBeEnabled()
   })
 
   test('registers a newly assigned AI task with an automatically managed initial status', async () => {
