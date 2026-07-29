@@ -1,4 +1,4 @@
-"""최종 15건 데모 시드 CSV의 전환 수용 기준."""
+"""최종 30건 데모 시드 CSV의 전환 수용 기준."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ def _rows(table: str) -> list[dict[str, str]]:
         return list(csv.DictReader(handle))
 
 
-def test_final_seed_has_fifteen_postings_per_job_and_expected_periods() -> None:
+def test_final_seed_has_thirty_postings_per_job_and_expected_periods() -> None:
     postings = _rows("postings")
     versions = {row["posting_id"]: row for row in _rows("posting_versions")}
     by_job: dict[str, list[dict[str, str]]] = defaultdict(list)
@@ -27,23 +27,25 @@ def test_final_seed_has_fifteen_postings_per_job_and_expected_periods() -> None:
         by_job[posting["job_role_id"]].append(versions[posting["posting_id"]])
 
     assert set(by_job) == set(build_seed.JOB_PARTS)
-    assert len(postings) == 135
+    assert len(postings) == 270
     for job, rows in by_job.items():
-        assert len(rows) == 15, job
+        assert len(rows) == 30, job
         recent = [row for row in rows if datetime.fromisoformat(row["posted_at"]).year == 2026]
         previous = [row for row in rows if datetime.fromisoformat(row["posted_at"]).year < 2026]
-        assert (len(recent), len(previous)) == (9, 6), job
+        assert (len(recent), len(previous)) == (18, 12), job
         assert Counter(row["entry_label"] for row in recent) == {
-            "entry_junior": 5,
-            "experienced": 4,
+            "entry_junior": 10,
+            "experienced": 8,
         }
         assert Counter(row["entry_label"] for row in previous) == {
-            "entry_junior": 3,
-            "experienced": 3,
+            "entry_junior": 6,
+            "experienced": 6,
         }
+        assert sum(row["closed_at"] == r"\N" for row in rows) == 6, job
+        assert all(row["closed_at"] != r"\N" for row in previous), job
 
 
-def test_final_outputs_have_49_rows_per_job_and_keep_statistics_sections() -> None:
+def test_final_outputs_have_112_rows_per_job_and_keep_statistics_sections() -> None:
     rows = _rows("analysis_outputs")
     required_sections = {
         "scope_expansion",
@@ -53,30 +55,23 @@ def test_final_outputs_have_49_rows_per_job_and_keep_statistics_sections() -> No
         "cluster_axes",
         "items",
     }
-    assert len(rows) == 441
+    assert len(rows) == 1008
     for job in build_seed.JOB_PARTS:
         mine = [row for row in rows if row["job_role_id"] == job]
-        assert len(mine) == 49, job
+        assert len(mine) == 112, job
         assert Counter(row["output_type"] for row in mine) == {
             "statistics": 1,
-            "interpretation": 16,
-            "strategy": 16,
-            "roadmap": 16,
+            "interpretation": 37,
+            "strategy": 37,
+            "roadmap": 37,
         }
         statistics = json.loads(
             next(row["payload"] for row in mine if row["output_type"] == "statistics")
         )
         assert required_sections <= statistics.keys(), job
-        assert statistics["meta"]["snapshots"]["recent"]["n"] == 9, job
-        assert statistics["meta"]["snapshots"]["prev"]["n"] == 6, job
-        assert sorted(row["n"] for row in statistics["cluster_axes"]["rows"]) == [
-            1,
-            1,
-            1,
-            2,
-            2,
-            2,
-        ], job
+        assert statistics["meta"]["snapshots"]["recent"]["n"] == 18, job
+        assert statistics["meta"]["snapshots"]["prev"]["n"] == 12, job
+        assert [row["n"] for row in statistics["cluster_axes"]["rows"]] == [3] * 6, job
 
 
 def test_small_cluster_statistics_are_marked_low_confidence() -> None:

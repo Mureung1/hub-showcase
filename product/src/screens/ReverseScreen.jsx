@@ -40,7 +40,7 @@ function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
   const [status, setStatus] = useState('loading') // loading | ready | error | notready
   const [detailStatus, setDetailStatus] = useState(postingId ? 'loading' : 'idle')
   // 공고 선택지는 범위와 무관한 직무 전체 목록이다. 기업군 응답에 딸려 오지 않는다.
-  const { postings, status: postingsStatus } = usePostings(jobRoleId)
+  const { postings, status: postingsStatus, retry: retryPostings } = usePostings(jobRoleId)
   const activeSection = useScrollSpy(NAV_IDS)
 
   useEffect(() => {
@@ -120,6 +120,7 @@ function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
             jobLabel={jobLabel}
             postings={postings}
             postingsStatus={postingsStatus}
+            onRetryPostings={retryPostings}
             myPosting={myPosting}
             payloadScope={detailScope}
             hint={scope.level === 'mine' ? '내가 입력한 공고의 해석은 아래 「내 공고 직접 분석」 섹션에 있습니다.' : null}

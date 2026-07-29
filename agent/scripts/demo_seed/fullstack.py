@@ -147,7 +147,7 @@ SECTION_REQUIREDNESS = {
     "우대사항": "preferred",
 }
 
-# ---------------------------------------------------------------- 공고 15건
+# ---------------------------------------------------------------- 공고 30건
 # 한 줄이 곧 요구 표현이다. (본문, 차원 키, 깊이) 로 적고 근거 위치는 실제로 계산한다.
 # 절 이름이 진술된 요구도(stated_requiredness)를 정한다.
 
@@ -664,6 +664,109 @@ POSTINGS: list[dict[str, Any]] = [
         },
     },
 ]
+
+
+def _additional_posting(
+    nn: str,
+    company: str,
+    cluster: str,
+    period: str,
+    title: str,
+    product: str,
+    posted_at: str,
+    closed_at: str | None,
+    entry_label: str,
+) -> dict[str, Any]:
+    """기존 01~15를 건드리지 않고 16~30 공고를 같은 계약 형태로 만든다."""
+    junior = entry_label == "entry_junior"
+    depth = "application" if junior else "tradeoff"
+    return {
+        "nn": nn,
+        "company": company,
+        "cluster": cluster,
+        "period": period,
+        "title": title,
+        "posted_at": posted_at,
+        "closed_at": closed_at,
+        "entry_label": entry_label,
+        "career_raw": "신입·주니어" if junior else "경력 3년 이상",
+        "edu_raw": "학력 무관" if junior else "대졸 이상",
+        "entry_raw": "신입 지원 가능" if junior else "경력직 채용",
+        "edu_label": "학력 무관" if junior else "대졸 이상",
+        "career_label": "신입·주니어" if junior else "경력 3년 이상",
+        "out_of_role_tags": ["plan_support"] if junior else ["data_ops", "qa_test"],
+        "reality_tags": ["collab_api", "deployed_service"],
+        "axis_mentions": ["e2e_delivery", "api_contract", "data_modeling", "deploy_ops"],
+        "advanced": [] if junior else [
+            ("arch_owner", f"{product}의 화면·API·데이터 구조를 함께 검토하고 개선 방향을 정합니다.")
+        ],
+        "sections": {
+            "주요업무": [
+                (f"{product}의 사용자 화면과 서버 기능을 한 흐름으로 개발합니다.", None, None),
+                (f"{product}의 배포 결과와 운영 지표를 확인해 반복되는 문제를 개선합니다.", None, None),
+            ],
+            "자격요건": [
+                (f"Node.js와 TypeScript로 {product} 서버 로직을 구현해 보신 분", "node_ts", depth),
+                (f"React로 {product} 화면과 상태 흐름을 구성해 보신 분", "react_ui", depth),
+                (f"REST API 계약을 정하고 {product} 화면과 연동해 보신 분", "rest_api", depth),
+                (f"관계형 데이터베이스로 {product} 데이터를 모델링해 보신 분", "rdb", depth),
+            ],
+            "우대사항": [
+                (f"Docker와 CI/CD로 {product}를 클라우드에 배포해 보신 분", "cloud", "application"),
+            ],
+        },
+    }
+
+
+POSTINGS.extend(
+    [
+        _additional_posting("16", "co_daangn", "startup", RECENT_PERIOD,
+                            "지역 서비스 풀스택 개발자 (주니어)", "지역 커뮤니티 기능",
+                            "2026-02-03", None, "entry_junior"),
+        _additional_posting("17", "co_kakaomobility", "bigtech_platform", RECENT_PERIOD,
+                            "모빌리티 플랫폼 풀스택 개발자", "이동 파트너 플랫폼",
+                            "2026-02-24", None, "experienced"),
+        _additional_posting("18", "co_navercloud", "b2b_saas", RECENT_PERIOD,
+                            "클라우드 관리 풀스택 개발자 (주니어)", "클라우드 자원 관리 콘솔",
+                            "2026-03-16", None, "entry_junior"),
+        _additional_posting("19", "co_kakaobank", "fintech_finance", RECENT_PERIOD,
+                            "금융 상품 풀스택 개발자 (신입)", "금융 상품 가입 서비스",
+                            "2026-01-28", "2026-03-20", "entry_junior"),
+        _additional_posting("20", "co_kakaobank", "fintech_finance", RECENT_PERIOD,
+                            "뱅킹 운영 풀스택 개발자", "뱅킹 운영 포털",
+                            "2026-05-12", "2026-06-26", "experienced"),
+        _additional_posting("21", "co_samsungsds", "si_enterprise", RECENT_PERIOD,
+                            "기업 포털 풀스택 개발자 (주니어)", "기업 협업 포털",
+                            "2026-02-18", "2026-04-10", "entry_junior"),
+        _additional_posting("22", "co_samsungsds", "si_enterprise", RECENT_PERIOD,
+                            "업무 자동화 풀스택 개발자", "업무 자동화 시스템",
+                            "2026-05-27", "2026-06-30", "experienced"),
+        _additional_posting("23", "co_smilegate", "game", RECENT_PERIOD,
+                            "게임 이벤트 풀스택 개발자 (주니어)", "게임 이벤트 운영 도구",
+                            "2026-03-30", "2026-05-15", "entry_junior"),
+        _additional_posting("24", "co_smilegate", "game", RECENT_PERIOD,
+                            "게임 커뮤니티 풀스택 개발자", "게임 커뮤니티 서비스",
+                            "2026-06-15", "2026-07-31", "experienced"),
+        _additional_posting("25", "co_wantedlab", "startup", PREV_PERIOD,
+                            "채용 운영 풀스택 개발자 (주니어)", "채용 운영 워크스페이스",
+                            "2024-05-13", "2024-07-05", "entry_junior"),
+        _additional_posting("26", "co_musinsa", "bigtech_platform", PREV_PERIOD,
+                            "커머스 파트너 풀스택 개발자", "커머스 파트너 센터",
+                            "2024-09-23", "2024-11-15", "experienced"),
+        _additional_posting("27", "co_channelcorp", "b2b_saas", PREV_PERIOD,
+                            "고객 관리 풀스택 개발자 (주니어)", "고객 관리 SaaS",
+                            "2025-01-20", "2025-03-14", "entry_junior"),
+        _additional_posting("28", "co_kakaobank", "fintech_finance", PREV_PERIOD,
+                            "자산 관리 풀스택 개발자", "자산 관리 백오피스",
+                            "2025-04-21", "2025-06-13", "experienced"),
+        _additional_posting("29", "co_samsungsds", "si_enterprise", PREV_PERIOD,
+                            "사내 지원 풀스택 개발자 (주니어)", "사내 지원 시스템",
+                            "2025-08-11", "2025-10-03", "entry_junior"),
+        _additional_posting("30", "co_smilegate", "game", PREV_PERIOD,
+                            "게임 정산 풀스택 개발자", "게임 정산 운영 도구",
+                            "2025-10-06", "2025-11-28", "experienced"),
+    ]
+)
 
 SECTION_ORDER = ("주요업무", "자격요건", "우대사항")
 RECENT = [p for p in POSTINGS if p["period"] == RECENT_PERIOD]
@@ -1522,7 +1625,14 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
             "sources": [{"type": "posting", "url": source_url(posting)}],
         })
 
-    title, body, ratio = POSTING_SUMMARY[posting["nn"]]
+    title, body, ratio = POSTING_SUMMARY.get(
+        posting["nn"],
+        (
+            f"{COMPANY_DISPLAY[posting['company']]}의 전체 흐름을 잇는 개발자",
+            "화면·API·데이터·배포를 함께 다루는 풀스택 기준선 위에서 이 공고의 제품 맥락과 운영 책임을 확인합니다.",
+            f"편차 3건 · 기준선 일치 {len(POSTING_DIMS[posting['nn']])}건",
+        ),
+    )
     return {
         "posting_id": posting_id(posting["nn"]),
         "company": COMPANY_DISPLAY[posting["company"]],
@@ -2182,7 +2292,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     } for c, nn in zip(CAPABILITIES, ["01", "04", "02"])
         for field in ("why_required", "depth_criteria", "interview_verification")]
 
-    # -------- 산출물 4종 (31행)
+    # -------- 산출물 4종 (52행)
     outputs: list[dict[str, Any]] = []
 
     def add_output(kind: str, output_type: str, agent: str, scope_level: str,
@@ -2205,7 +2315,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
         cluster_output[cluster] = add_output(
             "intp", "interpretation", "interpretation", "cluster", cluster,
             interpretation_payload("cluster", cluster), cluster)
-    for p in RECENT:
+    for p in POSTINGS:
         add_output("intp", "interpretation", "interpretation", "posting", posting_id(p["nn"]),
                    interpretation_payload("posting", p["cluster"], p), posting_id(p["nn"]))
     add_output("strat", "strategy", "strategy", "overall", JOB_ROLE_ID,
@@ -2497,7 +2607,7 @@ def check_payload_keys(t: dict[str, list[dict[str, Any]]]) -> list[str]:
                 problems.append(f"{output['output_id']}: baseline 개수 {len(payload['baseline'])}")
             if payload["scope"]["level"] != "overall" and not 2 <= len(payload["deviations"]) <= 4:
                 problems.append(f"{output['output_id']}: deviations 개수 {len(payload['deviations'])}")
-    expected_counts = {"statistics": 1, "interpretation": 16, "strategy": 7, "roadmap": 7}
+    expected_counts = {"statistics": 1, "interpretation": 37, "strategy": 7, "roadmap": 7}
     if counts != expected_counts:
         problems.append(f"산출물 개수 {counts} != {expected_counts}")
     return problems
@@ -2546,12 +2656,12 @@ def check_posting_population(t: dict[str, list[dict[str, Any]]]) -> list[str]:
     problems: list[str] = []
     expected_clusters = set(CLUSTER_DISPLAY)
     period_spec = {
-        RECENT_PERIOD: (9, "2026-01-01", "2026-06-30", {"entry_junior": 5, "experienced": 4}),
-        PREV_PERIOD: (6, "2024-03-01", "2025-11-30", {"entry_junior": 3, "experienced": 3}),
+        RECENT_PERIOD: (18, "2026-01-01", "2026-06-30", {"entry_junior": 10, "experienced": 8}),
+        PREV_PERIOD: (12, "2024-03-01", "2025-11-30", {"entry_junior": 6, "experienced": 6}),
     }
-    if len(POSTINGS) != 15 or len(t["postings"]) != 15:
-        problems.append(f"공고 수 {len(POSTINGS)}/{len(t['postings'])} != 15/15")
-    expected_ids = {posting_id(f"{n:02d}") for n in range(1, 16)}
+    if len(POSTINGS) != 30 or len(t["postings"]) != 30:
+        problems.append(f"공고 수 {len(POSTINGS)}/{len(t['postings'])} != 30/30")
+    expected_ids = {posting_id(f"{n:02d}") for n in range(1, 31)}
     actual_ids = {row["posting_id"] for row in t["postings"]}
     if actual_ids != expected_ids:
         problems.append(f"공고 식별자 차이 {sorted(actual_ids ^ expected_ids)}")
@@ -2577,14 +2687,29 @@ def check_posting_population(t: dict[str, list[dict[str, Any]]]) -> list[str]:
         cluster: sum(1 for p in RECENT if p["cluster"] == cluster)
         for cluster in CLUSTER_DISPLAY
     }
-    if sorted(recent_cluster_counts.values()) != [1, 1, 1, 2, 2, 2]:
-        problems.append(f"recent 기업군 분포 {recent_cluster_counts} != 2·2·2·1·1·1")
+    if set(recent_cluster_counts.values()) != {3}:
+        problems.append(f"recent 기업군 분포 {recent_cluster_counts} != 기업군별 3건")
     prev_cluster_counts = {
         cluster: sum(1 for p in PREV if p["cluster"] == cluster)
         for cluster in CLUSTER_DISPLAY
     }
-    if set(prev_cluster_counts.values()) != {1}:
-        problems.append(f"prev 기업군 분포 {prev_cluster_counts} != 기업군별 1건")
+    if set(prev_cluster_counts.values()) != {2}:
+        problems.append(f"prev 기업군 분포 {prev_cluster_counts} != 기업군별 2건")
+
+    open_postings = [p for p in POSTINGS if p["closed_at"] is None]
+    closed_postings = [p for p in POSTINGS if p["closed_at"] is not None]
+    if len(open_postings) != 6 or len(closed_postings) != 24:
+        problems.append(
+            f"진행/마감 {len(open_postings)}/{len(closed_postings)} != 6/24"
+        )
+    if any(p["closed_at"] is None for p in PREV):
+        problems.append("prev 공고에 진행 중 상태가 있다")
+    recent_open = sum(p["closed_at"] is None for p in RECENT)
+    if recent_open != 6:
+        problems.append(f"recent 진행 중 {recent_open}건 != 6건")
+    for p in closed_postings:
+        if p["closed_at"] <= p["posted_at"]:
+            problems.append(f"{p['nn']}: 마감일 {p['closed_at']} <= 게시일 {p['posted_at']}")
 
     for dim in DIMENSIONS:
         companies = {
@@ -2596,24 +2721,24 @@ def check_posting_population(t: dict[str, list[dict[str, Any]]]) -> list[str]:
 
 
 def check_output_population(t: dict[str, list[dict[str, Any]]]) -> list[str]:
-    """7. 모듈 산출물 31행과 recent 공고 해석 9행이 정확히 짝을 이루는가."""
+    """7. 모듈 산출물 52행과 전체 공고 해석 30행이 정확히 짝을 이루는가."""
     outputs = t["analysis_outputs"]
     problems: list[str] = []
     counts = {
         kind: sum(1 for row in outputs if row["output_type"] == kind)
         for kind in ("statistics", "interpretation", "strategy", "roadmap")
     }
-    expected = {"statistics": 1, "interpretation": 16, "strategy": 7, "roadmap": 7}
-    if len(outputs) != 31 or counts != expected:
-        problems.append(f"산출물 {len(outputs)}행, 종류별 {counts} != 31행, {expected}")
+    expected = {"statistics": 1, "interpretation": 37, "strategy": 7, "roadmap": 7}
+    if len(outputs) != 52 or counts != expected:
+        problems.append(f"산출물 {len(outputs)}행, 종류별 {counts} != 52행, {expected}")
     posting_interpretations = {
         row["scope_id"] for row in outputs
         if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
     }
-    recent_ids = {posting_id(p["nn"]) for p in RECENT}
-    if posting_interpretations != recent_ids:
+    posting_ids = {posting_id(p["nn"]) for p in POSTINGS}
+    if posting_interpretations != posting_ids:
         problems.append(
-            f"공고 해석 범위 차이 {sorted(posting_interpretations ^ recent_ids)}"
+            f"공고 해석 범위 차이 {sorted(posting_interpretations ^ posting_ids)}"
         )
     return problems
 

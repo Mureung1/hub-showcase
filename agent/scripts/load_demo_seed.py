@@ -1096,13 +1096,13 @@ REPLACEMENT_CHECKS: tuple[tuple[str, str, Any], ...] = (
     ),
     (
         "posting total",
-        """SELECT COUNT(*) = 135
+        """SELECT COUNT(*) = 270
            FROM posting_versions WHERE dataset_version = %(ds)s""",
         True,
     ),
     (
         "postings per job",
-        """SELECT COUNT(*) = 9 AND MIN(n) = 15 AND MAX(n) = 15
+        """SELECT COUNT(*) = 9 AND MIN(n) = 30 AND MAX(n) = 30
            FROM (
              SELECT p.job_role_id, COUNT(*) AS n
              FROM postings p
@@ -1114,7 +1114,7 @@ REPLACEMENT_CHECKS: tuple[tuple[str, str, Any], ...] = (
     ),
     (
         "recent postings per job",
-        """SELECT COUNT(*) = 9 AND MIN(n) = 9 AND MAX(n) = 9
+        """SELECT COUNT(*) = 9 AND MIN(n) = 18 AND MAX(n) = 18
            FROM (
              SELECT p.job_role_id, COUNT(*) AS n
              FROM postings p
@@ -1128,7 +1128,7 @@ REPLACEMENT_CHECKS: tuple[tuple[str, str, Any], ...] = (
     ),
     (
         "previous postings per job",
-        """SELECT COUNT(*) = 9 AND MIN(n) = 6 AND MAX(n) = 6
+        """SELECT COUNT(*) = 9 AND MIN(n) = 12 AND MAX(n) = 12
            FROM (
              SELECT p.job_role_id, COUNT(*) AS n
              FROM postings p
@@ -1141,8 +1141,149 @@ REPLACEMENT_CHECKS: tuple[tuple[str, str, Any], ...] = (
         True,
     ),
     (
+        "recent cluster postings per job",
+        """SELECT COUNT(*) = 54 AND MIN(n) = 3 AND MAX(n) = 3
+           FROM (
+             SELECT p.job_role_id, m.cluster_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             JOIN company_cluster_memberships m ON m.company_id = p.company_id
+               AND pv.posted_at::date >= m.valid_from
+               AND (m.valid_to IS NULL OR pv.posted_at::date <= m.valid_to)
+             WHERE pv.dataset_version = %(ds)s
+               AND pv.posted_at >= DATE '2026-01-01'
+               AND pv.posted_at < DATE '2026-07-01'
+             GROUP BY p.job_role_id, m.cluster_id
+           ) counts""",
+        True,
+    ),
+    (
+        "previous cluster postings per job",
+        """SELECT COUNT(*) = 54 AND MIN(n) = 2 AND MAX(n) = 2
+           FROM (
+             SELECT p.job_role_id, m.cluster_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             JOIN company_cluster_memberships m ON m.company_id = p.company_id
+               AND pv.posted_at::date >= m.valid_from
+               AND (m.valid_to IS NULL OR pv.posted_at::date <= m.valid_to)
+             WHERE pv.dataset_version = %(ds)s
+               AND pv.posted_at >= DATE '2024-03-01'
+               AND pv.posted_at < DATE '2025-12-01'
+             GROUP BY p.job_role_id, m.cluster_id
+           ) counts""",
+        True,
+    ),
+    (
+        "open postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 6 AND MAX(n) = 6
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s AND pv.closed_at IS NULL
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "closed postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 24 AND MAX(n) = 24
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s AND pv.closed_at IS NOT NULL
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "recent open postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 6 AND MAX(n) = 6
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s AND pv.closed_at IS NULL
+               AND pv.posted_at >= DATE '2026-01-01'
+               AND pv.posted_at < DATE '2026-07-01'
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "recent closed postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 12 AND MAX(n) = 12
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s AND pv.closed_at IS NOT NULL
+               AND pv.posted_at >= DATE '2026-01-01'
+               AND pv.posted_at < DATE '2026-07-01'
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "previous closed postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 12 AND MAX(n) = 12
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s AND pv.closed_at IS NOT NULL
+               AND pv.posted_at >= DATE '2024-03-01'
+               AND pv.posted_at < DATE '2025-12-01'
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
         "analysis outputs",
-        "SELECT COUNT(*) = 441 FROM analysis_outputs WHERE analysis_version LIKE %(an)s",
+        "SELECT COUNT(*) = 1008 FROM analysis_outputs WHERE analysis_version LIKE %(an)s",
+        True,
+    ),
+    (
+        "analysis outputs per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 112 AND MAX(n) = 112
+           FROM (
+             SELECT job_role_id, COUNT(*) AS n
+             FROM analysis_outputs
+             WHERE analysis_version LIKE %(an)s
+             GROUP BY job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "posting scoped outputs per job",
+        """SELECT COUNT(*) = 27 AND MIN(n) = 30 AND MAX(n) = 30
+           FROM (
+             SELECT job_role_id, output_type, COUNT(*) AS n
+             FROM analysis_outputs
+             WHERE analysis_version LIKE %(an)s
+               AND scope_level = 'posting'
+               AND output_type IN ('interpretation', 'strategy', 'roadmap')
+             GROUP BY job_role_id, output_type
+           ) counts""",
+        True,
+    ),
+    (
+        "posting output coverage",
+        """SELECT NOT EXISTS (
+             SELECT p.job_role_id, p.posting_id, expected.output_type
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             CROSS JOIN (
+               VALUES ('interpretation'), ('strategy'), ('roadmap')
+             ) AS expected(output_type)
+             WHERE pv.dataset_version = %(ds)s
+             EXCEPT
+             SELECT job_role_id, scope_id, output_type
+             FROM analysis_outputs
+             WHERE analysis_version LIKE %(an)s AND scope_level = 'posting'
+           )""",
         True,
     ),
     (

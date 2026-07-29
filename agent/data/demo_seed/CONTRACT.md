@@ -28,7 +28,7 @@
 | 회사 | `co_<slug>` | 기존 24개는 그대로 쓴다 |
 | 출처 | `src_demo_<job>_<nn>` | |
 | 스냅샷 | `snap_demo_<job>_<nn>` | `content_hash` 는 `raw_content` 의 SHA-256 |
-| 공고 | `dp_<job>_<nn>` | `nn` 은 `01`~`15`. **실 데이터와 겹치지 않는 `dp_` 접두사** |
+| 공고 | `dp_<job>_<nn>` | `nn` 은 `01`~`30`. **실 데이터와 겹치지 않는 `dp_` 접두사** |
 | 공고 버전 | `pv_demo_<job>_<nn>` | |
 | 요구 표현 | `mention_<job>_<nn>_<k>` | |
 | 할당 | `assign_<job>_<nn>_<k>` | |
@@ -45,7 +45,7 @@
 | Wiki 개정 | `wr_demo_<job>_<slug>_1` | |
 
 `<scope>` 는 `overall` · 기업군 `cluster_id` · 공고 `posting_id` 다.
-공고 범위는 `strategy`·`roadmap` 과 그 정규화 표에만 쓴다 (4장).
+공고 범위는 `interpretation`·`strategy`·`roadmap` 과 전략·로드맵 정규화 표에 쓴다 (4장).
 
 ## 2. 직무 아홉 종
 
@@ -63,15 +63,18 @@
 
 아홉 직무 전부 `is_active = true` 로 올린다 (B1).
 
-직무당 공고 15건. `recent` 9건은 `period_id = 'y2026'`, `prev` 6건은 `y2024_2025`.
+직무당 공고 30건. `recent` 18건은 `period_id = 'y2026'`, `prev` 12건은 `y2024_2025`.
+아홉 직무의 전체 공고 수는 270건이다.
 `posted_at` 은 recent 가 `2026-01-01`~`2026-06-30`, prev 가 `2024-03-01`~`2025-11-30` 사이다.
 두 범위는 3장의 기간 정의 안에 반드시 들어간다. 벗어나면 `statistics_facts.period_id` 가
 가리키는 기간과 공고 게시일이 어긋난다.
 
-**두 기간 각각에서 여섯 기업군 전부에 공고가 최소 1건씩 있다.** recent 9건·prev 6건은 이
-조건을 만족하는 최소 규모다. prev 6건은 여섯 기업군에 1건씩이고, recent 9건은 여섯 기업군에
-1건씩 둔 뒤 남는 3건을 서로 다른 기업군에 더한다. 기업군 범위 산출물과 `cluster_axes` 는
-기업군마다 표본이 있어야 성립하므로 빈 기업군을 남기지 않는다.
+두 기간 각각에서 여섯 기업군의 표본 수를 같게 둔다. recent 는 기업군마다 3건씩 총 18건,
+prev 는 기업군마다 2건씩 총 12건이다. 기업군 범위 산출물과 `cluster_axes` 는 기업군마다
+같은 표본 기반에서 비교한다.
+
+직무별 진행 중 공고는 6건, 마감 공고는 24건이다. prev 12건은 모두 마감 상태다. recent
+18건은 진행 중 6건·마감 12건이다.
 
 한 공고는 한 회사에 속하고, 승격 임계값(독립 공고 2·독립 회사 2)을 만족하도록 같은 차원이
 최소 두 회사의 공고에 나타나게 한다.
@@ -120,13 +123,13 @@ React → Express /api/{stats,reverse,conditions,roadmap}
 **직무당 필수 행 수**
 
 - `statistics` 1행 (overall)
-- `interpretation` 1 + 6 + 9 = 16행 (overall, 기업군 6, recent 공고 9)
-- `strategy` 1 + 6 + 9 = 16행 (overall, 기업군 6, recent 공고 9)
-- `roadmap` 1 + 6 + 9 = 16행 (overall, 기업군 6, recent 공고 9)
+- `interpretation` 1 + 6 + 30 = 37행 (overall, 기업군 6, 전체 공고 30)
+- `strategy` 1 + 6 + 30 = 37행 (overall, 기업군 6, 전체 공고 30)
+- `roadmap` 1 + 6 + 30 = 37행 (overall, 기업군 6, 전체 공고 30)
 
-합계 49행 × 9직무 = 441행. 이 가운데 직무 조각이 만드는 것은 31행(`statistics` 1 ·
-`interpretation` 16 · `strategy` 7 · `roadmap` 7)이고, posting 범위 `strategy`·`roadmap`
-18행은 `build_demo_seed.py` 가 만든다.
+합계 112행 × 9직무 = 1,008행. 이 가운데 직무 조각이 만드는 것은 52행(`statistics` 1 ·
+`interpretation` 37 · `strategy` 7 · `roadmap` 7)이고, posting 범위 `strategy`·`roadmap`
+60행은 `build_demo_seed.py` 가 만든다.
 
 **posting 범위의 `strategy`·`roadmap` 파생 (B17)**
 
@@ -385,6 +388,9 @@ agent/data/demo_seed/parts/user_postings/<table>.csv     A10
 ```
 
 `agent/scripts/build_demo_seed.py` 가 조각을 합쳐 `agent/data/demo_seed/<table>.csv` 를 만든다.
+병렬 전환 중 일반 빌드는 직무별 15건 또는 30건 상태만 허용한다. 최종 산출 전에는
+`python scripts/build_demo_seed.py --check --final` 로 모든 직무가 30건이고 직무별
+`analysis_outputs` 가 112행인지 검사한다.
 
 ### 9.2 형식
 
@@ -473,8 +479,8 @@ CSV 헤더의 컬럼 순서는 이 표와 정확히 같아야 한다.
 ### 10.1 `entry_label`
 
 `entry`, `junior`, `entry_junior`, `experienced`, `unspecified`.
-데모 공고는 recent 9건 중 5건이 `entry_junior`, 4건이 `experienced`.
-prev 6건 중 3건이 `entry_junior`, 3건이 `experienced`.
+데모 공고는 recent 18건 중 10건이 `entry_junior`, 8건이 `experienced`.
+prev 12건 중 6건이 `entry_junior`, 6건이 `experienced`.
 
 ### 10.2 `requiredness` · `depth_level`
 
@@ -553,7 +559,7 @@ prev 6건 중 3건이 `entry_junior`, 3건이 `experienced`.
 
 | 갈래 | 범위 |
 | --- | --- |
-| A1~A9 | 직무 하나. 차원·어휘 설계 → 공고 15건 본문 작성 → 표현·할당 → 지표 → 산출물 4종 → CSV 조각 |
+| A1~A9 | 직무 하나. 차원·어휘 설계 → 공고 30건 본문 작성 → 표현·할당 → 지표 → 산출물 4종 → CSV 조각 |
 | A10 | 샘플 공고 3건과 해석·전략·로드맵 결과 |
 
 ### 트랙 B — 코드
@@ -641,9 +647,10 @@ A10 은 `part` 이름으로 `user_postings` 를 쓴다.
 3. 모든 외래키 참조 대상이 같은 조각 안이나 마이그레이션 기준 데이터 안에 있다.
 4. `analysis_outputs` 의 payload 가 CONTRACT 5장의 키를 전부 갖는다.
 5. `checklist_items.concept_id` 와 payload 의 `item_id` 가 서로 맞는다.
-6. 공고가 15건이고 `recent` 9건·`prev` 6건이며, 두 기간 각각에서 여섯 기업군에 공고가
-   최소 1건씩 있다. `posted_at` 이 그 기간의 `starts_on`~`ends_on` 안에 있다.
-7. `analysis_outputs` 가 31행이다. `statistics` 1 · `interpretation` 16 ·
-   `strategy` 7 · `roadmap` 7 이며, `interpretation` 의 posting 범위 9행은 recent 공고와
+6. 공고가 30건이고 `recent` 18건·`prev` 12건이다. recent 는 여섯 기업군마다 3건,
+   prev 는 기업군마다 2건이며 `posted_at` 이 기간의 `starts_on`~`ends_on` 안에 있다.
+   진행 중 6건은 모두 recent 이고 나머지 recent 12건과 prev 12건은 마감 상태다.
+7. `analysis_outputs` 가 52행이다. `statistics` 1 · `interpretation` 37 ·
+   `strategy` 7 · `roadmap` 7 이며, `interpretation` 의 posting 범위 30행은 전체 공고와
    하나씩 짝을 이룬다.
 8. 12장 열 가지 가운데 모듈이 값을 직접 담는 2·3·4·5·9 를 행마다 확인한다.

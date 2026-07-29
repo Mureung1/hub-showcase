@@ -50,6 +50,23 @@ async function getActiveAnalysis(jobRoleId) {
   return data ? data.analysis_version : null
 }
 
+// 활성 분석이 실제로 집계한 데이터셋. 공고에는 여러 버전이 쌓일 수 있으므로 목록에서
+// 단순히 가장 최근 posting_version 을 고르면 화면의 연도·상태와 저장된 해석 시점이 갈린다.
+async function getAnalysisDatasetVersion(analysisVersion) {
+  const { data, error } = await supabase()
+    .from('analysis_versions')
+    .select('dataset_version')
+    .eq('analysis_version', analysisVersion)
+    .maybeSingle()
+  if (error) throw unavailable('analysis_versions', error)
+  if (!data) {
+    const missing = new Error(`활성 분석 버전 ${analysisVersion}의 데이터셋을 찾을 수 없습니다.`)
+    missing.code = 'DB_UNAVAILABLE'
+    throw missing
+  }
+  return data.dataset_version
+}
+
 // 산출물 한 행의 payload. `(analysis_version, scope_level, scope_id, output_type)` 이 유일키다.
 async function getOutput(analysisVersion, scopeLevel, scopeId, outputType) {
   const { data, error } = await supabase()
@@ -130,6 +147,7 @@ async function getPostingsInCluster(jobRoleId, clusterId) {
 
   const analysisVersion = await getActiveAnalysis(jobRoleId)
   if (!analysisVersion) return []
+  const datasetVersion = await getAnalysisDatasetVersion(analysisVersion)
 
   const outputs = await db
     .from('analysis_outputs')
@@ -146,8 +164,9 @@ async function getPostingsInCluster(jobRoleId, clusterId) {
 
   const versions = await db
     .from('posting_versions')
-    .select('posting_id, title, posted_at')
+    .select('posting_id, title, posted_at, closed_at')
     .in('posting_id', selected.map((row) => row.posting_id))
+    .eq('dataset_version', datasetVersion)
     .order('posted_at', { ascending: false })
   if (versions.error) throw unavailable('posting_versions', versions.error)
 
@@ -172,6 +191,8 @@ async function getPostingsInCluster(jobRoleId, clusterId) {
         company: companyName.get(row.company_id) || row.company_id,
         title: version ? version.title : null,
         posted_at: version ? version.posted_at : null,
+        closed_at: version ? version.closed_at : null,
+        status: version && version.closed_at ? 'closed' : 'open',
       }
     })
     .sort((a, b) => (String(a.posted_at) < String(b.posted_at) ? 1 : -1))
@@ -183,14 +204,16 @@ async function getPostingsInCluster(jobRoleId, clusterId) {
 // 선택지는 `getPostingsInCluster` 와 같은 규칙으로 "저장된 개별 해석이 있는 공고" 로 한정한다.
 // 해석이 없는 공고를 넣으면 고르는 순간 폴백으로 떨어져 다른 범위의 결과가 보인다.
 //
-// 줄마다 그 공고가 속한 기업군(`cluster_id`·표시명)을 함께 낸다. 화면은 공고를 고를 때
-// 기업군까지 같이 올려야 하고(CONTRACT 5.B 의 scope.cluster_tag), 목록에서도 어느 기업군
-// 공고인지 배지로 보여야 하기 때문이다. 소속은 `valid_to IS NULL` 인 현재 소속만 쓴다.
+// 줄마다 그 공고가 속한 기업군(`cluster_id`·표시명)과 채용 상태를 함께 낸다. 화면은 공고를
+// 고를 때 기업군까지 같이 올려야 하고(CONTRACT 5.B 의 scope.cluster_tag), 목록에서도 어느
+// 기업군 공고인지와 진행 여부를 함께 보여야 하기 때문이다. `closed_at` 이 없으면 진행 중,
+// 있으면 마감으로 본다. 소속은 `valid_to IS NULL` 인 현재 소속만 쓴다.
 async function getPostingsForJob(jobRoleId) {
   const db = supabase()
 
   const analysisVersion = await getActiveAnalysis(jobRoleId)
   if (!analysisVersion) return []
+  const datasetVersion = await getAnalysisDatasetVersion(analysisVersion)
 
   const postings = await db
     .from('postings')
@@ -231,8 +254,9 @@ async function getPostingsForJob(jobRoleId) {
 
   const versions = await db
     .from('posting_versions')
-    .select('posting_id, title, posted_at')
+    .select('posting_id, title, posted_at, closed_at')
     .in('posting_id', selected.map((row) => row.posting_id))
+    .eq('dataset_version', datasetVersion)
     .order('posted_at', { ascending: false })
   if (versions.error) throw unavailable('posting_versions', versions.error)
 
@@ -261,6 +285,8 @@ async function getPostingsForJob(jobRoleId) {
         company: companyName.get(row.company_id) || row.company_id,
         title: version ? version.title : null,
         posted_at: version ? version.posted_at : null,
+        closed_at: version ? version.closed_at : null,
+        status: version && version.closed_at ? 'closed' : 'open',
         cluster_id: clusterId,
         cluster_tag: clusterName.get(clusterId) || clusterId,
       }
