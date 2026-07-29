@@ -3,7 +3,8 @@
   "title": "FitCheck (핏첵)",
   "summary": "비대면 PT 강좌·AI 식단 피드백과 위치 기반 헬스장 매칭으로, 입문자와 골목 헬스장을 잇는 스마트 피트니스 O2O 플랫폼입니다.",
   "githubUser": "xlouisjungx",
-  "demoUrl": "https://hub-tan-pi.vercel.app",
+  "demoUrl": "https://hub-tan-pi.vercel.app/",
+  "demoVideoUrl": "https://photos.icloud.com/shared/album/06fPpKuI6vX9GBLu8DrCRgNHA",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
@@ -22,11 +23,7 @@
     "헬스장 상담 신청 시 PII(이름·연락처·메모)를 AES-256-GCM으로 암호화해 저장합니다.",
     "트레이너 대시보드에서 회원 신호등(소통 상태)·식단·루틴을 통합 관리합니다."
   ],
-  "featureTags": [
-    "PT 강좌 VOD",
-    "AI 식단 분석",
-    "헬스장 매칭"
-  ],
+  "featureTags": ["PT 강좌 VOD", "AI 식단 분석", "헬스장 매칭"],
   "techStack": [
     "React",
     "TypeScript",

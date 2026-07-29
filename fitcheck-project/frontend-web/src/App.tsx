@@ -4,6 +4,7 @@ import { AuthProvider } from './hooks/useAuth';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Layout from './components/layout/Layout';
 import UserLayout from './components/user/UserLayout';
+import LandingPage from './pages/landing/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
 import AuthCallbackPage from './pages/auth/AuthCallbackPage';
@@ -27,7 +28,7 @@ function App() {
       <AuthProvider>
         <AppStoreProvider>
           <Routes>
-            <Route path="/" element={<Navigate to="/user" replace />} />
+            <Route path="/" element={<LandingPage />} />
 
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
@@ -53,7 +54,7 @@ function App() {
               <Route path="reports" element={<ReportsPage />} />
             </Route>
 
-            <Route path="*" element={<Navigate to="/user" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AppStoreProvider>
       </AuthProvider>

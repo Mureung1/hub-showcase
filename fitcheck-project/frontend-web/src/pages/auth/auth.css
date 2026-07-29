@@ -4,6 +4,8 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  color: var(--text-primary);
+  background-color: var(--bg-base);
 }
 
 .auth-card {
@@ -11,8 +13,9 @@
   padding: clamp(1.25rem, 3vw, 1.75rem);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg-surface) 96%, transparent);
+  background: var(--bg-surface);
   box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
 }
 
 .auth-brand {
@@ -40,6 +43,7 @@
   font-size: 1.125rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .auth-brand p {
@@ -53,6 +57,7 @@
   font-size: 1.25rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 .auth-sub {

@@ -1,19 +1,47 @@
 @import '../../components/dashboard/StatsBar.css';
 
-/* ── Showcase-style user theme ── */
-
-.user-layout {
-  --showcase-card-bg: #141418;
-  --showcase-card-border: rgba(255, 255, 255, 0.06);
-  --showcase-radius: 16px;
-}
+/* ── User app — light theme v2 ── */
 
 .user-page {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-width: 480px;
+  width: 100%;
   margin: 0 auto;
+}
+
+.user-layout--mobile .user-page {
+  max-width: 480px;
+}
+
+.user-layout--desktop .user-page {
+  max-width: 1120px;
+}
+
+.user-layout--desktop .user-home {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.user-layout--desktop .home-greeting,
+.user-layout--desktop .home-quick-section {
+  grid-column: 1 / -1;
+}
+
+.user-layout--desktop .course-grid {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.user-layout--desktop .meal-timeline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.user-layout--desktop .map-page {
+  min-height: calc(100svh - 5rem);
 }
 
 .user-home {
@@ -25,25 +53,30 @@
   border: 1px solid var(--showcase-card-border);
   border-radius: var(--showcase-radius);
   padding: 1.125rem 1.25rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-card);
+}
+
+.showcase-card--accent {
+  background: var(--bg-accent-secondary);
+  border-color: color-mix(in srgb, var(--secondary) 35%, var(--border));
 }
 
 .showcase-section-title {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--text-h3);
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
 .home-empty-copy {
   margin: 0.75rem 0 0;
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   color: var(--text-secondary);
   line-height: 1.5;
 }
 
 .home-section-link {
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   font-weight: 600;
   color: var(--accent);
   text-decoration: none;
@@ -64,14 +97,14 @@
 
 .home-greeting-hello {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: var(--text-h2);
   font-weight: 800;
   letter-spacing: -0.03em;
 }
 
 .home-greeting-sub {
   margin: 0.35rem 0 0;
-  font-size: 0.8125rem;
+  font-size: var(--text-caption);
   color: var(--text-secondary);
 }
 
@@ -88,19 +121,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-elevated);
+  border-radius: var(--radius-btn);
+  background: var(--bg-surface);
   color: var(--text-secondary);
   cursor: pointer;
 }
 
 .home-icon-dot {
   position: absolute;
-  top: 0.4rem;
-  right: 0.4rem;
+  top: 0.5rem;
+  right: 0.5rem;
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 50%;
@@ -111,14 +144,81 @@
   display: inline-flex;
   align-items: center;
   gap: 0.15rem;
-  font-size: 0.6875rem;
+  font-size: var(--text-micro);
   font-weight: 600;
   color: var(--text-secondary);
   text-decoration: none;
 }
 
 .home-profile-link:hover {
-  color: var(--text-primary);
+  color: var(--accent);
+}
+
+/* Routine card */
+.home-routine-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.home-routine-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.home-routine-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-micro);
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--secondary) 22%, transparent);
+  color: #3d7a28;
+}
+
+.home-routine-title {
+  margin: 0.35rem 0 0;
+  font-size: var(--text-h3);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.home-routine-meta {
+  margin: 0.25rem 0 0;
+  font-size: var(--text-caption);
+  color: var(--text-secondary);
+}
+
+.home-routine-ring {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+
+.home-routine-ring svg {
+  width: 100%;
+  height: 100%;
+}
+
+.home-routine-ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-micro);
+  font-weight: 800;
+}
+
+.home-routine-cta {
+  width: 100%;
+  min-height: 44px;
+  border-radius: var(--radius-btn);
+  font-size: var(--text-body);
 }
 
 /* Diet card */
@@ -162,11 +262,13 @@
 .home-calorie-ring-label strong {
   font-size: 1.125rem;
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
 }
 
 .home-calorie-ring-label span {
   margin-top: 0.15rem;
-  font-size: 0.625rem;
+  font-size: var(--text-micro);
   color: var(--text-secondary);
 }
 
@@ -183,12 +285,12 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   color: var(--text-secondary);
 }
 
 .home-meal-kcal-list li svg {
-  color: var(--green);
+  color: var(--secondary);
   flex-shrink: 0;
 }
 
@@ -196,6 +298,7 @@
   margin-left: auto;
   color: var(--text-primary);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .home-macro-bars {
@@ -207,7 +310,7 @@
 .home-macro-row-top {
   display: flex;
   justify-content: space-between;
-  font-size: 0.6875rem;
+  font-size: var(--text-micro);
   color: var(--text-secondary);
   margin-bottom: 0.25rem;
 }
@@ -215,7 +318,7 @@
 .home-macro-track {
   height: 6px;
   border-radius: var(--radius-pill);
-  background: var(--bg-hover);
+  background: var(--bg-elevated);
   overflow: hidden;
 }
 
@@ -226,8 +329,22 @@
   transition: width 0.35s ease;
 }
 
+.home-diet-ai-tip {
+  margin: 0.875rem 0 0;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-accent-secondary);
+  border-left: 3px solid var(--secondary);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
 .home-diet-cta {
   margin-top: 0.75rem;
+  width: 100%;
+  min-height: 44px;
+  border-radius: var(--radius-btn);
 }
 
 /* Course card */
@@ -238,7 +355,7 @@
 }
 
 .home-course-media {
-  border-radius: 12px;
+  border-radius: var(--radius-btn);
   overflow: hidden;
 }
 
@@ -248,14 +365,14 @@
 
 .home-course-title {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: var(--text-body);
   font-weight: 700;
   line-height: 1.4;
 }
 
 .home-course-meta {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   color: var(--text-secondary);
 }
 
@@ -267,7 +384,7 @@
 }
 
 .home-tag {
-  font-size: 0.6875rem;
+  font-size: var(--text-micro);
   font-weight: 600;
   padding: 0.2rem 0.5rem;
   border-radius: var(--radius-pill);
@@ -280,15 +397,17 @@
   align-items: center;
   gap: 0.2rem;
   margin-left: auto;
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   font-weight: 700;
-  color: #ff6b35;
+  color: var(--accent);
 }
 
 .home-course-cta {
   width: 100%;
   padding: 0.75rem;
-  font-size: 0.875rem;
+  font-size: var(--text-body);
+  min-height: 44px;
+  border-radius: var(--radius-btn);
 }
 
 /* Gym match card */
@@ -307,7 +426,7 @@
 }
 
 .home-gym-match-top strong {
-  font-size: 0.875rem;
+  font-size: var(--text-body);
 }
 
 .home-gym-match-meta {
@@ -315,27 +434,39 @@
   align-items: center;
   gap: 0.25rem;
   margin: 0.35rem 0 0;
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   color: var(--text-secondary);
 }
 
 .home-gym-match-reason {
   margin: 0.35rem 0 0;
-  font-size: 0.6875rem;
+  font-size: var(--text-micro);
   color: var(--text-muted);
   line-height: 1.4;
+}
+
+.home-gym-bridge-copy {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.625rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-accent);
+  font-size: var(--text-micro);
+  color: var(--text-secondary);
+  line-height: 1.45;
 }
 
 .home-gym-cta {
   margin-top: 0.625rem;
   width: 100%;
+  min-height: 44px;
+  border-radius: var(--radius-btn);
 }
 
 .gym-match-badge {
-  font-size: 0.625rem;
+  font-size: var(--text-micro);
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(135deg, #e50914, #ff6b35);
+  background: var(--accent);
   border-radius: var(--radius-pill);
   padding: 0.2rem 0.45rem;
 }
@@ -363,9 +494,10 @@
   border-radius: var(--showcase-radius);
   background: var(--showcase-card-bg);
   border: 1px solid var(--showcase-card-border);
+  box-shadow: var(--shadow-card);
   text-decoration: none;
   color: var(--text-primary);
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   font-weight: 600;
   transition:
     border-color var(--transition-fast),
@@ -373,7 +505,7 @@
 }
 
 .home-quick-item:hover {
-  border-color: rgba(229, 9, 20, 0.35);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
   transform: translateY(-1px);
 }
 
@@ -383,12 +515,65 @@
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 12px;
+  border-radius: var(--radius-btn);
   background: var(--accent-dim);
   color: var(--accent);
 }
 
-/* Legacy user pages (courses, meals, etc.) */
+/* Meals page extras */
+.meal-date-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.meal-date-filter {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  padding: 0.45rem 0.875rem;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.meal-date-filter.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.meal-sticky-cta {
+  position: fixed;
+  bottom: calc(var(--bottom-nav-height) + 0.75rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100% - 2rem), 448px);
+  z-index: 90;
+}
+
+.meal-sticky-cta .btn {
+  width: 100%;
+  min-height: 48px;
+  border-radius: var(--radius-btn);
+  font-size: var(--text-body);
+  font-weight: 700;
+  box-shadow: var(--shadow-md);
+}
+
+@media (min-width: 768px) {
+  .meal-sticky-cta {
+    bottom: 1.5rem;
+  }
+}
+
+/* Legacy user pages */
 .user-section {
   display: flex;
   flex-direction: column;

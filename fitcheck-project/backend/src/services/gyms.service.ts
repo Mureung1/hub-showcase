@@ -66,10 +66,12 @@ function toGymDto(row: GymRow, trainers?: TrainerDto[], distanceKm?: number): Gy
   };
 }
 
+type GymsSelectBuilder = ReturnType<ReturnType<ReturnType<typeof getSupabase>['from']>['select']>;
+
 function applyFilters(
-  builder: ReturnType<ReturnType<typeof getSupabase>['from']>,
+  builder: GymsSelectBuilder,
   query: Pick<ListGymsQuery, 'type' | 'q' | 'lat' | 'lng' | 'radiusKm'>,
-) {
+): GymsSelectBuilder {
   let next = builder.eq('is_active', true);
 
   if (query.type) {
