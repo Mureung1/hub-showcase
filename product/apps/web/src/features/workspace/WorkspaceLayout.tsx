@@ -114,7 +114,6 @@ export function WorkspaceLayout({
           onCatalogRetry={onCatalogRetry}
           category={selection.categorySelection.name}
           categorySelection={selection.categorySelection}
-          categoryCoverageReason={storefronts.categoryCoverageReason}
           layer={selection.layer}
           topic={selection.analysisTopic}
           boundaryVisible={selection.boundaryVisible}
@@ -158,6 +157,7 @@ export function WorkspaceLayout({
         }
         mapBody={
           <MarketMapCanvas
+            key={catalogState.marketIdByKey[selection.marketKey]}
             market={market}
             marketKey={selection.marketKey}
             marketId={catalogState.marketIdByKey[selection.marketKey]}
