@@ -48,6 +48,7 @@ export interface CurateInput {
   major: string;
   keywords: string[];
   query: string;
+  lang?: 'KO' | 'EN';
 }
 
 export interface QueryTransformResult {

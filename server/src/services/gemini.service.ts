@@ -87,7 +87,7 @@ export async function evaluatePapersWithRAG(papers: S2RawPaper[], input: CurateI
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const modelName = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
-  const systemInstruction = buildCurateRAGSystemInstruction(input.major, input.keywords, input.query);
+  const systemInstruction = buildCurateRAGSystemInstruction(input.major, input.keywords, input.query, input.lang);
 
   return await callGeminiWithBackoff(async () => {
     const model = genAI.getGenerativeModel({

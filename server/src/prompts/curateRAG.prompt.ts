@@ -1,7 +1,8 @@
 import { SchemaType } from '@google/generative-ai';
 
-export function buildCurateRAGSystemInstruction(major: string, keywords: string[], query: string): string {
-  const keywordsStr = Array.isArray(keywords) && keywords.length > 0 ? keywords.join(', ') : '없음';
+export function buildCurateRAGSystemInstruction(major: string, keywords: string[], query: string, lang: 'KO' | 'EN' = 'KO'): string {
+  const keywordsStr = Array.isArray(keywords) && keywords.length > 0 ? keywords.join(', ') : (lang === 'EN' ? 'None' : '없음');
+  const targetLanguage = lang === 'EN' ? 'English' : 'Korean';
 
   return `
 너는 최고 수준의 인공지능(AI/ML) 연구 큐레이션 에이전트이다.
@@ -10,6 +11,7 @@ export function buildCurateRAGSystemInstruction(major: string, keywords: string[
 - 전공 분야 (Major): "${major}"
 - 연구 세부 키워드 (Keywords): [${keywordsStr}]
 - 최우선 연구 질문 (Original Query): "${query}"
+- 응답 언어 지침 (Language Requirement): MUST generate all output fields (reasoning and insights background, coreMethod, quantitativeResult) strictly in ${targetLanguage}.
 
 [큐레이션 및 데이터 클렌징 원칙]
 1. 최우선 연관성 필터링 (Relevance Filtering): OVG 기준을 평가하기에 앞서, 수집된 50편의 논문 중 사용자의 전공("${major}") 및 최우선 연구 질문("${query}")을 해결하는 데 직접적으로 연관된(Relevant) 논문인지 최우선으로 필터링하라.
@@ -20,7 +22,7 @@ export function buildCurateRAGSystemInstruction(major: string, keywords: string[
    - 2순위 (기계적 마침표 축약 금지): 'Journal -> J.' 같은 마침표(.) 슬라이싱 축약 절대 금지.
    - 3순위 (핵심 키워드 추출): 약어 미존재 시 불용어 제거 후 핵심 고유 명사 키워드만 남겨 50자 이내로 압축.
 5. 원문 링크 포함 (URL Preservation): 각 논문의 원문 접근 링크(url)를 반드시 포함하여 반환하라.
-6. XAI 근거 및 3줄 인사이트 작성: 선별된 논문들에 대하여 사용자 연구 질문("${query}")과 전공("${major}")에 어떻게 부합하는지 reasoning과 insights(background, coreMethod, quantitativeResult)를 한국어로 명확히 기술하라.
+6. XAI 근거 및 3줄 인사이트 작성: 선별된 논문들에 대하여 사용자 연구 질문("${query}")과 전공("${major}")에 어떻게 부합하는지 reasoning과 insights(background, coreMethod, quantitativeResult)를 반드시 ${targetLanguage}로 명확히 기술하라.
    - insights.background: 연구 배경 및 풀어내고자 하는 핵심 문제
    - insights.coreMethod: 논문에서 제시한 독자적인 핵심 알고리즘/방법론
    - insights.quantitativeResult: 수치적 정량 성과 및 연구 개선 결과
