@@ -33,7 +33,7 @@ export function formatSelectedRegionLabel(region: SelectedRegion, lang: Lang): s
       ? region.ctpvNmEn
       : region.ctpvNm
   const sgg = lang === 'en' && region.sggNmEn ? region.sggNmEn : region.sggNm
-  return `${ctpv} / ${sgg}`
+  return region.dongNm ? `${ctpv} / ${sgg} / ${region.dongNm}` : `${ctpv} / ${sgg}`
 }
 
 export function useSelectedRegion() {
