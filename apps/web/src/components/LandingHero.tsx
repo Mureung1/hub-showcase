@@ -6,8 +6,7 @@ type LandingHeroProps = {
 };
 
 export function LandingHero({ onStart }: LandingHeroProps) {
-  const demoVideoUrl = `${import.meta.env.BASE_URL}assets/landing/ptop-demo.mp4`;
-  const demoPosterUrl = `${import.meta.env.BASE_URL}assets/ptop-demo-preview.svg`;
+  const workspaceHeroUrl = `${import.meta.env.BASE_URL}assets/landing/workspace-hero.png`;
 
   return (
     <>
@@ -19,17 +18,11 @@ export function LandingHero({ onStart }: LandingHeroProps) {
           className="absolute inset-x-0 bottom-0 top-[calc(var(--header-height))] z-0 overflow-hidden"
           aria-hidden="true"
         >
-          <video
-            className="block h-full w-full object-cover object-center"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            poster={demoPosterUrl}
-          >
-            <source src={demoVideoUrl} type="video/mp4" />
-          </video>
+          <img
+            className="h-full w-full scale-[1.08] object-cover object-center"
+            src={workspaceHeroUrl}
+            alt=""
+          />
         </div>
         <div
           className="absolute inset-x-0 bottom-0 top-[calc(var(--header-height))] z-10 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.9)_0%,rgba(255,255,255,0.72)_22%,rgba(255,255,255,0.34)_50%,rgba(255,255,255,0.06)_78%,transparent_100%)] backdrop-blur-[0.5px]"
