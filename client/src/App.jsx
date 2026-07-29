@@ -209,7 +209,7 @@ function App() {
           imageUrl,
         })
       } else {
-        saved = await activeRepository.createCheckin(checkin)
+        saved = await activeRepository.createCheckin(checkin, photoFile)
       }
 
       setCheckins((current) => [saved, ...current])

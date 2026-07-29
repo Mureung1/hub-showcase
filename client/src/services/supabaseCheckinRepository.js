@@ -1,3 +1,12 @@
+const PHOTO_BUCKET = 'checkin-photos'
+
+const PHOTO_EXTENSIONS = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+}
+
 function toCheckin(row) {
   return {
     id: row.id,
@@ -49,6 +58,36 @@ export function createSupabaseCheckinRepository(supabaseClient) {
     return data.user.id
   }
 
+  async function uploadPhoto(photoFile, userId) {
+    const extension = PHOTO_EXTENSIONS[photoFile.type]
+    if (!extension) {
+      throw new Error('JPG, PNG, WEBP, GIF 사진만 첨부할 수 있어요.')
+    }
+
+    const photoPath = `${userId}/${Date.now()}-${crypto.randomUUID()}.${extension}`
+    const bucket = supabaseClient.storage.from(PHOTO_BUCKET)
+    const { error } = await bucket.upload(photoPath, photoFile, {
+      cacheControl: '3600',
+      contentType: photoFile.type,
+      upsert: false,
+    })
+
+    if (error) {
+      throw createRepositoryError('사진을 Supabase에 업로드하지 못했습니다.', error)
+    }
+
+    const { data } = bucket.getPublicUrl(photoPath)
+    if (!data?.publicUrl) {
+      await bucket.remove([photoPath])
+      throw new Error('업로드한 사진 주소를 만들지 못했습니다.')
+    }
+
+    return {
+      imageUrl: data.publicUrl,
+      photoPath,
+    }
+  }
+
   async function getCheckins() {
     const userId = await getUserId()
     const { data, error } = await supabaseClient
@@ -64,15 +103,29 @@ export function createSupabaseCheckinRepository(supabaseClient) {
     return data.map(toCheckin)
   }
 
-  async function createCheckin(entry) {
+  async function createCheckin(entry, photoFile) {
     const userId = await getUserId()
+    let uploadedPhoto = null
+
+    if (photoFile) {
+      uploadedPhoto = await uploadPhoto(photoFile, userId)
+    }
+
     const { data, error } = await supabaseClient
       .from('checkins')
-      .insert(toRow(entry, userId))
+      .insert(toRow({
+        ...entry,
+        imageUrl: uploadedPhoto?.imageUrl || entry.imageUrl,
+      }, userId))
       .select()
       .single()
 
     if (error) {
+      if (uploadedPhoto) {
+        await supabaseClient.storage
+          .from(PHOTO_BUCKET)
+          .remove([uploadedPhoto.photoPath])
+      }
       throw createRepositoryError('클라우드에 기록을 저장하지 못했습니다.', error)
     }
 

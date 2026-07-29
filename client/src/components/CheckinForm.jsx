@@ -41,22 +41,16 @@ function CheckinForm({
         <span>한두 문장이어도 충분해요.</span>
         <span>{rawText.length} / 2000</span>
       </div>
-      {isGuest && <PhotoUpload file={photoFile} onChange={onPhotoChange} />}
-      <div className="guest-storage-note">
-        <span aria-hidden="true">{isGuest ? '🔒' : '☁️'}</span>
-        <div>
-          <strong>
-            {isGuest
-              ? '기록과 사진은 이 기기에만 저장돼요.'
-              : '기록은 내 Supabase 계정에 저장돼요.'}
-          </strong>
-          <span>
-            {isGuest
-              ? '브라우저 데이터를 삭제하면 기록도 함께 사라질 수 있어요.'
-              : '사진 클라우드 동기화는 준비 중이라 지금은 첨부할 수 없어요.'}
-          </span>
+      <PhotoUpload file={photoFile} onChange={onPhotoChange} />
+      {isGuest && (
+        <div className="guest-storage-note">
+          <span aria-hidden="true">🔒</span>
+          <div>
+            <strong>기록과 사진은 이 기기에만 저장돼요.</strong>
+            <span>브라우저 데이터를 삭제하면 기록도 함께 사라질 수 있어요.</span>
+          </div>
         </div>
-      </div>
+      )}
       <button
         className="button button-secondary save-without-ai"
         type="button"
