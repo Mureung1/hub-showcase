@@ -5,8 +5,6 @@
   "githubUser": "codms8369(박채은)",
   "demoUrl": "https://calme-frontend.vercel.app",
   "demoVideoUrl": "https://drive.google.com/file/d/1U_t_j6QlnRvV3D1E9VH4mmuEyz8jYhUG/view?usp=sharing",
-  "repositoryUrl": "https://github.com/codms8369/hub",
-  "license": "MIT",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/dashboard.webp",
@@ -43,29 +41,6 @@
     "Supabase + Vercel + Render 풀스택 배포로 프로덕션 환경의 데이터 영속성과 확장성을 보장합니다."
   ],
   "developmentWithAI": "사용자 흐름, 기술 아키텍처, Mock 데이터 설계를 AI와 함께 정했습니다. 기능 구현 단계에서는 AI의 코드 리뷰와 개선안을 받아 더욱 견고한 서비스를 만들었습니다. Claude API 연동 시 프롬프트 엔지니어링과 응답 검증 로직을 함께 개선했습니다.",
-  "deployment": {
-    "frontend": {
-      "platform": "Vercel",
-      "url": "https://calme-frontend.vercel.app"
-    },
-    "backend": {
-      "platform": "Render",
-      "url": "https://calme-backend.onrender.com"
-    },
-    "database": {
-      "platform": "Supabase",
-      "type": "PostgreSQL"
-    }
-  },
-  "projectDates": {
-    "startDate": "2024-11-01",
-    "endDate": "2024-11-30"
-  },
-  "relatedLinks": [
-    "발표 자료: docs/presentation/week3/presentation.html",
-    "프로젝트 README: https://github.com/codms8369/hub#readme",
-    "배포 가이드: docs/배포와%20CICD.pdf"
-  ],
   "agent": {
     "summary": "기획부터 구현, 테스트까지 AI Agent를 활용해 개발을 진행했습니다.",
     "agentTools": [
