@@ -103,6 +103,7 @@ const NUTRIENT_SUMMARY_LIMIT = 3
 // nutrients: [{ key, label, unit, value }] — value가 있는 항목만 호출부가 걸러 넘긴다.
 // 처음 NUTRIENT_SUMMARY_LIMIT개만 보여주고, 나머지는 "더보기"로 펼친다(막대그래프 없이 같은
 // 텍스트 톤 유지 — NEIS 미량영양소는 앱 기준 막대 스케일이 없어 억지로 만들지 않는다).
+// layout='numbered'(학식) 전용 — stacked(급식)는 아래 MacroGrid를 대신 쓴다.
 function NutrientSection({ nutrients }) {
   const [expanded, setExpanded] = useState(false)
   if (!nutrients || nutrients.length === 0) return null
@@ -130,6 +131,58 @@ function NutrientSection({ nutrients }) {
         >
           {expanded ? '접기' : '더보기'}
         </button>
+      )}
+    </>
+  )
+}
+
+// layout='stacked'(급식) 전용 — 지도·달력 모바일 개편 3안이 요구한 3열 매크로 그리드
+// (탄수화물/단백질/지방). NEIS는 항상 이 순서로 6개(탄수/단백/지방/칼슘/철분/비타민C)를 주므로
+// (CafeteriaPanel.jsx의 NEIS_NUTRIENT_DISPLAY) 처음 3개를 그리드로, 나머지 3개는 NutrientSection과
+// 같은 "더보기" 패턴으로 접어둔다 — 화면은 3열만 보여주되 정보량은 그대로 유지한다.
+function MacroGrid({ nutrients }) {
+  const [expanded, setExpanded] = useState(false)
+  if (!nutrients || nutrients.length === 0) return null
+
+  const primary = nutrients.slice(0, 3)
+  const rest = nutrients.slice(3)
+
+  return (
+    <>
+      <div style={{ display: 'flex', gap: spacing.sm, padding: `${spacing.md}px 0`, borderTop: `1px solid ${colors.border}`, marginTop: spacing.sm }}>
+        {primary.map((n) => (
+          <div key={n.key} style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: 11, color: colors.muted }}>{n.label}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: colors.textStrong, marginTop: 2 }}>
+              {n.value}
+              {n.unit}
+            </div>
+          </div>
+        ))}
+      </div>
+      {rest.length > 0 && (
+        <>
+          {expanded && (
+            <p style={{ margin: `0 0 ${spacing.xs}px`, fontSize: font.size.xs, color: colors.textSub, textAlign: 'center' }}>
+              {rest.map((n, i) => (
+                <span key={n.key}>
+                  {i > 0 && ' · '}
+                  {n.label} {n.value}
+                  {n.unit}
+                </span>
+              ))}
+            </p>
+          )}
+          <button
+            type="button"
+            className="tds-press"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            style={{ ...styles.linkButton, display: 'block', margin: '0 auto', fontSize: font.size.xs }}
+          >
+            {expanded ? '접기' : '더보기'}
+          </button>
+        </>
       )}
     </>
   )
@@ -168,15 +221,27 @@ function ConflictMark() {
 
 function MenuList({ menus, layout, onAnalyzeMenu, analyzingMenu, profileAllergies }) {
   if (layout === 'stacked') {
+    // 지도·달력 모바일 개편 3안 — 세로 나열 대신 칩 배열(flex-wrap)로 바꿔 메뉴가 많아도 카드가
+    // 세로로 길어지지 않는다. 알레르기 겹침 표시(ConflictMark)는 칩 안에 그대로 유지.
     return (
-      <ul style={{ margin: `${spacing.md}px 0 0`, padding: 0, listStyle: 'none', textAlign: 'center' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, margin: `${spacing.md}px 0 0` }}>
         {menus.map((menu, i) => (
-          <li key={i} style={{ fontSize: font.size.lg, color: colors.textStrong, lineHeight: 2, fontWeight: 600 }}>
+          <span
+            key={i}
+            style={{
+              fontSize: 13.5,
+              fontWeight: 600,
+              color: colors.textStrong,
+              background: colors.bg,
+              padding: '9px 13px',
+              borderRadius: radius.sm,
+            }}
+          >
             {menu.name}
             {findAllergyConflicts(profileAllergies, menu.allergyCodes).length > 0 && <ConflictMark />}
-          </li>
+          </span>
         ))}
-      </ul>
+      </div>
     )
   }
 
@@ -276,8 +341,8 @@ export default function MealCard({
 
       <MenuList menus={menus} layout={layout} onAnalyzeMenu={onAnalyzeMenu} analyzingMenu={analyzingMenu} profileAllergies={profileAllergies} />
       {menuError && <p style={{ ...styles.errorText, textAlign: 'center' }}>{menuError}</p>}
+      {layout === 'stacked' ? <MacroGrid nutrients={nutrients} /> : <NutrientSection nutrients={nutrients} />}
       <AllergyLegend menus={menus} estimated={estimated} showPerItemDetail={layout === 'stacked'} />
-      <NutrientSection nutrients={nutrients} />
 
       {onAnalyzeTray && (
         <div style={{ marginTop: spacing.md }}>

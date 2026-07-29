@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
+import { TAB_BAR_CLEARANCE } from '../components/AppShell.jsx'
+import BottomSheet from '../components/BottomSheet.jsx'
 import CafeteriaPanel from '../components/CafeteriaPanel.jsx'
 import Card from '../components/Card.jsx'
+import ChevronIcon from '../components/ChevronIcon.jsx'
 import FoodCategoryChips from '../components/FoodCategoryChips.jsx'
 import NaverPlaceMap from '../components/NaverPlaceMap.jsx'
 import PlaceDuelModal from '../components/PlaceDuelModal.jsx'
@@ -29,7 +32,7 @@ import { diversifyByCategory } from '../lib/placeDiversity.js'
 import { calcPlaceScore } from '../lib/placeScore.js'
 import { TABS } from '../lib/tabs.js'
 import { useDocumentTitle } from '../lib/useDocumentTitle.js'
-import { colors, font, radius, spacing, styles } from '../styles/theme.js'
+import { colors, font, layout, radius, spacing, styles } from '../styles/theme.js'
 
 // 위치 권한 거부/실패 시 지도를 띄울 기본 위치(대전 유성구 충남대학교 인근)
 const DEFAULT_POSITION = { lat: 36.3665, lng: 127.3448 }
@@ -53,9 +56,16 @@ const BALANCED_KEYWORDS = ['백반', '샐러드', '정식']
 // 결과가 한 유형으로만 몰렸을 때 보완 검색에 쓰는 다양화 풀
 const DIVERSITY_POOL = ['샐러드', '고깃집', '비빔밥', '쌈밥', '두부요리']
 // 네이버 지역 검색은 쿼리당 최대 5건만 준다(실측 — proxy.js 참고). 후보 풀은 키워드 수로 늘리므로,
-// 키워드당 결과는 전부(5건) 쓰고 최종 목록은 5곳으로 자른다(네이버 응답 한도에 맞춤).
+// 키워드당 결과는 전부(5건) 쓴다.
 const MAX_PER_KEYWORD = 5
-const MAX_TOTAL_PLACES = 5
+// 지도 탭 개편(리텐션 강화 v7) — "내 주변 식당 N곳 · 목록 더 보기"를 위해 예전(5곳)보다 넉넉히
+// 받아둔다. 10으로 잡은 이유: attachExpectedIntake/enrichExpectedFromDB(장소당 Gemini+DB 조회 —
+// 비용이 드는 단계)가 이 값만큼 전부 돌기 때문에, 15 이상으로 올리면 "더 보기"를 한 번도 안 누르는
+// 검색에서도 AI 비용만 3배로 늘어난다. 10은 비용 증가를 2배로 묶어두면서도 "더 보기"가 실제로 몇
+// 곳을 더 보여줄 수 있게 하는 절충값이다. 처음 화면엔 INITIAL_VISIBLE_PLACES(5)곳만 보여주고 나머지는
+// 이미 받아둔 데이터 안에서 "더 보기"로 펼친다(추가 API 호출 없음).
+const MAX_TOTAL_PLACES = 10
+const INITIAL_VISIBLE_PLACES = 5
 // 한 번의 검색 라운드에서 병렬로 던질 최대 키워드 수(호출량·지연 상한)
 const MAX_SEARCH_KEYWORDS = 4
 // 네이버 지역 검색은 반경 파라미터가 없어 검색어에 지역명을 섞는 것만으로는 먼 결과가 섞여 들어올 수
@@ -265,7 +275,7 @@ async function searchOccupationPlaces({ x, y }, occupation) {
 // occupationPlaces는 attachExpectedIntake를 안 거쳐 place.expected가 없으므로, PlaceList에서
 // "추천 이유"·"예상 섭취량" 없이 그냥 후보 카드로만 뜬다 — 문구로 직업을 언급할 지점 자체가 없다.
 //
-// nutrientPlaces 자체가 이미 MAX_TOTAL_PLACES(8곳)까지 채워져 있는 경우가 많아(상업지구 등), 그냥
+// nutrientPlaces 자체가 이미 MAX_TOTAL_PLACES곳까지 채워져 있는 경우가 많아(상업지구 등), 그냥
 // 뒤에 이어 붙이고 slice하면 직업 매칭분이 들어갈 자리가 사실상 없다(리뷰에서 발견) — 최소
 // RESERVED_OCCUPATION_SLOTS곳은 직업 매칭 전용으로 남겨둔다.
 const RESERVED_OCCUPATION_SLOTS = 2
@@ -367,6 +377,190 @@ async function attachExpectedIntake(places, deficientRows, allergyLabels = [], {
   }
 }
 
+const HEADER_SELECTOR = '.tds-appbar'
+
+// 지도 탭 개편(지도·달력 모바일 개편 3안) — 지도가 상단 Header 아래부터 하단 탭바 위까지 화면
+// 전체를 차지하는 레이아웃으로 바뀌면서, 다른 4개 탭과 달리 "내 바로 위에 고정 헤더가 실제로 얼마나
+// 큰지"를 알아야 하는 유일한 화면이 됐다. Header.jsx/AppShell.jsx는 건드리지 않고(다른 탭은 그냥
+// 문서 흐름대로 스크롤되는 일반 페이지라 이 계산이 필요 없다) 이미 있는 .tds-appbar 클래스로 실제
+// 렌더된 높이를 재서 얻는다 — 로그인 상태·안전영역(노치)에 따라 달라지는 헤더 높이를 하드코딩하지
+// 않기 위함. useLayoutEffect로 페인트 전에 값을 확정해 첫 프레임에 지도가 살짝 밀렸다 튀는 걸 막는다.
+function useMapScreenTop() {
+  const [top, setTop] = useState(64)
+  useLayoutEffect(() => {
+    function measure() {
+      const header = document.querySelector(HEADER_SELECTOR)
+      if (header) setTop(header.getBoundingClientRect().bottom)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
+  return top
+}
+
+// 지도 위 상단 오버레이 — "주변 식당 | 학식·급식" 세그먼트(늘 보임) + 음식 종류 칩('주변 식당'일 때만).
+function MapTopOverlay({ view, onChangeView, categoryKey, onChangeCategory, disabled }) {
+  return (
+    <div style={{ position: 'relative', zIndex: 2, padding: '4px 16px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <SegmentedControl
+        options={MAP_VIEW_OPTIONS}
+        value={view}
+        onChange={onChangeView}
+        padding={`${spacing.sm}px 0`}
+        fontSize={font.size.sm}
+        inactiveTextColor={colors.textStrong}
+        style={{ background: 'rgba(255,255,255,0.92)', borderRadius: radius.md, padding: 4, boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}
+      />
+      {view === 'nearby' && <FoodCategoryChips variant="overlay" value={categoryKey} onChange={onChangeCategory} disabled={disabled} />}
+    </div>
+  )
+}
+
+// 시트 하단 고정 푸터 — 평소엔 "두 곳 비교하기"(듀얼 모드 진입), 모드 안에서는 선택 진행 상황에
+// 맞춰 라벨이 바뀐다. 취소(비교 모드 끄기)는 별도 텍스트 링크로 아래에 둔다.
+function DuelFooterButton({ duelMode, duelSelectedKeys, onStart, onOpen, onCancel }) {
+  if (!duelMode) {
+    return (
+      <AppButton onClick={onStart} style={{ borderRadius: radius.md, padding: '13px 0' }}>
+        두 곳 비교하기
+      </AppButton>
+    )
+  }
+  const ready = duelSelectedKeys.length === 2
+  return (
+    <div>
+      <AppButton onClick={onOpen} disabled={!ready} style={{ borderRadius: radius.md, padding: '13px 0' }}>
+        {ready ? '비교하기 (2/2)' : `비교할 두 곳을 선택하세요 (${duelSelectedKeys.length}/2)`}
+      </AppButton>
+      <button
+        type="button"
+        className="tds-press"
+        onClick={onCancel}
+        style={{ ...styles.linkButton, display: 'block', margin: `${spacing.sm}px auto 0`, fontSize: font.size.xs, color: colors.muted }}
+      >
+        비교 모드 끄기
+      </button>
+    </div>
+  )
+}
+
+// 바텀시트 안 '주변 식당' 콘텐츠 — 검색 전/로딩/결과 3상태 + "다른 지역에서 찾기"(기본 접힘)를 한
+// 자리에 모은다. 원래 화면 세로로 쌓여있던 지도 카드/카테고리 카드/지역검색 카드/결과 리스트를 시트
+// 하나로 합친 것뿐, 각 조각의 로직(검색·재시도·완화 안내)은 MapPage의 기존 핸들러를 그대로 받아쓴다.
+function NearbySheetContent({
+  places,
+  visiblePlaces,
+  nearbyLoading,
+  nearbyError,
+  locationNotice,
+  categoryNotice,
+  staleCategory,
+  showAllPlaces,
+  onShowAllPlaces,
+  todayTotal,
+  recommended,
+  deficientRows,
+  duelMode,
+  duelSelectedKeys,
+  onToggleDuelSelect,
+  locationQuery,
+  onChangeLocationQuery,
+  onSearchByLocation,
+  onFindNearby,
+}) {
+  const [showLocationSearch, setShowLocationSearch] = useState(false)
+
+  return (
+    <div style={{ padding: '4px 18px 4px' }}>
+      <button
+        type="button"
+        className="tds-press"
+        onClick={() => setShowLocationSearch((v) => !v)}
+        aria-expanded={showLocationSearch}
+        style={{ ...styles.linkButton, display: 'flex', alignItems: 'center', gap: 4, fontSize: 12.5, marginBottom: spacing.sm }}
+      >
+        다른 지역에서 찾기
+        <ChevronIcon open={showLocationSearch} />
+      </button>
+
+      {showLocationSearch && (
+        <div style={{ marginBottom: spacing.md }}>
+          <input
+            type="text"
+            value={locationQuery}
+            onChange={(e) => onChangeLocationQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                onSearchByLocation()
+              }
+            }}
+            placeholder="지역명/주소 입력 (예: 대전 유성구, 강남역)"
+            style={styles.input}
+          />
+          <AppButton variant="secondary" onClick={onSearchByLocation} disabled={nearbyLoading} style={{ marginTop: spacing.sm }}>
+            이 위치로 검색
+          </AppButton>
+        </div>
+      )}
+
+      <AppButton onClick={onFindNearby} disabled={nearbyLoading}>
+        {nearbyLoading && <Spinner size={16} />}
+        {nearbyLoading ? '찾는 중...' : staleCategory ? '이 종류로 다시 찾기' : '내 주변에서 찾기'}
+      </AppButton>
+      {nearbyError && <p style={styles.errorText}>{nearbyError}</p>}
+      {locationNotice && <p style={{ ...styles.helperText, fontSize: font.size.xs, marginTop: spacing.xs }}>{locationNotice}</p>}
+
+      {nearbyLoading && (
+        <div style={{ marginTop: spacing.md, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {[0, 1].map((i) => (
+            <Card key={i} flat>
+              <Skeleton height={18} width="45%" style={{ marginBottom: spacing.sm }} />
+              <Skeleton height={14} width="70%" style={{ marginBottom: spacing.sm }} />
+              <Skeleton height={14} width="55%" />
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {!nearbyLoading && places && places.length > 0 && (
+        <div style={{ marginTop: spacing.md }}>
+          {categoryNotice && !staleCategory && (
+            <Card style={{ background: colors.deficientSurface, boxShadow: 'none', marginBottom: spacing.sm }}>
+              <p style={{ margin: 0, color: colors.textStrong, fontSize: font.size.sm }}>{categoryNotice}</p>
+            </Card>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+            <span style={{ fontSize: 15, fontWeight: 800, color: colors.textStrong }}>내 주변 식당 {places.length}곳</span>
+            {!showAllPlaces && places.length > INITIAL_VISIBLE_PLACES && (
+              <button
+                type="button"
+                className="tds-press"
+                onClick={onShowAllPlaces}
+                style={{ ...styles.linkButton, fontSize: 12.5, whiteSpace: 'nowrap' }}
+              >
+                목록 더 보기 ({places.length - INITIAL_VISIBLE_PLACES}곳)
+              </button>
+            )}
+          </div>
+
+          <PlaceList
+            places={visiblePlaces}
+            todayTotal={todayTotal}
+            recommended={recommended}
+            deficientRows={deficientRows}
+            selectable={duelMode}
+            selectedKeys={duelSelectedKeys}
+            onToggleSelect={onToggleDuelSelect}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function MapPage() {
   useDocumentTitle(TABS.find((t) => t.key === 'map').label)
   const { profile, todayMealsTotal, effectiveRecommended } = useUser()
@@ -393,11 +587,18 @@ export default function MapPage() {
   const [myPosition, setMyPosition] = useState(null)
   const [locationNotice, setLocationNotice] = useState('')
   const [nearbyLoading, setNearbyLoading] = useState(false)
+  // "목록 더 보기" — 새 검색을 시작할 때마다 다시 접힌 상태로 되돌린다(핸들러들에서 리셋).
+  const [showAllPlaces, setShowAllPlaces] = useState(false)
+  const visiblePlaces = places ? (showAllPlaces ? places : places.slice(0, INITIAL_VISIBLE_PLACES)) : []
 
   // FR-18 — 지도 듀얼 비교. 다중 선택 모드에서 카드 2개를 고르면 "비교하기"가 나타난다.
   const [duelMode, setDuelMode] = useState(false)
   const [duelSelectedKeys, setDuelSelectedKeys] = useState([])
   const [duelPair, setDuelPair] = useState(null) // [placeA, placeB] | null
+  // 바텀시트 접힘(330px)/펼침(640px) — 지도 탭 개편(지도·달력 모바일 개편 3안). 학식·급식으로
+  // 탭을 바꿔도 그대로 유지된다(사용자가 펼쳐둔 상태를 기억하는 편이 자연스럽다).
+  const [sheetExpanded, setSheetExpanded] = useState(false)
+  const screenTop = useMapScreenTop()
 
   function handleToggleDuelMode() {
     setDuelMode((v) => !v)
@@ -576,6 +777,8 @@ export default function MapPage() {
     setNearbyError('')
     setCategoryNotice('')
     setPlaces(null)
+    setShowAllPlaces(false)
+    setDuelSelectedKeys([])
     try {
       const { x, y } = await getCurrentPosition()
       const [{ places: results, categoryNotice }, occupationResults] = await Promise.all([
@@ -616,6 +819,8 @@ export default function MapPage() {
     setNearbyError('')
     setCategoryNotice('')
     setPlaces(null)
+    setShowAllPlaces(false)
+    setDuelSelectedKeys([])
     try {
       const { x, y, label } = await geocodeLocation(query)
       const [{ places: results, categoryNotice }, occupationResults] = await Promise.all([
@@ -646,120 +851,95 @@ export default function MapPage() {
   }
 
   return (
-    <div style={styles.page}>
-      {/* 화면 제목("지도")과 설명 줄은 두지 않는다 — 하단 탭바가 이미 현재 화면을 알려주므로
-          중복이고, 지도를 위로 올려 한 화면에 더 넓게 보여준다. */}
-      <div style={{ marginBottom: spacing.md }}>
-        <SegmentedControl
-          options={MAP_VIEW_OPTIONS}
-          value={view}
-          onChange={setView}
-          padding={`${spacing.sm}px 0`}
-          fontSize={font.size.sm}
-          inactiveTextColor={colors.textStrong}
-        />
-      </div>
-
-      {view === 'cafeteria' && <CafeteriaPanel />}
-
-      {view === 'nearby' && (
-      <>
-      <div style={{ marginBottom: spacing.md }}>
+    <>
+      {/* 지도 탭 개편(지도·달력 모바일 개편 3안) — 지도가 화면 전체(상단 Header 아래 ~ 하단 탭바
+          위)를 차지하고 목록/학식·급식은 그 위에 뜨는 바텀시트로 옮겨졌다. 화면 제목("지도")과 설명
+          줄은 원래도 없었다 — 하단 탭바가 이미 현재 화면을 알려준다. left:50%+translateX(-50%)로
+          다른 탭과 같은 shellMaxWidth 중앙 정렬 폭을 유지한다(넓은 웹 브라우저에서 지도만 화면
+          가장자리까지 번지지 않게). */}
+      <div
+        style={{
+          position: 'fixed',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: `min(100%, ${layout.shellMaxWidth}px)`,
+          top: screenTop,
+          bottom: TAB_BAR_CLEARANCE,
+          overflow: 'hidden',
+          background: colors.bg,
+        }}
+      >
         {myPosition ? (
-          <NaverPlaceMap myPosition={myPosition} places={mapPlaces} />
+          <NaverPlaceMap myPosition={myPosition} places={mapPlaces} fullScreen />
         ) : (
-          <Skeleton height={320} radius={radius.lg} />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: '#E9EDEA',
+              backgroundImage: 'linear-gradient(#DFE5E0 1px, transparent 1px), linear-gradient(90deg, #DFE5E0 1px, transparent 1px)',
+              backgroundSize: '34px 34px',
+            }}
+          />
         )}
-        {locationNotice && (
-          <p style={{ ...styles.helperText, margin: `${spacing.sm}px 0 0`, textAlign: 'center' }}>{locationNotice}</p>
+
+        <MapTopOverlay
+          view={view}
+          onChangeView={setView}
+          categoryKey={categoryKey}
+          onChangeCategory={handleChangeCategory}
+          disabled={nearbyLoading}
+        />
+
+        {view === 'nearby' && (
+          <BottomSheet
+            expanded={sheetExpanded}
+            onToggle={() => setSheetExpanded((v) => !v)}
+            footer={
+              places &&
+              places.length > 0 && (
+                <DuelFooterButton
+                  duelMode={duelMode}
+                  duelSelectedKeys={duelSelectedKeys}
+                  onStart={handleToggleDuelMode}
+                  onOpen={handleOpenDuel}
+                  onCancel={handleToggleDuelMode}
+                />
+              )
+            }
+          >
+            <NearbySheetContent
+              places={places}
+              visiblePlaces={visiblePlaces}
+              nearbyLoading={nearbyLoading}
+              nearbyError={nearbyError}
+              locationNotice={locationNotice}
+              categoryNotice={categoryNotice}
+              staleCategory={staleCategory}
+              showAllPlaces={showAllPlaces}
+              onShowAllPlaces={() => setShowAllPlaces(true)}
+              todayTotal={todayTotal}
+              recommended={recommended}
+              deficientRows={top3Rows}
+              duelMode={duelMode}
+              duelSelectedKeys={duelSelectedKeys}
+              onToggleDuelSelect={handleToggleDuelSelect}
+              locationQuery={locationQuery}
+              onChangeLocationQuery={setLocationQuery}
+              onSearchByLocation={handleSearchByLocation}
+              onFindNearby={handleFindNearby}
+            />
+          </BottomSheet>
+        )}
+
+        {view === 'cafeteria' && (
+          <BottomSheet expanded={sheetExpanded} onToggle={() => setSheetExpanded((v) => !v)}>
+            <div style={{ padding: '4px 18px 18px', display: 'flex', flexDirection: 'column', gap: spacing.md }}>
+              <CafeteriaPanel />
+            </div>
+          </BottomSheet>
         )}
       </div>
-
-      <Card>
-        <FoodCategoryChips value={categoryKey} onChange={handleChangeCategory} disabled={nearbyLoading} />
-        <AppButton onClick={handleFindNearby} disabled={nearbyLoading}>
-          {nearbyLoading && <Spinner size={16} />}
-          {nearbyLoading ? '찾는 중...' : staleCategory ? '이 종류로 다시 찾기' : '내 주변에서 찾기'}
-        </AppButton>
-        {nearbyError && <p style={styles.errorText}>{nearbyError}</p>}
-      </Card>
-
-      <Card>
-        <h3 style={{ fontSize: font.size.md, fontWeight: 600, margin: `0 0 ${spacing.sm}px`, color: colors.textStrong }}>
-          다른 지역에서 찾기
-        </h3>
-        <input
-          type="text"
-          value={locationQuery}
-          onChange={(e) => setLocationQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              handleSearchByLocation()
-            }
-          }}
-          placeholder="지역명/주소 입력 (예: 대전 유성구, 강남역)"
-          style={styles.input}
-        />
-        <AppButton
-          variant="secondary"
-          onClick={handleSearchByLocation}
-          disabled={nearbyLoading}
-          style={{ marginTop: spacing.sm }}
-        >
-          이 위치로 검색
-        </AppButton>
-      </Card>
-
-      {nearbyLoading && (
-        <>
-          {[0, 1].map((i) => (
-            <Card key={i}>
-              <Skeleton height={18} width="45%" style={{ marginBottom: spacing.sm }} />
-              <Skeleton height={14} width="70%" style={{ marginBottom: spacing.sm }} />
-              <Skeleton height={14} width="55%" />
-            </Card>
-          ))}
-        </>
-      )}
-
-      {!nearbyLoading && places && (
-        <>
-          {categoryNotice && !staleCategory && (
-            <Card style={{ background: colors.deficientSurface, boxShadow: 'none' }}>
-              <p style={{ margin: 0, color: colors.textStrong, fontSize: font.size.sm }}>{categoryNotice}</p>
-            </Card>
-          )}
-
-          {/* FR-18 — 두 곳을 골라 영양/가격을 1:1로 비교한다. */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
-            <button type="button" className="tds-press" onClick={handleToggleDuelMode} style={styles.linkButton}>
-              {duelMode ? '비교 모드 끄기' : '두 곳 비교하기'}
-            </button>
-            {duelMode && (
-              <AppButton
-                onClick={handleOpenDuel}
-                disabled={duelSelectedKeys.length !== 2}
-                style={{ width: 'auto', height: 'auto', padding: `${spacing.xs}px ${spacing.md}px`, fontSize: font.size.sm }}
-              >
-                비교하기 ({duelSelectedKeys.length}/2)
-              </AppButton>
-            )}
-          </div>
-
-          <PlaceList
-            places={places}
-            todayTotal={todayTotal}
-            recommended={recommended}
-            deficientRows={top3Rows}
-            selectable={duelMode}
-            selectedKeys={duelSelectedKeys}
-            onToggleSelect={handleToggleDuelSelect}
-          />
-        </>
-      )}
-      </>
-      )}
 
       {duelPair && (
         <PlaceDuelModal
@@ -767,9 +947,14 @@ export default function MapPage() {
           placeB={duelPair[1]}
           todayTotal={todayTotal}
           recommended={recommended}
-          onClose={() => setDuelPair(null)}
+          onClose={() => {
+            setDuelPair(null)
+            // 닫은 뒤 같은 두 곳을 다시 선택한 채로 남기면 "비교하기"가 즉시 같은 모달을 재오픈한다 —
+            // 새 듀얼을 시작하려면 선택도 함께 비운다.
+            setDuelSelectedKeys([])
+          }}
         />
       )}
-    </div>
+    </>
   )
 }

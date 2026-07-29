@@ -16,7 +16,12 @@ function placeIdentity(place) {
 // 6주차 §5부터 직업 맞춤 추천은 places 안에 조용히 섞여 들어온다(MapPage.jsx의
 // mergeOccupationPlaces) — 예전엔 여기서 별도 파란 핀으로 구분해 그렸지만, 화면에 "직업 맞춤"이라고
 // 표 나게 노출하지 않기로 하면서 이 컴포넌트도 places 전부를 같은 핀 색으로만 그리도록 단순해졌다.
-export default function NaverPlaceMap({ myPosition, places = [] }) {
+//
+// fullScreen(지도·달력 모바일 개편 3안): 지도 탭이 "지도가 화면 전체를 차지하고 그 위에 바텀시트가
+// 뜨는" 레이아웃으로 바뀌면서 추가했다 — 부모(MapPage.jsx)가 position:absolute; inset:0인 컨테이너
+// 안에 이 컴포넌트를 넣고, 이 컴포넌트는 그 부모를 100% 채우기만 하면 된다(기존처럼 자체 높이
+// 320px 카드로 렌더하지 않음). 로딩/에러 상태도 카드가 아니라 그 전체 영역 위에 겹쳐 보여준다.
+export default function NaverPlaceMap({ myPosition, places = [], fullScreen = false }) {
   const containerRef = useRef(null)
 
   const markers = useMemo(() => {
@@ -56,7 +61,14 @@ export default function NaverPlaceMap({ myPosition, places = [] }) {
   })
 
   if (loadError) {
-    return (
+    return fullScreen ? (
+      <div style={{ position: 'absolute', inset: 0, background: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: spacing.xl }}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={styles.errorText}>지도를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.</p>
+          <p style={{ ...styles.helperText, marginTop: spacing.xs }}>{loadError}</p>
+        </div>
+      </div>
+    ) : (
       <div style={{ ...styles.card, textAlign: 'center' }}>
         <p style={styles.errorText}>지도를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.</p>
         <p style={{ ...styles.helperText, marginTop: spacing.xs }}>{loadError}</p>
@@ -65,12 +77,32 @@ export default function NaverPlaceMap({ myPosition, places = [] }) {
   }
 
   if (!loaded) {
-    return (
+    return fullScreen ? (
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: '#e9edea',
+          backgroundImage: 'linear-gradient(#dfe5e0 1px, transparent 1px), linear-gradient(90deg, #dfe5e0 1px, transparent 1px)',
+          backgroundSize: '34px 34px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <p style={styles.helperText}>지도를 불러오는 중...</p>
+      </div>
+    ) : (
       <div style={{ ...styles.card, textAlign: 'center' }}>
         <p style={styles.helperText}>지도를 불러오는 중...</p>
       </div>
     )
   }
 
-  return <div ref={containerRef} style={{ width: '100%', height: 320, borderRadius: radius.lg, overflow: 'hidden' }} />
+  return (
+    <div
+      ref={containerRef}
+      style={fullScreen ? { position: 'absolute', inset: 0 } : { width: '100%', height: 320, borderRadius: radius.lg, overflow: 'hidden' }}
+    />
+  )
 }

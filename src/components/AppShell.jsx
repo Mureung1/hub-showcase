@@ -7,7 +7,10 @@ import { useUser } from '../context/UserContext.jsx'
 import { navDirection } from '../lib/useTabTransition.js'
 import { colors, layout } from '../styles/theme.js'
 
-const TAB_BAR_CLEARANCE = 76 // 탭바(고정 위치)에 콘텐츠 마지막 줄이 가리지 않도록 확보하는 하단 여백
+// 탭바(고정 위치)에 콘텐츠 마지막 줄이 가리지 않도록 확보하는 하단 여백. export하는 이유: 지도 탭
+// (MapPage.jsx)이 화면 전체를 차지하는 지도+바텀시트 레이아웃으로 개편되면서, 탭바 바로 위까지
+// 정확히 차오르는 높이를 직접 계산해야 하는 유일한 페이지가 됐다 — 같은 상수를 이중 관리하지 않는다.
+export const TAB_BAR_CLEARANCE = 76
 
 // 챗봇 런처(리텐션 강화 v4)를 띄울 탭 — MY(/profile)는 제외. AppShell은 이 4개 외에도 /login·
 // /signup·/forgot-password(hideTabBar)와 /·/result·404에도 재사용되므로, "/profile만 제외" 대신
