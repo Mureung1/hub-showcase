@@ -52,6 +52,9 @@ describe('AuthenticatedWorkspace 원격 실패 수용 기준', () => {
       async delete() {
         return { ok: false, reason: 'write-failed' };
       },
+      async deleteMany() {
+        return { ok: false, reason: 'write-failed' };
+      },
       async list() {
         return { insights: [], warnings: [] };
       },
