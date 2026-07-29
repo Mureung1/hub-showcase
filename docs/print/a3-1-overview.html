@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>A3 세로-1 기획·주제 — 소상공인 정부 지원금 큐레이터</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+    />
+    <link rel="stylesheet" href="print.css" />
+  </head>
+  <body>
+    <div class="hint">
+      인쇄 방법 — Chrome에서 열고 <b>⌘P</b> → 용지 <b>A3</b> / 방향 <b>세로</b> / 배율 <b>100%</b> /
+      여백 <b>없음</b> / <b>배경 그래픽 켜기</b> → PDF로 저장. 이 안내 박스는 인쇄되지 않습니다.
+    </div>
+
+    <div class="poster">
+      <header class="head">
+        <div class="head-main">
+          <div class="kicker">AI AGENT CHALLENGE · 시연 자료 1 / 2 · 기획과 주제</div>
+          <h1>소상공인 정부 지원금 큐레이터</h1>
+          <p class="lede">
+            업종·지역·규모를 입력하면 <b>내 조건에 맞는 지원금</b>을 매칭·정렬해 보여주고, 신청은
+            해당 기관 사이트로 연결한다
+          </p>
+        </div>
+        <div class="head-side">
+          <div class="url">hub.syd348.com</div>
+          <div class="meta">
+            기업마당 · K-Startup Open API · 매일 00:00 자동 수집<br />
+            누적 공고 1,500건 이상 · 개인 프로젝트 4주
+          </div>
+        </div>
+      </header>
+
+      <main class="grid c2">
+        <!-- ============ 왼쪽 : 문제와 범위 ============ -->
+        <div class="col spread">
+          <section class="panel">
+            <h2><span class="n">1</span>무엇이 불편한가</h2>
+
+            <div class="colflow">
+              <div class="row">
+                <div class="box dash pad-s"><div class="t">정부24</div></div>
+                <div class="box dash pad-s"><div class="t">소진공</div></div>
+                <div class="box dash pad-s"><div class="t">지자체</div></div>
+                <div class="box dash pad-s"><div class="t">기업마당</div></div>
+              </div>
+              <div class="row" style="justify-content: space-around">
+                <span class="arr mute">↓</span><span class="arr mute">↓</span>
+                <span class="arr mute">↓</span><span class="arr mute">↓</span>
+              </div>
+              <div class="box warn">
+                <div class="t">사이트마다 따로 검색 · 조건 비교는 수작업</div>
+                <div class="s">내게 맞는 게 있는지조차 알기 어렵다</div>
+              </div>
+            </div>
+
+            <div class="row" style="justify-content: center">
+              <span class="tag blue">그래서</span>
+            </div>
+
+            <div class="colflow">
+              <div class="box navy">
+                <div class="t">한 번 입력 → 한 화면에서 비교</div>
+                <div class="s">흩어진 공고를 모아 조건으로 걸러준다</div>
+              </div>
+              <span class="arr v">↓</span>
+              <div class="row">
+                <div class="box ok pad-s"><div class="t">매칭도순</div></div>
+                <div class="box ok pad-s"><div class="t">마감임박순</div></div>
+                <div class="box ok pad-s"><div class="t">금액순</div></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2><span class="n">2</span>입력 조건<small>4필수 + 1선택</small></h2>
+            <div class="chips">
+              <span class="chip solid">지원분야 (복수)</span>
+              <span class="chip solid">지역</span>
+              <span class="chip solid">업력</span>
+              <span class="chip solid">직원 수</span>
+              <span class="chip off">신용도 (선택)</span>
+            </div>
+            <p class="cap">
+              신용도는 <b>일부러 선택 항목</b>으로 뒀다 — 진입장벽을 낮추는 게 우선이라고 판단.
+            </p>
+          </section>
+
+          <section class="panel">
+            <h2><span class="n">3</span>핵심 기능은 두 개만</h2>
+            <div class="row top">
+              <div class="box blue">
+                <div class="t">A. 조건 매칭 + 정렬</div>
+                <div class="s">
+                  입력 조건으로 후보를 걸러내고<br />매칭도 · 마감임박 · 금액 순으로 재정렬
+                </div>
+              </div>
+              <div class="box blue">
+                <div class="t">B. 상세 + 신청 연결</div>
+                <div class="s">
+                  자격 · 서류 · 기간을 정리해 보여주고<br />실제 신청은 외부 기관으로 연결
+                </div>
+              </div>
+            </div>
+            <p class="cap">
+              선정 기준 — <b>없으면 서비스가 안 돌아가는가</b>(필수성),
+              <b>문제를 정확히 푸는가</b>(적합성). 데이터 수집은 사용자에게 보이지 않지만 이 둘의
+              전제라서 인프라로 따로 구축.
+            </p>
+          </section>
+
+          <section class="panel tint">
+            <h2><span class="n">4</span>이번 단계에서 안 한 것</h2>
+            <ul class="list x">
+              <li>관심 지원금 저장 · 마감 알림</li>
+              <li>
+                서비스 안에서 신청서 작성 —<b>상세 화면 다음 단계만 교체</b>하면 붙일 수 있게 설계
+              </li>
+            </ul>
+          </section>
+          <section class="panel dark">
+            <h2>실제 데이터에서 확인한 것</h2>
+            <div class="stats">
+              <div class="stat">
+                <div class="v">1,500<span>건</span></div>
+                <div class="k">수집·보관 중인 공고 (2개 소스)</div>
+              </div>
+              <div class="stat">
+                <div class="v">98<span>%</span></div>
+                <div class="k">지역 정보가 구조화된 비율</div>
+              </div>
+              <div class="stat">
+                <div class="v">17.3<span>%</span></div>
+                <div class="k">&lsquo;상시·소진시까지&rsquo;처럼 마감일이 없는 공고 → 별도 표기</div>
+              </div>
+              <div class="stat">
+                <div class="v">100<span>%</span></div>
+                <div class="k">지원분야 분류가 채워진 비율 — 결측 0%</div>
+              </div>
+            </div>
+            <p class="cap">
+              업종은 <b>6.2%</b>밖에 알아낼 수 없었다 → 알고리즘 대신
+              <b>질문을 지원분야로 바꿨다</b>.
+            </p>
+          </section>
+        </div>
+
+        <!-- ============ 오른쪽 : 여정과 구조 ============ -->
+        <div class="col spread">
+          <section class="panel">
+            <h2><span class="n">5</span>사용자 여정<small>온보딩 4스텝 → 매칭 → 신청</small></h2>
+
+            <div class="colflow">
+              <div class="row">
+                <div class="box blue">
+                  <div class="t">STEP 1 · 지원분야</div>
+                  <div class="s">수출 · 기술 · 경영 · 내수<br />창업 · 인력 · 금융 (복수선택)</div>
+                </div>
+                <div class="box blue">
+                  <div class="t">STEP 2 · 지역</div>
+                  <div class="s">전국 16개 시·도</div>
+                </div>
+              </div>
+              <span class="arr v">↓</span>
+              <div class="row">
+                <div class="box blue">
+                  <div class="t">STEP 3 · 시·군·구</div>
+                  <div class="s">선택한 시·도의 하위 지역</div>
+                </div>
+                <div class="box blue">
+                  <div class="t">STEP 4 · 규모</div>
+                  <div class="s">직원 수 · 연매출 · 업력</div>
+                </div>
+              </div>
+              <span class="arr v">↓</span>
+              <div class="box">
+                <div class="t">입력 요약 확인</div>
+                <div class="s">입력값은 브라우저에만 보관 → 완료 시 한 번에 서버로 전송</div>
+              </div>
+              <span class="arr v">↓</span>
+              <div class="box navy">
+                <div class="t">매칭 결과 리스트</div>
+                <div class="s">
+                  매칭도순 기본 · 정렬 4종 전환 · 20건 단위 더보기 · D-day 배지로 마감 강조
+                </div>
+              </div>
+              <span class="arr v">↓</span>
+              <div class="box">
+                <div class="t">상세 화면</div>
+                <div class="s">지원 금액 · 자격 조건 · 필요 서류 · 신청 방법 · 문의처</div>
+              </div>
+              <span class="arr v">↓</span>
+              <div class="box ok">
+                <div class="t">기관 사이트로 이동해 신청</div>
+                <div class="s">
+                  서비스는 &lsquo;찾는 것&rsquo;까지 책임지고, 신청은 원본 공고로 연결
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2><span class="n">6</span>어떻게 동작하는가<small>4개 계층</small></h2>
+            <div class="colflow">
+              <div class="box">
+                <div class="t">① 수집 · 매일 00:00 자동</div>
+                <div class="s">기업마당 + K-Startup 두 소스 → 제목 유사도로 중복 제거 → 신규만 AI로 조건 추출</div>
+              </div>
+              <span class="arr v">↓</span>
+              <div class="box blue">
+                <div class="t">② 저장 · PostgreSQL</div>
+                <div class="s">공고 / 문서추출 캐시 / 매칭요청 로그</div>
+              </div>
+              <span class="arr v">↓</span>
+              <div class="box blue">
+                <div class="t">③ 매칭 API</div>
+                <div class="s">지역으로 후보를 걸러 점수 계산 후 정렬·페이지 분할</div>
+              </div>
+              <span class="arr v">↓</span>
+              <div class="box navy">
+                <div class="t">④ 화면 · 모바일 웹</div>
+                <div class="s">온보딩 · 리스트 · 상세 (서버가 죽어도 화면은 유지)</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <h2><span class="n">7</span>조건을 어떻게 반영하는가</h2>
+            <div class="row">
+              <div class="box dash pad-s"><div class="t">전체 공고</div></div>
+              <span class="arr">→</span>
+              <div class="box warn pad-s"><div class="t">지역·지원분야 불일치 제외</div></div>
+            </div>
+            <div class="row">
+              <div class="box pad-s" style="flex: 0 0 24mm">
+                <div class="t">기본 50</div>
+                <div class="s">남은 공고</div>
+              </div>
+              <span class="arr">+</span>
+              <div class="colflow" style="flex: 1">
+                <div class="row">
+                  <div class="box blue pad-s"><div class="t">지역 +20</div></div>
+                  <div class="box blue pad-s"><div class="t">직원 +10</div></div>
+                </div>
+                <div class="row">
+                  <div class="box blue pad-s"><div class="t">매출 +10</div></div>
+                  <div class="box blue pad-s"><div class="t">업력 +10</div></div>
+                </div>
+              </div>
+              <span class="arr">→</span>
+              <div class="box navy pad-s" style="flex: 0 0 20mm">
+                <div class="t">최대 100</div>
+              </div>
+            </div>
+            <p class="cap">
+              지역·지원분야는 <b>안 맞으면 아예 제외</b>하고, 규모 조건은 <b>맞을 때만 가점</b>을
+              준다 — 데이터가 비어 있는 공고를 부당하게 떨어뜨리지 않기 위한 구분.
+            </p>
+          </section>
+
+        </div>
+      </main>
+
+      <div class="stackbar">
+        <span class="lbl">STACK</span>
+        <span class="item">React 19 <span>+ TypeScript · Vite</span></span>
+        <span class="sep">|</span>
+        <span class="item">Express 4 <span>· zod</span></span>
+        <span class="sep">|</span>
+        <span class="item">Supabase <span>PostgreSQL</span></span>
+        <span class="sep">|</span>
+        <span class="item">Gemini <span>문서 추출</span></span>
+        <span class="sep">|</span>
+        <span class="item">GitHub Actions <span>매일 수집 · 자동 배포</span></span>
+        <span class="sep">|</span>
+        <span class="item">Vitest <span>· oxlint</span></span>
+      </div>
+    </div>
+  </body>
+</html>
