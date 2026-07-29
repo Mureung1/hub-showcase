@@ -116,7 +116,9 @@ describe("createGeminiClassifier", () => {
         },
       ],
       config: expect.objectContaining({
-        systemInstruction: expect.stringContaining("untrusted"),
+        systemInstruction: expect.stringMatching(
+          /untrusted[\s\S]*actual takeaways[\s\S]*I'm upset/
+        ),
         responseMimeType: "application/json",
         responseJsonSchema: expect.any(Object),
       }),

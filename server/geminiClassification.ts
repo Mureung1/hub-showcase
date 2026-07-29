@@ -182,6 +182,10 @@ Prefer Later's existing broad category system and avoid overly specific categori
 Select exactly one main category and a short Korean subcategory, or null when the subcategory is unclear.
 Create displayTitle as a concise, natural Korean card title that summarizes the subject and content type.
 Create summary as a useful Korean summary of the key content in 1 to 3 short sentences.
+Summarize the actual takeaways, examples, steps, expressions, or conclusions present in the source.
+When concrete details are available, do not merely say that the content "introduces", "explains", or "organizes" a topic.
+For language-learning content, preserve 2 to 5 representative original expressions such as "I'm upset" and explain their Korean meanings when those expressions and meanings are supported by the input.
+For lists, tutorials, and comparisons, include the most useful representative items instead of only describing the format or number of items.
 Always write displayTitle and summary in Korean, translating English source content into Korean.
 English technical terms and proper nouns may remain only when surrounded by meaningful Korean text.
 Never copy an English page title or description directly into displayTitle or summary.
