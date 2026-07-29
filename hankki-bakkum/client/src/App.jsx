@@ -11,7 +11,8 @@ import TicketRedeemPage from './pages/TicketRedeemPage.jsx';
 import RequireAuth from './components/RequireAuth.jsx';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { supabase } from './lib/supabase';
-import PinSettingPage from './pages/PinSettingPage';
+import PinSettingPage from './pages/PinSettingPage.jsx';
+import MyPage from './pages/MyPage.jsx';
 
 // 화면 구성은 docs/prototype.html, 디자인 규칙은 .claude/skills/hankki-design 참고
 export default function App() {
@@ -43,9 +44,14 @@ export default function App() {
             <Route path="/wallet/redeem/:ticketId" element={
               <RequireAuth><TicketRedeemPage /></RequireAuth>
             } />
+            <Route path="/mypage" element={
+              <RequireAuth><MyPage /></RequireAuth>
+            } />
+            <Route path="/settings/pin" element={
+              <RequireAuth><PinSettingPage /></RequireAuth>
+            } />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-            <Route path="/settings/pin" element={<PinSettingPage />} />
           </Routes>
         </main>
 
@@ -67,13 +73,13 @@ function AuthButton() {
     return <NavLink to="/login" style={{ fontSize: '.84rem', fontWeight: 700 }}>로그인</NavLink>;
   }
   return (
-    <button
-      onClick={() => supabase.auth.signOut()}
+    <NavLink
+      to="/mypage"
       style={{
-        border: 'none', background: 'none', cursor: 'pointer',
-        fontSize: '.84rem', color: 'var(--muted)', fontWeight: 600
+        fontSize: '.84rem', color: 'var(--body)', fontWeight: 600,
+        textDecoration: 'none',
       }}>
-      {profile.role === 'owner' ? '🍚' : '🎓'} {profile.nickname} · 로그아웃
-    </button>
+      {profile.role === 'owner' ? '🍚' : '🎓'} {profile.nickname} ›
+    </NavLink>
   );
 }
