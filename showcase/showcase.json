@@ -3,9 +3,17 @@
   "title": "답냥이 — 관계별 냥이 조력자와 함께 쓰는 메시지 작성 도우미",
   "summary": "대학생이 관계와 상황을 몇 번의 선택으로 정리하면, 정적 템플릿과 AI를 조합해 바로 보낼 수 있는 메시지를 제안하는 가이드형 작성 서비스.",
   "githubUser": "Catsmanager",
-  "demoUrl": "https://dabnyang.vercel.app/",
-  "thumbnail": "",
-  "screenshots": [],
+  "demoUrl": "https://youtube.com/shorts/n4OPj42kIFE?feature=share",
+  "thumbnail": "thumbnail.png",
+  "screenshots": [
+    "screenshots/home.webp",
+    "screenshots/s1-relationship.webp",
+    "screenshots/s2-situation-cards.webp",
+    "screenshots/s2-quick-question.webp",
+    "screenshots/s2-manual-input.webp",
+    "screenshots/s3-tone-results.webp",
+    "screenshots/s3-manual-result.webp"
+  ],
 
   "problem": "대학생은 팀플·조모임의 무임승차 팀원에게 먼저 꺼낼 말, 교수님·조교님께 보내는 과제 연장·결석 관련 메시지, 선배·동기 간 존댓말 수위 조절, 친구·연인에게 꺼내기 어려운 사과·부탁·마음 표현처럼 반복적으로 메시지 작성이 부담스러운 상황을 마주친다. 이때 단순히 문장을 만드는 것뿐 아니라 상대와의 관계, 말투의 강도, 예의 수준까지 함께 고민해야 해 시간과 감정 에너지가 소모된다. ChatGPT나 Gemini 같은 범용 AI로도 메시지를 만들 수 있지만, 사용자가 매번 관계와 상황을 처음부터 설명해야 하고 대학생 관계별 톤 기준이나 사실 충실성·전송 가능성에 대한 검수 절차를 기본적으로 제공하지 않는다.",
 
