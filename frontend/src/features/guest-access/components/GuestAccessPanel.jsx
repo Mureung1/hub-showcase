@@ -7,7 +7,9 @@ export default function GuestAccessPanel({
   error,
   onCreate,
   onRecover,
-  onUseAnonymous
+  onUseAnonymous,
+  onContinue,
+  onLeaveGuest = onUseAnonymous
 }) {
   const [keyInput, setKeyInput] = useState("");
   const [selectedMode, setSelectedMode] = useState(
@@ -35,7 +37,10 @@ export default function GuestAccessPanel({
             <span>지금 한 번만 표시돼요. 안전한 곳에 보관하세요.</span>
           </div>
         )}
-        <button type="button" className="guest-access__quiet-action" onClick={onUseAnonymous}>
+        <button type="button" className="guest-access__primary" onClick={onContinue}>
+          대화 시작
+        </button>
+        <button type="button" className="guest-access__quiet-action" onClick={onLeaveGuest}>
           게스트에서 나가기
         </button>
       </section>

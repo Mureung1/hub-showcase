@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { ConversationPanel } from "./features/conversation";
 import { AnalysisStatus } from "./features/emotion-analysis";
 import { EmotionInputForm } from "./features/emotion-input";
@@ -11,6 +11,7 @@ import { GuestAccessPanel, useGuestAccess } from "./features/guest-access";
 
 export default function App() {
   const guestAccess = useGuestAccess();
+  const [appView, setAppView] = useState("access");
   const {
     messages,
     aiStatus,
@@ -27,9 +28,26 @@ export default function App() {
     handleLiveFaceSignalChange
   } = useEmotionSession({ guestKey: guestAccess.guestKey });
 
+  const startAnonymousConversation = () => {
+    guestAccess.useAnonymous();
+    setAppView("conversation");
+  };
+
+  const recoverGuestConversation = async (key) => {
+    const recovered = await guestAccess.recoverGuest(key);
+    if (recovered) setAppView("conversation");
+    return recovered;
+  };
+
+  const leaveGuestConversation = () => {
+    guestAccess.useAnonymous();
+    setAppView("access");
+  };
+
   return (
-    <div className="app-root">
-      <aside className="access-column">
+    <div className={`app-root app-root--${appView}`}>
+      {appView === "access" && (
+      <main className="access-column">
         <ServiceHeader status={aiStatus} />
         <GuestAccessPanel
           mode={guestAccess.mode}
@@ -37,12 +55,17 @@ export default function App() {
           status={guestAccess.status}
           error={guestAccess.error}
           onCreate={guestAccess.createGuest}
-          onRecover={guestAccess.recoverGuest}
-          onUseAnonymous={guestAccess.useAnonymous}
+          onRecover={recoverGuestConversation}
+          onUseAnonymous={startAnonymousConversation}
+          onContinue={() => setAppView("conversation")}
+          onLeaveGuest={leaveGuestConversation}
         />
-      </aside>
+      </main>
+      )}
 
+      {appView === "conversation" && (
       <section className="conversation-column" aria-label="카메라를 사용하는 대화">
+        <ServiceHeader status={aiStatus} />
         <div className="column-heading">
           <span>PRIVATE CONVERSATION</span>
           <h2>지금의 마음을 이야기해 주세요</h2>
@@ -58,9 +81,19 @@ export default function App() {
             onLiveFaceSignalChange={handleLiveFaceSignalChange}
           />
         </ConversationPanel>
+        <button
+          type="button"
+          className="view-toggle"
+          onClick={() => setAppView("result")}
+        >
+          감정 신호 보기
+        </button>
       </section>
+      )}
 
+      {appView === "result" && (
       <aside className="signals-column">
+        <ServiceHeader status={aiStatus} />
         <AnalysisStatus status={analysisStatus} error={analysisError} />
         <EmotionResult
           result={emotionResult}
@@ -76,7 +109,15 @@ export default function App() {
           />
           <ObservationStatus observation={observation} />
         </details>
+        <button
+          type="button"
+          className="view-toggle"
+          onClick={() => setAppView("conversation")}
+        >
+          다시 대화하기
+        </button>
       </aside>
+      )}
     </div>
   );
 }
