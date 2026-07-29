@@ -26,9 +26,9 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   color: #102346;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 800;
   font-family: 'Cloudsofa_namgim-Regular', sans-serif;
 }
@@ -36,8 +36,8 @@
 .brandMark {
   position: relative;
   display: block;
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   overflow: hidden;
   flex: 0 0 auto;
   border: 1px solid rgb(7 0 61 / 14%);
@@ -47,10 +47,10 @@
 
 .brandMark img {
   position: absolute;
-  top: -8px;
-  left: -10px;
-  width: 68px;
-  height: 68px;
+  top: -10px;
+  left: -12px;
+  width: 84px;
+  height: 84px;
   max-width: none;
 }
 
@@ -124,8 +124,13 @@
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 .description {

@@ -71,8 +71,24 @@ ICU는 초급·중급 개발자가 오늘 학습할 내용을 정하고, 커리�
   --color-brand-accent-orange: #ff8a1c;
   --color-editor-bg: #151a24;
   --color-editor-text: #dbe4ef;
+
+  --icu-page-padding: 28px 30px 34px;
+  --icu-page-padding-inline: 30px;
+  --icu-page-section-gap: 22px;
+  --icu-page-title-size: 28px;
+  --icu-section-radius: 8px;
 }
 ```
+
+## Page Layout
+
+- 커리큘럼 보관함을 일반 앱 화면의 레이아웃 기준으로 사용합니다.
+- 데스크톱 일반 화면은 `28px 30px 34px`의 바깥 여백, `22px`의 주요 섹션 간격, `28px`의 페이지 제목, `8px`의 기본 섹션 반경을 공유합니다.
+- Today Hub, 커리큘럼 생성, 오답노트 목록·작성 화면은 이 기준을 직접 사용합니다.
+- Workspace와 Git Lab은 IDE·실습 화면의 내부 밀도와 세로 구조를 유지하되 좌우 콘텐츠 기준선은 `30px`로 맞춥니다.
+- 프로필 설정처럼 화면 전체가 하나의 편집 양식인 전용 작업면은 자체 내부 구성을 유지합니다.
+- 온보딩 화면은 진입 경험을 위한 별도 구성을 유지하며 공통 페이지 레이아웃 적용 대상에서 제외합니다.
+- 모바일에서는 각 화면의 기존 반응형 여백과 정보 우선순위를 유지합니다.
 
 ## Korean Copy
 

@@ -1,11 +1,13 @@
 import type { IconType } from 'react-icons'
 import { LuBookOpen } from 'react-icons/lu'
-import { SiDocker, SiGit, SiReact } from 'react-icons/si'
+import { SiDocker, SiGit, SiLinux, SiPython, SiReact } from 'react-icons/si'
 
 const trackIcons: Record<string, IconType> = {
   'git-lab': SiGit,
   'react-practice': SiReact,
   'docker-practice': SiDocker,
+  'devops-practice': SiLinux,
+  'python-practice': SiPython,
 }
 
 interface TrackIconProps {

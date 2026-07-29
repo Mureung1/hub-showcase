@@ -20,7 +20,7 @@ Today Learning Hub는 Intro와 Profile Setup 이후 진입하는 ICU의 중심 �
 - AppShell Navigation: `AppShell` 내부의 공통 `ResizableNavigator`를 유지하며 Today Hub는 `Outlet` 영역에 렌더링
 - Header: 오늘 학습, 날짜, 오늘 예정 요약
 - Today's Focus: 진행 중인 트랙, 현재 단계, 오늘 미션, 진행률, 이어서 학습하기
-- Today Queue: 개념 설명, 퀴즈, 실습, 실행, 리뷰 순서와 각 단계별 워크스페이스 진입 링크
+- Today Queue: 현재 생성 커리큘럼의 오늘 미션을 `핵심 개념 → 실습 → 실행 결과 정리` 3단계로 표시하고 같은 Workspace 미션으로 연결
 - Learning List Preview: 트랙별 상태와 진행률
 - Review And Mistakes: 대시보드형 요약 카드로 오늘 복습할 항목, 최근 오답, 오답노트 `전체보기` 이동 링크를 보여줍니다.
 
@@ -28,7 +28,7 @@ Today Learning Hub는 Intro와 Profile Setup 이후 진입하는 ICU의 중심 �
 
 - todayGoal: 오늘 학습 목표 문장
 - activeTrack: 현재 진행 중인 트랙 id, 제목, 상태, 진행률, 마지막 학습일, 다음 액션
-- todayQueue: 오늘 진행할 단계 목록, 각 단계의 id, 상태, 예상 시간
+- todayQueue: 활성 생성 커리큘럼의 오늘 미션 단계 목록, 단계 offset, 상태, 예상 시간
 - learningTracks: React, Python, FastAPI, BFS 등 학습 트랙 목록
 - reviewItems: 오늘 복습할 개념 목록
 - recentMistakes: 오답노트 store가 비어 있을 때 보여주는 fallback 최근 오답과 취약 개념 목록
@@ -63,7 +63,7 @@ Today Learning Hub는 Intro와 Profile Setup 이후 진입하는 ICU의 중심 �
 ## Workspace 연결 규칙
 
 - 기본 CTA인 `학습 시작`과 `워크스페이스로 이동`은 `/workspace?mission=generated-first-mission`으로 이동합니다.
-- Today Queue의 각 단계는 `/workspace?mission=<todayQueue item id>` 형식으로 이동합니다.
+- Today Queue의 세 단계는 모두 현재 생성 계획의 `/workspace?mission=generated-mission-<planId>`로 이동하고, 저장된 `activeStepOffset`으로 해당 단계를 복원합니다.
 - `ai-review`는 복습과 코드 리뷰 미션으로 사용합니다.
 - Workspace는 전달받은 `mission` 값과 서버에서 불러온 생성 커리큘럼·진도 상태로 현재 미션, 파일명, 단계, 실행 상태를 결정합니다.
 
@@ -127,9 +127,9 @@ Today Hub는 server mode 진입 시 다음 데이터를 병렬로 불러옵니�
 
 기본 server mode에서는 `/api/progress/today`와 mission progress API를 사용합니다. configured repository는 in-memory, SQLite, Supabase 중 하나입니다.
 
-- Today Queue는 기본 mock data를 먼저 만들고, mission별 저장 상태가 있으면 화면 표시 상태를 덮어씁니다.
-- 저장된 mission이 `passed`이거나 `completedAt`이 있으면 해당 항목을 완료로 표시합니다.
-- 저장된 mission이 실패 또는 진행 중이면 해당 항목을 현재 학습으로 표시합니다.
+- Today Queue는 활성 생성 커리큘럼의 오늘 미션만 사용합니다. 이전 정적 미션이나 다른 계획의 진행 기록을 현재 큐에 섞지 않습니다.
+- `activeStepOffset`보다 앞선 단계만 완료로 표시하고, 현재 offset은 현재 학습, 이후 단계는 대기로 표시합니다.
+- 실행 성공(`passed`)은 현재 단계의 실행 결과이며 전체 미션 완료가 아닙니다. 최종 단계 완료로 저장된 `completedAt`이 있을 때만 전체 큐를 완료로 표시합니다.
 - 완료율 stat은 Today Queue의 완료 항목 비율로 계산합니다.
 - mock mode에서만 `icu.learningProgress` localStorage 값을 fallback으로 사용합니다.
 

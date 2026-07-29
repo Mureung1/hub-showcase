@@ -11,6 +11,10 @@ import {
   useGeneratedCurriculumStore,
   type GeneratedCurriculumSnapshot,
 } from './model/useGeneratedCurriculumStore'
+import {
+  createGeneratedMissionId,
+  createWorkspaceMissionHref,
+} from '../learning-workspace/workspaceInteraction'
 import styles from './CurriculumHistoryPage.module.css'
 
 export function CurriculumHistoryPage() {
@@ -86,9 +90,16 @@ export function CurriculumHistoryPage() {
 
   async function handleActivate(snapshot: GeneratedCurriculumSnapshot) {
     const targetId = snapshot.id || `${snapshot.goal}-curriculum-plan`
+    const workspaceHref = createWorkspaceMissionHref(createGeneratedMissionId(snapshot.plan.id))
+    const isAlreadyActive = activeCurriculum?.id === targetId
     setServerError('')
 
     try {
+      if (isAlreadyActive) {
+        navigate(workspaceHref)
+        return
+      }
+
       if (shouldUseServerApi()) {
         const { generatedCurriculum } = await saveGeneratedCurriculumApi(
           { ...snapshot, id: targetId, updatedAt: new Date().toISOString() },
@@ -98,7 +109,7 @@ export function CurriculumHistoryPage() {
       } else {
         activateCurriculumSnapshot(targetId)
       }
-      void navigate('/today')
+      navigate(workspaceHref)
     } catch {
       setServerError('선택한 커리큘럼을 활성화하지 못했습니다. 다시 시도해 주세요.')
     }
@@ -135,14 +146,17 @@ export function CurriculumHistoryPage() {
     }
 
     try {
-      await Promise.all(duplicateIds.map((id) => deleteCurriculumHistoryItemApi(id, { mode: 'server' })))
+      await Promise.all(
+        duplicateIds.map((id) => deleteCurriculumHistoryItemApi(id, { mode: 'server' })),
+      )
       hydrateHistory(cleaned)
     } catch {
       setServerError('중복 커리큘럼을 정리하지 못했습니다. 다시 시도해 주세요.')
     }
   }
 
-  const activeId = activeCurriculum?.id || (activeCurriculum ? `${activeCurriculum.goal}-curriculum-plan` : '')
+  const activeId =
+    activeCurriculum?.id || (activeCurriculum ? `${activeCurriculum.goal}-curriculum-plan` : '')
 
   return (
     <div className={styles.page}>
@@ -167,7 +181,11 @@ export function CurriculumHistoryPage() {
         </div>
       </header>
 
-      {serverError ? <p className={styles.errorMessage} role="alert">{serverError}</p> : null}
+      {serverError ? (
+        <p className={styles.errorMessage} role="alert">
+          {serverError}
+        </p>
+      ) : null}
 
       <div className={styles.filterRow}>
         <input
@@ -225,17 +243,18 @@ export function CurriculumHistoryPage() {
 
                 <div className={styles.missionBox}>
                   <strong>오늘 미션: {item.plan.todayMission.title}</strong>
-                  <span>{item.plan.todayMission.detail} ({item.plan.todayMission.durationMinutes}분)</span>
+                  <span>
+                    {item.plan.todayMission.detail} ({item.plan.todayMission.durationMinutes}분)
+                  </span>
                 </div>
 
                 <div className={styles.cardActions}>
                   <button
                     type="button"
                     className={styles.activateButton}
-                    disabled={isActive}
                     onClick={() => handleActivate(item)}
                   >
-                    {isActive ? '학습 진행 중' : '이어서 학습하기'}
+                    이어서 학습하기
                   </button>
                   <button
                     type="button"
@@ -272,8 +291,7 @@ export function CurriculumHistoryPage() {
           onClose={() => setDetailState(null)}
           onActivate={handleActivate}
           isActive={
-            (detailState.snapshot.id ||
-              `${detailState.snapshot.goal}-curriculum-plan`) === activeId
+            (detailState.snapshot.id || `${detailState.snapshot.goal}-curriculum-plan`) === activeId
           }
         />
       )}

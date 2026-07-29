@@ -121,7 +121,7 @@ describe('useLearningProgressStore', () => {
     )
   })
 
-  it('records step advancement and resets run state for the next step', async () => {
+  it('records step advancement without completing the whole mission', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-07-14T12:30:00.000Z'))
     const localStorage = createLocalStorage()
@@ -139,7 +139,8 @@ describe('useLearningProgressStore', () => {
     expect(progress?.runState).toBe('idle')
     expect(progress?.runAttemptCount).toBe(0)
     expect(progress?.activeStepOffset).toBe(2)
-    expect(progress?.completedAt).toBe('2026-07-14T12:30:00.000Z')
+    expect(progress?.completedAt).toBeNull()
+    expect(progress?.lastTestResult).toBeNull()
     vi.useRealTimers()
   })
 

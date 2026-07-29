@@ -5,11 +5,11 @@
 }
 
 .content {
-  width: min(100%, 1500px);
+  width: 100%;
   display: grid;
-  gap: 18px;
+  gap: var(--icu-page-section-gap);
   margin: 0 auto;
-  padding: 18px 24px 28px;
+  padding: var(--icu-page-padding);
 }
 
 .topbar {
@@ -29,9 +29,13 @@
 .topbar h1 {
   margin: 0;
   color: #111827;
-  font-size: 17px;
+  font-size: var(--icu-page-title-size);
   line-height: 1.2;
   font-weight: 950;
+}
+
+.topbar h1[data-title-density='compact'] {
+  font-size: 22px;
 }
 
 .topbar p {
@@ -660,6 +664,16 @@
   color: #2496ed;
 }
 
+.trackIcon[data-track='devops-practice'] {
+  background: #f1f3f5;
+  color: #111827;
+}
+
+.trackIcon[data-track='python-practice'] {
+  background: #eef6ff;
+  color: #3776ab;
+}
+
 .trackTableStatus {
   justify-self: start;
   border-radius: 999px;
@@ -989,22 +1003,32 @@
 .goalInputRow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 12px;
+  grid-template-areas:
+    'label .'
+    'field action';
+  align-items: start;
+  gap: 8px 12px;
 }
 
-.goalInputRow label {
-  display: grid;
-  gap: 8px;
-}
-
-.goalInputRow label span {
+.goalInputLabel {
+  grid-area: label;
   color: #334155;
   font-size: 13px;
   font-weight: 900;
 }
 
-.goalInputRow label small {
+.goalField {
+  grid-area: field;
+  display: grid;
+  gap: 8px;
+}
+
+.goalInputRow > button {
+  grid-area: action;
+  min-height: 42px;
+}
+
+.goalField small {
   color: #64748b;
   font-size: 12px;
   line-height: 1.45;
@@ -1074,7 +1098,7 @@
   gap: 12px;
   margin-top: 18px;
   border: 1px solid #d5deea;
-  border-radius: 12px;
+  border-radius: var(--icu-section-radius);
   padding: 22px;
   background: linear-gradient(135deg, #f8fbff, #eef7ff);
 }
@@ -1117,7 +1141,7 @@
 .draftPanel {
   min-width: 0;
   border: 1px solid #d5deea;
-  border-radius: 12px;
+  border-radius: var(--icu-section-radius);
   background: #ffffff;
 }
 
@@ -1385,7 +1409,7 @@
   gap: 16px;
   margin-top: 14px;
   border: 1px solid #ffca8e;
-  border-radius: 10px;
+  border-radius: var(--icu-section-radius);
   padding: 16px;
   background: #fff8ef;
 }
@@ -1526,6 +1550,13 @@
   .generatedSummary,
   .curriculumWorkspace {
     grid-template-columns: 1fr;
+  }
+
+  .goalInputRow {
+    grid-template-areas:
+      'label'
+      'field'
+      'action';
   }
 
   .curriculumIntro {

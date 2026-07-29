@@ -2,8 +2,8 @@
   min-height: 100vh;
   display: grid;
   align-content: start;
-  gap: 22px;
-  padding: 28px 30px 34px;
+  gap: var(--icu-page-section-gap);
+  padding: var(--icu-page-padding);
   color: #102346;
   background: var(--icu-page-background);
 }
@@ -18,7 +18,7 @@
 .header h1 {
   margin: 0;
   color: #102346;
-  font-size: 30px;
+  font-size: var(--icu-page-title-size);
   line-height: 1.15;
   letter-spacing: 0;
 }

@@ -159,11 +159,42 @@ export function createSteps(
     }))
   }
 
-  return plan.steps.map((step, index) => ({
+  return createGeneratedMissionSteps(plan).map((step, index) => ({
     title: step.title,
     detail: step.detail,
     state: createStepState(index, activeStepOffset),
   }))
+}
+
+export function createGeneratedMissionSteps(
+  plan: GeneratedCurriculumPlan,
+): GeneratedCurriculumStep[] {
+  const currentModule = plan.steps[0]
+  const moduleId = currentModule?.id ?? `${plan.id}-module`
+
+  return [
+    {
+      id: `${moduleId}-concept`,
+      title: currentModule ? `${currentModule.title} 핵심 개념` : '오늘 학습 핵심 개념',
+      detail: currentModule?.detail ?? plan.summary,
+      outcome: currentModule?.outcome ?? '오늘 학습의 핵심을 설명할 수 있습니다.',
+      durationLabel: '1단계',
+    },
+    {
+      id: moduleId,
+      title: plan.todayMission.title,
+      detail: plan.todayMission.detail,
+      outcome: currentModule?.outcome ?? '오늘 미션을 직접 실행할 수 있습니다.',
+      durationLabel: '2단계',
+    },
+    {
+      id: `${moduleId}-review`,
+      title: '실행 결과 확인과 정리',
+      detail: '실행 결과를 확인하고 막힌 지점과 다음에 기억할 내용을 정리합니다.',
+      outcome: '실행 결과와 개선점을 한 문장으로 설명할 수 있습니다.',
+      durationLabel: '3단계',
+    },
+  ]
 }
 
 export function resolveWorkspaceMission(
@@ -390,10 +421,15 @@ export function createWorkspaceEditorFiles(mission: WorkspaceMission): Workspace
   return files
 }
 
-export function createTestCases(mission: WorkspaceMission, runState: RunState): TestCase[] {
+export function createTestCases(
+  mission: WorkspaceMission,
+  runState: RunState,
+  hasCodeChange = true,
+): TestCase[] {
   return createWorkspaceTestCases({
     isGeneratedMission: isGeneratedMissionId(mission.id),
     runState,
+    hasCodeChange,
   })
 }
 
@@ -409,11 +445,13 @@ export function resolveActiveGeneratedStep(
   generatedPlan: GeneratedCurriculumPlan,
   activeStepOffset: number,
 ): GeneratedCurriculumStep | null {
-  if (generatedPlan.steps.length === 0) {
+  const missionSteps = createGeneratedMissionSteps(generatedPlan)
+
+  if (missionSteps.length === 0) {
     return null
   }
 
-  return generatedPlan.steps[clampStepOffset(activeStepOffset, generatedPlan.steps.length)] ?? null
+  return missionSteps[clampStepOffset(activeStepOffset, missionSteps.length)] ?? null
 }
 
 export function createActiveMissionPresentation(

@@ -19,7 +19,8 @@
 
 3. **이어서 학습하기**
    - 선택한 snapshot을 활성 커리큘럼으로 변경
-   - Today Hub와 Workspace가 같은 plan을 사용
+   - 해당 generated mission의 Workspace로 이동
+   - 이미 활성화된 snapshot도 저장된 단계부터 다시 진입
 
 4. **상세 보기**
    - 전체 단계, 예상 기간, 집중 역할, 추천 출처 확인
@@ -37,7 +38,7 @@
   → /curriculum/history
   → 검색 또는 카드 선택
   ├─ 상세 보기
-  ├─ 이어서 학습하기 → /today
+  ├─ 이어서 학습하기 → /workspace?mission=<generated-mission-id>
   ├─ 개별 삭제
   └─ 중복 항목 정리
 ```

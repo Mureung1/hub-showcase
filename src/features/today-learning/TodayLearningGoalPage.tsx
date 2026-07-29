@@ -151,7 +151,9 @@ export function TodayLearningGoalPage() {
       <section className={styles.content}>
         <header className={styles.topbar}>
           <div>
-            <h1 id="today-goal-title">어떤 개발 목표를 이루고 싶나요?</h1>
+            <h1 id="today-goal-title" data-title-density="compact">
+              어떤 개발 목표를 이루고 싶나요?
+            </h1>
             <p>한 줄 목표로 시작하면 코듀가 초안을 만들고 필요한 내용을 이어서 질문합니다.</p>
           </div>
           <Link className={styles.profileLink} to="/today">
@@ -172,9 +174,12 @@ export function TodayLearningGoalPage() {
 
           <div className={styles.aiCurriculum} aria-busy={isGenerating}>
             <form className={styles.goalInputRow} onSubmit={handleGenerateCurriculum}>
-              <label>
-                <span>한 줄 목표</span>
+              <label className={styles.goalInputLabel} htmlFor="curriculum-goal">
+                한 줄 목표
+              </label>
+              <div className={styles.goalField} data-goal-field="input">
                 <input
+                  id="curriculum-goal"
                   value={careerGoal}
                   placeholder="예: 3주 안에 React로 개인 프로젝트를 완성하고 싶어"
                   aria-invalid={Boolean(goalError)}
@@ -184,7 +189,7 @@ export function TodayLearningGoalPage() {
                 <small id="curriculum-goal-help">
                   기간, 기술, 만들고 싶은 결과를 함께 적으면 더 정확해집니다.
                 </small>
-              </label>
+              </div>
               <button type="submit" disabled={isGenerating}>
                 {isGenerating ? '작성 중' : '커리큘럼 초안 만들기'}
               </button>

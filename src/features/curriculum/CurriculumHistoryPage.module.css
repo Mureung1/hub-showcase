@@ -1,9 +1,9 @@
 .page {
   min-width: 0;
   display: grid;
-  gap: 22px;
+  gap: var(--icu-page-section-gap);
   align-content: start;
-  padding: 28px 30px 34px;
+  padding: var(--icu-page-padding);
   color: #111827;
   background: var(--icu-page-background);
 }
@@ -19,7 +19,7 @@
 }
 
 .header h1 {
-  font-size: 28px;
+  font-size: var(--icu-page-title-size);
   font-weight: 900;
   margin: 0 0 4px 0;
   color: #07003d;

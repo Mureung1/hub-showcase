@@ -70,45 +70,22 @@ export function toLearningRunState(runState: RunState): 'idle' | 'failed' | 'pas
 export function createWorkspaceTestCases({
   isGeneratedMission,
   runState,
+  hasCodeChange = true,
 }: {
   isGeneratedMission: boolean
   runState: RunState
+  hasCodeChange?: boolean
 }): TestCase[] {
+  if (isGeneratedMission) {
+    return createGeneratedMissionTestCases(runState, hasCodeChange)
+  }
+
   if (runState === 'running' || runState === 'compiling' || runState === 'rendering') {
     return createRunningTestCases(isGeneratedMission)
   }
 
   if (runState === 'passed') {
     return createPassedTestCases(isGeneratedMission)
-  }
-
-  if (isGeneratedMission) {
-    return [
-      {
-        id: 'TC 01',
-        input: '학습 목표 요약',
-        expected: '오늘 단계의 핵심을 한 문장으로 설명',
-        actual: '오늘 단계의 핵심을 한 문장으로 설명',
-        state: 'passed',
-        runtime: '8ms',
-      },
-      {
-        id: 'TC 02',
-        input: '예제 실행',
-        expected: '파일의 핵심 흐름 확인',
-        actual: '파일의 핵심 흐름 확인',
-        state: 'passed',
-        runtime: '11ms',
-      },
-      {
-        id: 'TC 03',
-        input: '근거 정리',
-        expected: '공식 문서 기준으로 다음 질문 기록',
-        actual: runState === 'failed' ? '근거 문서 확인 필요' : '실행 대기',
-        state: runState === 'failed' ? 'failed' : 'pending',
-        runtime: runState === 'failed' ? '15ms' : '-',
-      },
-    ]
   }
 
   return [
@@ -142,6 +119,59 @@ export function createWorkspaceTestCases({
       expected: '오류 없음',
       actual: '대기',
       state: 'pending',
+      runtime: '-',
+    },
+  ]
+}
+
+function createGeneratedMissionTestCases(
+  runState: RunState,
+  hasCodeChange: boolean,
+): TestCase[] {
+  const isRunning =
+    runState === 'running' || runState === 'compiling' || runState === 'rendering'
+  const executionPassed = runState === 'passed'
+  const executionFailed = runState === 'failed' || runState === 'timeout'
+
+  return [
+    {
+      id: 'CHECK 01',
+      input: '학습 코드 수정',
+      expected: 'starter code에서 한 가지 이상 변경',
+      actual: hasCodeChange ? '변경 사항 확인' : '변경 사항 없음',
+      state: hasCodeChange ? 'passed' : executionPassed ? 'failed' : 'pending',
+      runtime: '-',
+    },
+    {
+      id: 'CHECK 02',
+      input: '실행 환경 확인',
+      expected: '현재 파일이 오류 없이 실행됨',
+      actual: isRunning
+        ? '실행 중'
+        : executionPassed
+          ? '실행 성공'
+          : executionFailed
+            ? '실행 실패'
+            : '실행 대기',
+      state: executionPassed ? 'passed' : executionFailed ? 'failed' : 'pending',
+      runtime: executionPassed || executionFailed ? '완료' : '-',
+    },
+    {
+      id: 'CHECK 03',
+      input: '다음 단계 준비',
+      expected: '코드 변경과 실행 성공을 모두 확인',
+      actual:
+        executionPassed && hasCodeChange
+          ? '이동 가능'
+          : executionFailed
+            ? '실행 결과 확인 필요'
+            : '조건 확인 중',
+      state:
+        executionPassed && hasCodeChange
+          ? 'passed'
+          : executionPassed || executionFailed
+            ? 'failed'
+            : 'pending',
       runtime: '-',
     },
   ]
@@ -298,7 +328,9 @@ export function getResultMessage(
   }
 
   if (runState === 'passed') {
-    return `${passedCount} / ${totalCount} 테스트 통과. 다음 단계로 이동할 수 있습니다.`
+    return failedCount > 0
+      ? '실행은 성공했지만 starter code를 직접 수정해야 다음 단계로 이동할 수 있습니다.'
+      : `${passedCount} / ${totalCount} 확인 통과. 다음 단계로 이동할 수 있습니다.`
   }
 
   if (runState === 'failed') {

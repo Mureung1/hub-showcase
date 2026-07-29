@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
   createActiveMissionPresentation,
+  createGeneratedMissionSteps,
   createWorkspaceEditorFiles,
   type WorkspaceMission,
 } from './workspaceMission'
 import type { ModuleExercise } from './data/frontendModuleExercises'
 import { generatedMissionId } from './workspaceInteraction'
-import type { GeneratedCurriculumStep } from '../curriculum/model/curriculumGenerator'
+import type {
+  GeneratedCurriculumPlan,
+  GeneratedCurriculumStep,
+} from '../curriculum/model/curriculumGenerator'
 
 const baseMission: WorkspaceMission = {
   id: generatedMissionId,
@@ -48,6 +52,41 @@ describe('createWorkspaceEditorFiles', () => {
 function createStep(id: string): GeneratedCurriculumStep {
   return { id, title: '단계 제목', detail: '단계 설명', outcome: '단계 성과', durationLabel: 'Week 1' }
 }
+
+describe('createGeneratedMissionSteps', () => {
+  it('turns the current curriculum module into one three-step today mission', () => {
+    const plan: GeneratedCurriculumPlan = {
+      id: 'plan-1',
+      goal: 'React 학습',
+      title: '프론트엔드 커리큘럼',
+      summary: 'React 기초를 학습합니다.',
+      estimatedDuration: '4주',
+      focusRole: '프론트엔드',
+      todayMission: {
+        title: '상태 관리 실습',
+        detail: '버튼 상태를 변경합니다.',
+        durationMinutes: 30,
+        fileName: 'Counter.jsx',
+        mode: 'react',
+      },
+      steps: [
+        createStep('fe-01-01'),
+        { ...createStep('fe-01-02'), title: '다음 주 모듈' },
+      ],
+      sources: [],
+    }
+
+    const steps = createGeneratedMissionSteps(plan)
+
+    expect(steps).toHaveLength(3)
+    expect(steps.map((step) => step.id)).toEqual([
+      'fe-01-01-concept',
+      'fe-01-01',
+      'fe-01-01-review',
+    ])
+    expect(steps.some((step) => step.title === '다음 주 모듈')).toBe(false)
+  })
+})
 
 describe('createActiveMissionPresentation', () => {
   it('applies matching exercise content when the step id has a registered exercise', () => {

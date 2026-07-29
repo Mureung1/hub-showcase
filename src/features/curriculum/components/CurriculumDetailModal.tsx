@@ -68,13 +68,13 @@ export function CurriculumDetailModal({
           <button
             type="button"
             className={styles.activateButton}
+            aria-label={isActive ? '현재 커리큘럼 이어서 학습하기' : '선택한 커리큘럼으로 학습하기'}
             onClick={() => {
               onActivate(snapshot)
               onClose()
             }}
-            disabled={isActive}
           >
-            {isActive ? '학습 진행 중' : '이어서 학습하기'}
+            이어서 학습하기
           </button>
         </header>
 
@@ -84,14 +84,20 @@ export function CurriculumDetailModal({
             <span className={styles.tag}>예상 기간: {plan.estimatedDuration}</span>
             <span className={styles.tag}>권장 역할: {plan.focusRole}</span>
             <span className={styles.tag}>
-              생성일: {new Date(generatedAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+              생성일:{' '}
+              {new Date(generatedAt).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
             </span>
           </div>
 
           <div className={styles.summaryBox}>
             <strong>오늘 미션 ({plan.todayMission.fileName})</strong>
             <p>
-              {plan.todayMission.title} · {plan.todayMission.detail} ({plan.todayMission.durationMinutes}분)
+              {plan.todayMission.title} · {plan.todayMission.detail} (
+              {plan.todayMission.durationMinutes}분)
             </p>
           </div>
 
@@ -104,7 +110,9 @@ export function CurriculumDetailModal({
                   <div className={styles.stepContent}>
                     <strong>{step.title}</strong>
                     <p>{step.detail}</p>
-                    <small>{step.durationLabel} · {step.outcome}</small>
+                    <small>
+                      {step.durationLabel} · {step.outcome}
+                    </small>
                   </div>
                 </li>
               ))}

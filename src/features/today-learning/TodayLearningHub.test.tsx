@@ -16,10 +16,13 @@ describe('TodayLearningHub', () => {
 
     expect(markup).toContain('학습 진행 현황')
     expect(markup).toContain('오늘 학습 큐')
+    expect(markup).toContain('실행 결과 확인과 정리')
+    expect(markup).not.toContain('state 개념 확인')
+    expect(markup).not.toContain('AI 코드 리뷰')
     expect(markup).toContain('복습과 오답')
     expect(markup).toContain('작업 공간 미리보기')
     expect(markup).toContain('data-track-icon="git-lab"')
-    expect(markup).toContain('data-track-icon="react-practice"')
+    expect(markup).toContain('data-track-icon="devops-practice"')
     expect(markup).toContain('data-track-icon="docker-practice"')
     expect(markup).toContain('현재 단계')
     expect(markup).toContain('최근 학습')
@@ -31,7 +34,7 @@ describe('TodayLearningHub', () => {
     expect(markup).not.toContain('calendar-title')
   })
 
-  it('shows a curriculum creation action instead of mock learning data in server mode', () => {
+  it('shows a loading state instead of fallback learning data before server hydration', () => {
     vi.stubEnv('VITE_ICU_API_MODE', 'server')
     const markup = renderToStaticMarkup(
       <MemoryRouter>
@@ -39,7 +42,7 @@ describe('TodayLearningHub', () => {
       </MemoryRouter>,
     )
 
-    expect(markup).toContain('커리큘럼을 먼저 생성해 주세요')
-    expect(markup).toContain('href="/today/goal"')
+    expect(markup).toContain('오늘 학습 데이터를 불러오는 중입니다.')
+    expect(markup).not.toContain('AI 코드 리뷰')
   })
 })

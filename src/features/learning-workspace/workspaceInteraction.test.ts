@@ -58,17 +58,36 @@ describe('workspaceInteraction', () => {
   })
 
   it('keeps generated mission test cases pending while running', () => {
-    const cases = createWorkspaceTestCases({ isGeneratedMission: true, runState: 'running' })
+    const cases = createWorkspaceTestCases({
+      isGeneratedMission: true,
+      runState: 'running',
+      hasCodeChange: false,
+    })
 
     expect(cases).toHaveLength(3)
     expect(cases.every((testCase) => testCase.state === 'pending')).toBe(true)
   })
 
-  it('marks the generated mission source check as failed after a failed run', () => {
-    const cases = createWorkspaceTestCases({ isGeneratedMission: true, runState: 'failed' })
+  it('shows an execution failure without marking the whole generated mission complete', () => {
+    const cases = createWorkspaceTestCases({
+      isGeneratedMission: true,
+      runState: 'failed',
+      hasCodeChange: true,
+    })
 
-    expect(cases.map((testCase) => testCase.state)).toEqual(['passed', 'passed', 'failed'])
-    expect(cases[2]?.actual).toBe('근거 문서 확인 필요')
+    expect(cases.map((testCase) => testCase.state)).toEqual(['passed', 'failed', 'failed'])
+    expect(cases[1]?.actual).toBe('실행 실패')
+  })
+
+  it('does not allow an untouched generated starter file to pass every check', () => {
+    const cases = createWorkspaceTestCases({
+      isGeneratedMission: true,
+      runState: 'passed',
+      hasCodeChange: false,
+    })
+
+    expect(cases.map((testCase) => testCase.state)).toEqual(['failed', 'passed', 'failed'])
+    expect(getResultMessage('passed', 1, 2, 3)).toContain('starter code')
   })
 
   it('marks every queued mission case as passed after a successful rerun', () => {

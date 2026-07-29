@@ -5,7 +5,7 @@
   display: grid;
   grid-template-rows: auto minmax(472px, 1fr) auto;
   gap: 16px;
-  padding: 18px 20px 22px;
+  padding: 18px var(--icu-page-padding-inline) 22px;
   background: var(--icu-page-background);
   color: #102346;
 }
@@ -111,6 +111,12 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
+}
+
+.workspaceHeader {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
 }
 
 .workspacePanelSlot,

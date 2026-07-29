@@ -6,7 +6,7 @@
   grid-template-rows: auto minmax(0, 1fr);
   gap: 18px;
   overflow: hidden;
-  padding: 20px 24px 28px;
+  padding: 20px var(--icu-page-padding-inline) 28px;
   color: #102346;
   background: var(--icu-page-background);
 }

@@ -53,11 +53,13 @@ Today Hub는 사용자가 다음 행동을 고르는 중심 화면입니다.
 
 - 저장된 커리큘럼 검색
 - 커리큘럼 상세 단계와 출처 확인
-- 선택한 커리큘럼을 활성화하고 이어서 학습
+- 선택한 커리큘럼을 활성화하고 해당 Workspace에서 이어서 학습
 - 개별 삭제
 - 같은 목표의 중복 snapshot 일괄 정리
 
 활성화한 계획은 Today Hub와 Workspace가 같은 snapshot을 사용합니다.
+`이어서 학습하기`를 누르면 `/workspace?mission=<generated-mission-id>`로 이동하며,
+저장된 학습 단계와 편집 초안을 복원합니다.
 
 ## 5. Learning Workspace
 
@@ -71,8 +73,9 @@ Workspace는 현재 미션, 단계 목록, Tutor 대화, Monaco Editor, React Pr
 2. 사용자가 코드를 수정합니다.
 3. Judge API `POST /api/code/run`으로 실행합니다.
 4. 결과와 활동 기록을 화면에 반영합니다.
-5. Core API에 attempt, active step, completion 상태를 저장합니다.
-6. Tutor 질문은 `POST /api/tutor/ask`로 현재 코드와 대화 맥락을 전달합니다.
+5. starter code 변경과 실행 성공을 모두 확인해야 다음 단계로 이동합니다.
+6. Core API에 attempt, active step, completion 상태를 저장하고, 편집 draft는 같은 기기의 브라우저에 미션·단계별로 저장합니다.
+7. Tutor 질문은 `POST /api/tutor/ask`로 현재 코드와 대화 맥락을 전달합니다.
 
 실패 기록은 오답노트로 저장할 수 있고, 완료한 미션은 Today Hub 진행률에 반영됩니다.
 

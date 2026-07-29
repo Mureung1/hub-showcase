@@ -56,6 +56,14 @@ type GeneratedCurriculumPlan = {
 }
 ```
 
+`GeneratedCurriculumPlan.steps`는 여러 주에 걸친 커리큘럼 모듈 목록입니다. Workspace는 이 모듈 전체를 하루에 완료할 단계로 사용하지 않습니다. 현재 `todayMission`을 다음 세 세션 단계로 변환합니다.
+
+1. 현재 모듈의 핵심 개념 확인
+2. 오늘 미션 실습
+3. 실행 결과 확인과 정리
+
+세 단계는 하나의 generated mission id와 `activeStepOffset`을 공유합니다.
+
 ## 코드 실행 API
 
 ```http
@@ -113,6 +121,8 @@ Workspace는 현재 미션, 코드, 실행 결과, 대화 이력을 Core API에 
 
 - 진입 시 generated curriculum과 mission progress를 API에서 불러옵니다.
 - 실행 결과, 시도 수, active step, 완료 시각, 활동 로그를 mission progress API에 저장합니다.
+- 중간 단계 이동은 `completedAt`을 저장하지 않으며, 최종 단계에서 `오늘 미션 완료`를 선택한 경우에만 완료 시각을 저장합니다.
+- 편집 중인 파일은 `missionId + activeStepOffset` 단위의 브라우저 draft로 함께 보존해 같은 기기에서 `이어하기`로 복원합니다.
 - 시스템 연결 실패는 학습 실패 시도에 포함하지 않습니다.
 - mock mode에서만 localStorage progress fallback을 사용합니다.
 
@@ -127,6 +137,8 @@ Workspace는 현재 미션, 코드, 실행 결과, 대화 이력을 Core API에 
 - `timeout`: Preview 앱이 5초 안에 렌더링 결과를 응답하지 않은 상태입니다.
 
 새 실행을 시작하면 이전 API 요청과 Preview 요청을 취소합니다. 늦게 도착한 응답은 현재 상태와 진도 기록을 변경하지 않습니다. 컴파일·렌더링·timeout은 학습 실패로 기록하지만 서버 연결 같은 시스템 오류는 시도 횟수에 포함하지 않습니다.
+
+실행 성공은 곧바로 학습 완료를 의미하지 않습니다. generated mission은 starter code에서 실제 변경이 있고 실행까지 성공해야 다음 단계로 이동할 수 있습니다. 현재 v1 검증은 코드 변경과 실행 성공을 확인하며, AI가 생성한 단계별 machine-readable acceptance check 검증은 후속 범위입니다.
 
 ## 후속 범위
 

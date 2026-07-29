@@ -168,6 +168,10 @@ export const useLearningProgressStore = create<LearningProgressState>((set, get)
   }) => {
     set((state) => {
       const current = state.missions[missionId]
+      const nextCompletedAt =
+        completedAt !== undefined ? completedAt : current?.completedAt ?? null
+      const nextLastTestResult =
+        lastTestResult !== undefined ? lastTestResult : current?.lastTestResult ?? null
       const nextMissions = {
         ...state.missions,
         [missionId]: createMissionProgress(missionId, {
@@ -175,9 +179,9 @@ export const useLearningProgressStore = create<LearningProgressState>((set, get)
           runState,
           runAttemptCount,
           activeStepOffset,
-          completedAt: completedAt ?? current?.completedAt ?? null,
+          completedAt: nextCompletedAt,
           activityLog,
-          lastTestResult: lastTestResult ?? current?.lastTestResult ?? null,
+          lastTestResult: nextLastTestResult,
         }),
       }
 
@@ -213,8 +217,9 @@ export const useLearningProgressStore = create<LearningProgressState>((set, get)
           runState: 'idle',
           runAttemptCount: 0,
           activeStepOffset,
-          completedAt: new Date().toISOString(),
+          completedAt: null,
           activityLog,
+          lastTestResult: null,
         }),
       }
 

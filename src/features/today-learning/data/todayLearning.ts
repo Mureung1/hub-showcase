@@ -2,6 +2,8 @@ export type TodayQueueStatus = 'done' | 'current' | 'locked' | 'optional'
 
 export type TodayQueueItem = {
   id: string
+  workspaceMissionId?: string
+  stepOffset?: number
   title: string
   detail: string
   durationMinutes: number

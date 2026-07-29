@@ -8,7 +8,6 @@ import {
 import {
   recentMistakes,
   reviewSummaryItems,
-  todayQueue,
   type TodayQueueItem,
   type TodayQueueStatus,
 } from './data/todayLearning'
@@ -30,6 +29,7 @@ import {
 } from '../git-lab/api/gitLabAttemptClient'
 import {
   createActiveMissionPresentation,
+  createGeneratedMissionSteps,
   createWorkspaceEditorFiles,
   resolveActiveGeneratedStep,
   resolveWorkspaceMission,
@@ -67,43 +67,34 @@ const queueStatusLabels: Record<TodayQueueStatus, string> = {
 }
 
 function isMissionComplete(progress: LearningMissionProgress | undefined) {
-  return Boolean(progress?.completedAt || progress?.runState === 'passed')
+  return Boolean(progress?.completedAt)
 }
 
 function applyQueueProgress(
   queue: TodayQueueItem[],
   missions: Record<string, LearningMissionProgress>,
 ): TodayQueueItem[] {
-  const activeProgressId = queue.find((item) => {
-    const progress = missions[item.id]
-
-    return progress && !isMissionComplete(progress)
-  })?.id
-  let currentAssigned = Boolean(activeProgressId)
-
   return queue.map((item) => {
-    const progress = missions[item.id]
+    const progress = missions[item.workspaceMissionId ?? item.id]
 
-    if (item.status === 'done' || isMissionComplete(progress)) {
+    if (isMissionComplete(progress)) {
       return { ...item, status: 'done' }
     }
 
-    if (activeProgressId) {
-      return item.id === activeProgressId
-        ? { ...item, status: 'current' }
-        : { ...item, status: item.status === 'optional' ? 'optional' : 'locked' }
+    if (typeof item.stepOffset === 'number') {
+      const activeStepOffset = progress?.activeStepOffset ?? 0
+
+      if (item.stepOffset < activeStepOffset) {
+        return { ...item, status: 'done' }
+      }
+
+      return {
+        ...item,
+        status: item.stepOffset === activeStepOffset ? 'current' : 'locked',
+      }
     }
 
-    if (item.status === 'optional') {
-      return item
-    }
-
-    if (!currentAssigned) {
-      currentAssigned = true
-      return { ...item, status: 'current' }
-    }
-
-    return { ...item, status: 'locked' }
+    return item
   })
 }
 
@@ -129,7 +120,9 @@ export function TodayLearningHub() {
   const mistakeNotes = useMistakeNoteStore((state) => state.notes)
   const hydrateMistakeNotes = useMistakeNoteStore((state) => state.hydrateMistakeNotes)
   const [gitLabAttempts, setGitLabAttempts] = useState<GitLabAttempt[]>([])
-  const [serverDataStatus, setServerDataStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+  const [serverDataStatus, setServerDataStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>(
+    serverMode ? 'loading' : 'idle',
+  )
   const [reloadKey, setReloadKey] = useState(0)
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
   const fallbackGeneratedPlan = useMemo(
@@ -191,16 +184,25 @@ export function TodayLearningHub() {
     [now],
   )
   const generatedQueue = useMemo<TodayQueueItem[]>(
-    () => [
-      {
-        id: createGeneratedMissionId(generatedPlan.id),
-        title: generatedPlan.todayMission.title,
-        detail: generatedPlan.todayMission.detail,
-        durationMinutes: generatedPlan.todayMission.durationMinutes,
-        status: 'current',
-      },
-      ...todayQueue.filter((item) => item.id !== 'counter-mission'),
-    ],
+    () => {
+      const workspaceMissionId = createGeneratedMissionId(generatedPlan.id)
+      const missionSteps = createGeneratedMissionSteps(generatedPlan)
+      const totalMinutes = Math.max(generatedPlan.todayMission.durationMinutes, missionSteps.length)
+      const baseMinutes = Math.floor(totalMinutes / missionSteps.length)
+
+      return missionSteps.map((step, index) => ({
+        id: `${workspaceMissionId}:step:${index}`,
+        workspaceMissionId,
+        stepOffset: index,
+        title: step.title,
+        detail: step.detail,
+        durationMinutes:
+          index === missionSteps.length - 1
+            ? totalMinutes - baseMinutes * (missionSteps.length - 1)
+            : baseMinutes,
+        status: index === 0 ? 'current' : 'locked',
+      }))
+    },
     [generatedPlan],
   )
   const displayQueue = useMemo(
@@ -246,8 +248,12 @@ export function TodayLearningHub() {
         : serverMode ? [] : recentMistakes,
     [recentOpenMistakes, serverMode],
   )
+  const activeQueueItem =
+    displayQueue.find((item) => item.status === 'current') ??
+    displayQueue[displayQueue.length - 1]
   const activeMissionId =
-    displayQueue.find((item) => item.status === 'current')?.id ??
+    activeQueueItem?.workspaceMissionId ??
+    activeQueueItem?.id ??
     createGeneratedMissionId(generatedPlan.id)
   const activeMissionTestResult = missionProgress[activeMissionId]?.lastTestResult ?? null
   const activeStepOffset =
@@ -266,7 +272,7 @@ export function TodayLearningHub() {
   )
   const topWeakConcept = useMemo(() => findTopWeakConcept(mistakeNotes), [mistakeNotes])
   const stepPosition = Math.max(
-    displayQueue.findIndex((item) => item.id === activeMissionId) + 1,
+    displayQueue.findIndex((item) => item.id === activeQueueItem?.id) + 1,
     1,
   )
   const stepTotal = displayQueue.length
@@ -285,6 +291,7 @@ export function TodayLearningHub() {
     () => [
       {
         id: 'git-lab',
+        iconId: 'git-lab',
         title: '깃 시뮬레이터',
         percent: gitLabProgress.percent,
         stepLabel: `Step ${Math.min(gitLabProgress.clearedCount + 1, gitLabProgress.totalCount)} / ${gitLabProgress.totalCount}`,
@@ -294,8 +301,16 @@ export function TodayLearningHub() {
         actionHref: '/git-lab',
       },
       {
-        id: 'react-practice',
-        title: 'React 실습',
+        id: 'generated-practice',
+        iconId:
+          generatedPlan.todayMission.mode === 'docker'
+            ? 'docker-practice'
+            : generatedPlan.todayMission.mode === 'react'
+              ? 'react-practice'
+              : generatedPlan.todayMission.mode === 'python'
+                ? 'python-practice'
+                : 'devops-practice',
+        title: generatedPlan.focusRole || generatedPlan.title,
         percent: completionPercent,
         stepLabel: `Step ${stepPosition} / ${stepTotal}`,
         recentLearningLabel: '오늘',
@@ -304,6 +319,7 @@ export function TodayLearningHub() {
       },
       {
         id: 'docker-practice',
+        iconId: 'docker-practice',
         title: 'Docker 실습',
         percent: null as number | null,
         stepLabel: 'Step 0 / 4',
@@ -315,6 +331,9 @@ export function TodayLearningHub() {
     [
       activeMissionId,
       completionPercent,
+      generatedPlan.focusRole,
+      generatedPlan.title,
+      generatedPlan.todayMission.mode,
       gitLabProgress.clearedCount,
       gitLabProgress.percent,
       gitLabProgress.totalCount,
@@ -477,14 +496,14 @@ export function TodayLearningHub() {
                   {item.status === 'current' ? (
                     <Link
                       className={styles.queueContinueButton}
-                      to={createWorkspaceMissionHref(item.id)}
+                      to={createWorkspaceMissionHref(item.workspaceMissionId ?? item.id)}
                     >
                       계속하기
                     </Link>
                   ) : (
                     <Link
                       className={styles.queueMoreLink}
-                      to={createWorkspaceMissionHref(item.id)}
+                      to={createWorkspaceMissionHref(item.workspaceMissionId ?? item.id)}
                       aria-label={`${item.title} 열기`}
                     >
                       ···
@@ -542,8 +561,8 @@ export function TodayLearningHub() {
                   >
                     <div className={styles.trackIdentityCell} role="cell">
                       <div className={styles.trackTitleRow}>
-                        <span className={styles.trackIcon} data-track={track.id} aria-hidden="true">
-                          <TrackIcon trackId={track.id} />
+                        <span className={styles.trackIcon} data-track={track.iconId} aria-hidden="true">
+                          <TrackIcon trackId={track.iconId} />
                         </span>
                         <h3>{track.title}</h3>
                       </div>
