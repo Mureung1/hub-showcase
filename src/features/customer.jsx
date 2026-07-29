@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
+import Barcode from 'react-barcode'
 import { supabase } from '../services'
 import { StatusCard } from '../components/common'
 import { buildQrValue } from '../utils/stamp'
@@ -40,6 +41,7 @@ function CustomerLayout({ profile }) {
         {activeTab === 'mypage' && (
           <MyPage
             nickname={nickname}
+            profile={profile}
             onChangeNickname={setNickname}
             onLogout={handleLogout}
           />
@@ -296,6 +298,9 @@ function CafeStampCard({ cafe, index }) {
 }
 
 function CouponsView({ coupons }) {
+  const [selectedCouponId, setSelectedCouponId] = useState(null)
+  const selectedCoupon = coupons.find((coupon) => coupon.id === selectedCouponId) ?? null
+
   return (
     <section className="screen-stack customer-page-screen">
       <div className="page-header">
@@ -308,21 +313,50 @@ function CouponsView({ coupons }) {
       {coupons.length === 0 ? (
         <StatusCard title="아직 발급된 쿠폰이 없습니다." />
       ) : (
-        <div className="coupon-cards">
-          {coupons.map((coupon) => (
-            <article className="ticket-card" key={coupon.id}>
-              <div className="ticket-art">
-                <span className="mono-icon icon-coffee" aria-hidden="true" />
+        <>
+          <div className="coupon-cards">
+            {coupons.map((coupon) => (
+              <button
+                className={`ticket-card ticket-button${coupon.id === selectedCoupon?.id ? ' selected' : ''}`}
+                key={coupon.id}
+                type="button"
+                onClick={() => setSelectedCouponId((currentId) => (currentId === coupon.id ? null : coupon.id))}
+              >
+                <div className="ticket-art">
+                  <span className="mono-icon icon-coffee" aria-hidden="true" />
+                </div>
+                <div className="ticket-info">
+                  <p>{coupon.cafes?.name}</p>
+                  <h2>{coupon.title}</h2>
+                  <span>{coupon.barcode}</span>
+                  <span>{new Date(coupon.issued_at).toLocaleDateString()}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {selectedCoupon && (
+            <article className="coupon-barcode-panel">
+              <div>
+                <p>{selectedCoupon.cafes?.name}</p>
+                <h2>{selectedCoupon.title}</h2>
+                <span>{new Date(selectedCoupon.issued_at).toLocaleDateString()}</span>
               </div>
-              <div className="ticket-info">
-                <p>{coupon.cafes?.name}</p>
-                <h2>{coupon.title}</h2>
-                <span>{coupon.barcode}</span>
-                <span>{new Date(coupon.issued_at).toLocaleDateString()}</span>
+              <div className="barcode-frame" aria-label={`쿠폰 바코드 ${selectedCoupon.barcode}`}>
+                <Barcode
+                  value={selectedCoupon.barcode}
+                  format="CODE128"
+                  width={2}
+                  height={82}
+                  margin={0}
+                  displayValue
+                  background="transparent"
+                  lineColor="#201915"
+                />
               </div>
             </article>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </section>
   )
@@ -409,7 +443,51 @@ function NotificationsView({ profile }) {
   )
 }
 
-function MyPage({ nickname, onChangeNickname, onLogout }) {
+function MyPage({ nickname, profile, onChangeNickname, onLogout }) {
+  const [draftNickname, setDraftNickname] = useState(nickname)
+  const [saveStatus, setSaveStatus] = useState('idle')
+  const [saveError, setSaveError] = useState('')
+
+  useEffect(() => {
+    setDraftNickname(nickname)
+  }, [nickname])
+
+  const handleNicknameSubmit = async (event) => {
+    event.preventDefault()
+
+    const nextNickname = draftNickname.trim()
+
+    setSaveError('')
+
+    if (!profile?.customer_id) {
+      setSaveStatus('error')
+      setSaveError('손님 정보를 찾을 수 없습니다.')
+      return
+    }
+
+    if (!nextNickname) {
+      setSaveStatus('error')
+      setSaveError('이름을 입력해 주세요.')
+      return
+    }
+
+    setSaveStatus('loading')
+
+    const { data, error } = await supabase.rpc('update_customer_name', {
+      customer_name: nextNickname,
+    })
+
+    if (error) {
+      setSaveStatus('error')
+      setSaveError('이름을 저장하지 못했습니다. 다시 시도해 주세요.')
+      return
+    }
+
+    onChangeNickname(data.name)
+    setDraftNickname(data.name)
+    setSaveStatus('success')
+  }
+
   return (
     <section className="screen-stack customer-page-screen">
       <div className="page-header simple">
@@ -428,14 +506,23 @@ function MyPage({ nickname, onChangeNickname, onLogout }) {
         </div>
       </article>
 
-      <form className="profile-form">
+      <form className="profile-form" onSubmit={handleNicknameSubmit}>
         <label htmlFor="nickname">닉네임</label>
         <input
           id="nickname"
           type="text"
-          value={nickname}
-          onChange={(event) => onChangeNickname(event.target.value)}
+          value={draftNickname}
+          onChange={(event) => {
+            setDraftNickname(event.target.value)
+            setSaveStatus('idle')
+            setSaveError('')
+          }}
         />
+        {saveError && <p className="form-error">{saveError}</p>}
+        {saveStatus === 'success' && <p className="form-success">이름을 저장했습니다.</p>}
+        <button className="profile-save-button" type="submit" disabled={saveStatus === 'loading'}>
+          {saveStatus === 'loading' ? '저장 중' : '저장'}
+        </button>
       </form>
 
       <button className="logout-button" type="button" onClick={onLogout}>

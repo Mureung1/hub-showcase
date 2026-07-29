@@ -17,7 +17,14 @@ function OwnerDashboard({ profile }) {
   const [awardStatus, setAwardStatus] = useState('idle')
   const [awardResult, setAwardResult] = useState(null)
   const [awardError, setAwardError] = useState('')
+  const [couponInput, setCouponInput] = useState('')
+  const [couponLookupStatus, setCouponLookupStatus] = useState('idle')
+  const [couponLookupError, setCouponLookupError] = useState('')
+  const [couponLookupResult, setCouponLookupResult] = useState(null)
+  const [couponRedeemStatus, setCouponRedeemStatus] = useState('idle')
+  const [couponRedeemError, setCouponRedeemError] = useState('')
   const lookupInputRef = useRef(null)
+  const couponInputRef = useRef(null)
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -130,6 +137,70 @@ function OwnerDashboard({ profile }) {
     lookupInputRef.current?.focus()
   }
 
+  const handleCouponLookupSubmit = async (event) => {
+    event.preventDefault()
+
+    const normalizedBarcode = couponInput.trim().toUpperCase()
+
+    setCouponLookupError('')
+    setCouponLookupResult(null)
+    setCouponRedeemStatus('idle')
+    setCouponRedeemError('')
+
+    if (!normalizedBarcode) {
+      setCouponLookupStatus('idle')
+      setCouponLookupError('Enter a coupon barcode.')
+      couponInputRef.current?.focus()
+      return
+    }
+
+    setCouponInput(normalizedBarcode)
+    setCouponLookupStatus('loading')
+
+    const { data, error } = await supabase.rpc('lookup_coupon', {
+      coupon_barcode: normalizedBarcode,
+    })
+
+    if (error) {
+      setCouponLookupStatus('error')
+      setCouponLookupError('Could not find this coupon. Check the barcode and try again.')
+      couponInputRef.current?.focus()
+      return
+    }
+
+    setCouponLookupResult(data)
+    setCouponLookupStatus('success')
+    setCouponLookupError('')
+    setCouponRedeemStatus('idle')
+    setCouponRedeemError('')
+    couponInputRef.current?.focus()
+  }
+
+  const handleCouponRedeem = async () => {
+    if (!couponLookupResult?.barcode) {
+      return
+    }
+
+    setCouponRedeemStatus('loading')
+    setCouponRedeemError('')
+
+    const { data, error } = await supabase.rpc('redeem_coupon', {
+      coupon_barcode: couponLookupResult.barcode,
+    })
+
+    if (error) {
+      setCouponRedeemStatus('error')
+      setCouponRedeemError('Could not redeem this coupon. Look it up again and try once more.')
+      couponInputRef.current?.focus()
+      return
+    }
+
+    setCouponLookupResult(data)
+    setCouponRedeemStatus('success')
+    setCouponRedeemError('')
+    couponInputRef.current?.focus()
+  }
+
   useEffect(() => {
     const loadOwnerCafe = async () => {
       if (!profile?.cafe_id) {
@@ -190,6 +261,7 @@ function OwnerDashboard({ profile }) {
           <a className="active" href="#owner-dashboard">홈</a>
           <a href="#owner-scan">QR 적립</a>
           <a href="#owner-rules">카페 규칙</a>
+          <a href="#owner-coupons">Coupon</a>
           <a href="#owner-activity">처리 결과</a>
         </nav>
       </aside>
@@ -325,6 +397,80 @@ function OwnerDashboard({ profile }) {
                       <dd>{ownerCafe.reward_title}</dd>
                     </div>
                   </dl>
+                </article>
+
+                <article className="owner-card owner-coupon-card" id="owner-coupons">
+                  <div className="owner-section-head">
+                    <div>
+                      <p>Coupon redeem</p>
+                      <h2>Look up a coupon barcode before redeeming.</h2>
+                    </div>
+                  </div>
+                  <form className="owner-lookup-form" onSubmit={handleCouponLookupSubmit}>
+                    <label htmlFor="coupon-lookup">Coupon barcode</label>
+                    <div className="owner-scan-input">
+                      <input
+                        id="coupon-lookup"
+                        ref={couponInputRef}
+                        type="text"
+                        value={couponInput}
+                        onChange={(event) => setCouponInput(event.target.value)}
+                        placeholder="CP-000001"
+                        autoComplete="off"
+                      />
+                      <button type="submit" disabled={couponLookupStatus === 'loading'}>
+                        {couponLookupStatus === 'loading' ? 'Looking up...' : 'Lookup coupon'}
+                      </button>
+                    </div>
+                  </form>
+                  {couponLookupError && <p className="form-error">{couponLookupError}</p>}
+                  {couponLookupResult && (
+                    <div className={couponLookupResult.isRedeemable ? 'owner-info-box' : 'owner-success-box'}>
+                      <span>Coupon lookup</span>
+                      <strong>{couponLookupResult.title}</strong>
+                      <dl className="owner-rule-list">
+                        <div>
+                          <dt>Barcode</dt>
+                          <dd>{couponLookupResult.barcode}</dd>
+                        </div>
+                        <div>
+                          <dt>Customer</dt>
+                          <dd>
+                            {couponLookupResult.customerName} / {couponLookupResult.memberNumber}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Cafe</dt>
+                          <dd>{couponLookupResult.cafeName}</dd>
+                        </div>
+                        <div>
+                          <dt>Status</dt>
+                          <dd>{couponLookupResult.status === 'issued' ? 'Ready' : 'Used'}</dd>
+                        </div>
+                      </dl>
+                      {couponLookupResult.isRedeemable ? (
+                        <button
+                          className="owner-award-button"
+                          type="button"
+                          disabled={couponRedeemStatus === 'loading'}
+                          onClick={handleCouponRedeem}
+                        >
+                          {couponRedeemStatus === 'loading' ? 'Redeeming...' : 'Redeem coupon'}
+                        </button>
+                      ) : (
+                        <span>
+                          Used at:{' '}
+                          {couponLookupResult.usedAt
+                            ? new Date(couponLookupResult.usedAt).toLocaleString()
+                            : 'No used time'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {couponRedeemError && <p className="form-error">{couponRedeemError}</p>}
+                  {couponRedeemStatus === 'success' && (
+                    <p className="form-success">Coupon redeemed.</p>
+                  )}
                 </article>
 
                 <article className="owner-card owner-activity-card" id="owner-activity">

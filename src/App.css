@@ -139,6 +139,12 @@
   font-weight: 700;
 }
 
+.form-success {
+  margin: 0;
+  color: #1d6b3a;
+  font-weight: 750;
+}
+
 button,
 input {
   font: inherit;
@@ -392,6 +398,20 @@ button {
   border-radius: 6px;
   color: #201915;
   background: #fffdf8;
+}
+
+.profile-save-button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 20px;
+  background: #1d2613;
+  color: #fff;
+  font-weight: 750;
+}
+
+.profile-save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.64;
 }
 
 .primary-button {
@@ -973,6 +993,60 @@ button {
   padding: 20px;
 }
 
+.ticket-button {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ticket-button.selected {
+  outline: 3px solid #201915;
+  outline-offset: 3px;
+}
+
+.coupon-barcode-panel {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+  border-radius: 28px;
+  background: #fffaf2;
+  box-shadow: 0 9px 4px rgba(48, 40, 27, 0.2);
+}
+
+.coupon-barcode-panel p,
+.coupon-barcode-panel h2,
+.coupon-barcode-panel span {
+  margin: 0;
+}
+
+.coupon-barcode-panel p,
+.coupon-barcode-panel span {
+  color: #70675f;
+  font-size: 14px;
+}
+
+.coupon-barcode-panel h2 {
+  color: #201915;
+  font-size: 22px;
+}
+
+.barcode-frame {
+  display: grid;
+  min-width: 0;
+  place-items: center;
+  overflow: hidden;
+  padding: 18px 10px;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.barcode-frame svg {
+  max-width: 100%;
+  height: auto;
+}
+
 .ticket-art,
 .notice-art,
 .profile-avatar {
@@ -1551,6 +1625,15 @@ button {
   color: rgba(0, 0, 0, 0.74);
   font-size: 14px;
   line-height: 20px;
+}
+
+.owner-coupon-card .owner-info-box,
+.owner-coupon-card .owner-success-box {
+  gap: 12px;
+}
+
+.owner-coupon-card .owner-rule-list {
+  margin: 0;
 }
 
 .owner-section-head {
