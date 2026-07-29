@@ -6,6 +6,7 @@ import AppShell from './components/AppShell.jsx'
 import Card from './components/Card.jsx'
 import GuestMigrationPrompt from './components/GuestMigrationPrompt.jsx'
 import Spinner from './components/Spinner.jsx'
+import ForgotPassword from './pages/ForgotPassword.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Profile from './pages/Profile.jsx'
@@ -108,6 +109,7 @@ export default function AppRouter() {
         <Route element={<AppShell hideTabBar />}>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
         </Route>
       </Routes>
     </BrowserRouter>

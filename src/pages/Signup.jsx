@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useToast } from '../context/ToastContext.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
@@ -12,6 +13,7 @@ import {
   validatePassword,
   validatePasswordConfirm,
 } from '../lib/authId.js'
+import { SECURITY_QUESTIONS, validateQuestionId, validateSecurityAnswer } from '../lib/securityQuestions.js'
 import { useDocumentTitle } from '../lib/useDocumentTitle.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
@@ -23,10 +25,18 @@ import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 // 그대로 만족한다(비밀번호 확인은 입력하는 즉시 불일치가 보인다).
 export default function Signup() {
   useDocumentTitle('회원가입')
-  const { authUser, authLoading, signup } = useUser()
+  const { authUser, authLoading, signup, registerSecurityQuestion } = useUser()
+  const { showToast } = useToast()
   const navigate = useNavigate()
 
-  const [form, setForm] = useState({ loginId: '', password: '', passwordConfirm: '', nickname: '' })
+  const [form, setForm] = useState({
+    loginId: '',
+    password: '',
+    passwordConfirm: '',
+    nickname: '',
+    questionId: '',
+    securityAnswer: '',
+  })
   const [touched, setTouched] = useState({})
   // 서버가 알려준 필드별 에러(중복 아이디 등). 해당 필드를 다시 수정하면 지운다.
   const [serverFieldError, setServerFieldError] = useState({})
@@ -44,6 +54,8 @@ export default function Signup() {
     password: validatePassword(form.password),
     passwordConfirm: validatePasswordConfirm(form.password, form.passwordConfirm),
     nickname: validateNickname(form.nickname),
+    questionId: validateQuestionId(form.questionId),
+    securityAnswer: validateSecurityAnswer(form.securityAnswer),
   }
   const isValid = Object.values(errors).every((e) => e === null)
 
@@ -66,7 +78,7 @@ export default function Signup() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    setTouched({ loginId: true, password: true, passwordConfirm: true, nickname: true })
+    setTouched({ loginId: true, password: true, passwordConfirm: true, nickname: true, questionId: true, securityAnswer: true })
     setFormError('')
     if (!isValid || submitting) return
 
@@ -74,6 +86,13 @@ export default function Signup() {
     try {
       await signup(form)
       // 성공하면 세션이 잡히는 즉시 위 useEffect가 홈으로 이동시킨다.
+      try {
+        await registerSecurityQuestion({ questionId: form.questionId, answer: form.securityAnswer })
+      } catch (secErr) {
+        // 가입 자체는 이미 성공했으므로 흐름을 막지 않는다 — 안내만 남긴다(무음 실패 금지 원칙).
+        console.error('보안 질문 등록 실패:', secErr)
+        showToast('가입은 완료됐지만 보안 질문 등록에 실패했어요. 나중에 다시 시도해주세요.', { tone: 'error' })
+      }
     } catch (err) {
       // signup은 어느 필드 문제인지 아는 경우 err.field를 실어 보낸다(예: 중복 아이디).
       if (err.field) {
@@ -144,19 +163,52 @@ export default function Signup() {
             error={errorFor('nickname')}
           />
 
-          {/* PRD FR-1.1 필수 고지: 이메일이 없어 비밀번호 재설정 경로 자체가 없다는 걸 가입 전에 알린다. */}
+          {/* FR-21: 이메일이 없어 이메일 인증 재설정은 불가능하지만, 보안 질문으로 나중에 비밀번호를
+              되찾을 수 있다는 걸 가입 전에 알린다(기존 "복구 불가" 고지를 대체). */}
           <div
             style={{
               background: colors.deficientSurface,
               borderRadius: radius.sm,
               padding: spacing.md,
               marginTop: spacing.sm,
+              marginBottom: spacing.md,
             }}
           >
             <p style={{ margin: 0, fontSize: font.size.sm, color: colors.textStrong, fontWeight: 600 }}>
-              비밀번호를 잊으면 계정을 복구할 수 없습니다. 안전한 곳에 보관해주세요.
+              비밀번호를 잊으면 이메일로는 복구할 수 없어요. 복구하려면 아래 보안 질문에 꼭 답해주세요.
             </p>
           </div>
+
+          <div style={styles.field}>
+            <label htmlFor="signup-question" style={styles.label}>
+              보안 질문(비밀번호 찾기에 사용돼요)
+            </label>
+            <select
+              id="signup-question"
+              value={form.questionId}
+              onChange={(e) => updateField('questionId', e.target.value)}
+              onBlur={() => markTouched('questionId')}
+              style={styles.input}
+            >
+              <option value="">질문을 선택해주세요</option>
+              {SECURITY_QUESTIONS.map((q) => (
+                <option key={q.id} value={q.id}>
+                  {q.question}
+                </option>
+              ))}
+            </select>
+            {errorFor('questionId') && <p style={styles.errorText}>{errorFor('questionId')}</p>}
+          </div>
+          <TextField
+            label="답변"
+            id="signup-security-answer"
+            type="text"
+            placeholder="30자 이하"
+            value={form.securityAnswer}
+            onChange={(e) => updateField('securityAnswer', e.target.value)}
+            onBlur={() => markTouched('securityAnswer')}
+            error={errorFor('securityAnswer')}
+          />
 
           {formError && <p style={styles.errorText}>{formError}</p>}
 
