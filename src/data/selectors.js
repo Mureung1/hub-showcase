@@ -36,6 +36,12 @@ export function getRecipesBySubgroups(recipes, category) {
   }))
 }
 
+// 재료샵 카테고리 탭에서 고른 카테고리의 재료만 반환. categoryId가 없으면(전체 탭) 그대로 반환.
+export function getFridgeIngredientsByCategory(ingredients, categoryId) {
+  if (!categoryId) return ingredients
+  return ingredients.filter((ingredient) => ingredient.category === categoryId)
+}
+
 // 냉장고 재료 칩을 카테고리별로 묶어서 반환 (예: 채소/고기·해산물/가공식품/면·곡물/기타) — FridgePage의 섹션 렌더링에 사용
 export function getIngredientsByCategory(ingredients, categories) {
   return categories.map((category) => ({

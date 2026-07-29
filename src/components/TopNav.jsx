@@ -4,6 +4,7 @@ import mascotKkini from '../assets/마스코트-끼니.png'
 const NAV_LINKS = [
   { label: '냉장고', to: '/', activeOn: ['/'] },
   { label: '레시피', to: '/home', activeOn: ['/home'] },
+  { label: '재료샵', to: '/shop', activeOn: ['/shop'] },
   // 개발 편의용 — 로딩 화면을 실제 재료 선택 없이 바로 확인할 때 사용 (checklist.md 범위 아님)
   { label: '로딩', to: '/home?loading=1', activeOn: [] },
 ]
