@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BASE_URL } from '../api/client.ts'
+import { resolveImageUrl } from '../api/client.ts'
 import { getRecordsByMonth } from '../api/records.ts'
 import type { MonthRecord } from '../api/records.ts'
 import Layout from '../components/Layout.tsx'
@@ -91,7 +91,7 @@ function CalendarPage() {
               } ${isToday ? 'outline outline-2 -outline-offset-2 outline-accent' : ''}`}
               key={dateString}
               onClick={() => record && setSelectedDate(dateString)}
-              style={record ? { backgroundImage: `url(${BASE_URL}${record.imageUrl})` } : undefined}
+              style={record ? { backgroundImage: `url(${resolveImageUrl(record.imageUrl)})` } : undefined}
               type="button"
             >
               {record ? (
@@ -112,7 +112,7 @@ function CalendarPage() {
           <img
             alt="기록 사진"
             className="mt-2 w-full rounded-xl border border-border object-cover"
-            src={`${BASE_URL}${selectedRecord.imageUrl}`}
+            src={resolveImageUrl(selectedRecord.imageUrl)}
           />
           <p className="mt-3 text-sm text-heading">{selectedRecord.memo}</p>
         </section>

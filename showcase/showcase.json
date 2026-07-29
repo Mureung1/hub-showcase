@@ -4,6 +4,7 @@
   "summary": "매일 랜덤 챌린지를 받아 사진 한 장 + 한 줄 메모로 기록하고, 소규모 친구 방에서 완료 여부만 느슨하게 나누는 기록 서비스입니다.",
   "githubUser": "parkjihyoun(박지현)",
   "demoUrl": "",
+  "demoVideoUrl": "https://youtu.be/VET9-gVLCok",
   "thumbnail": "thumbnail.png",
   "screenshots": [],
   "problem": "혼자 기록하는 습관은 며칠 하다 흐지부지되기 쉽고, 기존 SNS는 전체 공개라 비교와 피로를 유발합니다. 비교 없이 함께 꾸준함을 이어갈 수 있는 방식이 필요했습니다.",
