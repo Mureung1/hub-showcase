@@ -5,8 +5,6 @@ Noa AI는 사용자가 현재 상황을 이야기하고 선택적으로 카메�
 표시하며 의료적·심리적 진단을 제공하지 않습니다.
 
 - 프로덕션 웹: https://hub-five-topaz.vercel.app
-- 프로덕션 API: https://relationship-ai-api.onrender.com
-- 기준 브랜치: `relationship-ai-restored`
 
 ## 현재 사용자 흐름
 
@@ -29,9 +27,9 @@ Noa AI는 사용자가 현재 상황을 이야기하고 선택적으로 카메�
 ### 게스트 모드
 
 - 서버가 만든 무작위 복구 키로 시작합니다.
-- 복구 키 원문은 서버와 DB에 저장하지 않고 HMAC-SHA256 해시만 저장합니다.
+- 복구 키 원문은 서버와 DB에 저장하지 않고 보호된 형태로만 확인합니다.
 - 활성 키는 현재 탭의 `sessionStorage`에만 보관합니다.
-- 키로 인증된 `guest_session_id`의 기록만 저장하고 복원합니다.
+- 키로 인증된 해당 게스트의 기록만 저장하고 복원합니다.
 - 기본 보관 기간은 30일입니다.
 - 게스트에서 나가면 현재 탭의 키만 제거되고 서버 기록은 유지됩니다.
 
@@ -45,8 +43,8 @@ flowchart LR
     W -->|게스트 API 요청| V[Vercel /api 프록시]
     V --> R[Render Express API]
 
-    R -->|복구 키 해시 확인| G[(Supabase guest_sessions)]
-    R -->|분석 기록 저장·조회| E[(Supabase emotion_analyses)]
+    R -->|복구 키 확인| G[(게스트 보관 데이터)]
+    R -->|분석 기록 저장·조회| E[(대화 분석 데이터)]
     R -->|필요한 순간에만 생성 요청| A[Gemini API]
     A -->|생성 답변| R
     R -->|JSON 응답| V
@@ -109,14 +107,13 @@ sequenceDiagram
 
 ```text
 게스트 인증
-→ 입력과 최근 대화 최대 6개 검증
+→ 입력과 필요한 최근 대화 검증
 → 위기 표현은 서버의 고정 안전 응답
 → Gemini 단일 요청
 → 생성 답변과 감정 분석 기록 저장
 ```
 
-- AI 호출 타임아웃은 8초입니다.
-- 생성 요청은 기본적으로 IP별 15분당 10회로 제한합니다.
+- AI 요청에는 시간과 사용량 제한을 적용합니다.
 - Gemini 장애나 타임아웃은 규칙 기반 로컬 답변으로 복구합니다.
 - 무료 토큰 또는 요청 한도에 도달하면 `Noa는 자고 있어요.`를 표시합니다.
 - 백그라운드 호출, 폴링, WebSocket, SSE와 keep-alive 요청은 없습니다.
@@ -197,73 +194,19 @@ npm install
 npm run dev
 ```
 
-프런트엔드 기본 주소는 `http://127.0.0.1:5173`입니다.
-
 백엔드를 별도 실행하려면:
 
 ```bash
 npm run server
 ```
 
-Vite 개발 서버에서 로컬 Express를 직접 호출하려면
-`VITE_API_BASE_URL=http://127.0.0.1:3000`을 사용할 수 있습니다. 프로덕션은
-same-origin `/api` rewrite를 사용하므로 이 값이 필요하지 않습니다.
+## 서버와 데이터 보호
 
-## 서버 환경변수
-
-비밀값은 Render 또는 로컬 `.env`에만 저장하고 Git에 커밋하지 않습니다.
-
-| 환경변수 | 기본값 | 용도 |
-| --- | --- | --- |
-| `SUPABASE_URL` | 없음 | Supabase 프로젝트 URL |
-| `SUPABASE_SECRET_KEY` | 없음 | 서버 전용 Supabase secret |
-| `SUPABASE_SERVICE_ROLE_KEY` | 없음 | 이전 service-role 키 대체 입력 |
-| `GUEST_KEY_PEPPER` | 없음 | 게스트 키 HMAC용 32자 이상 비밀값 |
-| `GEMINI_API_KEY` | 없음 | 서버 전용 Gemini 키 |
-| `GEMINI_MODEL` | `gemini-2.5-flash-lite` | 생성 모델 |
-| `CLIENT_URL` | 로컬 origin | 허용할 Vercel origin |
-| `PORT` | `3000` | Express 포트 |
-| `API_RATE_LIMIT_WINDOW_MS` | `900000` | 요청 제한 시간 |
-| `API_RATE_LIMIT_MAX` | `100` | 전체 API 요청 제한 |
-| `AI_RATE_LIMIT_MAX` | `10` | AI 생성 요청 제한 |
-| `JSON_BODY_LIMIT` | `100kb` | JSON 본문 제한 |
-| `TRUST_PROXY_HOPS` | 프로덕션 `1` | Render 프록시 홉 |
-
-`/health`는 Supabase와 게스트 세션 필수 설정이 준비됐는지 확인합니다. Gemini
-미설정은 서버 전체 장애로 취급하지 않으며 프런트가 로컬 답변으로 복구합니다.
-
-## API
-
-| Method | Route | 인증 | 역할 |
-| --- | --- | --- | --- |
-| `GET` | `/health` | 없음 | 서버 준비 상태 |
-| `POST` | `/api/guest-sessions` | 없음 | 게스트 키 생성 |
-| `POST` | `/api/guest-sessions/recover` | `X-Guest-Key` | 키 복구 |
-| `DELETE` | `/api/guest-sessions/current` | `X-Guest-Key` | 서버 게스트 기록 삭제 |
-| `GET` | `/api/emotion-analyses?limit=20` | `X-Guest-Key` | 게스트 기록 조회 |
-| `POST` | `/api/emotion-analyses` | `X-Guest-Key` | 게스트 분석 저장 |
-| `POST` | `/api/ai-chat/responses` | `X-Guest-Key` | 온디맨드 AI 답변 |
-
-브라우저에서 만든 `sessionId`는 익명 탭 내부 식별과 UI 메시지 ID에만 사용하며
-서버 데이터 소유권 근거가 아닙니다.
-
-## 데이터베이스
-
-초기 스키마와 마이그레이션을 다음 순서로 적용합니다.
-
-1. `backend/supabase-schema.sql`
-2. `backend/migrations/20260724_add_face_signal_metadata.sql`
-3. `backend/migrations/20260724_make_camera_face_signal_optional.sql`
-4. `backend/migrations/20260729_add_guest_sessions.sql`
-
-주요 테이블:
-
-- `guest_sessions`: 복구 키 해시, 생성·접근·만료 시각
-- `emotion_analyses`: 게스트별 입력, 요약 신호, 분석 결과와 AI 답변
-- `conversation_messages`: 향후 독립 메시지 저장을 위한 테이블이며 현재 화면 복원은
-  `emotion_analyses` 레코드를 사용
-
-모든 테이블은 RLS를 활성화하고 브라우저 역할의 직접 접근을 막습니다.
+- 운영 비밀값은 배포 서비스의 비공개 환경설정에서 관리하고 Git에 저장하지 않습니다.
+- 브라우저는 데이터베이스나 생성형 AI 공급자에 직접 접근하지 않습니다.
+- 게스트 생성·복구, 대화 생성, 분석 저장과 조회는 모두 서버의 검증을 거칩니다.
+- 저장 데이터는 인증된 게스트별로 분리하며 브라우저의 직접 DB 접근을 막습니다.
+- AI가 준비되지 않았거나 요청에 실패해도 로컬 답변으로 대화를 계속할 수 있습니다.
 
 ## 빌드 확인
 
