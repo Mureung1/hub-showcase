@@ -86,6 +86,8 @@
 - 2026-07-27 Persona 범위 재정의: 현재 sprite motion 수가 제한적이므로 Persona의 핵심은 응원 문구, 피드백 방식, 퀘스트 제안 성향으로 두고, animation은 공통 motion set에 약한 behavior bias만 주는 구조로 정리
 - 2026-07-28 `T-712/T-703/T-713` 2순위 연결: Quest Event metadata에 stat delta, reward 후보, stage 해금, sound hint를 추가하고, 기록 노트 chip과 시작 메뉴의 설정 창 stage 선택/사운드 toggle로 확인할 수 있게 연결. 실제 cyber-purr 음원은 아직 placeholder/fallback 상태로 유지
 - 2026-07-28 LLM-style 퀘스트 능력치 평가 경계 추가: 난이도별 stat budget을 `easy=3`, `normal=7`, `hard=15`로 두고, LLM이 제안한 능력치 분배는 총합/주요 능력치 비율/단일 능력치 최대치 검증을 통과해야 저장되는 구조로 정리. 현재 runtime은 같은 계약의 `rule_fallback` 평가를 사용
+- 2026-07-29 Lumi outside roaming state machine 1차 개선: target dead zone에서 방향/이동 떨림을 막고, ladder climb은 climb/hold/descend/idle loop로, platform jump는 jump/land/idle_on_platform/jump_down/idle loop로 이어지도록 `outsidePetRuntime` 도메인 규칙과 React runtime hook을 TDD로 연결. platform 위 idle은 platform rect 이동을 따라가며, returning hiding은 화면 edge anchor에 멈춘 뒤 재생하도록 정리. 없는 outside animation state는 같은 pet/stage idle을 우선 사용해 다른 매니저 fallback 노출을 줄임
+- 2026-07-29 Lumi outside roaming invariant 보강: `idle/happy/hiding/recovering/focused/climbing`은 수평 이동하지 않고 `walk/run/jump`만 이동 speed를 갖도록 `outsidePetRuntime`에 animation speed policy를 추가. runtime animation 선택도 현재 pet/stage가 지원하지 않는 state면 같은 pet/stage `idle`로 정규화해 unsupported outside motion 진입을 줄임
 - 2026-07-29 P0 flow 정돈: 기록 노트 열기/닫기 모두 blink outside transition을 재생하도록 `blinkFocusPolicy`와 React 연결을 정리하고, 시작 메뉴의 종료/다시 시작 성격을 `매니저 바꾸기`로 바꿔 profile, level, exp, logs, quest/window state를 유지한 채 manager sprite만 교체하도록 연결
 - 2026-07-29 P1 XP window consistency 정돈: 창 id, label, title icon, 초기 위치/크기, desktop/window icon asset, workflow 여부를 `src/data/windowRegistry.ts` 단일 registry로 모으고 `App.tsx`의 분산 Record 상수를 제거
 - 2026-07-29 T-603 승격: Hono Manager LLM API v1 route 5종(`/api/manager/line`, `/api/manager/quest-suggestion`, `/api/manager/difficulty-evaluation`, `/api/manager/stat-evaluation`, `/api/manager/behavior-intent`)을 추가하고, OpenAI `gpt-5-nano` 기본 provider wrapper, server env key, strict schema tool call, in-memory 호출 제한, rule fallback 응답을 연결
@@ -165,6 +167,9 @@
 - 2026-07-29 restart 서버 hydration cutoff와 사다리 title 숨김 검증 통과: `npm.cmd test -- src/hooks/useQuestLogSync.test.ts src/domain/appLifecyclePolicy.test.ts src/data/windowRegistry.test.ts`, `npm.cmd run typecheck`
 - 2026-07-29 다시 시작 초기화 범위 보강 검증 통과: `npm.cmd test` 24 files / 92 tests, `npm.cmd run typecheck`
 - 2026-07-29 P2 Pixel TV 현실 픽셀화 prototype 1차 검증 통과: `npm.cmd test -- src/domain/pixelizer.test.ts src/data/windowRegistry.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 24 files / 94 tests
+- 2026-07-29 outside roaming state machine 1차 개선 검증 통과: `npm.cmd test -- src/data/assetManifest.test.ts src/domain/outsidePetRuntime.test.ts`, `npm.cmd test`, `npm.cmd run typecheck`
+- 2026-07-29 outside roaming invariant 보강 검증 통과: `npm.cmd test -- src/data/assetManifest.test.ts src/domain/outsidePetRuntime.test.ts`, `npm.cmd test`, `npm.cmd run typecheck`
+- 2026-07-29 outside roaming walk/run speed 절반 조정 검증 통과: `npm.cmd test -- src/domain/outsidePetRuntime.test.ts`, `npm.cmd run typecheck`, `npm.cmd test`
 - 로컬 skill 설치 확인: Superpowers, 하네스 workflow skills, `project-learning-agent`
 - React 화면은 정적 HTML 기준으로 큰 flow/state 차이는 줄였고, 남은 시각 차이는 사용자가 직접 화면을 보며 추가 점검 예정
 

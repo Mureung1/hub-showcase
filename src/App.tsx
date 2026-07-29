@@ -5,6 +5,7 @@ import { useCallback } from "react";
 import {
   getDesktopIconAsset,
   getPetAnimationAsset,
+  hasPetAnimationAsset,
   getLumiAnimationAsset,
   getRenderablePetStage,
   getUnlockedPetStages,
@@ -14,6 +15,7 @@ import {
   defaultLumiPetId,
   lumiMoodToSpriteState,
   resolvePetStageFromLevel,
+  resolveSupportedPetAnimationState,
   type DesktopIconId,
   type InteractionObjectAsset,
   type PetAnimationState,
@@ -861,9 +863,15 @@ export default function App() {
   useEffect(() => { writeStorage(managerKey, manager); }, [manager]);
   useEffect(() => { questLogRepository.set(logs); }, [logs]);
 
+  const managerDisplayStage = getManagerDisplayStage(manager);
   const getNextRoamAnimation = useCallback(
-    (pet: OutsidePetState, objects: InteractionObject[]) => getNextOutsidePetRoamAnimation(pet, objects, manager, profile.managerTone, questOutcomeStreak, reducedMotion),
-    [manager, profile.managerTone, questOutcomeStreak, reducedMotion],
+    (pet: OutsidePetState, objects: InteractionObject[]) =>
+      resolveSupportedPetAnimationState(
+        manager.petId,
+        managerDisplayStage,
+        getNextOutsidePetRoamAnimation(pet, objects, manager, profile.managerTone, questOutcomeStreak, reducedMotion),
+      ),
+    [manager, managerDisplayStage, profile.managerTone, questOutcomeStreak, reducedMotion],
   );
   useOutsidePetRuntime({
     outsidePet,
@@ -873,7 +881,6 @@ export default function App() {
     getNextRoamAnimation,
   });
 
-  const managerDisplayStage = getManagerDisplayStage(manager);
   const projectionModeAsset = projectionModeAssets.find((asset) => asset.mode === "single_plane_pepper");
 
   function triggerBlinkFocus(reason: BlinkEntryReason) {
@@ -2093,11 +2100,9 @@ function WindowPetInteraction({ state, petId, stage, placement, position, measur
 }
 
 function getInteractionPrototypeAnimation(petId: PetId, stage: PetStageId, state: PetAnimationState) {
-  try {
-    return getPetAnimationAsset(petId, stage, state);
-  } catch {
-    return getPetAnimationAsset(defaultLumiPetId, "stage-2", state);
-  }
+  if (hasPetAnimationAsset(petId, stage, state)) return getPetAnimationAsset(petId, stage, state);
+  if (hasPetAnimationAsset(petId, stage, "idle")) return getPetAnimationAsset(petId, stage, "idle");
+  return getPetAnimationAsset(defaultLumiPetId, "stage-2", state);
 }
 
 function getInteractionObjectAsset(type: InteractionObjectAsset["type"]): InteractionObjectAsset {
