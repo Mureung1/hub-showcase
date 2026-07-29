@@ -1,6 +1,12 @@
 import { generateMockResponse } from "../../conversation";
 import { createAnonymousEmotionAnalysis } from "../storage/anonymousEmotionStore";
 
+const NOA_SLEEP_RESPONSE = "Noa는 자고 있어요.";
+const AI_LIMIT_ERROR_CODES = new Set([
+  "AI_RATE_LIMITED",
+  "AI_RATE_LIMIT_EXCEEDED"
+]);
+
 export async function createEmotionAnalysisSubmission({
   sessionId,
   analysisInput,
@@ -33,7 +39,9 @@ export async function createEmotionAnalysisSubmission({
       );
     } catch (error) {
       if (error?.name === "AbortError") throw error;
-      aiResponse = fallbackResponse;
+      aiResponse = AI_LIMIT_ERROR_CODES.has(error?.code)
+        ? NOA_SLEEP_RESPONSE
+        : fallbackResponse;
     }
   }
   const faceSignal =

@@ -162,4 +162,36 @@ describe("createEmotionAnalysisSubmission", () => {
       { signal: undefined }
     );
   });
+
+  it.each(["AI_RATE_LIMITED", "AI_RATE_LIMIT_EXCEEDED"])(
+    "says Noa is sleeping when generation stops for %s",
+    async (code) => {
+      generateMockResponse.mockReturnValue("로컬 대체 응답");
+      const saveAnalysis = vi.fn(async (record) => record);
+
+      const result = await createEmotionAnalysisSubmission({
+        sessionId: "session-id",
+        analysisInput: {
+          situationText: "조금 더 이야기하고 싶어.",
+          faceSignal: "neutral",
+          faceSignalSource: "manual",
+          voiceSignal: "normal",
+          selectedScenario: "normal"
+        },
+        analysisResult: { scores: [] },
+        generateResponse: vi.fn(async () => {
+          const error = new Error("AI limit reached");
+          error.code = code;
+          throw error;
+        }),
+        saveAnalysis
+      });
+
+      expect(result.aiResponse).toBe("Noa는 자고 있어요.");
+      expect(saveAnalysis).toHaveBeenCalledWith(
+        expect.objectContaining({ aiResponse: "Noa는 자고 있어요." }),
+        { signal: undefined }
+      );
+    }
+  );
 });
