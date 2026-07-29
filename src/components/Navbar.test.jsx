@@ -98,6 +98,21 @@ describe("Navbar brand identity", () => {
     expect(screen.getByRole("button", { name: "🔔 알림 차단됨" })).toBeDisabled();
   });
 
+  it("permission granted + subscription 확인 중에는 확인 중 상태로 비활성 표시된다", () => {
+    setNotification("granted");
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: {
+        ready: new Promise(() => {}),
+      },
+    });
+    renderNavbar();
+
+    expect(
+      screen.getByRole("button", { name: "🔔 알림 확인 중" }),
+    ).toBeDisabled();
+  });
+
   it("permission default에서 클릭하면 기존처럼 권한 요청과 Push 구독을 수행한다", async () => {
     const requestPermission = setNotification("default");
     subscribeToPush.mockResolvedValue(undefined);

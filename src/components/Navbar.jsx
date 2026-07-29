@@ -20,6 +20,7 @@ const NAV_LINKS = [
 // - denied/unsupported: 사용자가 바꿀 수 없는 상태 → 비활성
 const NOTIFICATION_UI = {
   default: { label: "🔔 알림 켜기", clickable: true },
+  checking: { label: "🔔 알림 확인 중", clickable: false },
   "granted-no-sub": { label: "🔔 알림 다시 켜기", clickable: true },
   "granted-with-sub": { label: "🔔 알림 켜짐", clickable: false },
   denied: { label: "🔔 알림 차단됨", clickable: false },
@@ -101,9 +102,11 @@ function Navbar() {
 
   const statusKey =
     permission === "granted"
-      ? hasSubscription
-        ? "granted-with-sub"
-        : "granted-no-sub"
+      ? hasSubscription === null
+        ? "checking"
+        : hasSubscription
+          ? "granted-with-sub"
+          : "granted-no-sub"
       : permission;
   const ui = NOTIFICATION_UI[statusKey] ?? NOTIFICATION_UI.unsupported;
 
