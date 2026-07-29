@@ -91,6 +91,9 @@ MEASURE_PREVALENCE_RATIO = "prevalence_ratio"
 VALUE_TOLERANCE = 1e-6
 """`statistics_facts.value` 는 `numeric(12,6)` 이므로 여섯째 자리까지만 남는다."""
 
+RECOUNT_FIELDS: tuple[str, ...] = ("numerator", "denominator", "value")
+"""재계산이 대조하는 자리. 예시 출력이 이 차례로 저장값과 재계산값을 나란히 놓는다."""
+
 ENTRY_LABELED: frozenset[EntryLabel] = frozenset(
     label for label in EntryLabel if segment_of(label) is EntrySegment.ENTRY_JUNIOR
 )
@@ -482,7 +485,11 @@ def _cooccurrence(
     n_union = len(set_a | set_b)
 
     if measure == MEASURE_COUNT:
-        return MeasureCount(n_ab, None, float(n_ab))
+        # 분모를 갖지 않는 것이 이 measure 의 정의다(docs/metric-spec.md 3.5). 모집단이
+        # 비면 교집합 수가 몇 건 가운데 나온 것인지 말할 수 없으므로 값을 비운다
+        # (같은 문서 2.4). `metrics/families.py` 의 `cooccurrence` 가 같은 자리를 같은
+        # 규칙으로 비우며, 두 곳이 갈리면 값 대조가 저장 규칙을 계산 오류로 읽는다.
+        return MeasureCount(n_ab, None, None if total <= 0 else float(n_ab))
     if measure == MEASURE_JACCARD:
         return MeasureCount(n_ab, n_union, _ratio(n_ab, n_union))
     if measure == MEASURE_CONDITIONAL_A_GIVEN_B:
@@ -677,10 +684,28 @@ def expected_sample_status(audit: FactAudit) -> SampleStatus | None:
 
     일반 규칙은 docs/metric-spec.md 2.4이며 입력은 표본 수다.
     `cluster_contrast` 만 3.4의 규칙을 따라 기업군 분모와 직무 전체 분모를 함께 본다.
+
+    표본이 서 있어도 값이 서지 않는 자리가 있다. `association_lift` 는 두 집합 가운데
+    하나라도 비면 정의되지 않는다(같은 문서 3.5). 그 행은 값을 비우고
+    `not_computable` 로 적는 것이 2.4의 표이며, 표본 수만으로 판정하면 그 표기를
+    어긋남으로 읽는다. 재계산이 값을 내지 못했을 때만 그 표기를 받아들인다. 재계산은
+    이 갈래에서만 부르므로 통과하는 행의 비용이 늘지 않는다.
     """
     fact, policy = audit.fact, audit.policy
     if fact.metric_family != FAMILY_CLUSTER_CONTRAST:
-        return classify(fact.sample_size, policy)
+        expected = classify(fact.sample_size, policy)
+        if (
+            expected is not SampleStatus.NOT_COMPUTABLE
+            and fact.sample_status is SampleStatus.NOT_COMPUTABLE
+        ):
+            result = recount(audit)
+            if (
+                result.supported
+                and result.count is not None
+                and result.count.value is None
+            ):
+                return SampleStatus.NOT_COMPUTABLE
+        return expected
 
     baseline = audit.baseline_denominator
     if baseline is None:
@@ -734,9 +759,63 @@ def check_sample_status(audit: FactAudit) -> tuple[Violation, ...]:
 
 
 def _values_differ(stored: float | None, recounted: float | None) -> bool:
-    if stored is None or recounted is None:
+    """저장된 값과 재계산한 값이 다른가. 저장값이 없으면 견주지 않는다.
+
+    저장된 `value` 가 비어 있는 것은 저장 규칙이지 계산 오류가 아니다. 억제 정책이
+    `hide` 면 표본에 못 미친 값을 비우고, 분모가 서지 않으면 `not_computable` 로 값을
+    비운다(docs/metric-spec.md 2.4, `metrics/policy.py` 의 `_suppress`). 그 행도 분자와
+    분모는 그대로 남으므로 `_recount_differences` 가 두 자리로 대조한다.
+
+    저장값이 있는데 재계산이 값을 내지 못한 자리는 어긋남이다. 값이 성립하지 않는
+    자리에 수가 들어간 것이며, `association_lift` 의 빈 집합이 그 예다
+    (docs/metric-spec.md 3.5).
+    """
+    if stored is None:
         return False
+    if recounted is None:
+        return True
     return abs(float(stored) - float(recounted)) > VALUE_TOLERANCE
+
+
+def _recount_pairs(
+    fact: StoredFact, count: MeasureCount
+) -> dict[str, tuple[Any, Any]]:
+    """자리마다 `(저장값, 재계산값)`. 어긋나지 않은 자리도 담는다.
+
+    진단이 어긋난 자리만 보아서는 무엇과 무엇을 견주었는지 알 수 없다. 세 자리를
+    모두 남겨야 예시 출력이 저장값과 재계산값을 나란히 찍을 수 있다.
+    """
+    return {
+        "numerator": (fact.numerator, count.numerator),
+        "denominator": (fact.denominator, count.denominator),
+        "value": (fact.value, count.value),
+    }
+
+
+def _recount_differences(
+    fact: StoredFact, count: MeasureCount
+) -> dict[str, list[Any]]:
+    """대조 규칙을 적용해 어긋난 자리만 남긴다.
+
+    | 자리 | 대조 | 근거 |
+    | --- | --- | --- |
+    | 분자 | 언제나. 한쪽만 NULL 인 것도 어긋남이다 | 억제도 계산 불가도 분자를 비우지 않는다(docs/metric-spec.md 2.4) |
+    | 분모 | 언제나. 양쪽이 함께 NULL 이면 같다 | `cooccurrence` 의 `count` 는 분모가 없는 것이 정의다(같은 문서 3.5) |
+    | 값 | 저장값이 있을 때만 | 값을 비우는 것은 저장 규칙이다(같은 문서 2.4) |
+
+    분자·분모를 NULL 까지 포함해 대조하는 것이 이 검사의 무게추다. 값을 비운 행도
+    분자·분모로는 그대로 견주어지므로, 억제된 행이 검사에서 빠지지 않는다.
+    """
+    differs: dict[str, list[Any]] = {}
+    pairs = _recount_pairs(fact, count)
+    for field_name in ("numerator", "denominator"):
+        stored, recounted = pairs[field_name]
+        if stored != recounted:
+            differs[field_name] = [stored, recounted]
+    stored_value, recounted_value = pairs["value"]
+    if _values_differ(stored_value, recounted_value):
+        differs["value"] = [stored_value, recounted_value]
+    return differs
 
 
 def _diagnosis(audit: FactAudit, stored: tuple[int | None, int | None]) -> str | None:
@@ -759,6 +838,14 @@ def check_recount(audit: FactAudit) -> tuple[Violation, ...]:
 
     저장값은 SQL 집계가 만들고 이 판정은 걸러지지 않은 원자 행에서 파이썬 집합
     연산으로 다시 만든다. 재계산할 재료가 없으면 통과로 두지 않는다.
+
+    대조하지 않는 자리를 규칙으로 못 박는다. 저장된 `value` 가 비어 있는 행은 값을
+    견주지 않는다. 억제 정책이 값을 비우는 것과 분모가 서지 않아 `not_computable` 이
+    되는 것은 둘 다 저장 규칙이지 계산 오류가 아니기 때문이다
+    (docs/metric-spec.md 2.4). 규칙과 그 근거는 `_recount_differences` 에 있다.
+
+    검사가 무르지 않은 것은 그 행도 분자·분모를 그대로 대조하기 때문이다. 값을 비운
+    행에서 분자가 어긋나면 여기서 잡힌다.
     """
     fact = audit.fact
     result = recount(audit)
@@ -771,19 +858,18 @@ def check_recount(audit: FactAudit) -> tuple[Violation, ...]:
         )
 
     count = result.count
-    stored = {"numerator": fact.numerator, "denominator": fact.denominator}
-    recounted = {"numerator": count.numerator, "denominator": count.denominator}
-    differs = {
-        key: [stored[key], recounted[key]]
-        for key in stored
-        if stored[key] is not None and stored[key] != recounted[key]
-    }
-    if _values_differ(fact.value, count.value):
-        differs["value"] = [fact.value, count.value]
-
+    differs = _recount_differences(fact, count)
     if not differs:
         return ()
-    detail: dict[str, Any] = {"stored_vs_recounted": differs}
+
+    pairs = _recount_pairs(fact, count)
+    detail: dict[str, Any] = {
+        "stored_vs_recounted": differs,
+        "stored": {name: pairs[name][0] for name in RECOUNT_FIELDS},
+        "recounted": {name: pairs[name][1] for name in RECOUNT_FIELDS},
+        "value_compared": fact.value is not None,
+        "sample_status": str(fact.sample_status),
+    }
     cause = _diagnosis(audit, (fact.numerator, fact.denominator))
     if cause is not None:
         detail["reproduced_by"] = cause
@@ -894,14 +980,25 @@ def audit_fact(audit: FactAudit) -> tuple[Violation, ...]:
 
     위반이 나와도 남은 검사를 건너뛰지 않는다. 한 번의 실행이 결함 전체를 드러내야
     수리 지시를 한 번에 만들 수 있다. 근거는 docs/agent-design.md 9.3이다.
+
+    위반마다 지표 family 와 measure 를 함께 적는다. 사유 코드 하나와 건수 하나만
+    남기면 어느 family 가 틀렸는지 행을 다시 읽어야 알 수 있고, 산출물이 2만 행이면
+    그 되읽기가 진단의 대부분이 된다. 세는 쪽은 `verification/checks/statistics.py` 다.
     """
+    fact = audit.fact
     found: list[Violation] = []
     for name, check in CHECKS:
         for violation in check(audit):
             found.append(
                 Violation(
                     violation.reason_code,
-                    {"check": name, "fact_id": audit.fact.fact_id, **violation.detail},
+                    {
+                        "check": name,
+                        "fact_id": fact.fact_id,
+                        "metric_family": fact.metric_family,
+                        "measure": fact.measure,
+                        **violation.detail,
+                    },
                 )
             )
     return tuple(found)

@@ -91,6 +91,37 @@ def test_every_delete_is_scoped_by_the_analysis_version() -> None:
         assert "analysis_version" in step.where, step.table
 
 
+# ============================================================ 분석 버전 지정
+def test_a_named_analysis_version_narrows_every_delete() -> None:
+    """옛 분류체계로 계산한 버전 하나만 지울 수 있어야 한다.
+
+    분석 버전 식별자가 분류체계 버전을 재료로 삼으므로, 새 버전이 발행되면 다음
+    실행이 새 분석 버전 아래에 다시 계산하고 옛 행은 그대로 남는다.
+    """
+    for step in reset.DELETE_STEPS:
+        assert "%(analysis_version)s" in step.where, step.table
+
+
+def test_the_named_version_is_optional() -> None:
+    """비워 두면 이 직무·데이터셋의 전 버전을 지운다. 조건은 그대로 남는다."""
+    for step in reset.DELETE_STEPS:
+        assert "%(analysis_version)s::text IS NULL" in step.where, step.table
+        assert "job_role_id" in step.where or "%(job_role_id)s" in step.where
+
+
+def test_the_argument_defaults_to_every_version() -> None:
+    assert reset.parse_args([]).analysis_version is None
+    assert reset.parse_args(["--analysis-version", "an_old"]).analysis_version == (
+        "an_old"
+    )
+
+
+def test_the_blocker_query_follows_the_named_version() -> None:
+    """지울 지표 행이 좁혀지면 막는 참조를 세는 범위도 함께 좁혀야 한다."""
+    for blocker in reset.blockers_for(reset.unit_cascade(1)):
+        assert "%(analysis_version)s" in blocker.sql
+
+
 def test_count_and_delete_share_the_condition() -> None:
     """보여 준 수와 지운 수가 어긋나지 않는다."""
     for step in reset.DELETE_STEPS:

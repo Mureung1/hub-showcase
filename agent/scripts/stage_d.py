@@ -52,6 +52,18 @@ migration 을 적용하지 않은 스키마 위에서 돌면 psycopg 의 `Undefi
 `agent_knowledge`, Phase 12-2·12-3 은 `pipe_lineage` 다. 근거는
 docs/permission-matrix.md 3장이다.
 
+봉투가 선언하는 분류체계 버전은 상수가 아니라 저장소의 활성 버전이며 단계마다 다시
+읽는다. Phase 10 이 승격이 있을 때 새 버전을 발행하므로 실행 앞에서 한 번 읽어
+고정하면, Phase 11·12 가 실제로 쓰는 버전과 봉투의 선언이 갈린다. 분석 버전 식별자는
+분류체계 버전을 재료로 삼으므로 발행이 있었던 실행은 Phase 11 부터 다른 분석 버전에
+쌓이고, 요약 앞에 그 사실을 한 줄 적는다. 앞 단계의 산출물은 이전 분석 버전에 그대로
+남으며 그것이 옳다. 다른 분류체계로 계산한 결과는 다른 분석 버전이다
+(docs/architecture.md 8장·docs/erd.md 11.1).
+
+실행 앞에서 활성 분류체계 버전이 있는지 본다. 없으면, 또는 `--analysis-version` 이
+가리킨 분석 버전이 선언한 분류체계와 활성 버전이 다르면 한 단계도 돌리지 않고 종료
+코드 1로 멈춘다.
+
 비용 단가(`CHAT_PRICE_PER_CALL`, `EMBEDDING_PRICE_PER_REQUEST`)는 확인 후 갱신한다.
 기본값은 0이며 0인 항목은 금액 대신 "단가 미설정" 으로 표시한다. 확인하지 않은
 단가로 계산한 금액은 예산 판단에 그대로 쓰이므로, 틀린 금액을 찍는 것보다 호출
@@ -114,6 +126,8 @@ from careersignal.graph.semantic import (  # noqa: E402
 from careersignal.orchestration.envelope import (  # noqa: E402
     Envelope,
     OrchestratorStore,
+    active_taxonomy_version_id,
+    declared_taxonomy_mismatch,
     ensure_envelope,
     start_agent_run,
 )
@@ -721,6 +735,40 @@ def applied_revision() -> str | None:
 SKIP_HINT = "  확인을 건너뛰려면 --skip-schema-check 를 붙인다"
 UPGRADE_HINT = "  alembic upgrade head 를 먼저 돌린다"
 
+ENVELOPE_NO_TAXONOMY = "활성 분류체계 버전이 없다. 봉투가 선언할 버전이 없다"
+PUBLISH_HINT = (
+    "  migrations/sql/0002_seed_reference.sql 이 첫 버전을 만든다."
+    " alembic upgrade head 를 먼저 돌린다"
+)
+MISMATCH_HINT = (
+    "  --analysis-version 을 빼고 돌리면 활성 분류체계로 새 분석 버전을 만든다"
+)
+"""분석 버전이 선언한 분류체계 버전과 활성 버전이 어긋났을 때의 안내.
+
+갈린 채로 돌면 Phase 11 은 활성 버전의 차원에 표현을 붙이고 봉투는 다른 버전을
+선언한 채로 남는다. 그 위에서 Phase 13 이 세면 분석 버전이 선언한 버전으로 다시 세는
+13-4 가 할당을 하나도 찾지 못한다. 실행을 시작하지 않는 편이 그 결과를 만들고 지우는
+것보다 싸다.
+"""
+
+
+def envelope_problem(
+    job_role_id: str, analysis_version: str | None
+) -> str | None:
+    """봉투를 세울 수 없으면 사유와 안내를, 세울 수 있으면 비운다.
+
+    실행 앞에서 본다. 활성 분류체계 버전이 없으면 봉투가 선언할 버전이 없고,
+    `--analysis-version` 이 가리킨 분석 버전이 다른 분류체계를 선언하고 있으면
+    선언과 계산이 갈린 채로 산출물이 쌓인다. 둘 다 한 단계도 돌리기 전에 멈춘다.
+    """
+    active = active_taxonomy_version_id(job_role_id)
+    if active is None:
+        return f"{ENVELOPE_NO_TAXONOMY}\n{PUBLISH_HINT}"
+    if analysis_version is None:
+        return None
+    mismatch = declared_taxonomy_mismatch(analysis_version, active)
+    return None if mismatch is None else f"{mismatch}\n{MISMATCH_HINT}"
+
 
 def schema_problem(versions_dir: Path = MIGRATION_VERSIONS) -> str | None:
     """스키마가 최신이 아니면 사유와 안내를, 최신이면 비운다.
@@ -998,6 +1046,9 @@ class Session:
     published_version: bool = False
     """이번 실행의 Phase 10 이 새 분류체계 버전을 발행했는가."""
 
+    envelope_version: str = ""
+    """마지막으로 세운 봉투의 분석 버전. 갈렸을 때 한 줄 알리는 데만 쓴다."""
+
     def refresh(self) -> None:
         """작업량을 다시 센다.
 
@@ -1008,19 +1059,37 @@ class Session:
         """
         self.workload = gather_workload(self.manifest, self.job_role_id, self.limit)
 
-    def envelope(self, step: str) -> Envelope:
+    def envelope(self, step: str, taxonomy_version_id: str | None = None) -> Envelope:
         """단계마다 분석 버전과 실행 행을 보장한다.
 
         `--analysis-version` 을 주면 그 버전에 실행 행만 매단다. 없는 버전을 주면
         멈춘다. 봉투가 서지 않으면 Phase 8~12 는 한 줄도 저장하지 못한다.
+
+        분류체계 버전을 단계마다 다시 읽는다. 실행 앞에서 한 번 읽어 고정하면 Phase
+        10 이 새 버전을 발행한 순간부터 봉투의 선언과 Phase 11·12 가 실제로 쓰는
+        버전이 갈린다. 봉투는 자기가 선언한 버전으로만 계산했다고 말할 수 있어야
+        하므로, 새 버전이 발행되면 그 뒤 단계는 새 분석 버전 아래에 쌓인다.
+        `taxonomy_version_id` 를 주는 단계(Phase 12)는 그 단계가 실제로 쓰는 값을
+        그대로 넘겨 봉투의 선언과 계산이 같은 값이 되게 한다.
         """
         agent_name = AGENT_NAME[step]
         if self.analysis_version is None:
-            return ensure_envelope(
-                job_role_id=self.job_role_id,
-                dataset_version=self.manifest.dataset_version,
-                agent_name=agent_name,
+            active = taxonomy_version_id or active_taxonomy_version_id(
+                self.job_role_id
             )
+            if active is None:
+                raise SystemExit(f"{ENVELOPE_NO_TAXONOMY}\n{PUBLISH_HINT}")
+            try:
+                envelope = ensure_envelope(
+                    job_role_id=self.job_role_id,
+                    dataset_version=self.manifest.dataset_version,
+                    agent_name=agent_name,
+                    taxonomy_version_id=active,
+                )
+            except ValueError as error:
+                raise SystemExit(f"봉투를 세우지 못했다: {error}") from error
+            self.note_envelope(step, envelope.analysis_version, active)
+            return envelope
         with unit_of_work(Component.ORCHESTRATOR) as unit:
             store = OrchestratorStore(unit)
             if store.find_analysis_version(self.analysis_version) is None:
@@ -1034,6 +1103,24 @@ class Session:
             created_version=False,
         )
 
+    def note_envelope(
+        self, step: str, analysis_version: str, taxonomy_version_id: str
+    ) -> None:
+        """봉투의 분석 버전이 앞 단계와 갈리면 한 줄 알린다.
+
+        갈리는 것은 Phase 10 이 새 분류체계 버전을 발행했다는 뜻이다. 알리지 않으면
+        사용자는 한 실행의 산출물이 두 분석 버전에 나뉘어 들어간 것을 모른 채,
+        Phase 8~10 의 결과를 찾을 때 Phase 11~12 의 버전만 보게 된다.
+        """
+        if self.envelope_version and self.envelope_version != analysis_version:
+            print(
+                f"\n  분석 버전이 갈렸다. Phase {step} 부터 {analysis_version}"
+                f" 를 쓴다(분류체계 {taxonomy_version_id})"
+            )
+            print("  Phase 10 이 새 분류체계 버전을 발행했다."
+                  " 앞 단계의 산출물은 이전 분석 버전에 그대로 남는다")
+        self.envelope_version = analysis_version
+
     def context(
         self,
         step: str,
@@ -1045,7 +1132,7 @@ class Session:
         예산은 이 단계가 실제로 부를 호출 수에 맞춘다. 기본값 40 으로는 청크 수천
         개를 한 번에 돌지 못하고 `budget_exhausted` 로 끊긴다.
         """
-        envelope = self.envelope(step)
+        envelope = self.envelope(step, taxonomy_version_id)
         return RunContext(
             agent_run_id=envelope.agent_run_id,
             analysis_version=envelope.analysis_version,
@@ -1498,6 +1585,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     else:
         workload = gather_workload(manifest, job_role_id, args.limit)
         print(f"활성 분류체계 {workload.taxonomy_version_id or '없음'}")
+        problem = envelope_problem(job_role_id, args.analysis_version)
+        if problem is not None:
+            print(f"\n{problem}")
+            return EXIT_FAILED
 
     estimates = build_estimates(phases, workload, args.stub)
     chat_calls, embedding_calls = report_estimate(estimates, args.stub, args.offline)

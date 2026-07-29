@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import date
 from typing import Any
 
@@ -24,6 +25,7 @@ from careersignal.metrics.verification import (
     FAMILY_REQUIREDNESS_RATIO,
     FAMILY_SCOPE_EXPANSION,
     FAMILY_TEMPORAL_DELTA,
+    MEASURE_ASSOCIATION_LIFT,
     MEASURE_CONDITIONAL_A_GIVEN_B,
     MEASURE_COUNT,
     MEASURE_JACCARD,
@@ -59,7 +61,9 @@ from careersignal.metrics.verification import (
 from careersignal.taxonomy.requiredness import Requiredness
 from careersignal.verification import CheckContext
 from careersignal.verification.checks.statistics import (
+    FACT_PAGE_SIZE,
     REASON_NO_FACTS,
+    REASON_PARTIAL_SCAN,
     REASON_TARGET_NOT_FOUND,
     TARGET_AGGREGATION,
     TARGET_FACT,
@@ -181,16 +185,47 @@ def _run_context() -> RunContext:
 
 
 class FakeReader:
-    """저장소 조회의 대역. 검사는 대조할 행만 받는다."""
+    """저장소 조회의 대역. 검사는 대조할 행만 받는다.
 
-    def __init__(self, audits: dict[str, FactAudit] | None = None) -> None:
+    조회 호출을 센다. 왕복 수가 다시 늘어나면 그 자리에서 드러난다. `missing` 에 적은
+    식별자는 행은 있으나 기준 행을 찾지 못한 자리로 다룬다.
+    """
+
+    def __init__(
+        self,
+        audits: dict[str, FactAudit] | None = None,
+        missing: Sequence[str] = (),
+    ) -> None:
         self._audits = audits or {}
+        self._missing = tuple(missing)
+        self.calls: list[str] = []
+        self.pages: list[int] = []
+
+    def _order(self) -> list[str]:
+        return sorted([*self._audits, *self._missing])
 
     def fact_ids(self, analysis_version: str) -> list[str]:
-        return sorted(self._audits)
+        self.calls.append("fact_ids")
+        return self._order()
 
     def fact_audit(self, fact_id: str) -> FactAudit | None:
+        self.calls.append("fact_audit")
         return self._audits.get(fact_id)
+
+    def fact_count(self, analysis_version: str) -> int:
+        self.calls.append("fact_count")
+        return len(self._order())
+
+    def fact_audit_page(
+        self, analysis_version: str, after: str, size: int
+    ) -> list[tuple[str, FactAudit | None]]:
+        self.calls.append("fact_audit_page")
+        self.pages.append(size)
+        following = [fact_id for fact_id in self._order() if fact_id > after]
+        return [
+            (fact_id, self._audits.get(fact_id))
+            for fact_id in following[:size]
+        ]
 
 
 # ============================================================ 기본 상태
@@ -635,6 +670,108 @@ def test_cluster_contrast_difference_uses_the_baseline_prevalence() -> None:
     assert REASON_RECOUNT_MISMATCH in _codes(check_recount(wrong))
 
 
+# ------------------------------------------------------------ 값을 비운 행
+def test_suppressed_value_is_not_a_recount_violation() -> None:
+    """억제 정책이 값을 비운 행을 불일치로 잡지 않는다.
+
+    `hide` 는 표본에 못 미친 값과 구간만 비우고 행과 분자·분모는 남긴다
+    (docs/metric-spec.md 2.4). 값이 없는 것은 저장 규칙이지 계산 오류가 아니다.
+    """
+    audit = _audit(fact=_fact(value=None, sample_status=SampleStatus.LOW_CONFIDENCE))
+
+    assert check_recount(audit) == ()
+
+
+def test_not_computable_row_is_not_a_recount_violation() -> None:
+    """분모가 서지 않아 값이 없는 행도 불일치가 아니다."""
+    audit = _audit(
+        candidates=(),
+        assignments=(),
+        fact=_fact(
+            numerator=0,
+            denominator=0,
+            sample_size=0,
+            sample_status=SampleStatus.NOT_COMPUTABLE,
+            value=None,
+        ),
+    )
+    assert check_recount(audit) == ()
+    assert audit_fact(audit) == ()
+
+
+def test_emptied_value_does_not_hide_a_wrong_numerator() -> None:
+    """값을 비운 행도 분자·분모로는 그대로 대조한다. 검사가 무르지 않다."""
+    audit = _audit(
+        fact=_fact(
+            numerator=4, value=None, sample_status=SampleStatus.LOW_CONFIDENCE
+        )
+    )
+    violations = check_recount(audit)
+
+    assert REASON_RECOUNT_MISMATCH in _codes(violations)
+    assert violations[0].detail["stored_vs_recounted"]["numerator"] == [4, 2]
+    assert violations[0].detail["value_compared"] is False
+
+
+def test_value_that_should_not_exist_is_caught() -> None:
+    """재계산이 값을 내지 못하는 자리에 수가 들어가 있으면 잡힌다.
+
+    `association_lift` 는 두 집합 가운데 하나라도 비면 정의되지 않는다
+    (docs/metric-spec.md 3.5).
+    """
+    audit = _audit(
+        fact=_fact(
+            metric_family=FAMILY_COOCCURRENCE,
+            measure=MEASURE_ASSOCIATION_LIFT,
+            dimension_id="dim_a",
+            secondary_dimension_id="dim_z",
+            numerator=0,
+            denominator=4,
+            sample_size=4,
+            value=0.0,
+        )
+    )
+    violations = check_recount(audit)
+
+    assert REASON_RECOUNT_MISMATCH in _codes(violations)
+    assert violations[0].detail["stored_vs_recounted"]["value"] == [0.0, None]
+
+
+def test_cooccurrence_count_keeps_its_null_denominator() -> None:
+    """`count` 은 분모가 없는 것이 정의다. 양쪽이 함께 비면 어긋남이 아니다."""
+    audit = _audit(
+        fact=_fact(
+            metric_family=FAMILY_COOCCURRENCE,
+            measure=MEASURE_COUNT,
+            dimension_id="dim_a",
+            secondary_dimension_id="dim_b",
+            numerator=0,
+            denominator=None,
+            sample_size=4,
+            value=0.0,
+        ),
+        assignments=(_assignment(1), _assignment(2)),
+    )
+    assert check_recount(audit) == ()
+
+
+def test_recount_detail_carries_both_sides() -> None:
+    """예시 출력이 읽는 저장값·재계산값이 위반에 함께 담긴다."""
+    audit = _audit(fact=_fact(numerator=3, value=0.75))
+    detail = check_recount(audit)[0].detail
+
+    assert detail["stored"] == {"numerator": 3, "denominator": 4, "value": 0.75}
+    assert detail["recounted"] == {"numerator": 2, "denominator": 4, "value": 0.5}
+
+
+def test_every_violation_names_its_family_and_measure() -> None:
+    """family 별로 세려면 위반이 자기 family 를 들고 있어야 한다."""
+    audit = _audit(fact=_fact(numerator=3, value=0.75))
+    for violation in audit_fact(audit):
+        assert violation.detail["metric_family"] == FAMILY_POSTING_PREVALENCE
+        assert violation.detail["measure"] == MEASURE_RATIO
+
+
 def test_temporal_delta_without_base_facts_is_not_passed() -> None:
     """재계산할 재료가 없는 행을 통과로 두지 않는다."""
     audit = _audit(
@@ -851,6 +988,63 @@ def test_all_violations_are_collected_in_one_run() -> None:
     assert REASON_POLICY_VERSION_MISMATCH in codes
 
 
+def test_violations_are_counted_by_family_and_reason() -> None:
+    """어느 family 가 몇 건인지 판정 하나에서 읽힌다."""
+    wrong = _audit(fact=_fact(fact_id="fact_a", numerator=3, value=0.75))
+    other = _audit(
+        fact=_fact(
+            fact_id="fact_b",
+            metric_family=FAMILY_REQUIREDNESS_RATIO,
+            numerator=1,
+            denominator=2,
+            sample_size=2,
+            value=0.5,
+        ),
+        policy=MetricPolicy(FAMILY_REQUIREDNESS_RATIO, "v1", 5, 10),
+        assignments=(_assignment(1),),
+    )
+    outcome = numerical_consistency_check(
+        FakeReader({"fact_a": wrong, "fact_b": other})
+    )(
+        CheckContext(
+            run=_run_context(),
+            target_type=TARGET_AGGREGATION,
+            target_id="an_001",
+        )
+    )
+
+    assert outcome.verdict is CheckVerdict.FAIL
+    detail = outcome.detail or {}
+    assert detail["by_family"][FAMILY_POSTING_PREVALENCE] == 1
+    assert detail["by_family"][FAMILY_REQUIREDNESS_RATIO] >= 1
+    assert detail["by_reason"][REASON_RECOUNT_MISMATCH] >= 1
+    assert detail["by_check"]["recount"] >= 1
+    assert detail["violated_fact_count"] == 2
+
+
+def test_violation_rows_are_counted_apart_from_violations() -> None:
+    """한 행이 여러 검사에서 걸리면 위반 건수가 행 수보다 크다."""
+    audit = _audit(
+        fact=_fact(
+            metric_policy_version="mp_v2",
+            numerator=3,
+            sample_status=SampleStatus.ANALYSIS_READY,
+            value=0.75,
+        )
+    )
+    outcome = numerical_consistency_check(FakeReader({"fact_1": audit}))(
+        CheckContext(
+            run=_run_context(),
+            target_type=TARGET_AGGREGATION,
+            target_id="an_001",
+        )
+    )
+    detail = outcome.detail or {}
+
+    assert detail["violated_fact_count"] == 1
+    assert detail["violation_count"] > detail["violated_fact_count"]
+
+
 # ============================================================ 대조 재료 공급
 class FakeUnit:
     """저장소가 쓰는 거래의 대역. SQL 을 실행하지 않고 문장으로 행을 고른다.
@@ -879,11 +1073,20 @@ class FakeUnit:
     def fetch_all(self, sql: str, params: Any = None) -> list[dict[str, Any]]:
         key = self._key(sql)
         self.calls.append(key)
-        return [dict(row) for row in self._rows.get(key, [])]
+        rows = [dict(row) for row in self._rows.get(key, [])]
+        if key == "_FACT_PAGE" and params:
+            # 문장의 `fact_id > %(after)s ... LIMIT %(size)s` 를 대신한다.
+            rows.sort(key=lambda row: str(row["fact_id"]))
+            rows = [
+                row for row in rows if str(row["fact_id"]) > str(params["after"])
+            ][: int(params["size"])]
+        return rows
 
     def fetch_one(self, sql: str, params: Any = None) -> dict[str, Any] | None:
         key = self._key(sql)
         self.calls.append(key)
+        if key == "_FACT_COUNT":
+            return {"fact_count": len(self._rows.get("_FACT_PAGE", []))}
         rows = self._rows.get(key, [])
         return dict(rows[0]) if rows else None
 
@@ -1043,3 +1246,274 @@ def test_repository_reads_the_atomic_rows_once_per_transaction() -> None:
 
 def test_repository_returns_nothing_for_an_unknown_fact() -> None:
     assert _audit_repository({"_FACT": []}).fact_audit("fact_missing") is None
+
+
+def test_repository_reads_the_reference_rows_once_per_transaction() -> None:
+    """분석 버전·기간·정책을 행마다 다시 읽지 않는다.
+
+    셋 다 행마다 값이 거의 같다. 되풀이해 읽으면 왕복이 행 수의 세 배로 늘고, 원격
+    저장소에서는 그 왕복이 검증 시간의 거의 전부가 된다.
+    """
+    repository = _audit_repository()
+    repository.fact_audit("fact_1")
+    repository.fact_audit("fact_1")
+    unit = repository.unit
+
+    assert unit.calls.count("_ANALYSIS_VERSION") == 1
+    assert unit.calls.count("_PERIOD") == 1
+    assert unit.calls.count("_POLICY") == 1
+
+
+def test_repository_reads_the_baselines_once_for_the_whole_version() -> None:
+    """`cluster_contrast` 기준선을 행마다 찾지 않는다."""
+    rows = _audit_rows()
+    rows["_FACT"][0]["metric_family"] = FAMILY_CLUSTER_CONTRAST
+    rows["_FACT"][0]["measure"] = MEASURE_PREVALENCE_DIFFERENCE
+    rows["_BASELINE_PREVALENCES"] = [
+        {
+            "entry_segment": "all",
+            "period_id": "pd_2026h1",
+            "dimension_id": "dim_a",
+            "numerator": 3,
+            "denominator": 4,
+        },
+        {
+            "entry_segment": "all",
+            "period_id": "pd_2026h1",
+            "dimension_id": "dim_b",
+            "numerator": 1,
+            "denominator": 4,
+        },
+    ]
+    repository = _audit_repository(rows)
+    audit = repository.fact_audit("fact_1")
+    repository.fact_audit("fact_1")
+
+    assert audit is not None
+    assert audit.baseline_denominator == 4
+    assert audit.baseline_prevalence == 0.75
+    assert repository.unit.calls.count("_BASELINE_PREVALENCES") == 1
+
+
+def test_repository_reads_the_delta_inputs_once_for_the_whole_version() -> None:
+    """`temporal_delta` 의 두 입력을 행마다 찾지 않는다.
+
+    기준 기간 이하의 마지막 두 행을 고른다. 앞선 문장이 `starts_on DESC` 로 두 줄만
+    집던 것과 같은 차례여야 델타의 뺄셈이 같은 두 값을 본다.
+    """
+    rows = _audit_rows()
+    rows["_FACT"][0]["metric_family"] = FAMILY_TEMPORAL_DELTA
+    rows["_FACT"][0]["measure"] = "posting_prevalence__ratio"
+    base = {
+        **_audit_rows()["_FACT"][0],
+        "metric_family": FAMILY_POSTING_PREVALENCE,
+        "measure": MEASURE_RATIO,
+    }
+    rows["_BASE_FACTS_FOR_DELTA"] = [
+        {
+            **base,
+            "fact_id": "fact_old",
+            "period_id": "pd_2025h1",
+            "starts_on": date(2025, 1, 1),
+        },
+        {
+            **base,
+            "fact_id": "fact_prior",
+            "period_id": "pd_2025h2",
+            "starts_on": date(2025, 7, 1),
+        },
+        {
+            **base,
+            "fact_id": "fact_latest",
+            "period_id": "pd_2026h1",
+            "starts_on": PERIOD_START,
+        },
+        {
+            **base,
+            "fact_id": "fact_after",
+            "period_id": "pd_2026h2",
+            "starts_on": date(2026, 7, 1),
+        },
+    ]
+    repository = _audit_repository(rows)
+    audit = repository.fact_audit("fact_1")
+    repository.fact_audit("fact_1")
+
+    assert audit is not None
+    assert audit.temporal_inputs is not None
+    period_a, period_b = audit.temporal_inputs
+    assert (period_a.fact_id, period_b.fact_id) == ("fact_prior", "fact_latest")
+    assert repository.unit.calls.count("_BASE_FACTS_FOR_DELTA") == 1
+
+
+def test_repository_leaves_the_delta_inputs_empty_without_two_base_rows() -> None:
+    """기준 행이 하나뿐이면 입력을 지어내지 않는다."""
+    rows = _audit_rows()
+    rows["_FACT"][0]["metric_family"] = FAMILY_TEMPORAL_DELTA
+    rows["_FACT"][0]["measure"] = "posting_prevalence__ratio"
+    audit = _audit_repository(rows).fact_audit("fact_1")
+
+    assert audit is not None
+    assert audit.temporal_inputs is None
+
+
+# ============================================================ 왕복 조회 수
+LEGACY_FETCHES_PER_FACT = 4
+"""고치기 전 지표 행 하나에 들던 왕복 수.
+
+`_FACT`·`_ANALYSIS_VERSION`·`_PERIOD`·`_POLICY` 를 행마다 하나씩 읽었다. 21,676행이면
+왕복이 8만 7천 번이다. 이 상수는 줄어든 폭을 수로 확인하기 위한 기준이다.
+"""
+
+
+def _paged_rows(count: int) -> dict[str, Any]:
+    """지표 행 `count` 개를 담은 대역 상태. 행끼리는 식별자만 다르다."""
+    rows = _audit_rows()
+    template = rows["_FACT"][0]
+    rows["_FACT_PAGE"] = [
+        {**template, "fact_id": f"fact_{index:05d}"} for index in range(count)
+    ]
+    return rows
+
+
+def _aggregation_outcome(repository: Any, **options: Any) -> Any:
+    return numerical_consistency_check(repository, **options)(
+        CheckContext(
+            run=_run_context(),
+            target_type=TARGET_AGGREGATION,
+            target_id="an_001",
+        )
+    )
+
+
+def test_batched_scan_cuts_the_number_of_round_trips() -> None:
+    """행 수에 비례하던 왕복이 묶음 수로 줄었다.
+
+    행 1,200개는 고치기 전이라면 왕복 4,800번이었다. 지금은 묶음 3번에 기준 행과 원자
+    행을 합쳐 열 번대다. 이 수가 다시 늘면 회귀다.
+    """
+    count = 1200
+    repository = _audit_repository(_paged_rows(count))
+    outcome = _aggregation_outcome(repository)
+    calls = repository.unit.calls
+
+    assert outcome.verdict is CheckVerdict.PASS
+    assert calls.count("_FACT_PAGE") == -(-count // FACT_PAGE_SIZE)
+    assert calls.count("_FACT_COUNT") == 1
+    assert calls.count("_ANALYSIS_VERSION") == 1
+    assert calls.count("_PERIOD") == 1
+    assert calls.count("_POLICY") == 1
+    assert calls.count("_FACT") == 0
+    assert calls.count("_FACT_IDS") == 0
+    assert len(calls) < LEGACY_FETCHES_PER_FACT * count // 100
+
+
+def test_scan_does_not_grow_with_the_number_of_facts() -> None:
+    """행이 열 배가 되어도 왕복은 묶음 수만큼만 는다."""
+    small = _audit_repository(_paged_rows(100))
+    large = _audit_repository(_paged_rows(1000))
+    _aggregation_outcome(small)
+    _aggregation_outcome(large)
+
+    assert len(large.unit.calls) - len(small.unit.calls) == 1
+
+
+def test_full_scan_records_that_nothing_remains() -> None:
+    """전수로 훑은 실행은 남은 행이 0 이라고 적는다."""
+    outcome = _aggregation_outcome(_audit_repository(_paged_rows(10)))
+
+    assert outcome.verdict is CheckVerdict.PASS
+    assert outcome.detail == {"fact_count": 10, "remaining_count": 0}
+
+
+# ============================================================ 한도와 진행
+def test_limit_scans_the_head_and_is_not_a_pass() -> None:
+    """한도를 건 실행은 위반이 없어도 통과가 아니다."""
+    outcome = _aggregation_outcome(_audit_repository(_paged_rows(10)), limit=4)
+
+    assert outcome.verdict is CheckVerdict.SKIP
+    assert outcome.reason_code == REASON_PARTIAL_SCAN
+    assert outcome.detail is not None
+    assert outcome.detail["fact_count"] == 4
+    assert outcome.detail["remaining_count"] == 6
+    assert outcome.detail["total_count"] == 10
+
+
+def test_limit_larger_than_the_target_is_a_full_scan() -> None:
+    outcome = _aggregation_outcome(_audit_repository(_paged_rows(3)), limit=100)
+
+    assert outcome.verdict is CheckVerdict.PASS
+    assert outcome.detail == {"fact_count": 3, "remaining_count": 0}
+
+
+def test_limit_does_not_read_more_rows_than_it_checks() -> None:
+    """한도가 묶음보다 작으면 묶음도 그만큼만 읽는다."""
+    reader = FakeReader({f"fact_{i:03d}": _audit() for i in range(10)})
+    numerical_consistency_check(reader, limit=3)(
+        CheckContext(
+            run=_run_context(),
+            target_type=TARGET_AGGREGATION,
+            target_id="an_001",
+        )
+    )
+
+    assert reader.pages == [3]
+
+
+def test_limited_run_still_fails_on_a_violation() -> None:
+    """한도를 걸어도 찾은 위반은 그대로 실패다."""
+    reader = FakeReader(
+        {
+            "fact_1": _audit(fact=_fact(numerator=3, value=0.75)),
+            "fact_2": _audit(),
+        }
+    )
+    outcome = numerical_consistency_check(reader, limit=1)(
+        CheckContext(
+            run=_run_context(),
+            target_type=TARGET_AGGREGATION,
+            target_id="an_001",
+        )
+    )
+
+    assert outcome.verdict is CheckVerdict.FAIL
+    assert outcome.detail is not None
+    assert outcome.detail["remaining_count"] == 1
+
+
+def test_aggregation_reads_rows_in_pages_not_one_by_one() -> None:
+    """식별자를 모은 뒤 행을 하나씩 읽는 경로를 쓰지 않는다."""
+    reader = FakeReader({f"fact_{i:03d}": _audit() for i in range(3)})
+    _aggregation_outcome(reader)
+
+    assert reader.calls == ["fact_count", "fact_audit_page"]
+
+
+def test_progress_is_reported_for_every_page() -> None:
+    """묶음마다 진행 상황을 알린다. 화면이 비어 있으면 멈춘 실행과 같아 보인다."""
+    seen: list[tuple[int, int]] = []
+    reader = FakeReader({f"fact_{i:03d}": _audit() for i in range(3)})
+    def progress(done: int, total: int) -> None:
+        seen.append((done, total))
+
+    numerical_consistency_check(reader, None, progress)(
+        CheckContext(
+            run=_run_context(),
+            target_type=TARGET_AGGREGATION,
+            target_id="an_001",
+        )
+    )
+
+    assert seen == [(3, 3)]
+
+
+def test_row_without_reference_rows_is_not_silently_dropped() -> None:
+    """기준 행을 찾지 못한 행은 통과로 세지 않는다."""
+    reader = FakeReader({"fact_1": _audit()}, missing=["fact_2"])
+    outcome = _aggregation_outcome(reader)
+
+    assert outcome.verdict is CheckVerdict.FAIL
+    assert outcome.reason_code == REASON_TARGET_NOT_FOUND
+    assert outcome.detail is not None
+    assert outcome.detail["fact_ids"] == ["fact_2"]
+    assert outcome.detail["fact_count"] == 2

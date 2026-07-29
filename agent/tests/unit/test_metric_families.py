@@ -69,8 +69,8 @@ def test_assignment_join_keeps_active_dimensions_only() -> None:
 @pytest.mark.parametrize(
     "sql",
     [
-        families.PREVALENCE_SELECT,
-        families.REQUIREDNESS_SELECT,
+        families.PREVALENCE_GROUPED_SELECT,
+        families.REQUIREDNESS_GROUPED_SELECT,
         families.SCOPE_EXPANSION_SELECT,
         families.ADVANCED_SIGNAL_SELECT,
     ],
@@ -83,22 +83,53 @@ def test_counts_deduplicate_by_posting_version_id(sql: str) -> None:
 
 
 def test_pair_sets_deduplicate_by_posting_version_id() -> None:
-    assert families.COOCCURRENCE_SETS_CTE.count(
-        "SELECT DISTINCT posting_version_id FROM assigned"
-    ) == 2
+    assert (
+        "SELECT DISTINCT a.dimension_id, a.posting_version_id"
+        in families.COOCCURRENCE_PAIR_MEMBERS_CTE
+    )
 
 
-def test_depth_rank_groups_by_posting_version_id() -> None:
-    assert "GROUP BY posting_version_id" in families.DEPTH_RANK_CTE
+def test_depth_rank_groups_by_dimension_and_posting_version_id() -> None:
+    """대표 등급은 차원 하나 안에서 고른다. 차원이 묶음에 빠지면 깊이가 섞인다(3.3)."""
+    assert "GROUP BY dimension_id, posting_version_id" in (
+        families.DEPTH_RANK_GROUPED_CTE
+    )
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        families.PREVALENCE_GROUPED_SELECT,
+        families.REQUIREDNESS_GROUPED_SELECT,
+        families.DEPTH_GROUPED_SELECT,
+    ],
+)
+def test_grouped_counts_fill_dimensions_without_assignments(sql: str) -> None:
+    """할당이 없는 차원의 정답은 행 없음이 아니라 분자 0 이다(2.4).
+
+    `GROUP BY` 만 하면 그 차원이 결과에서 빠진다. 왼쪽 바깥 조인이 목록을 지키고
+    `COALESCE` 가 0 으로 채워, 차원마다 문장을 보내던 것과 행 수·값이 같다.
+    """
+    assert "FROM wanted w" in sql
+    assert "LEFT JOIN" in sql
+    assert "COALESCE(" in sql
+    assert "ORDER BY w.dimension_id" in sql
+
+
+def test_dimension_list_comes_from_an_array_parameter() -> None:
+    """차원 목록은 자리표시자다. 값을 문자열로 이어 붙이지 않는다."""
+    sql = families.DIMENSION_LIST_CTE
+    assert "unnest(%(dimension_ids)s::text[])" in sql
+    assert "%(dimension_id)s" not in sql
 
 
 # ------------------------------------------------------------ 3.1 posting_prevalence
 def test_posting_prevalence_numerator_and_denominator() -> None:
     """분자는 해당 차원 할당이 있는 공고 버전, 분모는 모집단 전체다(3.1)."""
-    assert "SELECT count(*) FROM population)" in families.PREVALENCE_SELECT
-    assert "WHERE dimension_id = %(dimension_id)s) AS numerator" in (
-        families.PREVALENCE_SELECT
-    )
+    sql = families.PREVALENCE_GROUPED_SELECT
+    assert "SELECT count(*) FROM population) AS denominator" in sql
+    assert "count(DISTINCT posting_version_id) AS numerator" in sql
+    assert "GROUP BY dimension_id" in sql
 
     result = families.prevalence(3, 12)[0]
     assert (result.measure, result.numerator, result.denominator) == ("ratio", 3, 12)
@@ -109,10 +140,10 @@ def test_posting_prevalence_numerator_and_denominator() -> None:
 # ------------------------------------------------------------ 3.2 requiredness_ratio
 def test_requiredness_denominator_is_prevalence_numerator() -> None:
     """분모가 전체 모집단이 아니라 해당 차원이 나타난 공고 수다(3.2)."""
-    sql = families.REQUIREDNESS_SELECT
+    sql = families.REQUIREDNESS_GROUPED_SELECT
     assert "FROM population" not in sql
-    assert "requiredness = 'required'" in sql
-    assert sql.count("dimension_id = %(dimension_id)s") == 2
+    assert "FILTER (WHERE requiredness = 'required') AS numerator" in sql
+    assert "count(DISTINCT posting_version_id)         AS denominator" in sql
 
     result = families.requiredness(2, 5)[0]
     assert (result.numerator, result.denominator, result.sample_size) == (2, 5, 5)
@@ -130,7 +161,7 @@ def test_depth_measures_are_the_three_levels() -> None:
 
 def test_depth_representative_rule_takes_the_deepest_level() -> None:
     """가장 깊은 등급 하나만 센다. 순서는 foundation < application < tradeoff 다(3.3)."""
-    sql = families.DEPTH_RANK_CTE
+    sql = families.DEPTH_RANK_GROUPED_CTE
     assert "WHEN 'tradeoff'    THEN 3" in sql
     assert "WHEN 'application' THEN 2" in sql
     assert "ELSE 1 END" in sql
@@ -237,9 +268,23 @@ def test_cooccurrence_count_has_no_value_on_empty_population() -> None:
 
 
 def test_cooccurrence_counts_come_from_set_operations() -> None:
-    sql = families.COOCCURRENCE_SELECT
-    assert "JOIN set_b b USING (posting_version_id)) AS n_ab" in sql
-    assert "(SELECT count(*) FROM population)          AS n_total" in sql
+    """쌍의 교집합은 소속 집합을 공고 버전으로 이어 센다(3.5)."""
+    sql = families.COOCCURRENCE_PAIR_SELECT
+    assert "ON r.posting_version_id = l.posting_version_id" in sql
+    assert "count(*)       AS n_ab" in sql
+    assert "GROUP BY l.dimension_id, r.dimension_id" in sql
+
+
+def test_cooccurrence_pairs_are_normalised_in_one_direction() -> None:
+    """한 쌍당 한 행이다. 뒤집은 쌍을 함께 세면 같은 수치가 두 벌 생긴다(3.5)."""
+    assert "AND r.dimension_id > l.dimension_id" in families.COOCCURRENCE_PAIR_SELECT
+
+
+def test_cooccurrence_pair_statement_does_not_recount_the_population() -> None:
+    """`n_a`·`n_b`·`n_total` 은 `posting_prevalence` 가 이미 센 값이다(3.5)."""
+    sql = families.COOCCURRENCE_PAIR_SELECT
+    assert "n_total" not in sql
+    assert "FROM population" not in sql
 
 
 # ------------------------------------------------------------ 3.6 scope_expansion

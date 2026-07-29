@@ -7,6 +7,9 @@ docs/erd.md 10.5 에서 온다. 저장소를 대역으로 대체하고 조합 �
 
 from __future__ import annotations
 
+import re
+from collections import Counter
+from collections.abc import Sequence
 from datetime import date
 from typing import Any
 
@@ -16,16 +19,20 @@ from careersignal.contracts import RunContext, StopReason
 from careersignal.domain.permissions import Component, can_write
 from careersignal.domain.sampling import MetricPolicy, SampleStatus, classify
 from careersignal.domain.scope import ScopeLevel
+from careersignal.domain.segment import EntrySegment
 from careersignal.metrics import families
-from careersignal.metrics.expansion import ARITY_BY_FAMILY, MetricFamily
+from careersignal.metrics.expansion import ARITY_BY_FAMILY, Envelope, MetricFamily
 from careersignal.metrics.runner import (
+    MISSING_DIMENSION_COUNT,
     NO_ACTIVE_TAXONOMY,
     TAXONOMY_MISMATCH,
+    TRANSACTION_LOST,
     MeasurePoint,
     MetricAggregation,
     SampleVerdict,
     fact_identifier,
 )
+from careersignal.repositories.base import INSERT_BATCH_SIZE
 from careersignal.repositories.metrics import MetricRepository
 
 JOB_ROLE_ID = "backend"
@@ -66,12 +73,6 @@ DEFAULT_COUNTS: dict[str, dict[str, int]] = {
         "tradeoff": 1,
         "denominator": 6,
     },
-    str(MetricFamily.COOCCURRENCE): {
-        "n_ab": 3,
-        "n_a": 6,
-        "n_b": 5,
-        "n_total": 12,
-    },
     str(MetricFamily.SCOPE_EXPANSION): {"numerator": 2, "denominator": 12},
     str(MetricFamily.ENTRY_LABEL_ADVANCED_SIGNAL_RATE): {
         "numerator": 1,
@@ -79,6 +80,31 @@ DEFAULT_COUNTS: dict[str, dict[str, int]] = {
     },
 }
 """대역이 돌려주는 기본 카운트. 조합마다 같은 값을 준다."""
+
+DEFAULT_PAIR_COUNT = 3
+"""차원 쌍의 기본 교집합 크기.
+
+`cooccurrence` 의 `n_a`·`n_b`·`n_total` 은 대역이 따로 돌려주지 않는다. 셋은 각각 두
+차원의 `posting_prevalence` 분자와 그 분모이며, 실행이 같은 봉투의 유병률 카운트에서
+읽는다(docs/metric-spec.md 3.5).
+"""
+
+AGGREGATION_STATEMENTS: tuple[str, ...] = (
+    "_PREVALENCE_BY_DIMENSION",
+    "_REQUIREDNESS_BY_DIMENSION",
+    "_DEPTH_BY_DIMENSION",
+    "_COOCCURRENCE_PAIRS",
+    "_SCOPE_EXPANSION",
+    "_ADVANCED_SIGNAL",
+)
+"""집계가 실행하는 문장. 자리표시자가 실행이 만드는 이름 안에 있어야 한다."""
+
+DIMENSION_FAMILIES: tuple[MetricFamily, ...] = (
+    MetricFamily.POSTING_PREVALENCE,
+    MetricFamily.REQUIREDNESS_RATIO,
+    MetricFamily.DEPTH_DISTRIBUTION,
+)
+"""차원별 묶음 조회를 갖는 family. 봉투 하나에 문장 하나다."""
 
 ACTIVE_TAXONOMY: dict[str, Any] = {
     "taxonomy_version_id": TAXONOMY_VERSION_ID,
@@ -190,6 +216,15 @@ class FakeMetrics:
 
     `idx_statistics_facts_unique` 를 `fact_id` 로 흉내 낸다. 실행이 같은 조합·measure 를
     두 번 넣으려 하면 여기서 걸린다.
+
+    묶음 조회는 차원 하나짜리 카운트를 그대로 모아 만든다. `counts` 가 `(family, 범위,
+    차원)` 마다 한 벌을 갖고, 묶음 결과의 각 줄이 그 벌이다. 조합마다 문장을 보내던
+    때와 같은 값이 실행에 들어가므로, 저장된 분자·분모가 달라지면 묶는 쪽이 어긋난
+    것이다.
+
+    묶음 저장은 되돌림까지 흉내 낸다. 한 행이라도 걸리면 그 묶음의 어떤 행도 남지
+    않는다. 실제 세이브포인트가 묶음 전체를 되돌리는 것과 같아야, 실패한 묶음을 한
+    줄씩 다시 넣어 나쁜 행만 골라내는 경로가 검사된다.
     """
 
     def __init__(
@@ -201,6 +236,7 @@ class FakeMetrics:
         periods: list[str] | None = None,
         clusters: list[str] | None = None,
         counts: dict[tuple[str, str, str | None], dict[str, int]] | None = None,
+        pair_counts: dict[tuple[str, str, str], int] | None = None,
         active: Any = _UNSET,
     ) -> None:
         self._dimensions = dimensions if dimensions is not None else _dimensions("dim_a")
@@ -210,9 +246,15 @@ class FakeMetrics:
         self._periods = periods if periods is not None else [PERIOD]
         self._clusters = clusters or []
         self._counts = counts or {}
+        self._pair_counts = pair_counts or {}
         self._active = ACTIVE_TAXONOMY if active is _UNSET else active
         self.rows: list[dict[str, Any]] = []
         self.queried: list[tuple[str, dict[str, Any]]] = []
+        self.inserts: list[int] = []
+        """저장 문장 하나가 실은 행 수. 길이가 곧 저장에 든 왕복 수다."""
+
+        self.fact_reads = 0
+        """저장된 `posting_prevalence` 행을 읽은 횟수. 봉투마다 한 번이어야 한다."""
 
     # -------------------------------------------------------- 읽기
     def active_taxonomy_version(self, job_role_id: str) -> dict[str, Any] | None:
@@ -262,6 +304,7 @@ class FakeMetrics:
         entry_segment: str,
         period_id: str,
     ) -> dict[str, tuple[int, int]]:
+        self.fact_reads += 1
         return {
             row["dimension_id"]: (row["numerator"], row["denominator"])
             for row in self.rows
@@ -276,22 +319,69 @@ class FakeMetrics:
         }
 
     # -------------------------------------------------------- 집계
-    def _row(self, family: MetricFamily, params: dict[str, Any]) -> dict[str, int]:
-        self.queried.append((str(family), dict(params)))
-        key = (str(family), params["scope_id"], params.get("dimension_id"))
+    def counts_of(
+        self, family: MetricFamily, scope_id: str, dimension_id: str | None
+    ) -> dict[str, int]:
+        """차원 하나짜리 카운트. 묶음 조회의 한 줄이 되는 값이다.
+
+        조합마다 문장을 보내던 때 그 문장이 돌려주던 것과 같다. 묶음이 이 값을 그대로
+        실어 나르는지가 곧 묶기 전후의 분자·분모가 같은지다.
+        """
+        key = (str(family), scope_id, dimension_id)
         return dict(self._counts.get(key, DEFAULT_COUNTS[str(family)]))
 
-    def prevalence_counts(self, params: dict[str, Any]) -> dict[str, int]:
-        return self._row(MetricFamily.POSTING_PREVALENCE, params)
+    def _row(self, family: MetricFamily, params: dict[str, Any]) -> dict[str, int]:
+        self.queried.append((str(family), dict(params)))
+        return self.counts_of(family, params["scope_id"], None)
 
-    def requiredness_counts(self, params: dict[str, Any]) -> dict[str, int]:
-        return self._row(MetricFamily.REQUIREDNESS_RATIO, params)
+    def _grouped(
+        self, family: MetricFamily, params: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        self.queried.append((str(family), dict(params)))
+        return [
+            {
+                "dimension_id": dimension_id,
+                **self.counts_of(family, params["scope_id"], dimension_id),
+            }
+            for dimension_id in sorted(params["dimension_ids"])
+        ]
 
-    def depth_counts(self, params: dict[str, Any]) -> dict[str, int]:
-        return self._row(MetricFamily.DEPTH_DISTRIBUTION, params)
+    def prevalence_counts_by_dimension(
+        self, params: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        return self._grouped(MetricFamily.POSTING_PREVALENCE, params)
 
-    def cooccurrence_counts(self, params: dict[str, Any]) -> dict[str, int]:
-        return self._row(MetricFamily.COOCCURRENCE, params)
+    def requiredness_counts_by_dimension(
+        self, params: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        return self._grouped(MetricFamily.REQUIREDNESS_RATIO, params)
+
+    def depth_counts_by_dimension(
+        self, params: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        return self._grouped(MetricFamily.DEPTH_DISTRIBUTION, params)
+
+    def cooccurrence_pair_counts(
+        self, params: dict[str, Any]
+    ) -> list[dict[str, Any]]:
+        """교집합이 있는 쌍만 돌려준다. 없는 쌍은 실행이 0 으로 읽는다."""
+        self.queried.append((str(MetricFamily.COOCCURRENCE), dict(params)))
+        wanted = sorted(params["dimension_ids"])
+        rows = []
+        for index, left in enumerate(wanted):
+            for right in wanted[index + 1 :]:
+                n_ab = self._pair_counts.get(
+                    (params["scope_id"], left, right), DEFAULT_PAIR_COUNT
+                )
+                if n_ab:
+                    rows.append(
+                        {
+                            "dimension_id": left,
+                            "secondary_dimension_id": right,
+                            "n_ab": n_ab,
+                        }
+                    )
+        return rows
 
     def scope_expansion_counts(self, params: dict[str, Any]) -> dict[str, int]:
         return self._row(MetricFamily.SCOPE_EXPANSION, params)
@@ -301,9 +391,22 @@ class FakeMetrics:
 
     # -------------------------------------------------------- 쓰기
     def add_fact(self, values: dict[str, Any]) -> None:
+        self.inserts.append(1)
         if any(row["fact_id"] == values["fact_id"] for row in self.rows):
             raise ValueError(f"중복 지표 행: {values['fact_id']}")
         self.rows.append(dict(values))
+
+    def add_facts(self, rows: Sequence[dict[str, Any]]) -> None:
+        """묶음 하나가 문장 하나다. 한 행이 걸리면 묶음 전체가 남지 않는다."""
+        self.inserts.append(len(rows))
+        staged = list(self.rows)
+        seen = {row["fact_id"] for row in staged}
+        for values in rows:
+            if values["fact_id"] in seen:
+                raise ValueError(f"중복 지표 행: {values['fact_id']}")
+            seen.add(values["fact_id"])
+            staged.append(dict(values))
+        self.rows = staged
 
 
 def _run(
@@ -318,6 +421,30 @@ def _run(
 
 def _facts(repository: FakeMetrics, family: MetricFamily) -> list[dict[str, Any]]:
     return [row for row in repository.rows if row["metric_family"] == str(family)]
+
+
+def _by_measure(
+    results: Sequence[families.MeasureResult],
+) -> dict[str, families.MeasureResult]:
+    return {result.measure: result for result in results}
+
+
+def _expected_results(
+    family: MetricFamily, counts: dict[str, int]
+) -> tuple[families.MeasureResult, ...]:
+    """카운트 한 벌을 measure 로 옮긴다. 조합마다 조회하던 때의 경로 그대로다."""
+    if family is MetricFamily.POSTING_PREVALENCE:
+        return families.prevalence(counts["numerator"], counts["denominator"])
+    if family is MetricFamily.REQUIREDNESS_RATIO:
+        return families.requiredness(counts["numerator"], counts["denominator"])
+    if family is MetricFamily.DEPTH_DISTRIBUTION:
+        return families.depth_distribution(
+            counts["foundation"],
+            counts["application"],
+            counts["tradeoff"],
+            counts["denominator"],
+        )
+    raise AssertionError(f"차원별 카운트가 없는 지표: {family}")
 
 
 # ------------------------------------------------------------ 권한
@@ -735,6 +862,371 @@ def test_limit_does_not_count_skipped_combinations() -> None:
     )
     assert again.computed_combinations == 0
     assert not again.limit_reached
+
+
+# ============================================================ 왕복 수
+DIMENSION_SCALE = 47
+CLUSTER_SCALE = 6
+PERIOD_SCALE = 2
+PAIR_ELIGIBLE_SCALE = 4
+"""이번 실행이 찍은 규모.
+
+차원 47개·봉투 56개는 `python3 scripts/stage_e.py` 가 남긴 수다. 봉투 56개는
+`(직무 전체 1 + 기업군 6) × 대상군 4 × 기간 2` 다.
+
+쌍을 만들 차원만 4개로 둔다. 쌍은 차원 수의 제곱으로 늘어 47개면 봉투마다 1,081쌍이고
+검사 하나가 30만 행을 만든다. 자르는 규칙은 실행의 것 그대로이며(`minimum_n` 미만인
+차원은 쌍을 만들지 않는다, docs/metric-spec.md 5장) 여기서는 그 규칙에 걸리도록 나머지
+차원의 유병률 분자를 낮춘다.
+"""
+
+ENVELOPE_SCALE = (1 + CLUSTER_SCALE) * PERIOD_SCALE * 4
+"""봉투 수. 대상군 네 값은 `runner.ALL_SEGMENTS` 다."""
+
+LEGACY_QUERY_PER_COMBINATION = 1
+LEGACY_INSERT_PER_FACT = 1
+"""고치기 전의 왕복 규칙.
+
+조합마다 집계 질의 하나, 행마다 INSERT 하나였다. 이 규모에서 왕복이 2만 7천 번이고
+왕복 하나가 수십 밀리초인 원격 저장소에서는 그것이 실행 시간의 거의 전부였다.
+두 상수는 줄어든 폭을 수로 확인하기 위한 기준이다.
+"""
+
+
+def _scaled_repository() -> FakeMetrics:
+    """차원 47개·봉투 56개의 대역."""
+    dimension_ids = [f"dim_{index:02d}" for index in range(DIMENSION_SCALE)]
+    clusters = [f"cluster_{index}" for index in range(CLUSTER_SCALE)]
+    thin = {
+        (str(MetricFamily.POSTING_PREVALENCE), scope_id, dimension_id): {
+            "numerator": 2,
+            "denominator": 12,
+        }
+        for scope_id in (JOB_ROLE_ID, *clusters)
+        for dimension_id in dimension_ids[PAIR_ELIGIBLE_SCALE:]
+    }
+    return FakeMetrics(
+        dimensions=_dimensions(*dimension_ids),
+        clusters=clusters,
+        periods=[f"y202{index}" for index in range(PERIOD_SCALE)],
+        counts=thin,
+    )
+
+
+@pytest.fixture(scope="module")
+def scaled() -> tuple[FakeMetrics, Any]:
+    """이 규모의 실행을 한 번만 돌려 여러 검사가 나눠 본다."""
+    repository = _scaled_repository()
+    outcome = MetricAggregation(repository, StubSamplePolicy()).run(  # type: ignore[arg-type]
+        _context()
+    )
+    return repository, outcome
+
+
+def test_the_run_reproduces_the_observed_scale(
+    scaled: tuple[FakeMetrics, Any]
+) -> None:
+    """검사가 보는 규모가 실행이 찍은 규모와 같다."""
+    _, outcome = scaled
+    assert outcome.dimension_count == DIMENSION_SCALE
+    assert outcome.envelope_count == ENVELOPE_SCALE == 56
+    assert outcome.stored_facts > 19_000
+    assert not outcome.errors
+
+
+def test_aggregation_queries_are_one_per_family_and_envelope(
+    scaled: tuple[FakeMetrics, Any]
+) -> None:
+    """차원 47개가 각각 따로 돌지 않는다. 봉투 하나에 family 하나면 질의 하나다.
+
+    `scope_expansion` 과 `entry_label_advanced_signal_rate` 는 차원을 받지 않아 봉투마다
+    조합이 하나뿐이므로 묶을 축이 없다. 뒤의 것은 `entry_junior` 봉투에서만 전개된다
+    (docs/metric-spec.md 5장).
+    """
+    repository, _ = scaled
+    counted = Counter(family for family, _ in repository.queried)
+    entry_junior = ENVELOPE_SCALE // 4
+    assert counted == {
+        str(MetricFamily.POSTING_PREVALENCE): ENVELOPE_SCALE,
+        str(MetricFamily.REQUIREDNESS_RATIO): ENVELOPE_SCALE,
+        str(MetricFamily.DEPTH_DISTRIBUTION): ENVELOPE_SCALE,
+        str(MetricFamily.SCOPE_EXPANSION): ENVELOPE_SCALE,
+        str(MetricFamily.COOCCURRENCE): ENVELOPE_SCALE,
+        str(MetricFamily.ENTRY_LABEL_ADVANCED_SIGNAL_RATE): entry_junior,
+    }
+
+
+def test_cluster_contrast_sends_no_aggregation_query(
+    scaled: tuple[FakeMetrics, Any]
+) -> None:
+    """기업군 대비는 저장된 행을 견줄 뿐 다시 세지 않는다(docs/metric-spec.md 3.4)."""
+    repository, outcome = scaled
+    assert outcome.by_family[str(MetricFamily.CLUSTER_CONTRAST)] > 0
+    assert str(MetricFamily.CLUSTER_CONTRAST) not in {
+        family for family, _ in repository.queried
+    }
+
+
+def test_stored_prevalence_is_read_once_per_envelope(
+    scaled: tuple[FakeMetrics, Any]
+) -> None:
+    """쌍의 대상과 기업군 기준선이 같은 조회를 나눠 쓴다."""
+    repository, _ = scaled
+    assert repository.fact_reads == ENVELOPE_SCALE
+
+
+def test_facts_are_stored_in_batches(scaled: tuple[FakeMetrics, Any]) -> None:
+    """행마다 INSERT 하나가 아니라 묶음마다 하나다."""
+    repository, outcome = scaled
+    assert sum(repository.inserts) == outcome.stored_facts
+    assert max(repository.inserts) <= INSERT_BATCH_SIZE
+    lower_bound = -(-outcome.stored_facts // INSERT_BATCH_SIZE)
+    # 단계가 끝날 때마다 남은 것을 먼저 저장하므로 단계 수만큼 묶음이 더 생긴다.
+    assert lower_bound <= len(repository.inserts) <= lower_bound + 3
+
+
+def test_round_trips_fall_by_two_orders_of_magnitude(
+    scaled: tuple[FakeMetrics, Any]
+) -> None:
+    """이 규모에서 왕복이 2만 7천 번에서 400번 아래로 줄었다.
+
+    회귀를 막는 자리다. 조합마다 질의를 보내거나 행마다 INSERT 를 보내는 코드가 다시
+    들어오면 이 수가 그 자리에서 튄다.
+    """
+    repository, outcome = scaled
+    contrast = outcome.by_family[str(MetricFamily.CLUSTER_CONTRAST)]
+    contrast_combinations = len(
+        [row for row in repository.rows if row["measure"] == "prevalence_difference"]
+    )
+    assert contrast_combinations * 2 >= contrast
+
+    legacy = (
+        (outcome.computed_combinations - contrast_combinations)
+        * LEGACY_QUERY_PER_COMBINATION
+        + outcome.stored_facts * LEGACY_INSERT_PER_FACT
+    )
+    now = len(repository.queried) + len(repository.inserts) + repository.fact_reads
+
+    assert legacy > 27_000
+    assert now < 450
+    assert now * 60 < legacy
+
+
+# ============================================================ 묶기 전후의 값
+def test_batched_counts_match_the_per_combination_counts(
+    scaled: tuple[FakeMetrics, Any]
+) -> None:
+    """묶어 세도 저장되는 분자·분모가 같다.
+
+    대역의 묶음 결과는 차원 하나짜리 카운트를 그대로 모은 것이다. 저장된 행의 분자·분모가
+    그 값에서 나온 measure 와 같으면, 묶는 축을 더한 것이 값을 바꾸지 않았다는 뜻이다.
+    """
+    repository, _ = scaled
+    checked = 0
+    for row in repository.rows:
+        family = MetricFamily(row["metric_family"])
+        if family not in DIMENSION_FAMILIES:
+            continue
+        counts = repository.counts_of(family, row["scope_id"], row["dimension_id"])
+        expected = _by_measure(_expected_results(family, counts))[row["measure"]]
+        assert (row["numerator"], row["denominator"]) == (
+            expected.numerator,
+            expected.denominator,
+        )
+        assert row["sample_size"] == expected.sample_size
+        checked += 1
+    assert checked > 13_000
+
+
+def test_batched_cooccurrence_matches_the_per_pair_counts(
+    scaled: tuple[FakeMetrics, Any]
+) -> None:
+    """쌍을 묶어 세도 네 카운트가 같다.
+
+    `n_a`·`n_b`·`n_total` 을 쌍 문장에서 빼고 유병률 결과에서 읽는다. 두 경로가 같은
+    수를 주는지가 여기서 갈린다.
+    """
+    repository, _ = scaled
+    rows = [
+        row
+        for row in repository.rows
+        if row["metric_family"] == str(MetricFamily.COOCCURRENCE)
+    ]
+    assert rows
+    for row in rows:
+        left = repository.counts_of(
+            MetricFamily.POSTING_PREVALENCE, row["scope_id"], row["dimension_id"]
+        )
+        right = repository.counts_of(
+            MetricFamily.POSTING_PREVALENCE,
+            row["scope_id"],
+            row["secondary_dimension_id"],
+        )
+        expected = _by_measure(
+            families.cooccurrence(
+                DEFAULT_PAIR_COUNT,
+                left["numerator"],
+                right["numerator"],
+                left["denominator"],
+            )
+        )[row["measure"]]
+        assert (row["numerator"], row["denominator"]) == (
+            expected.numerator,
+            expected.denominator,
+        )
+        assert row["sample_size"] == expected.sample_size
+
+
+def test_a_pair_without_a_shared_posting_counts_zero() -> None:
+    """쌍 조회에 없는 쌍의 교집합은 0 이다. 행이 빠진 것을 계산 실패로 읽지 않는다."""
+    repository = FakeMetrics(
+        dimensions=_dimensions("dim_a", "dim_b"),
+        pair_counts={(JOB_ROLE_ID, "dim_a", "dim_b"): 0},
+    )
+    outcome = _run(repository)
+    rows = {
+        row["measure"]: row
+        for row in _facts(repository, MetricFamily.COOCCURRENCE)
+        if row["entry_segment"] == "all"
+    }
+    assert rows["count"]["numerator"] == 0
+    assert rows["jaccard"]["numerator"] == 0
+    assert rows["jaccard"]["denominator"] == 12
+    assert not outcome.errors
+
+
+def test_a_dimension_missing_from_the_batch_is_not_read_as_zero() -> None:
+    """묶음 결과에 차원이 없으면 계산하지 않고 실패로 남긴다.
+
+    분자 0 은 그 차원이 한 공고에도 나타나지 않았다는 자료이고, 행이 빠진 것은 조회가
+    차원 목록을 지키지 않았다는 뜻이다. 둘을 같게 두면 조회의 결함이 수치로 굳는다.
+    """
+
+    class ForgetfulMetrics(FakeMetrics):
+        def prevalence_counts_by_dimension(
+            self, params: dict[str, Any]
+        ) -> list[dict[str, Any]]:
+            rows = super().prevalence_counts_by_dimension(params)
+            return [row for row in rows if row["dimension_id"] != "dim_a"]
+
+    repository = ForgetfulMetrics(dimensions=_dimensions("dim_a"))
+    outcome = _run(repository)
+    assert _facts(repository, MetricFamily.POSTING_PREVALENCE) == []
+    assert any(MISSING_DIMENSION_COUNT in reason for _, reason in outcome.errors)
+
+
+def test_every_placeholder_is_filled_by_the_run_parameters() -> None:
+    """집계 문장의 자리표시자가 실행이 만드는 이름 안에 있다.
+
+    빠진 이름 하나가 실행 중간에 드라이버 예외로 튀어나오면 앞 단계의 산출물만 남는다.
+    문장을 봉투 단위로 묶으면서 `dimension_id` 가 `dimension_ids` 로 바뀌었으므로 이
+    대조가 필요하다.
+    """
+    aggregation = MetricAggregation(FakeMetrics(), StubSamplePolicy())  # type: ignore[arg-type]
+    envelope = Envelope(
+        scope_level=ScopeLevel.OVERALL,
+        scope_id=JOB_ROLE_ID,
+        entry_segment=EntrySegment.ALL,
+        period_id=PERIOD,
+    )
+    state = _StateForParams()
+    filled = set(
+        aggregation._params(envelope, state, ("dim_a",))  # type: ignore[arg-type]
+    )
+    for name in AGGREGATION_STATEMENTS:
+        needed = set(re.findall(r"%\((\w+)\)s", getattr(MetricRepository, name)))
+        assert needed
+        assert needed <= filled, f"{name} 이 채워지지 않는 이름을 쓴다: {needed - filled}"
+
+
+class _StateForParams:
+    """`_params` 만 부르기 위한 최소 상태."""
+
+    context = _context()
+    taxonomy_version_id = TAXONOMY_VERSION_ID
+
+
+# ============================================================ 묶음 저장의 실패
+class RefusingMetrics(FakeMetrics):
+    """정해진 measure 의 행을 거절하는 대역."""
+
+    def __init__(self, refuse: str, fatal: bool = False, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._refuse = refuse
+        self._fatal = fatal
+
+    def _guard(self, values: dict[str, Any]) -> None:
+        if values["measure"] != self._refuse:
+            return
+        if self._fatal:
+            raise _DeadTransaction("current transaction is aborted")
+        raise ValueError(f"제약 위반: {values['fact_id']}")
+
+    def add_fact(self, values: dict[str, Any]) -> None:
+        self._guard(values)
+        super().add_fact(values)
+
+    def add_facts(self, rows: Sequence[dict[str, Any]]) -> None:
+        for values in rows:
+            self._guard(values)
+        super().add_facts(rows)
+
+
+class _DeadTransaction(Exception):
+    """거래를 죽이는 실패. 이름과 메시지가 판정의 재료다."""
+
+
+def test_one_bad_row_does_not_take_the_batch_down_with_it() -> None:
+    """묶음이 되돌아가면 한 줄씩 다시 넣어 나쁜 행만 뺀다.
+
+    행마다 세이브포인트를 잡던 때와 저장되는 행 집합이 같다. 묶음 하나가 통째로
+    사라지면 잘못이 없는 행 수백 개가 함께 없어진다.
+    """
+    repository = RefusingMetrics(
+        "foundation", dimensions=_dimensions("dim_a", "dim_b")
+    )
+    outcome = _run(repository)
+
+    measures = {row["measure"] for row in repository.rows}
+    assert "foundation" not in measures
+    assert {"ratio", "application", "tradeoff"} <= measures
+    assert outcome.stored_facts == len(repository.rows)
+    assert len(outcome.errors) == len(
+        _facts(repository, MetricFamily.DEPTH_DISTRIBUTION)
+    ) // 2
+    assert outcome.by_family[str(MetricFamily.POSTING_PREVALENCE)] > 0
+
+
+def test_a_dead_transaction_stops_the_run_after_one_reason() -> None:
+    """죽은 거래에 계속 넣으면 같은 사유의 실패 줄이 행 수만큼 쌓인다."""
+    repository = RefusingMetrics(
+        "ratio", fatal=True, dimensions=_dimensions("dim_a", "dim_b")
+    )
+    outcome = _run(repository)
+
+    assert outcome.stop_reason is StopReason.EXPLICIT_FAILURE
+    assert len(outcome.errors) == 2
+    assert outcome.errors[-1][1] == TRANSACTION_LOST
+    assert repository.rows == []
+
+
+# ============================================================ 진행 표시
+def test_progress_reports_every_combination_with_a_running_total() -> None:
+    """조합 하나마다 알린다. 간격을 정하는 것은 받는 쪽의 몫이다."""
+    repository = FakeMetrics(dimensions=_dimensions("dim_a", "dim_b"))
+    seen: list[tuple[int, int]] = []
+    outcome = MetricAggregation(repository, StubSamplePolicy()).run(  # type: ignore[arg-type]
+        _context(), progress=lambda done, total: seen.append((done, total))
+    )
+    assert len(seen) == outcome.expanded_combinations
+    assert [done for done, _ in seen] == list(range(1, len(seen) + 1))
+    assert all(done <= total for done, total in seen)
+    assert seen[-1][0] == seen[-1][1]
+
+
+def test_a_run_without_a_progress_callback_still_works() -> None:
+    outcome = _run(FakeMetrics())
+    assert outcome.stored_facts > 0
 
 
 # ------------------------------------------------------------ 패키지 재수출

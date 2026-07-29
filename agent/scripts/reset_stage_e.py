@@ -17,8 +17,17 @@ r"""Stage E(Phase 13)의 산출물을 지워 실행 전 상태로 되돌리는 �
 깊이 프로파일부터 뒤 산출물만 되돌린다:
     python scripts/reset_stage_e.py --unit 5 --execute
 
+분석 버전 하나의 행만 지운다:
+    python scripts/reset_stage_e.py --analysis-version an_xxx --execute
+
 범위는 `--dataset-version` 과 `--job-role` 로 좁히고 기본값은 매니페스트에서 읽는다.
 `scripts/stage_e.py` 와 `scripts/reset_stage_d.py` 가 쓰는 방식과 같다.
+
+한 직무·데이터셋에 분석 버전이 여럿 있을 수 있다. 분석 버전 식별자가 분류체계 버전을
+재료로 삼으므로 새 분류체계 버전이 발행되면 다음 실행이 새 분석 버전 아래에 다시
+계산하고, 옛 버전의 행은 그대로 남는다. `--analysis-version` 을 주지 않으면 이 직무·
+데이터셋의 전 버전을 지우고, 주면 그 하나만 지운다. 옛 분류체계로 계산한 버전만
+버리고 새 버전을 남기려면 옛 식별자를 준다.
 
 되돌림은 뒤로 번진다. 13-1 을 되돌리면 그 지표 행 위에 쌓인 13-2·13-5 도 함께
 되돌린다. 앞 단계를 지우고 뒤 단계를 남기면 남은 행이 사라진 행을 가리켜 분석이 틀린
@@ -98,11 +107,24 @@ SCOPED_ANALYSIS_VERSIONS = """
     FROM analysis_versions AS av
     WHERE av.job_role_id = %(job_role_id)s
       AND av.dataset_version = %(dataset_version)s
+      AND (
+        %(analysis_version)s::text IS NULL
+        OR av.analysis_version = %(analysis_version)s
+      )
 """
-"""이 직무·데이터셋의 분석 버전.
+"""이 직무·데이터셋의 분석 버전. `--analysis-version` 을 주면 그 하나로 좁힌다.
 
 세 산출물 표는 모두 `analysis_version` 을 NOT NULL 로 갖는다(docs/erd.md 10.5~10.7).
 데이터셋 버전 컬럼은 없으므로 분석 버전이 직무와 데이터셋을 함께 가리킨다.
+
+한 직무·데이터셋에 분석 버전이 여럿 있을 수 있다. 분석 버전 식별자가 분류체계 버전을
+재료로 삼으므로(`orchestration/envelope.py`) 새 분류체계 버전이 발행되면 다음 실행이
+새 분석 버전 아래에 다시 계산하고, 옛 버전의 행은 그대로 남는다. 버릴 버전 하나만
+지우려면 그 식별자를 준다.
+
+좁히는 조건을 조건문이 아니라 SQL 하나에 둔다. 세는 문장과 지우는 문장이 같은 조건
+하나에서 나오는 규칙(`DeleteStep`)을 지키려면 조건이 갈래마다 달라지면 안 된다.
+`::text` 로 형을 밝히지 않으면 NULL 을 넘겼을 때 드라이버가 형을 정하지 못한다.
 """
 
 DOOMED_FACTS = f"""
@@ -299,10 +321,14 @@ def report_scope(
     dataset_version: str,
     units: Sequence[int],
     execute: bool,
+    analysis_version: str | None = None,
 ) -> None:
     print("Stage E 되돌리기")
     print(f"  직무          {job_role_id}")
     print(f"  데이터셋      {dataset_version}")
+    print(
+        f"  분석 버전     {analysis_version or '이 직무·데이터셋의 전 버전'}"
+    )
     print(f"  되돌릴 단위   {' '.join(f'13-{unit}' for unit in units)}")
     for unit in units:
         print(f"                13-{unit}  {UNIT_LABEL[unit]}")
@@ -346,6 +372,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--dataset-version", default=None, help="기본값은 매니페스트의 데이터셋 버전"
     )
     parser.add_argument("--job-role", default=None, help="기본값은 매니페스트의 직무")
+    parser.add_argument(
+        "--analysis-version",
+        default=None,
+        help=(
+            "이 분석 버전의 행만 지운다. 비우면 이 직무·데이터셋의 전 분석 버전을"
+            " 지운다. 옛 분류체계로 계산한 버전 하나만 버릴 때 쓴다"
+        ),
+    )
     parser.add_argument(
         "--unit",
         type=int,
@@ -395,11 +429,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     # 거래 하나로 끝낸다. 세는 조회와 지우는 문장이 같은 거래 안에 있고 마지막에만
     # 반영하므로, 중간에 무엇이 실패해도 되돌아가 한 줄도 지워지지 않는다.
     with connect() as conn:
-        report_scope(job_role_id, dataset_version, units, args.execute)
+        report_scope(
+            job_role_id,
+            dataset_version,
+            units,
+            args.execute,
+            args.analysis_version,
+        )
 
         params: dict[str, Any] = {
             "dataset_version": dataset_version,
             "job_role_id": job_role_id,
+            "analysis_version": args.analysis_version,
         }
         steps = steps_for(units)
         blocked: list[tuple[Blocker, int]] = []

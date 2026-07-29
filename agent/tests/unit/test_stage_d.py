@@ -771,6 +771,146 @@ def test_head_를_읽지_못하면_사유를_돌려준다(tmp_path: Path) -> Non
     assert "--skip-schema-check" in problem
 
 
+# ================================================================ 봉투 가드
+ACTIVE_TAXONOMY = "tx_backend_v3"
+"""저장소가 정한 활성 분류체계 버전. Phase 10 이 실행할 때마다 새 버전을 발행한다."""
+
+SEEDED_TAXONOMY = "tx_backend_v1"
+"""`0002_seed_reference.sql` 이 만든 첫 버전. 옛 선언을 흉내 내는 데만 쓴다."""
+
+
+def test_활성_분류체계가_없으면_실행_전에_멈춘다(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """봉투가 선언할 버전이 없다. 한 단계도 돌리지 않는다."""
+    monkeypatch.setattr(stage_d, "active_taxonomy_version_id", lambda job: None)
+
+    problem = stage_d.envelope_problem("backend", None)
+
+    assert problem is not None
+    assert stage_d.ENVELOPE_NO_TAXONOMY in problem
+
+
+def test_선언한_분류체계가_활성_버전과_다르면_멈춘다(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """실행 로그의 결함이다. 갈린 채로 돌면 저장된 수치가 선언과 다른 근거를 갖는다."""
+    monkeypatch.setattr(
+        stage_d, "active_taxonomy_version_id", lambda job: ACTIVE_TAXONOMY
+    )
+    monkeypatch.setattr(
+        stage_d,
+        "declared_taxonomy_mismatch",
+        lambda version, active: f"{version} 은 {SEEDED_TAXONOMY} 를 선언했다",
+    )
+
+    problem = stage_d.envelope_problem("backend", "an_old")
+
+    assert problem is not None
+    assert SEEDED_TAXONOMY in problem
+    assert "--analysis-version" in problem
+
+
+def test_선언과_활성_버전이_같으면_멈추지_않는다(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        stage_d, "active_taxonomy_version_id", lambda job: ACTIVE_TAXONOMY
+    )
+    monkeypatch.setattr(
+        stage_d, "declared_taxonomy_mismatch", lambda version, active: None
+    )
+
+    assert stage_d.envelope_problem("backend", "an_current") is None
+
+
+def _envelope_session() -> Any:
+    """봉투만 검사하는 세션. 저장소에 붙지 않는다."""
+    return stage_d.Session(
+        manifest=stage_d.SourceManifest.load(stage_d.DEFAULT_MANIFEST),
+        job_role_id="backend",
+        limit=None,
+        stub=True,
+        analysis_version=None,
+        workload=stage_d.Workload(),
+    )
+
+
+def test_봉투가_단계마다_활성_분류체계를_다시_읽는다(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """실행 도중 Phase 10 이 새 버전을 발행하면 그 뒤 단계는 새 버전을 선언한다.
+
+    실행 앞에서 한 번 읽어 고정하면 Phase 11·12 가 실제로 쓰는 버전과 봉투의 선언이
+    갈린다. 봉투는 자기가 선언한 버전으로만 계산했다고 말할 수 있어야 한다.
+    """
+    session = _envelope_session()
+    published = [SEEDED_TAXONOMY, SEEDED_TAXONOMY, ACTIVE_TAXONOMY]
+    seen: list[str] = []
+
+    monkeypatch.setattr(
+        stage_d, "active_taxonomy_version_id", lambda job: published.pop(0)
+    )
+
+    def _ensure(**kwargs: Any) -> Any:
+        seen.append(kwargs["taxonomy_version_id"])
+        return stage_d.Envelope(
+            analysis_version=f"an_{kwargs['taxonomy_version_id']}",
+            agent_run_id="run_x",
+            created_version=True,
+        )
+
+    monkeypatch.setattr(stage_d, "ensure_envelope", _ensure)
+
+    versions = [session.envelope(step).analysis_version for step in ("8", "10", "11")]
+
+    assert seen == [SEEDED_TAXONOMY, SEEDED_TAXONOMY, ACTIVE_TAXONOMY]
+    assert versions[0] == versions[1]
+    assert versions[2] != versions[1]
+
+
+def test_분석_버전이_갈리면_사용자에게_알린다(
+    monkeypatch: pytest.MonkeyPatch, capsys: Any
+) -> None:
+    """한 실행의 산출물이 두 분석 버전에 나뉜 것을 조용히 넘기지 않는다."""
+    session = _envelope_session()
+    session.note_envelope("8", "an_a", SEEDED_TAXONOMY)
+
+    session.note_envelope("11", "an_b", ACTIVE_TAXONOMY)
+
+    out = capsys.readouterr().out
+    assert "an_b" in out
+    assert "Phase 11" in out
+
+
+def test_봉투가_활성_버전과_어긋나면_실행이_시작되지_않는다(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """봉투가 거절하면 그 단계는 한 줄도 저장하지 못한다."""
+    session = _envelope_session()
+    monkeypatch.setattr(
+        stage_d, "active_taxonomy_version_id", lambda job: SEEDED_TAXONOMY
+    )
+
+    def _ensure(**kwargs: Any) -> Any:
+        raise ValueError("봉투에 넘긴 분류체계 버전이 활성 버전과 다르다")
+
+    monkeypatch.setattr(stage_d, "ensure_envelope", _ensure)
+
+    with pytest.raises(SystemExit):
+        session.envelope("8")
+
+
+def test_활성_분류체계가_없으면_봉투를_세우지_않는다(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    session = _envelope_session()
+    monkeypatch.setattr(stage_d, "active_taxonomy_version_id", lambda job: None)
+
+    with pytest.raises(SystemExit):
+        session.envelope("8")
+
+
 # ================================================================ 실패 갈래
 def _session() -> Any:
     """결과 기록만 검사하는 세션. 저장소에 붙지 않는다."""
