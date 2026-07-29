@@ -1,0 +1,21 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Render 배포 설정
+# https://render.com/docs/blueprint-spec
+# ═══════════════════════════════════════════════════════════════════════════
+
+services:
+  - type: web
+    name: hub-api
+    runtime: node
+    rootDir: apps/api
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false  # 수동 설정 필요
+      - key: SUPABASE_ANON_KEY
+        sync: false  # 수동 설정 필요
+      - key: FRONTEND_URL
+        sync: false  # Vercel 배포 후 설정

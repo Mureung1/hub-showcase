@@ -1,9 +1,36 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   글로벌 스타일 — 앱 전체 기본 설정
+   글로벌 스타일 — 프로토타입 기반 리디자인
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @import './tokens.css';
 
+/* ─────────────────────────────────────────────────────────────────────────
+   애니메이션
+   ───────────────────────────────────────────────────────────────────────── */
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -90% -90%; }
+  100% { background-position: 90% 90%; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   리셋
+   ───────────────────────────────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -22,15 +49,28 @@ body {
   background: var(--color-paper);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
 }
 
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--color-mint);
+  color: #fff;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   버튼
+   ───────────────────────────────────────────────────────────────────────── */
 button {
   font: inherit;
   color: inherit;
   border: none;
   background: none;
   cursor: pointer;
-  min-height: var(--height-touch);
 }
 
 button:disabled {
@@ -38,18 +78,31 @@ button:disabled {
   opacity: 0.5;
 }
 
-/* 포커스 스타일 — 접근성 */
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+textarea:focus-visible {
   outline: 2px solid var(--color-mint);
   outline-offset: 2px;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   입력
+   ───────────────────────────────────────────────────────────────────────── */
+textarea {
+  font: inherit;
+  resize: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   리스트
+   ───────────────────────────────────────────────────────────────────────── */
 ul, ol {
   list-style: none;
 }
 
-/* 스크롤바 스타일 */
+/* ─────────────────────────────────────────────────────────────────────────
+   스크롤바
+   ───────────────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -65,4 +118,15 @@ ul, ol {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-ink-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   유틸리티 클래스
+   ───────────────────────────────────────────────────────────────────────── */
+.animate-rise {
+  animation: riseIn var(--transition-slow);
+}
+
+.animate-fade {
+  animation: fadeIn var(--transition-normal);
 }

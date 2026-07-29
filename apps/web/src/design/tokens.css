@@ -1,52 +1,62 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   디자인 토큰 — DESIGN_SYSTEM.md 기반
+   디자인 토큰 — 프로토타입 기반 리디자인
    "청소 직후의 물기 있는 타일" — 청록으로 청결·신뢰, 앰버·코랄로 이상 신호
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* ─────────────────────────────────────────────────────────────────────────
-     컬러 팔레트 — 의미 단위
+     컬러 팔레트 — 프로토타입 기반
      ───────────────────────────────────────────────────────────────────────── */
 
   /* 민트 — 브랜드 액션, 양호 */
   --color-mint: #12b3a0;
-  --color-mint-deep: #0e9a89;
+  --color-mint-deep: #0a8577;
   --color-mint-wash: rgba(18, 179, 160, 0.12);
+  --color-mint-soft: #e3f5f1;
 
   /* 앰버 — 이상 신호, 가정 */
-  --color-amber: #f5a623;
+  --color-amber: #f0a132;
   --color-amber-deep: #e09100;
-  --color-amber-wash: rgba(245, 166, 35, 0.12);
+  --color-amber-wash: #fdf1dd;
 
-  /* 알람 — 문제, 이의제기 */
-  --color-alarm: #e74c3c;
+  /* 알람 — 문제, 경고 */
+  --color-alarm: #e5644e;
   --color-alarm-deep: #c0392b;
-  --color-alarm-wash: rgba(231, 76, 60, 0.12);
+  --color-alarm-wash: #fce7e2;
 
   /* 텍스트 */
-  --color-ink: #1a1a2e;
-  --color-ink-soft: #6b7280;
+  --color-ink: #0f2a2e;
+  --color-ink-soft: #3c5a5e;
   --color-ink-muted: #9ca3af;
 
   /* 배경 */
-  --color-paper: #e3f5f1;
+  --color-paper: #f2f6f5;
   --color-tile: #ffffff;
-  --color-tile-hover: #f8fffe;
+  --color-tile-hover: #fbfdfc;
+  --color-sidebar: linear-gradient(180deg, #fbfdfc, #f4faf8);
 
   /* 테두리 */
-  --color-border: #d1d5db;
+  --color-border: #dbe6e4;
   --color-border-light: #e5e7eb;
+
+  /* 다크 (버튼, 말풍선) */
+  --color-dark: #0f2a2e;
+  --color-dark-text: #eafcf8;
 
   /* ─────────────────────────────────────────────────────────────────────────
      타이포그래피
      ───────────────────────────────────────────────────────────────────────── */
-  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
 
-  --font-display: 800 23px/1.3 var(--font-family);
-  --font-title: 700 15px/1.4 var(--font-family);
-  --font-body: 400 14px/1.5 var(--font-family);
-  --font-caption: 600 12px/1.4 var(--font-family);
-  --font-eyebrow: 600 11px/1.2 var(--font-family);
+  --font-display: 800 clamp(30px, 5vw, 50px)/1.08 var(--font-family);
+  --font-title-lg: 800 24px/1.2 var(--font-family);
+  --font-title: 700 17px/1.4 var(--font-family);
+  --font-title-sm: 700 16px/1.4 var(--font-family);
+  --font-body: 400 14.5px/1.5 var(--font-family);
+  --font-body-sm: 400 13.5px/1.5 var(--font-family);
+  --font-caption: 600 13px/1.4 var(--font-family);
+  --font-eyebrow: 700 11px/1.2 var(--font-family);
+  --font-nav: 600 14px/1.4 var(--font-family);
 
   /* ─────────────────────────────────────────────────────────────────────────
      간격 — 4px 그리드
@@ -57,33 +67,44 @@
   --space-4: 16px;
   --space-5: 20px;
   --space-6: 24px;
+  --space-7: 28px;
   --space-8: 32px;
   --space-10: 40px;
+  --space-12: 48px;
 
   /* ─────────────────────────────────────────────────────────────────────────
      모양
      ───────────────────────────────────────────────────────────────────────── */
-  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --radius-sm: 10px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
+  --radius-2xl: 26px;
   --radius-btn: 11px;
+  --radius-pill: 20px;
 
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-float: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-card: 0 4px 14px -10px rgba(15, 42, 46, 0.4);
+  --shadow-float: 0 10px 26px -10px rgba(15, 42, 46, 0.35);
+  --shadow-hero: 0 18px 50px -24px rgba(15, 42, 46, 0.4);
 
   /* ─────────────────────────────────────────────────────────────────────────
      레이아웃
      ───────────────────────────────────────────────────────────────────────── */
-  --width-card: 360px;
-  --width-content: 480px;
+  --width-container: 1160px;
+  --width-sidebar: 300px;
+  --width-content: 620px;
+  --width-card: 560px;
   --height-touch: 44px;
+  --height-nav: 74px;
 
   /* ─────────────────────────────────────────────────────────────────────────
      애니메이션
      ───────────────────────────────────────────────────────────────────────── */
-  --transition-fast: 150ms ease;
+  --transition-fast: 160ms ease;
   --transition-normal: 250ms ease;
+  --transition-slow: 400ms cubic-bezier(0.2, 0.6, 0.2, 1);
 }
 
 /* 접근성: reduced motion */
@@ -91,5 +112,6 @@
   :root {
     --transition-fast: 0ms;
     --transition-normal: 0ms;
+    --transition-slow: 0ms;
   }
 }
