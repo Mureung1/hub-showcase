@@ -118,6 +118,36 @@ describe('DELETE /api/meetings/:id/apply', () => {
     expect(rows[0].was_confirmed).toBe(false);
   });
 
+  // 이 테스트만은 회귀 위험이 가장 큰 지점을 실제 쓰기 경로(SQL)로 통과시킨다:
+  // hours_before_start의 단위(시간)와 24시간 임박 경계, 그리고 recalculateTrustScore 호출이
+  // 실제로 연결돼 있는지. 다른 취소 테스트는 전부 먼 미래 모임이라 이 경계를 넘지 않는다.
+  it('임박 취소(시작 2시간 전)는 hours_before_start가 24 미만으로 기록되고 점수가 깎인다', async () => {
+    const host = await createUser('cancel-h12');
+    const { rows } = await pool.query(
+      `INSERT INTO meetings (host_id, type, title, category, description, region_sido, region_sigungu,
+         region_eupmyeondong, start_at, end_at, capacity, adult_only, open_chat_url, status)
+       VALUES ($1,'flash','임박취소테스트','운동','설명','서울특별시','강남구','역삼동',
+               now() + interval '2 hours', NULL, 2, false, 'https://open.kakao.com/o/t', 'closed')
+       RETURNING id`,
+      [host]
+    );
+    const meetingId = Number(rows[0].id);
+    const { agent, userId } = await loginAgent('cancel-u12');
+    await insertParticipant(meetingId, userId, 'confirmed');
+
+    const res = await agent.delete(`/api/meetings/${meetingId}/apply`);
+    expect(res.status).toBe(200);
+
+    const hist = await pool.query(
+      'SELECT hours_before_start FROM participation_cancellations WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, userId]
+    );
+    const hoursBeforeStart = Number(hist.rows[0].hours_before_start);
+    expect(hoursBeforeStart).toBeGreaterThan(1);
+    expect(hoursBeforeStart).toBeLessThan(24);
+    expect(await trustScore(userId)).toBeLessThan(50);
+  });
+
   it('이미 취소된 걸 다시 취소해도 이력이 추가되지 않는다(404, 이력 1건 그대로)', async () => {
     const host = await createUser('cancel-h3');
     const meetingId = await insertMeeting(host);

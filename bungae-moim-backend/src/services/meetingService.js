@@ -346,10 +346,21 @@ async function applyToMeeting(meetingId, userId, rawAnswer) {
 }
 
 // DELETE /api/meetings/:id/apply — 참여/신청 취소(F2).
-// confirmed/approved 취소만 신뢰도 -3(0 미만 clamp) + flash가 closed면 recruiting으로 재오픈.
-// 감점은 반드시 SQL 상대 갱신으로 한다 — 한 사용자가 다른 두 모임을 동시 취소하면 모임 행
-// 잠금이 users 행을 지켜주지 못해 JS 읽기-쓰기는 갱신이 유실된다.
-// 이미 cancelled/rejected거나 신청이 없으면 아무 것도 하지 않는다(이중취소 감점 방지).
+// 더 이상 여기서 신뢰도를 직접 깎지 않는다(설계 7장 전환). 취소 사실을 participation_cancellations에
+// 이력으로 남기고(confirmed/approved였는지, 시작까지 남은 시간 스냅샷), recalculateTrustScore가
+// 그 이력 + 평가 이력에서 점수를 다시 계산해 users.trust_score에 캐시한다.
+// confirmed/approved 취소는 추가로 flash가 closed였다면 recruiting으로 재오픈한다.
+// 이미 cancelled/rejected거나 신청이 없으면 이력도 남기지 않고 404를 던진다(이중취소 방지).
+//
+// ⚠️ 과거에는 감점을 `UPDATE users SET trust_score = trust_score - 3`처럼 SQL 상대 갱신으로
+// 했다 — 한 사용자가 서로 다른 두 모임을 동시에 취소하면 각 트랜잭션이 잡는 FOR UPDATE 잠금은
+// meetings 행에만 걸리고 users 행은 잠기지 않아, 상대 갱신이 아니면(즉 JS에서 읽은 값에 -3을
+// 계산해 절대값으로 쓰면) 한쪽 갱신이 유실될 수 있었기 때문이다.
+// 지금의 recalculateTrustScore는 읽고-계산하고-쓰는(read-compute-write) 절대 갱신이라 같은
+// 문제가 이론적으로 남아있다 — READ COMMITTED에서 두 트랜잭션이 겹치면 둘 다 부분적인 이력만
+// 보고 계산할 수 있고, 나중에 커밋하는 UPDATE가 이긴다. 다만 이번엔 무해하다:
+// participation_cancellations와 meeting_evaluations는 append-only 원본이므로 진실은 보존되고,
+// 다음 재계산(다른 취소·평가 발생 시)이 캐시를 스스로 바로잡는다.
 async function cancelParticipation(meetingId, userId) {
   return withTransaction(async (client) => {
     // is_past는 신청(F1)과 똑같이 DB 시계로 계산한다 — JS Date로 다시 비교하면 목록과 어긋난다.
