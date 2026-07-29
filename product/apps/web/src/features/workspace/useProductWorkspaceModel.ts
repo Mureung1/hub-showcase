@@ -1,6 +1,10 @@
 import { useEffect, useMemo } from "react";
 
 import { useAnalysisPeriodNormalization } from "../analysis/useAnalysisPeriodNormalization";
+import {
+  restoreAnalysisSessionState,
+  saveAnalysisSessionState,
+} from "../analysis/analysisSessionState";
 import { useNearbyStores } from "../analysis/useNearbyStores";
 import { topCategorySelectionForStore } from "../market/categorySelection";
 import { demandFromFlow } from "../market/model";
@@ -390,9 +394,13 @@ export function useProductWorkspaceModel(
 ) {
   const compactMap = useCompactMap();
   const catalogState = useWorkspaceCatalog(catalog);
-  const selection = useAnalysisSelection(catalogState.initialAnalysisState);
+  const initialAnalysisState = useMemo(
+    () => restoreAnalysisSessionState(catalogState.initialAnalysisState, catalog),
+    [catalog, catalogState.initialAnalysisState],
+  );
+  const selection = useAnalysisSelection(initialAnalysisState);
   const panels = useWorkspacePanels(compactMap);
-  const viewport = useMapViewport(catalogState.initialAnalysisState.center, !useDemoData);
+  const viewport = useMapViewport(initialAnalysisState.center, !useDemoData);
   const marketData = useWorkspaceMarketData(
     catalog,
     catalogState,
@@ -409,6 +417,32 @@ export function useProductWorkspaceModel(
     marketData,
     storefronts,
   );
+
+  useEffect(() => {
+    saveAnalysisSessionState({
+      marketKey: selection.marketKey,
+      selectedCategoryName: selection.categorySelection.name,
+      selectedCategoryCode: selection.categorySelection.code,
+      radius: selection.radius,
+      activeHour: selection.activeHour,
+      layer: selection.layer,
+      topic: selection.analysisTopic,
+      boundaryVisible: selection.boundaryVisible,
+      storesVisible: selection.storesVisible,
+      period: selection.period,
+    });
+  }, [
+    selection.activeHour,
+    selection.analysisTopic,
+    selection.boundaryVisible,
+    selection.categorySelection.code,
+    selection.categorySelection.name,
+    selection.layer,
+    selection.marketKey,
+    selection.period,
+    selection.radius,
+    selection.storesVisible,
+  ]);
 
   return {
     catalog,

@@ -54,10 +54,12 @@ vi.mock("./components/SplatViewer", () => ({
 }));
 
 import { App } from "./App";
+import { ANALYSIS_SESSION_STORAGE_KEY } from "./features/analysis/analysisSessionState";
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  window.sessionStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 
@@ -240,6 +242,37 @@ describe("App", () => {
       "aria-expanded",
       "true",
     );
+  });
+
+  it("restores the same-tab analysis filters from session storage while keeping the URL clean", () => {
+    window.sessionStorage.setItem(
+      ANALYSIS_SESSION_STORAGE_KEY,
+      JSON.stringify({
+        marketKey: "합정",
+        selectedCategoryName: "음식점",
+        selectedCategoryCode: null,
+        radius: 300,
+        activeHour: 4,
+        layer: "density",
+        topic: "competition",
+        boundaryVisible: true,
+        storesVisible: true,
+        period: "20254",
+      }),
+    );
+
+    render(<App />);
+
+    expect(screen.getByRole("button", { name: "상권 선택: 합정" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "음식점" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "경쟁 현황" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(window.location.search).toBe("");
   });
 
   it("trusts the API category result instead of filtering detailed store names again", async () => {
