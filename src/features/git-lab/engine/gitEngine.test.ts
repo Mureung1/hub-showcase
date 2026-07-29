@@ -87,6 +87,27 @@ describe('gitEngine', () => {
     expect(parseGitCommand('git merge feature')).toEqual({ type: 'merge', name: 'feature' })
     expect(parseGitCommand('git log')).toEqual({ type: 'log', oneline: false })
     expect(parseGitCommand('git log --oneline')).toEqual({ type: 'log', oneline: true })
+    expect(parseGitCommand('git remote add origin https://example.com/repo.git')).toEqual({
+      type: 'remoteAdd',
+      name: 'origin',
+      url: 'https://example.com/repo.git',
+    })
+    expect(parseGitCommand('git remote -v')).toEqual({ type: 'remoteList' })
+    expect(parseGitCommand('git push -u origin master')).toEqual({
+      type: 'push',
+      remote: 'origin',
+      branch: 'master',
+      setUpstream: true,
+    })
+    expect(parseGitCommand('git push origin iss53')).toEqual({
+      type: 'push',
+      remote: 'origin',
+      branch: 'iss53',
+      setUpstream: false,
+    })
+    expect(parseGitCommand('git fetch')).toEqual({ type: 'fetch', remote: 'origin' })
+    expect(parseGitCommand('git fetch origin')).toEqual({ type: 'fetch', remote: 'origin' })
+    expect(parseGitCommand('git branch -r')).toEqual({ type: 'branchRemoteList' })
   })
 
   it('handles boundary cases and normalizes input', () => {

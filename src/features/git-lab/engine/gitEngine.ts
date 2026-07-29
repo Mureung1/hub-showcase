@@ -1,3 +1,11 @@
+import {
+  branchRemoteList,
+  fetch,
+  push,
+  remoteAdd,
+  remoteList,
+} from './remoteCommands'
+
 export type GitCommit = {
   id: string
   parents: string[]
@@ -91,6 +99,11 @@ export type GitCommand =
   | { type: 'checkoutNewBranch'; name: string }
   | { type: 'merge'; name: string }
   | { type: 'log'; oneline: boolean }
+  | { type: 'remoteAdd'; name: string; url: string }
+  | { type: 'remoteList' }
+  | { type: 'push'; remote: string; branch: string; setUpstream: boolean }
+  | { type: 'fetch'; remote: string }
+  | { type: 'branchRemoteList' }
 
 export type GitCommandResult = {
   state: GitEngineState
@@ -218,6 +231,30 @@ export function parseGitCommand(input: string): GitCommand {
     return { type: 'amendCommit', message: tokens.slice(4).join(' ') }
   }
 
+  if (tokens[1] === 'remote' && tokens[2] === 'add' && tokens.length === 5) {
+    return { type: 'remoteAdd', name: tokens[3], url: tokens[4] }
+  }
+
+  if (tokens[1] === 'remote' && tokens[2] === '-v' && tokens.length === 3) {
+    return { type: 'remoteList' }
+  }
+
+  if (tokens[1] === 'push' && tokens[2] === '-u' && tokens.length === 5) {
+    return { type: 'push', remote: tokens[3], branch: tokens[4], setUpstream: true }
+  }
+
+  if (tokens[1] === 'push' && tokens.length === 4) {
+    return { type: 'push', remote: tokens[2], branch: tokens[3], setUpstream: false }
+  }
+
+  if (tokens[1] === 'fetch' && tokens.length <= 3) {
+    return { type: 'fetch', remote: tokens[2] ?? 'origin' }
+  }
+
+  if (tokens[1] === 'branch' && tokens[2] === '-r' && tokens.length === 3) {
+    return { type: 'branchRemoteList' }
+  }
+
   if (tokens[1] === 'branch' && tokens[2] === '-d' && tokens.length === 4) {
     return { type: 'deleteBranch', name: tokens[3] }
   }
@@ -306,6 +343,16 @@ export function executeGitCommand(state: GitEngineState, command: GitCommand): G
       return merge(state, command.name)
     case 'log':
       return log(state, command.oneline)
+    case 'remoteAdd':
+      return remoteAdd(state, command.name, command.url)
+    case 'remoteList':
+      return remoteList(state)
+    case 'push':
+      return push(state, command.remote, command.branch, command.setUpstream)
+    case 'fetch':
+      return fetch(state, command.remote)
+    case 'branchRemoteList':
+      return branchRemoteList(state)
   }
 }
 
@@ -561,7 +608,7 @@ function add(state: GitEngineState, path: string): GitCommandResult {
   }
 }
 
-function commit(state: GitEngineState, message?: string): GitCommandResult {
+export function commit(state: GitEngineState, message?: string): GitCommandResult {
   if (!state.repoExists) {
     return failure(state, 'not a git repository')
   }

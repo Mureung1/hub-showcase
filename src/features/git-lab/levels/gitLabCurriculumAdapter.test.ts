@@ -134,4 +134,61 @@ describe('gitLabCurriculumAdapter', () => {
     ])
     expect(level.initialEngineState?.commits[0].bugState).toBe('good')
   })
+
+  it('parses remoteState goal conditions for both origin registration and remote branch existence', () => {
+    const [level1, level2] = createPlayableLevels({
+      levels: [],
+      curriculumModules: [
+        {
+          moduleId: 'm1',
+          moduleTitle: 'Module 1',
+          bookRef: 'ref',
+          levels: [
+            {
+              id: 'remote-origin',
+              title: 'origin',
+              bookRef: 'ref',
+              description: 'desc',
+              allowedCommands: ['git remote add'],
+              initialState: {
+                commits: [{ id: 'C0', parents: [] }],
+                branches: [{ name: 'master', commitId: 'C0' }],
+                HEAD: { type: 'branch', name: 'master' },
+              },
+              goal: {
+                type: 'remoteState',
+                condition: "remotes.includes('origin') && remoteBranches.master === localBranches.master",
+              },
+            },
+            {
+              id: 'remote-branch',
+              title: 'branch',
+              bookRef: 'ref',
+              description: 'desc',
+              allowedCommands: ['git push'],
+              initialState: {
+                commits: [{ id: 'C0', parents: [] }],
+                branches: [{ name: 'iss53', commitId: 'C0' }],
+                HEAD: { type: 'branch', name: 'iss53' },
+              },
+              goal: {
+                type: 'remoteState',
+                condition: "remoteBranches.includes('origin/iss53')",
+              },
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(level1.goalCheck).toMatchObject({
+      type: 'remoteState',
+      requiredRemoteName: 'origin',
+      requiredRemoteBranch: 'origin/master',
+    })
+    expect(level2.goalCheck).toMatchObject({
+      type: 'remoteState',
+      requiredRemoteBranch: 'origin/iss53',
+    })
+  })
 })

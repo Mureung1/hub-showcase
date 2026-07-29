@@ -338,6 +338,24 @@ function createGoalCheck(level: CurriculumLevel): GitLabGoalCheck | undefined {
     }
   }
 
+  if (level.goal?.type === 'remoteState') {
+    const condition = level.goal.condition ?? ''
+    const remoteNameMatch = /remotes\.includes\('([^']+)'\)/.exec(condition)
+    const remoteBranchIncludesMatch = /remoteBranches\.includes\('([^']+)'\)/.exec(condition)
+    const remoteBranchKeyMatch = /remoteBranches\.(\w+)\s*===/.exec(condition)
+
+    return {
+      type: 'remoteState',
+      requiredRemoteName: remoteNameMatch?.[1],
+      requiredRemoteBranch:
+        remoteBranchIncludesMatch?.[1] ??
+        (remoteBranchKeyMatch
+          ? `${remoteNameMatch?.[1] ?? 'origin'}/${remoteBranchKeyMatch[1]}`
+          : undefined),
+      description,
+    }
+  }
+
   return undefined
 }
 
