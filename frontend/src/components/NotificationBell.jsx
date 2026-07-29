@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
+import InfoModal from './InfoModal'
 import './NotificationBell.css'
 
 // 독립적인 알림 벨 컴포넌트. 화면별 특수 로직 없이 어디든 그대로 끼워 넣을 수 있다.
@@ -20,6 +21,10 @@ export default function NotificationBell() {
   const [isMatchRequestsExpanded, setIsMatchRequestsExpanded] = useState(false)
   const [respondingInviteId, setRespondingInviteId] = useState(null)
   const [inviteErrorMessage, setInviteErrorMessage] = useState('')
+  const [respondingMatchRequestId, setRespondingMatchRequestId] = useState(null)
+  const [matchRequestErrorMessage, setMatchRequestErrorMessage] = useState('')
+  // 매칭 신청 수락/거절 결과 안내 팝업 (TeamMatchDetailPage의 InfoModal 사용 패턴과 동일)
+  const [infoModal, setInfoModal] = useState({ isOpen: false, title: '', message: '' })
 
   useEffect(() => {
     let isMounted = true
@@ -35,6 +40,22 @@ export default function NotificationBell() {
       isMounted = false
     }
   }, [])
+
+  // 수락/거절 후 알림 목록을 최신 상태로 다시 불러온다.
+  // (accept는 두 팀에 걸려있던 다른 pending 신청까지 함께 rejected 처리될 수 있어
+  //  단순히 클릭한 항목 하나만 로컬에서 지우면 목록이 실제 서버 상태와 어긋날 수 있다)
+  const refreshSummary = async () => {
+    try {
+      const res = await apiClient.get('/notifications/summary')
+      setSummary(res.data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const closeInfoModal = () => {
+    setInfoModal({ isOpen: false, title: '', message: '' })
+  }
 
   useEffect(() => {
     if (!isDropdownOpen) return
@@ -53,9 +74,9 @@ export default function NotificationBell() {
     setIsDropdownOpen((prev) => !prev)
   }
 
-  const handleChatItemClick = (chatRoomId) => {
+  const handleChatItemClick = (chatRoomId, chatRoomType) => {
     setIsDropdownOpen(false)
-    navigate(`/chat/${chatRoomId}`)
+    navigate(chatRoomType === 'teamMatch' ? `/team-match-chat/${chatRoomId}` : `/chat/${chatRoomId}`)
   }
 
   const handleRespondInvite = async (inviteId, action) => {
@@ -63,12 +84,18 @@ export default function NotificationBell() {
     setInviteErrorMessage('')
 
     try {
-      await apiClient.patch(`/team-invites/${inviteId}`, { action })
+      const res = await apiClient.patch(`/team-invites/${inviteId}`, { action })
       setSummary((prev) => ({
         ...prev,
         totalCount: prev.totalCount - 1,
         pendingInvites: prev.pendingInvites.filter((invite) => invite.inviteId !== inviteId),
       }))
+
+      // 수락이고 팀 정보를 받아온 경우에만 팀 화면으로 이동한다 (거절이거나 teamId가 없으면 기존 동작 유지)
+      if (action === 'accept' && res.data?.teamId) {
+        setIsDropdownOpen(false)
+        navigate('/team-setup')
+      }
     } catch (err) {
       console.error(err)
       setInviteErrorMessage('초대 처리에 실패했어요. 잠시 후 다시 시도해주세요.')
@@ -77,13 +104,58 @@ export default function NotificationBell() {
     }
   }
 
-  // 매칭 신청(관심 보내기) 수락/거절은 다음 단계에서 API로 연결한다. 지금은 콘솔 로그만 출력한다.
-  const handleAcceptMatchRequest = (requestId) => {
-    console.log(`매칭 신청 수락: requestId=${requestId}`)
+  // 매칭 신청(관심 보내기) 수락. 채팅방 생성까지 서버에서 원자적으로 처리되므로,
+  // 응답으로 받은 chatRoomId로 바로 채팅방까지 이동시킨다.
+  const handleAcceptMatchRequest = async (requestId) => {
+    setRespondingMatchRequestId(requestId)
+
+    try {
+      const res = await apiClient.patch(`/match-requests/${requestId}/accept`)
+
+      // 채팅방 id를 받아온 경우 바로 채팅방으로 이동시키고, 못 받아온 경우에만 기존 팝업으로 안내한다
+      if (res.data?.chatRoomId) {
+        setIsDropdownOpen(false)
+        navigate(`/team-match-chat/${res.data.chatRoomId}`)
+      } else {
+        setInfoModal({
+          isOpen: true,
+          title: '매칭 성사',
+          message: '매칭이 성사됐어요! 채팅방이 생성됐어요.',
+        })
+      }
+    } catch (err) {
+      console.error(err)
+      const message =
+        err.response?.data?.message ?? '수락 처리 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.'
+      setInfoModal({ isOpen: true, title: '수락 실패', message })
+    } finally {
+      setRespondingMatchRequestId(null)
+      refreshSummary()
+    }
   }
 
-  const handleRejectMatchRequest = (requestId) => {
-    console.log(`매칭 신청 거절: requestId=${requestId}`)
+  // 매칭 신청 거절. 반대 방향 신청까지 서버에서 함께 정리되지만, 그건 상대 팀의 목록에
+  // 영향을 주는 것이라 내 목록에서는 클릭한 항목만 지우면 된다 (teamInvite 거절 처리와 동일한 패턴)
+  const handleRejectMatchRequest = async (requestId) => {
+    setRespondingMatchRequestId(requestId)
+    setMatchRequestErrorMessage('')
+
+    try {
+      await apiClient.patch(`/match-requests/${requestId}/reject`)
+      setSummary((prev) => ({
+        ...prev,
+        totalCount: prev.totalCount - 1,
+        pendingMatchRequests: prev.pendingMatchRequests.filter(
+          (request) => request.requestId !== requestId
+        ),
+      }))
+    } catch (err) {
+      console.error(err)
+      setMatchRequestErrorMessage('매칭 신청 처리에 실패했어요. 잠시 후 다시 시도해주세요.')
+      refreshSummary()
+    } finally {
+      setRespondingMatchRequestId(null)
+    }
   }
 
   const unreadChatTotal = summary.unreadChats.reduce((sum, chat) => sum + chat.unreadCount, 0)
@@ -148,9 +220,9 @@ export default function NotificationBell() {
                     {summary.unreadChats.map((chat) => (
                       <button
                         type="button"
-                        key={chat.chatRoomId}
+                        key={`${chat.chatRoomType}-${chat.chatRoomId}`}
                         className="notification-bell-chat-item"
-                        onClick={() => handleChatItemClick(chat.chatRoomId)}
+                        onClick={() => handleChatItemClick(chat.chatRoomId, chat.chatRoomType)}
                       >
                         <span className="notification-bell-chat-nickname">
                           {chat.partnerNickname}
@@ -230,6 +302,9 @@ export default function NotificationBell() {
                     {summary.pendingMatchRequests.length === 0 && (
                       <p className="notification-bell-list-empty">받은 매칭 신청이 없어요</p>
                     )}
+                    {matchRequestErrorMessage && (
+                      <p className="notification-bell-invite-error">{matchRequestErrorMessage}</p>
+                    )}
                     {summary.pendingMatchRequests.map((request) => (
                       <div className="notification-bell-invite-item" key={request.requestId}>
                         <span className="notification-bell-invite-nickname">
@@ -240,6 +315,7 @@ export default function NotificationBell() {
                             type="button"
                             className="notification-bell-invite-button notification-bell-invite-accept"
                             onClick={() => handleAcceptMatchRequest(request.requestId)}
+                            disabled={respondingMatchRequestId === request.requestId}
                           >
                             수락
                           </button>
@@ -247,6 +323,7 @@ export default function NotificationBell() {
                             type="button"
                             className="notification-bell-invite-button notification-bell-invite-reject"
                             onClick={() => handleRejectMatchRequest(request.requestId)}
+                            disabled={respondingMatchRequestId === request.requestId}
                           >
                             거절
                           </button>
@@ -260,6 +337,13 @@ export default function NotificationBell() {
           )}
         </div>
       )}
+
+      <InfoModal
+        isOpen={infoModal.isOpen}
+        title={infoModal.title}
+        message={infoModal.message}
+        onConfirm={closeInfoModal}
+      />
     </div>
   )
 }

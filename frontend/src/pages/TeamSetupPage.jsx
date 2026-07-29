@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../api/client'
 import NotificationBell from '../components/NotificationBell'
+import ChatListButton from '../components/ChatListButton'
 import InviteCodeModal from '../components/InviteCodeModal'
 import './TeamSetupPage.css'
 
@@ -162,6 +163,7 @@ export default function TeamSetupPage() {
   return (
     <div className="team-setup-page">
       <div className="team-setup-notification-bell">
+        <ChatListButton />
         <NotificationBell />
       </div>
 

@@ -13,6 +13,9 @@
   position: absolute;
   top: 32px;
   right: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .dating-same-results-eyebrow {

@@ -111,6 +111,9 @@ enum TeamStatus {
   recruiting
   matched
   closed
+  // 매칭 신청(MatchRequest)이 수락되어 이성 매칭이 실제로 성사된 상태.
+  // matched(이성 매칭 후보로 노출 가능)와 달리, 이 상태가 되면 더 이상 후보 리스트에 노출되면 안 된다.
+  confirmed
 }
 
 model DatingTeam {
@@ -301,4 +304,49 @@ model MatchRequest {
 
   @@unique([fromTeamId, toTeamId])
   @@map("match_requests")
+}
+
+// ==========================================
+// 12. team_match_chat_rooms / team_match_chat_room_members / team_match_chat_messages
+//     매칭 신청(MatchRequest)이 수락되어 성사된 두 팀의 전체 팀원이 함께 참여하는 그룹 채팅.
+//     CandidateChatRoom(동성 후보 1:1 초대코드 교환용)과는 용도가 달라 별도 테이블로 둔다.
+// ==========================================
+model TeamMatchChatRoom {
+  id BigInt @id @default(autoincrement())
+  // 이 채팅방을 만든 매칭 신청(MatchRequest). MatchRequest의 fromTeamId/toTeamId와 동일하게
+  // relation 없이 plain BigInt로 둔다 (MatchRequest 모델은 이번 작업에서 건드리지 않음).
+  matchRequestId BigInt   @unique @map("match_request_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  members  TeamMatchChatRoomMember[]
+  messages TeamMatchChatMessage[]
+
+  @@map("team_match_chat_rooms")
+}
+
+model TeamMatchChatRoomMember {
+  id         BigInt @id @default(autoincrement())
+  chatRoomId BigInt @map("chat_room_id")
+  // 참여자(매칭된 두 팀의 팀원). User 모델은 이번 작업에서 건드리지 않으므로 relation 없이 plain BigInt로 둔다.
+  userId     BigInt @map("user_id")
+  // 이 유저가 이 채팅방의 메시지를 마지막으로 조회한 시각. null이면 한 번도 읽지 않은 상태.
+  lastReadAt DateTime? @map("last_read_at")
+
+  chatRoom TeamMatchChatRoom @relation(fields: [chatRoomId], references: [id])
+
+  @@unique([chatRoomId, userId])
+  @@map("team_match_chat_room_members")
+}
+
+model TeamMatchChatMessage {
+  id         BigInt   @id @default(autoincrement())
+  chatRoomId BigInt   @map("chat_room_id")
+  // 메시지를 보낸 유저. User 모델은 이번 작업에서 건드리지 않으므로 relation 없이 plain BigInt로 둔다.
+  senderId   BigInt   @map("sender_id")
+  content    String   @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  chatRoom TeamMatchChatRoom @relation(fields: [chatRoomId], references: [id])
+
+  @@map("team_match_chat_messages")
 }
