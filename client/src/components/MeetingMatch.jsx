@@ -9,10 +9,7 @@ import { getCurrentTeam } from '../api/teams';
 import { addDaysToDateString, formatMonthDaySlash, getWeekPlan } from '../utils/date';
 import { buildSlotStats, getTopRecommendedSlots } from '../utils/availability';
 
-// server/src/currentTeamId.js와 마찬가지로 다중 팀 전까지는 1로 고정
-const CURRENT_TEAM_ID = 1;
-
-function MeetingMatch({ members, currentMemberId }) {
+function MeetingMatch({ members, currentMemberId, currentTeamId }) {
   const [team, setTeam] = useState(null);
   const [weekIndex, setWeekIndex] = useState(0);
   const [weekSlots, setWeekSlots] = useState([]);
@@ -22,6 +19,8 @@ function MeetingMatch({ members, currentMemberId }) {
   const toastTimerRef = useRef(null);
   const [highlightedKey, setHighlightedKey] = useState(null);
   const highlightTimerRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragMode, setDragMode] = useState(null);
 
   // team이 아직 안 왔거나(로딩 중) start_date/end_date가 없으면
   // getWeekPlan이 "오늘이 속한 주 하나뿐"으로 안전하게 처리해줌
@@ -54,7 +53,7 @@ function MeetingMatch({ members, currentMemberId }) {
   }, []);
 
   async function loadAvailability() {
-    const rows = await getAvailability(CURRENT_TEAM_ID, weekStart);
+    const rows = await getAvailability(currentTeamId, weekStart);
     setWeekSlots(rows);
     // member_id가 서버에서 문자열로 내려올 수 있어(bigint) Number로 맞춰 비교
     const mine = rows.filter((row) => Number(row.member_id) === currentMemberId);
@@ -78,6 +77,52 @@ function MeetingMatch({ members, currentMemberId }) {
       return next;
     });
   }
+
+  // 비어있는 칸에서 드래그를 시작하면 지나가는 칸을 전부 켜고,
+  // 이미 켜진 칸에서 시작하면 전부 끈다 — 이 방향은 시작 시점에 한 번만 정해서 드래그 내내 유지한다.
+  function handleCellMouseDown(date, hour) {
+    const key = `${date}_${hour}`;
+    const mode = selectedKeys.has(key) ? 'deselect' : 'select';
+    setDragMode(mode);
+    setIsDragging(true);
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (mode === 'select') {
+        next.add(key);
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
+  }
+
+  function handleCellMouseEnter(date, hour) {
+    if (!isDragging) return;
+    const key = `${date}_${hour}`;
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (dragMode === 'select') {
+        next.add(key);
+      } else {
+        next.delete(key);
+      }
+      return next;
+    });
+  }
+
+  function handleDragEnd() {
+    setIsDragging(false);
+    setDragMode(null);
+  }
+
+  // 격자 안에서만 mouseup을 들으면 격자 "바깥"에서 마우스를 뗐을 때 드래그가 안 풀리므로,
+  // 드래그 중일 때만 window 전체에서 mouseup을 듣는다
+  useEffect(() => {
+    if (!isDragging) return;
+
+    window.addEventListener('mouseup', handleDragEnd);
+    return () => window.removeEventListener('mouseup', handleDragEnd);
+  }, [isDragging]);
 
   function handleSelectRecommendation(date, hour) {
     setHighlightedKey(`${date}_${hour}`);
@@ -106,7 +151,7 @@ function MeetingMatch({ members, currentMemberId }) {
     });
 
     try {
-      await saveAvailability(CURRENT_TEAM_ID, currentMemberId, weekStart, slots);
+      await saveAvailability(currentTeamId, currentMemberId, weekStart, slots);
       await loadAvailability(); // 히트맵을 최신으로 반영
       showToast('저장했습니다.');
     } catch (err) {
@@ -134,6 +179,8 @@ function MeetingMatch({ members, currentMemberId }) {
           totalMembers={members.length}
           highlightedKey={highlightedKey}
           onToggleCell={handleToggleCell}
+          onCellMouseDown={handleCellMouseDown}
+          onCellMouseEnter={handleCellMouseEnter}
         />
       </div>
 

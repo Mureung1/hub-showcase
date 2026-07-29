@@ -3,7 +3,7 @@ import './AddTaskForm.css';
 import { createTask } from '../api/tasks';
 import { getTodayDateString } from '../utils/date';
 
-function AddTaskForm({ members, onTaskAdded }) {
+function AddTaskForm({ currentTeamId, members, onTaskAdded }) {
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
@@ -37,7 +37,7 @@ function AddTaskForm({ members, onTaskAdded }) {
     setIsSubmitting(true);
     setError('');
     try {
-      const newTask = await createTask({
+      const newTask = await createTask(currentTeamId, {
         title: trimmedTitle,
         assigneeId: assigneeId ? Number(assigneeId) : null,
         dueDate: dueDate || null,
