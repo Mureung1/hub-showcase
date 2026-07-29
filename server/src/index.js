@@ -8,6 +8,7 @@ import roleTasksRouter from './routes/roleTasks.js'
 import confirmRouter from './routes/confirm.js'
 import suggestRouter from './routes/suggest.js'
 import harvestRouter from './routes/harvest.js'
+import expensesRouter from './routes/expenses.js'
 
 dotenv.config()
 const app = express()
@@ -21,5 +22,6 @@ app.use('/api/letters', roleTasksRouter)
 app.use('/api/letters', confirmRouter)
 app.use('/api/letters', suggestRouter)
 app.use('/api/letters', harvestRouter)
+app.use('/api/letters', expensesRouter)
 
 app.listen(process.env.PORT, () => console.log(`서버 실행 중: ${process.env.PORT}`))

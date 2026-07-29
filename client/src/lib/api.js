@@ -97,3 +97,13 @@ export function createHarvestReview(token, payload) {
 export function getHarvestReviews(token) {
   return request(`/api/letters/${token}/harvest-reviews`)
 }
+
+// POST /api/letters/:token/expenses — 지출 항목 추가
+export function createExpense(token, payload) {
+  return request(`/api/letters/${token}/expenses`, { method: 'POST', body: JSON.stringify(payload) })
+}
+
+// GET /api/letters/:token/expenses — 지출 항목 목록 조회
+export function getExpenses(token) {
+  return request(`/api/letters/${token}/expenses`)
+}
