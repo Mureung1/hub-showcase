@@ -12,12 +12,20 @@ const { createClient } = require('@supabase/supabase-js')
 
 let client = null
 
+// 접속 설정이 없으면 조회 실패와 구분되는 코드로 올린다.
+// 배포에서 둘을 같은 500 으로 뭉개면 "키를 안 넣었다" 와 "질의가 틀렸다" 를
+// 로그 없이는 가를 수 없다. 어느 변수가 비었는지도 함께 밝힌다.
 function supabase() {
   if (client) return client
   const url = process.env.SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_KEY
-  if (!url || !key) {
-    throw new Error('SUPABASE_URL / SUPABASE_SERVICE_KEY 가 .env 에 없습니다. server/.env.example 을 참고하세요.')
+  const missing = [!url && 'SUPABASE_URL', !key && 'SUPABASE_SERVICE_KEY'].filter(Boolean)
+  if (missing.length > 0) {
+    const configError = new Error(
+      `${missing.join(', ')} 가 없습니다. 배포 환경에서는 플랫폼의 환경변수로 넣습니다.`,
+    )
+    configError.code = 'CONFIG_MISSING'
+    throw configError
   }
   client = createClient(url, key)
   return client
@@ -59,19 +67,29 @@ async function getOutput(analysisVersion, scopeLevel, scopeId, outputType) {
 // 화면 선택지용 직무 목록. `is_active` 인 직무만 낸다.
 // `supported` 는 활성 분석 버전이 있는지 여부다. 활성 버전이 없는 직무는
 // 화면에서 고를 수는 있어도 결과가 없으므로 이 값으로 구분해 표시한다.
+// 두 표를 따로 읽고 JS 에서 잇는다. PostgREST 의 내포 조회
+// (`job_roles(active_analysis_versions(...))`)는 외래키 관계를 스키마 캐시에서 찾는데,
+// 캐시가 낡거나 관계가 모호하면 질의 자체가 실패한다. 직무 목록은 화면의 첫 관문이라
+// 그 한 자리의 실패가 서비스 전체를 못 쓰게 만든다. 행이 아홉 개뿐이므로 두 번 읽어도
+// 비용이 없다.
 async function getJobRoles() {
-  const { data, error } = await supabase()
+  const db = supabase()
+
+  const roles = await db
     .from('job_roles')
-    .select('job_role_id, display_name, active_analysis_versions(analysis_version)')
+    .select('job_role_id, display_name')
     .eq('is_active', true)
     .order('job_role_id')
-  if (error) throw unavailable('job_roles', error)
-  return (data || []).map((row) => ({
+  if (roles.error) throw unavailable('job_roles', roles.error)
+
+  const active = await db.from('active_analysis_versions').select('job_role_id')
+  if (active.error) throw unavailable('active_analysis_versions', active.error)
+
+  const supported = new Set((active.data || []).map((row) => row.job_role_id))
+  return (roles.data || []).map((row) => ({
     job_role_id: row.job_role_id,
     display_name: row.display_name,
-    supported: Array.isArray(row.active_analysis_versions)
-      ? row.active_analysis_versions.length > 0
-      : Boolean(row.active_analysis_versions),
+    supported: supported.has(row.job_role_id),
   }))
 }
 

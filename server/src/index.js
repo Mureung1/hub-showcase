@@ -46,6 +46,11 @@ function fail(res, status, job, code, message) {
 // 저장소·산출물 오류를 화면이 구분할 수 있는 상태 코드로 옮긴다.
 // 결과가 없는 상황을 빈 배열로 덮지 않는다(CONTRACT 7장).
 function sendKnownError(res, job, error) {
+  // 원인을 로그에 남긴다. 배포에서는 이 줄이 유일한 단서다.
+  console.error('[api]', error.code || 'UNKNOWN', error.message)
+  if (error.code === 'CONFIG_MISSING') {
+    return fail(res, 503, job, error.code, error.message)
+  }
   if (error.code === 'DB_UNAVAILABLE') {
     return fail(res, 503, job, error.code, error.message)
   }
