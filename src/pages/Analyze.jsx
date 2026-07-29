@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import AnalysisResultCard from '../components/AnalysisResultCard.jsx'
 import CustomComboBuilder from '../components/CustomComboBuilder.jsx'
 import HomeQuestCard from '../components/HomeQuestCard.jsx'
+import HomeTodaySummary from '../components/HomeTodaySummary.jsx'
 import PhotoUpload from '../components/PhotoUpload.jsx'
 import LabelScan from '../components/LabelScan.jsx'
 import LevelPill from '../components/LevelPill.jsx'
@@ -27,8 +28,7 @@ import {
   getUnlockedBadgeIds,
   unlockBadge,
 } from '../lib/dataStore.js'
-import { pickBestFoodMatch, searchFoodDB } from '../lib/fooddb.js'
-import { normalizeFoodSearchName } from '../lib/foodNameMap.js'
+import { resolveFoodItems as resolveFoodItemsApi } from '../lib/resolveFood.js'
 import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
 import { GEMINI_TEMPERATURE, IDENTIFICATION_SCHEMA, LABEL_SCAN_SCHEMA } from '../lib/geminiSchemas.js'
 import { getLevelProgress } from '../lib/levelSystem.js'
@@ -128,95 +128,41 @@ function extractBrand(displayName) {
   return match ? match[1] : null
 }
 
-// 식약처 DB는 이름이 정확히 일치해야만 검색되고(부분/포함 일치 없음) 접두 수식어의 띄어쓰기까지 등록된
-// 표기와 달라도 실패한다(예: "돌솥비빔밥"은 0건, DB에는 "돌솥 비빔밥"으로 등록). dbSearchName이 2글자
-// 수식어+기본 음식명 형태의 복합어(예: "돌솥비빔밥", "참치김치찌개")인데 그 자체로 매칭되지 않으면, 앞
-// 2글자를 뗀 기본 음식명("비빔밥", "김치찌개")으로도 한 번 더 시도해 AI의 fallbackSearchName이 충분히
-// 일반적이지 않은 경우까지 보완한다.
-function stripLeadingModifier(term) {
-  return typeof term === 'string' && term.length >= 5 ? term.slice(2) : null
-}
+// AI가 식별한 음식들을 **한 번의 요청**으로 실제 영양수치까지 채운다.
+//
+// 예전엔 항목마다 findFoodMatch가 /api/fooddb를 최대 9번 순차 호출했다(음식 5개 사진이면 45요청,
+// 최악 75초, IP당 60요청/분 제한에 스스로 걸림). 이제 검색·매칭 판정은 전부 서버의 통합 해석
+// 엔진(server/nutrition/resolveFood.js)이 하고, 여기서는 그 결과에 기존 환산·보정 파이프라인
+// (resolveConsumedGrams → scaleNutrients → fillMissingNutrients → clampToPlausibleNutrients)만
+// 그대로 적용한다 — 화면에 나가는 수치의 계산 규칙은 예전과 동일하다.
+async function resolveFoodItems(idItems) {
+  const resolved = await resolveFoodItemsApi(idItems)
 
-// DB 검색 우선순위: ① dbSearchName-음식 ② 정규화 표준명(foodNameMap)-음식 ③ dbSearchName-가공식품
-// ④ dbSearchName 수식어 제거-음식 ⑤ fallbackSearchName-음식 ⑥ 정규화 표준명-가공식품 ⑦ fallbackSearchName-가공식품.
-// 정규화 표준명은 AI의 fallbackSearchName이 충분히 일반적이지 않을 때를 대비한 클라이언트 측 안전망
-// (foodNameMap.js). 가공식품 DB는 편의점/포장/프랜차이즈 제품처럼 "음식"(조리식) DB에 없는 제품을 보완한다.
-// 같은 (검색어, DB) 조합은 한 번만 호출하도록 중복을 제거해 불필요한 반복 요청을 막는다.
-async function findFoodMatch(idItem) {
-  const normalized = normalizeFoodSearchName(idItem.dbSearchName) || normalizeFoodSearchName(idItem.displayName)
-  const attempts = [
-    { term: idItem.dbSearchName, dbSource: 'food' },
-    { term: normalized, dbSource: 'food' },
-    { term: idItem.dbSearchName, dbSource: 'process' },
-    { term: stripLeadingModifier(idItem.dbSearchName), dbSource: 'food' },
-    { term: idItem.fallbackSearchName, dbSource: 'food' },
-    { term: normalized, dbSource: 'process' },
-    { term: idItem.fallbackSearchName, dbSource: 'process' },
-  ]
+  return idItems.map((idItem, i) => {
+    const name = idItem.displayName || idItem.dbSearchName
+    const found = resolved[i]
 
-  const seen = new Set()
-  for (const attempt of attempts) {
-    if (!attempt.term) continue
-    const key = `${attempt.dbSource}:${attempt.term}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    try {
-      const results = await searchFoodDB(attempt.term, attempt.dbSource)
-      const match = pickBestFoodMatch(results, attempt.term, { averageExactMatches: attempt.dbSource === 'food' })
-      if (match) return { match, dbSource: attempt.dbSource, matchedTerm: attempt.term }
-    } catch (err) {
-      console.error(`fooddb search failed (${attempt.dbSource}, ${attempt.term}):`, err)
-      // 식약처 서버 연결 자체가 안 되는 상황(배포 리전 등)이면 나머지 소스/재검색어도 똑같이
-      // 실패할 뿐이니 즉시 포기하고 AI 추정치 폴백으로 넘어간다. "결과 없음"은 이 코드가 아니므로
-      // 계속 다음 시도로 진행한다.
-      if (err.code === 'FOODDB_CONNECTION_FAILED') break
+    if (found?.match) {
+      const { match, source: resolvedSource, matchedName, matchType, confidence } = found
+      const baseValue = match.baseQuantity?.value > 0 ? match.baseQuantity.value : 100
+      const grams = resolveConsumedGrams(match, idItem.estimatedGrams, idItem.dbSearchName)
+      const scaled = scaleNutrients(match.nutrients, baseValue, grams)
+      const nutrients = clampToPlausibleNutrients(fillMissingNutrients(scaled, idItem.estimatedNutrients), idItem.dbSearchName, grams)
+      // 서버가 판정한 출처를 그대로 쓴다(식약처DB / 식약처DB(가공) / 레시피DB) — 클라이언트가
+      // 같은 판정을 두 벌로 들고 있으면 어긋난다.
+      const source = resolvedSource ?? NUTRITION_SOURCE.DB
+      logAnalysisDebug(name, { matched: true, source, matchedName, matchType, confidence, grams, estimatedGrams: idItem.estimatedGrams, nutrients })
+      return { name, nutrients, source }
     }
-  }
 
-  // ⑧ 로컬 유사 매칭 폴백(FR-8) — 위 7단계(전부 식약처 실시간 API)가 다 실패했을 때만 도는 최후
-  // 수단. 외부 API를 안 쓰므로 FOODDB_CONNECTION_FAILED로 위 루프를 일찍 포기했을 때도(해외 배포
-  // 리전 등) 똑같이 시도한다. server/nutrition/foodLookup.js(precisionEngine이 이미 쓰며 검증된
-  // 것과 같은 모듈, 정규화→완전일치→별칭→부분포함→편집거리 순)가 서버에서 이미 최대 1건으로 걸러
-  // 돌려주므로, pickBestFoodMatch의 클라이언트 측 유사도 재검증(다른 알고리즘)은 건너뛰고 그 결과를
-  // 그대로 쓴다 — 이미 검증한 매칭을 다른 기준으로 다시 걸러 놓치지 않기 위해서다.
-  const localTerm = idItem.fallbackSearchName || idItem.dbSearchName
-  if (localTerm) {
-    try {
-      const results = await searchFoodDB(localTerm, 'local-fuzzy')
-      if (results[0]) return { match: results[0], dbSource: 'local-fuzzy', matchedTerm: localTerm }
-    } catch (err) {
-      console.error(`fooddb local-fuzzy search failed (${localTerm}):`, err)
-    }
-  }
-
-  return null
-}
-
-// AI가 식별한 음식 하나를 식약처 DB(음식→가공식품 순)로 조회해 실제 영양수치를 채운다.
-// 전부 매칭에 실패하면 AI의 참고용 추정치(estimatedNutrients)를 그대로 쓴다.
-async function resolveFoodItem(idItem) {
-  const name = idItem.displayName || idItem.dbSearchName
-  const found = await findFoodMatch(idItem)
-
-  if (found) {
-    const { match, dbSource, matchedTerm } = found
-    const baseValue = match.baseQuantity?.value > 0 ? match.baseQuantity.value : 100
-    const grams = resolveConsumedGrams(match, idItem.estimatedGrams, idItem.dbSearchName)
-    const scaled = scaleNutrients(match.nutrients, baseValue, grams)
-    const source = dbSource === 'process' ? NUTRITION_SOURCE.DB_PROCESS : NUTRITION_SOURCE.DB
-    const nutrients = clampToPlausibleNutrients(fillMissingNutrients(scaled, idItem.estimatedNutrients), idItem.dbSearchName, grams)
-    // 개발 중 정확도 점검용(운영 빌드에선 출력 안 함): 어떤 검색어로 DB 매칭됐는지, 추정 g, 최종 수치.
-    logAnalysisDebug(name, { matched: true, dbSource, matchedTerm, grams, estimatedGrams: idItem.estimatedGrams, nutrients })
+    const brand = extractBrand(name)
+    const source = brand ? NUTRITION_SOURCE.OFFICIAL : NUTRITION_SOURCE.ESTIMATED
+    const grams = clampEstimatedGrams(idItem.estimatedGrams, idItem.dbSearchName)
+    const nutrients = clampToPlausibleNutrients(fillMissingNutrients({}, idItem.estimatedNutrients), idItem.dbSearchName, grams)
+    // DB 매칭 전부 실패 → AI 추정치 폴백. 이런 로그가 자주 뜨면 DB 검색명 매핑을 손봐야 한다는 신호다.
+    logAnalysisDebug(name, { matched: false, dbSearchName: idItem.dbSearchName, fallbackSearchName: idItem.fallbackSearchName, grams, estimatedGrams: idItem.estimatedGrams, nutrients, source })
     return { name, nutrients, source }
-  }
-
-  const brand = extractBrand(name)
-  const source = brand ? NUTRITION_SOURCE.OFFICIAL : NUTRITION_SOURCE.ESTIMATED
-  const grams = clampEstimatedGrams(idItem.estimatedGrams, idItem.dbSearchName)
-  const nutrients = clampToPlausibleNutrients(fillMissingNutrients({}, idItem.estimatedNutrients), idItem.dbSearchName, grams)
-  // DB 매칭 전부 실패 → AI 추정치 폴백. 이런 로그가 자주 뜨면 DB 검색명 매핑을 손봐야 한다는 신호다.
-  logAnalysisDebug(name, { matched: false, dbSearchName: idItem.dbSearchName, fallbackSearchName: idItem.fallbackSearchName, grams, estimatedGrams: idItem.estimatedGrams, nutrients, source })
-  return { name, nutrients, source }
+  })
 }
 
 // 정확도 진단용 로그(개발 빌드에서만). 어떤 경로로 수치가 나왔는지 콘솔에 남겨, 오차가 나는 음식을
@@ -230,7 +176,7 @@ function logAnalysisDebug(name, info) {
 // items+nutrients를 내고 그 추정치를 그대로 썼지만, 그러면 같은 "김치찌개"를 사진으로 찍었을 때와
 // 타이핑했을 때 수치가 달라진다(신뢰도 문제). 지금은 사진 경로와 동일하게 AI에게는 식별
 // (dbSearchName/fallbackSearchName/표준 1인분 그램)만 시키고, 실제 수치는 식약처 DB 조회
-// (resolveFoodItem — 사진 경로와 같은 함수)로 채운다. estimatedNutrients는 DB 매칭 실패 시 폴백.
+// (resolveFoodItems — 사진 경로와 같은 함수)로 채운다. estimatedNutrients는 DB 매칭 실패 시 폴백.
 // ※ 절차 2·5·6번의 문구는 IDENTIFICATION_SYSTEM_PROMPT(사진 경로)와 같은 규칙이다 — 한쪽을
 //   고치면 다른 쪽도 함께 검토할 것.
 const TEXT_IDENTIFICATION_SYSTEM_PROMPT = `당신은 한국 음식 인식·영양 분석 전문가다. 사용자가 입력한 메뉴명(과 선택적 브랜드)만 보고, 식약처 식품영양성분DB 검색에 쓸 표준 식품명과 사용자에게 보여줄 이름, 섭취량을 판단한다. DB 매칭이 실패할 경우를 대비해 참고용 영양성분 추정치도 함께 낸다. 다음 절차를 반드시 내부적으로 따른다(최종 출력은 JSON만):
@@ -262,7 +208,7 @@ function buildTextIdentificationPrompt(menuName, brand) {
 }`
 }
 
-// 텍스트 경로도 사진 경로와 동일한 2단계 구조다: AI 식별 → 식약처 DB 조회(resolveFoodItem 공유).
+// 텍스트 경로도 사진 경로와 동일한 2단계 구조다: AI 식별 → 통합 해석(resolveFoodItems 공유).
 // 같은 음식이면 사진으로 찍든 타이핑하든 (그램수가 같다면) 같은 수치가 나온다. 출처 배지도 동일하게
 // 식약처DB/식약처DB(가공)/공식/추정으로 판정된다. 순수 계산 함수라 상태를 직접 건드리지 않고
 // MealAnalysis를 반환하거나(실패 시) 던진다 — handleAnalyze가 사진 유무로 경로를 고른다.
@@ -289,8 +235,8 @@ async function resolveTextAnalysis(menuName, brand) {
     throw new Error('분석 결과 형식이 올바르지 않습니다. 다시 시도해주세요.')
   }
 
-  // 사진 경로와 같은 절차: 항목별 식약처 DB 조회 → 그램 환산 → 현실 범위 보정 → 클라이언트 합산.
-  const items = await Promise.all(identified.items.map(resolveFoodItem))
+  // 사진 경로와 같은 절차: 통합 해석(요청 1회) → 그램 환산 → 현실 범위 보정 → 클라이언트 합산.
+  const items = await resolveFoodItems(identified.items)
   const parsed = { items, total: sumNutrients(items) }
 
   if (!isMealAnalysis(parsed)) {
@@ -658,7 +604,7 @@ export default function Analyze() {
           throw new Error('분석 결과 형식이 올바르지 않습니다.')
         }
 
-        const items = await Promise.all(identified.items.map(resolveFoodItem))
+        const items = await resolveFoodItems(identified.items)
         parsed = { items, total: sumNutrients(items) }
 
         if (!isMealAnalysis(parsed)) {
@@ -962,6 +908,10 @@ export default function Analyze() {
           />
         </Card>
       )}
+
+      {/* 홈 탭 개편(리텐션 강화 v7) — 분석 카드 아래 "오늘 요약" 위젯. 신체정보가 없으면(위
+          SexPromptCard가 이미 안내 중) 컴포넌트가 스스로 아무 것도 그리지 않는다. */}
+      <HomeTodaySummary />
 
       {/* 트랙 3 §3 — 급식 기반 하루 설계. 한 판 통합 분석(prefillTrayAnalysis) 결과일 때만 보인다. */}
       {status === STATUS.RESULT && resultMeta.isSchoolMeal && (

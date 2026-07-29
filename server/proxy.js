@@ -15,6 +15,7 @@ import { getSecurityQuestionByLoginId, registerSecurityQuestion, verifyAndResetP
 import * as cnuUnivMealAdapter from './univMealAdapters/cnu.js'
 import { lookupFood, toFoodItemResponse } from './nutrition/foodLookup.js'
 import { analyzeTray } from './nutrition/precisionEngine.js'
+import { resolveFoodItems } from './nutrition/resolveFood.js'
 import { getSupabaseAdmin } from './supabaseAdmin.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -36,7 +37,7 @@ const NAVER_LOCAL_SORT = 'comment'
 // Vercel 서버리스는 인스턴스가 언제든 재생성될 수 있어 캐시가 항상 살아있다는 보장이 없다 — "24시간
 // 캐싱"의 실효성은 배포 환경에 따라 다르다는 걸 여기 명시해둔다. 완전한 해결(Redis 등 외부 공유
 // 스토어)은 비용·인프라가 추가로 필요해 이번 범위 밖. 히트/미스를 로그로 남겨, 운영 후 실측치로
-// docs/04-프로젝트설명/cost-analysis.md처럼 효과를 검증할 수 있게 한다. 캐시는 조회(GET 성격) 응답만
+// docs/04-프로젝트설명.md의 "비용 분석" 절처럼 효과를 검증할 수 있게 한다. 캐시는 조회(GET 성격) 응답만
 // 저장한다 — 로컬 유사 매칭(local-fuzzy)은 이미 인메모리 조회라 캐싱할 이유가 없다.
 const CACHE_TTL_SECONDS = 24 * 60 * 60
 const foodDbCache = new NodeCache({ stdTTL: CACHE_TTL_SECONDS })
@@ -47,6 +48,13 @@ const FOODSAFETY_SOURCES = {
   food: { url: 'https://api.data.go.kr/openapi/tn_pubr_public_nutri_food_info_api', envKey: 'FOODSAFETY_API_KEY' },
   process: { url: 'https://api.data.go.kr/openapi/tn_pubr_public_nutri_process_info_api', envKey: 'FOODSAFETY_PROC_API_KEY' },
 }
+
+// /api/resolve-food 상한. items는 한 끼 분석에 들어오는 음식 수라 현실적으로 10개를 잘 넘지 않는데,
+// 20으로 2배 여유를 둔 건 반찬 많은 한 판 트레이 같은 정상 사용까지 걸리지 않게 하기 위해서다 —
+// 그 이상은 잘못된 사용이거나 남용이므로 거절한다. 데드라인 상한은 Gemini 식별(2~4초)과 합쳐 전체
+// 7초 목표 안에 들어오도록 잡은 값이다(resolveFood.js의 DEFAULT_DEADLINE_MS 참고).
+const RESOLVE_FOOD_MAX_ITEMS = 20
+const RESOLVE_FOOD_MAX_DEADLINE_MS = 4000
 
 // NEIS(나이스) 교육정보 개방포털: 학교기본정보(학교 검색) + 급식식단정보(초중고 급식 조회).
 const NEIS_SCHOOL_INFO_URL = 'https://open.neis.go.kr/hub/schoolInfo'
@@ -400,7 +408,7 @@ async function handleGeminiRequest(req, res) {
       return res.status(openRouterRes.status).json({ error: data?.error?.message || 'OpenRouter API error' })
     }
 
-    // 토큰 사용량·응답 시간 로그 — docs/04-프로젝트설명/cost-analysis.md의 추정치를 실측값으로 교체할 때 근거로 쓴다.
+    // 토큰 사용량·응답 시간 로그 — docs/04-프로젝트설명.md "비용 분석" 절의 추정치를 실측값으로 교체할 때 근거로 쓴다.
     if (data?.usage) {
       console.log(
         `Gemini usage: prompt=${data.usage.prompt_tokens ?? '?'} completion=${data.usage.completion_tokens ?? '?'} ` +
@@ -443,6 +451,37 @@ app.post('/api/precision-analyze', geminiLimiter, async (req, res) => {
     res.json(result)
   } catch (err) {
     respondToProxyError(res, err, '/api/precision-analyze')
+  }
+})
+
+// POST /api/resolve-food - 통합 해석 엔진(server/nutrition/resolveFood.js) 프록시.
+//
+// 예전엔 클라이언트(Analyze.jsx findFoodMatch)가 항목마다 /api/fooddb를 **최대 9번 순차** 호출했다.
+// 음식 5개짜리 사진이면 45요청이라 IP당 60요청/분 제한(apiLimiter)에 스스로 걸렸고, 최악 지연은
+// 75초에 달했다. 이제 항목 배열을 한 번에 받아 요청 1회로 끝낸다.
+//
+// 지연 상한은 서버가 직접 강제한다(deadlineMs) — 예산을 넘겨도 에러가 아니라 그 시점까지 확보한
+// 결과로 정상 응답하므로, 느린 업스트림이 사용자 화면을 멈춰 세우지 못한다.
+// Gemini를 호출하지 않으므로(식별은 이미 끝난 상태로 들어온다) geminiLimiter는 걸지 않는다.
+app.post('/api/resolve-food', async (req, res) => {
+  const { items, deadlineMs } = req.body || {}
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'items(배열)가 필요합니다' })
+  }
+  if (items.length > RESOLVE_FOOD_MAX_ITEMS) {
+    return res.status(400).json({ error: `items는 최대 ${RESOLVE_FOOD_MAX_ITEMS}개까지 처리합니다` })
+  }
+
+  try {
+    const budget = Number(deadlineMs)
+    const resolved = await resolveFoodItems(items, {
+      // 클라이언트가 더 짧은 예산을 요구하면 존중하되, 서버 상한을 넘기지는 못하게 한다.
+      deadlineMs: Number.isFinite(budget) && budget > 0 ? Math.min(budget, RESOLVE_FOOD_MAX_DEADLINE_MS) : undefined,
+      searchRemote: lookupFoodSafety,
+    })
+    res.json({ items: resolved })
+  } catch (err) {
+    respondToProxyError(res, err, '/api/resolve-food')
   }
 })
 
@@ -889,6 +928,106 @@ async function callFoodSafetyApi(baseUrl, apiKey, foodName, rawKey) {
   return { upstreamRes, raw, data }
 }
 
+// 진행 중인 식약처 조회를 검색어+소스 단위로 합치는 맵. foodDbCache는 **완료된 뒤에만** 효과가
+// 있어서, 같은 음식이 여러 개 담긴 사진(예: 반찬 트레이)이 동시에 같은 이름을 조회하면 전부 캐시를
+// 놓치고 업스트림을 그대로 때렸다. 여기에 진행 중 promise를 담아 첫 요청 하나만 나가게 한다.
+// (src/lib/menuNutrition.js가 클라이언트에서 쓰던 패턴을 서버로 옮긴 것.)
+const foodDbInflight = new Map()
+
+// 실패/무결과를 짧게 기억하는 네거티브 캐시. 예전엔 에러를 전혀 캐싱하지 않아, 업스트림이 죽어
+// 있으면 재시도할 때마다 5~10초 타임아웃 비용을 처음부터 다시 지불했다.
+const FOODDB_NEGATIVE_TTL_SECONDS = 60
+
+function connectionFailedError(message) {
+  const err = new Error(message)
+  err.code = 'FOODDB_CONNECTION_FAILED'
+  return err
+}
+
+// 식약처 음식/가공식품 DB 조회 — 캐시 → 인플라이트 합류 → 업스트림 순.
+// 성공 시 normalizeFoodItem 배열을 반환하고, 연결 실패는 code='FOODDB_CONNECTION_FAILED'로 던진다.
+// /api/fooddb와 /api/resolve-food가 같은 함수를 공유해 캐시·중복제거 효과를 함께 누린다.
+async function lookupFoodSafety(foodName, source) {
+  const sourceConfig = FOODSAFETY_SOURCES[source]
+  if (!sourceConfig) throw new Error(`unknown source: ${source}`)
+  const apiKey = process.env[sourceConfig.envKey]
+  if (!apiKey) {
+    const err = new Error(`${sourceConfig.envKey} is not configured on the server`)
+    err.status = 500
+    throw err
+  }
+
+  const cacheKey = `${source}:${foodName}`
+  const cached = foodDbCache.get(cacheKey)
+  if (cached) {
+    console.log('[cache] fooddb hit', cacheKey)
+    // 네거티브 캐시 항목은 저장할 때 감싼 모양 그대로 돌려주지 않고 원래 실패로 되살린다.
+    if (cached.__failed) throw connectionFailedError('식약처 API 서버에 연결할 수 없습니다(최근 실패 캐시)')
+    return cached
+  }
+
+  const inflight = foodDbInflight.get(cacheKey)
+  if (inflight) return inflight
+
+  const promise = (async () => {
+    let { upstreamRes, raw, data } = await callFoodSafetyApi(sourceConfig.url, apiKey, foodName, false)
+
+    // JSON 파싱 실패(보통 서비스키 인증 오류 시 XML로 응답) 또는 인증 오류 메시지면 반대 방식(raw key)으로 재시도
+    if (!data || isAuthError(data)) {
+      ;({ upstreamRes, raw, data } = await callFoodSafetyApi(sourceConfig.url, apiKey, foodName, true))
+    }
+
+    if (!data) {
+      console.error(`FoodSafety API(${source}): JSON 파싱 실패, 원본 응답 일부:`, raw.slice(0, 500))
+      const err = new Error('식약처 API 응답을 해석할 수 없습니다')
+      err.status = 502
+      throw err
+    }
+
+    const resultCode = data?.response?.header?.resultCode
+
+    // resultCode 03 = NODATA_ERROR: 검색 결과가 없다는 정상 응답(이때는 body 자체가 없다)이라 빈 배열로 처리한다.
+    if (resultCode === '03') {
+      foodDbCache.set(cacheKey, [])
+      return []
+    }
+
+    const items = extractFoodItems(data)
+    if (items === null) {
+      console.error(`FoodSafety API(${source}): items 구조를 찾을 수 없음, 원본 응답 일부:`, JSON.stringify(data).slice(0, 500))
+      const err = new Error(`식약처 API 응답 형식이 예상과 다릅니다 (resultCode: ${resultCode ?? '알 수 없음'})`)
+      err.status = 502
+      throw err
+    }
+
+    if (!upstreamRes.ok && items.length === 0) {
+      console.error(`FoodSafety API(${source}) error:`, resultCode, data?.response?.header?.resultMsg)
+      const err = new Error(data?.response?.header?.resultMsg || 'FoodSafety API error')
+      err.status = upstreamRes.status
+      throw err
+    }
+
+    const payload = items.map(normalizeFoodItem)
+    foodDbCache.set(cacheKey, payload)
+    return payload
+  })()
+    .catch((err) => {
+      // 네트워크 연결 실패(타임아웃 포함)만 네거티브 캐싱한다 — 파싱/형식 오류는 검색어에 따라
+      // 달라질 수 있어 짧게라도 기억하면 멀쩡한 검색어까지 막을 수 있다.
+      if (!err.status) {
+        foodDbCache.set(cacheKey, { __failed: true }, FOODDB_NEGATIVE_TTL_SECONDS)
+        throw connectionFailedError(err.message)
+      }
+      throw err
+    })
+    .finally(() => {
+      foodDbInflight.delete(cacheKey)
+    })
+
+  foodDbInflight.set(cacheKey, promise)
+  return promise
+}
+
 // POST /api/fooddb - 식약처 전국통합식품영양성분정보 검색 프록시. body.source로 "음식"(기본) / "가공식품" DB를 선택한다.
 // (FOODSAFETY_API_KEY / FOODSAFETY_PROC_API_KEY는 서버에서만 사용)
 //
@@ -897,6 +1036,10 @@ async function callFoodSafetyApi(baseUrl, apiKey, foodName, rawKey) {
 // 유사 매칭(precisionEngine이 쓰는 것과 같은 foodLookup.js)을 그대로 재사용한다 — foodLookup.js
 // 자체는 수정하지 않는다. load()가 지연 로드(첫 호출 시에만 5.3MB 파싱)라 이 폴백이 실제로 트리거되는
 // 요청에서만 그 비용을 치른다.
+//
+// 레시피DB(COOKRCP01)는 이제 이 라우트를 거치지 않는다 — 전체 1,141건을 빌드 타임에 번들해
+// (scripts/buildRecipeDB.js → server/data/recipeDB.json) 서버 메모리에서 바로 조회하므로,
+// /api/resolve-food가 로컬 음식DB와 함께 in-process로 본다(server/nutrition/recipeLookup.js).
 app.post('/api/fooddb', async (req, res) => {
   const { foodName, source = 'food' } = req.body || {}
 
@@ -916,76 +1059,29 @@ app.post('/api/fooddb', async (req, res) => {
     }
   }
 
-  const sourceConfig = FOODSAFETY_SOURCES[source]
-  if (!sourceConfig) {
+  if (!FOODSAFETY_SOURCES[source]) {
     return res.status(400).json({ error: `source must be one of: ${Object.keys(FOODSAFETY_SOURCES).join(', ')}` })
-  }
-
-  const apiKey = process.env[sourceConfig.envKey]
-  if (!apiKey) {
-    return res.status(500).json({ error: `${sourceConfig.envKey} is not configured on the server` })
   }
 
   if (!foodName || typeof foodName !== 'string' || !foodName.trim()) {
     return res.status(400).json({ error: 'foodName is required' })
   }
 
-  const cacheKey = `${source}:${foodName.trim()}`
-  const cached = foodDbCache.get(cacheKey)
-  if (cached) {
-    console.log('[cache] fooddb hit', cacheKey)
-    return res.json(cached)
-  }
-  console.log('[cache] fooddb miss', cacheKey)
-
   try {
-    let { upstreamRes, raw, data } = await callFoodSafetyApi(sourceConfig.url, apiKey, foodName, false)
-
-    // JSON 파싱 실패(보통 서비스키 인증 오류 시 XML로 응답) 또는 인증 오류 메시지면 반대 방식(raw key)으로 재시도
-    if (!data || isAuthError(data)) {
-      ;({ upstreamRes, raw, data } = await callFoodSafetyApi(sourceConfig.url, apiKey, foodName, true))
-    }
-
-    if (!data) {
-      console.error(`FoodSafety API(${source}): JSON 파싱 실패, 원본 응답 일부:`, raw.slice(0, 500))
-      return res.status(502).json({ error: '식약처 API 응답을 해석할 수 없습니다' })
-    }
-
-    const resultCode = data?.response?.header?.resultCode
-
-    // resultCode 03 = NODATA_ERROR: 검색 결과가 없다는 정상 응답(이때는 body 자체가 없다)이라 빈 배열로 처리한다.
-    if (resultCode === '03') {
-      foodDbCache.set(cacheKey, [])
-      return res.json([])
-    }
-
-    const items = extractFoodItems(data)
-
-    if (items === null) {
-      console.error(`FoodSafety API(${source}): items 구조를 찾을 수 없음, 원본 응답 일부:`, JSON.stringify(data).slice(0, 500))
-      return res.status(502).json({ error: `식약처 API 응답 형식이 예상과 다릅니다 (resultCode: ${resultCode ?? '알 수 없음'})` })
-    }
-
-    if (!upstreamRes.ok && items.length === 0) {
-      console.error(`FoodSafety API(${source}) error:`, resultCode, data?.response?.header?.resultMsg)
-      return res.status(upstreamRes.status).json({ error: data?.response?.header?.resultMsg || 'FoodSafety API error' })
-    }
-
-    const payload = items.map(normalizeFoodItem)
-    foodDbCache.set(cacheKey, payload)
+    const payload = await lookupFoodSafety(foodName.trim(), source)
     res.json(payload)
   } catch (err) {
-    // 이 catch에 도달하는 예외는 전부 식약처 서버로의 네트워크 연결 실패(타임아웃 포함)다.
-    // 그 외 실패 케이스는 위에서 전부 명시적으로 status를 응답하고 return하기 때문이다.
-    // 배포 리전(해외 IP)에서는 api.data.go.kr 접속이 아예 안 되는 경우가 있는데, 이를 "검색
-    // 결과 없음"(NODATA, 200 [])과 똑같이 응답하면 프론트가 계속 나머지 소스/재검색어로
-    // 재시도한다 — 연결 자체가 안 되는 상황에서는 그 재시도도 전부 똑같이 실패할 뿐이라
-    // 시간만 누적된다. 그래서 코드(FOODDB_CONNECTION_FAILED)를 실어 503으로 응답해 프론트가
-    // "연결 실패"와 "결과 없음"을 구분해, 연결 실패일 때는 남은 재시도를 건너뛰고 즉시 AI
-    // 추정치로 폴백하도록 한다(findFoodMatch 참고). 국내(로컬)에서는 연결이 정상이라 이 분기를
-    // 타지 않고 기존처럼 식약처 DB를 계속 활용한다.
-    console.error(`FoodSafety proxy(${source}) upstream connection failed:`, err.message)
-    res.status(503).json({ error: '식약처 API 서버에 연결할 수 없습니다', code: 'FOODDB_CONNECTION_FAILED' })
+    if (err.code === 'FOODDB_CONNECTION_FAILED') {
+      // 배포 리전(해외 IP)에서는 api.data.go.kr 접속이 아예 안 되는 경우가 있는데, 이를 "검색
+      // 결과 없음"(NODATA, 200 [])과 똑같이 응답하면 프론트가 계속 나머지 소스/재검색어로
+      // 재시도한다 — 연결 자체가 안 되는 상황에서는 그 재시도도 전부 똑같이 실패할 뿐이라
+      // 시간만 누적된다. 그래서 코드를 실어 503으로 응답해 프론트가 "연결 실패"와 "결과 없음"을
+      // 구분하고, 연결 실패일 때는 남은 재시도를 건너뛰게 한다.
+      console.error(`FoodSafety proxy(${source}) upstream connection failed:`, err.message)
+      return res.status(503).json({ error: '식약처 API 서버에 연결할 수 없습니다', code: 'FOODDB_CONNECTION_FAILED' })
+    }
+    console.error(`FoodSafety API(${source}) 조회 실패:`, err.message)
+    res.status(err.status || 502).json({ error: err.message || 'FoodSafety API error' })
   }
 })
 

@@ -200,4 +200,24 @@ describe('analyzeTray', () => {
     expect(result.method).toBe('estimated')
     expect(result.confidence).not.toBe('high')
   })
+
+  // 레시피DB(recipeDB.json) 도입 전에는 foodDB에서 편집거리로 겨우 걸린 결과를 무조건 채택해서,
+  // "가자미쑥국"이 "가자미구이"(361.95kcal), "가지겉절이"가 "배추 겉절이"(19.68kcal)로 잡혔다.
+  // 두 메뉴 다 레시피DB에는 완전일치로 존재한다 — 소스 순서가 아니라 매칭 신뢰도로 골라야 한다.
+  it('레시피DB 완전일치가 식약처DB 편집거리 매칭을 이긴다(오매칭 회귀 방지)', async () => {
+    const result = await analyzeTray(
+      { menus: ['가자미쑥국', '가지겉절이'], mealType: 'lunch', schoolType: 'middle' },
+      { calibrate: false, useCache: false },
+    )
+
+    for (const item of result.items) {
+      expect(item.matched).toBe(true)
+      expect(item.matchType).toBe('exact')
+    }
+    // 잘못 매칭됐을 때의 값(가자미구이 361.95 / 배추겉절이 19.68)으로 돌아가지 않았는지 확인한다.
+    const soup = result.items.find((i) => i.name === '가자미쑥국')
+    expect(soup.nutrients.calories).toBeLessThan(200)
+    const sideDish = result.items.find((i) => i.name === '가지겉절이')
+    expect(sideDish.nutrients.calories).toBeGreaterThan(50)
+  })
 })

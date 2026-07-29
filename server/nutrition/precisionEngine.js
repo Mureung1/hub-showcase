@@ -30,6 +30,8 @@
 // 영향을 준다.
 import NodeCache from 'node-cache'
 import { lookupFood } from './foodLookup.js'
+import { lookupRecipe } from './recipeLookup.js'
+import { recipeToPer100 } from './resolveFood.js'
 import { classifyMenuRole } from '../../src/lib/mealPortions.js'
 import { getPlausibility } from '../../src/lib/foodData.js'
 import { buildTrayAnalysisPrompt, parseTrayAnalysisResult } from '../../src/lib/prompts/trayAnalysis.js'
@@ -109,6 +111,58 @@ const MIN_SERVING_RATIO_TO_ROLE = 0.4
 function resolveReferenceWeight(menuName) {
   const plausibility = getPlausibility(menuName)
   return plausibility?.referenceGrams ?? classifyMenuRole(menuName).weight
+}
+
+// 메뉴 하나를 로컬 DB에서 찾는다: 식약처 음식DB(foodDB.json) 우선, 없으면 레시피DB(recipeDB.json).
+//
+// 레시피DB는 급식표에 자주 오르는 창작·조합형 메뉴명(예: "닭고기김치찌개")을 보완한다 — 이 엔진의
+// 실측 정확도 리포트(위 헤더 주석)에서 "매칭 실패분이 mealPortions 기본값으로 떨어지는 것"이 남은
+// 최대 오차 원인으로 지목됐는데, 그 실패분을 직접 줄이는 게 목적이다.
+//
+// 여기서 통합 해석 엔진(resolveFood.js)을 쓰지 않는 이유: 이 엔진은 학교급 배식량 계수
+// (PORTION_FACTORS)·NEIS 공식 수치 캘리브레이션처럼 트레이 전용 로직을 중량 결정에 얽어 놓았다.
+// 그 계약을 건드리지 않으면서 레시피DB만 얻는 게 목적이라, 조회 단계만 확장한다.
+// **소스 순서가 아니라 매칭 신뢰도 순으로 고른다.** 예전엔 foodDB 결과가 있으면 그게 편집거리로
+// 겨우 걸린 엉뚱한 음식이어도 무조건 채택했다 — 실측으로 "가자미쑥국"이 "가자미구이"(구이 vs 국물),
+// "가지겉절이"가 "배추 겉절이"로 잡히는 걸 확인했고, 정작 레시피DB엔 두 메뉴 다 정확히 있었다.
+// 완전일치/별칭은 어느 DB에서 나왔든 편집거리 매칭보다 항상 신뢰할 수 있다.
+const MATCH_TYPE_RANK = { exact: 0, alias: 1, partial: 2, fuzzy: 3 }
+
+function lookupMenuItem(menuName) {
+  const food = lookupFood(menuName)
+  const recipe = lookupRecipe(menuName)
+
+  const candidates = []
+  if (food) candidates.push({ rank: MATCH_TYPE_RANK[food.matchType] ?? 9, build: () => food })
+  if (recipe) {
+    candidates.push({
+      rank: MATCH_TYPE_RANK[recipe.matchType] ?? 9,
+      build: () => {
+        // 레시피DB는 1인분 전체 기준이라 이 엔진이 기대하는 per-100g 모양으로 맞춰준다. 1인분 중량을
+        // 모르는 항목이 대부분이라(1,141건 중 282건만 앎) recipeToPer100이 표준 중량을 가정한다.
+        const per100 = recipeToPer100(recipe.item)
+        if (!per100) return null
+        return {
+          matchType: recipe.matchType,
+          item: {
+            name: recipe.item.name,
+            // RCP_PAT2(반찬/국&찌개/…)는 mealPortions의 role 체계와 달라 그대로 쓰면 안 된다 —
+            // null로 넘겨 호출부가 메뉴명 기반 classifyMenuRole로 판정하게 한다.
+            category: null,
+            servingGram: recipe.item.servingGram ?? null,
+            nutrientsPer100: per100.nutrients,
+          },
+        }
+      },
+    })
+  }
+
+  // 동점이면 먼저 담긴 foodDB(식약처 공식 수치)가 이긴다 — sort가 안정 정렬이라 순서가 유지된다.
+  for (const candidate of candidates.sort((a, b) => a.rank - b.rank)) {
+    const built = candidate.build()
+    if (built) return built
+  }
+  return null
 }
 
 function resolveWeightGram(menuName, dbItem, schoolType) {
@@ -239,7 +293,7 @@ export async function analyzeTray({ menus, mealType, schoolType, officialTotals 
 
   // ① + ②
   const resolved = menuNames.map((name) => {
-    const lookup = lookupFood(name)
+    const lookup = lookupMenuItem(name)
     const dbItem = lookup?.item ?? null
     const role = dbItem?.category ?? classifyMenuRole(name).role
     const weight = resolveWeightGram(name, dbItem, schoolType)

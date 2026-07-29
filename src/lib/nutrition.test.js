@@ -3,6 +3,7 @@
 // 단백질·식이섬유가 충족률 기준으로 부족 목록에 진입할 수 있다.
 import { describe, it, expect } from 'vitest'
 import {
+  applyAtwaterEnsemble,
   buildDeficiencyRows,
   calcDayStatus,
   calcRecommendedNutrients,
@@ -101,6 +102,40 @@ describe('countSatisfiedNutrients / calcDayStatus — 나트륨 방향 반전', 
     const mostlyUnmet = { calories: 0, protein: 0, carbs: 0, fat: 80, fiber: 0, sodium: 5000 }
     expect(countSatisfiedNutrients(RECOMMENDED, mostlyUnmet)).toBe(1)
     expect(calcDayStatus(RECOMMENDED, mostlyUnmet)).toBe('bad')
+  })
+})
+
+describe('applyAtwaterEnsemble', () => {
+  it('탄단지로 역산한 칼로리가 기록된 calories와 20% 이내면 손대지 않는다', () => {
+    // 4*40 + 4*10 + 9*10 = 290kcal, 기록값 300kcal → 오차 3.3%
+    const nutrients = { calories: 300, protein: 10, carbs: 40, fat: 10, fiber: 3, sodium: 500 }
+    expect(applyAtwaterEnsemble(nutrients)).toEqual(nutrients)
+  })
+
+  it('오차가 20%를 넘으면 탄단지를 calories에 맞춰 비례 보정한다', () => {
+    // 4*10 + 4*10 + 9*10 = 170kcal인데 calories는 500kcal로 기록됨(오차 194%) → carbs/protein/fat을
+    // 500/170배로 스케일해 Atwater 역산치가 500kcal에 맞도록 보정, 서로의 비율(1:1:1)은 유지된다.
+    const nutrients = { calories: 500, protein: 10, carbs: 10, fat: 10, fiber: 3, sodium: 500 }
+    const result = applyAtwaterEnsemble(nutrients)
+    expect(result.calories).toBe(500) // calories 자체는 신뢰값으로 보고 건드리지 않는다
+    expect(result.fiber).toBe(3) // Atwater와 무관한 항목은 그대로
+    expect(result.sodium).toBe(500)
+    const recomputed = result.carbs * 4 + result.protein * 4 + result.fat * 9
+    expect(recomputed).toBeCloseTo(500, 0)
+    // 세 값 사이의 원래 비율(1:1:1)이 보정 후에도 유지돼야 한다
+    expect(result.carbs).toBeCloseTo(result.protein, 5)
+    expect(result.carbs).toBeCloseTo(result.fat, 5)
+  })
+
+  it('calories나 탄단지가 없거나 0 이하면 원본을 그대로 반환한다', () => {
+    expect(applyAtwaterEnsemble({ calories: 0, protein: 10, carbs: 10, fat: 10 })).toEqual({
+      calories: 0,
+      protein: 10,
+      carbs: 10,
+      fat: 10,
+    })
+    const missingMacro = { calories: 300, protein: null, carbs: 40, fat: 10 }
+    expect(applyAtwaterEnsemble(missingMacro)).toEqual(missingMacro)
   })
 })
 

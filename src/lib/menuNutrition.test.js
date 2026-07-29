@@ -1,28 +1,41 @@
 // 식당·메뉴 추천 expected 보강(menuNutrition.js) 규칙 테스트.
-// 네트워크(searchFoodDB)만 모킹하고 매칭·환산·보정 로직은 실제 코드를 그대로 태운다.
-// 주의: menuCache가 모듈 수준이라 테스트마다 서로 다른 메뉴명을 써서 캐시 간섭을 피한다.
+// 통합 해석 엔진 호출(/api/resolve-food)만 모킹하고 환산·보정 로직은 실제 코드를 그대로 태운다.
+//
+// 캐싱·인플라이트 중복제거·연결실패 쿨다운을 검증하던 테스트들은 여기서 사라졌다 — 그 책임이
+// 전부 서버(server/proxy.js의 lookupFoodSafety, server/nutrition/resolveFood.js)로 옮겨갔기
+// 때문이다. 이 모듈은 이제 "해석 결과를 받아 expected에 반영"하는 일만 한다.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { clampExpectedForItems, enrichExpectedFromDB } from './menuNutrition.js'
-import { searchFoodDB } from './fooddb.js'
+import { resolveFoodItems } from './resolveFood.js'
 
-vi.mock('./fooddb.js', async (importOriginal) => {
-  const actual = await importOriginal()
-  return { ...actual, searchFoodDB: vi.fn() }
-})
+vi.mock('./resolveFood.js', () => ({ resolveFoodItems: vi.fn() }))
 
-function dbRecord(name, per100 = {}) {
+// 서버가 돌려주는 해석 결과 한 건의 모양.
+function resolved(name, per100 = {}, servingGram = 500) {
   return {
-    name,
-    baseQuantity: { value: 100, unit: 'g', raw: '100g' },
-    servSize: null,
-    foodSize: null,
-    brand: null,
-    nutrients: { calories: 120, protein: 2, fat: 3, carbs: 18, fiber: null, sodium: 250, ...per100 },
+    matchedName: name,
+    match: {
+      name,
+      baseQuantity: { value: 100, unit: 'g', raw: '100g' },
+      servSize: null,
+      foodSize: null,
+      brand: null,
+      nutrients: { calories: 120, protein: 2, fat: 3, carbs: 18, fiber: null, sodium: 250, ...per100 },
+    },
+    source: '식약처DB',
+    matchType: 'exact',
+    confidence: 'high',
+    assumedServing: false,
+    servingGram,
   }
 }
 
+function unmatched() {
+  return { matchedName: null, match: null, source: '추정', matchType: null, confidence: 'low', assumedServing: false, servingGram: null }
+}
+
 beforeEach(() => {
-  vi.mocked(searchFoodDB).mockReset()
+  vi.mocked(resolveFoodItems).mockReset()
 })
 
 describe('clampExpectedForItems (1단계 — 현실 범위 보정)', () => {
@@ -41,85 +54,69 @@ describe('clampExpectedForItems (1단계 — 현실 범위 보정)', () => {
   })
 })
 
-describe('enrichExpectedFromDB (2단계 — 식약처 DB 보강)', () => {
-  it('DB 매칭 성공: 100g값 × 표준 1인분으로 환산해 expected를 대체하고 expectedSource=db', async () => {
-    // 국밥 referenceGrams=500 → 100g당 protein 5 → 25g
-    vi.mocked(searchFoodDB).mockResolvedValue([dbRecord('국밥', { protein: 5, sodium: 400 })])
+describe('enrichExpectedFromDB (2단계 — 통합 해석 엔진 보강)', () => {
+  it('매칭 성공: 100g값 × 표준 1인분으로 환산해 expected를 대체하고 expectedSource=db', async () => {
+    vi.mocked(resolveFoodItems).mockResolvedValue([resolved('국밥', { protein: 5, sodium: 400 }, 500)])
     const items = [{ representativeMenu: '국밥', expected: { protein: 10, fiber: 3 } }]
     const [out] = await enrichExpectedFromDB(items, (i) => i.representativeMenu)
+
     expect(out.expectedSource).toBe('db')
-    expect(out.expected.protein).toBe(25) // DB 기반 (5 × 500/100)
+    expect(out.expected.protein).toBe(25) // 5 × 500/100
     expect(out.expected.fiber).toBe(3) // DB에 없는 키(null)는 AI 값 유지
     expect(out.expected.sodium).toBe(2000) // 400×5=2000 — 국밥 상한(2900)의 1.5배 이내라 유지
   })
 
-  it('DB 결과 없음: 보정된 AI 추정 유지 + expectedSource=ai', async () => {
-    vi.mocked(searchFoodDB).mockResolvedValue([])
+  it('매칭 없음: 보정된 AI 추정 유지 + expectedSource=ai', async () => {
+    vi.mocked(resolveFoodItems).mockResolvedValue([unmatched()])
     const items = [{ representativeMenu: '감자탕', expected: { protein: 30 } }]
     const [out] = await enrichExpectedFromDB(items, (i) => i.representativeMenu)
+
     expect(out.expectedSource).toBe('ai')
     expect(out.expected).toEqual({ protein: 30 })
   })
 
-  it('네트워크 오류: 해당 메뉴만 AI 유지, 다른 메뉴는 정상 보강 (부분 실패 허용)', async () => {
-    vi.mocked(searchFoodDB).mockImplementation(async (term) => {
-      if (term === '설렁탕') throw new Error('boom')
-      return [dbRecord('갈비탕', { protein: 4 })]
-    })
+  it('표준 1인분 무게를 모르면 DB 수치를 쓰지 않는다(100g 환산 근거 없음)', async () => {
+    vi.mocked(resolveFoodItems).mockResolvedValue([{ ...resolved('수제버거플래터', { protein: 9 }), servingGram: null }])
+    const items = [{ representativeMenu: '수제버거플래터', expected: { protein: 35 } }]
+    const [out] = await enrichExpectedFromDB(items, (i) => i.representativeMenu)
+
+    expect(out.expectedSource).toBe('ai')
+    expect(out.expected).toEqual({ protein: 35 })
+  })
+
+  it('일부만 매칭돼도 나머지는 정상 보강한다(부분 실패 허용)', async () => {
+    vi.mocked(resolveFoodItems).mockResolvedValue([unmatched(), resolved('갈비탕', { protein: 4 }, 600)])
     const items = [
       { representativeMenu: '설렁탕', expected: { protein: 20 } },
       { representativeMenu: '갈비탕', expected: { protein: 20 } },
     ]
     const out = await enrichExpectedFromDB(items, (i) => i.representativeMenu)
+
     expect(out[0].expectedSource).toBe('ai')
     expect(out[0].expected).toEqual({ protein: 20 })
     expect(out[1].expectedSource).toBe('db')
     expect(out[1].expected.protein).toBe(24) // 4 × 600/100
   })
 
-  it('같은 메뉴명은 캐시로 한 번만 조회한다', async () => {
-    vi.mocked(searchFoodDB).mockResolvedValue([dbRecord('비빔밥', { protein: 3 })])
-    const items = [{ name: '비빔밥', expected: { protein: 1 } }]
-    await enrichExpectedFromDB(items, (i) => i.name)
-    const callsAfterFirst = vi.mocked(searchFoodDB).mock.calls.length
-    await enrichExpectedFromDB(items, (i) => i.name)
-    expect(vi.mocked(searchFoodDB).mock.calls.length).toBe(callsAfterFirst) // 추가 호출 없음
-  })
-
-  it('표준 1인분 무게를 모르는 메뉴는 DB 조회 없이 AI 유지 (100g 환산 오류 방지)', async () => {
-    const items = [{ representativeMenu: '수제버거플래터', expected: { protein: 35 } }]
-    const [out] = await enrichExpectedFromDB(items, (i) => i.representativeMenu)
-    expect(vi.mocked(searchFoodDB)).not.toHaveBeenCalled()
-    expect(out.expected).toEqual({ protein: 35 })
-  })
-
-  it('같은 배치의 동일 대표 메뉴는 in-flight 중복 없이 한 번만 조회한다', async () => {
-    vi.mocked(searchFoodDB).mockResolvedValue([dbRecord('돈까스', { protein: 10 })])
+  // 이 개편의 핵심 — 예전엔 메뉴 수만큼 순차 조회했다.
+  it('메뉴가 여럿이어도 해석 요청은 한 번만 나간다', async () => {
+    vi.mocked(resolveFoodItems).mockResolvedValue([resolved('돈까스', { protein: 10 }, 200), resolved('비빔밥', { protein: 3 }, 500)])
     const items = [
       { representativeMenu: '돈까스', expected: { protein: 1 } },
-      { representativeMenu: '돈까스', expected: { protein: 2 } },
+      { representativeMenu: '비빔밥', expected: { protein: 2 } },
     ]
     const out = await enrichExpectedFromDB(items, (i) => i.representativeMenu)
-    expect(vi.mocked(searchFoodDB).mock.calls.length).toBe(1)
-    expect(out[0].expectedSource).toBe('db')
-    expect(out[1].expectedSource).toBe('db')
+
+    expect(vi.mocked(resolveFoodItems)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(resolveFoodItems).mock.calls[0][0]).toHaveLength(2)
     expect(out[0].expected.protein).toBe(20) // 10 × 200/100
   })
 
-  // 주의: 이 테스트는 모듈 수준 쿨다운(fooddbDownUntil)을 세팅하므로 반드시 파일의 마지막에 둔다 —
-  // 이후 테스트가 있으면 DB 보강이 통째로 건너뛰어져 실패한다.
-  it('식약처 연결 실패(FOODDB_CONNECTION_FAILED): 전 항목 AI 유지, 오류로 죽지 않는다', async () => {
-    vi.mocked(searchFoodDB).mockImplementation(async () => {
-      const err = new Error('식약처 API 서버에 연결할 수 없습니다')
-      err.code = 'FOODDB_CONNECTION_FAILED'
-      throw err
-    })
-    const items = [
-      { representativeMenu: '냉면', expected: { protein: 12 } },
-      { representativeMenu: '우동', expected: { protein: 11 } },
-    ]
+  it('해석 대상이 없으면(대표 메뉴·expected 없음) 요청 자체를 보내지 않는다', async () => {
+    const items = [{ representativeMenu: null, expected: { protein: 5 } }, { representativeMenu: '김밥' }]
     const out = await enrichExpectedFromDB(items, (i) => i.representativeMenu)
-    expect(out.every((i) => i.expectedSource === 'ai')).toBe(true)
-    expect(out[0].expected).toEqual({ protein: 12 })
+
+    expect(vi.mocked(resolveFoodItems)).not.toHaveBeenCalled()
+    expect(out).toBe(items)
   })
 })

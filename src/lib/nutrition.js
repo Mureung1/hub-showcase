@@ -97,6 +97,9 @@ export function scaleMealAnalysisByServings(analysis, servings) {
 export const NUTRITION_SOURCE = {
   DB: '식약처DB',
   DB_PROCESS: '식약처DB(가공)',
+  // 식약처 음식/가공식품 DB에 없는 창작·조합형 메뉴명을 보완하는 식품안전나라 "조리식품의 레시피
+  // DB"(COOKRCP01) 매칭. 같은 식약처 산하지만 별개 데이터셋이라 배지 문구를 분리한다.
+  RECIPE_DB: '레시피DB',
   OFFICIAL: '공식',
   LABEL: '라벨 추출',
   ESTIMATED: '추정',
@@ -128,6 +131,34 @@ export function resolveConsumedGrams(match, estimatedGrams, foodName) {
   return clampEstimatedGrams(estimatedGrams, foodName)
 }
 
+// PRD v3.0 §3 — Atwater 계수(탄4/단4/지9)로 역산한 칼로리가 기록된 calories와 20% 넘게 벌어지면
+// (DB 오기재, 편차가 큰 매칭, AI 추정 등) 탄단지를 calories 쪽에 맞춰 비례 보정한다. calories는
+// 대부분 DB/AI가 직접 제공하는 값이라 세 영양소 각각의 추정보다 신뢰도가 높다고 보고, 탄단지 사이의
+// 상대적 비율(예: 저탄고지 레시피의 비율)은 그대로 유지한 채 크기만 스케일한다 — 세 값을 각각 따로
+// 보정하면 이 비율 자체가 무너진다.
+const ATWATER_FACTORS = { carbs: 4, protein: 4, fat: 9 }
+const ATWATER_ERROR_THRESHOLD = 0.2
+
+export function applyAtwaterEnsemble(nutrients) {
+  const { calories, carbs, protein, fat } = nutrients ?? {}
+  if (!(calories > 0)) return nutrients
+  if (![carbs, protein, fat].every((v) => typeof v === 'number' && Number.isFinite(v) && v >= 0)) return nutrients
+
+  const atwaterCalories = carbs * ATWATER_FACTORS.carbs + protein * ATWATER_FACTORS.protein + fat * ATWATER_FACTORS.fat
+  if (!(atwaterCalories > 0)) return nutrients
+
+  const errorRatio = Math.abs(atwaterCalories - calories) / calories
+  if (errorRatio <= ATWATER_ERROR_THRESHOLD) return nutrients
+
+  const scale = calories / atwaterCalories
+  return {
+    ...nutrients,
+    carbs: Math.round(carbs * scale * 10) / 10,
+    protein: Math.round(protein * scale * 10) / 10,
+    fat: Math.round(fat * scale * 10) / 10,
+  }
+}
+
 // "표준 1인분" 현실 영양 범위 보정(범위 자체는 foodData.js 통합 테이블에). DB 매칭에 성공해도 그
 // 레코드 자체의 수치가(예: 특정 산출 레시피가 실제보다 고단백/고지방으로 계산된 경우) 현실 범위를 크게
 // 벗어날 수 있다 — 식약처 DB "짜장면" 레코드들은 여러 건이 모두 100g당 단백질 4g 안팎으로 일관되는데,
@@ -141,12 +172,15 @@ const PLAUSIBILITY_OUTLIER_HIGH = 1.5
 
 // foodData의 현실 범위에 걸리는 음식이면, 실제 사용된 grams에 비례해 범위를 스케일한 뒤 그 범위를
 // 크게 벗어나는 영양소만 경계값으로 보정한다. 걸리지 않는 음식/영양소는 손대지 않고 그대로 둔다.
+// PRD v3.0 §3 — Atwater 앙상블 보정을 먼저 거쳐 탄단지-칼로리 물리적 정합성부터 맞춘 뒤, 그 결과에
+// foodData 표준범위 클램프를 적용한다(음식별 표준범위가 없는 항목도 Atwater 보정 자체는 받는다).
 export function clampToPlausibleNutrients(nutrients, foodName, grams) {
+  const balanced = applyAtwaterEnsemble(nutrients)
   const entry = getPlausibility(foodName)
-  if (!entry) return nutrients
+  if (!entry) return balanced
 
   const scale = entry.referenceGrams > 0 && Number(grams) > 0 ? Number(grams) / entry.referenceGrams : 1
-  const result = { ...nutrients }
+  const result = { ...balanced }
 
   for (const [key, [min, max]] of Object.entries(entry.ranges)) {
     const value = result[key]
