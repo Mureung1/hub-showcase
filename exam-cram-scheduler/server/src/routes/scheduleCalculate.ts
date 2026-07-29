@@ -5,6 +5,8 @@ import type { Request, Response } from "express";
 import { buildMultiDayCandidates } from "../calc/multiDayCandidates.js";
 import { searchMultiDaySchedule } from "../calc/multiDayLocalSearch.js";
 import { buildAlertnessTimeline } from "../calc/alertnessTimeline.js";
+import { buildMultiNightSegments } from "../calc/candidateSleepSegments.js";
+import { computeStudyShortfall, type ExamStudyNeed } from "../calc/studyReservation.js";
 import type { CaffeineDose } from "../calc/caffeineConcentration.js";
 import { applyOralContraceptive, type CaffeineSensitivity } from "../calc/sensitivityToHalfLife.js";
 import { buildExamTimeline } from "../timeline/examTimeline.js";
@@ -60,6 +62,12 @@ interface ScheduleCalculateRequestBody {
   caffeineSensitivity: CaffeineSensitivity;
   healthProfile: HealthProfile;
   minSleepHours?: number;
+  // ① 밤별 최소 수면시간(2026-07-30). 조정 화면에서 밤마다 다르게 걸 수 있게 배열로 받는다.
+  // 인덱스는 night[0]=오늘 밤. 안 넘긴 밤은 minSleepHours(전역)로 채워진다.
+  minSleepHoursByNight?: number[];
+  // ② "공부 시간 확보" 선택(2026-07-30). true면 남은 공부량 부족분을 점수에서 깎아
+  // 잠을 줄여서라도 공부 시간을 확보하는 스케줄을 찾는다. 기본(false)은 경고만 띄운다.
+  reserveStudyTime?: boolean;
   nightOverrides: NightOverrideInput[];
 }
 
@@ -116,6 +124,26 @@ function validateRequestBody(body: unknown): { data: ScheduleCalculateRequestBod
 
   const minSleepHours = typeof b.minSleepHours === "number" ? b.minSleepHours : undefined;
 
+  // ① 밤별 최소 수면시간 — 배열이면 각 항목이 0 이상 숫자여야 한다(빈 자리는 undefined 허용).
+  let minSleepHoursByNight: number[] | undefined;
+  if (b.minSleepHoursByNight !== undefined) {
+    if (!Array.isArray(b.minSleepHoursByNight)) {
+      return { error: "minSleepHoursByNight는 숫자 배열이어야 합니다." };
+    }
+    for (const value of b.minSleepHoursByNight) {
+      if (value !== undefined && value !== null && (typeof value !== "number" || value < 0)) {
+        return { error: "minSleepHoursByNight의 각 값은 0 이상의 숫자여야 합니다." };
+      }
+    }
+    minSleepHoursByNight = b.minSleepHoursByNight as number[];
+  }
+
+  // ② "공부 시간 확보" 선택 — 오면 boolean이어야 한다.
+  if (b.reserveStudyTime !== undefined && typeof b.reserveStudyTime !== "boolean") {
+    return { error: "reserveStudyTime는 true/false여야 합니다." };
+  }
+  const reserveStudyTime = b.reserveStudyTime === true;
+
   const nightOverridesRaw = Array.isArray(b.nightOverrides) ? b.nightOverrides : [];
   for (const override of nightOverridesRaw as Record<string, unknown>[]) {
     if (!override || typeof override.nightIndex !== "number" || !Number.isInteger(override.nightIndex) || override.nightIndex < 0) {
@@ -144,6 +172,8 @@ function validateRequestBody(body: unknown): { data: ScheduleCalculateRequestBod
       caffeineSensitivity: b.caffeineSensitivity,
       healthProfile: hp as unknown as HealthProfile,
       minSleepHours,
+      minSleepHoursByNight,
+      reserveStudyTime,
       nightOverrides: nightOverridesRaw as NightOverrideInput[],
     },
   };
@@ -155,8 +185,18 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     res.status(400).json({ error: validation.error });
     return;
   }
-  const { exams, habitualBedTime, habitualWakeTime, todayCaffeineIntakes, caffeineSensitivity, healthProfile, minSleepHours, nightOverrides } =
-    validation.data;
+  const {
+    exams,
+    habitualBedTime,
+    habitualWakeTime,
+    todayCaffeineIntakes,
+    caffeineSensitivity,
+    healthProfile,
+    minSleepHours,
+    minSleepHoursByNight,
+    reserveStudyTime,
+    nightOverrides,
+  } = validation.data;
 
   const nowIso = new Date().toISOString();
 
@@ -244,6 +284,18 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     amountMg: intake.mg,
   }));
 
+  // ① 밤별 최소 수면시간 — 전역 minSleepHours로 전체를 채운 뒤, 요청에 밤별 값이 있으면 덮어쓴다.
+  const perNightMinSleep = Array.from({ length: timeline.numNights }, (_, i) =>
+    minSleepHoursByNight?.[i] ?? minSleepHours ?? 0,
+  );
+
+  // ② 시험별 남은 공부량 — examTimes와 같은 순서·좌표계. 공부는 "지금"부터 할 수 있다.
+  const studyWindowStart = toContinuousCoordinate(nowIso, nowIso);
+  const studyNeeds: ExamStudyNeed[] = exams.map((exam, i) => ({
+    examTime: timeline.examTimes[i],
+    requiredHours: exam.remainingStudyHours ?? 0,
+  }));
+
   const best = searchMultiDaySchedule({
     habitualBedTime: timeline.habitualBedTime,
     habitualWakeTime: timeline.habitualWakeTime,
@@ -252,6 +304,11 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     bodyWeightKg: healthProfile.weightKg,
     halfLifeHours,
     minSleepHours,
+    minSleepHoursByNight: perNightMinSleep,
+    studyNeeds,
+    studyWindowStart,
+    // reserveStudyTime일 때만 공부 부족을 점수에 반영해 잠을 줄여 공부 시간을 확보한다.
+    enforceStudyTime: reserveStudyTime,
     fixedDoses,
     // #3 — 한도를 채점에 반영해야 "많이 마셔라"와 "한도 초과 경고"가 동시에 나오지 않는다
     dailyLimitMg,
@@ -274,6 +331,26 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
       warnings.push(`${라벨} 카페인 섭취량(${totalMg}mg)이 안전 한도(${dailyLimitMg}mg)를 초과합니다.`);
     }
   }
+
+  // ② 추천된(=best) 스케줄에서 시험별 공부 부족 시간을 다시 계산해 응답에 담는다. 화면은 이걸로
+  // "공부 시간 확보할까요?" 경고를 띄우고, 사용자가 "네"를 누르면 reserveStudyTime=true로 재요청한다.
+  const bestSegments = buildMultiNightSegments(timeline.habitualBedTime, timeline.habitualWakeTime, best.nights);
+  const studyShortfall = computeStudyShortfall(bestSegments, studyNeeds, studyWindowStart);
+  // 시각 → 과목명(경고 문구에 과목 이름을 넣기 위한 매핑). 같은 시각의 시험이 여럿이면 마지막이 남지만
+  // 화면 문구용이라 문제되지 않는다.
+  const subjectByExamTime = new Map(exams.map((exam, i) => [timeline.examTimes[i], exam.subject]));
+  const studyReservation = {
+    enforced: reserveStudyTime,
+    totalShortfallHours: Math.round(studyShortfall.total * 10) / 10,
+    byExam: studyShortfall.byExam
+      .filter((exam) => exam.requiredHours > 0)
+      .map((exam) => ({
+        subject: subjectByExamTime.get(exam.examTime) ?? '',
+        requiredHours: exam.requiredHours,
+        availableHours: Math.round(exam.availableHours * 10) / 10,
+        shortfallHours: Math.round(exam.shortfallHours * 10) / 10,
+      })),
+  };
 
   const timelinePoints = buildAlertnessTimeline({
     habitualBedTime: timeline.habitualBedTime,
@@ -309,5 +386,6 @@ export async function handleCalculateSchedule(req: Request, res: Response): Prom
     },
     },
     warnings,
+    studyReservation,
   });
 }
