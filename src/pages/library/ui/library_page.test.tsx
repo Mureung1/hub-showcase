@@ -8,9 +8,10 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { DesignSystemProvider } from '@/shared/ui';
 
-import { LibraryPage } from './library_page';
+import { LibraryPage, type LibraryPageProps } from './library_page';
 
 const DEVELOPMENT_CATEGORY_ID = '10000000-0000-4000-8000-000000000001';
+const SECOND_ID = '10000000-0000-4000-8000-000000000002';
 const EXISTING_INSIGHT = {
   categoryId: null,
   createdAt: '2026-07-14T00:00:00.000Z',
@@ -25,6 +26,15 @@ const EXISTING_INSIGHT = {
 };
 
 beforeAll(() => {
+  vi.stubGlobal(
+    'ResizeObserver',
+    class ResizeObserverMock {
+      disconnect = vi.fn();
+      observe = vi.fn();
+      unobserve = vi.fn();
+    }
+  );
+
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
     value: vi.fn().mockImplementation((query: string) => ({
@@ -307,6 +317,7 @@ describe('LibraryPage', () => {
       categoryOptions: [{ colorKey: null, label: '전체', value: 'all' }],
       onCategoryChange: vi.fn(),
       onDeleteInsight: vi.fn().mockResolvedValue({ ok: true } as const),
+      onDeleteInsights: vi.fn().mockResolvedValue({ ok: true } as const),
       onOpenImport,
       onOpenSave: vi.fn(),
       onQueryChange: vi.fn(),
@@ -336,7 +347,109 @@ describe('LibraryPage', () => {
       screen.queryByRole('button', { name: '인사이트 가져오기' })
     ).toBeNull();
   });
+
+  it('현재 목록을 선택하고 확인한 뒤에만 삭제하며 실패하면 선택을 유지한다', async () => {
+    const user = userEvent.setup();
+    const onDeleteInsights = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, reason: 'write-failed' } as const)
+      .mockResolvedValueOnce({ ok: true } as const);
+    const insights = [
+      EXISTING_INSIGHT,
+      { ...EXISTING_INSIGHT, id: SECOND_ID, title: '둘째 인사이트' },
+    ];
+
+    render(
+      <DesignSystemProvider>
+        <LibraryPage
+          {...createLibraryProps()}
+          insights={insights}
+          onDeleteInsights={onDeleteInsights}
+          totalInsightCount={2}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '선택' }));
+    expect(screen.getByText('0개 선택됨')).not.toBeNull();
+    expect(screen.queryByRole('link', { name: '원문 열기' })).toBeNull();
+
+    await user.click(
+      screen.getByRole('button', { name: '현재 목록 2개 모두 선택' })
+    );
+    await user.click(screen.getByRole('button', { name: '삭제' }));
+    expect(onDeleteInsights).not.toHaveBeenCalled();
+
+    const confirmation = screen.getByRole('textbox', { name: '확인 문구' });
+    await user.type(confirmation, '삭제');
+    await user.click(
+      screen.getByRole('button', {
+        name: '인사이트 2개 모두 삭제하기',
+      })
+    );
+
+    expect((await screen.findByRole('alert')).textContent).toContain(
+      '인사이트와 선택은 그대로 두었어요.'
+    );
+    expect(screen.getByText('2개 선택됨')).not.toBeNull();
+
+    await user.click(
+      screen.getByRole('button', {
+        name: '인사이트 2개 모두 다시 삭제하기',
+      })
+    );
+    expect(onDeleteInsights).toHaveBeenCalledTimes(2);
+  });
+
+  it('검색 범위가 바뀌면 숨은 선택을 남기지 않는다', async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+
+    render(
+      <DesignSystemProvider>
+        <LibraryPage
+          {...createLibraryProps()}
+          insights={[EXISTING_INSIGHT]}
+          onQueryChange={onQueryChange}
+        />
+      </DesignSystemProvider>
+    );
+
+    await user.click(screen.getByRole('button', { name: '선택' }));
+    await user.click(
+      screen.getByRole('button', { name: '기존 인사이트 선택' })
+    );
+    await user.type(
+      screen.getByRole('searchbox', { name: '보관함 검색' }),
+      '다른 범위'
+    );
+
+    expect(onQueryChange).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: '선택' })).not.toBeNull();
+    expect(screen.queryByText('1개 선택됨')).toBeNull();
+  });
 });
+
+function createLibraryProps(
+  overrides: Partial<LibraryPageProps> = {}
+): LibraryPageProps {
+  return {
+    activeCategory: 'all',
+    categoryOptions: [{ colorKey: null, label: '전체', value: 'all' }],
+    insights: [EXISTING_INSIGHT],
+    onCategoryChange: vi.fn(),
+    onDeleteInsight: vi.fn().mockResolvedValue({ ok: true } as const),
+    onDeleteInsights: vi.fn().mockResolvedValue({ ok: true } as const),
+    onOpenImport: vi.fn(),
+    onOpenSave: vi.fn(),
+    onQueryChange: vi.fn(),
+    onRetryLoad: vi.fn(),
+    onUpdateInsight: vi.fn().mockResolvedValue({ ok: true } as const),
+    query: '',
+    totalInsightCount: 1,
+    ...overrides,
+  };
+}
 
 function getCssRule(styles: string, selector: string) {
   const ruleStart = styles.indexOf(`${selector} {`);
