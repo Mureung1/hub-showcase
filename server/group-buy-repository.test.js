@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { groupBuyRowToDto, newGroupBuyToRow } from "./group-buy-repository.js";
+import {
+  groupBuyPatchToRow,
+  groupBuyRowToDto,
+  newGroupBuyToRow,
+} from "./group-buy-repository.js";
 
 test("Given a database row, when it is mapped, then the frontend receives camelCase fields", () => {
   const dto = groupBuyRowToDto({
@@ -44,6 +48,55 @@ test("Given validated form data, when a row is prepared, then database column na
   assert.equal(row.current_people, 1);
 });
 
+test("Given a row with product metadata, when it is mapped, then metadata uses camelCase fields", () => {
+  const dto = groupBuyRowToDto({
+    free_shipping_threshold: 30000,
+    image_url: "https://cdn.example.test/product.jpg",
+    per_person_quantity: 4,
+    product_url: "https://shop.example.test/products/42",
+  });
+
+  assert.equal(dto.productUrl, "https://shop.example.test/products/42");
+  assert.equal(dto.imageUrl, "https://cdn.example.test/product.jpg");
+  assert.equal(dto.freeShippingThreshold, 30000);
+  assert.equal(dto.perPersonQuantity, 4);
+});
+
+test("Given a stale row without product metadata, when it is mapped, then nullable metadata and the quantity default are returned", () => {
+  const dto = groupBuyRowToDto({});
+
+  assert.equal(dto.productUrl, null);
+  assert.equal(dto.imageUrl, null);
+  assert.equal(dto.freeShippingThreshold, null);
+  assert.equal(dto.perPersonQuantity, 1);
+});
+
+test("Given validated product metadata, when a row is prepared, then metadata uses database column names", () => {
+  const row = newGroupBuyToRow({
+    freeShippingThreshold: 50000,
+    imageUrl: "https://cdn.example.test/bulk-rice.jpg",
+    perPersonQuantity: 2,
+    productUrl: "https://shop.example.test/bulk-rice",
+  }, "demo-user");
+
+  assert.equal(row.product_url, "https://shop.example.test/bulk-rice");
+  assert.equal(row.image_url, "https://cdn.example.test/bulk-rice.jpg");
+  assert.equal(row.free_shipping_threshold, 50000);
+  assert.equal(row.per_person_quantity, 2);
+});
+
+test("Given a partial metadata edit, when a patch row is prepared, then only supplied metadata is changed", () => {
+  const row = groupBuyPatchToRow({
+    imageUrl: null,
+    perPersonQuantity: 5,
+  });
+
+  assert.deepEqual(row, {
+    image_url: null,
+    per_person_quantity: 5,
+  });
+});
+
 test("Given participant rows, when a group buy is mapped, then participation survives refresh", () => {
   const dto = groupBuyRowToDto({
     category: "식품",
@@ -54,6 +107,8 @@ test("Given participant rows, when a group buy is mapped, then participation sur
       created_at: "2026-07-21T01:00:00.000Z",
       group_buy_id: "11111111-1111-4111-8111-111111111111",
       id: "22222222-2222-4222-8222-222222222222",
+      latitude: 35.15,
+      longitude: 128.1,
       quantity: 2,
       start_location: "학생회관",
       user_id: "demo-user",
@@ -73,6 +128,8 @@ test("Given participant rows, when a group buy is mapped, then participation sur
   assert.deepEqual(dto.participants, [{
     createdAt: "2026-07-21T01:00:00.000Z",
     id: "22222222-2222-4222-8222-222222222222",
+    latitude: 35.15,
+    longitude: 128.1,
     nickname: "참여자 2",
     quantity: 2,
     startLocation: "학생회관",

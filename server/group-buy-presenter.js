@@ -19,7 +19,11 @@ export function presentGroupBuy(item, viewerId) {
 
   return {
     ...publicItem,
+    finalPickup: canSeeParticipantDetails ? item.finalPickup : null,
     participants,
+    pickupLocation: canSeeParticipantDetails ? item.pickupLocation : "참여 후 공개",
+    pickupCandidates: canSeeParticipantDetails ? item.pickupCandidates : [],
+    votes: canSeeParticipantDetails ? item.votes : {},
     isOwner,
     userJoined,
     userQuantity: viewerParticipation?.quantity ?? null,

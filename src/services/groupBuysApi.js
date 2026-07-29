@@ -17,6 +17,7 @@ export const register = (input) => request("/api/auth/register", jsonOptions("PO
 export const getGroupBuys = async () => (await request("/api/group-buys")).groupBuys;
 export const getGroupBuy = async (id) => (await request(`/api/group-buys/${id}`)).groupBuy;
 export const createGroupBuy = async (input) => (await request("/api/group-buys", jsonOptions("POST", input))).groupBuy;
+export const previewProduct = async (url) => (await request("/api/products/preview", jsonOptions("POST", { url }))).product;
 export const updateGroupBuy = async (id, input) => (await request(`/api/group-buys/${id}`, jsonOptions("PATCH", input))).groupBuy;
 export const joinGroupBuy = async (id, input = {}) => (await request(`/api/group-buys/${id}/join`, jsonOptions("POST", input))).groupBuy;
 export const cancelGroupBuyParticipation = async (id) => (await request(`/api/group-buys/${id}/join`, { method: "DELETE" })).groupBuy;
