@@ -99,7 +99,7 @@ function IngredientShopPage() {
       <TopNav />
       <main className="min-h-screen bg-bg-page px-4 py-8" style={PAGE_BACKGROUND_STYLE}>
         <div className="mx-auto max-w-5xl">
-          <h1 className="text-center font-display text-2xl font-bold text-text-primary">재료샵</h1>
+          <h1 className="text-center font-display text-2xl font-bold text-text-primary">재료픽</h1>
           <p className="mt-1 text-center font-display text-sm text-text-secondary">
             필요한 재료만 낱개로, 최저가로 담아보세요
           </p>
@@ -116,18 +116,17 @@ function IngredientShopPage() {
           <div className="mt-4 flex flex-col gap-6 md:flex-row-reverse md:items-start">
             <div className="flex-1">
               {visibleIngredients.length > 0 ? (
-                <ol className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {visibleIngredients.map((ingredient, index) => (
+                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {visibleIngredients.map((ingredient) => (
                     <IngredientShopCard
                       key={ingredient.id}
-                      rank={index + 1}
                       ingredient={ingredient}
                       fetchState={productsByIngredientId[ingredient.id]}
                       isSelected={selectedIngredient?.id === ingredient.id}
                       onCompareClick={setSelectedIngredient}
                     />
                   ))}
-                </ol>
+                </ul>
               ) : (
                 <p className="text-center font-display text-sm text-text-secondary">이 카테고리에는 재료가 없어요.</p>
               )}

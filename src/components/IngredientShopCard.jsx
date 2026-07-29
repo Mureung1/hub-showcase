@@ -1,10 +1,10 @@
 import Thumbnail from './Thumbnail'
 
-// MenuCard와 같은 카드 껍데기(테두리·순위 배지·Thumbnail)를 쓰지만, 클릭해도 페이지 이동 없이
+// MenuCard와 같은 카드 껍데기(테두리·Thumbnail)를 쓰지만, 클릭해도 페이지 이동 없이
 // 아래 PurchaseLinkPanel만 갱신하는 구조라 Link가 아니라 버튼 내장 카드로 따로 만듦.
 // 사진·가격은 네이버 최저가 검색 결과(fetchState)에서 가져오고, 아직 안 불러왔거나 실패하면
 // Thumbnail이 이모지로 자동 대체한다.
-function IngredientShopCard({ rank, ingredient, fetchState, isSelected, onCompareClick }) {
+function IngredientShopCard({ ingredient, fetchState, isSelected, onCompareClick }) {
   const cheapest = fetchState?.items?.[0] ?? null
   const isDone = fetchState?.status === 'done'
   const isError = fetchState?.status === 'error'
@@ -16,11 +16,6 @@ function IngredientShopCard({ rank, ingredient, fetchState, isSelected, onCompar
           isSelected ? 'border-primary' : 'border-ink'
         }`}
       >
-        {rank && (
-          <span className="absolute left-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-bg-surface/90 text-xs font-semibold text-primary-text shadow">
-            {rank}
-          </span>
-        )}
         <Thumbnail image={cheapest?.image} emoji={ingredient.emoji} alt={ingredient.label} className="aspect-video w-full text-4xl" />
         <div className="flex flex-1 flex-col p-3">
           <p className="truncate font-display text-base font-bold text-text-primary">{ingredient.label}</p>

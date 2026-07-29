@@ -54,7 +54,7 @@
 | `recipe-card` (실제 앱 `MenuCard`와 대응) | `bg-surface` 카드 + 상단 이미지 + 본문(이름/부제/가격). 하트 배지는 제거함(사용 안 함) | `radius-card`, `bg-surface`, `text-secondary` |
 | `recipe-grid` (실제 앱 `RecipeGrid`) | `recipe-card`를 3열 그리드(`grid-cols-3`, 모바일 1열)로 늘어놓는 `<ol>` 래퍼. 홈 화면에 이 그리드가 5번(지금 바로/조금만 사면/전체 둘러보기/빈 상태 대체 후보 2종) 반복되던 걸 하나로 합침 — `cheapestId`(최저가 배지)·`showMissingCount`·`showTimeLabel` prop으로 섹션마다 다른 배지만 켜고 끔 | `radius-card`, `bg-surface` |
 | `best-tag` | 작은 pill 배지, `primary-soft` 배경 + `primary-text` 글자 | `primary-soft`, `primary-text` |
-| `ingredient-shop-card` (실제 앱 `IngredientShopCard`) | `recipe-card`와 같은 카드 껍데기(`radius-card`, `border-ink`, 순위 배지)를 쓰지만 `Link`가 아니라 내부에 "가격 비교" 버튼을 둔 카드 — 클릭해도 페이지 이동 없이 아래 `purchase-link-item` 패널만 갱신됨. 사진은 정적 이모지가 아니라 그 재료의 네이버 최저가 검색 결과 이미지(카드별 독립 fetch, 로딩/실패 시 이모지로 자동 대체) | `radius-card`, `bg-surface`, `border-ink`, `primary` |
+| `ingredient-shop-card` (실제 앱 `IngredientShopCard`) | `recipe-card`와 같은 카드 껍데기(`radius-card`, `border-ink`)를 쓰지만 `Link`가 아니라 내부에 "가격 비교" 버튼을 둔 카드 — 클릭해도 페이지 이동 없이 아래 `purchase-link-item` 패널만 갱신됨. 사진은 정적 이모지가 아니라 그 재료의 네이버 최저가 검색 결과 이미지(카드별 독립 fetch, 로딩/실패 시 이모지로 자동 대체) | `radius-card`, `bg-surface`, `border-ink`, `primary` |
 | `quick-tab` | 상단 가로 pill 탭 줄. **음식종류(필터 패널의 메인음식/반찬/간식)와는 별개 축**으로, 요리 국가(전체/한식/일식/중식/양식/기타)를 다중 선택(OR)함. 체크박스가 아니라 버튼 `is-active` 상태로 직접 관리되고, 필터 패널과는 동기화되지 않음(서로 다른 데이터: `data-cuisine` vs `data-type`) | `radius-pill`, `primary`, `border` |
 | `quick-tab` | 상단 가로 pill 탭 줄(전체/한식/일식/중식/양식/기타 — 음식종류는 요리 국가 기준 분류). 상세 필터 패널의 음식종류 체크박스와 항상 양방향 동기화됨. 필터 패널은 항상 열려있어서 별도 토글 버튼 없음 | `radius-pill`, `primary`, `border` |
 | `banner-dot` | 프로모 배너 하단 원형 dot, 라디오 hack으로 슬라이드 전환(JS 없이 순수 CSS) | `radius-pill`, `text-primary` |
