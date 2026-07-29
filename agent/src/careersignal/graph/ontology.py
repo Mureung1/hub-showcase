@@ -19,7 +19,7 @@ docs/ontology-v1.md 2·3·4장이다. 검사 일곱 종은 같은 문서 7장이
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from enum import StrEnum
 from typing import Any, Protocol
 
@@ -34,6 +34,15 @@ from careersignal.contracts.check_result import (
 from careersignal.contracts.run_context import RunContext, StopReason
 from careersignal.contracts.verification import TypedVerdict
 from careersignal.graph.identifiers import edge_identifier, node_identifier
+from careersignal.repositories.base import item_savepoint, transaction_is_dead
+
+TRANSACTION_LOST = "거래가 죽어 남은 노드와 엣지를 저장하지 못한다"
+"""저장이 거래를 죽이는 실패를 냈다. 남은 항목을 시도하지 않고 멈춘 사유다.
+
+PostgreSQL 은 거래 안에서 오류가 나면 남은 명령을 전부 거부한다. 죽은 거래에 계속
+저장하면 같은 사유의 실패 줄이 항목 수만큼 쌓인다. 저장하지 못한 항목은 식별자가
+결정적이므로 다음 실행이 같은 자리에서 다시 만든다.
+"""
 
 
 class GraphLayer(StrEnum):
@@ -598,6 +607,8 @@ class LayerBuild:
         self.discarded: list[CheckResult] = []
         self.skipped: list[tuple[str, str]] = []
         self.errors: list[tuple[str, str]] = []
+        self.transaction_lost = False
+        """거래가 죽었는가. 참이면 남은 노드와 엣지를 저장하지 않는다."""
 
     # -------------------------------------------------------- 노드
     def node(
@@ -638,9 +649,16 @@ class LayerBuild:
             self._count(self.reused_nodes, node_type)
             return ref
 
-        self._writer.add_node(
-            _node_row(candidate, self.context, self.ontology_version)
-        )
+        if not self._write(
+            candidate.node_id,
+            lambda: self._writer.add_node(
+                _node_row(candidate, self.context, self.ontology_version)
+            ),
+        ):
+            # 저장하지 못한 노드를 끝점 목록에서 뺀다. 남겨 두면 이 노드를 가리키는
+            # 엣지가 없는 행을 참조한다.
+            self._refs.pop((node_type, ref_id), None)
+            return None
         self._node_ids.add(candidate.node_id)
         self._count(self.created_nodes, node_type)
         return ref
@@ -719,13 +737,39 @@ class LayerBuild:
             self._count(self.reused_edges, edge_type)
             return False
 
-        self._writer.add_edge(
-            _edge_row(
-                candidate, self.context, self.ontology_version, valid_from, valid_to
-            )
-        )
+        if not self._write(
+            candidate.edge_id,
+            lambda: self._writer.add_edge(
+                _edge_row(
+                    candidate, self.context, self.ontology_version, valid_from, valid_to
+                )
+            ),
+        ):
+            return False
         self._edge_ids.add(candidate.edge_id)
         self._count(self.created_edges, edge_type)
+        return True
+
+    # -------------------------------------------------------- 저장
+    def _write(self, target: str, save: Callable[[], None]) -> bool:
+        """항목 하나를 되돌림 지점 안에서 저장한다. 저장했으면 참이다.
+
+        실패한 항목만 되돌리고 거래를 살려 두므로 한 항목의 실패가 뒤 항목의 저장을
+        막지 않는다. 되돌림으로도 살릴 수 없는 실패를 만나면 그 뒤로는 아무것도
+        시도하지 않는다. 죽은 거래에 계속 저장하면 같은 사유의 실패 줄이 항목 수만큼
+        쌓인다.
+        """
+        if self.transaction_lost:
+            return False
+        try:
+            with item_savepoint(self._writer):
+                save()
+        except Exception as exc:
+            self.errors.append((target, f"{type(exc).__name__}: {exc}"))
+            if transaction_is_dead(exc):
+                self.transaction_lost = True
+                self.errors.append((target, TRANSACTION_LOST))
+            return False
         return True
 
     # -------------------------------------------------------- 결과

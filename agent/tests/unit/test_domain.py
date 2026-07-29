@@ -223,6 +223,21 @@ def test_eval_runner_cannot_write_analysis_outputs(table: str) -> None:
         require_write(Component.EVAL_RUNNER, table)
 
 
+def test_stats_records_the_extracted_chunks() -> None:
+    """추출 기록은 표현 저장과 같은 거래에서 남기므로 같은 구성요소가 쓴다."""
+    assert can_write(Component.AGENT_STATS, "chunk_extractions")
+
+
+@pytest.mark.parametrize(
+    "component", [c for c in Component if c is not Component.AGENT_STATS]
+)
+def test_only_stats_records_the_extracted_chunks(component: Component) -> None:
+    """추출을 돌리는 구성요소는 하나다. 다른 곳이 처리됨을 표시할 수 없다."""
+    assert not can_write(component, "chunk_extractions")
+    with pytest.raises(PermissionError):
+        require_write(component, "chunk_extractions")
+
+
 @pytest.mark.parametrize("table", EVALUATION_TABLES)
 def test_evaluation_tables_belong_to_eval_runner_only(table: str) -> None:
     others = [

@@ -1,11 +1,21 @@
 import { useState } from 'react'
 import TopBar from '../components/TopBar'
-import { JOBS, SUPPORTED_JOB, PREVIEW } from '../data/mock'
+import useJobs from '../hooks/useJobs'
+import { PREVIEW } from '../data/preview'
 
-// 01 직무 선택. 예시 직무 버튼 중 하나를 선택하고 분석을 시작한다.
-// selectedJob 상태로 어떤 버튼이 선택됐는지 화면에 반영한다.
-function SelectScreen({ go }) {
-  const [selectedJob, setSelectedJob] = useState(SUPPORTED_JOB)
+// 01 직무 선택. 직무 목록은 GET /api/jobs 에서 받아 온다(useJobs).
+// 고른 직무는 App 의 job 상태로 올라가고, 나머지 네 화면이 그 값을 prop 으로 받는다.
+function SelectScreen({ go, job, setJob }) {
+  const { jobs, status } = useJobs()
+  // 선택 표시는 화면 안에서만 쓰고, 확정(분석 시작) 때 App 으로 올린다.
+  const [selected, setSelected] = useState(job)
+  // 목록이 바뀌어 선택한 직무가 사라지면 첫 항목으로 맞춘다.
+  const current = jobs.find((j) => j.job_role_id === selected.job_role_id) || jobs[0] || selected
+
+  const start = () => {
+    setJob(current)
+    go('stats')
+  }
 
   return (
     <>
@@ -25,15 +35,15 @@ function SelectScreen({ go }) {
             <div className="example-section">
               <div className="example-label">직무 선택</div>
               <div className="example-buttons">
-                {JOBS.map((job) => (
+                {jobs.map((item) => (
                   <button
-                    key={job}
+                    key={item.job_role_id}
                     type="button"
-                    className={`example-btn${job === selectedJob ? ' is-selected' : ''}`}
-                    aria-pressed={job === selectedJob}
-                    onClick={() => setSelectedJob(job)}
+                    className={`example-btn${item.job_role_id === current.job_role_id ? ' is-selected' : ''}`}
+                    aria-pressed={item.job_role_id === current.job_role_id}
+                    onClick={() => setSelected(item)}
                   >
-                    {job}
+                    {item.display_name}
                   </button>
                 ))}
               </div>
@@ -48,17 +58,13 @@ function SelectScreen({ go }) {
               ))}
             </div>
 
-            <button
-              type="button"
-              className="submit-btn"
-              onClick={() => go('stats')}
-              disabled={selectedJob !== SUPPORTED_JOB}
-              style={{ width: '100%', opacity: selectedJob === SUPPORTED_JOB ? 1 : 0.5 }}
-            >
-              {selectedJob} 분석 시작하기 →
+            <button type="button" className="submit-btn" onClick={start} style={{ width: '100%' }}>
+              {current.display_name} 분석 시작하기 →
             </button>
             <p className="footnote">
-              최근 1년 백엔드 신입·주니어 공고 30건을 가정한 mock 리서치입니다. 현재 데이터는 백엔드 직무만 제공합니다.
+              직무 목록은 서버의 직무 카탈로그(<code>GET /api/jobs</code>)를 그대로 씁니다.
+              {status === 'fallback' && ' 지금은 서버에 연결하지 못해 기본 목록을 보여 주고 있습니다.'}
+              {' '}분석 결과가 아직 준비되지 않은 직무는 다음 화면에서 안내합니다.
             </p>
           </section>
         </div>

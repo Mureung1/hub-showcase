@@ -1,0 +1,18 @@
+# FastAPI 에이전트의 실행 명령 (Phase 23-1).
+#
+# Render·Railway·Heroku 계열 플랫폼이 이 파일의 `web:` 줄을 실행한다. 실행 폴더는
+# `agent/` 다(Root Directory 를 `agent` 로 둔다).
+#
+# 포트는 플랫폼이 `PORT` 로 준다. 값을 고정하면 헬스체크가 플랫폼이 지정한 포트로
+# 붙어 실패한다. 로컬에서는 `PORT` 가 없으므로 8000 을 쓰며, 이 값은
+# `server/.env.example` 의 `AGENT_URL` 기본값과 같다.
+#
+# `main:app` 은 `agent/main.py` 의 `app` 이고, 그 실체는
+# `src/careersignal/api/__init__.py` 다. 소스가 `src/` 아래에 있으므로 `PYTHONPATH=src`
+# 를 함께 준다(`pyproject.toml` 의 `[tool.pytest.ini_options] pythonpath` 는 테스트에만
+# 적용된다).
+#
+# 비밀값은 이 파일에 두지 않는다. `SUPABASE_DB_URL`·`OPENAI_API_KEY` 등은 플랫폼의
+# 환경변수로 넣는다. 목록은 `agent/.env.example` 에 있다.
+
+web: PYTHONPATH=src uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}

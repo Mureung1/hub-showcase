@@ -1,0 +1,82 @@
+observation_id,snapshot_id,observed_at,fetch_status,canonical_url,http_status,notes
+obs_demo_backend_01,snap_demo_backend_01,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/backend/dp_backend_01,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_backend_02,snap_demo_backend_02,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/backend/dp_backend_02,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_backend_03,snap_demo_backend_03,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/backend/dp_backend_03,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_backend_04,snap_demo_backend_04,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/backend/dp_backend_04,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_backend_05,snap_demo_backend_05,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/backend/dp_backend_05,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_backend_06,snap_demo_backend_06,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/backend/dp_backend_06,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_backend_07,snap_demo_backend_07,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/backend/dp_backend_07,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_backend_08,snap_demo_backend_08,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/backend/dp_backend_08,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_backend_09,snap_demo_backend_09,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/backend/dp_backend_09,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_frontend_01,snap_demo_frontend_01,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/frontend/dp_frontend_01,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_frontend_02,snap_demo_frontend_02,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/frontend/dp_frontend_02,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_frontend_03,snap_demo_frontend_03,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/frontend/dp_frontend_03,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_frontend_04,snap_demo_frontend_04,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/frontend/dp_frontend_04,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_frontend_05,snap_demo_frontend_05,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/frontend/dp_frontend_05,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_frontend_06,snap_demo_frontend_06,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/frontend/dp_frontend_06,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_frontend_07,snap_demo_frontend_07,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/frontend/dp_frontend_07,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_frontend_08,snap_demo_frontend_08,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/frontend/dp_frontend_08,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_frontend_09,snap_demo_frontend_09,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/frontend/dp_frontend_09,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_ai_engineer_01,snap_demo_ai_engineer_01,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_01,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_ai_engineer_02,snap_demo_ai_engineer_02,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_02,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_ai_engineer_03,snap_demo_ai_engineer_03,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_03,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_ai_engineer_04,snap_demo_ai_engineer_04,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_04,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_ai_engineer_05,snap_demo_ai_engineer_05,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_05,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_ai_engineer_06,snap_demo_ai_engineer_06,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_06,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_ai_engineer_07,snap_demo_ai_engineer_07,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_07,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_ai_engineer_08,snap_demo_ai_engineer_08,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_08,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_ai_engineer_09,snap_demo_ai_engineer_09,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_09,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_data_engineer_01,snap_demo_data_engineer_01,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/data_engineer/dp_data_engineer_01,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_data_engineer_02,snap_demo_data_engineer_02,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/data_engineer/dp_data_engineer_02,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_data_engineer_03,snap_demo_data_engineer_03,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/data_engineer/dp_data_engineer_03,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_data_engineer_04,snap_demo_data_engineer_04,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/data_engineer/dp_data_engineer_04,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_data_engineer_05,snap_demo_data_engineer_05,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/data_engineer/dp_data_engineer_05,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_data_engineer_06,snap_demo_data_engineer_06,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/data_engineer/dp_data_engineer_06,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_data_engineer_07,snap_demo_data_engineer_07,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/data_engineer/dp_data_engineer_07,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_data_engineer_08,snap_demo_data_engineer_08,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/data_engineer/dp_data_engineer_08,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_data_engineer_09,snap_demo_data_engineer_09,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/data_engineer/dp_data_engineer_09,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_fullstack_01,snap_demo_fullstack_01,2026-02-10T10:00:00+09:00,ok,https://seed.careersignal.invalid/fullstack/co_wantedlab/01,200,생성 데이터
+obs_demo_fullstack_02,snap_demo_fullstack_02,2026-01-20T10:00:00+09:00,ok,https://seed.careersignal.invalid/fullstack/co_musinsa/02,200,생성 데이터
+obs_demo_fullstack_03,snap_demo_fullstack_03,2026-04-14T10:00:00+09:00,ok,https://seed.careersignal.invalid/fullstack/co_channelcorp/03,200,생성 데이터
+obs_demo_fullstack_04,snap_demo_fullstack_04,2026-03-11T10:00:00+09:00,ok,https://seed.careersignal.invalid/fullstack/co_kakaobank/04,200,생성 데이터
+obs_demo_fullstack_05,snap_demo_fullstack_05,2026-05-08T10:00:00+09:00,ok,https://seed.careersignal.invalid/fullstack/co_samsungsds/05,200,생성 데이터
+obs_demo_fullstack_06,snap_demo_fullstack_06,2024-10-02T10:00:00+09:00,ok,https://seed.careersignal.invalid/fullstack/co_smilegate/06,200,생성 데이터
+obs_demo_fullstack_07,snap_demo_fullstack_07,2025-01-15T10:00:00+09:00,ok,https://seed.careersignal.invalid/fullstack/co_daangn/07,200,생성 데이터
+obs_demo_fullstack_08,snap_demo_fullstack_08,2025-03-04T10:00:00+09:00,ok,https://seed.careersignal.invalid/fullstack/co_navercloud/08,200,생성 데이터
+obs_demo_fullstack_09,snap_demo_fullstack_09,2025-05-20T10:00:00+09:00,ok,https://seed.careersignal.invalid/fullstack/co_kakaomobility/09,200,생성 데이터
+obs_demo_devops_01,snap_demo_devops_01,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/devops/dp_devops_01,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_devops_02,snap_demo_devops_02,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/devops/dp_devops_02,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_devops_03,snap_demo_devops_03,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/devops/dp_devops_03,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_devops_04,snap_demo_devops_04,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/devops/dp_devops_04,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_devops_05,snap_demo_devops_05,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/devops/dp_devops_05,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_devops_06,snap_demo_devops_06,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/devops/dp_devops_06,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_devops_07,snap_demo_devops_07,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/devops/dp_devops_07,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_devops_08,snap_demo_devops_08,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/devops/dp_devops_08,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_devops_09,snap_demo_devops_09,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/devops/dp_devops_09,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_mobile_01,snap_demo_mobile_01,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/mobile/dp_mobile_01,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_mobile_02,snap_demo_mobile_02,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/mobile/dp_mobile_02,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_mobile_03,snap_demo_mobile_03,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/mobile/dp_mobile_03,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_mobile_04,snap_demo_mobile_04,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/mobile/dp_mobile_04,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_mobile_05,snap_demo_mobile_05,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/mobile/dp_mobile_05,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_mobile_06,snap_demo_mobile_06,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/mobile/dp_mobile_06,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_mobile_07,snap_demo_mobile_07,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/mobile/dp_mobile_07,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_mobile_08,snap_demo_mobile_08,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/mobile/dp_mobile_08,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_mobile_09,snap_demo_mobile_09,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/mobile/dp_mobile_09,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_security_01,snap_demo_security_01,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/security/dp_security_01,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_security_02,snap_demo_security_02,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/security/dp_security_02,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_security_03,snap_demo_security_03,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/security/dp_security_03,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_security_04,snap_demo_security_04,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/security/dp_security_04,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_security_05,snap_demo_security_05,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/security/dp_security_05,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_security_06,snap_demo_security_06,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/security/dp_security_06,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_security_07,snap_demo_security_07,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/security/dp_security_07,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_security_08,snap_demo_security_08,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/security/dp_security_08,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_security_09,snap_demo_security_09,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/security/dp_security_09,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_game_client_01,snap_demo_game_client_01,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/game_client/dp_game_client_01,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_game_client_02,snap_demo_game_client_02,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/game_client/dp_game_client_02,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_game_client_03,snap_demo_game_client_03,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/game_client/dp_game_client_03,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_game_client_04,snap_demo_game_client_04,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/game_client/dp_game_client_04,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_game_client_05,snap_demo_game_client_05,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/game_client/dp_game_client_05,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_game_client_06,snap_demo_game_client_06,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/game_client/dp_game_client_06,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_game_client_07,snap_demo_game_client_07,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/game_client/dp_game_client_07,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_game_client_08,snap_demo_game_client_08,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/game_client/dp_game_client_08,200,생성 데이터. 네트워크 호출 없이 만들었다.
+obs_demo_game_client_09,snap_demo_game_client_09,2026-07-20T09:00:00+09:00,ok,https://careersignal.example/demo/game_client/dp_game_client_09,200,생성 데이터. 네트워크 호출 없이 만들었다.

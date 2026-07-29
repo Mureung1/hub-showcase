@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Workflow"
+  short_description: "Plan, approve, implement, and verify UI changes"
+  default_prompt: "Use $design-workflow to plan and validate a CareerSignal interface change."

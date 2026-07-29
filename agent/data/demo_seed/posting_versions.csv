@@ -1,0 +1,82 @@
+posting_version_id,posting_id,snapshot_id,title,career_label_raw,edu_label_raw,entry_label_raw,entry_label,posted_at,closed_at,dataset_version
+pv_demo_backend_01,dp_backend_01,snap_demo_backend_01,백엔드 개발자 (결제·정산 서버) 신입·주니어,신입~3년,학력 무관,신입 지원 가능,entry_junior,2026-03-02T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_backend_02,dp_backend_02,snap_demo_backend_02,서버 개발자 (신입·주니어),경력 무관,학사 이상,신입/주니어,entry_junior,2026-01-12T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_backend_03,dp_backend_03,snap_demo_backend_03,백엔드 엔지니어 (주니어),1~4년,학력 무관,주니어 환영,entry_junior,2026-02-17T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_backend_04,dp_backend_04,snap_demo_backend_04,백엔드 개발자 (Backend Developer),3년 이상,학력 무관,경력 3년 이상,experienced,2026-04-21T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_backend_05,dp_backend_05,snap_demo_backend_05,게임 플랫폼 서버 개발자,3년 이상,학사 이상,경력,experienced,2026-05-11T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_backend_06,dp_backend_06,snap_demo_backend_06,클라우드 서비스 백엔드 개발 (신입),신입,학사 이상,신입,entry_junior,2024-10-14T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_backend_07,dp_backend_07,snap_demo_backend_07,결제 서비스 백엔드 개발자 (신입·주니어),0~3년,학력 무관,신입·주니어,entry_junior,2025-03-03T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_backend_08,dp_backend_08,snap_demo_backend_08,배달 서비스 백엔드 개발자,3년 이상,학력 무관,경력,experienced,2024-11-25T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_backend_09,dp_backend_09,snap_demo_backend_09,백엔드 개발자 (커머스),2년 이상,학력 무관,경력,experienced,2025-05-19T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_frontend_01,dp_frontend_01,snap_demo_frontend_01,프론트엔드 개발자 (신입·주니어),신입~3년,학력 무관,신입 지원 가능,entry_junior,2026-03-02T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_frontend_02,dp_frontend_02,snap_demo_frontend_02,프론트엔드 개발자 (금융 서비스 웹),신입~2년,학사 이상,신입/주니어,entry_junior,2026-01-12T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_frontend_03,dp_frontend_03,snap_demo_frontend_03,프론트엔드 개발자 (웹 서비스),경력 무관,학력 무관,신입 환영,entry_junior,2026-02-16T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_frontend_04,dp_frontend_04,snap_demo_frontend_04,프론트엔드 엔지니어 (상담 데스크 웹),경력 3~7년,학력 무관,경력 3년 이상,experienced,2026-04-14T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_frontend_05,dp_frontend_05,snap_demo_frontend_05,웹 프론트엔드 개발자 (공공·금융 SI),경력 2~5년,학사 이상,경력 2년 이상,experienced,2026-05-26T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_frontend_06,dp_frontend_06,snap_demo_frontend_06,프론트엔드 개발자 (서비스 웹),신입~3년,학력 무관,신입/경력,entry_junior,2025-03-10T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_frontend_07,dp_frontend_07,snap_demo_frontend_07,프론트엔드 개발자 (결제 서비스),신입~3년,학사 이상,신입 지원 가능,entry_junior,2024-11-05T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_frontend_08,dp_frontend_08,snap_demo_frontend_08,웹 프론트엔드 개발자 (게임 서비스 플랫폼),경력 3~8년,학력 무관,경력 3년 이상,experienced,2025-04-18T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_frontend_09,dp_frontend_09,snap_demo_frontend_09,프론트엔드 엔지니어 (SDK 대시보드),경력 2~6년,학력 무관,경력 2년 이상,experienced,2025-02-20T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_ai_engineer_01,dp_ai_engineer_01,snap_demo_ai_engineer_01,AI 엔지니어 (검색 품질) 신입·주니어,신입~3년,학사 이상,신입 지원 가능,entry_junior,2026-03-10T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_ai_engineer_02,dp_ai_engineer_02,snap_demo_ai_engineer_02,AI 엔지니어 (문서 이해 제품) 신입·주니어,경력 무관,학력 무관,신입 환영,entry_junior,2026-01-19T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_ai_engineer_03,dp_ai_engineer_03,snap_demo_ai_engineer_03,AI API 서비스 엔지니어 신입·주니어,신입~2년,학사 이상,신입 가능,entry_junior,2026-02-24T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_ai_engineer_04,dp_ai_engineer_04,snap_demo_ai_engineer_04,AI 엔지니어 (이상거래 탐지),경력 3년 이상,학사 이상,경력,experienced,2026-05-12T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_ai_engineer_05,dp_ai_engineer_05,snap_demo_ai_engineer_05,게임 AI 엔지니어,경력 3년 이상,학사 이상,경력,experienced,2026-06-09T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_ai_engineer_06,dp_ai_engineer_06,snap_demo_ai_engineer_06,AI 엔지니어 (추천) 신입·주니어,신입~3년,학사 이상,신입 지원 가능,entry_junior,2025-02-18T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_ai_engineer_07,dp_ai_engineer_07,snap_demo_ai_engineer_07,AI 엔지니어 (신입),신입,학력 무관,신입,entry_junior,2025-04-08T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_ai_engineer_08,dp_ai_engineer_08,snap_demo_ai_engineer_08,AI 엔지니어 (고객사 프로젝트),경력 3년 이상,학사 이상,경력,experienced,2024-11-12T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_ai_engineer_09,dp_ai_engineer_09,snap_demo_ai_engineer_09,AI 엔지니어 (메시징 제품),경력 3년 이상,학사 이상,경력,experienced,2025-01-20T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_data_engineer_01,dp_data_engineer_01,snap_demo_data_engineer_01,데이터 엔지니어 (Data Platform) 신입·주니어,신입~3년,학사 이상,신입 지원 가능,entry_junior,2026-03-10T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_data_engineer_02,dp_data_engineer_02,snap_demo_data_engineer_02,데이터 엔지니어 (결제 데이터 플랫폼),경력 무관,학력 무관,신입/주니어,entry_junior,2026-02-09T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_data_engineer_03,dp_data_engineer_03,snap_demo_data_engineer_03,데이터 플랫폼 엔지니어 (신입),신입,학사 이상,신입 채용,entry_junior,2026-01-20T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_data_engineer_04,dp_data_engineer_04,snap_demo_data_engineer_04,데이터 엔지니어 (학습 데이터 플랫폼),2년 이상,학력 무관,경력 2년 이상,experienced,2026-05-18T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_data_engineer_05,dp_data_engineer_05,snap_demo_data_engineer_05,데이터 엔지니어 (데이터 플랫폼 구축),3년 이상,학사 이상,경력 3년 이상,experienced,2026-04-06T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_data_engineer_06,dp_data_engineer_06,snap_demo_data_engineer_06,데이터 엔지니어 (신입·주니어),신입~2년,학사 이상,신입 지원 가능,entry_junior,2025-03-12T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_data_engineer_07,dp_data_engineer_07,snap_demo_data_engineer_07,데이터 엔지니어 (결제 데이터),경력 무관,학력 무관,신입/주니어,entry_junior,2024-11-20T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_data_engineer_08,dp_data_engineer_08,snap_demo_data_engineer_08,데이터 엔지니어 (게임 로그 플랫폼),3년 이상,학력 무관,경력 3년 이상,experienced,2025-05-08T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_data_engineer_09,dp_data_engineer_09,snap_demo_data_engineer_09,데이터 엔지니어 (Analytics Platform),2년 이상,학력 무관,경력 2년 이상,experienced,2024-09-25T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_fullstack_01,dp_fullstack_01,snap_demo_fullstack_01,풀스택 개발자 (신입·주니어),신입·주니어,학력 무관,신입 지원 가능,entry_junior,2026-02-10T09:00:00+09:00,2026-03-31T23:59:59+09:00,ds_demo_v1
+pv_demo_fullstack_02,dp_fullstack_02,snap_demo_fullstack_02,커머스 플랫폼 풀스택 개발자,경력 3년 이상,대졸 이상,경력직 채용,experienced,2026-01-20T09:00:00+09:00,\N,ds_demo_v1
+pv_demo_fullstack_03,dp_fullstack_03,snap_demo_fullstack_03,프로덕트 풀스택 개발자 (주니어),신입·주니어,학력 무관,신입·주니어 환영,entry_junior,2026-04-14T09:00:00+09:00,2026-05-31T23:59:59+09:00,ds_demo_v1
+pv_demo_fullstack_04,dp_fullstack_04,snap_demo_fullstack_04,뱅킹 서비스 풀스택 개발자 (신입),신입,대졸 이상,신입 지원 가능,entry_junior,2026-03-11T09:00:00+09:00,\N,ds_demo_v1
+pv_demo_fullstack_05,dp_fullstack_05,snap_demo_fullstack_05,사내 시스템 풀스택 개발자,경력 3년 이상,대졸 이상,경력직 채용,experienced,2026-05-08T09:00:00+09:00,\N,ds_demo_v1
+pv_demo_fullstack_06,dp_fullstack_06,snap_demo_fullstack_06,게임 운영 도구 풀스택 개발자,경력 2년 이상,학력 무관,경력직 채용,experienced,2024-10-02T09:00:00+09:00,2024-12-20T23:59:59+09:00,ds_demo_v1
+pv_demo_fullstack_07,dp_fullstack_07,snap_demo_fullstack_07,광고 도구 풀스택 개발자 (주니어),신입·주니어,학력 무관,신입 지원 가능,entry_junior,2025-01-15T09:00:00+09:00,2025-03-01T23:59:59+09:00,ds_demo_v1
+pv_demo_fullstack_08,dp_fullstack_08,snap_demo_fullstack_08,클라우드 콘솔 풀스택 개발자,신입·주니어,대졸 이상,신입 지원 가능,entry_junior,2025-03-04T09:00:00+09:00,2025-04-30T23:59:59+09:00,ds_demo_v1
+pv_demo_fullstack_09,dp_fullstack_09,snap_demo_fullstack_09,모빌리티 내부 도구 풀스택 개발자,경력 3년 이상,대졸 이상,경력직 채용,experienced,2025-05-20T09:00:00+09:00,2025-07-10T23:59:59+09:00,ds_demo_v1
+pv_demo_devops_01,dp_devops_01,snap_demo_devops_01,클라우드 플랫폼 DevOps 엔지니어 (신입·주니어),신입~3년,학력 무관,신입 지원 가능,entry_junior,2026-03-10T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_devops_02,dp_devops_02,snap_demo_devops_02,인프라 엔지니어 (Kubernetes·SRE),경력 3~8년,학사 이상,경력 3년 이상,experienced,2026-01-15T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_devops_03,dp_devops_03,snap_demo_devops_03,DevOps 엔지니어 (신입·주니어),경력 무관,학사 이상,신입/주니어,entry_junior,2026-02-11T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_devops_04,dp_devops_04,snap_demo_devops_04,게임 서비스 인프라 엔지니어,경력 5~10년,학력 무관,경력 5년 이상,experienced,2026-04-20T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_devops_05,dp_devops_05,snap_demo_devops_05,DevOps 엔지니어 (신입·주니어),신입~2년,학력 무관,신입 환영,entry_junior,2026-06-02T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_devops_06,dp_devops_06,snap_demo_devops_06,클라우드 운영 엔지니어 신입 채용,신입,대졸 이상,신입 채용,entry_junior,2025-04-10T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_devops_07,dp_devops_07,snap_demo_devops_07,플랫폼 엔지니어 (인프라·배포),경력 4~9년,학력 무관,경력 4년 이상,experienced,2025-02-18T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_devops_08,dp_devops_08,snap_demo_devops_08,인프라 엔지니어 (신입·주니어),신입~2년,학사 이상,신입·주니어,entry_junior,2024-12-02T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_devops_09,dp_devops_09,snap_demo_devops_09,DevOps 엔지니어,경력 3~7년,학력 무관,경력 3년 이상,experienced,2024-10-15T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_mobile_01,dp_mobile_01,snap_demo_mobile_01,안드로이드 앱 개발자 신입·주니어,신입~3년,학력 무관,신입 지원 가능,entry_junior,2026-03-11T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_mobile_02,dp_mobile_02,snap_demo_mobile_02,iOS 개발자 (금융 서비스) 신입·주니어,신입~3년,학력 무관,신입 환영,entry_junior,2026-01-20T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_mobile_03,dp_mobile_03,snap_demo_mobile_03,안드로이드 개발자 신입·주니어,경력 무관,학력 무관,신입 가능,entry_junior,2026-02-10T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_mobile_04,dp_mobile_04,snap_demo_mobile_04,모바일 클라이언트 개발자 (경력),3년 이상,학사 이상,경력 3년 이상,experienced,2026-04-15T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_mobile_05,dp_mobile_05,snap_demo_mobile_05,모바일 SDK 개발자 (iOS),2년 이상,학력 무관,경력,experienced,2026-05-08T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_mobile_06,dp_mobile_06,snap_demo_mobile_06,안드로이드 개발자 신입·주니어,신입~2년,학사 이상,신입 지원 가능,entry_junior,2025-03-17T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_mobile_07,dp_mobile_07,snap_demo_mobile_07,iOS 개발자 신입·주니어,경력 무관,학사 이상,신입/주니어,entry_junior,2024-11-12T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_mobile_08,dp_mobile_08,snap_demo_mobile_08,모바일 앱 개발자 (경력),3년 이상,학사 이상,경력,experienced,2025-04-02T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_mobile_09,dp_mobile_09,snap_demo_mobile_09,안드로이드 개발자 (경력),2년 이상,학력 무관,경력,experienced,2024-10-15T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_security_01,dp_security_01,snap_demo_security_01,정보보안 엔지니어(취약점 진단) 신입·주니어,신입~3년,"대졸 이상(2,3년제 포함)",신입·주니어,entry_junior,2026-02-03T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_security_02,dp_security_02,snap_demo_security_02,정보보안 담당자(보안관제),경력 4년 이상,학력무관,경력,experienced,2026-04-14T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_security_03,dp_security_03,snap_demo_security_03,서비스 보안 엔지니어 신입·주니어,신입 또는 3년 이하,"대졸 이상(2,3년제 포함)",신입·주니어,entry_junior,2026-01-13T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_security_04,dp_security_04,snap_demo_security_04,정보보안 컨설팅·인프라 보안 담당,신입,"대졸 이상(2,3년제 포함)",신입,entry_junior,2026-03-05T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_security_05,dp_security_05,snap_demo_security_05,게임 서비스 보안 담당,경력 5년 이상,학력무관,경력,experienced,2026-05-19T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_security_06,dp_security_06,snap_demo_security_06,정보보안 담당자(신입·주니어),신입~2년,학력무관,신입·주니어,entry_junior,2024-10-08T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_security_07,dp_security_07,snap_demo_security_07,보안 엔지니어(Security Operations),경력 4년 이상,"대졸 이상(2,3년제 포함)",경력,experienced,2024-11-26T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_security_08,dp_security_08,snap_demo_security_08,정보보안 신입·주니어,신입,"대졸 이상(2,3년제 포함)",신입,entry_junior,2025-02-18T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_security_09,dp_security_09,snap_demo_security_09,보안 인프라 운영 담당,경력 3년 이상,학력무관,경력,experienced,2025-04-22T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_game_client_01,dp_game_client_01,snap_demo_game_client_01,MMORPG 클라이언트 개발 (신입·주니어),신입~3년,학력 무관,신입 지원 가능,entry_junior,2026-03-04T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_game_client_02,dp_game_client_02,snap_demo_game_client_02,슈팅 게임 클라이언트 개발 신입 채용,신입,대졸 이상,신입,entry_junior,2026-01-12T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_game_client_03,dp_game_client_03,snap_demo_game_client_03,캐주얼 게임 클라이언트 개발자 (신입),신입·주니어,학력 무관,신입 가능,entry_junior,2026-02-24T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_game_client_04,dp_game_client_04,snap_demo_game_client_04,XR 시뮬레이션 클라이언트 개발 (경력),경력 3년 이상,대졸 이상,경력,experienced,2026-04-08T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_game_client_05,dp_game_client_05,snap_demo_game_client_05,리워드 앱 미니게임 클라이언트 개발 (경력),경력 2년 이상,학력 무관,경력,experienced,2026-06-02T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_game_client_06,dp_game_client_06,snap_demo_game_client_06,온라인 게임 클라이언트 개발 신입 채용,신입,대졸 이상,신입,entry_junior,2025-03-05T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_game_client_07,dp_game_client_07,snap_demo_game_client_07,모바일 게임 클라이언트 개발 신입,신입·주니어,학력 무관,신입 지원 가능,entry_junior,2024-11-14T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_game_client_08,dp_game_client_08,snap_demo_game_client_08,클라우드 게임 스트리밍 클라이언트 개발 (경력),경력 3년 이상,대졸 이상,경력,experienced,2025-05-20T10:00:00+09:00,\N,ds_demo_v1
+pv_demo_game_client_09,dp_game_client_09,snap_demo_game_client_09,게이미피케이션 콘텐츠 클라이언트 개발 (경력),경력 3년 이상,대졸 이상,경력,experienced,2024-10-02T10:00:00+09:00,\N,ds_demo_v1

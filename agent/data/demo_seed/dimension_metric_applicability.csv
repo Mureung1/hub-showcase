@@ -1,0 +1,407 @@
+taxonomy_version_id,dimension_id,metric_family,applicable,reason
+tx_demo_backend,dim_backend_java-spring,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_java-spring,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_java-spring,depth_distribution,true,\N
+tx_demo_backend,dim_backend_java-spring,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_java-spring,cooccurrence,true,\N
+tx_demo_backend,dim_backend_java-spring,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_backend,dim_backend_java-spring,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_rdb-modeling,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_rdb-modeling,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_rdb-modeling,depth_distribution,true,\N
+tx_demo_backend,dim_backend_rdb-modeling,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_rdb-modeling,cooccurrence,true,\N
+tx_demo_backend,dim_backend_rdb-modeling,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_backend,dim_backend_rdb-modeling,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_caching-performance,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_caching-performance,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_caching-performance,depth_distribution,true,\N
+tx_demo_backend,dim_backend_caching-performance,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_caching-performance,cooccurrence,true,\N
+tx_demo_backend,dim_backend_caching-performance,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_backend,dim_backend_caching-performance,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_message-queue,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_message-queue,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_message-queue,depth_distribution,true,\N
+tx_demo_backend,dim_backend_message-queue,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_message-queue,cooccurrence,true,\N
+tx_demo_backend,dim_backend_message-queue,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_backend,dim_backend_message-queue,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_rest-api-design,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_rest-api-design,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_rest-api-design,depth_distribution,true,\N
+tx_demo_backend,dim_backend_rest-api-design,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_rest-api-design,cooccurrence,true,\N
+tx_demo_backend,dim_backend_rest-api-design,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_backend,dim_backend_rest-api-design,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_transaction-integrity,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_transaction-integrity,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_transaction-integrity,depth_distribution,true,\N
+tx_demo_backend,dim_backend_transaction-integrity,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_transaction-integrity,cooccurrence,true,\N
+tx_demo_backend,dim_backend_transaction-integrity,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_backend,dim_backend_transaction-integrity,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_test-automation,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_test-automation,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_test-automation,depth_distribution,true,\N
+tx_demo_backend,dim_backend_test-automation,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_test-automation,cooccurrence,true,\N
+tx_demo_backend,dim_backend_test-automation,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_backend,dim_backend_test-automation,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_monitoring-incident,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_monitoring-incident,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_monitoring-incident,depth_distribution,true,\N
+tx_demo_backend,dim_backend_monitoring-incident,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_monitoring-incident,cooccurrence,true,\N
+tx_demo_backend,dim_backend_monitoring-incident,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_backend,dim_backend_monitoring-incident,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_container-deploy,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_container-deploy,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_container-deploy,depth_distribution,true,\N
+tx_demo_backend,dim_backend_container-deploy,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_container-deploy,cooccurrence,true,\N
+tx_demo_backend,dim_backend_container-deploy,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_backend,dim_backend_container-deploy,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_cloud-infra,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_cloud-infra,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_cloud-infra,depth_distribution,true,\N
+tx_demo_backend,dim_backend_cloud-infra,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_cloud-infra,cooccurrence,true,\N
+tx_demo_backend,dim_backend_cloud-infra,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_backend,dim_backend_cloud-infra,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_cicd-automation,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_cicd-automation,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_cicd-automation,depth_distribution,true,\N
+tx_demo_backend,dim_backend_cicd-automation,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_cicd-automation,cooccurrence,true,\N
+tx_demo_backend,dim_backend_cicd-automation,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_backend,dim_backend_cicd-automation,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_payment-settlement,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_payment-settlement,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_payment-settlement,depth_distribution,true,\N
+tx_demo_backend,dim_backend_payment-settlement,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_payment-settlement,cooccurrence,true,\N
+tx_demo_backend,dim_backend_payment-settlement,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_backend,dim_backend_payment-settlement,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_service-domain-modeling,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_service-domain-modeling,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_service-domain-modeling,depth_distribution,true,\N
+tx_demo_backend,dim_backend_service-domain-modeling,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_service-domain-modeling,cooccurrence,true,\N
+tx_demo_backend,dim_backend_service-domain-modeling,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_backend,dim_backend_service-domain-modeling,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_code-review-collab,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_code-review-collab,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_code-review-collab,depth_distribution,true,\N
+tx_demo_backend,dim_backend_code-review-collab,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_code-review-collab,cooccurrence,true,\N
+tx_demo_backend,dim_backend_code-review-collab,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_backend,dim_backend_code-review-collab,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_backend,dim_backend_tech-documentation,posting_prevalence,true,\N
+tx_demo_backend,dim_backend_tech-documentation,requiredness_ratio,true,\N
+tx_demo_backend,dim_backend_tech-documentation,depth_distribution,true,\N
+tx_demo_backend,dim_backend_tech-documentation,cluster_contrast,true,\N
+tx_demo_backend,dim_backend_tech-documentation,cooccurrence,true,\N
+tx_demo_backend,dim_backend_tech-documentation,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_backend,dim_backend_tech-documentation,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_frontend,dim_frontend_react-component,posting_prevalence,true,\N
+tx_demo_frontend,dim_frontend_react-component,requiredness_ratio,true,\N
+tx_demo_frontend,dim_frontend_react-component,depth_distribution,true,\N
+tx_demo_frontend,dim_frontend_react-component,cluster_contrast,true,\N
+tx_demo_frontend,dim_frontend_react-component,cooccurrence,true,\N
+tx_demo_frontend,dim_frontend_react-component,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_frontend,dim_frontend_react-component,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_frontend,dim_frontend_typescript-typing,posting_prevalence,true,\N
+tx_demo_frontend,dim_frontend_typescript-typing,requiredness_ratio,true,\N
+tx_demo_frontend,dim_frontend_typescript-typing,depth_distribution,true,\N
+tx_demo_frontend,dim_frontend_typescript-typing,cluster_contrast,true,\N
+tx_demo_frontend,dim_frontend_typescript-typing,cooccurrence,true,\N
+tx_demo_frontend,dim_frontend_typescript-typing,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_frontend,dim_frontend_typescript-typing,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_frontend,dim_frontend_state-management,posting_prevalence,true,\N
+tx_demo_frontend,dim_frontend_state-management,requiredness_ratio,true,\N
+tx_demo_frontend,dim_frontend_state-management,depth_distribution,true,\N
+tx_demo_frontend,dim_frontend_state-management,cluster_contrast,true,\N
+tx_demo_frontend,dim_frontend_state-management,cooccurrence,true,\N
+tx_demo_frontend,dim_frontend_state-management,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_frontend,dim_frontend_state-management,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_frontend,dim_frontend_css-architecture,posting_prevalence,true,\N
+tx_demo_frontend,dim_frontend_css-architecture,requiredness_ratio,true,\N
+tx_demo_frontend,dim_frontend_css-architecture,depth_distribution,true,\N
+tx_demo_frontend,dim_frontend_css-architecture,cluster_contrast,true,\N
+tx_demo_frontend,dim_frontend_css-architecture,cooccurrence,true,\N
+tx_demo_frontend,dim_frontend_css-architecture,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_frontend,dim_frontend_css-architecture,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_frontend,dim_frontend_web-performance,posting_prevalence,true,\N
+tx_demo_frontend,dim_frontend_web-performance,requiredness_ratio,true,\N
+tx_demo_frontend,dim_frontend_web-performance,depth_distribution,true,\N
+tx_demo_frontend,dim_frontend_web-performance,cluster_contrast,true,\N
+tx_demo_frontend,dim_frontend_web-performance,cooccurrence,true,\N
+tx_demo_frontend,dim_frontend_web-performance,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_frontend,dim_frontend_web-performance,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_frontend,dim_frontend_web-accessibility,posting_prevalence,true,\N
+tx_demo_frontend,dim_frontend_web-accessibility,requiredness_ratio,true,\N
+tx_demo_frontend,dim_frontend_web-accessibility,depth_distribution,true,\N
+tx_demo_frontend,dim_frontend_web-accessibility,cluster_contrast,true,\N
+tx_demo_frontend,dim_frontend_web-accessibility,cooccurrence,true,\N
+tx_demo_frontend,dim_frontend_web-accessibility,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_frontend,dim_frontend_web-accessibility,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_frontend,dim_frontend_frontend-testing,posting_prevalence,true,\N
+tx_demo_frontend,dim_frontend_frontend-testing,requiredness_ratio,true,\N
+tx_demo_frontend,dim_frontend_frontend-testing,depth_distribution,true,\N
+tx_demo_frontend,dim_frontend_frontend-testing,cluster_contrast,true,\N
+tx_demo_frontend,dim_frontend_frontend-testing,cooccurrence,true,\N
+tx_demo_frontend,dim_frontend_frontend-testing,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_frontend,dim_frontend_frontend-testing,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_frontend,dim_frontend_bundling-build,posting_prevalence,true,\N
+tx_demo_frontend,dim_frontend_bundling-build,requiredness_ratio,true,\N
+tx_demo_frontend,dim_frontend_bundling-build,depth_distribution,true,\N
+tx_demo_frontend,dim_frontend_bundling-build,cluster_contrast,true,\N
+tx_demo_frontend,dim_frontend_bundling-build,cooccurrence,true,\N
+tx_demo_frontend,dim_frontend_bundling-build,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_frontend,dim_frontend_bundling-build,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_ai_engineer,dim_ai_engineer_python,posting_prevalence,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_python,requiredness_ratio,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_python,depth_distribution,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_python,cluster_contrast,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_python,cooccurrence,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_python,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_ai_engineer,dim_ai_engineer_python,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_ai_engineer,dim_ai_engineer_dl-framework,posting_prevalence,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_dl-framework,requiredness_ratio,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_dl-framework,depth_distribution,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_dl-framework,cluster_contrast,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_dl-framework,cooccurrence,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_dl-framework,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_ai_engineer,dim_ai_engineer_dl-framework,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_ai_engineer,dim_ai_engineer_llm-app,posting_prevalence,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_llm-app,requiredness_ratio,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_llm-app,depth_distribution,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_llm-app,cluster_contrast,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_llm-app,cooccurrence,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_llm-app,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_ai_engineer,dim_ai_engineer_llm-app,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_ai_engineer,dim_ai_engineer_data-prep,posting_prevalence,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_data-prep,requiredness_ratio,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_data-prep,depth_distribution,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_data-prep,cluster_contrast,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_data-prep,cooccurrence,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_data-prep,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_ai_engineer,dim_ai_engineer_data-prep,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_ai_engineer,dim_ai_engineer_model-serving,posting_prevalence,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_model-serving,requiredness_ratio,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_model-serving,depth_distribution,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_model-serving,cluster_contrast,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_model-serving,cooccurrence,true,\N
+tx_demo_ai_engineer,dim_ai_engineer_model-serving,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_ai_engineer,dim_ai_engineer_model-serving,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_data_engineer,dim_data_engineer_sql-analytics,posting_prevalence,true,\N
+tx_demo_data_engineer,dim_data_engineer_sql-analytics,requiredness_ratio,true,\N
+tx_demo_data_engineer,dim_data_engineer_sql-analytics,depth_distribution,true,\N
+tx_demo_data_engineer,dim_data_engineer_sql-analytics,cluster_contrast,true,\N
+tx_demo_data_engineer,dim_data_engineer_sql-analytics,cooccurrence,true,\N
+tx_demo_data_engineer,dim_data_engineer_sql-analytics,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_data_engineer,dim_data_engineer_sql-analytics,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_data_engineer,dim_data_engineer_spark-batch,posting_prevalence,true,\N
+tx_demo_data_engineer,dim_data_engineer_spark-batch,requiredness_ratio,true,\N
+tx_demo_data_engineer,dim_data_engineer_spark-batch,depth_distribution,true,\N
+tx_demo_data_engineer,dim_data_engineer_spark-batch,cluster_contrast,true,\N
+tx_demo_data_engineer,dim_data_engineer_spark-batch,cooccurrence,true,\N
+tx_demo_data_engineer,dim_data_engineer_spark-batch,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_data_engineer,dim_data_engineer_spark-batch,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,posting_prevalence,true,\N
+tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,requiredness_ratio,true,\N
+tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,depth_distribution,true,\N
+tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,cluster_contrast,true,\N
+tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,cooccurrence,true,\N
+tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_data_engineer,dim_data_engineer_data-warehouse,posting_prevalence,true,\N
+tx_demo_data_engineer,dim_data_engineer_data-warehouse,requiredness_ratio,true,\N
+tx_demo_data_engineer,dim_data_engineer_data-warehouse,depth_distribution,true,\N
+tx_demo_data_engineer,dim_data_engineer_data-warehouse,cluster_contrast,true,\N
+tx_demo_data_engineer,dim_data_engineer_data-warehouse,cooccurrence,true,\N
+tx_demo_data_engineer,dim_data_engineer_data-warehouse,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_data_engineer,dim_data_engineer_data-warehouse,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_data_engineer,dim_data_engineer_streaming-ingest,posting_prevalence,true,\N
+tx_demo_data_engineer,dim_data_engineer_streaming-ingest,requiredness_ratio,true,\N
+tx_demo_data_engineer,dim_data_engineer_streaming-ingest,depth_distribution,true,\N
+tx_demo_data_engineer,dim_data_engineer_streaming-ingest,cluster_contrast,true,\N
+tx_demo_data_engineer,dim_data_engineer_streaming-ingest,cooccurrence,true,\N
+tx_demo_data_engineer,dim_data_engineer_streaming-ingest,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_data_engineer,dim_data_engineer_streaming-ingest,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_fullstack,dim_fullstack_node-typescript,posting_prevalence,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_node-typescript,requiredness_ratio,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_node-typescript,depth_distribution,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_node-typescript,cluster_contrast,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_node-typescript,cooccurrence,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_node-typescript,scope_expansion,false,공고 메타에서 세는 지표라 차원에 붙지 않는다
+tx_demo_fullstack,dim_fullstack_node-typescript,entry_label_advanced_signal_rate,false,공고 메타에서 세는 지표라 차원에 붙지 않는다
+tx_demo_fullstack,dim_fullstack_react-ui,posting_prevalence,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_react-ui,requiredness_ratio,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_react-ui,depth_distribution,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_react-ui,cluster_contrast,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_react-ui,cooccurrence,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_react-ui,scope_expansion,false,공고 메타에서 세는 지표라 차원에 붙지 않는다
+tx_demo_fullstack,dim_fullstack_react-ui,entry_label_advanced_signal_rate,false,공고 메타에서 세는 지표라 차원에 붙지 않는다
+tx_demo_fullstack,dim_fullstack_rest-api,posting_prevalence,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_rest-api,requiredness_ratio,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_rest-api,depth_distribution,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_rest-api,cluster_contrast,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_rest-api,cooccurrence,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_rest-api,scope_expansion,false,공고 메타에서 세는 지표라 차원에 붙지 않는다
+tx_demo_fullstack,dim_fullstack_rest-api,entry_label_advanced_signal_rate,false,공고 메타에서 세는 지표라 차원에 붙지 않는다
+tx_demo_fullstack,dim_fullstack_rdb-modeling,posting_prevalence,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_rdb-modeling,requiredness_ratio,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_rdb-modeling,depth_distribution,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_rdb-modeling,cluster_contrast,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_rdb-modeling,cooccurrence,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_rdb-modeling,scope_expansion,false,공고 메타에서 세는 지표라 차원에 붙지 않는다
+tx_demo_fullstack,dim_fullstack_rdb-modeling,entry_label_advanced_signal_rate,false,공고 메타에서 세는 지표라 차원에 붙지 않는다
+tx_demo_fullstack,dim_fullstack_cloud-deploy,posting_prevalence,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_cloud-deploy,requiredness_ratio,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_cloud-deploy,depth_distribution,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_cloud-deploy,cluster_contrast,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_cloud-deploy,cooccurrence,true,차원 단위로 계산한다
+tx_demo_fullstack,dim_fullstack_cloud-deploy,scope_expansion,false,공고 메타에서 세는 지표라 차원에 붙지 않는다
+tx_demo_fullstack,dim_fullstack_cloud-deploy,entry_label_advanced_signal_rate,false,공고 메타에서 세는 지표라 차원에 붙지 않는다
+tx_demo_devops,dim_devops_kubernetes,posting_prevalence,true,\N
+tx_demo_devops,dim_devops_kubernetes,requiredness_ratio,true,\N
+tx_demo_devops,dim_devops_kubernetes,depth_distribution,true,\N
+tx_demo_devops,dim_devops_kubernetes,cluster_contrast,true,\N
+tx_demo_devops,dim_devops_kubernetes,cooccurrence,true,\N
+tx_demo_devops,dim_devops_kubernetes,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_devops,dim_devops_kubernetes,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_devops,dim_devops_iac-terraform,posting_prevalence,true,\N
+tx_demo_devops,dim_devops_iac-terraform,requiredness_ratio,true,\N
+tx_demo_devops,dim_devops_iac-terraform,depth_distribution,true,\N
+tx_demo_devops,dim_devops_iac-terraform,cluster_contrast,true,\N
+tx_demo_devops,dim_devops_iac-terraform,cooccurrence,true,\N
+tx_demo_devops,dim_devops_iac-terraform,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_devops,dim_devops_iac-terraform,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_devops,dim_devops_cicd-pipeline,posting_prevalence,true,\N
+tx_demo_devops,dim_devops_cicd-pipeline,requiredness_ratio,true,\N
+tx_demo_devops,dim_devops_cicd-pipeline,depth_distribution,true,\N
+tx_demo_devops,dim_devops_cicd-pipeline,cluster_contrast,true,\N
+tx_demo_devops,dim_devops_cicd-pipeline,cooccurrence,true,\N
+tx_demo_devops,dim_devops_cicd-pipeline,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_devops,dim_devops_cicd-pipeline,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_devops,dim_devops_observability,posting_prevalence,true,\N
+tx_demo_devops,dim_devops_observability,requiredness_ratio,true,\N
+tx_demo_devops,dim_devops_observability,depth_distribution,true,\N
+tx_demo_devops,dim_devops_observability,cluster_contrast,true,\N
+tx_demo_devops,dim_devops_observability,cooccurrence,true,\N
+tx_demo_devops,dim_devops_observability,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_devops,dim_devops_observability,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_devops,dim_devops_cloud-network,posting_prevalence,true,\N
+tx_demo_devops,dim_devops_cloud-network,requiredness_ratio,true,\N
+tx_demo_devops,dim_devops_cloud-network,depth_distribution,true,\N
+tx_demo_devops,dim_devops_cloud-network,cluster_contrast,true,\N
+tx_demo_devops,dim_devops_cloud-network,cooccurrence,true,\N
+tx_demo_devops,dim_devops_cloud-network,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_devops,dim_devops_cloud-network,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_mobile,dim_mobile_kotlin-android,posting_prevalence,true,\N
+tx_demo_mobile,dim_mobile_kotlin-android,requiredness_ratio,true,\N
+tx_demo_mobile,dim_mobile_kotlin-android,depth_distribution,true,\N
+tx_demo_mobile,dim_mobile_kotlin-android,cluster_contrast,true,\N
+tx_demo_mobile,dim_mobile_kotlin-android,cooccurrence,true,\N
+tx_demo_mobile,dim_mobile_kotlin-android,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_mobile,dim_mobile_kotlin-android,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_mobile,dim_mobile_swift-ios,posting_prevalence,true,\N
+tx_demo_mobile,dim_mobile_swift-ios,requiredness_ratio,true,\N
+tx_demo_mobile,dim_mobile_swift-ios,depth_distribution,true,\N
+tx_demo_mobile,dim_mobile_swift-ios,cluster_contrast,true,\N
+tx_demo_mobile,dim_mobile_swift-ios,cooccurrence,true,\N
+tx_demo_mobile,dim_mobile_swift-ios,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_mobile,dim_mobile_swift-ios,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_mobile,dim_mobile_app-architecture,posting_prevalence,true,\N
+tx_demo_mobile,dim_mobile_app-architecture,requiredness_ratio,true,\N
+tx_demo_mobile,dim_mobile_app-architecture,depth_distribution,true,\N
+tx_demo_mobile,dim_mobile_app-architecture,cluster_contrast,true,\N
+tx_demo_mobile,dim_mobile_app-architecture,cooccurrence,true,\N
+tx_demo_mobile,dim_mobile_app-architecture,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_mobile,dim_mobile_app-architecture,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_mobile,dim_mobile_network-api,posting_prevalence,true,\N
+tx_demo_mobile,dim_mobile_network-api,requiredness_ratio,true,\N
+tx_demo_mobile,dim_mobile_network-api,depth_distribution,true,\N
+tx_demo_mobile,dim_mobile_network-api,cluster_contrast,true,\N
+tx_demo_mobile,dim_mobile_network-api,cooccurrence,true,\N
+tx_demo_mobile,dim_mobile_network-api,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_mobile,dim_mobile_network-api,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_mobile,dim_mobile_store-release,posting_prevalence,true,\N
+tx_demo_mobile,dim_mobile_store-release,requiredness_ratio,true,\N
+tx_demo_mobile,dim_mobile_store-release,depth_distribution,true,\N
+tx_demo_mobile,dim_mobile_store-release,cluster_contrast,true,\N
+tx_demo_mobile,dim_mobile_store-release,cooccurrence,true,\N
+tx_demo_mobile,dim_mobile_store-release,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_mobile,dim_mobile_store-release,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_security,dim_security_web-vuln-assessment,posting_prevalence,true,\N
+tx_demo_security,dim_security_web-vuln-assessment,requiredness_ratio,true,\N
+tx_demo_security,dim_security_web-vuln-assessment,depth_distribution,true,\N
+tx_demo_security,dim_security_web-vuln-assessment,cluster_contrast,true,\N
+tx_demo_security,dim_security_web-vuln-assessment,cooccurrence,true,\N
+tx_demo_security,dim_security_web-vuln-assessment,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_security,dim_security_web-vuln-assessment,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_security,dim_security_soc-siem,posting_prevalence,true,\N
+tx_demo_security,dim_security_soc-siem,requiredness_ratio,true,\N
+tx_demo_security,dim_security_soc-siem,depth_distribution,true,\N
+tx_demo_security,dim_security_soc-siem,cluster_contrast,true,\N
+tx_demo_security,dim_security_soc-siem,cooccurrence,true,\N
+tx_demo_security,dim_security_soc-siem,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_security,dim_security_soc-siem,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_security,dim_security_network-security,posting_prevalence,true,\N
+tx_demo_security,dim_security_network-security,requiredness_ratio,true,\N
+tx_demo_security,dim_security_network-security,depth_distribution,true,\N
+tx_demo_security,dim_security_network-security,cluster_contrast,true,\N
+tx_demo_security,dim_security_network-security,cooccurrence,true,\N
+tx_demo_security,dim_security_network-security,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_security,dim_security_network-security,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_security,dim_security_privacy-compliance,posting_prevalence,true,\N
+tx_demo_security,dim_security_privacy-compliance,requiredness_ratio,true,\N
+tx_demo_security,dim_security_privacy-compliance,depth_distribution,true,\N
+tx_demo_security,dim_security_privacy-compliance,cluster_contrast,true,\N
+tx_demo_security,dim_security_privacy-compliance,cooccurrence,true,\N
+tx_demo_security,dim_security_privacy-compliance,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_security,dim_security_privacy-compliance,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_security,dim_security_secure-coding,posting_prevalence,true,\N
+tx_demo_security,dim_security_secure-coding,requiredness_ratio,true,\N
+tx_demo_security,dim_security_secure-coding,depth_distribution,true,\N
+tx_demo_security,dim_security_secure-coding,cluster_contrast,true,\N
+tx_demo_security,dim_security_secure-coding,cooccurrence,true,\N
+tx_demo_security,dim_security_secure-coding,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_security,dim_security_secure-coding,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_game_client,dim_game_client_unity-csharp,posting_prevalence,true,\N
+tx_demo_game_client,dim_game_client_unity-csharp,requiredness_ratio,true,\N
+tx_demo_game_client,dim_game_client_unity-csharp,depth_distribution,true,\N
+tx_demo_game_client,dim_game_client_unity-csharp,cluster_contrast,true,\N
+tx_demo_game_client,dim_game_client_unity-csharp,cooccurrence,true,\N
+tx_demo_game_client,dim_game_client_unity-csharp,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_game_client,dim_game_client_unity-csharp,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_game_client,dim_game_client_unreal-cpp,posting_prevalence,true,\N
+tx_demo_game_client,dim_game_client_unreal-cpp,requiredness_ratio,true,\N
+tx_demo_game_client,dim_game_client_unreal-cpp,depth_distribution,true,\N
+tx_demo_game_client,dim_game_client_unreal-cpp,cluster_contrast,true,\N
+tx_demo_game_client,dim_game_client_unreal-cpp,cooccurrence,true,\N
+tx_demo_game_client,dim_game_client_unreal-cpp,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_game_client,dim_game_client_unreal-cpp,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_game_client,dim_game_client_graphics-opt,posting_prevalence,true,\N
+tx_demo_game_client,dim_game_client_graphics-opt,requiredness_ratio,true,\N
+tx_demo_game_client,dim_game_client_graphics-opt,depth_distribution,true,\N
+tx_demo_game_client,dim_game_client_graphics-opt,cluster_contrast,true,\N
+tx_demo_game_client,dim_game_client_graphics-opt,cooccurrence,true,\N
+tx_demo_game_client,dim_game_client_graphics-opt,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_game_client,dim_game_client_graphics-opt,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_game_client,dim_game_client_game-math,posting_prevalence,true,\N
+tx_demo_game_client,dim_game_client_game-math,requiredness_ratio,true,\N
+tx_demo_game_client,dim_game_client_game-math,depth_distribution,true,\N
+tx_demo_game_client,dim_game_client_game-math,cluster_contrast,true,\N
+tx_demo_game_client,dim_game_client_game-math,cooccurrence,true,\N
+tx_demo_game_client,dim_game_client_game-math,scope_expansion,false,역할 경계 차원이 아니다
+tx_demo_game_client,dim_game_client_game-math,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다
+tx_demo_game_client,dim_game_client_net-sync,posting_prevalence,true,\N
+tx_demo_game_client,dim_game_client_net-sync,requiredness_ratio,true,\N
+tx_demo_game_client,dim_game_client_net-sync,depth_distribution,true,\N
+tx_demo_game_client,dim_game_client_net-sync,cluster_contrast,true,\N
+tx_demo_game_client,dim_game_client_net-sync,cooccurrence,true,\N
+tx_demo_game_client,dim_game_client_net-sync,scope_expansion,true,역할 경계를 넘는 차원이라 분자에 든다
+tx_demo_game_client,dim_game_client_net-sync,entry_label_advanced_signal_rate,false,차원을 입력으로 받지 않는 범위 지표다

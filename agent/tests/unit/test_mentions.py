@@ -39,6 +39,9 @@ class FakeStats:
 
     def __init__(self, rows: list[dict[str, Any]] | None = None) -> None:
         self.mentions: list[dict[str, Any]] = []
+        self.extractions: list[dict[str, Any]] = []
+        """`chunk_extractions` 에 남긴 행. 표현이 0개인 청크도 여기 있다."""
+
         self._rows = rows or []
         self.done: set[str] = set()
         self.raced: set[str] = set()
@@ -70,6 +73,15 @@ class FakeStats:
     def add_mention(self, values: dict[str, Any]) -> None:
         self.writing_threads.add(threading.current_thread().name)
         self.mentions.append(values)
+
+    def record_extraction(self, values: dict[str, Any]) -> None:
+        """기본키가 (chunk_id, dataset_version) 이므로 같은 짝이 두 번 오면 깨진다."""
+        self.writing_threads.add(threading.current_thread().name)
+        key = (values["chunk_id"], values["dataset_version"])
+        if key in {(r["chunk_id"], r["dataset_version"]) for r in self.extractions}:
+            raise AssertionError(f"{key} 를 두 번 기록했다")
+        self.extractions.append(values)
+        self.done.add(values["chunk_id"])
 
 
 class Exploding:
@@ -329,6 +341,98 @@ def test_the_budget_stops_the_run() -> None:
     assert outcome.stop_reason is StopReason.BUDGET_EXHAUSTED
 
 
+# ============================================================ 추출 기록
+class Silent:
+    """표현을 하나도 돌려주지 않는 추출 구현.
+
+    회사 소개·복리후생·전형 절차 청크의 정상 동작이다.
+    """
+
+    def extract(self, section: str | None, text: str) -> tuple[MentionCandidate, ...]:
+        return ()
+
+
+def test_a_chunk_without_any_expression_is_still_recorded() -> None:
+    """표현이 0개인 것이 정상인 청크가 있다. 처리 사실은 남겨야 한다."""
+    store = FakeStats([_chunk()])
+
+    MentionCollector(Silent(), store).run(_context())
+
+    assert store.mentions == []
+    assert [r["chunk_id"] for r in store.extractions] == ["chunk_1"]
+    assert store.extractions[0]["mention_count"] == 0
+
+
+def test_a_chunk_without_any_expression_is_not_offered_again() -> None:
+    """표현이 0개인 청크가 매 실행마다 다시 호출되던 자리다."""
+    store = FakeStats([_chunk()])
+    MentionCollector(Silent(), store).run(_context())
+
+    second = MentionCollector(Silent(), store).run(_context())
+
+    assert second.visited_chunks == 0
+    assert second.stop_reason is StopReason.FRONTIER_EXHAUSTED
+    assert len(store.extractions) == 1
+
+
+def test_the_record_carries_the_run_and_the_dataset() -> None:
+    """`extraction_run_id` 는 `agent_runs` 를 참조하므로 실행 봉투의 값이어야 한다."""
+    store = FakeStats([_chunk()])
+
+    MentionCollector(StubMentionExtractor(), store).run(_context())
+
+    row = store.extractions[0]
+    assert row["extraction_run_id"] == "run_extract_test"
+    assert row["dataset_version"] == "ds_test"
+
+
+def test_the_recorded_count_matches_the_stored_mentions() -> None:
+    store = FakeStats([_chunk()])
+
+    MentionCollector(StubMentionExtractor(), store).run(_context())
+
+    assert store.extractions[0]["mention_count"] == len(store.mentions)
+
+
+def test_a_discarded_expression_is_not_counted() -> None:
+    """자리를 정하지 못해 저장하지 않은 표현은 세지 않는다."""
+    store = FakeStats([_chunk()])
+
+    MentionCollector(Inventing(), store).run(_context())
+
+    assert store.extractions[0]["mention_count"] == 0
+
+
+def test_a_failed_chunk_leaves_no_record() -> None:
+    """모델이 답하지 못한 것을 표현 없음으로 굳히면 다시 시도하지 못한다."""
+    store = FakeStats([_chunk()])
+
+    MentionCollector(Exploding(), store).run(_context())
+
+    assert store.extractions == []
+
+
+def test_a_chunk_shared_by_two_postings_is_recorded_once() -> None:
+    """기본키가 (chunk_id, dataset_version) 이라 두 번 넣으면 저장이 깨진다."""
+    shared = [_chunk(), dict(_chunk(), posting_version_id="pv_2")]
+    store = FakeStats(shared)
+
+    MentionCollector(StubMentionExtractor(), store).run(_context())
+
+    assert len(store.extractions) == 1
+    assert store.extractions[0]["mention_count"] == len(store.mentions)
+
+
+def test_the_records_follow_the_chunk_order() -> None:
+    store = FakeStats(_chunks(4))
+
+    MentionCollector(StubMentionExtractor(), store).run(_context())
+
+    assert [r["chunk_id"] for r in store.extractions] == [
+        f"chunk_{index}" for index in range(1, 5)
+    ]
+
+
 # ============================================================ 동시 실행
 def _chunks(count: int) -> list[dict[str, Any]]:
     return [_chunk(f"chunk_{index}") for index in range(1, count + 1)]
@@ -446,13 +550,12 @@ class RecordingUnit:
     def __init__(self, component: Component) -> None:
         self.component = component
         self.sql = ""
-        self.params: dict[str, Any] = {}
+        self.params: Any = None
 
-    def fetch_all(
-        self, sql: str, params: dict[str, Any] | None = None
-    ) -> list[dict[str, Any]]:
+    def fetch_all(self, sql: str, params: Any = None) -> list[dict[str, Any]]:
+        """이름 있는 인자와 자리 인자를 모두 받는다. 저장소가 둘 다 쓴다."""
         self.sql = sql
-        self.params = dict(params or {})
+        self.params = params
         return []
 
 
@@ -474,9 +577,23 @@ def test_the_chunk_exclusion_matches_the_extracted_chunks_rule() -> None:
     """제외 기준이 `extracted_chunks()` 와 같다. 청크 단위이며 같은 데이터셋 버전이다."""
     sql = _recorded_chunk_sql().sql
 
-    assert "FROM requirement_mentions m" in sql
-    assert "m.chunk_id = c.chunk_id" in sql
-    assert "m.dataset_version = %(dataset_version)s" in sql
+    assert "FROM chunk_extractions e" in sql
+    assert "e.chunk_id = c.chunk_id" in sql
+    assert "e.dataset_version = %(dataset_version)s" in sql
+
+
+def test_the_exclusion_does_not_read_the_mentions() -> None:
+    """mention 을 자국으로 삼으면 표현이 0개인 청크가 영구히 다시 대상이 된다."""
+    assert "requirement_mentions" not in _recorded_chunk_sql().sql
+
+
+def test_the_extracted_chunks_come_from_the_extraction_records() -> None:
+    unit = RecordingUnit(Component.AGENT_STATS)
+
+    StatisticsRepository(unit).extracted_chunks("ds_2026_01")
+
+    assert "FROM chunk_extractions" in unit.sql
+    assert "requirement_mentions" not in unit.sql
 
 
 def test_the_chunk_order_stays_deterministic() -> None:

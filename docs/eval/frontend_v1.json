@@ -1,0 +1,831 @@
+{
+  "eval_set_id": "eval_frontend_v1",
+  "job_role_id": "frontend",
+  "source_file": "docs/eval/frontend_v1.json",
+  "dataset_version": "ds_demo_v1",
+  "content_root": "agent/data/demo_seed/parts/frontend/",
+  "status": "draft",
+  "note": "사람이 확정하기 전의 초안. 대상 공고는 scripts/demo_seed/frontend.py 가 만드는 생성 공고 아홉 건이다",
+  "rubric_file": "docs/eval/rubrics_v1.json",
+  "cases": [
+    {
+      "case_id": "case_frontend_01",
+      "case_type": "mention_extraction",
+      "posting_id": "dp_frontend_01",
+      "source_id": "src_demo_frontend_01",
+      "content_file": "source_snapshots.csv",
+      "expected_entry_label": "entry_junior",
+      "expected_job_role_id": "frontend",
+      "expected_items": [
+        {
+          "expected_id": "exp_frontend_01_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "많은 사용자가 동시에 보는 화면의 렌더링 성능을 개선합니다.",
+            "stated_requiredness": "담당업무",
+            "requiredness": "responsibility",
+            "section": "[주요업무]",
+            "evidence_quote": "많은 사용자가 동시에 보는 화면의 렌더링 성능을 개선합니다."
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_01_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "공통 컴포넌트 라이브러리를 유지보수하고 사용법을 문서로 남깁니다.",
+            "stated_requiredness": "담당업무",
+            "requiredness": "responsibility",
+            "section": "[주요업무]",
+            "evidence_quote": "공통 컴포넌트 라이브러리를 유지보수하고 사용법을 문서로 남깁니다."
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_01_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "React로 컴포넌트를 나누어 화면을 개발한 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "React로 컴포넌트를 나누어 화면을 개발한 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_01_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "TypeScript로 타입을 정의하며 개발해 보신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "TypeScript로 타입을 정의하며 개발해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_01_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "Core Web Vitals 등 성능 지표를 측정하고 개선해 본 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "Core Web Vitals 등 성능 지표를 측정하고 개선해 본 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_01_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "상태 관리 라이브러리로 데이터 흐름을 설계해 보신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "상태 관리 라이브러리로 데이터 흐름을 설계해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_01_07",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "Jest·Testing Library로 컴포넌트 테스트를 작성해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "Jest·Testing Library로 컴포넌트 테스트를 작성해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_01_08",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "웹 접근성 지침(WCAG)을 고려해 마크업해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "웹 접근성 지침(WCAG)을 고려해 마크업해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_01_09",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "Webpack·Vite 등 번들러 설정을 다뤄 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "Webpack·Vite 등 번들러 설정을 다뤄 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        }
+      ]
+    },
+    {
+      "case_id": "case_frontend_02",
+      "case_type": "mention_extraction",
+      "posting_id": "dp_frontend_02",
+      "source_id": "src_demo_frontend_02",
+      "content_file": "source_snapshots.csv",
+      "expected_entry_label": "entry_junior",
+      "expected_job_role_id": "frontend",
+      "expected_items": [
+        {
+          "expected_id": "exp_frontend_02_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "결제·송금 플로우의 로딩·에러·재시도 화면 상태를 설계합니다.",
+            "stated_requiredness": "담당업무",
+            "requiredness": "responsibility",
+            "section": "[주요업무]",
+            "evidence_quote": "결제·송금 플로우의 로딩·에러·재시도 화면 상태를 설계합니다."
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_02_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "디자인 시스템 컴포넌트를 개선하고 사용처를 정리합니다.",
+            "stated_requiredness": "담당업무",
+            "requiredness": "responsibility",
+            "section": "[주요업무]",
+            "evidence_quote": "디자인 시스템 컴포넌트를 개선하고 사용처를 정리합니다."
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_02_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "React로 서비스 화면을 개발해 배포해 보신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "React로 서비스 화면을 개발해 배포해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_02_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "TypeScript 타입으로 도메인 규칙을 표현할 수 있는 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "TypeScript 타입으로 도메인 규칙을 표현할 수 있는 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_02_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "테스트 코드로 결제 플로우를 검증해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "테스트 코드로 결제 플로우를 검증해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_02_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "웹 접근성 표준을 지켜 금융 화면을 만들어 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "웹 접근성 표준을 지켜 금융 화면을 만들어 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_02_07",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "번들 크기와 초기 로딩 시간을 개선해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "번들 크기와 초기 로딩 시간을 개선해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        }
+      ]
+    },
+    {
+      "case_id": "case_frontend_03",
+      "case_type": "mention_extraction",
+      "posting_id": "dp_frontend_03",
+      "source_id": "src_demo_frontend_03",
+      "content_file": "source_snapshots.csv",
+      "expected_entry_label": "entry_junior",
+      "expected_job_role_id": "frontend",
+      "expected_items": [
+        {
+          "expected_id": "exp_frontend_03_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "여러 화면에 흩어진 스타일을 공통 규칙으로 정리합니다.",
+            "stated_requiredness": "담당업무",
+            "requiredness": "responsibility",
+            "section": "[주요업무]",
+            "evidence_quote": "여러 화면에 흩어진 스타일을 공통 규칙으로 정리합니다."
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_03_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "React로 화면을 완성해 배포해 본 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "React로 화면을 완성해 배포해 본 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_03_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "TypeScript를 사용해 보신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "TypeScript를 사용해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_03_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "상태 관리 도구를 한 가지 이상 써 보신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "상태 관리 도구를 한 가지 이상 써 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_03_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "Vite 등 빌드 도구를 직접 설정해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "Vite 등 빌드 도구를 직접 설정해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_03_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "공통 컴포넌트와 디자인 토큰 체계를 만들어 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "공통 컴포넌트와 디자인 토큰 체계를 만들어 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        }
+      ]
+    },
+    {
+      "case_id": "case_frontend_04",
+      "case_type": "mention_extraction",
+      "posting_id": "dp_frontend_04",
+      "source_id": "src_demo_frontend_04",
+      "content_file": "source_snapshots.csv",
+      "expected_entry_label": "experienced",
+      "expected_job_role_id": "frontend",
+      "expected_items": [
+        {
+          "expected_id": "exp_frontend_04_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "실시간 상담 데이터의 상태 동기화 구조를 설계합니다.",
+            "stated_requiredness": "담당업무",
+            "requiredness": "responsibility",
+            "section": "[주요업무]",
+            "evidence_quote": "실시간 상담 데이터의 상태 동기화 구조를 설계합니다."
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_04_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "디자인 시스템과 공통 컴포넌트를 설계하고 배포합니다.",
+            "stated_requiredness": "담당업무",
+            "requiredness": "responsibility",
+            "section": "[주요업무]",
+            "evidence_quote": "디자인 시스템과 공통 컴포넌트를 설계하고 배포합니다."
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_04_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "React 기반 웹 애플리케이션을 설계·개발한 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "React 기반 웹 애플리케이션을 설계·개발한 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_04_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "TypeScript로 규모 있는 코드베이스를 다뤄 보신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "TypeScript로 규모 있는 코드베이스를 다뤄 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_04_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "컴포넌트 테스트와 회귀 테스트를 운영해 보신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "컴포넌트 테스트와 회귀 테스트를 운영해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_04_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "번들 구성을 분석해 빌드·로딩 시간을 줄여 보신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "번들 구성을 분석해 빌드·로딩 시간을 줄여 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_04_07",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "웹 접근성 기준을 제품에 적용해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "웹 접근성 기준을 제품에 적용해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_04_08",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "렌더링 성능을 프로파일링해 개선해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "렌더링 성능을 프로파일링해 개선해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        }
+      ]
+    },
+    {
+      "case_id": "case_frontend_05",
+      "case_type": "mention_extraction",
+      "posting_id": "dp_frontend_05",
+      "source_id": "src_demo_frontend_05",
+      "content_file": "source_snapshots.csv",
+      "expected_entry_label": "experienced",
+      "expected_job_role_id": "frontend",
+      "expected_items": [
+        {
+          "expected_id": "exp_frontend_05_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "웹 접근성 인증 기준에 맞춰 화면을 구현하고 점검합니다.",
+            "stated_requiredness": "담당업무",
+            "requiredness": "responsibility",
+            "section": "[주요업무]",
+            "evidence_quote": "웹 접근성 인증 기준에 맞춰 화면을 구현하고 점검합니다."
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_05_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "React 또는 Vue로 업무 화면을 개발한 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "React 또는 Vue로 업무 화면을 개발한 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_05_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "TypeScript 기반 개발 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "TypeScript 기반 개발 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_05_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "웹 접근성 지침(KWCAG)을 준수해 마크업해 본 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "웹 접근성 지침(KWCAG)을 준수해 마크업해 본 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_05_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "CSS 방법론에 따라 스타일 규칙을 문서로 정리해 본 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "CSS 방법론에 따라 스타일 규칙을 문서로 정리해 본 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_05_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "빌드·배포 파이프라인을 구성해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "빌드·배포 파이프라인을 구성해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        }
+      ]
+    },
+    {
+      "case_id": "case_frontend_06",
+      "case_type": "mention_extraction",
+      "posting_id": "dp_frontend_06",
+      "source_id": "src_demo_frontend_06",
+      "content_file": "source_snapshots.csv",
+      "expected_entry_label": "entry_junior",
+      "expected_job_role_id": "frontend",
+      "expected_items": [
+        {
+          "expected_id": "exp_frontend_06_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "공통 스타일과 컴포넌트를 정리합니다.",
+            "stated_requiredness": "담당업무",
+            "requiredness": "responsibility",
+            "section": "[주요업무]",
+            "evidence_quote": "공통 스타일과 컴포넌트를 정리합니다."
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_06_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "React로 웹 화면을 개발해 보신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "React로 웹 화면을 개발해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_06_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "상태 관리 라이브러리를 사용해 보신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "상태 관리 라이브러리를 사용해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_06_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "TypeScript 사용 경험이 있으신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "TypeScript 사용 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_06_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "웹 성능 개선 경험이 있으신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "웹 성능 개선 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_06_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "테스트 코드를 작성해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "테스트 코드를 작성해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        }
+      ]
+    },
+    {
+      "case_id": "case_frontend_07",
+      "case_type": "mention_extraction",
+      "posting_id": "dp_frontend_07",
+      "source_id": "src_demo_frontend_07",
+      "content_file": "source_snapshots.csv",
+      "expected_entry_label": "entry_junior",
+      "expected_job_role_id": "frontend",
+      "expected_items": [
+        {
+          "expected_id": "exp_frontend_07_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "결제 서비스 화면의 스타일과 컴포넌트를 정리합니다.",
+            "stated_requiredness": "담당업무",
+            "requiredness": "responsibility",
+            "section": "[주요업무]",
+            "evidence_quote": "결제 서비스 화면의 스타일과 컴포넌트를 정리합니다."
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_07_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "React로 화면을 개발한 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "React로 화면을 개발한 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_07_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "TypeScript로 개발한 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "TypeScript로 개발한 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_07_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "상태 관리 도구로 데이터 흐름을 다뤄 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "상태 관리 도구로 데이터 흐름을 다뤄 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_07_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "웹 접근성을 고려해 마크업해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "웹 접근성을 고려해 마크업해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_07_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "테스트 코드를 작성해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "테스트 코드를 작성해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        }
+      ]
+    },
+    {
+      "case_id": "case_frontend_08",
+      "case_type": "mention_extraction",
+      "posting_id": "dp_frontend_08",
+      "source_id": "src_demo_frontend_08",
+      "content_file": "source_snapshots.csv",
+      "expected_entry_label": "experienced",
+      "expected_job_role_id": "frontend",
+      "expected_items": [
+        {
+          "expected_id": "exp_frontend_08_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "공통 UI 컴포넌트와 스타일 체계를 관리합니다.",
+            "stated_requiredness": "담당업무",
+            "requiredness": "responsibility",
+            "section": "[주요업무]",
+            "evidence_quote": "공통 UI 컴포넌트와 스타일 체계를 관리합니다."
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_08_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "React로 웹 애플리케이션을 개발한 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "React로 웹 애플리케이션을 개발한 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_08_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "TypeScript로 개발한 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "TypeScript로 개발한 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_08_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "많은 사용자가 몰리는 화면의 성능을 개선해 보신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "많은 사용자가 몰리는 화면의 성능을 개선해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_08_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "번들 크기를 관리해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "번들 크기를 관리해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_08_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "실시간 데이터를 화면 상태와 동기화해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "실시간 데이터를 화면 상태와 동기화해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        }
+      ]
+    },
+    {
+      "case_id": "case_frontend_09",
+      "case_type": "mention_extraction",
+      "posting_id": "dp_frontend_09",
+      "source_id": "src_demo_frontend_09",
+      "content_file": "source_snapshots.csv",
+      "expected_entry_label": "experienced",
+      "expected_job_role_id": "frontend",
+      "expected_items": [
+        {
+          "expected_id": "exp_frontend_09_01",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "대시보드의 데이터 흐름과 화면 상태를 관리합니다.",
+            "stated_requiredness": "담당업무",
+            "requiredness": "responsibility",
+            "section": "[주요업무]",
+            "evidence_quote": "대시보드의 데이터 흐름과 화면 상태를 관리합니다."
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_09_02",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "React로 웹 애플리케이션을 개발한 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "React로 웹 애플리케이션을 개발한 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_09_03",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "TypeScript로 개발한 경험이 있으신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "TypeScript로 개발한 경험이 있으신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_09_04",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "컴포넌트 테스트를 작성하고 유지해 보신 분",
+            "stated_requiredness": "필수",
+            "requiredness": "required",
+            "section": "[자격요건]",
+            "evidence_quote": "컴포넌트 테스트를 작성하고 유지해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_09_05",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "웹 접근성 기준을 고려해 개발해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "웹 접근성 기준을 고려해 개발해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        },
+        {
+          "expected_id": "exp_frontend_09_06",
+          "expected_field": "requirement_mention",
+          "expected_value": {
+            "raw_expression": "빌드 설정을 관리해 보신 분",
+            "stated_requiredness": "우대",
+            "requiredness": "preferred",
+            "section": "[우대사항]",
+            "evidence_quote": "빌드 설정을 관리해 보신 분"
+          },
+          "rubric": "rb_frontend_mention_extraction"
+        }
+      ]
+    }
+  ]
+}

@@ -32,6 +32,7 @@ from careersignal.graph.traversal import (
     TraversalCut,
     traverse,
 )
+from careersignal.repositories.base import item_savepoint, transaction_is_dead
 
 PATH_PREFIX = "path_"
 """`graph_paths.path_id` 의 접두사. docs/erd.md 2.2에 자리가 없어 표 이름을 따른다."""
@@ -48,6 +49,14 @@ NO_GRAPH = "그래프에 노드가 없다"
 NO_PATHS = "사슬을 완성하는 경로가 없다"
 SPEC_REJECTED = "사슬이 허용 연결을 어긴다"
 """건너뛴 경로 유형의 사유. 만들 것이 없는 상태와 규칙 위반을 구분한다."""
+
+TRANSACTION_LOST = "거래가 죽어 남은 경로를 저장하지 못한다"
+"""저장이 거래를 죽이는 실패를 냈다. 남은 경로를 시도하지 않고 멈춘 사유다.
+
+PostgreSQL 은 거래 안에서 오류가 나면 남은 명령을 전부 거부한다. 죽은 거래에 계속
+저장하면 같은 사유의 실패 줄이 경로 수만큼 쌓인다. 저장하지 못한 경로는 캐시에
+남지 않으므로 다음 실행이 같은 키로 다시 계산한다.
+"""
 
 
 def path_identifier(
@@ -259,6 +268,7 @@ class GraphPathRunner:
         cuts: list[TraversalCut] = []
         violations: list[Violation] = []
         skipped: list[tuple[str, str]] = []
+        errors: list[tuple[str, str]] = []
         stamp = computed_at or datetime.now()
 
         if view.empty:
@@ -272,7 +282,10 @@ class GraphPathRunner:
                 skipped_types=tuple(skipped),
             )
 
+        lost = False
         for spec in policy.path_specs:
+            if lost:
+                break
             key = CacheKey.of(spec.path_type, context, graph_policy_version)
             cached = self._repository.cached_paths(key.as_filter())
             if cached:
@@ -291,16 +304,32 @@ class GraphPathRunner:
                 skipped.append((spec.path_type, NO_PATHS))
                 continue
 
+            # 경로 하나가 저장의 단위다. 되돌림 지점이 실패한 경로만 되돌리고 거래를
+            # 살려 두므로 한 경로의 실패가 뒤 경로의 저장을 막지 않는다.
+            stored = 0
             for path in outcome.paths:
-                self._repository.add_path(key.row(path, stamp))
-            misses[spec.path_type] = len(outcome.paths)
+                try:
+                    with item_savepoint(self._repository):
+                        self._repository.add_path(key.row(path, stamp))
+                except Exception as exc:
+                    errors.append(
+                        (spec.path_type, f"{type(exc).__name__}: {exc}")
+                    )
+                    if transaction_is_dead(exc):
+                        errors.append((spec.path_type, TRANSACTION_LOST))
+                        lost = True
+                        break
+                    continue
+                stored += 1
+            if stored:
+                misses[spec.path_type] = stored
 
         return PathCacheOutcome(
             agent_run_id=context.agent_run_id,
             stop_reason=_stop_reason(
                 computed=sum(misses.values()),
                 cached=sum(hits.values()),
-                violated=bool(violations),
+                violated=bool(violations) or bool(errors),
             ),
             graph_policy_version=graph_policy_version,
             ontology_version=ontology_version,
@@ -310,6 +339,7 @@ class GraphPathRunner:
             cuts=tuple(cuts),
             violations=tuple(violations),
             skipped_types=tuple(skipped),
+            errors=tuple(errors),
         )
 
     def invalidate(

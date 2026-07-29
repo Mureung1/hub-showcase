@@ -1,0 +1,37 @@
+// 기업군 6종. 화면 세 곳에 복제돼 있던 배열을 여기 하나로 모았다.
+// 값은 마이그레이션 0002_seed_reference.sql 의 company_clusters.display_name 과 같다.
+// 계약(CONTRACT 5장 B)이 scope.cluster_tag 를 기업군 "표시명" 문자열로 정의하므로 표시명을 그대로 쓴다.
+//
+// 배열 순서는 기본 기업군을 앞에 두는 화면 표시 순서다.
+// (DB 의 sort_order 는 빅테크·플랫폼 → 스타트업 → B2B SaaS → 핀테크·금융 → SI·대기업 → 게임사)
+export const CLUSTERS = [
+  '핀테크·금융',
+  '빅테크·플랫폼',
+  '스타트업',
+  'B2B SaaS',
+  'SI·대기업',
+  '게임사',
+]
+
+// 기업군을 아직 고르지 않았을 때 쓰는 기본값. 화면마다 따로 적지 않는다.
+export const DEFAULT_CLUSTER = CLUSTERS[0]
+
+// 범위(scope) 초기값. 직무를 바꾸면 공고 선택이 무의미해지므로 이 값으로 되돌린다.
+export const defaultScope = () => ({ level: 'cluster', cluster_tag: DEFAULT_CLUSTER, posting_id: null })
+
+// 서버로 나가는 범위 한 벌.
+//
+// 화면의 scope 에는 요청 계약(CONTRACT 5장 B)에 없는 값이 하나 더 있다. `level: 'mine'` 은
+// 사용자가 붙여넣은 공고의 payload 를 그대로 그린다는 화면 전용 표시라서 요청으로 나가면
+// 안 된다. 그 범위에서는 화면이 아예 요청을 하지 않지만, 이 함수가 한 번 더 걸러 두면
+// 실수로 나간 요청도 400 이 아니라 기업군 결과를 받는다.
+//
+// posting 범위인데 공고를 고르지 않은 상태도 같은 이유로 기업군으로 내린다.
+export function apiScope(scope) {
+  const cluster = scope.cluster_tag || DEFAULT_CLUSTER
+  if (scope.level === 'overall') return { level: 'overall', cluster_tag: null, posting_id: null }
+  if (scope.level === 'posting' && scope.posting_id) {
+    return { level: 'posting', cluster_tag: cluster, posting_id: scope.posting_id }
+  }
+  return { level: 'cluster', cluster_tag: cluster, posting_id: null }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Generate Tests"
+  short_description: "Design, write, and verify focused requirement tests"
+  default_prompt: "Use $generate-tests to turn this requirement into focused tests."

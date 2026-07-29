@@ -36,18 +36,27 @@ docs/statistics-model.md 3.4 와 docs/adr/0001-taxonomy-promotion.md 다. 임계
 이 모듈은 판정까지 하고 `hold` 와 `reject` 결정만 기록한다. `promote` 와 `merge`
 결정은 새 분류체계 버전이 있어야 성립하므로(`promoted_to_version_id`)
 `careersignal.taxonomy.publication` 이 발행과 같은 거래에서 기록한다.
+
+심사의 단위는 실행이 아니라 분류체계 버전이다. 결정 행의 기본키가 후보와 심사 기준
+버전으로 정해지므로(`repositories/promotion.py` 의 `decision_identifier`), 같은
+버전을 다시 심사한 실행은 같은 행을 만들고 새 버전의 심사만 행을 늘린다. 심사 대상
+조회도 같은 식별자로 이미 결정된 후보를 뺀다. `hold` 는 종결 판정이 아니지만 같은
+버전·같은 근거로 다시 심사하면 같은 결론이 나오므로 다시 판정하지 않는다.
 """
 
 from __future__ import annotations
 
-import hashlib
 from collections.abc import Sequence
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from careersignal.contracts.run_context import RunContext, StopReason
-from careersignal.repositories.promotion import PromotionRepository
+from careersignal.repositories.base import item_savepoint, transaction_is_dead
+from careersignal.repositories.promotion import (
+    PromotionRepository,
+    decision_identifier,
+)
 from careersignal.taxonomy import lifecycle
 from careersignal.taxonomy.vocabulary import normalize_expression
 
@@ -140,6 +149,14 @@ docs/statistics-model.md 3.5 다.
 
 UNKNOWN_POLICY = "등록되지 않은 승격 정책 버전이다"
 """활성 버전이 적은 정책 버전을 코드가 모른다. 임계값을 지어내지 않는다."""
+
+TRANSACTION_LOST = "거래가 죽어 남은 후보를 저장하지 못한다"
+"""저장이 거래를 죽이는 실패를 냈다. 남은 묶음을 시도하지 않고 멈춘 사유다.
+
+PostgreSQL 은 거래 안에서 오류가 나면 남은 명령을 전부 거부한다. 세이브포인트로도
+살릴 수 없는 자리에 닿으면 뒤의 저장은 전부 같은 사유로 실패하므로, 사유 한 줄을
+남기고 멈춘다. 실패한 후보는 저장소에 자국이 없으므로 다음 실행이 다시 집는다.
+"""
 
 
 class PromotionPolicy(BaseModel):
@@ -240,6 +257,17 @@ class CandidateEvidence(BaseModel):
 
     judged_against_taxonomy_version_id: str | None = None
     """관계 판정이 어느 분류체계 버전을 기준으로 나왔는가."""
+
+    reviewed_against_taxonomy_version_id: str = ""
+    """이 심사가 기준으로 삼은 활성 분류체계 버전.
+
+    판정 기준 버전(`judged_against_taxonomy_version_id`)과 다르다. 앞은 발견이 후보를
+    명명할 때 본 어휘의 버전이고 이 값은 심사가 임계값과 어휘를 견준 버전이다. 둘이
+    어긋난 후보를 `ReviewOutcome.stale_judgments` 가 센다.
+
+    결정 행의 기본키가 이 값을 재료로 쓴다(`decision_identifier`). 같은 버전에서 다시
+    심사하면 같은 행이고 새 버전에서 심사하면 새 행이다.
+    """
 
     judgment_rationale: str = ""
     """발견이 남긴 판정 근거. 심사가 읽는 문장이다."""
@@ -693,15 +721,6 @@ def _decision(
     )
 
 
-def decision_identifier(candidate_id: str, agent_run_id: str) -> str:
-    """같은 실행의 같은 후보는 같은 결정이다.
-
-    실행을 다시 돌려도 결정 행이 늘어나지 않는다. 기본키가 중복 삽입을 막는다.
-    """
-    material = f"{candidate_id}:{agent_run_id}".encode()
-    return f"dec_{hashlib.sha256(material).hexdigest()[:24]}"
-
-
 def decision_row(
     decision: CandidateDecision,
     evidence: CandidateEvidence,
@@ -715,9 +734,15 @@ def decision_row(
 
     `decided_by` 에 실행 식별자를 붙인다. 결정 행에 실행 컬럼이 없으므로 어느
     실행이 판정했는지 남길 자리가 여기뿐이다.
+
+    기본키는 실행이 아니라 심사 기준 버전이 정한다
+    (`evidence.reviewed_against_taxonomy_version_id`). 같은 버전을 다시 심사한 실행이
+    같은 행을 만들어야 기본키가 중복 삽입을 막고, 새 버전의 심사는 새 행이 된다.
     """
     return {
-        "decision_id": decision_identifier(decision.candidate_id, agent_run_id),
+        "decision_id": decision_identifier(
+            decision.candidate_id, evidence.reviewed_against_taxonomy_version_id
+        ),
         "candidate_id": decision.candidate_id,
         "decision": decision.decision,
         "independent_posting_count": decision.independent_posting_count,
@@ -806,8 +831,14 @@ class CandidateReview:
     def run(self, context: RunContext, limit: int | None = None) -> ReviewOutcome:
         """심사 대상을 소진할 때까지 묶음 단위로 판정한다.
 
-        한 묶음의 실패가 나머지를 막지 않는다. 이미 종결 판정을 받은 후보는
-        저장소가 대상에서 뺀다.
+        한 묶음의 실패가 나머지를 막지 않는다. 묶음 하나의 저장을 되돌림 지점으로
+        감싸므로(`item_savepoint`) 실패한 묶음만 되돌아가고 거래는 살아 있다.
+
+        되돌림으로도 살릴 수 없는 실패를 만나면 거기서 멈춘다. 죽은 거래에 계속
+        저장하면 같은 사유의 실패 줄이 묶음 수만큼 쌓이고 진짜 원인이 묻힌다.
+
+        이미 종결 판정을 받은 후보와 이 버전에서 이미 결정을 받은 후보는 저장소가
+        대상에서 뺀다.
         """
         active = self._repository.active_taxonomy_version(context.job_role_id)
         if active is None:
@@ -846,14 +877,22 @@ class CandidateReview:
 
         for group in groups:
             try:
-                evidence = self._group_evidence(context, group, by_id, expected)
-                judged = judge_group(group, evidence, policy)
-                for decision in judged:
-                    if not decision.enters_taxonomy:
-                        self._record(context, decision, evidence[decision.candidate_id])
-                        recorded += 1
+                with item_savepoint(self._repository):
+                    evidence = self._group_evidence(
+                        context, group, by_id, expected, taxonomy_version_id
+                    )
+                    judged = judge_group(group, evidence, policy)
+                    for decision in judged:
+                        if not decision.enters_taxonomy:
+                            self._record(
+                                context, decision, evidence[decision.candidate_id]
+                            )
+                            recorded += 1
             except Exception as exc:
                 errors.append((group.group_key, f"{type(exc).__name__}: {exc}"))
+                if transaction_is_dead(exc):
+                    errors.append((group.group_key, TRANSACTION_LOST))
+                    break
                 continue
 
             for decision in judged:
@@ -892,6 +931,7 @@ class CandidateReview:
         group: LabelGroup,
         by_id: dict[str, dict[str, Any]],
         expected: dict[str, Any],
+        taxonomy_version_id: str,
     ) -> dict[str, CandidateEvidence]:
         """묶음의 후보마다 근거를 붙인다.
 
@@ -905,7 +945,7 @@ class CandidateReview:
         )
         return {
             candidate_id: self._evidence(
-                context, by_id[candidate_id], expected, counted
+                context, by_id[candidate_id], expected, counted, taxonomy_version_id
             )
             for candidate_id in group.member_ids
         }
@@ -916,6 +956,7 @@ class CandidateReview:
         row: dict[str, Any],
         expected: dict[str, Any],
         counted: dict[str, int],
+        taxonomy_version_id: str,
     ) -> CandidateEvidence:
         """후보 한 줄에 근거를 붙인다. 세는 일은 전부 저장소가 SQL 로 한다."""
         sentences = self._repository.representative_sentences(
@@ -932,6 +973,7 @@ class CandidateReview:
             judged_against_taxonomy_version_id=row.get(
                 "judged_against_taxonomy_version_id"
             ),
+            reviewed_against_taxonomy_version_id=taxonomy_version_id,
             judgment_rationale=row.get("judgment_rationale") or "",
             proposed_dimension_kind=row.get("proposed_dimension_kind"),
             independent_posting_count=counted["independent_posting_count"],
@@ -1038,6 +1080,7 @@ __all__ = [
     "ROUTE_RELATION",
     "SYNONYM",
     "TAXONOMY_MISMATCH",
+    "TRANSACTION_LOST",
     "UNGROUPED_PREFIX",
     "UNKNOWN_POLICY",
     "UNMAPPED",

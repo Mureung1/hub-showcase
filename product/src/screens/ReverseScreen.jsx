@@ -1,83 +1,99 @@
 import { useEffect, useState } from 'react'
 import TopBar from '../components/TopBar'
+import AnalysisNotice from '../components/AnalysisNotice'
+import PostingAnalyzePanel, { ConfBadge, PostingInterpretation } from '../components/PostingAnalyzePanel'
+import ScopeSwitch from '../components/ScopeSwitch'
+import SectionNav from '../components/SectionNav'
 import useScrollSpy from '../hooks/useScrollSpy'
-import { SUPPORTED_JOB } from '../data/mock'
+import usePostings from '../hooks/usePostings'
+import { jumpToSection } from '../hooks/sectionJump'
+import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
+import { DEFAULT_CLUSTER } from '../data/clusters'
 
 // 03 채용공고 해석 화면.
-// 세 섹션(전체 baseline / 기업군 편차 / 개별 공고)을 항상 표시한다.
-// 데이터는 POST /api/reverse 실통신(에이전트 fixture + DB 공고 목록)으로 받는다.
+// 네 섹션(전체 baseline / 기업군 편차 / 개별 공고 / 내 공고 직접 분석)을 항상 표시한다.
+// 데이터는 POST /api/reverse 실통신(저장된 활성 결과 + DB 공고 목록)으로 받는다.
+// 직무는 App 이 내려주는 job prop({ job_role_id, display_name })을 쓴다.
+// 범위를 고르는 자리는 맨 위 ScopeSwitch 하나뿐이다 — 기업군 칩과 공고 목록도 그 안에 있다.
+// 공고 목록은 기업군 응답이 아니라 hooks/usePostings(직무 전체)가 받아 그 블록으로 넘긴다.
 
-const CLUSTERS = ['핀테크·금융', '빅테크·플랫폼', '스타트업', 'B2B SaaS', 'SI·대기업', '게임사']
-const CONF_LABEL = { high: '신뢰도 높음', mid: '신뢰도 중간', low: '신뢰도 낮음' }
-const NAV_IDS = ['baseline', 'cluster', 'posting']
+const NAV_IDS = ['baseline', 'cluster', 'posting', 'my-posting']
+const NAV_ITEMS = [['baseline', '전체 baseline'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해석'], ['my-posting', '내 공고 직접 분석']]
 
-async function fetchReverse(scope, signal) {
-  const res = await fetch('/api/reverse', {
+function fetchReverse(jobRoleId, scope, signal) {
+  return fetchJson('/api/reverse', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ job: 'backend', scope }),
+    body: JSON.stringify({ job: jobRoleId, scope }),
     signal,
   })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.json()
 }
 
-function ConfBadge({ level }) {
-  return <span className={`conf conf--${level}`}>{CONF_LABEL[level] || level}</span>
-}
-
-function ReverseScreen({ go, scope, setScope }) {
-  const cluster = scope.cluster_tag || '핀테크·금융'
+function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
+  const jobRoleId = job.job_role_id
+  const jobLabel = job.display_name
+  const cluster = scope.cluster_tag || DEFAULT_CLUSTER
   const postingId = scope.level === 'posting' ? scope.posting_id : null
   const [data, setData] = useState(null)          // cluster 범위 응답
   const [detail, setDetail] = useState(null)      // posting 범위 응답
-  const [search, setSearch] = useState('')
-  const [annTab, setAnnTab] = useState('deviation') // deviation | baseline | signal
-  const [status, setStatus] = useState('loading') // loading | ready | error
+  const [detailScope, setDetailScope] = useState(null) // 그 응답이 실제로 쓴 범위
+  const [status, setStatus] = useState('loading') // loading | ready | error | notready
   const [detailStatus, setDetailStatus] = useState(postingId ? 'loading' : 'idle')
+  // 공고 선택지는 범위와 무관한 직무 전체 목록이다. 기업군 응답에 딸려 오지 않는다.
+  const { postings, status: postingsStatus } = usePostings(jobRoleId)
   const activeSection = useScrollSpy(NAV_IDS)
 
   useEffect(() => {
     const controller = new AbortController()
-    fetchReverse({ level: 'cluster', cluster_tag: cluster }, controller.signal)
+    fetchReverse(jobRoleId, { level: 'cluster', cluster_tag: cluster }, controller.signal)
       .then((json) => { setData(json); setStatus('ready') })
-      .catch((error) => { if (error.name !== 'AbortError') setStatus('error') })
+      .catch((error) => {
+        if (error.name === 'AbortError') return
+        // 활성 분석 결과가 없는 직무는 오류가 아니라 "아직 준비 안 됨"으로 안내한다.
+        setStatus(isJobNotReady(error.code) ? 'notready' : 'error')
+      })
     return () => controller.abort()
-  }, [cluster])
+  }, [jobRoleId, cluster])
 
   useEffect(() => {
     if (!postingId) return undefined
     const controller = new AbortController()
-    fetchReverse({ level: 'posting', cluster_tag: cluster, posting_id: postingId }, controller.signal)
-      .then((json) => { setDetail(json.posting); setDetailStatus('ready') })
+    fetchReverse(jobRoleId, { level: 'posting', cluster_tag: cluster, posting_id: postingId }, controller.signal)
+      .then((json) => { setDetail(json.posting); setDetailScope(json.scope || null); setDetailStatus('ready') })
       .catch((error) => { if (error.name !== 'AbortError') setDetailStatus('error') })
     return () => controller.abort()
-  }, [cluster, postingId])
+  }, [jobRoleId, cluster, postingId])
 
-  const selectPosting = (nextPostingId) => {
-    if (nextPostingId === postingId) {
-      // 같은 공고를 다시 누르면 접는다
-      setDetail(null)
-      setDetailStatus('idle')
-      setScope({ level: 'cluster', cluster_tag: cluster, posting_id: null })
-      return
-    }
+  // 범위 전환. ScopeSwitch 가 만든 다음 범위 한 벌을 그대로 받는다.
+  // 스크롤은 건드리지 않는다 — 범위를 바꾼 자리에 그대로 있어야 무엇이 바뀌었는지 보인다.
+  const changeScope = (next) => {
+    const nextCluster = next.cluster_tag || DEFAULT_CLUSTER
+    const nextPostingId = next.level === 'posting' ? next.posting_id : null
+    // 기업군이 바뀌면 지금 그리고 있는 편차·공고 목록은 다른 기업군의 것이 된다.
+    if (nextCluster !== cluster) setStatus('loading')
     setDetail(null)
-    setDetailStatus('loading')
-    setScope({ level: 'posting', cluster_tag: cluster, posting_id: nextPostingId })
+    setDetailScope(null)
+    setDetailStatus(nextPostingId ? 'loading' : 'idle')
+    setScope(next)
   }
 
-  const selectCluster = (nextCluster) => {
-    setStatus('loading')
-    setDetail(null)
-    setDetailStatus('idle')
-    setScope({ level: 'cluster', cluster_tag: nextCluster, posting_id: null })
-  }
+  // 붙여넣은 공고 범위로 다음 화면을 연다. 기업군 선택은 되돌아올 때를 위해 남겨 둔다.
+  const openMine = (target) => go(target, { scope: { level: 'mine', cluster_tag: cluster, posting_id: null } })
 
+  if (status === 'notready') {
+    return (
+      <>
+        <TopBar step={3} label="채용공고 해석" job={jobLabel} backTo="stats" backLabel="통계" go={go} />
+        <main className="app-shell reader-layout">
+          <AnalysisNotice jobName={jobLabel} onBack={() => go('select')} />
+        </main>
+      </>
+    )
+  }
   if (status === 'error') {
     return (
       <>
-        <TopBar step={3} label="채용공고 해석" job={SUPPORTED_JOB} backTo="stats" backLabel="통계" go={go} />
+        <TopBar step={3} label="채용공고 해석" job={jobLabel} backTo="stats" backLabel="통계" go={go} />
         <main className="app-shell reader-layout">
           <p className="status-panel status-panel--error">
             공고 해석 서버에 연결하지 못했습니다. server(4000)와 agent(8000)가 켜져 있는지 확인해 주세요.
@@ -87,14 +103,10 @@ function ReverseScreen({ go, scope, setScope }) {
     )
   }
 
-  const allPostings = data?.postings_in_cluster || []
-  const filtered = search
-    ? allPostings.filter((p) => (p.company + p.title).toLowerCase().includes(search.toLowerCase()))
-    : allPostings
 
   return (
     <>
-      <TopBar step={3} label="채용공고 해석" job={SUPPORTED_JOB} backTo="stats" backLabel="통계" go={go} />
+      <TopBar step={3} label="채용공고 해석" job={jobLabel} backTo="stats" backLabel="통계" go={go} />
       <main className="app-shell reader-layout">
         <article className="page page--wide">
           <header className="report-header" id="top">
@@ -103,6 +115,17 @@ function ReverseScreen({ go, scope, setScope }) {
             <p>전체는 직군 공통 기대치(baseline)를, 기업군·개별 공고는 그 기준 위에서 더 높거나 추가로 요구되는 편차를 근거·신뢰도와 함께 보여 줍니다.</p>
           </header>
 
+          <ScopeSwitch
+            scope={scope}
+            jobLabel={jobLabel}
+            postings={postings}
+            postingsStatus={postingsStatus}
+            myPosting={myPosting}
+            payloadScope={detailScope}
+            hint={scope.level === 'mine' ? '내가 입력한 공고의 해석은 아래 「내 공고 직접 분석」 섹션에 있습니다.' : null}
+            onSelect={changeScope}
+          />
+
           {status === 'loading' && <p className="status-panel">채용공고를 해석하는 중입니다…</p>}
 
           {status === 'ready' && data && (
@@ -110,7 +133,7 @@ function ReverseScreen({ go, scope, setScope }) {
               {/* 섹션 1 · 전체 baseline */}
               <section className="section-block" id="baseline">
                 <div className="section-title">
-                  <h2>백엔드 신입 공통 기대치 (baseline)</h2>
+                  <h2>{jobLabel} 신입 공통 기대치 (baseline)</h2>
                   <span className="hint">회사와 무관한 기준선 · 통계 근거 병기</span>
                 </div>
                 <div className="baseline-grid">
@@ -132,15 +155,8 @@ function ReverseScreen({ go, scope, setScope }) {
               {/* 섹션 2 · 기업군 편차 */}
               <section className="section-block" id="cluster">
                 <div className="section-title">
-                  <h2>기업군이 baseline 위에서 더 요구하는 것</h2>
-                  <span className="hint">기업군을 고르면 이 섹션과 아래 개별 공고가 바뀝니다</span>
-                </div>
-                <div className="cluster-chips">
-                  {CLUSTERS.map((c) => (
-                    <button key={c} type="button" className={`scope-chip${c === cluster ? ' scope-chip--on' : ''}`} onClick={() => selectCluster(c)}>
-                      {c}
-                    </button>
-                  ))}
+                  <h2>{cluster} 기업군이 baseline 위에서 더 요구하는 것</h2>
+                  <span className="hint">맨 위 범위 선택에서 기업군을 바꾸면 이 섹션이 바뀝니다</span>
                 </div>
                 <div className="dev-grid">
                   {data.deviations.map((d) => (
@@ -181,96 +197,39 @@ function ReverseScreen({ go, scope, setScope }) {
                   <h2>개별 공고 — 원문과 해석을 나란히</h2>
                   <span className="hint">하이라이트 = baseline보다 높거나 baseline에 없는 요구 문장</span>
                 </div>
-                <input
-                  className="posting-search"
-                  type="text"
-                  placeholder="회사·공고명 검색"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <p className="posting-count">
-                  {cluster} 공고 전체 {allPostings.length}건{search && ` · 검색 결과 ${filtered.length}건`}
-                </p>
-                <div className="posting-list">
-                  {filtered.length === 0 && <p className="posting-empty">조건에 맞는 공고가 없습니다.</p>}
-                  {filtered.map((p) => (
-                    <button
-                      key={p.posting_id}
-                      type="button"
-                      className={`posting-row${p.posting_id === postingId ? ' posting-row--on' : ''}`}
-                      onClick={() => selectPosting(p.posting_id)}
-                    >
-                      <span className="co">{p.company}</span>
-                      <span className="ti">{p.title}</span>
-                      <span className="dt">{p.posted_at}</span>
-                    </button>
-                  ))}
-                </div>
+                {!postingId && (
+                  <p className="fold-note">
+                    맨 위 범위 선택에서 <b>개별 공고</b>를 고르고 목록에서 공고를 누르면 이 자리에 원문과 해석이 나란히 열립니다.
+                  </p>
+                )}
 
                 {detailStatus === 'loading' && <p className="status-panel">공고를 해석하는 중입니다…</p>}
                 {detailStatus === 'error' && <p className="status-panel status-panel--error">선택한 공고 해석을 불러오지 못했습니다.</p>}
 
                 {detail && (
-                  <div className="posting-layout">
-                    <div className="posting-raw">
-                      <h4>공고 원문 · {detail.company}</h4>
-                      {detail.raw_sections.map((sec) => (
-                        <div key={sec.section}>
-                          <h5>{sec.section}</h5>
-                          {sec.lines.map((line, i) => (
-                            <div className="raw-line" key={i}>
-                              <p>
-                                ·{' '}
-                                {line.mark_n && <mark className="mark--dev">{line.text}<sup>{line.mark_n}</sup></mark>}
-                                {line.note_n && <mark className="mark--signal">{line.text}<sup>{line.note_n}</sup></mark>}
-                                {line.base_n && <>{line.text}<sup className="sup-base">{line.base_n}</sup></>}
-                                {!line.mark_n && !line.note_n && !line.base_n && line.text}
-                                {line.base_ref && <span className="raw-base">baseline · {line.base_ref}</span>}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="interp-stack">
-                      <div className="interp-card interp-card--sum">
-                        <h4>{detail.summary.title}</h4>
-                        <p>{detail.summary.body}</p>
-                        <div className="interp-meta"><ConfBadge level={detail.summary.confidence} />{detail.summary.ratio && <span className="ratio-pill">{detail.summary.ratio}</span>}</div>
-                      </div>
-                      <div className="ann-tabs">
-                        <button type="button" className={`ann-tab ann-tab--base${annTab === 'baseline' ? ' is-on' : ''}`} onClick={() => setAnnTab('baseline')}><i className="ann-dot"></i>{SUPPORTED_JOB} 공통 {detail.baseline_notes.length}</button>
-                        <button type="button" className={`ann-tab ann-tab--sig${annTab === 'signal' ? ' is-on' : ''}`} onClick={() => setAnnTab('signal')}><i className="ann-dot"></i>숨은 의미 {detail.signal_notes.length}</button>
-                        <button type="button" className={`ann-tab ann-tab--dev${annTab === 'deviation' ? ' is-on' : ''}`} onClick={() => setAnnTab('deviation')}><i className="ann-dot"></i>{detail.company} 특징 {detail.interpretations.length}</button>
-                      </div>
-                      {annTab === 'deviation' && detail.interpretations.map((it) => (
-                        <div className="interp-card" key={it.n}>
-                          <h4><span className="interp-num interp-num--dev">{it.n}</span>{it.title}</h4>
-                          <p>{it.body}</p>
-                          <div className="interp-meta">
-                            <ConfBadge level={it.confidence} />
-                            {it.ratio && <span className="ratio-pill">{it.ratio}</span>}
-                            {it.sources.some((s) => s.type === 'company_blog') && <span className="stat-pill">근거: 공고 + 회사 블로그</span>}
-                          </div>
-                        </div>
-                      ))}
-                      {annTab === 'baseline' && detail.baseline_notes.map((b) => (
-                        <div className="interp-card interp-card--base" key={b.n}>
-                          <h4><span className="interp-num interp-num--base">{b.n}</span>{b.base_ref}</h4>
-                          <p>{b.body}</p>
-                        </div>
-                      ))}
-                      {annTab === 'signal' && detail.signal_notes.map((s) => (
-                        <div className="interp-card interp-card--sig" key={s.n}>
-                          <h4><span className="interp-num interp-num--sig">{s.n}</span>{s.title}</h4>
-                          <p>{s.body}</p>
-                        </div>
-                      ))}
-                      <div className="fold-note">{detail.unchanged_note}</div>
-                      <div className="posting-input-note"><b>공고 직접 입력</b> — 다른 공고 원문을 붙여넣으면 같은 방식으로 개별 해석합니다.</div>
-                    </div>
-                  </div>
+                  <PostingInterpretation
+                    key={detail.posting_id}
+                    posting={detail}
+                    jobLabel={jobLabel}
+                    footer={<div className="posting-input-note"><b>공고 직접 입력</b> — 아래 <a href="#my-posting" onClick={(event) => jumpToSection(event, 'my-posting')}>내 공고 직접 분석</a>에 원문을 붙여넣으면 같은 방식으로 해석합니다.</div>}
+                  />
                 )}
+              </section>
+
+              {/* 섹션 4 · 내 공고 직접 분석 (직무 선택 화면에는 두지 않는다) */}
+              <section className="section-block" id="my-posting">
+                <div className="section-title">
+                  <h2>내 공고 직접 분석</h2>
+                  <span className="hint">지원하려는 공고 원문을 붙여넣으면 같은 기준으로 해석합니다</span>
+                </div>
+                <PostingAnalyzePanel
+                  job={jobRoleId}
+                  jobLabel={jobLabel}
+                  fallback={{ baseline: data.baseline, deviations: data.deviations }}
+                  myPosting={myPosting}
+                  setMyPosting={setMyPosting}
+                  onOpenMine={openMine}
+                />
               </section>
 
               <div className="nav-actions">
@@ -281,12 +240,7 @@ function ReverseScreen({ go, scope, setScope }) {
           )}
         </article>
 
-        <aside className="floating-nav" aria-label="채용공고 해석 목차">
-          <p className="floating-nav__label">공고 해석</p>
-          {[['baseline', '전체 baseline'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해석']].map(([id, label]) => (
-            <a key={id} className={activeSection === id ? 'is-current' : ''} href={`#${id}`}><span className="dot"></span>{label}</a>
-          ))}
-        </aside>
+        <SectionNav label="공고 해석" ariaLabel="채용공고 해석 목차" items={NAV_ITEMS} active={activeSection} />
       </main>
     </>
   )

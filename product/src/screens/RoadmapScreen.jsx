@@ -1,61 +1,102 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import TopBar from '../components/TopBar'
+import AnalysisNotice from '../components/AnalysisNotice'
+import ScopeSwitch from '../components/ScopeSwitch'
+import SectionNav from '../components/SectionNav'
 import useScrollSpy from '../hooks/useScrollSpy'
-import { SUPPORTED_JOB } from '../data/mock'
+import usePostings from '../hooks/usePostings'
+import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
+import { DEFAULT_CLUSTER, apiScope } from '../data/clusters'
+import { HELD_LABEL, recompose } from '../data/recompose'
 
 // 05 준비 로드맵 — 로드맵 슬라이스.
-// 범위(전체/기업군/개별 공고)와 체크 상태를 입력으로 프로젝트/학습 두 트랙을 보여준다.
-// 체크는 즉시 저장되고, 로드맵 재구성은 적용 버튼으로 반영한다.
+// 범위(전체/기업군/개별 공고/내가 입력한 공고)와 체크 상태를 입력으로 프로젝트/학습 두
+// 트랙을 보여준다. 체크는 즉시 저장되고, 로드맵 재구성은 적용 버튼으로 반영한다.
+//
+// 재조합의 주인은 범위에 따라 다르다. 저장된 범위(전체·기업군·개별 공고)는 지금처럼
+// POST /api/roadmap 이 재조합해 준다. 붙여넣은 공고는 서버가 조회할 수 있는 산출물이 아니라
+// 이미 받아 둔 payload 라서, 같은 규칙을 옮긴 data/recompose.js 가 화면에서 재조합한다.
+// 직무는 App 이 내려주는 job prop({ job_role_id, display_name })을 쓴다.
+// 범위를 고르는 자리는 맨 위 ScopeSwitch 하나뿐이다 — 기업군 칩과 공고 목록도 그 안에 있다.
+// 공고 목록은 기업군 응답이 아니라 hooks/usePostings(직무 전체)가 받아 그 블록으로 넘긴다.
 
-const CLUSTERS = ['핀테크·금융', '빅테크·플랫폼', '스타트업', 'B2B SaaS', 'SI·대기업', '게임사']
 const PRIO = { vhigh: ['우선순위 매우 높음', 'prio--vhigh'], high: ['우선순위 높음', 'prio--high'], mid: ['우선순위 중간', 'prio--mid'], track: ['전형 대비 · 별도 트랙', 'prio--mid'] }
 const KIND_LABEL = { project: '프로젝트', story: '서사', study: '학습 · 면접' }
 const NAV_IDS = ['overview', 'project', 'study', 'sync']
+const NAV_ITEMS = [['overview', '로드맵 개요'], ['project', '프로젝트 로드맵'], ['study', '학습 로드맵'], ['sync', '체크리스트 갱신']]
 const EMPTY_CHECKS = Object.freeze({})
 
-const scopeToKey = (scope) => `${scope.level}:${scope.cluster_tag || ''}:${scope.posting_id || ''}`
+// 적용한 체크를 범위별로 가르는 키.
+// 직무 전체 범위는 기업군과 무관하다. ScopeSwitch 가 되돌아올 자리를 기억하려고 cluster_tag 를
+// 남겨 두므로, 키에서는 그 값을 빼야 기업군을 거쳐 갈 때마다 적용 상태가 갈리지 않는다.
+const scopeToKey = (scope) => `${scope.level}:${scope.level === 'overall' ? '' : (scope.cluster_tag || '')}:${scope.posting_id || ''}`
 
-async function fetchRoadmap(scope, checks, signal) {
-  const res = await fetch('/api/roadmap', {
+function fetchRoadmap(jobRoleId, scope, checks, signal) {
+  return fetchJson('/api/roadmap', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ job: 'backend', scope, checks: checks || {} }),
+    body: JSON.stringify({ job: jobRoleId, scope, checks: checks || {} }),
     signal,
   })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.json()
 }
 
-function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
+function RoadmapScreen({ go, job, checks, setChecks, scope, setScope, myPosting }) {
+  const jobRoleId = job.job_role_id
   const level = scope.level
-  const cluster = scope.cluster_tag || '핀테크·금융'
+  const cluster = scope.cluster_tag || DEFAULT_CLUSTER
   const postingId = scope.posting_id
   const ck = checks || {}
   const scopeKey = scopeToKey(scope)
+  // 붙여넣은 공고의 저장된 로드맵. 재조합 전 원본이며 체크 초기값도 여기서 세운다.
+  const mineRoadmap = level === 'mine' && myPosting ? myPosting.roadmap : null
   const [data, setData] = useState(null)
   const [appliedByScope, setAppliedByScope] = useState(() => ({ [scopeKey]: checks || {} }))
   const applied = appliedByScope[scopeKey] || EMPTY_CHECKS
   const [status, setStatus] = useState('loading')
   const activeSection = useScrollSpy(NAV_IDS)
+  // 공고 선택지는 범위와 무관한 직무 전체 목록이다. 기업군 응답에 딸려 오지 않는다.
+  const { postings, status: postingsStatus } = usePostings(jobRoleId)
+
+  // 붙여넣은 공고의 재조합. 서버가 하는 것과 같은 조건으로 부른다 —
+  // 체크가 비어 있으면 저장된 payload 를 그대로 쓰고, 있으면 recompose 를 한 번 적용한다.
+  const mineView = useMemo(() => {
+    if (!mineRoadmap) return null
+    return Object.keys(applied).length > 0 ? recompose(mineRoadmap, applied) : mineRoadmap
+  }, [mineRoadmap, applied])
 
   useEffect(() => {
+    if (mineRoadmap) {
+      // 이미 받아 둔 결과다. 체크 초기값만 payload 에서 세우고 요청은 건너뛴다.
+      setChecks((prev) => prev ?? Object.fromEntries((mineRoadmap.check_rows || []).map((row) => [row.item_id, row.source_step === HELD_LABEL])))
+      return undefined
+    }
     const controller = new AbortController()
     fetchRoadmap(
-      { level, cluster_tag: level === 'overall' ? null : cluster, posting_id: level === 'posting' ? postingId : null },
+      jobRoleId,
+      apiScope({ level, cluster_tag: cluster, posting_id: postingId }),
       applied,
       controller.signal
     )
       .then((json) => {
         setData(json)
-        setChecks((prev) => prev ?? Object.fromEntries(json.check_rows.map((row) => [row.item_id, row.source_step === '보유'])))
+        setChecks((prev) => prev ?? Object.fromEntries(json.check_rows.map((row) => [row.item_id, row.source_step === HELD_LABEL])))
         setStatus('ready')
       })
-      .catch((error) => { if (error.name !== 'AbortError') setStatus('error') })
+      .catch((error) => {
+        if (error.name === 'AbortError') return
+        // 활성 분석 결과가 없는 직무는 오류가 아니라 "아직 준비 안 됨"으로 안내한다.
+        setStatus(isJobNotReady(error.code) ? 'notready' : 'error')
+      })
     return () => controller.abort()
-  }, [level, cluster, postingId, applied, setChecks])
+  }, [jobRoleId, level, cluster, postingId, applied, mineRoadmap, setChecks])
 
-  const pendingCount = data
-    ? data.check_rows.filter((r) => !!ck[r.item_id] !== !!applied[r.item_id]).length
+  // 그릴 payload 는 하나다 — 붙여넣은 공고 결과이거나 서버가 준 범위 결과다.
+  const view = mineView || data
+  // 붙여넣은 공고 범위에는 요청이 없으므로 로딩·오류 상태도 없다. 체크 적용도 즉시 끝난다.
+  const viewStatus = mineView ? 'ready' : status
+
+  const pendingCount = view
+    ? view.check_rows.filter((r) => !!ck[r.item_id] !== !!applied[r.item_id]).length
     : 0
 
   const applyChecks = () => {
@@ -63,6 +104,7 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
     setAppliedByScope((prev) => ({ ...prev, [scopeKey]: { ...ck } }))
   }
 
+  // 범위 전환. 스크롤은 건드리지 않는다 — 바꾼 자리에 그대로 있어야 무엇이 바뀌었는지 보인다.
   const changeScope = (nextScope) => {
     const nextKey = scopeToKey(nextScope)
     setStatus('loading')
@@ -70,10 +112,20 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
     setScope(nextScope)
   }
 
-  if (status === 'error') {
+  if (viewStatus === 'notready') {
     return (
       <>
-        <TopBar step={5} label="준비 로드맵" job={SUPPORTED_JOB} backTo="checklist" backLabel="합격 전략" go={go} />
+        <TopBar step={5} label="준비 로드맵" job={job.display_name} backTo="checklist" backLabel="합격 전략" go={go} />
+        <main className="app-shell reader-layout">
+          <AnalysisNotice jobName={job.display_name} onBack={() => go('select')} />
+        </main>
+      </>
+    )
+  }
+  if (viewStatus === 'error') {
+    return (
+      <>
+        <TopBar step={5} label="준비 로드맵" job={job.display_name} backTo="checklist" backLabel="합격 전략" go={go} />
         <main className="app-shell reader-layout">
           <p className="status-panel status-panel--error">로드맵 서버에 연결하지 못했습니다. server(4000)와 agent(8000)를 확인해 주세요.</p>
         </main>
@@ -81,54 +133,37 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
     )
   }
 
-  const steps = data?.project_steps || []
-  const studies = data?.study_tracks || []
-  const rows = data?.check_rows || []
+  const steps = view?.project_steps || []
+  const studies = view?.study_tracks || []
+  const rows = view?.check_rows || []
   const totalWeeks = steps.reduce((a, s) => a + s.weeks, 0)
-  const fillCount = rows.filter((r) => r.source_step !== '보유').length
+  const fillCount = rows.filter((r) => r.source_step !== HELD_LABEL).length
   const haveRows = rows.filter((r) => ck[r.item_id])
-  const postings = data?.postings_in_cluster || []
 
   return (
     <>
-      <TopBar step={5} label="준비 로드맵" job={SUPPORTED_JOB} backTo="checklist" backLabel="합격 전략" go={go} />
+      <TopBar step={5} label="준비 로드맵" job={job.display_name} backTo="checklist" backLabel="합격 전략" go={go} />
       <main className="app-shell reader-layout">
         <article className="page page--wide">
           <header className="report-header" id="top">
             <span className="eyebrow">미보유 항목 → 우선순위 로드맵</span>
             <h1>막연한 공부 목록이 아니라, 필수부터 채우는 순서표를 드립니다.</h1>
             <p>체크리스트의 미보유 항목을 채우는 프로젝트·학습을 배치했습니다. 각 단계가 끝나면 어떤 합격 전략 항목이 채워지는지 함께 표시합니다.</p>
-            <div className="cluster-chips">
-              <button type="button" className={`scope-chip${level === 'overall' ? ' scope-chip--on' : ''}`} onClick={() => changeScope({ level: 'overall', cluster_tag: null, posting_id: null })}>{SUPPORTED_JOB} 전체 기준</button>
-              {CLUSTERS.map((c) => (
-                <button key={c} type="button"
-                  className={`scope-chip${level !== 'overall' && c === cluster ? ' scope-chip--on' : ''}`}
-                  onClick={() => changeScope({ level: 'cluster', cluster_tag: c, posting_id: null })}>
-                  {c}
-                </button>
-              ))}
-            </div>
-            {level !== 'overall' && postings.length > 0 && (
-              <div className="posting-list posting-list--slim">
-                {postings.map((p) => (
-                  <button key={p.posting_id} type="button"
-                    className={`posting-row${level === 'posting' && p.posting_id === postingId ? ' posting-row--on' : ''}`}
-                    onClick={() => {
-                      if (level === 'posting' && p.posting_id === postingId) changeScope({ level: 'cluster', cluster_tag: cluster, posting_id: null })
-                      else changeScope({ level: 'posting', cluster_tag: cluster, posting_id: p.posting_id })
-                    }}>
-                    <span className="co">{p.company}</span>
-                    <span className="ti">{p.title}</span>
-                    <span className="dt">{p.posted_at}</span>
-                  </button>
-                ))}
-              </div>
-            )}
           </header>
 
-          {status === 'loading' && <p className="status-panel">로드맵을 구성하는 중입니다…</p>}
+          <ScopeSwitch
+            scope={scope}
+            jobLabel={job.display_name}
+            postings={postings}
+            postingsStatus={postingsStatus}
+            myPosting={myPosting}
+            payloadScope={view?.scope}
+            onSelect={changeScope}
+          />
 
-          {status === 'ready' && data && (
+          {viewStatus === 'loading' && <p className="status-panel">로드맵을 구성하는 중입니다…</p>}
+
+          {viewStatus === 'ready' && view && (
             <>
               {/* 블록 1 · 개요 */}
               <section className="section-block" id="overview">
@@ -209,7 +244,7 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
                   {rows.map((r) => {
                     const changed = !!ck[r.item_id] !== !!applied[r.item_id]
                     return (
-                      <div className={`mc-row${changed ? ' mc-row--changed' : ''}${r.source_step === '보유' && ck[r.item_id] ? ' mc-row--done' : ''}`} key={r.item_id}>
+                      <div className={`mc-row${changed ? ' mc-row--changed' : ''}${r.source_step === HELD_LABEL && ck[r.item_id] ? ' mc-row--done' : ''}`} key={r.item_id}>
                         <button type="button" aria-label="보유 여부"
                           className={`mc-box${ck[r.item_id] ? ' mc-box--on' : ''}`}
                           onClick={() => setChecks((prev) => ({ ...(prev || {}), [r.item_id]: !(prev || {})[r.item_id] }))}>
@@ -243,12 +278,7 @@ function RoadmapScreen({ go, checks, setChecks, scope, setScope }) {
           )}
         </article>
 
-        <aside className="floating-nav" aria-label="로드맵 목차">
-          <p className="floating-nav__label">로드맵</p>
-          {[['overview', '로드맵 개요'], ['project', '프로젝트 로드맵'], ['study', '학습 로드맵'], ['sync', '체크리스트 갱신']].map(([id, label]) => (
-            <a key={id} className={activeSection === id ? 'is-current' : ''} href={`#${id}`}><span className="dot"></span>{label}</a>
-          ))}
-        </aside>
+        <SectionNav label="로드맵" ariaLabel="로드맵 목차" items={NAV_ITEMS} active={activeSection} />
       </main>
     </>
   )

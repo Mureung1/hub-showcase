@@ -18,12 +18,18 @@ from careersignal.repositories.knowledge_graph import (
     SemanticGraphRepository,
 )
 from careersignal.repositories.lineage import LineageGraphRepository
+from careersignal.repositories.metrics import (
+    MetricRepository,
+    StatisticsAuditRepository,
+)
+from careersignal.repositories.profiles import DepthProfileRepository
 from careersignal.repositories.promotion import PromotionRepository
 from careersignal.repositories.sources import (
     IngestRepository,
     SourceRepository,
     content_hash,
 )
+from careersignal.repositories.saturation import SaturationRepository
 from careersignal.repositories.statistics import StatisticsRepository
 from careersignal.repositories.telemetry import (
     OrchestratorRepository,
@@ -37,6 +43,7 @@ from careersignal.repositories.verification import (
 
 __all__ = [
     "AssignmentRepository",
+    "DepthProfileRepository",
     "EvaluationRepository",
     "EvidenceSetRepository",
     "GraphPathRepository",
@@ -44,11 +51,14 @@ __all__ = [
     "IndexRepository",
     "IngestRepository",
     "LineageGraphRepository",
+    "MetricRepository",
     "OrchestratorRepository",
     "PromotionRepository",
     "Repository",
+    "SaturationRepository",
     "SemanticGraphRepository",
     "SourceRepository",
+    "StatisticsAuditRepository",
     "StatisticsRepository",
     "TelemetryRepository",
     "Unit",

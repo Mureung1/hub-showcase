@@ -1,0 +1,10 @@
+taxonomy_id,job_role_id
+taxonomy_backend,backend
+taxonomy_frontend,frontend
+taxonomy_ai_engineer,ai_engineer
+taxonomy_data_engineer,data_engineer
+taxonomy_fullstack,fullstack
+taxonomy_devops,devops
+taxonomy_mobile,mobile
+taxonomy_security,security
+taxonomy_game_client,game_client

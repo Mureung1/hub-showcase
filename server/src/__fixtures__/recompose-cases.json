@@ -1,0 +1,3929 @@
+{
+  "note": "파이썬 `agent/src/careersignal/agents/roadmap/recompose.py` 의 `recompose(payload, checks)` 를 아래 입력으로 돌린 결과다. `payload` 는 `agent/data/demo_seed/analysis_outputs.csv` 의 `output_type = 'roadmap'` 행 두 개(`out_demo_backend_road_overall`, `out_demo_backend_road_bigtech_platform`)와 합성 빈 payload 하나이며, `checks` 는 빈 체크 · 일부 보유 · 전부 보유 · 거짓 체크 섞임 · fills 가 빈 트랙을 덮는 일곱 벌이다. `server/src/recompose.test.js` 가 이 파일 전량을 돌려 JS 결과가 `expected` 와 정확히 같은지 확인한다. 파이썬이 기준이므로 두 결과가 갈라지면 JS 를 고친다.",
+  "generated_from": "agent/src/careersignal/agents/roadmap/recompose.py",
+  "cases": [
+    {
+      "name": "빈 체크 · overall",
+      "note": "체크가 없으면 저장된 payload 와 같은 순서·우선순위를 유지한다",
+      "source": "agent/data/demo_seed/analysis_outputs.csv · out_demo_backend_road_overall",
+      "payload": {
+        "job": "backend",
+        "scope": {
+          "level": "overall",
+          "cluster_tag": null,
+          "posting_id": null
+        },
+        "project_steps": [
+          {
+            "n": 1,
+            "phase": "STEP 01 · 3주",
+            "weeks": 3,
+            "priority": "vhigh",
+            "title": "한 도메인을 배포까지 완성하기",
+            "body": "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
+            "deliverable": "배포 URL + ERD + 인덱스 설계 근거 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_crud-api",
+                "label": "CRUD REST API 프로젝트",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_rdb-schema",
+                "label": "RDB 설계·쿼리 기본기",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+            "tags": [
+              "자원 설계",
+              "인덱스 근거",
+              "배포"
+            ]
+          },
+          {
+            "n": 2,
+            "phase": "STEP 02 · 2주",
+            "weeks": 2,
+            "priority": "vhigh",
+            "title": "실패를 다루기 — 에러 응답과 장애 복구 실험",
+            "body": "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
+            "deliverable": "실패 케이스 처리 코드 + 장애 재현·복구 기록 + 회고 글",
+            "fills": [
+              {
+                "item_id": "cc_backend_error-handling",
+                "label": "예외·에러 응답 설계",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_incident-recovery",
+                "label": "장애·복구 대응 경험",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 성공 경로만 있는 결과물은 신입 사이에서 변별력이 없습니다.",
+            "tags": [
+              "에러 응답 설계",
+              "장애 재현",
+              "회고"
+            ]
+          },
+          {
+            "n": 3,
+            "phase": "STEP 03 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "측정하고 하나를 개선하기",
+            "body": "부하 테스트로 병목을 찾고 인덱스나 캐시 중 하나를 골라 개선 전후 지표를 남기세요.",
+            "deliverable": "부하 테스트 결과 + 개선 전후 지표 비교 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_test-habit",
+                "label": "테스트 작성 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
+            "tags": [
+              "부하 테스트",
+              "캐시",
+              "지표 비교"
+            ]
+          },
+          {
+            "n": 4,
+            "phase": "STEP 04 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "기업군에 맞춰 마무리하기",
+            "body": "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
+            "deliverable": "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+            "fills": [
+              {
+                "item_id": "cc_backend_collab-story",
+                "label": "협업 문제 해결 서사",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_docs-habit",
+                "label": "기술 문서화 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+            "tags": [
+              "편차 보강",
+              "소개 순서",
+              "문서 정리"
+            ]
+          }
+        ],
+        "study_tracks": [
+          {
+            "phase": "STEP 01~02와 병행",
+            "priority": "vhigh",
+            "title": "트랜잭션·DB 이론",
+            "depth": "격리수준 네 단계와 각각의 문제, 락과 MVCC 의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "프로젝트에서 적용은 하지만 면접의 꼬리질문은 이론 이해를 검증합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_tx-integrity",
+                "label": "트랜잭션·동시성 심화",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "STEP 01~03과 병행",
+            "priority": "high",
+            "title": "Spring 동작 원리",
+            "depth": "DI 컨테이너가 하는 일, @Transactional 의 프록시 동작, 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "써 봤다와 무엇을 해주는지 안다를 면접이 구분합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_spring-internals",
+                "label": "Spring 동작 원리 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 주 3~4시간",
+            "priority": "high",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "depth": "HTTP 와 TCP 의 기본 흐름, 프로세스와 스레드, 경쟁 상태의 원인까지. 과목 전체가 아니라 면접 단골 주제 중심으로.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "동시성과 장애 해석의 이론 바탕입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 별도 트랙",
+            "priority": "track",
+            "title": "알고리즘·코딩테스트",
+            "depth": "지원 시점까지 꾸준히. 공고 요구 분석의 대상이 아니라 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+            "reason_title": "왜 따로 두나요?",
+            "reason": "요구 분석의 결과가 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+            "fills": []
+          }
+        ],
+        "check_rows": [
+          {
+            "item_id": "cc_backend_crud-api",
+            "title": "CRUD REST API 프로젝트",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_rdb-schema",
+            "title": "RDB 설계·쿼리 기본기",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_error-handling",
+            "title": "예외·에러 응답 설계",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_tx-integrity",
+            "title": "트랜잭션·동시성 심화",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_performance",
+            "title": "부하 측정·성능 개선",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_deploy-pipeline",
+            "title": "배포 파이프라인 구성",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_event-pipeline",
+            "title": "이벤트 처리 경험",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_incident-recovery",
+            "title": "장애·복구 대응 경험",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_collab-story",
+            "title": "협업 문제 해결 서사",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_test-habit",
+            "title": "테스트 작성 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_docs-habit",
+            "title": "기술 문서화 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_domain-study",
+            "title": "도메인 이해 정리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_cs-basics",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_spring-internals",
+            "title": "Spring 동작 원리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          }
+        ],
+        "agent_version": "1.0.0",
+        "source": "stored"
+      },
+      "checks": {},
+      "expected": {
+        "job": "backend",
+        "scope": {
+          "level": "overall",
+          "cluster_tag": null,
+          "posting_id": null
+        },
+        "project_steps": [
+          {
+            "n": 1,
+            "phase": "STEP 01 · 3주",
+            "weeks": 3,
+            "priority": "vhigh",
+            "title": "한 도메인을 배포까지 완성하기",
+            "body": "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
+            "deliverable": "배포 URL + ERD + 인덱스 설계 근거 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_crud-api",
+                "label": "CRUD REST API 프로젝트",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_rdb-schema",
+                "label": "RDB 설계·쿼리 기본기",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+            "tags": [
+              "자원 설계",
+              "인덱스 근거",
+              "배포"
+            ]
+          },
+          {
+            "n": 2,
+            "phase": "STEP 02 · 2주",
+            "weeks": 2,
+            "priority": "vhigh",
+            "title": "실패를 다루기 — 에러 응답과 장애 복구 실험",
+            "body": "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
+            "deliverable": "실패 케이스 처리 코드 + 장애 재현·복구 기록 + 회고 글",
+            "fills": [
+              {
+                "item_id": "cc_backend_error-handling",
+                "label": "예외·에러 응답 설계",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_incident-recovery",
+                "label": "장애·복구 대응 경험",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 성공 경로만 있는 결과물은 신입 사이에서 변별력이 없습니다.",
+            "tags": [
+              "에러 응답 설계",
+              "장애 재현",
+              "회고"
+            ]
+          },
+          {
+            "n": 3,
+            "phase": "STEP 03 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "측정하고 하나를 개선하기",
+            "body": "부하 테스트로 병목을 찾고 인덱스나 캐시 중 하나를 골라 개선 전후 지표를 남기세요.",
+            "deliverable": "부하 테스트 결과 + 개선 전후 지표 비교 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_test-habit",
+                "label": "테스트 작성 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
+            "tags": [
+              "부하 테스트",
+              "캐시",
+              "지표 비교"
+            ]
+          },
+          {
+            "n": 4,
+            "phase": "STEP 04 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "기업군에 맞춰 마무리하기",
+            "body": "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
+            "deliverable": "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+            "fills": [
+              {
+                "item_id": "cc_backend_collab-story",
+                "label": "협업 문제 해결 서사",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_docs-habit",
+                "label": "기술 문서화 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+            "tags": [
+              "편차 보강",
+              "소개 순서",
+              "문서 정리"
+            ]
+          }
+        ],
+        "study_tracks": [
+          {
+            "phase": "STEP 01~02와 병행",
+            "priority": "vhigh",
+            "title": "트랜잭션·DB 이론",
+            "depth": "격리수준 네 단계와 각각의 문제, 락과 MVCC 의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "프로젝트에서 적용은 하지만 면접의 꼬리질문은 이론 이해를 검증합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_tx-integrity",
+                "label": "트랜잭션·동시성 심화",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "STEP 01~03과 병행",
+            "priority": "high",
+            "title": "Spring 동작 원리",
+            "depth": "DI 컨테이너가 하는 일, @Transactional 의 프록시 동작, 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "써 봤다와 무엇을 해주는지 안다를 면접이 구분합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_spring-internals",
+                "label": "Spring 동작 원리 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 주 3~4시간",
+            "priority": "high",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "depth": "HTTP 와 TCP 의 기본 흐름, 프로세스와 스레드, 경쟁 상태의 원인까지. 과목 전체가 아니라 면접 단골 주제 중심으로.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "동시성과 장애 해석의 이론 바탕입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 별도 트랙",
+            "priority": "track",
+            "title": "알고리즘·코딩테스트",
+            "depth": "지원 시점까지 꾸준히. 공고 요구 분석의 대상이 아니라 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+            "reason_title": "왜 따로 두나요?",
+            "reason": "요구 분석의 결과가 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+            "fills": []
+          }
+        ],
+        "check_rows": [
+          {
+            "item_id": "cc_backend_crud-api",
+            "title": "CRUD REST API 프로젝트",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_rdb-schema",
+            "title": "RDB 설계·쿼리 기본기",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_error-handling",
+            "title": "예외·에러 응답 설계",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_tx-integrity",
+            "title": "트랜잭션·동시성 심화",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_performance",
+            "title": "부하 측정·성능 개선",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_deploy-pipeline",
+            "title": "배포 파이프라인 구성",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_event-pipeline",
+            "title": "이벤트 처리 경험",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_incident-recovery",
+            "title": "장애·복구 대응 경험",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_collab-story",
+            "title": "협업 문제 해결 서사",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_test-habit",
+            "title": "테스트 작성 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_docs-habit",
+            "title": "기술 문서화 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_domain-study",
+            "title": "도메인 이해 정리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_cs-basics",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_spring-internals",
+            "title": "Spring 동작 원리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          }
+        ],
+        "agent_version": "1.0.0",
+        "source": "stored"
+      }
+    },
+    {
+      "name": "일부 보유 · overall · STEP 01 완결",
+      "note": "STEP 01 의 fills 두 개를 모두 보유하면 그 단계가 뒤로 밀리고 나머지가 1 부터 다시 번호를 받는다",
+      "source": "agent/data/demo_seed/analysis_outputs.csv · out_demo_backend_road_overall",
+      "payload": {
+        "job": "backend",
+        "scope": {
+          "level": "overall",
+          "cluster_tag": null,
+          "posting_id": null
+        },
+        "project_steps": [
+          {
+            "n": 1,
+            "phase": "STEP 01 · 3주",
+            "weeks": 3,
+            "priority": "vhigh",
+            "title": "한 도메인을 배포까지 완성하기",
+            "body": "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
+            "deliverable": "배포 URL + ERD + 인덱스 설계 근거 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_crud-api",
+                "label": "CRUD REST API 프로젝트",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_rdb-schema",
+                "label": "RDB 설계·쿼리 기본기",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+            "tags": [
+              "자원 설계",
+              "인덱스 근거",
+              "배포"
+            ]
+          },
+          {
+            "n": 2,
+            "phase": "STEP 02 · 2주",
+            "weeks": 2,
+            "priority": "vhigh",
+            "title": "실패를 다루기 — 에러 응답과 장애 복구 실험",
+            "body": "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
+            "deliverable": "실패 케이스 처리 코드 + 장애 재현·복구 기록 + 회고 글",
+            "fills": [
+              {
+                "item_id": "cc_backend_error-handling",
+                "label": "예외·에러 응답 설계",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_incident-recovery",
+                "label": "장애·복구 대응 경험",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 성공 경로만 있는 결과물은 신입 사이에서 변별력이 없습니다.",
+            "tags": [
+              "에러 응답 설계",
+              "장애 재현",
+              "회고"
+            ]
+          },
+          {
+            "n": 3,
+            "phase": "STEP 03 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "측정하고 하나를 개선하기",
+            "body": "부하 테스트로 병목을 찾고 인덱스나 캐시 중 하나를 골라 개선 전후 지표를 남기세요.",
+            "deliverable": "부하 테스트 결과 + 개선 전후 지표 비교 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_test-habit",
+                "label": "테스트 작성 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
+            "tags": [
+              "부하 테스트",
+              "캐시",
+              "지표 비교"
+            ]
+          },
+          {
+            "n": 4,
+            "phase": "STEP 04 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "기업군에 맞춰 마무리하기",
+            "body": "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
+            "deliverable": "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+            "fills": [
+              {
+                "item_id": "cc_backend_collab-story",
+                "label": "협업 문제 해결 서사",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_docs-habit",
+                "label": "기술 문서화 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+            "tags": [
+              "편차 보강",
+              "소개 순서",
+              "문서 정리"
+            ]
+          }
+        ],
+        "study_tracks": [
+          {
+            "phase": "STEP 01~02와 병행",
+            "priority": "vhigh",
+            "title": "트랜잭션·DB 이론",
+            "depth": "격리수준 네 단계와 각각의 문제, 락과 MVCC 의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "프로젝트에서 적용은 하지만 면접의 꼬리질문은 이론 이해를 검증합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_tx-integrity",
+                "label": "트랜잭션·동시성 심화",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "STEP 01~03과 병행",
+            "priority": "high",
+            "title": "Spring 동작 원리",
+            "depth": "DI 컨테이너가 하는 일, @Transactional 의 프록시 동작, 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "써 봤다와 무엇을 해주는지 안다를 면접이 구분합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_spring-internals",
+                "label": "Spring 동작 원리 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 주 3~4시간",
+            "priority": "high",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "depth": "HTTP 와 TCP 의 기본 흐름, 프로세스와 스레드, 경쟁 상태의 원인까지. 과목 전체가 아니라 면접 단골 주제 중심으로.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "동시성과 장애 해석의 이론 바탕입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 별도 트랙",
+            "priority": "track",
+            "title": "알고리즘·코딩테스트",
+            "depth": "지원 시점까지 꾸준히. 공고 요구 분석의 대상이 아니라 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+            "reason_title": "왜 따로 두나요?",
+            "reason": "요구 분석의 결과가 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+            "fills": []
+          }
+        ],
+        "check_rows": [
+          {
+            "item_id": "cc_backend_crud-api",
+            "title": "CRUD REST API 프로젝트",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_rdb-schema",
+            "title": "RDB 설계·쿼리 기본기",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_error-handling",
+            "title": "예외·에러 응답 설계",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_tx-integrity",
+            "title": "트랜잭션·동시성 심화",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_performance",
+            "title": "부하 측정·성능 개선",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_deploy-pipeline",
+            "title": "배포 파이프라인 구성",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_event-pipeline",
+            "title": "이벤트 처리 경험",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_incident-recovery",
+            "title": "장애·복구 대응 경험",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_collab-story",
+            "title": "협업 문제 해결 서사",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_test-habit",
+            "title": "테스트 작성 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_docs-habit",
+            "title": "기술 문서화 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_domain-study",
+            "title": "도메인 이해 정리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_cs-basics",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_spring-internals",
+            "title": "Spring 동작 원리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          }
+        ],
+        "agent_version": "1.0.0",
+        "source": "stored"
+      },
+      "checks": {
+        "cc_backend_crud-api": true,
+        "cc_backend_rdb-schema": true
+      },
+      "expected": {
+        "job": "backend",
+        "scope": {
+          "level": "overall",
+          "cluster_tag": null,
+          "posting_id": null
+        },
+        "project_steps": [
+          {
+            "n": 1,
+            "phase": "STEP 01 · 2주",
+            "weeks": 2,
+            "priority": "vhigh",
+            "title": "실패를 다루기 — 에러 응답과 장애 복구 실험",
+            "body": "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
+            "deliverable": "실패 케이스 처리 코드 + 장애 재현·복구 기록 + 회고 글",
+            "fills": [
+              {
+                "item_id": "cc_backend_error-handling",
+                "label": "예외·에러 응답 설계",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_incident-recovery",
+                "label": "장애·복구 대응 경험",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 성공 경로만 있는 결과물은 신입 사이에서 변별력이 없습니다.",
+            "tags": [
+              "에러 응답 설계",
+              "장애 재현",
+              "회고"
+            ]
+          },
+          {
+            "n": 2,
+            "phase": "STEP 02 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "측정하고 하나를 개선하기",
+            "body": "부하 테스트로 병목을 찾고 인덱스나 캐시 중 하나를 골라 개선 전후 지표를 남기세요.",
+            "deliverable": "부하 테스트 결과 + 개선 전후 지표 비교 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_test-habit",
+                "label": "테스트 작성 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
+            "tags": [
+              "부하 테스트",
+              "캐시",
+              "지표 비교"
+            ]
+          },
+          {
+            "n": 3,
+            "phase": "STEP 03 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "기업군에 맞춰 마무리하기",
+            "body": "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
+            "deliverable": "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+            "fills": [
+              {
+                "item_id": "cc_backend_collab-story",
+                "label": "협업 문제 해결 서사",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_docs-habit",
+                "label": "기술 문서화 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+            "tags": [
+              "편차 보강",
+              "소개 순서",
+              "문서 정리"
+            ]
+          },
+          {
+            "n": 4,
+            "phase": "STEP 04 · 3주",
+            "weeks": 3,
+            "priority": "high",
+            "title": "한 도메인을 배포까지 완성하기",
+            "body": "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
+            "deliverable": "배포 URL + ERD + 인덱스 설계 근거 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_crud-api",
+                "label": "CRUD REST API 프로젝트",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_rdb-schema",
+                "label": "RDB 설계·쿼리 기본기",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+            "tags": [
+              "자원 설계",
+              "인덱스 근거",
+              "배포"
+            ]
+          }
+        ],
+        "study_tracks": [
+          {
+            "phase": "STEP 04~02와 병행",
+            "priority": "vhigh",
+            "title": "트랜잭션·DB 이론",
+            "depth": "격리수준 네 단계와 각각의 문제, 락과 MVCC 의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "프로젝트에서 적용은 하지만 면접의 꼬리질문은 이론 이해를 검증합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_tx-integrity",
+                "label": "트랜잭션·동시성 심화",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "STEP 04~03과 병행",
+            "priority": "high",
+            "title": "Spring 동작 원리",
+            "depth": "DI 컨테이너가 하는 일, @Transactional 의 프록시 동작, 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "써 봤다와 무엇을 해주는지 안다를 면접이 구분합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_spring-internals",
+                "label": "Spring 동작 원리 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 주 3~4시간",
+            "priority": "high",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "depth": "HTTP 와 TCP 의 기본 흐름, 프로세스와 스레드, 경쟁 상태의 원인까지. 과목 전체가 아니라 면접 단골 주제 중심으로.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "동시성과 장애 해석의 이론 바탕입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 별도 트랙",
+            "priority": "track",
+            "title": "알고리즘·코딩테스트",
+            "depth": "지원 시점까지 꾸준히. 공고 요구 분석의 대상이 아니라 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+            "reason_title": "왜 따로 두나요?",
+            "reason": "요구 분석의 결과가 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+            "fills": []
+          }
+        ],
+        "check_rows": [
+          {
+            "item_id": "cc_backend_crud-api",
+            "title": "CRUD REST API 프로젝트",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_rdb-schema",
+            "title": "RDB 설계·쿼리 기본기",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_error-handling",
+            "title": "예외·에러 응답 설계",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_tx-integrity",
+            "title": "트랜잭션·동시성 심화",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_performance",
+            "title": "부하 측정·성능 개선",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_deploy-pipeline",
+            "title": "배포 파이프라인 구성",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_event-pipeline",
+            "title": "이벤트 처리 경험",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_incident-recovery",
+            "title": "장애·복구 대응 경험",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_collab-story",
+            "title": "협업 문제 해결 서사",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_test-habit",
+            "title": "테스트 작성 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_docs-habit",
+            "title": "기술 문서화 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_domain-study",
+            "title": "도메인 이해 정리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_cs-basics",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_spring-internals",
+            "title": "Spring 동작 원리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          }
+        ],
+        "agent_version": "1.0.0",
+        "source": "stored"
+      }
+    },
+    {
+      "name": "전부 보유 · overall",
+      "note": "check_rows 의 모든 개념을 보유하면 fills 가 있는 단계·트랙 전부가 뒤로 밀리고 우선순위가 한 칸씩 내려간다. fills 가 빈 코딩테스트 트랙은 보유로 보지 않아 앞에 남는다",
+      "source": "agent/data/demo_seed/analysis_outputs.csv · out_demo_backend_road_overall",
+      "payload": {
+        "job": "backend",
+        "scope": {
+          "level": "overall",
+          "cluster_tag": null,
+          "posting_id": null
+        },
+        "project_steps": [
+          {
+            "n": 1,
+            "phase": "STEP 01 · 3주",
+            "weeks": 3,
+            "priority": "vhigh",
+            "title": "한 도메인을 배포까지 완성하기",
+            "body": "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
+            "deliverable": "배포 URL + ERD + 인덱스 설계 근거 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_crud-api",
+                "label": "CRUD REST API 프로젝트",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_rdb-schema",
+                "label": "RDB 설계·쿼리 기본기",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+            "tags": [
+              "자원 설계",
+              "인덱스 근거",
+              "배포"
+            ]
+          },
+          {
+            "n": 2,
+            "phase": "STEP 02 · 2주",
+            "weeks": 2,
+            "priority": "vhigh",
+            "title": "실패를 다루기 — 에러 응답과 장애 복구 실험",
+            "body": "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
+            "deliverable": "실패 케이스 처리 코드 + 장애 재현·복구 기록 + 회고 글",
+            "fills": [
+              {
+                "item_id": "cc_backend_error-handling",
+                "label": "예외·에러 응답 설계",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_incident-recovery",
+                "label": "장애·복구 대응 경험",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 성공 경로만 있는 결과물은 신입 사이에서 변별력이 없습니다.",
+            "tags": [
+              "에러 응답 설계",
+              "장애 재현",
+              "회고"
+            ]
+          },
+          {
+            "n": 3,
+            "phase": "STEP 03 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "측정하고 하나를 개선하기",
+            "body": "부하 테스트로 병목을 찾고 인덱스나 캐시 중 하나를 골라 개선 전후 지표를 남기세요.",
+            "deliverable": "부하 테스트 결과 + 개선 전후 지표 비교 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_test-habit",
+                "label": "테스트 작성 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
+            "tags": [
+              "부하 테스트",
+              "캐시",
+              "지표 비교"
+            ]
+          },
+          {
+            "n": 4,
+            "phase": "STEP 04 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "기업군에 맞춰 마무리하기",
+            "body": "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
+            "deliverable": "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+            "fills": [
+              {
+                "item_id": "cc_backend_collab-story",
+                "label": "협업 문제 해결 서사",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_docs-habit",
+                "label": "기술 문서화 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+            "tags": [
+              "편차 보강",
+              "소개 순서",
+              "문서 정리"
+            ]
+          }
+        ],
+        "study_tracks": [
+          {
+            "phase": "STEP 01~02와 병행",
+            "priority": "vhigh",
+            "title": "트랜잭션·DB 이론",
+            "depth": "격리수준 네 단계와 각각의 문제, 락과 MVCC 의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "프로젝트에서 적용은 하지만 면접의 꼬리질문은 이론 이해를 검증합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_tx-integrity",
+                "label": "트랜잭션·동시성 심화",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "STEP 01~03과 병행",
+            "priority": "high",
+            "title": "Spring 동작 원리",
+            "depth": "DI 컨테이너가 하는 일, @Transactional 의 프록시 동작, 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "써 봤다와 무엇을 해주는지 안다를 면접이 구분합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_spring-internals",
+                "label": "Spring 동작 원리 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 주 3~4시간",
+            "priority": "high",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "depth": "HTTP 와 TCP 의 기본 흐름, 프로세스와 스레드, 경쟁 상태의 원인까지. 과목 전체가 아니라 면접 단골 주제 중심으로.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "동시성과 장애 해석의 이론 바탕입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 별도 트랙",
+            "priority": "track",
+            "title": "알고리즘·코딩테스트",
+            "depth": "지원 시점까지 꾸준히. 공고 요구 분석의 대상이 아니라 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+            "reason_title": "왜 따로 두나요?",
+            "reason": "요구 분석의 결과가 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+            "fills": []
+          }
+        ],
+        "check_rows": [
+          {
+            "item_id": "cc_backend_crud-api",
+            "title": "CRUD REST API 프로젝트",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_rdb-schema",
+            "title": "RDB 설계·쿼리 기본기",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_error-handling",
+            "title": "예외·에러 응답 설계",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_tx-integrity",
+            "title": "트랜잭션·동시성 심화",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_performance",
+            "title": "부하 측정·성능 개선",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_deploy-pipeline",
+            "title": "배포 파이프라인 구성",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_event-pipeline",
+            "title": "이벤트 처리 경험",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_incident-recovery",
+            "title": "장애·복구 대응 경험",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_collab-story",
+            "title": "협업 문제 해결 서사",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_test-habit",
+            "title": "테스트 작성 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_docs-habit",
+            "title": "기술 문서화 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_domain-study",
+            "title": "도메인 이해 정리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_cs-basics",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_spring-internals",
+            "title": "Spring 동작 원리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          }
+        ],
+        "agent_version": "1.0.0",
+        "source": "stored"
+      },
+      "checks": {
+        "cc_backend_crud-api": true,
+        "cc_backend_rdb-schema": true,
+        "cc_backend_error-handling": true,
+        "cc_backend_tx-integrity": true,
+        "cc_backend_performance": true,
+        "cc_backend_deploy-pipeline": true,
+        "cc_backend_event-pipeline": true,
+        "cc_backend_incident-recovery": true,
+        "cc_backend_collab-story": true,
+        "cc_backend_test-habit": true,
+        "cc_backend_docs-habit": true,
+        "cc_backend_domain-study": true,
+        "cc_backend_cs-basics": true,
+        "cc_backend_spring-internals": true
+      },
+      "expected": {
+        "job": "backend",
+        "scope": {
+          "level": "overall",
+          "cluster_tag": null,
+          "posting_id": null
+        },
+        "project_steps": [
+          {
+            "n": 1,
+            "phase": "STEP 01 · 3주",
+            "weeks": 3,
+            "priority": "high",
+            "title": "한 도메인을 배포까지 완성하기",
+            "body": "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
+            "deliverable": "배포 URL + ERD + 인덱스 설계 근거 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_crud-api",
+                "label": "CRUD REST API 프로젝트",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_rdb-schema",
+                "label": "RDB 설계·쿼리 기본기",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+            "tags": [
+              "자원 설계",
+              "인덱스 근거",
+              "배포"
+            ]
+          },
+          {
+            "n": 2,
+            "phase": "STEP 02 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "실패를 다루기 — 에러 응답과 장애 복구 실험",
+            "body": "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
+            "deliverable": "실패 케이스 처리 코드 + 장애 재현·복구 기록 + 회고 글",
+            "fills": [
+              {
+                "item_id": "cc_backend_error-handling",
+                "label": "예외·에러 응답 설계",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_incident-recovery",
+                "label": "장애·복구 대응 경험",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 성공 경로만 있는 결과물은 신입 사이에서 변별력이 없습니다.",
+            "tags": [
+              "에러 응답 설계",
+              "장애 재현",
+              "회고"
+            ]
+          },
+          {
+            "n": 3,
+            "phase": "STEP 03 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "측정하고 하나를 개선하기",
+            "body": "부하 테스트로 병목을 찾고 인덱스나 캐시 중 하나를 골라 개선 전후 지표를 남기세요.",
+            "deliverable": "부하 테스트 결과 + 개선 전후 지표 비교 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_test-habit",
+                "label": "테스트 작성 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
+            "tags": [
+              "부하 테스트",
+              "캐시",
+              "지표 비교"
+            ]
+          },
+          {
+            "n": 4,
+            "phase": "STEP 04 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "기업군에 맞춰 마무리하기",
+            "body": "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
+            "deliverable": "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+            "fills": [
+              {
+                "item_id": "cc_backend_collab-story",
+                "label": "협업 문제 해결 서사",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_docs-habit",
+                "label": "기술 문서화 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+            "tags": [
+              "편차 보강",
+              "소개 순서",
+              "문서 정리"
+            ]
+          }
+        ],
+        "study_tracks": [
+          {
+            "phase": "상시 · 별도 트랙",
+            "priority": "track",
+            "title": "알고리즘·코딩테스트",
+            "depth": "지원 시점까지 꾸준히. 공고 요구 분석의 대상이 아니라 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+            "reason_title": "왜 따로 두나요?",
+            "reason": "요구 분석의 결과가 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+            "fills": []
+          },
+          {
+            "phase": "STEP 01~02와 병행",
+            "priority": "high",
+            "title": "트랜잭션·DB 이론",
+            "depth": "격리수준 네 단계와 각각의 문제, 락과 MVCC 의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "프로젝트에서 적용은 하지만 면접의 꼬리질문은 이론 이해를 검증합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_tx-integrity",
+                "label": "트랜잭션·동시성 심화",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "STEP 01~03과 병행",
+            "priority": "mid",
+            "title": "Spring 동작 원리",
+            "depth": "DI 컨테이너가 하는 일, @Transactional 의 프록시 동작, 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "써 봤다와 무엇을 해주는지 안다를 면접이 구분합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_spring-internals",
+                "label": "Spring 동작 원리 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 주 3~4시간",
+            "priority": "mid",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "depth": "HTTP 와 TCP 의 기본 흐름, 프로세스와 스레드, 경쟁 상태의 원인까지. 과목 전체가 아니라 면접 단골 주제 중심으로.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "동시성과 장애 해석의 이론 바탕입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          }
+        ],
+        "check_rows": [
+          {
+            "item_id": "cc_backend_crud-api",
+            "title": "CRUD REST API 프로젝트",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_rdb-schema",
+            "title": "RDB 설계·쿼리 기본기",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_error-handling",
+            "title": "예외·에러 응답 설계",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_tx-integrity",
+            "title": "트랜잭션·동시성 심화",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_performance",
+            "title": "부하 측정·성능 개선",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_deploy-pipeline",
+            "title": "배포 파이프라인 구성",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_event-pipeline",
+            "title": "이벤트 처리 경험",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_incident-recovery",
+            "title": "장애·복구 대응 경험",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_collab-story",
+            "title": "협업 문제 해결 서사",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_test-habit",
+            "title": "테스트 작성 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_docs-habit",
+            "title": "기술 문서화 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_domain-study",
+            "title": "도메인 이해 정리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_cs-basics",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_spring-internals",
+            "title": "Spring 동작 원리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          }
+        ],
+        "agent_version": "1.0.0",
+        "source": "stored"
+      }
+    },
+    {
+      "name": "거짓 체크 섞임 · overall · 모르는 키 포함",
+      "note": "값이 거짓인 키는 보유가 아니다. payload 에 없는 개념 키는 아무 단계도 움직이지 않는다. 여기서는 STEP 02 만 완결된다",
+      "source": "agent/data/demo_seed/analysis_outputs.csv · out_demo_backend_road_overall",
+      "payload": {
+        "job": "backend",
+        "scope": {
+          "level": "overall",
+          "cluster_tag": null,
+          "posting_id": null
+        },
+        "project_steps": [
+          {
+            "n": 1,
+            "phase": "STEP 01 · 3주",
+            "weeks": 3,
+            "priority": "vhigh",
+            "title": "한 도메인을 배포까지 완성하기",
+            "body": "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
+            "deliverable": "배포 URL + ERD + 인덱스 설계 근거 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_crud-api",
+                "label": "CRUD REST API 프로젝트",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_rdb-schema",
+                "label": "RDB 설계·쿼리 기본기",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+            "tags": [
+              "자원 설계",
+              "인덱스 근거",
+              "배포"
+            ]
+          },
+          {
+            "n": 2,
+            "phase": "STEP 02 · 2주",
+            "weeks": 2,
+            "priority": "vhigh",
+            "title": "실패를 다루기 — 에러 응답과 장애 복구 실험",
+            "body": "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
+            "deliverable": "실패 케이스 처리 코드 + 장애 재현·복구 기록 + 회고 글",
+            "fills": [
+              {
+                "item_id": "cc_backend_error-handling",
+                "label": "예외·에러 응답 설계",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_incident-recovery",
+                "label": "장애·복구 대응 경험",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 성공 경로만 있는 결과물은 신입 사이에서 변별력이 없습니다.",
+            "tags": [
+              "에러 응답 설계",
+              "장애 재현",
+              "회고"
+            ]
+          },
+          {
+            "n": 3,
+            "phase": "STEP 03 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "측정하고 하나를 개선하기",
+            "body": "부하 테스트로 병목을 찾고 인덱스나 캐시 중 하나를 골라 개선 전후 지표를 남기세요.",
+            "deliverable": "부하 테스트 결과 + 개선 전후 지표 비교 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_test-habit",
+                "label": "테스트 작성 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
+            "tags": [
+              "부하 테스트",
+              "캐시",
+              "지표 비교"
+            ]
+          },
+          {
+            "n": 4,
+            "phase": "STEP 04 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "기업군에 맞춰 마무리하기",
+            "body": "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
+            "deliverable": "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+            "fills": [
+              {
+                "item_id": "cc_backend_collab-story",
+                "label": "협업 문제 해결 서사",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_docs-habit",
+                "label": "기술 문서화 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+            "tags": [
+              "편차 보강",
+              "소개 순서",
+              "문서 정리"
+            ]
+          }
+        ],
+        "study_tracks": [
+          {
+            "phase": "STEP 01~02와 병행",
+            "priority": "vhigh",
+            "title": "트랜잭션·DB 이론",
+            "depth": "격리수준 네 단계와 각각의 문제, 락과 MVCC 의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "프로젝트에서 적용은 하지만 면접의 꼬리질문은 이론 이해를 검증합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_tx-integrity",
+                "label": "트랜잭션·동시성 심화",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "STEP 01~03과 병행",
+            "priority": "high",
+            "title": "Spring 동작 원리",
+            "depth": "DI 컨테이너가 하는 일, @Transactional 의 프록시 동작, 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "써 봤다와 무엇을 해주는지 안다를 면접이 구분합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_spring-internals",
+                "label": "Spring 동작 원리 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 주 3~4시간",
+            "priority": "high",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "depth": "HTTP 와 TCP 의 기본 흐름, 프로세스와 스레드, 경쟁 상태의 원인까지. 과목 전체가 아니라 면접 단골 주제 중심으로.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "동시성과 장애 해석의 이론 바탕입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 별도 트랙",
+            "priority": "track",
+            "title": "알고리즘·코딩테스트",
+            "depth": "지원 시점까지 꾸준히. 공고 요구 분석의 대상이 아니라 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+            "reason_title": "왜 따로 두나요?",
+            "reason": "요구 분석의 결과가 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+            "fills": []
+          }
+        ],
+        "check_rows": [
+          {
+            "item_id": "cc_backend_crud-api",
+            "title": "CRUD REST API 프로젝트",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_rdb-schema",
+            "title": "RDB 설계·쿼리 기본기",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_error-handling",
+            "title": "예외·에러 응답 설계",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_tx-integrity",
+            "title": "트랜잭션·동시성 심화",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_performance",
+            "title": "부하 측정·성능 개선",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_deploy-pipeline",
+            "title": "배포 파이프라인 구성",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_event-pipeline",
+            "title": "이벤트 처리 경험",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_incident-recovery",
+            "title": "장애·복구 대응 경험",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_collab-story",
+            "title": "협업 문제 해결 서사",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_test-habit",
+            "title": "테스트 작성 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_docs-habit",
+            "title": "기술 문서화 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_domain-study",
+            "title": "도메인 이해 정리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_cs-basics",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_spring-internals",
+            "title": "Spring 동작 원리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          }
+        ],
+        "agent_version": "1.0.0",
+        "source": "stored"
+      },
+      "checks": {
+        "cc_backend_crud-api": true,
+        "cc_backend_rdb-schema": false,
+        "cc_backend_error-handling": true,
+        "cc_backend_incident-recovery": true,
+        "cc_backend_performance": false,
+        "cc_backend_unknown-concept": true
+      },
+      "expected": {
+        "job": "backend",
+        "scope": {
+          "level": "overall",
+          "cluster_tag": null,
+          "posting_id": null
+        },
+        "project_steps": [
+          {
+            "n": 1,
+            "phase": "STEP 01 · 3주",
+            "weeks": 3,
+            "priority": "vhigh",
+            "title": "한 도메인을 배포까지 완성하기",
+            "body": "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
+            "deliverable": "배포 URL + ERD + 인덱스 설계 근거 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_crud-api",
+                "label": "CRUD REST API 프로젝트",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_rdb-schema",
+                "label": "RDB 설계·쿼리 기본기",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+            "tags": [
+              "자원 설계",
+              "인덱스 근거",
+              "배포"
+            ]
+          },
+          {
+            "n": 2,
+            "phase": "STEP 02 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "측정하고 하나를 개선하기",
+            "body": "부하 테스트로 병목을 찾고 인덱스나 캐시 중 하나를 골라 개선 전후 지표를 남기세요.",
+            "deliverable": "부하 테스트 결과 + 개선 전후 지표 비교 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_test-habit",
+                "label": "테스트 작성 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
+            "tags": [
+              "부하 테스트",
+              "캐시",
+              "지표 비교"
+            ]
+          },
+          {
+            "n": 3,
+            "phase": "STEP 03 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "기업군에 맞춰 마무리하기",
+            "body": "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
+            "deliverable": "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+            "fills": [
+              {
+                "item_id": "cc_backend_collab-story",
+                "label": "협업 문제 해결 서사",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_docs-habit",
+                "label": "기술 문서화 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+            "tags": [
+              "편차 보강",
+              "소개 순서",
+              "문서 정리"
+            ]
+          },
+          {
+            "n": 4,
+            "phase": "STEP 04 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "실패를 다루기 — 에러 응답과 장애 복구 실험",
+            "body": "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
+            "deliverable": "실패 케이스 처리 코드 + 장애 재현·복구 기록 + 회고 글",
+            "fills": [
+              {
+                "item_id": "cc_backend_error-handling",
+                "label": "예외·에러 응답 설계",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_incident-recovery",
+                "label": "장애·복구 대응 경험",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "전체 기준에서 성공 경로만 있는 결과물은 신입 사이에서 변별력이 없습니다.",
+            "tags": [
+              "에러 응답 설계",
+              "장애 재현",
+              "회고"
+            ]
+          }
+        ],
+        "study_tracks": [
+          {
+            "phase": "STEP 01~02와 병행",
+            "priority": "vhigh",
+            "title": "트랜잭션·DB 이론",
+            "depth": "격리수준 네 단계와 각각의 문제, 락과 MVCC 의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "프로젝트에서 적용은 하지만 면접의 꼬리질문은 이론 이해를 검증합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_tx-integrity",
+                "label": "트랜잭션·동시성 심화",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "STEP 01~03과 병행",
+            "priority": "high",
+            "title": "Spring 동작 원리",
+            "depth": "DI 컨테이너가 하는 일, @Transactional 의 프록시 동작, 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "써 봤다와 무엇을 해주는지 안다를 면접이 구분합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_spring-internals",
+                "label": "Spring 동작 원리 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 주 3~4시간",
+            "priority": "high",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "depth": "HTTP 와 TCP 의 기본 흐름, 프로세스와 스레드, 경쟁 상태의 원인까지. 과목 전체가 아니라 면접 단골 주제 중심으로.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "동시성과 장애 해석의 이론 바탕입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 별도 트랙",
+            "priority": "track",
+            "title": "알고리즘·코딩테스트",
+            "depth": "지원 시점까지 꾸준히. 공고 요구 분석의 대상이 아니라 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+            "reason_title": "왜 따로 두나요?",
+            "reason": "요구 분석의 결과가 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+            "fills": []
+          }
+        ],
+        "check_rows": [
+          {
+            "item_id": "cc_backend_crud-api",
+            "title": "CRUD REST API 프로젝트",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_rdb-schema",
+            "title": "RDB 설계·쿼리 기본기",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_error-handling",
+            "title": "예외·에러 응답 설계",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_tx-integrity",
+            "title": "트랜잭션·동시성 심화",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_performance",
+            "title": "부하 측정·성능 개선",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_deploy-pipeline",
+            "title": "배포 파이프라인 구성",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_event-pipeline",
+            "title": "이벤트 처리 경험",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_incident-recovery",
+            "title": "장애·복구 대응 경험",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_collab-story",
+            "title": "협업 문제 해결 서사",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_test-habit",
+            "title": "테스트 작성 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_docs-habit",
+            "title": "기술 문서화 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_domain-study",
+            "title": "도메인 이해 정리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_cs-basics",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_spring-internals",
+            "title": "Spring 동작 원리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          }
+        ],
+        "agent_version": "1.0.0",
+        "source": "stored"
+      }
+    },
+    {
+      "name": "학습 트랙만 보유 · cluster bigtech_platform · 빈 fills 트랙",
+      "note": "세 학습 트랙의 개념을 모두 보유해 트랙만 뒤로 밀린다. fills 가 빈 코딩테스트 트랙은 자리를 지키고 project_steps 는 번호가 그대로다",
+      "source": "agent/data/demo_seed/analysis_outputs.csv · out_demo_backend_road_bigtech_platform",
+      "payload": {
+        "job": "backend",
+        "scope": {
+          "level": "cluster",
+          "cluster_tag": "빅테크·플랫폼",
+          "posting_id": null
+        },
+        "project_steps": [
+          {
+            "n": 1,
+            "phase": "STEP 01 · 3주",
+            "weeks": 3,
+            "priority": "vhigh",
+            "title": "한 도메인을 배포까지 완성하기",
+            "body": "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
+            "deliverable": "배포 URL + ERD + 인덱스 설계 근거 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선 (편차 1)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_crud-api",
+                "label": "CRUD REST API 프로젝트",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_rdb-schema",
+                "label": "RDB 설계·쿼리 기본기",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+            "tags": [
+              "자원 설계",
+              "인덱스 근거",
+              "배포"
+            ]
+          },
+          {
+            "n": 2,
+            "phase": "STEP 02 · 2주",
+            "weeks": 2,
+            "priority": "vhigh",
+            "title": "실패를 다루기 — 에러 응답과 장애 복구 실험",
+            "body": "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
+            "deliverable": "실패 케이스 처리 코드 + 장애 재현·복구 기록 + 회고 글",
+            "fills": [
+              {
+                "item_id": "cc_backend_event-pipeline",
+                "label": "이벤트 처리 경험 (편차 2)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_error-handling",
+                "label": "예외·에러 응답 설계",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_incident-recovery",
+                "label": "장애·복구 대응 경험",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 성공 경로만 있는 결과물은 신입 사이에서 변별력이 없습니다.",
+            "tags": [
+              "에러 응답 설계",
+              "장애 재현",
+              "회고"
+            ]
+          },
+          {
+            "n": 3,
+            "phase": "STEP 03 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "측정하고 하나를 개선하기",
+            "body": "부하 테스트로 병목을 찾고 인덱스나 캐시 중 하나를 골라 개선 전후 지표를 남기세요.",
+            "deliverable": "부하 테스트 결과 + 개선 전후 지표 비교 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_deploy-pipeline",
+                "label": "배포 파이프라인 구성 (편차 3)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선 (편차 1)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_test-habit",
+                "label": "테스트 작성 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
+            "tags": [
+              "부하 테스트",
+              "캐시",
+              "지표 비교"
+            ]
+          },
+          {
+            "n": 4,
+            "phase": "STEP 04 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "기업군에 맞춰 마무리하기",
+            "body": "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
+            "deliverable": "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+            "fills": [
+              {
+                "item_id": "cc_backend_collab-story",
+                "label": "협업 문제 해결 서사",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_docs-habit",
+                "label": "기술 문서화 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+            "tags": [
+              "편차 보강",
+              "소개 순서",
+              "문서 정리"
+            ]
+          }
+        ],
+        "study_tracks": [
+          {
+            "phase": "STEP 01~02와 병행",
+            "priority": "vhigh",
+            "title": "트랜잭션·DB 이론",
+            "depth": "격리수준 네 단계와 각각의 문제, 락과 MVCC 의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "프로젝트에서 적용은 하지만 면접의 꼬리질문은 이론 이해를 검증합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_tx-integrity",
+                "label": "트랜잭션·동시성 심화",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "STEP 01~03과 병행",
+            "priority": "high",
+            "title": "Spring 동작 원리",
+            "depth": "DI 컨테이너가 하는 일, @Transactional 의 프록시 동작, 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "써 봤다와 무엇을 해주는지 안다를 면접이 구분합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_spring-internals",
+                "label": "Spring 동작 원리 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 주 3~4시간",
+            "priority": "high",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "depth": "HTTP 와 TCP 의 기본 흐름, 프로세스와 스레드, 경쟁 상태의 원인까지. 과목 전체가 아니라 면접 단골 주제 중심으로.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "동시성과 장애 해석의 이론 바탕입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 별도 트랙",
+            "priority": "track",
+            "title": "알고리즘·코딩테스트",
+            "depth": "지원 시점까지 꾸준히. 공고 요구 분석의 대상이 아니라 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+            "reason_title": "왜 따로 두나요?",
+            "reason": "요구 분석의 결과가 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+            "fills": []
+          }
+        ],
+        "check_rows": [
+          {
+            "item_id": "cc_backend_crud-api",
+            "title": "CRUD REST API 프로젝트",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_rdb-schema",
+            "title": "RDB 설계·쿼리 기본기",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_error-handling",
+            "title": "예외·에러 응답 설계",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_tx-integrity",
+            "title": "트랜잭션·동시성 심화",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_performance",
+            "title": "부하 측정·성능 개선",
+            "kind": "project",
+            "is_deviation": true,
+            "dev_n": 1,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_deploy-pipeline",
+            "title": "배포 파이프라인 구성",
+            "kind": "project",
+            "is_deviation": true,
+            "dev_n": 3,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_event-pipeline",
+            "title": "이벤트 처리 경험",
+            "kind": "project",
+            "is_deviation": true,
+            "dev_n": 2,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_incident-recovery",
+            "title": "장애·복구 대응 경험",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_collab-story",
+            "title": "협업 문제 해결 서사",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_test-habit",
+            "title": "테스트 작성 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_docs-habit",
+            "title": "기술 문서화 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_domain-study",
+            "title": "도메인 이해 정리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_cs-basics",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_spring-internals",
+            "title": "Spring 동작 원리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          }
+        ],
+        "agent_version": "1.0.0",
+        "source": "stored"
+      },
+      "checks": {
+        "cc_backend_tx-integrity": true,
+        "cc_backend_cs-basics": true,
+        "cc_backend_spring-internals": true
+      },
+      "expected": {
+        "job": "backend",
+        "scope": {
+          "level": "cluster",
+          "cluster_tag": "빅테크·플랫폼",
+          "posting_id": null
+        },
+        "project_steps": [
+          {
+            "n": 1,
+            "phase": "STEP 01 · 3주",
+            "weeks": 3,
+            "priority": "vhigh",
+            "title": "한 도메인을 배포까지 완성하기",
+            "body": "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
+            "deliverable": "배포 URL + ERD + 인덱스 설계 근거 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선 (편차 1)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_crud-api",
+                "label": "CRUD REST API 프로젝트",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_rdb-schema",
+                "label": "RDB 설계·쿼리 기본기",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+            "tags": [
+              "자원 설계",
+              "인덱스 근거",
+              "배포"
+            ]
+          },
+          {
+            "n": 2,
+            "phase": "STEP 02 · 2주",
+            "weeks": 2,
+            "priority": "vhigh",
+            "title": "실패를 다루기 — 에러 응답과 장애 복구 실험",
+            "body": "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
+            "deliverable": "실패 케이스 처리 코드 + 장애 재현·복구 기록 + 회고 글",
+            "fills": [
+              {
+                "item_id": "cc_backend_event-pipeline",
+                "label": "이벤트 처리 경험 (편차 2)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_error-handling",
+                "label": "예외·에러 응답 설계",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_incident-recovery",
+                "label": "장애·복구 대응 경험",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 성공 경로만 있는 결과물은 신입 사이에서 변별력이 없습니다.",
+            "tags": [
+              "에러 응답 설계",
+              "장애 재현",
+              "회고"
+            ]
+          },
+          {
+            "n": 3,
+            "phase": "STEP 03 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "측정하고 하나를 개선하기",
+            "body": "부하 테스트로 병목을 찾고 인덱스나 캐시 중 하나를 골라 개선 전후 지표를 남기세요.",
+            "deliverable": "부하 테스트 결과 + 개선 전후 지표 비교 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_deploy-pipeline",
+                "label": "배포 파이프라인 구성 (편차 3)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선 (편차 1)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_test-habit",
+                "label": "테스트 작성 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
+            "tags": [
+              "부하 테스트",
+              "캐시",
+              "지표 비교"
+            ]
+          },
+          {
+            "n": 4,
+            "phase": "STEP 04 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "기업군에 맞춰 마무리하기",
+            "body": "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
+            "deliverable": "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+            "fills": [
+              {
+                "item_id": "cc_backend_collab-story",
+                "label": "협업 문제 해결 서사",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_docs-habit",
+                "label": "기술 문서화 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+            "tags": [
+              "편차 보강",
+              "소개 순서",
+              "문서 정리"
+            ]
+          }
+        ],
+        "study_tracks": [
+          {
+            "phase": "상시 · 별도 트랙",
+            "priority": "track",
+            "title": "알고리즘·코딩테스트",
+            "depth": "지원 시점까지 꾸준히. 공고 요구 분석의 대상이 아니라 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+            "reason_title": "왜 따로 두나요?",
+            "reason": "요구 분석의 결과가 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+            "fills": []
+          },
+          {
+            "phase": "STEP 01~02와 병행",
+            "priority": "high",
+            "title": "트랜잭션·DB 이론",
+            "depth": "격리수준 네 단계와 각각의 문제, 락과 MVCC 의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "프로젝트에서 적용은 하지만 면접의 꼬리질문은 이론 이해를 검증합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_tx-integrity",
+                "label": "트랜잭션·동시성 심화",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "STEP 01~03과 병행",
+            "priority": "mid",
+            "title": "Spring 동작 원리",
+            "depth": "DI 컨테이너가 하는 일, @Transactional 의 프록시 동작, 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "써 봤다와 무엇을 해주는지 안다를 면접이 구분합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_spring-internals",
+                "label": "Spring 동작 원리 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 주 3~4시간",
+            "priority": "mid",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "depth": "HTTP 와 TCP 의 기본 흐름, 프로세스와 스레드, 경쟁 상태의 원인까지. 과목 전체가 아니라 면접 단골 주제 중심으로.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "동시성과 장애 해석의 이론 바탕입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          }
+        ],
+        "check_rows": [
+          {
+            "item_id": "cc_backend_crud-api",
+            "title": "CRUD REST API 프로젝트",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_rdb-schema",
+            "title": "RDB 설계·쿼리 기본기",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_error-handling",
+            "title": "예외·에러 응답 설계",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_tx-integrity",
+            "title": "트랜잭션·동시성 심화",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_performance",
+            "title": "부하 측정·성능 개선",
+            "kind": "project",
+            "is_deviation": true,
+            "dev_n": 1,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_deploy-pipeline",
+            "title": "배포 파이프라인 구성",
+            "kind": "project",
+            "is_deviation": true,
+            "dev_n": 3,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_event-pipeline",
+            "title": "이벤트 처리 경험",
+            "kind": "project",
+            "is_deviation": true,
+            "dev_n": 2,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_incident-recovery",
+            "title": "장애·복구 대응 경험",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_collab-story",
+            "title": "협업 문제 해결 서사",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_test-habit",
+            "title": "테스트 작성 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_docs-habit",
+            "title": "기술 문서화 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_domain-study",
+            "title": "도메인 이해 정리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_cs-basics",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_spring-internals",
+            "title": "Spring 동작 원리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          }
+        ],
+        "agent_version": "1.0.0",
+        "source": "stored"
+      }
+    },
+    {
+      "name": "전부 보유 · cluster bigtech_platform",
+      "note": "기업군 범위 payload 로 같은 규칙을 한 번 더 확인한다. check_rows 의 source_step 이 모두 보유로 바뀐다",
+      "source": "agent/data/demo_seed/analysis_outputs.csv · out_demo_backend_road_bigtech_platform",
+      "payload": {
+        "job": "backend",
+        "scope": {
+          "level": "cluster",
+          "cluster_tag": "빅테크·플랫폼",
+          "posting_id": null
+        },
+        "project_steps": [
+          {
+            "n": 1,
+            "phase": "STEP 01 · 3주",
+            "weeks": 3,
+            "priority": "vhigh",
+            "title": "한 도메인을 배포까지 완성하기",
+            "body": "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
+            "deliverable": "배포 URL + ERD + 인덱스 설계 근거 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선 (편차 1)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_crud-api",
+                "label": "CRUD REST API 프로젝트",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_rdb-schema",
+                "label": "RDB 설계·쿼리 기본기",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+            "tags": [
+              "자원 설계",
+              "인덱스 근거",
+              "배포"
+            ]
+          },
+          {
+            "n": 2,
+            "phase": "STEP 02 · 2주",
+            "weeks": 2,
+            "priority": "vhigh",
+            "title": "실패를 다루기 — 에러 응답과 장애 복구 실험",
+            "body": "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
+            "deliverable": "실패 케이스 처리 코드 + 장애 재현·복구 기록 + 회고 글",
+            "fills": [
+              {
+                "item_id": "cc_backend_event-pipeline",
+                "label": "이벤트 처리 경험 (편차 2)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_error-handling",
+                "label": "예외·에러 응답 설계",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_incident-recovery",
+                "label": "장애·복구 대응 경험",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 성공 경로만 있는 결과물은 신입 사이에서 변별력이 없습니다.",
+            "tags": [
+              "에러 응답 설계",
+              "장애 재현",
+              "회고"
+            ]
+          },
+          {
+            "n": 3,
+            "phase": "STEP 03 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "측정하고 하나를 개선하기",
+            "body": "부하 테스트로 병목을 찾고 인덱스나 캐시 중 하나를 골라 개선 전후 지표를 남기세요.",
+            "deliverable": "부하 테스트 결과 + 개선 전후 지표 비교 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_deploy-pipeline",
+                "label": "배포 파이프라인 구성 (편차 3)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선 (편차 1)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_test-habit",
+                "label": "테스트 작성 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
+            "tags": [
+              "부하 테스트",
+              "캐시",
+              "지표 비교"
+            ]
+          },
+          {
+            "n": 4,
+            "phase": "STEP 04 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "기업군에 맞춰 마무리하기",
+            "body": "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
+            "deliverable": "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+            "fills": [
+              {
+                "item_id": "cc_backend_collab-story",
+                "label": "협업 문제 해결 서사",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_docs-habit",
+                "label": "기술 문서화 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+            "tags": [
+              "편차 보강",
+              "소개 순서",
+              "문서 정리"
+            ]
+          }
+        ],
+        "study_tracks": [
+          {
+            "phase": "STEP 01~02와 병행",
+            "priority": "vhigh",
+            "title": "트랜잭션·DB 이론",
+            "depth": "격리수준 네 단계와 각각의 문제, 락과 MVCC 의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "프로젝트에서 적용은 하지만 면접의 꼬리질문은 이론 이해를 검증합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_tx-integrity",
+                "label": "트랜잭션·동시성 심화",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "STEP 01~03과 병행",
+            "priority": "high",
+            "title": "Spring 동작 원리",
+            "depth": "DI 컨테이너가 하는 일, @Transactional 의 프록시 동작, 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "써 봤다와 무엇을 해주는지 안다를 면접이 구분합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_spring-internals",
+                "label": "Spring 동작 원리 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 주 3~4시간",
+            "priority": "high",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "depth": "HTTP 와 TCP 의 기본 흐름, 프로세스와 스레드, 경쟁 상태의 원인까지. 과목 전체가 아니라 면접 단골 주제 중심으로.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "동시성과 장애 해석의 이론 바탕입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 별도 트랙",
+            "priority": "track",
+            "title": "알고리즘·코딩테스트",
+            "depth": "지원 시점까지 꾸준히. 공고 요구 분석의 대상이 아니라 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+            "reason_title": "왜 따로 두나요?",
+            "reason": "요구 분석의 결과가 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+            "fills": []
+          }
+        ],
+        "check_rows": [
+          {
+            "item_id": "cc_backend_crud-api",
+            "title": "CRUD REST API 프로젝트",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_rdb-schema",
+            "title": "RDB 설계·쿼리 기본기",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_error-handling",
+            "title": "예외·에러 응답 설계",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_tx-integrity",
+            "title": "트랜잭션·동시성 심화",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_performance",
+            "title": "부하 측정·성능 개선",
+            "kind": "project",
+            "is_deviation": true,
+            "dev_n": 1,
+            "required": true,
+            "source_step": "STEP 01"
+          },
+          {
+            "item_id": "cc_backend_deploy-pipeline",
+            "title": "배포 파이프라인 구성",
+            "kind": "project",
+            "is_deviation": true,
+            "dev_n": 3,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_event-pipeline",
+            "title": "이벤트 처리 경험",
+            "kind": "project",
+            "is_deviation": true,
+            "dev_n": 2,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_incident-recovery",
+            "title": "장애·복구 대응 경험",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 02"
+          },
+          {
+            "item_id": "cc_backend_collab-story",
+            "title": "협업 문제 해결 서사",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_test-habit",
+            "title": "테스트 작성 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "STEP 03"
+          },
+          {
+            "item_id": "cc_backend_docs-habit",
+            "title": "기술 문서화 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "STEP 04"
+          },
+          {
+            "item_id": "cc_backend_domain-study",
+            "title": "도메인 이해 정리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "상시"
+          },
+          {
+            "item_id": "cc_backend_cs-basics",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          },
+          {
+            "item_id": "cc_backend_spring-internals",
+            "title": "Spring 동작 원리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "병행"
+          }
+        ],
+        "agent_version": "1.0.0",
+        "source": "stored"
+      },
+      "checks": {
+        "cc_backend_crud-api": true,
+        "cc_backend_rdb-schema": true,
+        "cc_backend_error-handling": true,
+        "cc_backend_tx-integrity": true,
+        "cc_backend_performance": true,
+        "cc_backend_deploy-pipeline": true,
+        "cc_backend_event-pipeline": true,
+        "cc_backend_incident-recovery": true,
+        "cc_backend_collab-story": true,
+        "cc_backend_test-habit": true,
+        "cc_backend_docs-habit": true,
+        "cc_backend_domain-study": true,
+        "cc_backend_cs-basics": true,
+        "cc_backend_spring-internals": true
+      },
+      "expected": {
+        "job": "backend",
+        "scope": {
+          "level": "cluster",
+          "cluster_tag": "빅테크·플랫폼",
+          "posting_id": null
+        },
+        "project_steps": [
+          {
+            "n": 1,
+            "phase": "STEP 01 · 3주",
+            "weeks": 3,
+            "priority": "high",
+            "title": "한 도메인을 배포까지 완성하기",
+            "body": "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
+            "deliverable": "배포 URL + ERD + 인덱스 설계 근거 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선 (편차 1)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_crud-api",
+                "label": "CRUD REST API 프로젝트",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_rdb-schema",
+                "label": "RDB 설계·쿼리 기본기",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+            "tags": [
+              "자원 설계",
+              "인덱스 근거",
+              "배포"
+            ]
+          },
+          {
+            "n": 2,
+            "phase": "STEP 02 · 2주",
+            "weeks": 2,
+            "priority": "high",
+            "title": "실패를 다루기 — 에러 응답과 장애 복구 실험",
+            "body": "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
+            "deliverable": "실패 케이스 처리 코드 + 장애 재현·복구 기록 + 회고 글",
+            "fills": [
+              {
+                "item_id": "cc_backend_event-pipeline",
+                "label": "이벤트 처리 경험 (편차 2)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_error-handling",
+                "label": "예외·에러 응답 설계",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_incident-recovery",
+                "label": "장애·복구 대응 경험",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 성공 경로만 있는 결과물은 신입 사이에서 변별력이 없습니다.",
+            "tags": [
+              "에러 응답 설계",
+              "장애 재현",
+              "회고"
+            ]
+          },
+          {
+            "n": 3,
+            "phase": "STEP 03 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "측정하고 하나를 개선하기",
+            "body": "부하 테스트로 병목을 찾고 인덱스나 캐시 중 하나를 골라 개선 전후 지표를 남기세요.",
+            "deliverable": "부하 테스트 결과 + 개선 전후 지표 비교 문서",
+            "fills": [
+              {
+                "item_id": "cc_backend_deploy-pipeline",
+                "label": "배포 파이프라인 구성 (편차 3)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_performance",
+                "label": "부하 측정·성능 개선 (편차 1)",
+                "kind": "dev"
+              },
+              {
+                "item_id": "cc_backend_test-habit",
+                "label": "테스트 작성 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
+            "tags": [
+              "부하 테스트",
+              "캐시",
+              "지표 비교"
+            ]
+          },
+          {
+            "n": 4,
+            "phase": "STEP 04 · 2주",
+            "weeks": 2,
+            "priority": "mid",
+            "title": "기업군에 맞춰 마무리하기",
+            "body": "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
+            "deliverable": "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+            "fills": [
+              {
+                "item_id": "cc_backend_collab-story",
+                "label": "협업 문제 해결 서사",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_docs-habit",
+                "label": "기술 문서화 습관",
+                "kind": "normal"
+              }
+            ],
+            "reason_title": "왜 이 순서인가요?",
+            "reason": "빅테크·플랫폼에서 필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+            "tags": [
+              "편차 보강",
+              "소개 순서",
+              "문서 정리"
+            ]
+          }
+        ],
+        "study_tracks": [
+          {
+            "phase": "상시 · 별도 트랙",
+            "priority": "track",
+            "title": "알고리즘·코딩테스트",
+            "depth": "지원 시점까지 꾸준히. 공고 요구 분석의 대상이 아니라 전형 자체의 관문이라 별도 트랙으로 둡니다.",
+            "reason_title": "왜 따로 두나요?",
+            "reason": "요구 분석의 결과가 아니라 전형 단계입니다. 잊지 않도록 표시만 합니다.",
+            "fills": []
+          },
+          {
+            "phase": "STEP 01~02와 병행",
+            "priority": "high",
+            "title": "트랜잭션·DB 이론",
+            "depth": "격리수준 네 단계와 각각의 문제, 락과 MVCC 의 차이, 인덱스가 쿼리를 빠르게 하는 원리를 남에게 설명할 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "프로젝트에서 적용은 하지만 면접의 꼬리질문은 이론 이해를 검증합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_tx-integrity",
+                "label": "트랜잭션·동시성 심화",
+                "kind": "normal"
+              },
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "STEP 01~03과 병행",
+            "priority": "mid",
+            "title": "Spring 동작 원리",
+            "depth": "DI 컨테이너가 하는 일, @Transactional 의 프록시 동작, 요청 하나가 컨트롤러까지 오는 흐름을 그림으로 그릴 수 있는 수준까지.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "써 봤다와 무엇을 해주는지 안다를 면접이 구분합니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_spring-internals",
+                "label": "Spring 동작 원리 (학습)",
+                "kind": "study"
+              }
+            ]
+          },
+          {
+            "phase": "상시 · 주 3~4시간",
+            "priority": "mid",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "depth": "HTTP 와 TCP 의 기본 흐름, 프로세스와 스레드, 경쟁 상태의 원인까지. 과목 전체가 아니라 면접 단골 주제 중심으로.",
+            "reason_title": "왜 필요한가요?",
+            "reason": "동시성과 장애 해석의 이론 바탕입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+            "fills": [
+              {
+                "item_id": "cc_backend_cs-basics",
+                "label": "CS 기본기 — 네트워크·운영체제 (학습)",
+                "kind": "study"
+              }
+            ]
+          }
+        ],
+        "check_rows": [
+          {
+            "item_id": "cc_backend_crud-api",
+            "title": "CRUD REST API 프로젝트",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_rdb-schema",
+            "title": "RDB 설계·쿼리 기본기",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_error-handling",
+            "title": "예외·에러 응답 설계",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_tx-integrity",
+            "title": "트랜잭션·동시성 심화",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_performance",
+            "title": "부하 측정·성능 개선",
+            "kind": "project",
+            "is_deviation": true,
+            "dev_n": 1,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_deploy-pipeline",
+            "title": "배포 파이프라인 구성",
+            "kind": "project",
+            "is_deviation": true,
+            "dev_n": 3,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_event-pipeline",
+            "title": "이벤트 처리 경험",
+            "kind": "project",
+            "is_deviation": true,
+            "dev_n": 2,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_incident-recovery",
+            "title": "장애·복구 대응 경험",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_collab-story",
+            "title": "협업 문제 해결 서사",
+            "kind": "story",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_test-habit",
+            "title": "테스트 작성 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_docs-habit",
+            "title": "기술 문서화 습관",
+            "kind": "project",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_domain-study",
+            "title": "도메인 이해 정리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": false,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_cs-basics",
+            "title": "CS 기본기 — 네트워크·운영체제",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          },
+          {
+            "item_id": "cc_backend_spring-internals",
+            "title": "Spring 동작 원리",
+            "kind": "study",
+            "is_deviation": false,
+            "dev_n": null,
+            "required": true,
+            "source_step": "보유"
+          }
+        ],
+        "agent_version": "1.0.0",
+        "source": "stored"
+      }
+    },
+    {
+      "name": "빈 payload",
+      "note": "세 배열이 없어도 빈 배열 세 개를 붙여 돌려준다. 합성 입력이다",
+      "source": "합성",
+      "payload": {
+        "job": "backend",
+        "scope": {
+          "level": "overall",
+          "cluster_tag": null,
+          "posting_id": null
+        }
+      },
+      "checks": {
+        "cc_backend_crud-api": true
+      },
+      "expected": {
+        "job": "backend",
+        "scope": {
+          "level": "overall",
+          "cluster_tag": null,
+          "posting_id": null
+        },
+        "project_steps": [],
+        "study_tracks": [],
+        "check_rows": []
+      }
+    }
+  ]
+}

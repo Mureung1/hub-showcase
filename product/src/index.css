@@ -1905,3 +1905,107 @@ button.view-tab { font-weight: 750; }
   .mc-row { grid-template-columns: 34px 1fr; }
   .mc-from { display: none; }
 }
+
+/* ── B14 · 미지원 직무 안내 ─────────────────────────────────────────── */
+
+/* 활성 분석 결과가 없는 직무 안내 — 빈 화면 대신 다음 행동을 준다. */
+.notice-card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
+  padding: 34px 32px; margin: 24px auto; max-width: 620px;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+}
+.notice-card h2 { font-size: 20px; margin: 0; color: var(--color-text-primary); }
+.notice-card p { font-size: 14px; line-height: 1.7; color: var(--color-text-secondary); margin: 0; }
+.notice-card p strong { color: var(--color-text-primary); }
+.notice-card .btn { margin-top: 6px; }
+
+/* 로고 파일이 없는 기술의 글자 배지. 직무마다 등장 기술이 달라도 이미지가 깨지지 않는다. */
+.tech-logo--text {
+  display: grid; place-items: center;
+  background: var(--color-surface-soft); border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 800; color: var(--color-text-secondary);
+}
+
+/* ── 범위 전환 줄 ──────────────────────────────────────────────────────
+   해석·합격 전략·준비 로드맵 세 화면이 머리글 바로 아래에서 같은 모양으로 쓴다.
+   본문 카드와 같은 불투명 흰 면이다 — 반투명은 상단바·사이드바에만 둔다. */
+.scope-switch {
+  display: flex; flex-direction: column; gap: 8px;
+  margin: 0 0 20px; padding: 14px 18px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+}
+.scope-switch__chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.scope-switch .scope-chip:disabled { cursor: default; opacity: 0.55; }
+.scope-switch__line {
+  margin: 0; font-size: 13px; font-weight: 700;
+  color: var(--color-text-primary);
+}
+.scope-switch__hint {
+  margin: 0; font-size: 12px; color: var(--color-text-muted);
+}
+/* 요청한 범위와 다른 범위 결과를 보여 줄 때의 고지. 조용히 넘어가지 않는다. */
+.scope-switch__notice {
+  margin: 0; padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: 12.5px; font-weight: 650;
+}
+
+/* ── 범위 선택 3단 ─────────────────────────────────────────────────────
+   해석·합격 전략·준비 로드맵 세 화면의 범위 선택은 위 `.scope-switch` 하나뿐이다.
+   본문에 흩어져 있던 기업군 칩(.cluster-chips)과 공고 목록(.posting-list)이 이 안으로
+   들어오면서 단이 셋으로 늘었다. 단마다 왼쪽에 이름을 두어 무엇을 고르는 자리인지
+   먼저 읽히게 한다. 본문 카드와 같은 불투명 흰 면을 그대로 유지한다. */
+.scope-switch__tier { display: grid; grid-template-columns: 62px 1fr; gap: 10px; align-items: start; }
+.scope-switch__tier + .scope-switch__tier { padding-top: 10px; border-top: 1px dashed var(--color-border); }
+.scope-switch__tier-label {
+  padding-top: 7px;
+  font-size: 11.5px; font-weight: 750; letter-spacing: .04em;
+  color: var(--color-text-muted);
+}
+
+/* 3단 — 공고 목록. 검색칸·건수·목록을 세로로 쌓는다. */
+.scope-switch__postings { display: flex; flex-direction: column; gap: 6px; }
+.scope-switch__postings .posting-search { max-width: 100%; }
+.scope-switch__postings .posting-count { margin: 0; }
+
+/* 지금 보고 있는 범위 한 줄. 고르는 자리와 읽는 자리를 선으로 나눈다. */
+.scope-switch__line {
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  padding-top: 10px; border-top: 1px solid var(--color-border);
+}
+.scope-switch__now {
+  font-size: 11px; font-weight: 750; letter-spacing: .04em;
+  border-radius: 999px; padding: 2.5px 9px;
+  background: var(--color-primary-light); color: var(--color-primary-dark);
+}
+
+@media (max-width: 860px) {
+  .scope-switch__tier { grid-template-columns: 1fr; gap: 6px; }
+  .scope-switch__tier-label { padding-top: 0; }
+}
+
+/* ── 3단 공고 목록 — 기업군에 매이지 않는 선택지 ────────────────────────
+   직무의 공고 전체가 한 목록에 들어오므로 줄마다 어느 기업군인지 배지로 밝힌다.
+   목록은 길어질 수 있어 최대 높이를 두고 그 안에서 스크롤한다.
+   본문 카드와 같은 불투명 흰 면을 그대로 쓴다 — 반투명은 상단바·사이드바 몫이다. */
+.posting-list--scope { max-height: 232px; margin-top: 2px; }
+.posting-row--scope { grid-template-columns: 1fr 1.5fr auto 88px; }
+.posting-cluster {
+  justify-self: start;
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+  border-radius: 999px; padding: 2px 8px;
+  background: var(--color-primary-light); color: var(--color-primary-dark);
+}
+.posting-row--on .posting-cluster { background: var(--color-surface); }
+
+@media (max-width: 860px) {
+  .posting-row--scope { grid-template-columns: 1fr; }
+  .posting-cluster { justify-self: start; }
+}

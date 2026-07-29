@@ -12,29 +12,49 @@ import json
 from datetime import datetime
 from typing import Any
 
+import pytest
+
 from careersignal.domain.versioning import AnalysisVersionStatus
 from careersignal.orchestration.envelope import (
     METRIC_POLICY_VERSION,
-    TAXONOMY_VERSION_ID,
     agent_run_identifier,
     analysis_version_identifier,
     ensure_analysis_version,
     start_agent_run,
+    taxonomy_mismatch,
 )
 
 JOB_ROLE = "backend"
 DATASET = "ds_backend_2607"
 AGENT = "statistics"
 
+ACTIVE_TAXONOMY = "tx_backend_v3"
+"""저장소가 정한 활성 분류체계 버전. 시드가 만든 v1 이 아니다.
+
+Phase 10 이 승격이 있을 때마다 새 버전을 발행하므로 실행 중인 저장소의 활성 버전은
+시드 직후의 값과 다르다. 대역의 기본값을 v1 로 두면 상수를 다시 고정한 것과 같다.
+"""
+
+SEEDED_TAXONOMY = "tx_backend_v1"
+"""`0002_seed_reference.sql` 이 만든 첫 버전. 옛 선언을 흉내 내는 데만 쓴다."""
+
 
 class FakeEnvelopeStore:
     """오케스트레이터 저장소와 계측 저장소의 대역."""
 
-    def __init__(self) -> None:
+    def __init__(self, active: str | None = ACTIVE_TAXONOMY) -> None:
         self.versions: dict[str, dict[str, Any]] = {}
         self.runs: dict[str, dict[str, Any]] = {}
         self.created_versions = 0
         self.started_runs = 0
+        self.active = active
+
+    def active_taxonomy_version(self, job_role_id: str) -> str | None:
+        return self.active
+
+    def declared_taxonomy_version(self, analysis_version: str) -> str | None:
+        stored = self.versions.get(analysis_version)
+        return None if stored is None else str(stored["taxonomy_version_id"])
 
     def find_analysis_version(self, analysis_version: str) -> str | None:
         return analysis_version if analysis_version in self.versions else None
@@ -67,23 +87,45 @@ class FakeEnvelopeStore:
 
 
 def _ensure(store: FakeEnvelopeStore, **kw: Any) -> Any:
-    base: dict[str, Any] = {"job_role_id": JOB_ROLE, "dataset_version": DATASET}
+    base: dict[str, Any] = {
+        "job_role_id": JOB_ROLE,
+        "dataset_version": DATASET,
+        "taxonomy_version_id": store.active or ACTIVE_TAXONOMY,
+    }
     return ensure_analysis_version(store, **(base | kw))
 
 
 # ============================================================ 식별자
 def test_the_same_inputs_make_the_same_analysis_version() -> None:
     first = analysis_version_identifier(
-        JOB_ROLE, DATASET, TAXONOMY_VERSION_ID, "model_v1", "prompt_v1", "rp_v1",
+        JOB_ROLE, DATASET, ACTIVE_TAXONOMY, "model_v1", "prompt_v1", "rp_v1",
         METRIC_POLICY_VERSION,
     )
     second = analysis_version_identifier(
-        JOB_ROLE, DATASET, TAXONOMY_VERSION_ID, "model_v1", "prompt_v1", "rp_v1",
+        JOB_ROLE, DATASET, ACTIVE_TAXONOMY, "model_v1", "prompt_v1", "rp_v1",
         METRIC_POLICY_VERSION,
     )
 
     assert first == second
     assert first.startswith("an_")
+
+
+def test_a_different_taxonomy_makes_a_different_analysis_version() -> None:
+    """활성 분류체계가 바뀌면 분석 버전도 바뀐다.
+
+    다른 분류체계로 계산한 수치는 다른 분석 버전이다(docs/architecture.md 8장).
+    같은 식별자를 쓰면 옛 분류체계로 낸 결과가 새 계산에 덮여 사라진다.
+    """
+    seeded = analysis_version_identifier(
+        JOB_ROLE, DATASET, SEEDED_TAXONOMY, "model_v1", "prompt_v1", "rp_v1",
+        METRIC_POLICY_VERSION,
+    )
+    active = analysis_version_identifier(
+        JOB_ROLE, DATASET, ACTIVE_TAXONOMY, "model_v1", "prompt_v1", "rp_v1",
+        METRIC_POLICY_VERSION,
+    )
+
+    assert seeded != active
 
 
 def test_a_different_dataset_makes_a_different_analysis_version() -> None:
@@ -116,17 +158,44 @@ def test_a_later_iteration_makes_a_different_run_identifier() -> None:
 
 
 # ============================================================ 분석 버전
-def test_a_version_is_created_with_the_seeded_reference_values() -> None:
+def test_a_version_declares_the_active_taxonomy() -> None:
+    """봉투가 선언하는 분류체계는 저장소가 정한 활성 버전이다.
+
+    실행 로그의 결함이다. 시드가 만든 첫 버전을 상수로 선언하면, 집계는 활성 버전의
+    할당으로 세고 검증은 선언한 버전으로 다시 세어 분자가 전부 0 이 된다.
+    """
     store = FakeEnvelopeStore()
 
     ensured = _ensure(store)
 
     stored = store.versions[ensured.analysis_version]
     assert ensured.created is True
-    assert stored["taxonomy_version_id"] == "tx_backend_v1"
+    assert stored["taxonomy_version_id"] == ACTIVE_TAXONOMY
     assert stored["metric_policy_version"] == "mp_v1_prevalence"
     assert stored["job_role_id"] == JOB_ROLE
     assert stored["dataset_version"] == DATASET
+
+
+def test_a_stale_taxonomy_is_refused() -> None:
+    """활성 버전과 다른 버전을 선언하려 하면 만들지 않는다."""
+    store = FakeEnvelopeStore()
+
+    with pytest.raises(ValueError) as error:
+        _ensure(store, taxonomy_version_id=SEEDED_TAXONOMY)
+
+    assert SEEDED_TAXONOMY in str(error.value)
+    assert ACTIVE_TAXONOMY in str(error.value)
+    assert store.created_versions == 0
+
+
+def test_no_active_taxonomy_is_refused() -> None:
+    """발행된 버전이 없으면 봉투가 선언할 값이 없다."""
+    store = FakeEnvelopeStore(active=None)
+
+    with pytest.raises(ValueError):
+        _ensure(store, taxonomy_version_id=SEEDED_TAXONOMY)
+
+    assert store.created_versions == 0
 
 
 def test_a_bootstrapped_version_is_running() -> None:
@@ -189,6 +258,30 @@ def test_starting_the_same_run_twice_adds_nothing() -> None:
 
     assert second == first
     assert store.started_runs == 1
+
+
+# ============================================================ 어긋남 판정
+def test_the_same_version_is_not_a_mismatch() -> None:
+    assert taxonomy_mismatch("an_x", ACTIVE_TAXONOMY, ACTIVE_TAXONOMY) is None
+
+
+def test_a_missing_declaration_is_not_a_mismatch() -> None:
+    """아직 만들지 않은 분석 버전이다. 봉투가 활성 버전으로 선언하며 만든다."""
+    assert taxonomy_mismatch("an_x", None, ACTIVE_TAXONOMY) is None
+
+
+def test_a_stale_declaration_names_both_versions() -> None:
+    """사용자가 무엇과 무엇이 갈렸는지 읽을 수 있어야 한다."""
+    reason = taxonomy_mismatch("an_x", SEEDED_TAXONOMY, ACTIVE_TAXONOMY)
+
+    assert reason is not None
+    assert "an_x" in reason
+    assert SEEDED_TAXONOMY in reason
+    assert ACTIVE_TAXONOMY in reason
+
+
+def test_no_active_version_is_a_reason() -> None:
+    assert taxonomy_mismatch("an_x", SEEDED_TAXONOMY, None) is not None
 
 
 def test_a_second_iteration_opens_another_run() -> None:
