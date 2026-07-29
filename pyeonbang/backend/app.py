@@ -95,14 +95,12 @@ def upload_image():
     if file.filename == '':
         return jsonify({'status': 'fail', 'message': '선택된 파일이 없습니다.'}), 400
 
-    # 1. 파일 저장 및 바이트 읽기
+    # 1. 파일 저장 및 바이트 읽기 (동일 파일명 업로드 시 덮어써서 중복 누적 방지)
     try:
-        original_filename = file.filename
-        ext = os.path.splitext(original_filename)[1]
-        if not ext:
-            ext = '.jpg'
-        unique_filename = f"{int(time.time())}_{uuid.uuid4().hex[:8]}{ext}"
-        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+        original_filename = os.path.basename(file.filename)
+        if not original_filename:
+            original_filename = "upload_image.jpg"
+        file_path = os.path.join(UPLOAD_FOLDER, original_filename)
         
         file_bytes = file.read()
         with open(file_path, 'wb') as f:
@@ -148,7 +146,7 @@ def upload_image():
         "sodium": parsed_data.get("sodium", 0),
         "sugar": parsed_data.get("sugar", 0),
         "type": intent_tab,
-        "saved_filename": unique_filename
+        "saved_filename": original_filename
     }
 
     # 5. 시간대별 코멘트 생성
