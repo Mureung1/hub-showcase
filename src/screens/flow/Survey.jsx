@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import logo from '../../assets/logo.png'
 import { useApi, apiPost } from '../../api/client'
@@ -20,6 +20,14 @@ export default function Survey() {
   })
   const [busy, setBusy] = useState(false)
   const [submitError, setSubmitError] = useState('')
+
+  // 제출 후엔 다른 팀원의 합류·제출 현황이 갱신되도록 30초마다 새로고침
+  const hasSubmitted = data?.mySubmitted
+  useEffect(() => {
+    if (!hasSubmitted) return
+    const timer = setInterval(reload, 30000)
+    return () => clearInterval(timer)
+  }, [hasSubmitted, reload])
 
   if (loading) {
     return (
@@ -129,7 +137,17 @@ export default function Survey() {
     <div className="flow-page">
       <header className="flow-top">
         <img src={logo} alt="" />
-        <span>역할 설문</span>
+        {mySubmitted ? (
+          <button
+            type="button"
+            className="flow-top-link"
+            onClick={() => document.getElementById('survey-wait')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+          >
+            역할 설문
+          </button>
+        ) : (
+          <span>역할 설문</span>
+        )}
       </header>
 
       <div className="flow-card">
@@ -138,6 +156,18 @@ export default function Survey() {
           응답은 <strong>비공개</strong>입니다. 팀원끼리 서로의 답변을 볼 수 없고,
           배정 결과에는 팀 전체 통계만 표시됩니다.
         </p>
+
+        {mySubmitted && (
+          <div id="survey-wait" className="survey-wait">
+            <p className="survey-wait-title">✓ 설문을 제출했어요</p>
+            <div className="survey-wait-rows">
+              <div className="wait-row"><span>합류 현황</span><strong>{memberCount} / {project.headcount}명</strong></div>
+              <div className="wait-row"><span>제출 현황</span><strong>{submittedCount} / {memberCount}명</strong></div>
+            </div>
+            <p className="flow-muted">모든 팀원이 설문을 제출하면 역할 배정이 시작됩니다.</p>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={reload}>현황 새로고침</button>
+          </div>
+        )}
 
         <div className="survey-status">
           <div className="join-status-head">

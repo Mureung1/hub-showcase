@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router'
 import { api, apiPost, timeAgo } from '../api/client'
 import './NotificationBell.css'
 
@@ -21,10 +22,31 @@ function notifText(n) {
   }
 }
 
+// 알림 종류별 이동 목적지 — 초대 화면은 생성자 전용이라, 수신자 누구나 볼 수 있는 곳으로 보낸다.
+function notifTarget(n) {
+  switch (n.type) {
+    case 'join': // 팀원 목록·진행률은 프로젝트 관리 탭에서 모두가 확인 가능
+      return '/app/projects'
+    case 'upload':
+      return '/app/progress'
+    case 'reveal':
+    case 'swap':
+      return n.projectId ? `/projects/${n.projectId}/result` : '/app/dashboard'
+    default:
+      return '/app/dashboard'
+  }
+}
+
+// 대기 프로젝트(생성자) 이동 — 계획 미확정이면 확정 화면, 모집 중이면 초대 화면
+function pendingTarget(p) {
+  return p.status === 'planning' ? `/projects/${p.id}/plan` : `/projects/${p.id}/invite`
+}
+
 export default function NotificationBell() {
-  const [data, setData] = useState({ unreadCount: 0, items: [] })
+  const [data, setData] = useState({ unreadCount: 0, items: [], pending: [] })
   const [open, setOpen] = useState(false)
   const wrapRef = useRef(null)
+  const navigate = useNavigate()
 
   const load = useCallback(() => {
     api('/api/me/notifications')
@@ -64,14 +86,44 @@ export default function NotificationBell() {
     }
   }
 
+  // 항목 클릭 → 패널 닫고 목적지로 이동
+  function go(path) {
+    setOpen(false)
+    if (path) navigate(path)
+  }
+
+  const pending = data.pending ?? []
+  // 배지: 안 읽은 이벤트가 있으면 숫자, 없고 대기 프로젝트만 있으면 점으로 알린다
+  const showBadge = data.unreadCount > 0
+  const showDot = !showBadge && pending.length > 0
+
   return (
     <div className="notif-wrap" ref={wrapRef}>
       <button type="button" className="icon-btn" aria-label="알림" onClick={toggle}>🔔</button>
-      {data.unreadCount > 0 && (
+      {showBadge && (
         <span className="bell-badge">{data.unreadCount > 9 ? '9+' : data.unreadCount}</span>
       )}
+      {showDot && <span className="bell-dot" aria-hidden="true" />}
       {open && (
         <div className="notif-panel">
+          {pending.length > 0 && (
+            <div className="notif-pending">
+              <div className="notif-pending-head">대기중 프로젝트</div>
+              <ul className="notif-pending-list">
+                {pending.map((p) => (
+                  <li key={p.id}>
+                    <button type="button" className="notif-pending-item" onClick={() => go(pendingTarget(p))}>
+                      <span className="notif-icon" aria-hidden="true">⏳</span>
+                      <div className="notif-body">
+                        <p className="notif-text">{p.title}</p>
+                        <p className="notif-meta">프로젝트 생성을 마무리하세요 →</p>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="notif-head">알림</div>
           {data.items.length === 0 ? (
             <p className="notif-empty">새 알림이 없습니다.</p>
@@ -79,13 +131,15 @@ export default function NotificationBell() {
             <ul className="notif-list">
               {data.items.map((n) => (
                 <li key={n.id} className={`notif-item${n.isRead ? '' : ' unread'}`}>
-                  <span className="notif-icon" aria-hidden="true">{NOTIF_ICON[n.type] ?? '•'}</span>
-                  <div className="notif-body">
-                    <p className="notif-text">{notifText(n)}</p>
-                    <p className="notif-meta">
-                      {n.projectTitle ? `${n.projectTitle} · ` : ''}{timeAgo(n.createdAt)}
-                    </p>
-                  </div>
+                  <button type="button" className="notif-item-btn" onClick={() => go(notifTarget(n))}>
+                    <span className="notif-icon" aria-hidden="true">{NOTIF_ICON[n.type] ?? '•'}</span>
+                    <div className="notif-body">
+                      <p className="notif-text">{notifText(n)}</p>
+                      <p className="notif-meta">
+                        {n.projectTitle ? `${n.projectTitle} · ` : ''}{timeAgo(n.createdAt)}
+                      </p>
+                    </div>
+                  </button>
                 </li>
               ))}
             </ul>

@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useApi, apiPost, apiDelete } from '../../api/client'
 import './tabs.css'
 
 function ProjectCard({ project, section, canUp, canDown, busy, onDelete, onComplete, onSetMain, onMove }) {
   const active = section === 'active'
+  const navigate = useNavigate()
   return (
     <li className={`proj-card${project.status === 'completed' ? ' proj-done' : ''}`}>
       <div className="proj-info">
@@ -30,6 +31,9 @@ function ProjectCard({ project, section, canUp, canDown, busy, onDelete, onCompl
         <div className="bar-track"><div className="bar-fill" style={{ width: `${project.progress}%` }} /></div>
       </div>
       <div className="proj-actions">
+        {project.isCreator && project.status === 'recruiting' && (
+          <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => navigate(`/projects/${project.id}/invite`)}>🔗 초대 링크</button>
+        )}
         {active && !project.isMain && (
           <div className="proj-reorder">
             <button type="button" className="reorder-btn" disabled={busy || !canUp} aria-label="위로" onClick={() => onMove(project, -1)}>↑</button>

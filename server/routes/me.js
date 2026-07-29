@@ -593,7 +593,7 @@ me.get('/api/me/notifications', async (req, res) => {
 
     const { data: rows, error: e1 } = await supabase
       .from('notifications')
-      .select('id, type, payload, is_read, created_at, projects(title)')
+      .select('id, type, payload, is_read, created_at, project_id, projects(title)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20)
@@ -606,6 +606,15 @@ me.get('/api/me/notifications', async (req, res) => {
       .eq('is_read', false)
     throwIf(e2, '안 읽은 알림 수 조회')
 
+    // 아직 못 끝낸 내 프로젝트(생성자·배정 전) — 알림 배지와 무관한 파생 리마인더
+    const { data: pending, error: e3 } = await supabase
+      .from('projects')
+      .select('id, title, status')
+      .eq('creator_id', user.id)
+      .in('status', ['planning', 'recruiting'])
+      .order('created_at')
+    throwIf(e3, '대기 프로젝트 조회')
+
     res.json({
       unreadCount: count ?? 0,
       items: rows.map((n) => ({
@@ -614,8 +623,10 @@ me.get('/api/me/notifications', async (req, res) => {
         payload: n.payload,
         isRead: n.is_read,
         createdAt: n.created_at,
+        projectId: n.project_id,
         projectTitle: n.projects?.title ?? null,
       })),
+      pending: (pending ?? []).map((p) => ({ id: p.id, title: p.title, status: p.status })),
     })
   } catch (err) {
     res.status(err.status ?? 500).json({ error: err.message })

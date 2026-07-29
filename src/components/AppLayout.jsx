@@ -62,15 +62,6 @@ export default function AppLayout() {
         <div className="sidebar-bottom">
           <Link to="/projects/new" className="btn btn-dark sidebar-new">＋ 새 프로젝트 만들기</Link>
 
-          <div className="sidebar-utils">
-            <button type="button" className="sidebar-link">
-              <span className="sidebar-icon" aria-hidden="true">🔔</span>알림
-            </button>
-            <button type="button" className="sidebar-link">
-              <span className="sidebar-icon" aria-hidden="true">❓</span>도움말
-            </button>
-          </div>
-
           <div className="sidebar-profile">
             <span className="avatar" aria-hidden="true">👤</span>
             <div className="sidebar-profile-info">

@@ -64,7 +64,9 @@
 - [ ] 진행률 주간 스냅샷 자동화 (KST)
 - [ ] 검증 에이전트 `.claude/agents/verifier.md` + 결함 수정
 - [~] 배포 설정 (Vercel 한 프로젝트 · 같은 오리진) — 정적 프론트 + Express serverless: `api/index.js`(=export app)·`vercel.json`(`/api`→함수, SPA 폴백) / FE 상대경로 `/api`·`credentials:'same-origin'` / BE `auth.js` SameSite=Lax(CORS 없음) / 업로드 4MB. **실제 배포(Vercel 연결+환경변수+Deploy)는 사용자 수행**
+- [x] 모집~대기 UX 4종 — 초대링크 재접근(`ProjectsTab` recruiting 카드 🔗 버튼) · 알림 클릭 이동(`NotificationBell` + `/api/me/notifications`에 `projectId`) · 설문 제출 후 대기현황(`Survey` 합류/제출 + "모두 제출하면 배정 시작" 안내) · 대기 프로젝트 리마인더(벨 핀 섹션, `pending`=생성자 planning/recruiting)
 ### 알려진 후속 과제
+- **초대 합류 중복(같은 사람 2좌석)**: 합류는 signup 전용이라 다른 아이디+다른 닉네임이면 통과 → 향후 "기존 계정으로 합류"(로그인) 경로로 `unique(project_id,user_id)` 활용해 근본 차단, 또는 안내·메시지 개선
 - ~~**조장 DB 정합**: 조장이 "조장+실무" 2역이 되면 `assignments`의 `unique(project_id, member_id)`와 충돌~~ → **해결**: unique를 `(project_id, member_id, role_id)`로 변경해 한 사람이 여러 역할(조장 표식 + 실무)을 각각 1행으로 저장. me.js가 member별 역할을 묶어 표시
 - `shell-quote`(concurrently 하위 의존성) high 취약점 — 개발 도구라 배포 영향 없음, 추후 정리
 
@@ -256,6 +258,16 @@
 ## 개발 로그 (결정·검증)
 
 > 작업(슬라이스/커밋 단위)마다 **왜 그렇게 구현했는지 + 어떻게 검증했는지**를 짧게 남긴다. 최신이 위로.
+
+### 2026-07-29 · 모집~배정 대기 구간 UX 4종
+- **왜**: 배포 후 실사용에서 "모집~역할배정 대기" 구간에 **현황을 볼 입구/화면이 없다**는 문제 4가지. 데이터·화면은 대부분 이미 있어 **연결만** 붙였다.
+- **방식**:
+  - **공통 서버**(`server/routes/me.js` `/api/me/notifications` 1곳): 알림 select에 `project_id` 추가 → item에 `projectId`. 응답에 `pending`(생성자의 `planning`/`recruiting` 프로젝트) 추가. — 이 하나로 ②④가 열림.
+  - **① 초대 링크 재접근**(`ProjectsTab.jsx`): `isCreator && status==='recruiting'` 카드에 "🔗 초대 링크" 버튼 → `/projects/:id/invite`(기존 화면·엔드포인트 재사용, 생성자 전용이라 403 없음).
+  - **② 알림 클릭 이동**(`NotificationBell.jsx`+css): 항목을 버튼으로. 종류별 목적지 — `join`→`/app/projects`(수신자 누구나 팀원·진행률 확인), `upload`→`/app/progress`, `reveal`/`swap`→`/projects/:id/result`. 초대 화면은 생성자 전용이라 join은 공용 화면으로 보냄.
+  - **③ 설문 대기현황**(`Survey.jsx`+css): `mySubmitted`면 상단에 대기 패널(합류 `memberCount/headcount` + 제출 `submittedCount/memberCount` + "모두 제출하면 배정 시작"), "역할 설문" 타이틀은 그 패널로 스크롤. 30초 폴링으로 타 팀원 반영. 데이터는 이미 있던 것.
+  - **④ 대기 프로젝트 리마인더**(`NotificationBell.jsx`): 드롭다운 상단 핀 섹션 "대기중 프로젝트"(=`pending`) → 상태별 `planning`→`/plan`, `recruiting`→`/invite`. 숫자 배지는 안읽은 이벤트 전용, pending은 점(dot)으로 표시(상시 점등 방지).
+- **검증**: `oxlint`(exit 0)·`build`(dist) 통과. 서버 스크립트 **5/5 통과** — `items[].projectId` 값 일치 · `pending`에 recruiting 포함/active 제외 · `pending` 항목 `title/status` 정확(로컬 서버 3010, 시드 삽입 후 실호출). 화면 상호작용(카드 버튼·알림 클릭·설문 패널)은 배포본에서 사용자 확인 권장.
 
 ### 2026-07-29 · Vercel-only 배포로 복귀 (분리 배포 → 같은 오리진)
 - **왜**: 배포 방식을 다시 **Vercel 한 프로젝트**(정적 프론트 + Express serverless, **같은 오리진**)로 통일. 같은 오리진이면 분리 배포용 추가물이 불필요할 뿐 아니라 일부는 **보안이 느슨** — CORS `origin:true+credentials`는 아무 사이트나 인증요청 반영, 쿠키 `SameSite=None`은 CSRF 방어를 약화. 전부 되돌려 더 단순·안전하게.
