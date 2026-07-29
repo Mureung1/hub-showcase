@@ -2,6 +2,7 @@ node_modules/
 dist/
 build/
 .vercel/
+PROJECT_HANDOFF.md
 .env
 .env.*
 !.env.example
