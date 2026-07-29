@@ -8,6 +8,7 @@ import {
 import { logTags, tag } from './tagCommands'
 import { logRange, show } from './revisionCommands'
 import { stashApply, stashList, stashPop, stashPush } from './stashCommands'
+import { bisectBad, bisectGood, bisectReset, bisectStart } from './bisectCommands'
 
 export type GitCommit = {
   id: string
@@ -115,6 +116,10 @@ export type GitCommand =
   | { type: 'stashPop' }
   | { type: 'stashApply' }
   | { type: 'stashList' }
+  | { type: 'bisectStart' }
+  | { type: 'bisectBad'; ref: string | null }
+  | { type: 'bisectGood'; ref: string | null }
+  | { type: 'bisectReset' }
 
 export type GitCommandResult = {
   state: GitEngineState
@@ -339,6 +344,22 @@ export function parseGitCommand(input: string): GitCommand {
     return { type: 'stashList' }
   }
 
+  if (tokens[1] === 'bisect' && tokens[2] === 'start' && tokens.length === 3) {
+    return { type: 'bisectStart' }
+  }
+
+  if (tokens[1] === 'bisect' && tokens[2] === 'bad' && tokens.length <= 4) {
+    return { type: 'bisectBad', ref: tokens[3] ?? null }
+  }
+
+  if (tokens[1] === 'bisect' && tokens[2] === 'good' && tokens.length <= 4) {
+    return { type: 'bisectGood', ref: tokens[3] ?? null }
+  }
+
+  if (tokens[1] === 'bisect' && tokens[2] === 'reset' && tokens.length === 3) {
+    return { type: 'bisectReset' }
+  }
+
   throw new Error(`Unsupported git command: ${input}`)
 }
 
@@ -417,6 +438,14 @@ export function executeGitCommand(state: GitEngineState, command: GitCommand): G
       return stashApply(state)
     case 'stashList':
       return stashList(state)
+    case 'bisectStart':
+      return bisectStart(state)
+    case 'bisectBad':
+      return bisectBad(state, command.ref)
+    case 'bisectGood':
+      return bisectGood(state, command.ref)
+    case 'bisectReset':
+      return bisectReset(state)
   }
 }
 

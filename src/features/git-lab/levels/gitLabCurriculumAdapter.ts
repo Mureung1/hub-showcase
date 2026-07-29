@@ -399,6 +399,12 @@ function createGoalCheck(level: CurriculumLevel): GitLabGoalCheck | undefined {
     }
   }
 
+  if (level.goal?.type === 'bisectResult') {
+    const match = /identifiedFirstBadCommit === '([^']+)'/.exec(level.goal.condition ?? '')
+
+    return { type: 'bisectResult', commitId: match?.[1] ?? '', description }
+  }
+
   return undefined
 }
 

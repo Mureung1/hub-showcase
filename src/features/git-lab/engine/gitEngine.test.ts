@@ -131,6 +131,11 @@ describe('gitEngine', () => {
     expect(parseGitCommand('git stash pop')).toEqual({ type: 'stashPop' })
     expect(parseGitCommand('git stash apply')).toEqual({ type: 'stashApply' })
     expect(parseGitCommand('git stash list')).toEqual({ type: 'stashList' })
+    expect(parseGitCommand('git bisect start')).toEqual({ type: 'bisectStart' })
+    expect(parseGitCommand('git bisect bad')).toEqual({ type: 'bisectBad', ref: null })
+    expect(parseGitCommand('git bisect bad C7')).toEqual({ type: 'bisectBad', ref: 'C7' })
+    expect(parseGitCommand('git bisect good C0')).toEqual({ type: 'bisectGood', ref: 'C0' })
+    expect(parseGitCommand('git bisect reset')).toEqual({ type: 'bisectReset' })
   })
 
   it('handles boundary cases and normalizes input', () => {
