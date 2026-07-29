@@ -27,6 +27,7 @@ from localtwin_api.product_catalog import (
     SUPPORTED_MARKET_CODES,
     SUPPORTED_RADII,
     NearbyRadius,
+    classify_category_group,
 )
 
 ProductCategory = Literal["카페", "음식점", "베이커리", "편의점"]
@@ -121,6 +122,8 @@ def category_code(store: StorePoint) -> str | None:
 def category_matches(store: StorePoint, requested_category: str | None) -> bool:
     if not requested_category:
         return False
+    if requested_category in CATEGORY_FILTER_TERMS:
+        return classify_category_group(store) == requested_category
     normalized = requested_category.casefold()
     search_terms = CATEGORY_FILTER_TERMS.get(
         requested_category,
