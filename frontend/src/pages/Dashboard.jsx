@@ -10,7 +10,8 @@ import PlatformChart from '../components/dashboard/PlatformChart';
 import { statCardsData } from '../mocks/dashboardMock';
 
 export default function Dashboard() {
-  const [storeCategory, setStoreCategory] = useState('카페');
+  const [storeCategory, setStoreCategory] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchStoreCategory() {
@@ -19,21 +20,31 @@ export default function Dashboard() {
         console.log('[Dashboard] 조회한 카테고리:', response.data?.category);
         if (response.success && response.data?.category) {
           setStoreCategory(response.data.category);
+          console.log('[Dashboard] 카테고리 설정 완료:', response.data.category);
+        } else {
+          console.warn('가게 정보에 카테고리가 없습니다');
+          setStoreCategory('음식점'); // 폴백 기본값
         }
       } catch (err) {
-        console.warn('가게 정보 조회 실패, 기본값 사용:', err);
+        console.warn('가게 정보 조회 실패:', err);
+        setStoreCategory('음식점'); // 폴백 기본값
+      } finally {
+        setLoading(false);
       }
     }
 
     // 마운트 시에만 한 번 조회
     fetchStoreCategory();
   }, []);
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-[#151D48]">대시보드</h1>
         <p className="text-[#737791] mt-2">가게 정보와 실시간 트렌드 분석</p>
-        <p className="text-xs text-[#999CAA] mt-1">현재 카테고리: <strong>{storeCategory}</strong></p>
+        <p className="text-xs text-[#999CAA] mt-1">
+          현재 카테고리: <strong>{storeCategory || '로딩 중...'}</strong>
+        </p>
       </div>
 
       {/* 프로필 카드 */}
@@ -57,7 +68,8 @@ export default function Dashboard() {
         <div className="lg:col-span-2">
           <CtrChart />
         </div>
-        <TrendTags category={storeCategory} />
+        {/* storeCategory가 설정된 후에만 TrendTags 렌더링 */}
+        {storeCategory && <TrendTags category={storeCategory} />}
       </div>
 
       {/* 3개 위젯 (3열) */}
