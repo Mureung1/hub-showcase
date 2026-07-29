@@ -1,14 +1,12 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import Header from "../components/layout/Header";
 import { homeFeatures } from "../data/homeFeatures";
-import { isAuthenticated } from "../features/auth/authService";
 import { getSession, getUser } from "../features/auth/authStorage";
 import {
   getCareerAnalysis,
   getCareerSpec,
   isCareerSpecComplete,
 } from "../features/career/careerStorage";
-import { navigate, routes } from "../router";
 
 const workflowSteps = [
   {
@@ -102,8 +100,7 @@ function Home() {
   const [displayReadiness, setDisplayReadiness] = useState(78);
   const session = getSession();
   const user = getUser();
-  const isLoggedIn = isAuthenticated();
-  const currentUser = isLoggedIn ? user || session : null;
+  const currentUser = session && user?.id === session.id ? user : null;
   const spec = getCareerSpec(currentUser?.id);
   const analysis = getCareerAnalysis(currentUser?.id);
   const hasCompleteSpec = isCareerSpecComplete(spec);
@@ -112,12 +109,7 @@ function Home() {
     ? "확정 준비도"
     : hasCompleteSpec
       ? "분석 대기 준비도"
-      : "입력 전 예시";
-  const previewLabel = analysis
-    ? "내 분석 결과"
-    : hasCompleteSpec
-      ? "분석 실행 전 상태"
-      : "데이터 입력 전 예시 화면";
+      : "예시 준비도";
   const panelMetrics = analysis
     ? [
         ["직무 적합도", analysis.fitLevel],
@@ -135,18 +127,6 @@ function Home() {
         ["포트폴리오 준비도", "프로젝트 등록 후 제공"],
         ["번아웃 위험도", "학습/활동 정보 등록 후 분석"],
       ];
-
-  const primaryRoute = isLoggedIn ? routes.specs : routes.signup;
-  const secondaryRoute = !isLoggedIn
-    ? routes.login
-    : hasCompleteSpec
-      ? routes.analysis
-      : routes.specs;
-
-  const handleCtaClick = (event, path) => {
-    event.preventDefault();
-    navigate(path);
-  };
 
   useEffect(() => {
     const timerId = setInterval(() => {
@@ -221,31 +201,8 @@ function Home() {
               포트폴리오로 남길 수 있는 실무형 미션을 제안합니다.
             </p>
 
-            <div style={styles.ctaRow}>
-              <a
-                href={primaryRoute}
-                className="cm-button cm-button-primary"
-                style={styles.ctaButton}
-                onClick={(event) => handleCtaClick(event, primaryRoute)}
-              >
-                {currentUser ? "스펙 등록 시작하기" : "회원가입하고 시작하기"}
-              </a>
-              <a
-                href={secondaryRoute}
-                className="cm-button cm-button-secondary"
-                style={styles.ctaButton}
-                onClick={(event) => handleCtaClick(event, secondaryRoute)}
-              >
-                {currentUser
-                  ? hasCompleteSpec
-                    ? "AI 분석 보러가기"
-                    : "분석 준비하기"
-                  : "로그인하고 이어가기"}
-              </a>
-            </div>
-
             <div style={styles.toolPanel} aria-label="사용 도구">
-              <span style={styles.toolPanelLabel}>기술 기반</span>
+              <span style={styles.toolPanelLabel}>사용 도구</span>
               <div style={styles.toolList}>
                 {heroTools.map((tool) => (
                   <span key={tool.name} style={styles.toolChip}>
@@ -263,7 +220,7 @@ function Home() {
           <aside style={styles.aiPanel}>
             <div style={styles.panelHeader}>
               <span style={styles.statusDot}></span>
-              <span style={styles.panelLabel}>{previewLabel}</span>
+              <span style={styles.panelLabel}>Sample Career Scan</span>
             </div>
 
             <div style={styles.scoreBox}>
@@ -419,17 +376,17 @@ const animations = `
 
 const styles = {
   container: {
-    minHeight: "100vh",
+    height: "100vh",
     background:
       "radial-gradient(circle at 12% 8%, rgba(37, 99, 235, 0.2), transparent 28%), radial-gradient(circle at 88% 12%, rgba(6, 182, 212, 0.22), transparent 26%), radial-gradient(circle at 52% 92%, rgba(124, 58, 237, 0.12), transparent 30%), linear-gradient(135deg, #f8fafc 0%, #eef6ff 48%, #f8fbff 100%)",
     padding: 0,
     fontFamily: "Arial, sans-serif",
     color: "#0f172a",
-    overflowX: "hidden",
+    overflow: "hidden",
   },
   hero: {
     width: "min(1440px, calc(100% - clamp(32px, 6vw, 96px)))",
-    minHeight: "calc(100vh - 58px)",
+    height: "calc(100vh - 58px)",
     margin: "0 auto",
     padding: "clamp(14px, 2.2vw, 24px) 0 clamp(12px, 2vw, 20px)",
     boxSizing: "border-box",
@@ -445,7 +402,7 @@ const styles = {
     position: "relative",
     minHeight: 0,
     maxHeight: "none",
-    transform: "translateY(-24px)",
+    transform: "translateY(-44px)",
     transformStyle: "preserve-3d",
   },
   backPlate: {
@@ -455,16 +412,13 @@ const styles = {
     background: "linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(6, 182, 212, 0.12))",
     filter: "blur(2px)",
     transform: "translateZ(-42px)",
-    pointerEvents: "none",
   },
   copyArea: {
     position: "relative",
-    zIndex: 2,
     minHeight: "100%",
-    height: "auto",
-    minHeight: "clamp(330px, 39vh, 420px)",
-    padding: "clamp(24px, 4.4vw, 40px)",
-    borderRadius: "18px",
+    height: "clamp(300px, 34vh, 380px)",
+    padding: "clamp(26px, 5vw, 44px)",
+    borderRadius: "28px",
     background: "linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(239, 246, 255, 0.4))",
     border: "1px solid rgba(255, 255, 255, 0.86)",
     boxShadow:
@@ -490,7 +444,7 @@ const styles = {
     fontSize: "clamp(30px, 5vw, 46px)",
     lineHeight: "1.16",
     color: "#0f172a",
-    margin: "0 0 18px",
+    margin: "0 0 22px",
     textShadow: "0 1px 0 rgba(255, 255, 255, 0.8)",
     wordBreak: "keep-all",
     overflowWrap: "normal",
@@ -503,24 +457,12 @@ const styles = {
     fontSize: "clamp(16px, 2vw, 18px)",
     lineHeight: "1.8",
     color: "#475569",
-    margin: "0 0 20px",
-  },
-  ctaRow: {
-    position: "relative",
-    zIndex: 5,
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "10px",
-    marginBottom: "18px",
-  },
-  ctaButton: {
-    minWidth: "160px",
-    pointerEvents: "auto",
-    textDecoration: "none",
+    margin: "0 0 30px",
   },
   toolPanel: {
     display: "grid",
-    gap: "8px",
+    gap: "10px",
+    transform: "translateY(-10px)",
   },
   toolPanelLabel: {
     color: "#2563eb",
@@ -534,7 +476,7 @@ const styles = {
     maxWidth: "560px",
   },
   toolChip: {
-    minHeight: "32px",
+    minHeight: "34px",
     display: "inline-flex",
     alignItems: "center",
     gap: "8px",
@@ -556,7 +498,7 @@ const styles = {
     position: "relative",
     minHeight: 0,
     maxHeight: "none",
-    transform: "translateY(-24px)",
+    transform: "translateY(-44px)",
     transformStyle: "preserve-3d",
   },
   panelPlate: {
@@ -566,15 +508,13 @@ const styles = {
     background: "linear-gradient(145deg, rgba(37, 99, 235, 0.28), rgba(124, 58, 237, 0.2))",
     filter: "blur(1px)",
     transform: "translateZ(-46px)",
-    pointerEvents: "none",
   },
   aiPanel: {
     position: "relative",
     minHeight: "100%",
-    height: "auto",
-    minHeight: "clamp(330px, 39vh, 420px)",
+    height: "clamp(300px, 34vh, 380px)",
     padding: "clamp(22px, 4vw, 26px)",
-    borderRadius: "18px",
+    borderRadius: "28px",
     background:
       "linear-gradient(155deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.78)), radial-gradient(circle at top right, rgba(6, 182, 212, 0.28), transparent 36%)",
     color: "#e2e8f0",
@@ -582,7 +522,7 @@ const styles = {
       "0 34px 90px rgba(15, 23, 42, 0.34), 0 14px 34px rgba(37, 99, 235, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.1)",
     border: "1px solid rgba(226, 232, 240, 0.16)",
     backdropFilter: "blur(18px)",
-    transform: "rotateX(1deg) rotateY(2deg) translateY(-6px)",
+    transform: "rotateX(2deg) rotateY(4deg) translateY(-10px)",
     overflow: "hidden",
   },
   panelHeader: {
