@@ -47,19 +47,43 @@
   "agent": {
     "summary": "요구사항·데이터 흐름·차별점은 사람이 정의했습니다. 개발 과정에서 같은 판단을 반복해 설명하게 되는 지점을 발견할 때마다 Skill/Agent 파일로 고정해, 최종적으로 Skill 5종·Agent 1종을 실사용했습니다. 각 도구가 실제로 무엇을 고정했는지는 아래 항목에 정리했습니다. AI가 만든 초안은 항상 사람이 최종 판단하는 것을 원칙으로 삼았습니다.",
     "agentTools": [
-      "requirement-verifier (Agent)",
-      "pm-interview-analysis (Skill)",
-      "analysis-quality-eval (Skill)",
-      "tdd-feature-loop (Skill)",
-      "branch-commit-push (Skill)",
-      "pm_design_system (Skill)"
+      {
+        "type": "agent",
+        "name": "requirement-verifier",
+        "purpose": "Task 완료 조건 원문과 코드베이스만 받아 구현 세션과 독립적으로 PASS/FAIL/NOT VERIFIED를 판정한다. 구현자가 자기 코드를 자기가 채점하지 않도록 분리했다."
+      },
+      {
+        "type": "skill",
+        "name": "pm-interview-analysis",
+        "purpose": "근거 강도 위계, 반증 우선 원칙 등 가설 검증 판정 기준의 단일 원본. 설계 문서와 실제 프롬프트 구현이 모두 이 문서를 따른다."
+      },
+      {
+        "type": "skill",
+        "name": "analysis-quality-eval",
+        "purpose": "사람이 직접 라벨링한 골든셋 fixture 대비 분석 품질을 측정하는 절차. 프롬프트를 바꾸기 전 baseline을 먼저 측정한다."
+      },
+      {
+        "type": "skill",
+        "name": "tdd-feature-loop",
+        "purpose": "순수 로직은 실패하는 테스트를 먼저 쓰고 실패를 눈으로 확인한 뒤 구현하며, test: / feat: 커밋을 분리한다."
+      },
+      {
+        "type": "skill",
+        "name": "branch-commit-push",
+        "purpose": "feature/<slug> 브랜치 규칙, 성격별 커밋 분리, 푸시 전 사용자 확인 등 이 레포의 기존 관행을 고정한다."
+      },
+      {
+        "type": "skill",
+        "name": "pm_design_system",
+        "purpose": "프로젝트 CSS 변수와 톤앤매너를 정의해 입력·대시보드·상세·공유·인쇄 화면이 서로 다른 스타일로 갈라지지 않게 한다."
+      }
     ],
     "workflows": [
       {
         "name": "pm-interview-analysis (Skill) — 가설 검증 판정 기준의 단일 원본",
         "steps": [
           "근거 강도 위계, 반증 우선 원칙, 유도 질문 감쇠, 가설 수정 방향 3형태를 판정 기준으로 정의",
-          "별도 운영 중인 개인 PM 스킬 레포(9개 플러그인·68개 스킬) 중 이 도메인에 실제로 걸리는 4개만 선별해 번역·이식 — 전체를 넣지 않은 이유는 컨텍스트만 소모하기 때문",
+          "개인 PM 스킬 레포(68개 스킬) 중 이 도메인에 실제로 걸리는 4개만 선별해 번역·이식 — 전체를 넣으면 컨텍스트만 소모",
           "AI_Pipeline_Design.md(계약 문서)와 backend/src/lib/prompts/* (구현)가 이 문서를 따르게 하고, 세 곳이 어긋나면 이 문서를 정답으로 삼음"
         ]
       },
@@ -75,7 +99,7 @@
         "name": "requirement-verifier (Agent) — 구현자가 자기 채점하지 않게 분리",
         "steps": [
           "구현을 마친 세션이 스스로 '완료했다'고 판단하지 않도록, 검증만 담당하는 별도 에이전트로 분리",
-          "계획서의 완료 조건 원문과 코드베이스 접근 권한(Read/Grep/Glob/Bash)만 전달 — 구현 요약이나 '다 됐다'는 결론성 문장은 넘기지 않고, 받더라도 무시하고 코드로만 확인",
+          "완료 조건 원문과 코드베이스 접근 권한만 전달 — '다 됐다'는 결론성 문장은 넘기지 않고, 받아도 무시",
           "완료 조건과 실제 코드를 대조해 PASS / FAIL / NOT VERIFIED 판정"
         ]
       },
