@@ -400,14 +400,22 @@ export function CoordinateConfirm() {
 
                 {suggestStatus === 'done' && suggestion?.role_suggestions?.length ? (
                   <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ fontFamily: 'var(--font-caption-alt)', fontSize: '11px', letterSpacing: '0.15em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>역할 추천</div>
-                    {/* 역할 배정 수락/변경 UI는 SCR2(CoordinateRoles) 몫 — 여기서는 추천 내용만 참고용으로 보여준다. */}
-                    {suggestion.role_suggestions.map((role, i) => (
-                      <InfoCard key={`${role.name}-${i}`}>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--ink)' }}>{role.name}</div>
-                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ink-soft)', marginTop: '4px' }}>{role.reason}</div>
-                      </InfoCard>
-                    ))}
+                    <div style={{ fontFamily: 'var(--font-caption-alt)', fontSize: '11px', letterSpacing: '0.15em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>역할 배정 추천</div>
+                    {/* 역할은 이미 SCR2(Assign)에서 사람이 만들어둔 것 — 여기서는 배정 추천만 참고용으로 보여준다.
+                        실제 배정 수락/변경은 SCR2 몫. */}
+                    {suggestion.role_suggestions.map((s) => {
+                      const role = roles.find((r) => r.id === s.role_id)
+                      if (!role) return null
+                      const assignee = participants.find((p) => p.id === s.assignee_participant_id)
+                      return (
+                        <InfoCard key={s.role_id}>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--ink)' }}>
+                            {role.name}{assignee ? ` → ${assignee.name}` : ''}
+                          </div>
+                          <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ink-soft)', marginTop: '4px' }}>{s.reason}</div>
+                        </InfoCard>
+                      )
+                    })}
                   </div>
                 ) : null}
 
