@@ -12,10 +12,8 @@ dist
 dist-ssr
 *.local
 
-# 환경변수 (.env.example 만 공유한다)
-.env
-.env.*
-!.env.example
+# Vercel CLI 가 만드는 로컬 연결 정보 (프로젝트 id·토큰)
+.vercel
 
 # Editor directories and files
 .vscode/*
@@ -27,3 +25,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 환경변수. 예시 파일만 공유한다.
+# 예외(!)가 뒤에 와야 하므로 이 블록은 항상 파일 맨 끝에 둔다.
+.env
+.env.*
+!.env.example
