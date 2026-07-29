@@ -27,16 +27,21 @@ const BY_NAME = {
 };
 
 // 위 목록에 없는 빵집(앞으로 데이터가 늘어날 때)도 항상 같은 값이 나오도록 id로 결정적 생성.
+// hasCoffee는 빵투어 테마(tourThemes.js) "커피와 함께" 필터용 — 실제 커피 판매 여부 데이터가
+// 없어서 id 기반으로 결정적으로 반반 나눈다.
 function fallbackExtras(bakery) {
   const seed = bakery.id ?? 0;
   return {
     category: [BREAD_CATEGORIES[seed % BREAD_CATEGORIES.length]],
     priceTier: (seed % 3) + 1,
     busyHours: [10 + (seed % 8), 11 + (seed % 8)],
+    hasCoffee: seed % 2 === 0,
   };
 }
 
 export function withMockExtras(bakery) {
-  const extra = BY_NAME[bakery.name] || fallbackExtras(bakery);
+  // BY_NAME 항목이 있어도 hasCoffee처럼 BY_NAME에 없는 필드는 fallback 값을 그대로 쓰도록 병합한다
+  // (예전엔 BY_NAME이 있으면 fallback을 통째로 무시해서, BY_NAME에 없는 새 필드는 항상 undefined였음).
+  const extra = { ...fallbackExtras(bakery), ...(BY_NAME[bakery.name] || {}) };
   return { ...bakery, ...extra };
 }

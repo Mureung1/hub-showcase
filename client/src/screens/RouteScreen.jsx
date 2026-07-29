@@ -152,18 +152,56 @@ export default function RouteScreen() {
   return (
     <section className="screen-route">
       <div className="route-main">
-        <div className="route-ranks">
-          {routes.map((r, i) => (
-            <RankCard
-              key={i}
-              route={r}
-              index={i}
-              active={i === activeRankIdx}
-              originLabel={origin.name}
-              onClick={() => setActiveRankIdx(i)}
-            />
-          ))}
-        </div>
+        {/* 효율적 동선 1~3순위 + 그 아래 선택한 베이커리(x로 취소)를 한 박스 안에 몰아넣고,
+            박스 하나만 내부 스크롤되게 한다(사이드바 자체가 페이지를 밀어 늘리지 않도록). */}
+        <aside className="route-sidebar">
+          <div className="route-sidebar-scroll">
+            <div className="route-ranks">
+              {routes.map((r, i) => (
+                <RankCard
+                  key={i}
+                  route={r}
+                  index={i}
+                  color={RANK_COLORS[i % RANK_COLORS.length]}
+                  active={i === activeRankIdx}
+                  onClick={() => setActiveRankIdx(i)}
+                />
+              ))}
+            </div>
+
+            <div className="route-selection-block">
+              <div className="route-selection-head">
+                <span>선택한 베이커리</span>
+                <span className="count">{chosen.length}곳</span>
+              </div>
+              <div className="route-selection-list">
+                <AnimatePresence initial={false}>
+                  {chosen.map((b) => (
+                    <motion.div
+                      className="route-picked-item"
+                      key={b.id}
+                      layout
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <span>{b.name}</span>
+                      <button
+                        type="button"
+                        className="remove-btn"
+                        aria-label={`${b.name} 선택 해제`}
+                        onClick={() => removeFromSelection(b.id)}
+                      >
+                        <CloseIcon style={{ width: 11, height: 11 }} />
+                      </button>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+        </aside>
 
         <div className="route-map-center">
           <svg className="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -207,10 +245,10 @@ export default function RouteScreen() {
               </div>
             );
           })}
-        </div>
 
-        <div className="route-selection">
-          <div className="route-selection-actions">
+          {/* 공유/저장은 예전엔 우측 별도 칸에 있었는데, 그 칸을 없애고 좌측바에 순위+선택목록을
+              몰아넣으면서 지도 위 플로팅 버튼으로 옮겼다(MapScreen의 location-bar와 같은 패턴). */}
+          <div className="route-map-actions">
             <button type="button" className="btn-outline" onClick={handleShare}>
               <ShareIcon />
               공유하기
@@ -218,31 +256,6 @@ export default function RouteScreen() {
             <button type="button" className="btn-solid" onClick={() => setSaveModalOpen(true)}>
               이 코스 저장하기
             </button>
-          </div>
-          <div className="route-selection-list">
-            <AnimatePresence initial={false}>
-              {chosen.map((b) => (
-                <motion.div
-                  className="route-picked-item"
-                  key={b.id}
-                  layout
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <span>{b.name}</span>
-                  <button
-                    type="button"
-                    className="remove-btn"
-                    aria-label={`${b.name} 선택 해제`}
-                    onClick={() => removeFromSelection(b.id)}
-                  >
-                    <CloseIcon style={{ width: 11, height: 11 }} />
-                  </button>
-                </motion.div>
-              ))}
-            </AnimatePresence>
           </div>
         </div>
       </div>

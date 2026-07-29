@@ -7,6 +7,7 @@ import { haversineDistanceKm } from '../utils/geo.js';
 import { BREAD_CATEGORIES } from '../data/breadCategories.js';
 import { PRICE_LABELS } from '../data/mockBakeryExtras.js';
 import BakeryCard from '../components/BakeryCard.jsx';
+import { SearchIcon } from '../components/icons.jsx';
 
 const PRICE_TIERS = [1, 2, 3];
 
@@ -20,6 +21,7 @@ export default function ListScreen() {
   const visited = useAppStore((s) => s.visited);
   const toggleVisited = useAppStore((s) => s.toggleVisited);
   const searchQuery = useAppStore((s) => s.searchQuery);
+  const setSearchQuery = useAppStore((s) => s.setSearchQuery);
   const listFilters = useAppStore((s) => s.listFilters);
   const setOpenOnly = useAppStore((s) => s.setOpenOnly);
   const setSort = useAppStore((s) => s.setSort);
@@ -51,6 +53,16 @@ export default function ListScreen() {
     <section className="screen-list">
       <div className="list-toolbar">
         <div className="section-title">대전 베이커리 목록</div>
+        <label className="search">
+          <SearchIcon />
+          <input
+            type="text"
+            placeholder="빵집, 메뉴로 검색"
+            autoComplete="off"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </label>
         <div className="sort-wrap">
           <label htmlFor="sort-select">정렬</label>
           <select id="sort-select" value={listFilters.sort} onChange={(e) => setSort(e.target.value)}>
