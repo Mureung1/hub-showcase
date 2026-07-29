@@ -2196,7 +2196,7 @@ function createRetrieveService(insightIds: string[]): RetrieveService {
   return {
     retrieve: vi.fn(async () => ({
       insightIds,
-      ok: true,
+      ok: true as const,
       pendingCount: 0,
     })),
   };
