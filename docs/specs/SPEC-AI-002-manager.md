@@ -1270,6 +1270,24 @@ Mock 데이터와 실제 응답이 같은 계약을 만족해야 한다 (CLAUDE.
 | 5 | **`agendas_selected_source_ref_ck` CHECK 개정** (§9.3) — `auto_consensus`·`auto_single_source`가 실제 참조를 갖도록 |
 | 6 | `questions.manager_meta jsonb NOT NULL DEFAULT '{}'` (§3.3) |
 | 7 | `agendas.display_order smallint NOT NULL DEFAULT 0` (§7.5) |
+| 8 | **`agendas.stances jsonb NOT NULL DEFAULT '[]'::jsonb`** + stance 보존 CHECK (아래) |
+
+**8번은 T-019.3 착수 시점에 발견된 누락이다.** §13.1이 `AgendaSchema.stances`를 계약 신설로 명시했는데 이 마이그레이션 목록에 대응 컬럼이 빠져 있었다. T-019.1에서 드러나지 않은 이유는 그 단계의 Mock이 `stances`를 메모리에 들고 있었기 때문이며, 실제 저장이 필요해지는 T-019.3에서 표면화됐다.
+
+**대체 수단이 없다.** `stances[].text`(25자 압축)와 `quotes`(원문 인용)는 Manager LLM의 출력이므로 `source_refs`(sourceAnswerId·sectionId)만으로 재구성할 수 없다. §10.5가 "`stances`는 1차 비교의 기록이자 3열 화면 재구성의 근거"라고 보존을 전제하고 있고, §12.3의 복원 조회에서 `stances`가 비면 `conflicted` Agenda에서 사용자가 판단할 재료 자체가 사라진다.
+
+```sql
+alter table agendas
+  add column stances jsonb not null default '[]'::jsonb;
+
+-- §11-4: stance 0개 쟁점은 폐기되므로, 판정을 마친 Agenda는 항상 stance를 갖는다.
+-- draft는 단계 5의 일괄 INSERT 시점이라 아직 비어 있다(단계 6이 채운다).
+alter table agendas add constraint agendas_stances_ck check (
+  status = 'draft' or jsonb_array_length(stances) >= 1
+);
+```
+
+RLS는 행 단위, GRANT는 테이블 단위라 컬럼 추가에 영향받지 않는다(T-016.1 선례). `not null default '[]'`은 기존 행에 안전하며 계약의 `.default([])`와 일치한다.
 
 **실물 CHECK 확인(2026-07-29)** — `supabase/migrations/20260720120000_init_schema.sql` 107~130행:
 
@@ -1343,6 +1361,53 @@ constraint agendas_selected_source_ref_ck check (
 | `rejectRate` | `user_rejected` 비율 | 30% 초과 | 쟁점 분류가 쓸모없었다는 신호 |
 
 `conflictAcceptRate`와 `rejectRate`는 **사용자 행동에서 공짜로 나오는 신호**다. 별도 수집 비용이 없다.
+
+**`stancesDiscarded` 추가 (2026-07-30, T-019.3 실측 중 발견)**
+
+`agendaDropRate`만으로는 폐기 원인을 가릴 수 없다. `quoteRejectRate`가 **0%인데 쟁점이 폐기되는** 조합이 실측에서 실제로 나왔고(33.3% 폐기 / 인용 폐기 0건), 그때 남는 관측값이 하나도 없었다. quote 검증에 **도달하기 전에** 버려지는 stance가 있기 때문이다.
+
+| 사유 | 뜻 |
+|---|---|
+| `empty_output` | LLM이 `stances`를 빈 배열로 냈다 |
+| `not_participant` | 이 쟁점에 참여하지 않은 provider의 입장을 만들어냈다(§16.2-3에서 폐기) |
+| `duplicate_provider` | 같은 provider를 두 번 냈다(§8.7로 인용만 합침 — 폐기는 아니고 건수만 관측) |
+
+`quoteRejectRate`가 낮은데 `agendaDropRate`가 높으면 원인은 여기다.
+
+### 14.4 실측 결과 (2026-07-30, T-019.3 · `qwen/qwen3.7-plus` · 프롬프트 v1 무튜닝)
+
+단계 6·7을 fixture 3회 + 실 DB 질문 2회로 측정했다. **판정 로직·grounding·저장은 전부 설계대로 작동했다.** 다만 지연과 출력 길이가 §2.3·§5.5 추정을 크게 벗어난다.
+
+| 항목 | 추정 | 실측 | 판정 |
+|---|---|---|---|
+| 단계 6 쟁점당 출력 토큰 | ~430 (§5.5) | **694 ~ 6,365** (평균 894 ~ 3,976) | ❌ **1.6~15배 초과** |
+| 단계 6 쟁점당 지연 | — | 14.8 ~ 115.8초 | — |
+| 단계 6 wall-clock(병렬 3) | 10~30초 (§2.3) | **21.6 ~ 115.8초** | ❌ **최대 4배 초과** |
+| Manager 전체(3+4+6) | 10~30초 (§2.3) | **37.9 ~ 145.5초** | ❌ **최대 5배 초과** |
+| 첫 `agenda.judged`(체감 지연) | — | 14.9 ~ 95.1초 | ⚠️ 조기 표시 효과가 불안정 |
+| `quoteRejectRate` | — | 0% / 8.3% / **33.3%** | ⚠️ 10% 임계 초과 관측 |
+| `agendaDropRate` | — | 0% (4회) / **33.3%** (1회) | ⚠️ 5% 임계 초과 관측 |
+| `judgeFailRate` | — | 0% (전 구간) | ✅ 단계 6 호출 자체는 안정 |
+| `disagreementTypeDist` | — | `main_answer` 0~50% | ⚠️ 3회 중 2회 0% |
+| `confidence` 표준편차 | — | 0.025 / 0.045 (n=2·4) | §14.3 기준 **0.05 미만** — 축적 후 재판정 |
+
+**확인된 것 (설계 검증)**
+
+- **구조화 출력·파싱 실패 0건.** 단계 3과 동일하게 `strict: true`가 실작동한다
+- **§11 grounding이 실제 날조를 잡았다.** 3사 실측에서 openai가 원문에 없는 문장("익명 사용자(anon)과 인증 사용자(authenticated) 역할을 구분해…")을 인용으로 냈고 `not_in_source`로 폐기됐다. 주입 테스트가 아니라 **자연 발생 날조**다 — §11이 장식이 아님이 확인됐다
+- **날조 인용 주입 테스트 8/8 통과**(`--grounding-test`, LLM 0회): 정상 대조군·원문 부재·타 provider 인용·단어 추가·공백만 차이(통과해야 함)·전량 날조로 stance 폐기·전 stance 날조로 쟁점 폐기·비참여 provider
+- **충돌 0건 경로 통과.** `MANAGER_CONFLICT_TYPES`를 아무 유형과도 매칭되지 않는 값으로 두어 6쟁점 전부 자동 통과시킨 결과, Question이 `review_required`로 **전이되지 않고** 전 쟁점이 `passed`가 됐다(§12.1 요구대로 web이 `completed`를 트리거할 수 있는 상태)
+- **저장·CHECK 정합.** 실 DB에서 `stances` 채움·`auto_single_source`·`agendas_stances_ck`·`agendas_selected_source_ref_ck`(§9.3) 전부 통과. `manager_meta`에 `conflictTypes`·`comparatorVersion`·품질 지표가 스탬프됨(결정 4·6)
+- **재현성(AC1).** pivot·shuffleSeed가 같은 입력에서 완전 동일
+
+**미해소 — 지연이 이번 단계의 지배적 문제다**
+
+§2.3은 "모델을 확정했으므로 남은 지연은 UX(조기 표시)로 완화한다"고 했으나, **첫 판정까지 95초가 걸리는 경우가 있어 조기 표시가 완화 수단으로 충분하지 않다.** 원인은 두 가지가 겹친다.
+
+1. **출력이 추정의 최대 15배** — Qwen이 `comparisonNote`를 매우 길게 쓴다. `max_tokens`를 설정할 수 없어(§0.2) 길이를 직접 제한할 수단이 없다
+2. **동시성 3** — 쟁점이 4개면 4번째가 첫 배치를 기다린다. 실측에서 쟁점당 최대 115초는 그 대기를 포함한 값이다
+
+같은 입력의 런투런 변동이 크다는 점(2사 fixture 동일 입력 2회에서 토큰 5,113→1,095, wall-clock 95초→22초)도 T-019.2.1에서 관측된 Qwen 특성과 일치한다. **완화안 판단은 사용자 몫이며 이번 범위에서 손대지 않았다** — 후보는 ① `comparisonNote` 길이 제한 명시 ② 동시성 상향 ③ 모델 재검토다.
 
 ### 14.3 `confidence` 전환 조건 (결정 9)
 
@@ -1519,8 +1584,10 @@ Manager 프롬프트에 들어가는 **신뢰할 수 없는 입력은 세 가지
 | 일자 | 내용 |
 |---|---|
 | 2026-07-29 | 최초 작성. 설계안(`SPEC-AI-002-manager-design.md`)을 기준 문서와 대조 검토해 11건 확정(1장 표). Pivot 방식 + 2-pass, 5유형 분류 + 코드 매핑, `quote` 배열 grounding, 쟁점 상한 제거, `kind` 저장, SSE 이벤트 개명(`source_answer.done`), 저장·SSE 배선(12장)·보안(16장)·품질 지표(14.2) 신설 |
+| 2026-07-29 | **`stances` 컬럼 누락 수정 (T-019.3 착수 시 발견).** §13.1이 계약 신설로 명시한 `AgendaSchema.stances`에 대응하는 DB 컬럼이 §13.2 마이그레이션 목록에서 빠져 있었다. T-019.1에서는 Mock이 메모리에 들고 있어 드러나지 않았다. 8번 항목으로 추가하고 stance 보존 CHECK를 함께 정의. **계약 23개 필드를 실 DB와 전수 대조해 다른 결손이 없음을 확인**(`prompt_version`은 서버 내부용으로 계약 미노출이 의도된 것) |
 | 2026-07-29 | **T-019.2.1 전환 결과 반영 + 모델 확정.** 분할 효과 확인(실제 질문 84→33초, 타임아웃 제거) → §5.1 확정. `topicRestated` 40자 제한은 이득 미확인 + 참여 분포 흔들림 신호로 **롤백**, `secondAgendaReason` optional은 유지. `multiAssignRate` 29→0%를 단계 6 실측 재확인 항목으로 등록. **Manager 모델을 `qwen/qwen3.7-plus`로 확정**(§15.2)하고, 남은 지연을 SSE 조기 표시로 완화하도록 §2.3을 "필수"로 격상. §18 한계 갱신 |
 | 2026-07-29 | **T-019.2 실측 반영.** 구조화 출력 8/8·재현성·의미 정렬 품질은 확인됨. 단계 3 출력이 가정의 1.3~5.6배, 지연이 최대 5.6배로 나와 §5.5가 예고한 전환 조건을 충족 → ① 단계 3을 provider별 분할·병렬로 전환(§5.1) ② 스키마 다이어트 ③ 단계적 재측정 절차를 §5.5.1·5.5.2에 기록. §8.2의 "분할 시 입력 반복은 낭비" 판단을 실측으로 정정 |
 | 2026-07-29 | **구현 분할 중 발견된 모호성 해소.** 참여 1개 쟁점이 단계 6을 건너뛸 때 마감 주체와 `stances` 생성 방법이 불명확했다. §7.6·§7.7을 신설해 ① 마감은 경로와 무관하게 단계 7 한 곳 ② 참여 1개 쟁점의 stances는 코드가 §3.4 방식으로 생성 ③ 단계 5 산출물은 종류에 관계없이 동일한 초안 모양을 명시했다 |
 | 2026-07-29 | **T-019.1 구현 회귀 반영.** ① 충돌 0건 Question이 `review_required`에 갇히는 결함을 §12.1에 명시하고, web 트리거 조건을 "Agenda 집합이 갱신될 때마다 전부 passed/rejected 확인"으로 고정 ② 자동 통과 Agenda를 '사용자 판단' 그룹·노트 bullet에서 분리하는 규칙을 §12.5에 추가 |
+| 2026-07-30 | **T-019.3 실측 반영.** 단계 6·7·저장·SSE·사용자 판단 API 구현 후 fixture 3회 + 실 DB 2회 측정 결과를 §14.4에 기록. ① **grounding이 자연 발생 날조 인용을 실제로 폐기**했고 주입 테스트 8/8 통과 — §11 실작동 확인 ② **충돌 0건 경로 실 DB 검증 통과**(review_required 미전이, 전 쟁점 passed) ③ 단계 6 출력 토큰이 §5.5 추정의 1.6~15배, Manager 전체 지연이 §2.3 예산의 최대 5배로 나와 **조기 표시만으로는 완화 부족**(첫 판정 최대 95초) — 완화안 3후보 제시, 판단은 사용자 ④ `quoteRejectRate` 0%인데 쟁점이 폐기되는 조합이 관측돼 원인 관측값이 없던 문제를 `stancesDiscarded` 지표 신설로 해소(§14.2) |
 | 2026-07-29 | **실물 코드·마이그레이션 대조 검토 반영.** ① `stances`·`AgendaSourceRef`가 계약에 없고 web UI 전용 타입이었음을 확인 → 13.1을 "변경"에서 "승격·신설"로 정정 ② `agendas_selected_source_ref_ck` 원문을 확인해 고칠 두 지점(`auto_consensus` 제거 / `auto_single_source` 명시 추가)을 13.2에 인용 ③ `title`·`summary`가 `NOT NULL`이고 Manager가 주지 않는 경로가 있어 §7.4 신설 ④ 정렬 필드 부재로 표시 순서가 흔들리는 문제 → `display_order` 제안(§7.5) ⑤ web 타입 정리·SSE 파서 위치·`agendas` 모듈 신설을 12.5에 명시 |

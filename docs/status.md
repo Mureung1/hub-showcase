@@ -357,5 +357,22 @@
   - **다이어트 판정**: **B-2 `secondAgendaReason` optional 허용됨**(OpenRouter·Qwen strict에서 20/20 파싱, 스키마 오류 0 → `required`에서 제외 확정). **B-1 40자는 품질 저하 없음** — 기준선 동의어 병합 쌍이 ②에서도 유지: "정책 관리"(gemini)↔"정책 작성 위치", "역할과 키"(gemini)↔"service_role 키 취급", "점검 체크리스트"(gemini)↔"검증 방법" 모두 그대로. (경미 변동: ambiguous한 "역할 구분"(openai)의 배정만 A↔B로 흔들림 — 기준선에도 있던 오배정)
   - **미해소/신호**: 단계 3 지연이 여전히 20~43초. **모델 자체가 호출당 느림**(입력이 작은 2사 fixture도 12~30초). 실제 질문 ② 참여 분포가 A2·C2·D2로 흔들린 1회 관측(다이어트 vs Qwen 변동 미구분, n=1). **모델 교체 판단(§5.5.1)에 필요한 지연 하한은 분할로도 ~30초** — 단계 6(쟁점별 N회)이 붙는 T-019.3 전 모델 결정에 이 수치를 쓰면 됨
   - **검증**: 루트 typecheck·build, lint(web) 통과. web 무변경. 타임아웃 45초 유지(늘리지 않음). 비밀값 미노출
-- 이후: SPEC-AI-002 나머지(T-019.3~4)~003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **T-019.3 서버 구간 완료 / web 재배선 미완 (2026-07-30)** — SPEC-AI-002 §8·§9·§7.6~7.7·§11·§12(§12.5 제외)·§2.5·§14·§16. 재검토(§10)와 PATCH의 `recheck`·`retry_recheck`는 T-019.4로 제외. **⚠️ §12.5 web 재배선은 손대지 않았다** — `buildMockAgendas`가 그대로 있고 web은 `agenda.*` SSE 이벤트를 무시하므로, 서버가 실제 Agenda를 만들어 저장·발신하는데도 **브라우저에는 여전히 Mock Agenda가 보인다**
+  - **구현**: `ports/conflictComparator.port.ts`+`adapters/openRouterComparator.adapter.ts`+`registry`(단계 6), `pipeline/judge.ts`(쟁점별 병렬 판정 오케스트레이션·`onJudged` 건별 발신), `pipeline/grounding.ts`(§11 검증 2·3·4), `pipeline/finalize.ts`(§9.2 규칙표 — **경로 무관 단일 마감 지점**, §7.6), `agendas.repository.ts`(2단계 저장 §12.1)·`agendas.controller.ts`(GET 스냅샷·PATCH 3액션)·라우트 연결, `agendas.service.ts`에 `runManagerForQuestion`·`applyUserDecision` 추가, `sourceAnswers.controller.ts`가 **같은 SSE 스트림에 Manager 구간을 이어붙임**(§12.2, 새 스트림 열지 않음). `adapters/openRouterCall.ts`로 HTTP·재시도·파싱을 단계 3·4·6이 공유. 프롬프트 `prompts/manager/compare/v1.md`
+  - **마이그레이션**: `20260730120200_agenda_stances.sql`(`agendas.stances` jsonb + `agendas_stances_ck` — draft만 빈 배열 허용). **실 DB 적용 완료**(psql로 컬럼·CHECK·`schema_migrations` 이력 확인)
+  - **검증 (루트 typecheck·lint·build 통과)**:
+    - **날조 인용 주입 8/8 통과**(`npm run manager:judge -- --grounding-test`, LLM 0회, 결정론적): 정상 대조군·원문 부재·타 provider 인용·단어 추가·공백만 차이(통과해야 함)·전량 날조로 stance 폐기·전 stance 날조로 쟁점 폐기·비참여 provider stance
+    - **자연 발생 날조 탐지**: 3사 실측에서 openai가 원문에 없는 문장을 인용으로 내 `not_in_source`로 폐기됨. §11이 주입 테스트에서만 작동하는 게 아님을 확인
+    - **충돌 0건 경로 실 DB 통과**: `MANAGER_CONFLICT_TYPES`를 아무 유형과도 매칭 안 되는 값으로 두어 6쟁점 전부 자동 통과 → Question이 `review_required`로 **전이되지 않고** 전 쟁점 `passed`·`selectedContent` 전부 채워짐. 검증 하네스가 만든 행만 삭제하고 Question 상태 복원함
+    - **실 DB 저장·CHECK 정합**: `stances` 채움, `auto_single_source` 경로, `agendas_stances_ck`·`agendas_selected_source_ref_ck`(§9.3) 통과. `manager_meta`에 `conflictTypes`·`comparatorVersion`·품질 지표 스탬프(결정 4·6). 충돌 1건 있는 질문은 `review_required`로 정상 전이
+    - **재현성(AC1)**: pivot·shuffleSeed 동일 입력에서 완전 일치. `Math.random()` 미사용
+  - **⚠️ 실측 문제 — 지연이 지배적 (상세 §14.4)**: 단계 6 출력 토큰 **694~6,365**(§5.5 추정 430의 1.6~15배), Manager 전체 **37.9~145.5초**(§2.3 예산 10~30초의 최대 5배), 첫 `agenda.judged` **14.9~95.1초**. §2.3이 기댄 "조기 표시로 완화" 가정이 **95초 케이스에서 무너진다.** 원인은 Qwen의 긴 `comparisonNote`(`max_tokens` 설정 불가) + 동시성 3 대기. 런투런 변동 큼(동일 입력 2회 5,113→1,095토큰, 95→22초). **완화안 3후보(comparisonNote 길이 제한 / 동시성 상향 / 모델 재검토) 제시했고 이번 범위에서 손대지 않았다 — 판단 필요**
+  - **지표 추가**: `quoteRejectRate` 0%인데 쟁점이 폐기되는 조합(33.3% 폐기 / 인용 폐기 0건)이 관측됐으나 원인 관측값이 하나도 없었다 — quote 검증에 도달하기 전 버려지는 stance가 있기 때문. `stancesDiscarded`(`empty_output`·`not_participant`·`duplicate_provider`)를 신설해 폐기 사유를 셈(§14.2)
+  - **미확인/남은 문제**:
+    - **§12.5 web 재배선 전량 미완** — `buildMockAgendas` 제거, `agenda.*` 이벤트 소비, SSE 종료 판정 규칙(§12.2), 자동 통과 vs 사용자 판단 분류(`resolutionReason` 기준), `recheck_requested` [다시 시도] 버튼. **브라우저 사용자 시나리오는 하나도 확인하지 못했다**(서버만 검증)
+    - GET 스냅샷·PATCH 3액션은 **HTTP로 호출해 보지 않았다** — 라우트 연결과 타입만 확인. 사용자 JWT가 필요해 서버 코드 경로로만 검증
+    - `agendaDropRate` 33.3% 1회의 근본 원인 미규명(`stancesDiscarded` 계측만 넣음, 재현 안 됨)
+    - `main_answer` 0% 관측 2회 — §14.2 "충돌 과소 탐지 의심" 임계 해당. 판정 품질 축적 필요
+    - `confidence` 표준편차 0.025~0.045(n=2·4) — §14.3의 0.05 미만이나 표본 부족, 20~30건 축적 후 재판정
+- 이후: SPEC-AI-002 나머지(T-019.4: §12.5 web 재배선 + §10 재검토)~003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

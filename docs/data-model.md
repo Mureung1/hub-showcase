@@ -283,6 +283,7 @@ INDEX source_answers_question_id
 | `selected_content` | `text` | Yes | `null` | 합의 내용(auto_consensus), 기존 AI 내용 채택 또는 사용자가 직접 입력한 최종 채택 내용 |
 | `selected_source_ref` | `jsonb` | Yes | `null` | `selected_content`가 온 곳의 참조(어느 SourceAnswer·Section). 값 부재 규칙(1.6): 합의·단일 소스·채택형이면 참조, 직접입력·제외면 `NO_VALUE`, 미판단이면 `null`. **SPEC-AI-002 결정 1로 의미 확장** — 원래는 '사용자가 채택한 출처'만 담았다 |
 | `user_note` | `text` | Yes | `null` | 사용자 메모 |
+| `stances` | `jsonb` | No | `[]` | AI별 입장 — `{ provider, text, quotes[], sourceRefs[] }`. Manager 판정의 산출물이며 **3열 비교 화면 재구성의 근거**. `text`·`quotes`는 LLM 출력이라 `source_refs`로 재구성할 수 없다. SPEC-AI-002 §8.7·§10.5 |
 | `source_refs` | `jsonb` | No | `[]` | 근거 SourceAnswer·Section 참조. **비교한 모든 근거를 보존한다(선택된 것만 저장하지 않는다)** — 3열 비교 재구성의 근거 |
 | `prompt_version` | `varchar(100)` | Yes | `null` | 이 Agenda의 판정 기준이 된 ConflictComparator 프롬프트 버전. 분류(Classifier) 버전 등 나머지 실행 정보는 `questions.manager_meta` |
 | `kind` | `agenda_kind` | Yes | `null` | 쟁점 성격(`consensus`·`conflict`·`single_source`). `draft` 시점엔 미정. SPEC-AI-002 결정 4 |
@@ -328,6 +329,13 @@ resolution_reason IN ('user_composed', 'user_composed_after_recheck',
 status IN ('draft', 'conflicted', 'recheck_requested', 'reanswered')
 → selected_source_ref IS NULL (미판단)
 ```
+
+```text
+status <> 'draft'
+→ jsonb_array_length(stances) >= 1
+```
+
+> **stance 보존 규칙 (2026-07-29, SPEC-AI-002 §11-4)**: 근거가 없는 stance는 저장 전에 폐기되고, stance가 0개가 된 쟁점은 통째로 폐기된다. 따라서 판정을 마친 Agenda는 항상 stance를 하나 이상 갖는다. `draft`만 예외이며, 이는 단계 5의 일괄 INSERT 시점이라 단계 6이 아직 채우지 않은 상태다.
 
 > **개정 (2026-07-29, SPEC-AI-002 결정 1)**: `auto_consensus`를 `NO_VALUE` 분기에서 실제 참조 분기로 옮기고 `auto_single_source`를 명시적으로 추가했다. 합의 내용이 어느 AI의 어느 Section에서 왔는지가 3열 비교 재구성과 투명성에 필요하기 때문이다.
 > 부수 효과로 **`"NO_VALUE"`는 사용자 행동(직접 입력·제외)에서만 발생하는 값**이 되었다. Manager는 이 값을 만들지 않으므로, 데이터만 보고 AI가 만든 것인지 사람이 쓴 것인지 구분할 수 있다.

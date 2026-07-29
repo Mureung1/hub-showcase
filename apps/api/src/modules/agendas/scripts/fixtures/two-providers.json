@@ -1,5 +1,6 @@
 {
   "questionId": "22222222-2222-4222-8222-222222222222",
+  "questionMessage": "Supabase RLS 정책은 어떻게 관리하고 검증해야 하나요?",
   "sourceAnswers": [
     {
       "id": "dddddddd-0000-4000-8000-000000000001",

@@ -1,7 +1,9 @@
 import type { Request, Response } from "express";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   QuestionStreamEventSchema,
   type QuestionStreamEvent,
+  type SourceAnswer,
 } from "@decision-log/shared";
 import { z } from "zod";
 
@@ -13,13 +15,19 @@ import { AppError } from "../../shared/http/appError.js";
 import { ALL_PROVIDERS } from "./providers/registry.js";
 import * as repo from "./sourceAnswers.repository.js";
 import * as service from "./sourceAnswers.service.js";
+import * as agendasRepo from "../agendas/agendas.repository.js";
+import * as agendasService from "../agendas/agendas.service.js";
 
 /**
- * SourceAnswer Controller (SPEC-AI-001 4장).
+ * SourceAnswer Controller (SPEC-AI-001 4장) + Manager 구간 이어붙이기 (SPEC-AI-002 §12.2).
  *
  * POST는 **응답 자체를 SSE 스트림으로 연다**. web은 EventSource 대신 fetch ReadableStream으로
  * 소비한다 — EventSource는 커스텀 헤더 불가·GET 전용이라 토큰을 URL에 실어야 하기 때문(§4 구현 노트).
  * 사전 점검·소유권 실패는 스트림을 열기 전에 일반 에러 봉투로 응답한다.
+ *
+ * ⚠️ **Manager는 새 스트림을 열지 않는다.** 사용자가 보는 것은 "질문 → 답변 → 쟁점"의 한
+ * 흐름이고, 스트림을 둘로 끊으면 그 사이에 연결이 유실될 구간이 생긴다(§12.2).
+ * 15초 heartbeat도 Manager 구간에 그대로 흐른다.
  *
  * 소유권은 검증된 JWT userId로만 판단한다 — body의 userId 같은 값은 쓰지 않는다.
  */
@@ -59,8 +67,72 @@ function writeEvent(response: Response, event: QuestionStreamEvent): void {
 }
 
 /**
+ * Manager 구간 (SPEC-AI-002 §12.2) — 같은 스트림에 이어 쓴다.
+ *
+ * `agenda.judged`는 **쟁점 판정이 끝날 때마다 1건씩** 나간다. 모아뒀다 한꺼번에 보내면
+ * 조기 표시가 사라지고 체감 지연이 그대로 남는다(§2.3 — 모델 확정 이후 지연을 줄일
+ * 수단은 UX뿐이다).
+ *
+ * 실패해도 **항상 터미널 신호(`agenda.done`)** 를 보내 클라이언트가 매달리지 않게 한다.
+ */
+async function streamManagerSegment(input: {
+  response: Response;
+  userClient: SupabaseClient;
+  questionId: string;
+  questionMessage: string;
+  sourceAnswers: SourceAnswer[];
+}): Promise<void> {
+  const { response, userClient, questionId, questionMessage, sourceAnswers } =
+    input;
+
+  // 비교할 답변이 하나도 없으면 Manager 구간 자체가 없다 — SPEC-AI-001 §6.2가 이미 종결한다.
+  // 이 경우 스트림은 source_answer.done으로 끝나며, 그것이 web의 종료 판정 근거가 된다(§12.2).
+  const usable = sourceAnswers.filter(
+    (answer) =>
+      answer.status === "succeeded" &&
+      !answer.excludedFromComparison &&
+      answer.structuredContent !== null,
+  );
+  if (usable.length === 0) return;
+
+  try {
+    const result = await agendasService.runManagerForQuestion({
+      questionId,
+      questionMessage,
+      sourceAnswers,
+      userClient,
+      progress: {
+        onAgendasCreated: (agendas) => {
+          writeEvent(response, { type: "agenda.created", agendas });
+        },
+        onAgendaJudged: (agenda) => {
+          writeEvent(response, { type: "agenda.judged", agenda });
+        },
+      },
+    });
+    writeEvent(response, { type: "agenda.done", agendas: result.agendas });
+  } catch (error) {
+    console.error(
+      "[agendas] Manager 처리 실패:",
+      error instanceof Error ? error.message : error,
+    );
+    try {
+      const agendas = await agendasRepo.listByQuestion(userClient, questionId);
+      writeEvent(response, { type: "agenda.done", agendas });
+    } catch (recoveryError) {
+      // 재조회까지 실패하면 done 없이 닫는다(무한 루프 방지).
+      // 클라이언트는 done 없는 종료를 GET 스냅샷 재조회로 화해한다(§12.2).
+      console.error(
+        "[agendas] 종료 신호 전송 실패:",
+        recoveryError instanceof Error ? recoveryError.message : recoveryError,
+      );
+    }
+  }
+}
+
+/**
  * POST /api/chats/:chatId/questions/:questionId/source-answers
- * 생성 시작(명시적) — 진행 상황을 SSE로 푸시하고 done에 최종 스냅샷을 싣는다.
+ * 생성 시작(명시적) — 진행 상황을 SSE로 푸시하고, 같은 스트림에 Manager 구간을 이어 쓴다.
  */
 export async function postSourceAnswers(
   request: Request,
@@ -139,6 +211,15 @@ export async function postSourceAnswers(
     });
 
     writeEvent(response, { type: "source_answer.done", sourceAnswers });
+
+    // SPEC-AI-002 §12.2 — 스트림을 끊지 않고 Manager 구간을 이어 쓴다.
+    await streamManagerSegment({
+      response,
+      userClient,
+      questionId: params.data.questionId,
+      questionMessage: prepared.question.message,
+      sourceAnswers,
+    });
   } catch (error) {
     // 에러 전용 이벤트는 두지 않는다. 대신 **항상 터미널 신호(source_answer.done)** 를
     // 보내 클라이언트가 매달리지 않게 한다. 남은 미종결 행은 실패로 마감해 상태를 정합하게 만든다.

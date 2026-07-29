@@ -1,15 +1,28 @@
-import type { AiProvider, SourceAnswer } from "@decision-log/shared";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  NO_VALUE,
+  type Agenda,
+  type AgendaResolutionReason,
+  type AiProvider,
+  type SourceAnswer,
+  type SourceRef,
+} from "@decision-log/shared";
 
 import { loadEnv } from "../../shared/config/env.js";
+import { AppError } from "../../shared/http/appError.js";
+import { getAdminClient } from "../../shared/supabase/adminClient.js";
 import {
   ManagerCallError,
   type BuildAgendaDraftsResult,
   type Candidate,
   type ManagerMeta,
   type ManagerMetrics,
+  type ManagerQualityMetrics,
   type PipelineSection,
   type PipelineTrace,
 } from "./agendas.types.js";
+import * as repo from "./agendas.repository.js";
+import { judgeDrafts } from "./pipeline/judge.js";
 import { getAgendaClassifier } from "./adapters/agendaClassifier.registry.js";
 import type {
   AgendaRef,
@@ -49,6 +62,19 @@ function toPipelineSections(sourceAnswers: SourceAnswer[]): PipelineSection[] {
 
 function toAgendaRef(candidate: Candidate): AgendaRef {
   return { id: candidate.id, title: candidate.title };
+}
+
+/** 단계 6을 타지 않은 경로에서도 지표 형태를 동일하게 유지한다(소비 쪽 분기 제거). */
+function emptyQualityMetrics(): ManagerQualityMetrics {
+  return {
+    quoteRejectRate: null,
+    agendaDropRate: null,
+    judgeFailRate: null,
+    disagreementTypeDist: {},
+    confidences: [],
+    stage6OutputTokens: [],
+    stage6DurationsMs: [],
+  };
 }
 
 function toClassifiableSection(section: PipelineSection): ClassifiableSection {
@@ -102,7 +128,9 @@ export async function buildAgendaDrafts(
     leftoverRate: null,
     pivotProvider: pivot.provider,
     stage3OutputTokens: null,
-    stageDurationsMs: { stage3: null, stage4: null, total: 0 },
+    stageDurationsMs: { stage3: null, stage4: null, stage6: null, total: 0 },
+    // 단계 6·7은 judgeDrafts가 채운다. 그 경로를 타지 않아도 형태는 유지한다.
+    quality: emptyQualityMetrics(),
   };
 
   const trace: PipelineTrace = {
@@ -466,4 +494,267 @@ export async function buildAgendaDrafts(
   metrics.stageDurationsMs.total = Math.round(performance.now() - startedAt);
 
   return { drafts, managerMeta: { ...baseMeta(), lastError }, trace };
+}
+
+// ---------------------------------------------------------------------------
+// Manager 전체 실행 — 단계 1~7 + 저장 + 진행 알림 (SPEC-AI-002 §12.1)
+// ---------------------------------------------------------------------------
+
+/**
+ * 진행 상황 알림. 전달 방식(SSE·동기)과 무관하게 콜백으로만 노출한다 —
+ * Service는 req/res를 받지 않는다(CLAUDE.md 8장).
+ */
+export interface ManagerProgress {
+  /** 단계 5 후 쟁점 목록이 draft로 확정됐을 때 1회. */
+  onAgendasCreated?: (agendas: Agenda[]) => Promise<void> | void;
+  /** 쟁점 하나의 판정·저장이 끝날 때마다 1건씩. **모아서 보내지 않는다**(§2.3 조기 표시). */
+  onAgendaJudged?: (agenda: Agenda) => Promise<void> | void;
+}
+
+export interface RunManagerResult {
+  agendas: Agenda[];
+  managerMeta: ManagerMeta;
+  /** 충돌 쟁점 수. 0이면 Question을 review_required로 전이하지 않는다(§12.1). */
+  conflictCount: number;
+}
+
+/**
+ * Manager 파이프라인 전체를 실행하고 결과를 저장한다 (§12.1).
+ *
+ * 저장은 두 단계다 — 단계 5 후 목록을 `draft`로 일괄 INSERT 하고, 단계 6이 끝나는
+ * 쟁점부터 하나씩 UPDATE 한다. 단계 6이 병렬이라 완료 시점이 제각각인데, 목록을 먼저
+ * 확정해두면 중간에 죽어도 쟁점이 남고 SSE와 DB가 어긋나지 않는다.
+ *
+ * 소유권은 호출부(Controller·prepareGeneration)가 검증된 JWT userId로 이미 확인했다.
+ * 여기서의 쓰기는 전부 시스템 쓰기(`adminClient`)다(ADR-002).
+ */
+export async function runManagerForQuestion(input: {
+  questionId: string;
+  questionMessage: string;
+  sourceAnswers: SourceAnswer[];
+  /** 최종 스냅샷을 RLS로 되읽어 돌려주기 위한 사용자 클라이언트. */
+  userClient: SupabaseClient;
+  progress?: ManagerProgress;
+}): Promise<RunManagerResult> {
+  const { questionId, questionMessage, sourceAnswers, userClient, progress } =
+    input;
+  const env = loadEnv();
+  const adminClient = getAdminClient();
+
+  // 단계 1~5
+  const built = await buildAgendaDrafts(questionId, sourceAnswers);
+
+  // §2.5 — 단계 3·4 모두 실패하면 쟁점이 없다. manager_meta만 남기고 조용히 끝낸다.
+  // (고정 안내 문구 + completed 마무리는 호출부가 SourceAnswer 경로와 함께 처리한다.)
+  if (built.drafts.length === 0) {
+    await repo.saveManagerMeta(adminClient, questionId, built.managerMeta);
+    return { agendas: [], managerMeta: built.managerMeta, conflictCount: 0 };
+  }
+
+  // 저장 1단계 — 쟁점 목록을 draft로 확정한다.
+  const created = await repo.insertDrafts(
+    adminClient,
+    questionId,
+    built.drafts,
+  );
+  await progress?.onAgendasCreated?.(created);
+
+  // 임시 라벨(A·B·C…) → 실제 uuid. 양쪽 다 display_order 순이라 위치로 잇는다.
+  const idByDisplayOrder = new Map(
+    created.map((agenda) => [agenda.displayOrder, agenda.id] as const),
+  );
+
+  // 단계 6·7 — 쟁점별 병렬. 마감되는 쟁점부터 즉시 저장·발신한다.
+  const judged = await judgeDrafts({
+    questionId,
+    questionMessage,
+    drafts: built.drafts,
+    pivotProvider: built.managerMeta.pivotProvider,
+    conflictTypes: built.managerMeta.conflictTypes,
+    concurrency: env.MANAGER_CONCURRENCY,
+    onJudged: async (finalized) => {
+      const agendaId = idByDisplayOrder.get(finalized.draft.displayOrder);
+      if (!agendaId) return; // 도달 불가 — INSERT 반환분과 초안은 1:1이다.
+      const saved = await repo.updateJudged(
+        adminClient,
+        agendaId,
+        finalized,
+        // 단계 6을 타지 않은 쟁점(참여 1개)에는 comparator 버전이 없다(§15.4).
+        finalized.draft.participantCount >= 2
+          ? built.managerMeta.comparatorVersion
+          : null,
+      );
+      await progress?.onAgendaJudged?.(saved);
+    },
+  });
+
+  // §11-4로 폐기된 쟁점은 draft 행이 남아 있다. 근거 없는 비교 결과를 정상 데이터로
+  // 두지 않기 위해 행 자체를 지운다(§11·CLAUDE.md 12장).
+  const droppedIds = judged.droppedAgendaIds
+    .map((label) => {
+      const draft = built.drafts.find((d) => d.id === label);
+      return draft ? idByDisplayOrder.get(draft.displayOrder) : undefined;
+    })
+    .filter((id): id is string => id !== undefined);
+  if (droppedIds.length > 0) {
+    await repo.deleteAgendas(adminClient, droppedIds);
+  }
+
+  // 지표·실행 메타 저장 (§3.3·§14)
+  const managerMeta: ManagerMeta = {
+    ...built.managerMeta,
+    metrics: {
+      ...built.managerMeta.metrics,
+      stageDurationsMs: {
+        ...built.managerMeta.metrics.stageDurationsMs,
+        stage6: judged.wallClockMs,
+      },
+      quality: judged.quality,
+    },
+  };
+  await repo.saveManagerMeta(adminClient, questionId, managerMeta);
+
+  const conflictCount = judged.agendas.filter(
+    (agenda) => agenda.kind === "conflict",
+  ).length;
+
+  // §12.1 — 충돌이 있을 때만 사용자 판단을 기다린다.
+  // 충돌 0건이면 전이시키지 않는다. 누를 것이 없는데 review_required로 두면 Question이 갇힌다.
+  if (conflictCount > 0) {
+    await repo.markReviewRequired(adminClient, questionId);
+  }
+
+  // 최종 스냅샷은 사용자 클라이언트(RLS)로 되읽는다.
+  const agendas = await repo.listByQuestion(userClient, questionId);
+  return { agendas, managerMeta, conflictCount };
+}
+
+// ---------------------------------------------------------------------------
+// 사용자 판단 (§12.4) — 사용자 행동이므로 userClient(RLS)로 쓴다
+// ---------------------------------------------------------------------------
+
+/** 이번 범위의 액션 3종. `recheck`·`retry_recheck`는 T-019.4. */
+export type UserDecisionAction = "accept" | "compose" | "reject";
+
+export interface UserDecisionInput {
+  userClient: SupabaseClient;
+  chatId: string;
+  questionId: string;
+  agendaId: string;
+  action: UserDecisionAction;
+  /** accept — 채택할 출처. 내용은 서버가 원본에서 되읽는다(클라이언트 값을 신뢰하지 않는다). */
+  sourceRef?: SourceRef;
+  /** compose — 사용자가 직접 쓴 내용. */
+  content?: string;
+  userNote?: string | null;
+}
+
+/** 사용자 판단을 받을 수 있는 상태(§12.4·domain-policy §4.2). */
+const DECIDABLE_STATUSES = new Set(["conflicted", "recheck_requested", "reanswered"]);
+
+/**
+ * §12.4 접미사 규칙 — `_after_recheck`는 **`reanswered`에서 온 경우에만** 붙인다.
+ * `recheck_requested`(재검토 진행 중 이탈)에서 바로 판단하면 접미사가 붙지 않는다.
+ */
+function reasonFor(
+  action: UserDecisionAction,
+  fromStatus: string,
+): AgendaResolutionReason {
+  const afterRecheck = fromStatus === "reanswered";
+  if (action === "accept") {
+    return afterRecheck ? "user_accepted_after_recheck" : "user_accepted";
+  }
+  if (action === "compose") {
+    return afterRecheck ? "user_composed_after_recheck" : "user_composed";
+  }
+  return afterRecheck ? "user_rejected_after_recheck" : "user_rejected";
+}
+
+/**
+ * 채택·직접 입력·제외를 적용한다(§9.2 사용자 행동 3행).
+ * 상태 전이 검증은 여기(Service)서 하고, 허용되지 않은 전이는 409다(§12.4).
+ */
+export async function applyUserDecision(
+  input: UserDecisionInput,
+): Promise<Agenda> {
+  const { userClient, questionId, agendaId, action } = input;
+
+  const agenda = await repo.findOwnedAgenda(userClient, questionId, agendaId);
+  if (!agenda) {
+    // RLS로 안 보이거나 없는 경우 — 남의 것이거나 존재하지 않는다. 정보는 은닉한다.
+    throw new AppError(404, "AGENDA_NOT_FOUND", "대상 Agenda를 찾을 수 없습니다.");
+  }
+  if (!DECIDABLE_STATUSES.has(agenda.status)) {
+    throw new AppError(
+      409,
+      "INVALID_AGENDA_TRANSITION",
+      `현재 상태(${agenda.status})에서는 이 판단을 적용할 수 없습니다.`,
+    );
+  }
+
+  const resolutionReason = reasonFor(action, agenda.status);
+  const userNote = input.userNote ?? null;
+
+  if (action === "reject") {
+    // 제외 — 내용 없음이 아니라 "의도적으로 없음"이므로 NO_VALUE다(1.6 값 부재 규칙).
+    return repo.applyUserDecision(userClient, agendaId, {
+      status: "rejected",
+      resolutionReason,
+      selectedContent: null,
+      selectedSourceRef: NO_VALUE,
+      userNote,
+    });
+  }
+
+  if (action === "compose") {
+    const content = input.content?.trim() ?? "";
+    if (content.length === 0) {
+      throw new AppError(
+        400,
+        "VALIDATION_ERROR",
+        "직접 입력에는 내용이 필요합니다.",
+      );
+    }
+    return repo.applyUserDecision(userClient, agendaId, {
+      status: "passed",
+      resolutionReason,
+      selectedContent: content,
+      selectedSourceRef: NO_VALUE,
+      userNote,
+    });
+  }
+
+  // accept — 클라이언트가 보낸 참조가 이 Agenda의 stance에 실제로 있는지 확인하고,
+  // 내용은 저장된 SourceAnswer 원문에서 되읽는다(클라이언트 본문을 신뢰하지 않는다).
+  const ref = input.sourceRef;
+  if (!ref) {
+    throw new AppError(400, "VALIDATION_ERROR", "채택할 출처가 필요합니다.");
+  }
+  if (!repo.hasSourceRef(agenda.stances, ref)) {
+    throw new AppError(
+      400,
+      "VALIDATION_ERROR",
+      "이 쟁점의 근거가 아닌 출처는 채택할 수 없습니다.",
+    );
+  }
+  const content = await repo.findSectionContent(
+    userClient,
+    ref.sourceAnswerId,
+    ref.sectionId,
+  );
+  if (content === null || content.trim().length === 0) {
+    throw new AppError(
+      404,
+      "SOURCE_SECTION_NOT_FOUND",
+      "채택할 원문을 찾을 수 없습니다.",
+    );
+  }
+
+  return repo.applyUserDecision(userClient, agendaId, {
+    status: "passed",
+    resolutionReason,
+    selectedContent: content,
+    selectedSourceRef: ref,
+    userNote,
+  });
 }

@@ -8,7 +8,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "manager:classify": "tsx src/modules/agendas/scripts/classify.ts"
+    "manager:classify": "tsx src/modules/agendas/scripts/classify.ts",
+    "manager:judge": "tsx src/modules/agendas/scripts/judge.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.5",

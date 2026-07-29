@@ -1,5 +1,10 @@
 import { z } from "zod";
-import type { AiProvider, ErrorCode } from "@decision-log/shared";
+import {
+  AgendaDisagreementTypeSchema,
+  AiProviderSchema,
+  type AiProvider,
+  type ErrorCode,
+} from "@decision-log/shared";
 
 /**
  * Manager 호출·검증 실패를 errorCode 5종(§2.4)으로 표현한다.
@@ -86,8 +91,28 @@ export interface AgendaDraft {
 }
 
 /**
- * §14.1 프로세스 지표 중 이번 단계(1~5)에서 계산 가능한 것.
- * 품질 지표(§14.2)는 단계 6 이후라 T-019.3.
+ * §14.2 품질 지표 — 단계 6·7과 §11 검증에서 나온다.
+ * `conflictAcceptRate`·`rejectRate`는 사용자 행동에서 나오므로 여기서 계산하지 않는다.
+ */
+export interface ManagerQualityMetrics {
+  /** 폐기된 quote / 전체 quote (경고 10% 초과 — 인용 날조·grounding 실패) */
+  quoteRejectRate: number | null;
+  /** 폐기 쟁점 / 생성 쟁점 (경고 5% 초과 — stance 0개 빈발) */
+  agendaDropRate: number | null;
+  /** fallback stance로 저장된 쟁점 비율 (경고 10% 초과 — 단계 6 불안정) */
+  judgeFailRate: number | null;
+  /** 유형별 건수. `main_answer` 비율이 5% 미만이면 충돌 과소 탐지 의심(§14.2·§5.5.3 결론 3) */
+  disagreementTypeDist: Record<string, number>;
+  /** 판정 confidence 관측값 전체. 표준편차 판단은 축적 후(§14.3) */
+  confidences: number[];
+  /** 단계 6 호출당 출력 토큰(§5.5의 430 추정과 대조) */
+  stage6OutputTokens: number[];
+  /** 단계 6 쟁점당 소요 시간(ms). 병렬 wall-clock은 stageDurationsMs.stage6. */
+  stage6DurationsMs: number[];
+}
+
+/**
+ * §14.1 프로세스 지표 중 단계 1~5에서 계산 가능한 것 + 단계 6·7 품질 지표(§14.2).
  */
 export interface ManagerMetrics {
   /** 재배정 수 / leftover 수 (경고 임계 50% 초과) */
@@ -106,8 +131,12 @@ export interface ManagerMetrics {
   stageDurationsMs: {
     stage3: number | null;
     stage4: number | null;
+    /** 단계 6 병렬 wall-clock. 쟁점당 지연은 quality.stage6DurationsMs. */
+    stage6: number | null;
     total: number;
   };
+  /** §14.2 품질 지표. 단계 6을 실행하지 않은 경로에서도 형태는 유지한다. */
+  quality: ManagerQualityMetrics;
 }
 
 /**
@@ -209,3 +238,26 @@ export type LeftoverOutput = z.infer<typeof LeftoverOutputSchema>;
 export const LeftoverTitleOnlyOutputSchema = z.object({
   titleRevisions: z.array(TitleRevisionSchema),
 });
+
+/**
+ * 단계 6 출력 (§8.6).
+ *
+ * 필드 순서가 사고 순서다 — `comparisonNote`(추론)가 `disagreementType`(결론)보다,
+ * `quotes`(원문 찾기)가 `text`(압축)보다 앞이다. `comparisonNote`는 저장하지 않고 버린다(§8.6).
+ *
+ * `provider`를 여기서 enum으로 좁히지 않는 이유: 참여 provider는 쟁점마다 다르므로
+ * LLM에 보내는 JSON Schema에서 런타임 enum으로 제약하고(§8.6), 서버 쪽 검증은
+ * "그 쟁점의 참여자인가"를 §11에서 확인한다.
+ */
+export const CompareStanceSchema = z.object({
+  provider: AiProviderSchema,
+  quotes: z.array(z.string()),
+  text: z.string(),
+});
+export const CompareOutputSchema = z.object({
+  comparisonNote: z.string(),
+  stances: z.array(CompareStanceSchema),
+  disagreementType: AgendaDisagreementTypeSchema,
+  confidence: z.number(),
+});
+export type CompareOutput = z.infer<typeof CompareOutputSchema>;
