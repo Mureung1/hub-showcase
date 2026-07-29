@@ -20,6 +20,7 @@ interface CalendarEvent {
   endTime?: string
   memo?: string
   hideFromRecommendation?: boolean
+  originalTitle?: string
 }
 
 interface ModalState {

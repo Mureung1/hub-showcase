@@ -82,7 +82,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
       if (response?.id || response?.userId) {
         console.log('✅ 프로필 데이터:', response)
         setProfile(response)
-      } else if (response?.data) {
+      } else if (response?.data?.id || response?.data?.userId) {
         console.log('✅ 프로필 데이터 (ApiResponse):', response.data)
         setProfile(response.data)
       } else {
@@ -184,14 +184,13 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
         dtstart: endDate.toISOString(),
         dtend: endDate.toISOString(),
         relatedPostingId: posting.id,
-        isAllDay: true,
         memo: posting.sourceUrl ? `링크: ${posting.sourceUrl}` : '',
       })
 
       // 2. Google Calendar에 동기화 (오늘 이후인 경우만)
       if (!isPast) {
         try {
-          await calendarApi.sync(posting.id)
+          await postingsApi.syncCalendar(posting.id)
           console.log('✅ Google Calendar 동기화 완료')
         } catch (syncError) {
           console.warn('⚠️ Google Calendar 동기화 실패 (로컬 저장은 완료):', syncError)
@@ -279,12 +278,12 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                 <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>
-                    {(profile as any).nickname?.charAt(0).toUpperCase() || profile.userId?.charAt(0).toUpperCase() || '?'}
+                    {profile.nickname?.charAt(0).toUpperCase() || profile.userId?.charAt(0).toUpperCase() || '?'}
                   </span>
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 600, lineHeight: 1.3 }}>
-                    {(profile as any).nickname || profile.userId || '사용자'}
+                    {profile.nickname || profile.userId || '사용자'}
                   </div>
                   <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: 1.3 }}>{profile.major || '전공미정'} {profile.grade || ''}학년</div>
                 </div>

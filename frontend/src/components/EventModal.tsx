@@ -24,7 +24,7 @@ interface EventModalProps {
   onDelete?: () => void
 }
 
-export default function EventModal({ isOpen, mode, date, endDate, event, postingEvents = [], onClose, onSave, onDelete }: EventModalProps) {
+export default function EventModal({ isOpen, mode, date, endDate, event, overlappingEvents = [], postingEvents = [], onClose, onSelectEvent, onSave, onDelete }: EventModalProps) {
   const [title, setTitle] = useState('')
   const [type, setType] = useState<'EXAM' | 'PART_TIME' | 'POSTING' | 'OTHER'>('EXAM')
   const [startDate, setStartDate] = useState('')
