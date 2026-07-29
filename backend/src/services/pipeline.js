@@ -66,7 +66,7 @@ async function runStep1(jobId) {
   const startTime = Date.now();
 
   try {
-    console.log("[Step 1] Sharp 엔트로피 기반 크롭 실행 중...");
+    console.log(`[Step 1] Sharp 엔트로피 기반 크롭 실행 중... (job_id: ${jobId})`);
 
     const { data: job, error: jobError } = await supabase
       .from("generation_jobs")
@@ -144,7 +144,7 @@ async function runStep2(jobId) {
   let signatureMenu = "시그니처 메뉴";
 
   try {
-    console.log("[Step 2] Google Gemini API를 사용한 자막 생성 실행 중...");
+    console.log(`[Step 2] Google Gemini API를 사용한 자막 생성 실행 중... (job_id: ${jobId})`);
 
     const { data: job, error: jobError } = await supabase
       .from("generation_jobs")
@@ -220,14 +220,28 @@ async function runStep2(jobId) {
       try {
         console.log(`[Step 2] Gemini 모델 시도 중: ${modelName}`);
         const model = client.getGenerativeModel({ model: modelName });
-        const response = await model.generateContent(prompt);
+
+        // 30초 타임아웃 설정
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error(`${modelName} API 타임아웃 (30초)`)), 30000)
+        );
+
+        const response = await Promise.race([
+          model.generateContent(prompt),
+          timeoutPromise
+        ]);
+
         content = response.response.text();
         if (content) {
-          console.log(`[Step 2] ${modelName} 호출 성공!`);
+          console.log(`[Step 2] ${modelName} 호출 성공! (응답 길이: ${content.length}자)`);
           break;
         }
       } catch (err) {
-        console.warn(`[Step 2] ${modelName} 호출 실패: ${err.message}`);
+        console.warn(`[Step 2] ${modelName} 호출 실패:`, {
+          message: err.message,
+          code: err.code,
+          status: err.status
+        });
         lastError = err;
       }
     }
@@ -262,24 +276,38 @@ async function runStep2(jobId) {
 
     console.log(`[✅ Step 2 완료] Gemini 자막 생성 (${duration}ms)\n`);
   } catch (error) {
-    console.error("[❌ Step 2 실패]", error.message);
+    console.error("[❌ Step 2 실패] 상세 정보:", {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      status: error.status
+    });
 
     // Gemini API 호출 실패시 Fallback 기본 대사 사용
-    console.log("[⚠️ Fallback] 기본 대사 템플릿으로 대체하여 진행합니다.");
-    const fallbackResult = generateFallbackCaption(
-      storeCategory,
-      signatureMenu,
-    );
-    const duration = Date.now() - startTime;
+    console.log(`[⚠️ Fallback] 기본 대사 템플릿으로 대체하여 진행합니다. (카테고리: ${storeCategory})`);
 
     try {
-      await updateStep2Results(jobId, fallbackResult, duration, true);
-      console.log(
-        `[✅ Step 2 Fallback 완료] 기본 대사 적용 완료 (${duration}ms)\n`,
+      const fallbackResult = generateFallbackCaption(
+        storeCategory,
+        signatureMenu,
       );
-    } catch (dbError) {
-      console.error("[❌ Step 2 DB 업데이트 실패]", dbError.message);
-      throw new Error(`Step 2 처리 중 오류 발생: ${error.message}`);
+      console.log("[Step 2] Fallback 대사 생성 완료:", {
+        primary_caption: fallbackResult.primary_caption,
+        hashtags: fallbackResult.hashtags
+      });
+
+      const duration = Date.now() - startTime;
+      await updateStep2Results(jobId, fallbackResult, duration, true);
+
+      console.log(
+        `[✅ Step 2 Fallback 완료] 기본 대사 DB 저장 완료 (${duration}ms)\n`,
+      );
+    } catch (fallbackError) {
+      console.error("[❌ Step 2 Fallback 처리 실패]", {
+        message: fallbackError.message,
+        originalError: error.message
+      });
+      throw new Error(`Step 2 처리 중 오류 발생: ${error.message} → Fallback 처리도 실패: ${fallbackError.message}`);
     }
   }
 }
