@@ -91,6 +91,14 @@ export type TechnicalChallengeCandidate = {
   evidence: TechnicalChallengeEvidenceReference[];
 };
 
+/** 기술적 도전 후보와 연결된 실제 Repository 파일의 제한된 원문입니다. */
+export type RepositoryCodeReference = {
+  filePath: string;
+  url: string;
+  language: string;
+  content: string;
+};
+
 export type RepositoryAnalysisDetails = {
   repositorySnapshot: {
     readmeAvailable: boolean;
@@ -132,6 +140,8 @@ export type RepositoryAnalysisDetails = {
     reviewCount: number;
   };
   technicalChallenges: TechnicalChallengeCandidate[];
+  /** 후보 분석에 사용된 파일 중 초안 생성을 위해 재사용할 수 있는 코드 근거입니다. */
+  codeReferences?: RepositoryCodeReference[];
   warnings: string[];
   evidence: RepositoryAnalysisEvidence[];
 };
