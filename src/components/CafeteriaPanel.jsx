@@ -621,8 +621,8 @@ export default function CafeteriaPanel() {
           onSelectBuilding={handleSelectBuilding}
         />
       )}
-      <AllergyCodeSheet />
       {school.type === 'university' && <CnuCafeteriaLocationCard selectedBuilding={building} />}
+      <AllergyCodeSheet />
     </>
   )
 }

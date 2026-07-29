@@ -97,7 +97,7 @@ export default function CnuCafeteriaLocationCard({ selectedBuilding }) {
           textAlign: 'left',
         }}
       >
-        <span style={{ fontSize: font.size.sm, fontWeight: 600, color: colors.textStrong }}>식비 위치 보기</span>
+        <span style={{ fontSize: font.size.sm, fontWeight: 600, color: colors.textStrong }}>학생 식당위치</span>
         <span style={{ color: colors.muted }}>
           <ChevronIcon open={open} />
         </span>
