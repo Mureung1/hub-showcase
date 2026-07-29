@@ -8,7 +8,8 @@ export const SERVER_DEFAULTS = Object.freeze({
   allowedOrigins: DEFAULT_ALLOWED_ORIGINS,
   rateLimitWindowMs: 15 * 60 * 1000,
   rateLimitMaximum: 100,
-  jsonBodyLimit: "100kb"
+  jsonBodyLimit: "100kb",
+  trustProxy: false
 });
 
 function readPositiveInteger(value, fallback) {
@@ -51,6 +52,9 @@ function readAllowedOrigins(value) {
 }
 
 export function createServerConfig(environment = {}) {
+  const productionTrustProxy =
+    environment.NODE_ENV === "production" ? 1 : SERVER_DEFAULTS.trustProxy;
+
   return {
     port: readPositiveInteger(
       environment.PORT ?? environment.SERVER_PORT,
@@ -65,6 +69,10 @@ export function createServerConfig(environment = {}) {
       environment.API_RATE_LIMIT_MAX,
       SERVER_DEFAULTS.rateLimitMaximum
     ),
-    jsonBodyLimit: readBodyLimit(environment.JSON_BODY_LIMIT)
+    jsonBodyLimit: readBodyLimit(environment.JSON_BODY_LIMIT),
+    trustProxy: readPositiveInteger(
+      environment.TRUST_PROXY_HOPS,
+      productionTrustProxy
+    )
   };
 }

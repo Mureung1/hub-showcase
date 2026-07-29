@@ -29,6 +29,7 @@ export function createApp({
   authenticateGuest,
   guestAuthenticationOptions,
   guestSessionOptions,
+  trustProxy = serverConfig.trustProxy,
   healthStatus = () => ({
     databaseConfigured: isSupabaseConfigured(),
     guestSessionsConfigured:
@@ -38,6 +39,7 @@ export function createApp({
   rateLimitOptions = {}
 } = {}) {
   const app = express();
+  app.set("trust proxy", trustProxy);
   const apiRateLimiter = rateLimit({
     windowMs: serverConfig.rateLimitWindowMs,
     limit: serverConfig.rateLimitMaximum,

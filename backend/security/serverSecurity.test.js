@@ -54,4 +54,20 @@ describe("Express security baseline", () => {
       error: { code: "RATE_LIMIT_EXCEEDED" }
     });
   });
+
+  it("accepts Render-style forwarded client addresses through one trusted hop", async () => {
+    const baseUrl = await startServer({
+      trustProxy: 1,
+      authenticateGuest: async () => ({
+        session: { id: "550e8400-e29b-41d4-a716-446655440000" }
+      }),
+      listAnalyses: async () => [],
+      rateLimitOptions: { windowMs: 60_000, limit: 2 }
+    });
+    const response = await fetch(`${baseUrl}/api/emotion-analyses`, {
+      headers: { "X-Forwarded-For": "203.0.113.10" }
+    });
+
+    expect(response.status).toBe(200);
+  });
 });

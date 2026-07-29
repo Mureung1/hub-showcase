@@ -16,7 +16,8 @@ describe("createServerConfig", () => {
         CLIENT_URL: "https://example.com, http://localhost:5173",
         API_RATE_LIMIT_WINDOW_MS: "60000",
         API_RATE_LIMIT_MAX: "25",
-        JSON_BODY_LIMIT: "200kb"
+        JSON_BODY_LIMIT: "200kb",
+        TRUST_PROXY_HOPS: "1"
       })
     ).toMatchObject({
       port: 4100,
@@ -27,8 +28,16 @@ describe("createServerConfig", () => {
       ],
       rateLimitWindowMs: 60_000,
       rateLimitMaximum: 25,
-      jsonBodyLimit: "200kb"
+      jsonBodyLimit: "200kb",
+      trustProxy: 1
     });
+  });
+
+  it("trusts one proxy hop in production but not in development", () => {
+    expect(createServerConfig({ NODE_ENV: "production" }).trustProxy).toBe(1);
+    expect(createServerConfig({ NODE_ENV: "development" }).trustProxy).toBe(
+      false
+    );
   });
 
   it("falls back when numeric or body limit overrides are invalid", () => {
