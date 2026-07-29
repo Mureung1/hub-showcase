@@ -9,9 +9,14 @@ import { useProfileSession } from './hooks/useProfileSession'
 import { useAuth } from './context/AuthContext'
 
 function App() {
-  const [lang, setLang] = useState<'KO' | 'EN'>('KO')
-  const [curationData, setCurationData] = useState<CurationData | null>(null)
+  const [lang, setLang] = useState<'KO' | 'EN'>(() => (localStorage.getItem('scholar_lang') as 'KO' | 'EN') || 'KO');
+  const [query, setQuery] = useState('');
+  const [curationData, setCurationData] = useState<CurationData | null>(null);
   const { session } = useAuth();
+
+  useEffect(() => {
+    localStorage.setItem('scholar_lang', lang);
+  }, [lang]);
   
   // Custom Hook: Container A 연구 프로필 로컬스토리지 영속화 및 Auth 세션 관리
   const {
@@ -53,6 +58,14 @@ function App() {
 
   // 서재 논문 삭제 처리 핸들러 (Lifting Up)
   const handleRemovePaper = async (paperId: string): Promise<void> => {
+    const confirmMessage = lang === 'KO' 
+      ? '해당 논문을 서재에서 제거하시겠습니까?' 
+      : 'Are you sure you want to remove this paper from your library?';
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
     try {
       const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
       const headers: Record<string, string> = {};
@@ -67,13 +80,13 @@ function App() {
 
       if (response.ok) {
         setSavedPapers(prev => prev.filter(item => item.paperId !== paperId));
-        alert('서재에서 삭제되었습니다.');
+        alert(lang === 'KO' ? '서재에서 삭제되었습니다.' : 'Removed from library.');
       } else {
-        alert('삭제에 실패했습니다.');
+        alert(lang === 'KO' ? '삭제에 실패했습니다.' : 'Failed to remove paper.');
       }
     } catch (error) {
       console.error('❌ Remove paper error:', error);
-      alert('삭제에 실패했습니다.');
+      alert(lang === 'KO' ? '삭제에 실패했습니다.' : 'Failed to remove paper.');
     }
   };
 
@@ -96,6 +109,8 @@ function App() {
             keywords={keywords}
             addKeyword={addKeyword}
             removeKeyword={removeKeyword}
+            query={query}
+            setQuery={setQuery}
           />
           
           {/* Bottom Row: Results & Workspace (100%) */}
@@ -109,7 +124,7 @@ function App() {
           />
         </main>
       ) : (
-        <MyLibrary savedPapers={savedPapers} handleRemovePaper={handleRemovePaper} />
+        <MyLibrary lang={lang} savedPapers={savedPapers} handleRemovePaper={handleRemovePaper} />
       )}
     </div>
   )
