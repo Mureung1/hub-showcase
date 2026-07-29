@@ -58,12 +58,15 @@ export function UserProvider({ children }) {
   // 로그인 기본 ON"은 이 복원 경로가 그대로 충족한다). 로그인은 선택 사항이라(게스트도 앱을 그대로
   // 쓸 수 있음) authLoading은 라우터가 /login으로 튕기는 데 쓰이지 않고, 세션 복원 전에 잠깐
   // "게스트"로 오판해 화면이 깜빡이는 것만 막는 용도로 쓰인다.
+  //
+  // ⚠️ getSession()을 onAuthStateChange와 병행 호출하지 않는다 — 예전엔 둘 다 불렀는데, 마운트 시
+  // 시작된 getSession() 프라미스가(콜드 스타트로 지연될 수 있음) 로그인 성공 이후에야 뒤늦게
+  // resolve되면 로그인 "이전"에 캡처된 session:null로 방금 세팅된 로그인 세션을 덮어써버렸다 —
+  // 실측 증상: 로그인 직후 화면이 게스트 데이터로 잠깐(또는 계속) 보이고, 같은 세션에서 다시
+  // 로그인하면(이미 그 프라미스가 끝난 뒤라) 정상 동작. supabase-js v2의 onAuthStateChange는 구독
+  // 즉시 현재 세션으로 INITIAL_SESSION 이벤트를 한 번 발생시켜 최초 복원까지 커버하므로, 이 리스너
+  // 하나만으로 충분하다 — 세션의 단일 진실 공급원을 두 개로 쪼개지 않는다.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setAuthLoading(false)
-    })
-
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
       setAuthLoading(false)
