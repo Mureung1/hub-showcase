@@ -149,16 +149,16 @@ async function runStep1(jobId) {
 }
 
 /**
- * Step 2: OpenAI API를 사용한 숏폼 자막 생성
- * KoBERT 대신 gpt-4o-mini를 사용하여 트렌드에 맞는 자막 생성
- * (경량화: PyTorch/transformers 제거)
+ * Step 2: Google Gemini API를 사용한 숏폼 자막 생성
+ * 100% 무료 Google Gemini API(gemini-2.0-flash)로 트렌드에 맞는 자막 생성
+ * (경량화: PyTorch/transformers 제거, OpenAI 비용 절감)
  */
 async function runStep2(jobId) {
   const supabase = getSupabaseClient();
   const startTime = Date.now();
 
   try {
-    console.log('[Step 2] OpenAI API를 사용한 자막 생성 실행 중...');
+    console.log('[Step 2] Google Gemini API를 사용한 자막 생성 실행 중...');
 
     // 1. Job 정보 조회
     const { data: job, error: jobError } = await supabase
@@ -185,11 +185,16 @@ async function runStep2(jobId) {
     const purpose = job.purpose || '상품 홍보';
     const mood = job.mood || 'bright';
 
-    // 2. OpenAI API 호출
-    const apiKey = process.env.OPENAI_API_KEY;
+    // 2. Google Gemini API 호출
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error('OPENAI_API_KEY 환경변수가 설정되지 않았습니다');
+      throw new Error('GEMINI_API_KEY 환경변수가 설정되지 않았습니다');
     }
+
+    // Google Generative AI 클라이언트 초기화
+    const { GoogleGenerativeAI } = await import('@google/generativeai');
+    const client = new GoogleGenerativeAI(apiKey);
+    const model = client.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const prompt = `당신은 소상공인을 위한 숏폼 콘텐츠 전문가입니다.
 
@@ -208,7 +213,7 @@ async function runStep2(jobId) {
 4. 행동 촉구 포함 (클릭, 방문, 주문 등)
 5. SNS 친화적이고 감정적 호소력 있게
 
-다음 JSON 형식으로 응답해주세요 (마크다운 없이):
+다음 JSON 형식으로 응답해주세요 (마크다운 코드 블록 없이, 순수 JSON만):
 {
   "primary_caption": "메인 자막",
   "caption_options": [
@@ -220,53 +225,40 @@ async function runStep2(jobId) {
   "similarity_score": 0.92
 }`;
 
-    console.log('[Step 2] OpenAI 프롬프트:', {
-      model: 'gpt-4o-mini',
+    console.log('[Step 2] Gemini 요청:', {
+      model: 'gemini-2.0-flash',
       promptLength: prompt.length,
       inputs: { trendHashtag, productLabel, storeCategory, mood }
     });
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 500
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`OpenAI API 오류 (${response.status}): ${errorData.error?.message || '알 수 없는 오류'}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0]?.message?.content;
+    // Gemini API 호출
+    const response = await model.generateContent(prompt);
+    const content = response.response.text();
 
     if (!content) {
-      throw new Error('OpenAI API에서 응답 콘텐츠가 없습니다');
+      throw new Error('Gemini API에서 응답 콘텐츠가 없습니다');
     }
 
-    // JSON 파싱
+    console.log('[Step 2] Gemini 원본 응답:', content.substring(0, 200) + '...');
+
+    // JSON 파싱 (마크다운 코드 블록 제거)
+    let jsonText = content;
+    if (content.includes('```json')) {
+      jsonText = content.split('```json')[1]?.split('```')[0] || content;
+    } else if (content.includes('```')) {
+      jsonText = content.split('```')[1] || content;
+    }
+    jsonText = jsonText.trim();
+
     let result;
     try {
-      result = JSON.parse(content);
+      result = JSON.parse(jsonText);
     } catch (parseError) {
-      console.error('[Step 2] JSON 파싱 실패:', content);
-      throw new Error(`OpenAI 응답 파싱 실패: ${parseError.message}`);
+      console.error('[Step 2] JSON 파싱 실패:', jsonText);
+      throw new Error(`Gemini 응답 파싱 실패: ${parseError.message}`);
     }
 
-    console.log('[Step 2] OpenAI 생성 결과:', result);
+    console.log('[Step 2] Gemini 생성 결과:', result);
 
     // 3. DB 업데이트
     const duration = Date.now() - startTime;
@@ -299,7 +291,7 @@ async function runStep2(jobId) {
       .eq('job_id', jobId)
       .eq('step_number', 2);
 
-    console.log(`[✅ Step 2 완료] OpenAI 자막 생성 (${duration}ms)\n`);
+    console.log(`[✅ Step 2 완료] Gemini 자막 생성 (${duration}ms)\n`);
 
   } catch (error) {
     console.error('[❌ Step 2 실패]', error.message);
