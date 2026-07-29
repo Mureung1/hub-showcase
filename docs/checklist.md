@@ -85,6 +85,18 @@
 
 > 위 항목은 로컬 작업/검증까지 끝난 상태이고 아직 커밋 전이라, 커밋되면 이 절 제목의 "커밋 예정"을 실제 커밋 해시로 교체할 것.
 
+## 카테고리 라벨 출처 일원화 — 로컬 작업 완료, 커밋 예정
+
+"향후 확장" 절에 있던 미확정 아이디어였는데(4주차), Supabase 이전 이후에도 `CommandListPage.jsx`/`CommandDetailPage.jsx`가 여전히 `src/data/commands.js`의 정적 `CATEGORY_LABELS`를 참조하던 이중 관리 문제를 실제로 해결했다.
+
+- [x] `server/src/services/commandsService.js` — `listCommands`/`getCommandById`가 `commands` 테이블 조회 시 FK(`commands.category → categories.key`)를 통해 `categories(label)`를 함께 조회하도록 변경, 응답에 평평한 `category_label` 필드로 포함
+- [x] `CommandDetailPage.jsx` — `CATEGORY_LABELS` import 제거, 이미 fetch된 `command.category_label`을 그대로 사용 (로딩 게이트가 이미 있어 타이밍 리스크 없음)
+- [x] `CommandListPage.jsx` — `CATEGORY_LABELS`를 쓰던 동기적 카테고리 유효성 판단을, 이미 돌고 있던 전체 목록 fetch(#36 알파벳 인덱스용)에서 `category_label`을 같이 받아오는 방식으로 전환. 판단 시점이 늦어지는 만큼 로딩 → 조회 실패(네트워크 오류) → 존재하지 않는 카테고리, 3단계로 상태를 나눠 순서대로 처리하도록 렌더링 로직 재구성
+- [x] `CATEGORY_LABELS`는 이제 시드 스크립트(`migrateCommandsToSupabase.js`)에서만 참조 — 실제 화면 쪽 라벨 출처는 DB 하나로 통일됨
+- [x] `npm run lint`, `npm run test` 통과 확인, Edge headless로 `/unix`·`/git`(정상)·`/docker`(존재하지 않는 카테고리)·`/commands/unix-ls`(상세 페이지 breadcrumb) 4개 경로 스크린샷 확인
+
+> 커밋되면 이 절 제목의 "커밋 예정"을 실제 커밋 해시로 교체할 것.
+
 ## 동료 피드백 반영 (실행 후보)
 
 - [ ] AI 챗봇 API 연동 방식 조사 — 정적인 터미널 UI에 챗봇을 붙이는 방법, API 선택지 비교 (동료 피드백 5번, 실행 후보)
@@ -102,7 +114,6 @@
 
 ## 향후 확장 (README 확장 아이디어)
 
-- [ ] 카테고리 라벨 출처 일원화 — Supabase 이전(`commands`/`categories` 테이블) 이후에도 `CommandListPage.jsx`/`CommandDetailPage.jsx`가 여전히 `src/data/commands.js`의 `CATEGORY_LABELS`(정적 파일)를 직접 import해서 라벨을 표시 중 — DB의 `categories.label`은 지금 FK 무결성 체크에만 쓰이고 실제 화면엔 반영 안 됨(라벨 출처가 DB/정적파일 두 곳으로 이중 관리되는 상태 그대로 남음). 완전히 해결하려면 검색 페이지(`CommandListPage.jsx`, 이번 Supabase 이전 스코프 밖)까지 같이 고쳐야 해서, 검색 페이지를 다시 손댈 때 한 번에 정리하는 게 맞다고 판단해 지금은 보류 (미확정 아이디어)
 - [ ] 명령어별 중요도 표시 기능 — 가로 막대 형태, 우선순위 낮음 (미확정 아이디어)
 - [ ] 상세 페이지 "보충 설명" 접기/펴기 섹션 — chmod처럼 옵션 표 안에 개념 설명(권한 표기법 등)까지 욱여넣은 명령어를 위해, 실제 플래그 목록과 개념 설명을 분리해 접기/펴기로 보여주는 안. 스키마 변경(nullable 컬럼 추가) + 새 UI 컴포넌트(아코디언)가 필요해 스코프가 있음, 지금 49개 중 chmod 1건만 해당돼 우선순위 낮음 (미확정 아이디어)
 - [ ] 알파벳 두문자 인덱스 탐색 (A, B, C… 점프) — 목록 화면에 사전식 알파벳 인덱스를 두고 클릭하면 해당 글자로 시작하는 명령어로 스크롤/필터. 백엔드/DB 불필요, 기존 49개 명령어 데이터를 프론트에서 정렬·그룹핑만 하면 됨. 사전 컨셉과 잘 맞는 기능이나 구현 시 유의할 점 두 가지: (1) 표본이 49개뿐이라 알파벳별 항목 수가 매우 불균등할 수 있음(스크롤 부담이 원래 크지 않을 수도), (2) Git 명령어는 전부 `git ` 접두사라 단순 첫 글자 인덱싱 시 21개가 전부 "G"로 몰림 — `src/utils/commandSort.js`가 검색 정렬에서 이미 처리한 "git 접두사 떼고 비교" 로직을 인덱스에도 재사용해야 함(예: `git commit`은 "C"로 인덱싱) (미확정 아이디어)
