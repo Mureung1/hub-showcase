@@ -1,0 +1,37 @@
+7d2aa58 | 2026-06-22 | Initial commit
+658901c | 2026-07-03 | Create pull_request_template.md
+1d93be5 | 2026-07-03 | Add auto-merge workflow for pull requests
+76abf50 | 2026-07-03 | Update pull_request_template.md
+a787c7a | 2026-07-03 | Add auto-merge workflow for pull requests
+73be7b0 | 2026-07-03 | Delete workflows directory
+a44ede9 | 2026-07-03 | Update pull request template with new sections
+d0b6b27 | 2026-07-07 | Expand README with project overview and features
+b7497da | 2026-07-08 | Update README with project planning and AI pipeline
+b44957f | 2026-07-08 | 위키링크 추가
+ccda899 | 2026-07-09 | design.md 추가
+3ad0bd6 | 2026-07-10 | 백로그
+284a9cc | 2026-07-13 | 주제 업데이트
+06aeeca | 2026-07-13 | 2주차 계획
+6109a81 | 2026-07-14 | 수정
+df52bc7 | 2026-07-15 | Update README.md
+555d11d | 2026-07-15 | Create README.md
+5532680 | 2026-07-15 | Add UI screenshots
+93e0db6 | 2026-07-15 | Add README for AI Life Log project
+9dbf41f | 2026-07-16 | Add files via upload
+7c92ba0 | 2026-07-16 | Update README.md
+203c3c8 | 2026-07-20 | README.md 업데이트
+5d13bd9 | 2026-07-21 | feat: LifeLog 프론트엔드 및 Gemini API 태그 추출 실험 추가
+781a0c2 | 2026-07-21 | Update weekly plan link from week 2 to week 3
+24abb4e | 2026-07-22 | Enhance README with architecture and tech stack
+7062606 | 2026-07-22 | Update README.md
+d72e9c7 | 2026-07-23 | feat: Express API(/api/analyze) 및 parseLLMResponse 테스트 코드 추가
+20de2f5 | 2026-07-23 | docs: showcase.json 초안 추가
+41bb63c | 2026-07-23 | Merge branch 'N097_백다빈' of https://github.com/dabinnida/hub into N097_백다빈 Lines starting with '#' will be ignored, and an empty message aborts
+50c0b57 | 2026-07-23 | docs: showcase.json 형식 오류 수정 (featureTags, thumbnail, developmentWithAI)
+77acb64 | 2026-07-24 | feat: 키워드·월별 카드 파스텔 색상 자동 배정 및 고양이 아바타 적용
+1f55cac | 2026-07-27 | entries/weekly_summaries 파이프라인, 조회 API, React 연결, 파일 업로드 기능 추가
+6d91c16 | 2026-07-28 | showcase.json 및 스크린샷 추가
+4e382a0 | 2026-07-28 | 배포 준비: 헬스체크 API 추가, 포트/API 주소 환경변수화
+1062cb6 | 2026-07-29 | showcase.json agentTools/workflows 형식 오류 수정
+092c96e | 2026-07-29 | 배포 위해 build에서 타입체크 제외
+c0bd6af | 2026-07-29 | 재배포 트리거
