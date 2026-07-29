@@ -6,6 +6,7 @@ const request = require('supertest');
 const app = require('../src/app');
 const pool = require('../src/config/db');
 const { exchangeGoogleCode } = require('../src/services/oauthClients');
+const evaluationService = require('../src/services/evaluationService');
 
 afterAll(async () => {
   await pool.end();
@@ -102,5 +103,34 @@ describe('평가 요청 알림 lazy 생성', () => {
     await agent.get('/api/notifications');
     const { rows } = await pool.query('SELECT COUNT(*)::int AS n FROM notifications');
     expect(rows[0].n).toBe(0);
+  });
+
+  it('lazy 생성이 실패해도 알림 조회는 200을 반환하고 기존 알림은 그대로 온다', async () => {
+    const { agent, userId } = await loginAgent('n-ev5');
+    const host = await createUser('n-h5');
+    const meetingId = await createMeeting(host, { endedDaysAgo: 1 });
+    // 이 사용자가 이미 갖고 있던, lazy 생성과 무관한 알림. 실패 격리가 안 되면
+    // GET 자체가 500이 되어 이 알림도 함께 안 보이게 된다.
+    await pool.query(
+      `INSERT INTO notifications (user_id, type, meeting_id) VALUES ($1, 'new_application', $2)`,
+      [userId, meetingId]
+    );
+
+    const listSpy = jest
+      .spyOn(evaluationService, 'listPendingEvaluations')
+      .mockRejectedValueOnce(new Error('DB 순간 장애(테스트로 주입)'));
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const res = await agent.get('/api/notifications');
+
+    expect(res.status).toBe(200);
+    const types = res.body.data.items.map((n) => n.type);
+    expect(types).toContain('new_application');
+    expect(types).not.toContain('evaluation_requested');
+    // 실패는 삼켜지되 흔적 없이 사라지진 않는다 — 서버 로그(콘솔)에는 남아야 한다.
+    expect(consoleSpy).toHaveBeenCalled();
+
+    listSpy.mockRestore();
+    consoleSpy.mockRestore();
   });
 });

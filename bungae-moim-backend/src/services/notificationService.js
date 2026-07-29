@@ -1,5 +1,8 @@
 const pool = require('../config/db');
-const { listPendingEvaluations } = require('./evaluationService');
+// 프로퍼티 접근으로 둔다(구조분해 X) — 라우트가 이 호출 실패를 격리하는지 테스트가
+// jest.spyOn(evaluationService, 'listPendingEvaluations')로 확인해야 하는데, 구조분해로
+// 지역 변수에 함수 참조를 복사해 버리면 spyOn이 모듈 export를 바꿔도 이 파일은 원본을 계속 쓴다.
+const evaluationService = require('./evaluationService');
 
 // 알림 종류. DB에는 varchar로 저장하고 문구는 FE가 고른다.
 const NOTIFICATION_TYPES = {
@@ -39,7 +42,7 @@ async function createNotifications(client, { userIds, type, meetingId }) {
 // 않는다). 중복은 부분 유니크 인덱스(user_id, meeting_id) WHERE type='evaluation_requested'
 // (마이그레이션 1785283754872)가 막으므로 ON CONFLICT로 조용히 넘긴다.
 async function ensureEvaluationNotifications(userId) {
-  const { items } = await listPendingEvaluations(userId);
+  const { items } = await evaluationService.listPendingEvaluations(userId);
   if (items.length === 0) return;
 
   const meetingIds = items.map((item) => item.meeting.id);
