@@ -20,7 +20,4 @@ If you are developing a production application, we recommend using TypeScript wi
 - **기획서**: [docs/plan.md](./docs/plan.md)
 - **개발 Task & 백로그**: [docs/backlog.md](./docs/backlog.md)
 - **아키텍처(Screen → Server → DB 데이터 흐름)**: [mermaid.md](./mermaid.md)
-
-## 이번 주 작업 현황
-
-- [2주차 이슈 보드](https://github.com/JeongHun-s/hub/milestone/1)
+- **쇼케이스**: [showcase/showcase.json](./showcase/showcase.json)
