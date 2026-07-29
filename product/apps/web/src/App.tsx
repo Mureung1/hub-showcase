@@ -12,6 +12,7 @@ import "./styles/global.css";
 import "./styles/suitFont.css";
 import "./styles/mapOverlays.css";
 import "./styles/panelAccessibility.css";
+import "./styles/categorySemantics.css";
 
 export function App({ useDemoData = false }: { useDemoData?: boolean }) {
   const apiReadiness = useApiReadiness(!useDemoData);

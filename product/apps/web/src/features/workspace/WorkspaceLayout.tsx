@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { categoryMatchesSelection } from "../market/categorySelection";
+import { categoryFocusCode } from "../market/categorySemantics";
 import { MarketFilters } from "../market/MarketFilters";
 import { MarketInspector } from "../market/MarketInspector";
 import { MarketQuickMetrics } from "../market/MarketQuickMetrics";
@@ -12,33 +13,6 @@ import { MarketSearch } from "../search/MarketSearch";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 import type { PanelTextSize } from "./usePanelTextSize";
 import { useWorkspaceUrlPersistence } from "./useWorkspaceUrlPersistence";
-
-function focusCategoryCode(category: string, categoryCode: string | null | undefined) {
-  if (categoryCode?.trim()) return categoryCode;
-  if (category.includes("카페") || category.includes("커피")) return "I21201";
-  if (category.includes("베이커리") || category.includes("제과") || category.includes("빵"))
-    return "I21001";
-  if (category.includes("편의점") || category.includes("마트") || category.includes("슈퍼"))
-    return "G20405";
-  if (category.includes("미용") || category.includes("헤어") || category.includes("네일"))
-    return "S20701";
-  if (category.includes("의류") || category.includes("패션") || category.includes("신발"))
-    return "G20901";
-  if (category.includes("학원") || category.includes("교육")) return "P10501";
-  if (category.includes("숙박") || category.includes("호텔") || category.includes("모텔"))
-    return "I10103";
-  if (
-    category.includes("체육") ||
-    category.includes("헬스") ||
-    category.includes("스포츠") ||
-    category.includes("요가") ||
-    category.includes("필라테스")
-  )
-    return "S20801";
-  if (category.includes("음식") || category.includes("한식") || category.includes("중식"))
-    return "I20101";
-  return "LOCAL_SERVICE";
-}
 
 export function WorkspaceLayout({
   model,
@@ -84,7 +58,7 @@ export function WorkspaceLayout({
               `${selectedStore.name}:${selectedStore.longitude}:${selectedStore.latitude}`,
             longitude: selectedStore.longitude,
             latitude: selectedStore.latitude,
-            categoryCode: focusCategoryCode(selectedStore.category, selectedStore.categoryCode),
+            categoryCode: categoryFocusCode(selectedStore.category, selectedStore.categoryCode),
             placementMode: "selected-focus",
             building: null,
           }

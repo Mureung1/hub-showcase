@@ -1,25 +1,9 @@
-import {
-  BedDouble,
-  ChevronRight,
-  Coffee,
-  Dumbbell,
-  Flower2,
-  GraduationCap,
-  MapPinned,
-  Scissors,
-  Shirt,
-  ShoppingBasket,
-  Store,
-  Target,
-  Utensils,
-  UsersRound,
-  Wheat,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronRight, MapPinned, Target, UsersRound } from "lucide-react";
 import { lazy, Suspense, useMemo, useState, type RefObject } from "react";
 import Map, { Layer, Marker, Popup, type MapRef } from "react-map-gl/maplibre";
 
-import { categoryClass, isTestEnvironment } from "../market/model";
+import { resolveCategoryPresentation } from "../market/categoryPresentation";
+import { isTestEnvironment } from "../market/model";
 import type { LayerMode, Market, MarketKey, MarketStore } from "../market/types";
 import {
   addMissingStyleImageFallback,
@@ -120,21 +104,21 @@ function StoreMarker({
     selectedName,
     prefabMode ? "storefront3d" : "analysis",
   );
-  const Icon = markerIcon(store.category);
+  const { icon: Icon, tone, label: groupLabel } = resolveCategoryPresentation(store.category);
   const label =
-    count > 1 ? `${store.category} 점포 ${count}개 묶음 보기` : `${store.name} 후보 보기`;
+    count > 1 ? `${groupLabel} 점포 ${count}개 묶음 보기` : `${store.name} 후보 보기`;
   return (
     <Marker longitude={store.longitude} latitude={store.latitude} anchor="bottom">
       <button
         type="button"
         aria-label={label}
-        title={count > 1 ? `${store.category} 점포 ${count}개` : `${store.name} · ${store.category}`}
+        title={count > 1 ? `${groupLabel} 점포 ${count}개` : `${store.name} · ${store.category}`}
         className={
           isPrefab
-            ? `prefab-building ${categoryClass(store.category)} ${isSelected ? "is-selected" : ""}`
+            ? `prefab-building ${tone} ${isSelected ? "is-selected" : ""}`
             : [
                 "map-marker",
-                categoryClass(store.category),
+                tone,
                 isSelected ? "is-selected" : "",
                 isDeemphasized ? "is-deemphasized" : "",
                 detailed ? "is-detailed" : "is-compact",
@@ -173,62 +157,6 @@ function StoreMarker({
       </button>
     </Marker>
   );
-}
-
-function markerIcon(category: string): LucideIcon {
-  if (category.includes("카페") || category.includes("커피")) return Coffee;
-  if (
-    category.includes("음식점") ||
-    category.includes("한식") ||
-    category.includes("중식") ||
-    category.includes("일식") ||
-    category.includes("분식") ||
-    category.includes("주점")
-  )
-    return Utensils;
-  if (
-    category.includes("베이커리") ||
-    category.includes("제과") ||
-    category.includes("빵") ||
-    category.includes("도넛")
-  )
-    return Wheat;
-  if (category.includes("편의점") || category.includes("슈퍼") || category.includes("마트"))
-    return ShoppingBasket;
-  if (category.includes("꽃") || category.includes("화원")) return Flower2;
-  if (
-    category.includes("미용") ||
-    category.includes("헤어") ||
-    category.includes("네일") ||
-    category.includes("피부관리")
-  )
-    return Scissors;
-  if (
-    category.includes("의류") ||
-    category.includes("의복") ||
-    category.includes("패션") ||
-    category.includes("신발")
-  )
-    return Shirt;
-  if (category.includes("학원") || category.includes("교습") || category.includes("교육원"))
-    return GraduationCap;
-  if (
-    category.includes("숙박") ||
-    category.includes("호텔") ||
-    category.includes("모텔") ||
-    category.includes("여관")
-  )
-    return BedDouble;
-  if (
-    category.includes("체육") ||
-    category.includes("헬스") ||
-    category.includes("피트니스") ||
-    category.includes("스포츠") ||
-    category.includes("요가") ||
-    category.includes("필라테스")
-  )
-    return Dumbbell;
-  return Store;
 }
 
 export function MarketMapCanvas({
@@ -311,7 +239,13 @@ export function MarketMapCanvas({
   );
   const densityMarkersVisible =
     presentationMode !== "analysis" || layer !== "density" || zoom >= DENSITY_MARKER_MIN_ZOOM;
-  const SelectedIcon = selected ? markerIcon(selected.category) : Coffee;
+  const selectedPresentation = resolveCategoryPresentation(
+    selected?.category ?? selectedCategoryName,
+  );
+  const SelectedIcon = selectedPresentation.icon;
+  const footfallLabel = market.footfall.includes("조회 중")
+    ? "유동인구 불러오는 중"
+    : `유동인구 ${market.footfall}`;
 
   if (isTestEnvironment())
     return <div className="map-fallback">실제 지도는 브라우저 환경에서 표시됩니다.</div>;
@@ -448,7 +382,10 @@ export function MarketMapCanvas({
           ))}
         {presentationMode === "storefront3d" && selected && (
           <Marker longitude={selected.longitude} latitude={selected.latitude} anchor="center">
-            <span className="selected-store-focus-anchor" aria-label={`${selected.name} 선택 위치`}>
+            <span
+              className={`selected-store-focus-anchor ${selectedPresentation.tone}`}
+              aria-label={`${selected.name} 선택 위치`}
+            >
               <SelectedIcon size={20} strokeWidth={2.6} aria-hidden="true" />
             </span>
           </Marker>
@@ -463,27 +400,36 @@ export function MarketMapCanvas({
             closeOnClick={false}
             className="selected-store-popup"
           >
-            <div className="selected-location">
-              <span className="selected-store-icon">
+            <div className={`selected-location theme-${selectedPresentation.tone}`}>
+              <span className={`selected-store-icon ${selectedPresentation.tone}`}>
                 <SelectedIcon size={18} aria-hidden="true" />
               </span>
               <div className="selected-store-heading">
                 <div>
                   <b>{selected.name}</b>
+                  <span className={`selected-store-category-chip ${selectedPresentation.tone}`}>
+                    {selectedPresentation.label}
+                  </span>
                   <small>
-                    {selected.category} · {selected.distance}
+                    {selected.category === selectedPresentation.label
+                      ? selected.distance
+                      : `${selected.category} · ${selected.distance}`}
                   </small>
                 </div>
-                <strong title="선택 점포가 속한 상권의 입지 점수">
-                  {score === null ? "분석 중" : `${score}점`}
-                </strong>
+                <span
+                  className={`selected-store-score ${score === null ? "is-loading" : ""}`}
+                  title="선택 점포가 속한 상권의 입지 점수"
+                >
+                  <small>입지 점수</small>
+                  <strong>{score === null ? "계산 중" : `${score}점`}</strong>
+                </span>
               </div>
               <div className="selected-store-factors">
                 <span>
-                  <UsersRound size={13} aria-hidden="true" /> {market.footfall}
+                  <UsersRound size={13} aria-hidden="true" /> {footfallLabel}
                 </span>
                 <span>
-                  <Target size={13} aria-hidden="true" /> 경쟁 {sameCategoryCount}개
+                  <Target size={13} aria-hidden="true" /> 같은 업종 {sameCategoryCount}개
                 </span>
               </div>
               <button type="button" onClick={onEvidenceOpen}>

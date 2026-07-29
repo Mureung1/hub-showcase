@@ -18,6 +18,7 @@ export type ProductCategory = {
   rank?: number | null;
   store_count?: number | null;
   market_count?: number | null;
+  store_counts_by_market?: Partial<Record<MarketKey, number>>;
 };
 
 export type ProductCatalog = {
