@@ -1,4 +1,5 @@
 import type { MarketAnalysis } from "../../services/marketAnalysis";
+import { categoryTone } from "./categorySemantics";
 import type { Category } from "./types";
 
 export const FLOW_TIME_BUCKET_LABELS = [
@@ -18,53 +19,7 @@ export const CLUSTER_LABELS: Record<string, string> = {
 };
 
 export function categoryClass(category: string) {
-  return category.includes("카페") || category.includes("커피")
-    ? "green"
-    : category.includes("음식점") ||
-        category.includes("한식") ||
-        category.includes("중식") ||
-        category.includes("일식") ||
-        category.includes("분식") ||
-        category.includes("주점")
-      ? "orange"
-      : category.includes("베이커리") ||
-          category.includes("제과") ||
-          category.includes("빵") ||
-          category.includes("도넛")
-        ? "blue"
-        : category.includes("편의점") ||
-            category.includes("슈퍼") ||
-            category.includes("마트")
-          ? "navy"
-          : category.includes("꽃") || category.includes("화원")
-            ? "yellow"
-            : category.includes("미용") ||
-                category.includes("헤어") ||
-                category.includes("네일") ||
-                category.includes("피부관리")
-              ? "pink"
-              : category.includes("의류") ||
-                  category.includes("의복") ||
-                  category.includes("패션") ||
-                  category.includes("신발")
-                ? "violet"
-                : category.includes("학원") ||
-                    category.includes("교습") ||
-                    category.includes("교육원")
-                  ? "cyan"
-                  : category.includes("숙박") ||
-                      category.includes("호텔") ||
-                      category.includes("모텔") ||
-                      category.includes("여관")
-                    ? "plum"
-                    : category.includes("체육") ||
-                        category.includes("헬스") ||
-                        category.includes("피트니스") ||
-                        category.includes("스포츠") ||
-                        category.includes("요가") ||
-                        category.includes("필라테스")
-                      ? "red"
-                      : "gray";
+  return categoryTone(category);
 }
 
 export function formatMarketScore(score: number, category: Category, radius: number) {
