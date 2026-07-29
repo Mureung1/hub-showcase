@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useOutletContext } from "react-router-dom";
+import { formatDDay } from "../utils/dday";
 
 export default function PickListingForBoard() {
-  const { listings, region, regionLabel } = useOutletContext();
+  const { listings, region, regionLabel, bookmarks } = useOutletContext();
   const [search, setSearch] = useState("");
 
   const activityListings = listings
@@ -13,7 +14,12 @@ export default function PickListingForBoard() {
       if (!keyword) return true;
       return `${l.title} ${l.desc}`.includes(keyword);
     })
-    .sort((a, b) => a.dDay - b.dDay);
+    .sort((a, b) => {
+      const aBookmarked = bookmarks.includes(a.id) ? 0 : 1;
+      const bBookmarked = bookmarks.includes(b.id) ? 0 : 1;
+      if (aBookmarked !== bBookmarked) return aBookmarked - bBookmarked;
+      return a.dDay - b.dDay;
+    });
 
   return (
     <div className="detail">
@@ -44,7 +50,8 @@ export default function PickListingForBoard() {
               </div>
               <div className="desc">{l.desc}</div>
             </div>
-            <span className={l.dDay <= 7 ? "pill-alert" : "pill-neutral"}>D-{l.dDay}</span>
+            {bookmarks.includes(l.id) && <span className="pill-grade">북마크</span>}
+            <span className={l.dDay <= 7 ? "pill-alert" : "pill-neutral"}>{formatDDay(l.dDay)}</span>
           </Link>
         ))}
         {activityListings.length === 0 && (

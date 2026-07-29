@@ -1,5 +1,6 @@
 import { Link, useOutletContext } from "react-router-dom";
 import BookmarkStar from "../components/BookmarkStar";
+import { formatDDay } from "../utils/dday";
 
 export default function Bookmarks() {
   const { bookmarks, toggleBookmark, categories, listings } = useOutletContext();
@@ -27,7 +28,7 @@ export default function Bookmarks() {
                 </div>
                 <div className="desc">{l.desc}</div>
               </div>
-              <span className={l.dDay <= 7 ? "pill-alert" : "pill-neutral"}>D-{l.dDay}</span>
+              <span className={l.dDay <= 7 ? "pill-alert" : "pill-neutral"}>{formatDDay(l.dDay)}</span>
               <BookmarkStar
                 active
                 onClick={(e) => {

@@ -1,6 +1,7 @@
 import { Link, useOutletContext, useParams } from "react-router-dom";
 import CardNewsThumb from "../components/CardNewsThumb";
 import BookmarkStar from "../components/BookmarkStar";
+import { formatDDay, isRolling } from "../utils/dday";
 
 export default function ListingDetail() {
   const { listingId } = useParams();
@@ -14,7 +15,7 @@ export default function ListingDetail() {
         <Link to="/">홈</Link> / <Link to={`/category/${category.id}`}>{category.label}</Link>
       </p>
       <div className="detail-meta">
-        <span className={listing.dDay <= 7 ? "pill-alert" : "pill-neutral"}>D-{listing.dDay}</span>
+        <span className={listing.dDay <= 7 ? "pill-alert" : "pill-neutral"}>{formatDDay(listing.dDay)}</span>
         <span style={{ fontSize: 13, color: "var(--ink-faint)" }}>{listing.desc}</span>
       </div>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 24 }}>
@@ -59,7 +60,7 @@ export default function ListingDetail() {
         </div>
         <div className="info-row">
           <span className="k">신청기간</span>
-          <span className="v">마감 D-{listing.dDay}</span>
+          <span className="v">{isRolling(listing.dDay) ? "마감일 미정" : `마감 D-${listing.dDay}`}</span>
         </div>
         <div className="info-row">
           <span className="k">신청방법</span>
@@ -75,6 +76,10 @@ export default function ListingDetail() {
           공식 페이지에서 지원하기 ↗
         </a>
       )}
+      <p style={{ fontSize: 14, fontWeight: 700, color: "var(--ink-soft)", margin: "10px 0 0" }}>
+        마감일은 공공데이터 기준이라 기관 사정으로 조기 마감됐을 수 있어요. 지원 전에 공식
+        페이지에서 한 번 더 확인해주세요.
+      </p>
       {(listing.teamBoardCount > 0 || listing.categoryId === "activity") && (
         <Link className="btn-team" to={`/board/listing/${listing.id}`}>
           팀원 모집하기

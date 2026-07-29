@@ -4,6 +4,7 @@
   "summary": "지역, 학년 조건에 맞는 장학금·지자체혜택·대외활동·인턴십만 걸러 보여주고, 팀 단위 공고는 인앱 팀원모집 게시판에서 댓글로 바로 지원까지 이어지는 서비스입니다.",
   "githubUser": "sohyunll(권소현)",
   "thumbnail": "screenshots/home.png",
+  "demoVideoUrl": "https://1drv.ms/v/c/7FDB251D3F0D6E91/IQB9MSJnfFgDTpT_TGPzAyYqAeYyl9u7QeauCvbb9ih1dVU?e=mwVARe",
   "screenshots": [
     "screenshots/home.png",
     "screenshots/category.png",

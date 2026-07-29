@@ -1,4 +1,5 @@
 import CardNewsIcon, { resolveCardNewsIcon } from "./CardNewsIcon";
+import { formatDDay } from "../utils/dday";
 
 export default function CardNewsThumb({ categoryId, categoryLabel, interest, title, dDay }) {
   const iconKey = resolveCardNewsIcon(categoryId, interest);
@@ -13,7 +14,7 @@ export default function CardNewsThumb({ categoryId, categoryLabel, interest, tit
       </p>
       <h2 className="cn-title">{title}</h2>
       <div className="cn-footer">
-        <span className="cn-ddaypill">D-{dDay}</span>
+        <span className="cn-ddaypill">{formatDDay(dDay)}</span>
         <span className="cn-brand">캠퍼스핏</span>
       </div>
     </div>

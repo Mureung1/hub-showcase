@@ -3,7 +3,7 @@ import { useOutletContext } from "react-router-dom";
 import BookmarkStar from "../components/BookmarkStar";
 
 export default function Main() {
-  const { region, grade, openFilter, bookmarks, toggleBookmark, categories, listings } =
+  const { region, grade, openFilter, bookmarks, toggleBookmark, categories, listings, boardPosts } =
     useOutletContext();
 
   const deadlineSoon = listings
@@ -17,7 +17,7 @@ export default function Main() {
     count: listings.filter((l) => l.categoryId === c.id).length,
   }));
 
-  const teamBoardTotal = listings.reduce((sum, l) => sum + (l.teamBoardCount || 0), 0);
+  const teamBoardTotal = boardPosts.filter((p) => p.status !== "closed").length;
 
   return (
     <>
