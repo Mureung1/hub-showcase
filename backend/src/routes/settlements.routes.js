@@ -394,4 +394,50 @@ router.patch('/:id/settlements/:settlementId/members/:settlementMemberId', requi
   }
 })
 
+router.delete('/:id/settlements/:settlementId', requireAuth, async (req, res, next) => {
+  try {
+    const subscription = await prisma.subscription.findUnique({
+      where: { id: req.params.id },
+    })
+
+    if (!subscription) {
+      const err = new Error('존재하지 않는 파티입니다.')
+      err.status = 404
+      return next(err)
+    }
+
+    if (subscription.ownerId !== req.user.id) {
+      const err = new Error('파티장만 삭제할 수 있습니다.')
+      err.status = 403
+      return next(err)
+    }
+
+    const settlement = await prisma.settlement.findUnique({
+      where: { id: req.params.settlementId },
+      include: { members: true },
+    })
+
+    if (!settlement || settlement.subscriptionId !== subscription.id) {
+      const err = new Error('존재하지 않는 정산입니다.')
+      err.status = 404
+      return next(err)
+    }
+
+    if (settlement.members.some((member) => member.status === 'done')) {
+      const err = new Error('이미 확인 완료된 파티원이 있어 삭제할 수 없습니다.')
+      err.status = 409
+      return next(err)
+    }
+
+    await prisma.$transaction([
+      prisma.settlementMember.deleteMany({ where: { settlementId: settlement.id } }),
+      prisma.settlement.delete({ where: { id: settlement.id } }),
+    ])
+
+    res.status(204).end()
+  } catch (e) {
+    next(e)
+  }
+})
+
 export default router

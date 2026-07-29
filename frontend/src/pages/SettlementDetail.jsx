@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   billingMonthLabel,
   billingMonthShortLabel,
+  deleteSettlement,
   getSettlementDetail,
   reportSettlementMember,
   settlementOwnerStatusLabel,
@@ -12,11 +13,13 @@ import {
 } from '../lib/settlements'
 import { getSubscription } from '../lib/subscriptions'
 import LoginRequired from '../components/LoginRequired'
+import ConfirmDialog from '../components/ConfirmDialog'
 import './SubscriptionDetail.css'
 import './SettlementDetail.css'
 
 const SettlementDetail = () => {
   const { id, settlementId } = useParams()
+  const navigate = useNavigate()
   const [status, setStatus] = useState('loading')
   const [settlement, setSettlement] = useState(null)
   const [serviceName, setServiceName] = useState('')
@@ -27,6 +30,10 @@ const SettlementDetail = () => {
 
   const [reportStatus, setReportStatus] = useState('idle')
   const [reportErrorMessage, setReportErrorMessage] = useState('')
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteErrorMessage, setDeleteErrorMessage] = useState('')
+  const [showDoneBlockedInfo, setShowDoneBlockedInfo] = useState(false)
 
   const myMember = settlement && settlement.role !== 'owner' ? settlement.members[0] : null
   const { showFallback: showTransferFallback, qrDataUrl } = useTossTransferFallback(
@@ -77,6 +84,16 @@ const SettlementDetail = () => {
       setActionErrorMessage(error.message)
     } finally {
       setActionMemberId(null)
+    }
+  }
+
+  const handleDelete = async () => {
+    setDeleteErrorMessage('')
+    try {
+      await deleteSettlement(id, settlementId)
+      navigate(`/subscriptions/${id}`)
+    } catch (error) {
+      setDeleteErrorMessage(error.message)
     }
   }
 
@@ -216,14 +233,48 @@ const SettlementDetail = () => {
     )
   }
 
+  const hasDoneMember = settlement?.members?.some((member) => member.status === 'done') ?? false
+
   return (
     <div className="subscription-detail-page">
       <div className="subscription-detail-topbar">
         <Link to={`/subscriptions/${id}`} className="back-link">
           ← 이전으로
         </Link>
+        {status === 'success' && settlement.role === 'owner' && (
+          <div className="detail-header-actions">
+            <button
+              type="button"
+              className="detail-action-btn"
+              onClick={() => (hasDoneMember ? setShowDoneBlockedInfo(true) : setShowDeleteConfirm(true))}
+            >
+              삭제
+            </button>
+          </div>
+        )}
       </div>
       {content}
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          message={'정말 삭제할까요?\n파티원별 정산 내역이 모두 사라져요.'}
+          confirmLabel="삭제"
+          errorMessage={deleteErrorMessage}
+          onConfirm={handleDelete}
+          onCancel={() => {
+            setShowDeleteConfirm(false)
+            setDeleteErrorMessage('')
+          }}
+        />
+      )}
+      {showDoneBlockedInfo && (
+        <ConfirmDialog
+          message="이미 정산이 완료된 파티원이 있어 삭제할 수 없어요."
+          confirmLabel="확인"
+          hideCancel
+          onConfirm={() => setShowDoneBlockedInfo(false)}
+          onCancel={() => setShowDoneBlockedInfo(false)}
+        />
+      )}
     </div>
   )
 }

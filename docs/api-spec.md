@@ -362,6 +362,7 @@
 | GET | `/api/subscriptions/:id/settlements/:settlementId` | 정산 상세 조회 | ✓ |
 | POST | `/api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId/report` | 이체 확인 요청 | ✓ (본인) |
 | PATCH | `/api/subscriptions/:id/settlements/:settlementId/members/:settlementMemberId` | 파티원 정산 상태 변경(수락/거절) | ✓ (파티장) |
+| DELETE | `/api/subscriptions/:id/settlements/:settlementId` | 정산 삭제 | ✓ (파티장) |
 
 ### 정산 생성: `POST /api/subscriptions/:id/settlements`
 
@@ -526,6 +527,20 @@
 **Error `403`**: 파티장이 아닌 사용자의 접근
 
 **Error `404`**: 존재하지 않는 정산 또는 파티원 항목
+
+### 정산 삭제: `DELETE /api/subscriptions/:id/settlements/:settlementId`
+
+- 파티장 전용. 실수로 생성했거나 파티 구성 변경 후 다시 만들고 싶을 때 사용.
+- 파티원 중 한 명이라도 파티장이 최종 확인 처리(`status: "done"`)한 항목이 있으면 삭제 불가 — 이미 확정된 입금 기록을 보존하기 위함. 파티원이 "이체 확인 요청"만 한 상태(`reportedAt`만 있고 `status`는 `"pending"`)는 삭제 가능.
+- 삭제 후에는 `(subscriptionId, billingMonth)` 유니크 제약이 풀려 같은 달로 정산을 다시 생성할 수 있다.
+
+**Response `204`**: 본문 없음
+
+**Error `403`**: 파티장이 아닌 사용자의 접근
+
+**Error `404`**: 존재하지 않는 정산
+
+**Error `409`**: `"done"`으로 확인 완료된 파티원이 있어 삭제 불가
 
 ---
 
