@@ -2705,3 +2705,27 @@ select:focus {
   .saved-opportunity-list article { grid-template-columns: 1fr; }
   .saved-opportunity-actions { flex-direction: row; flex-wrap: wrap; }
 }
+
+.source-count-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #dfe5f2);
+  border-radius: 6px;
+  background: #f8faff;
+  color: var(--muted, #667085);
+  font-size: 0.82rem;
+}
+
+.source-count-summary span {
+  color: var(--text, #172b4d);
+  font-weight: 700;
+}
+
+.source-count-summary small {
+  margin-left: auto;
+  color: var(--muted, #667085);
+}

@@ -195,6 +195,16 @@ function createScanSummary(
   allNoticesPerSource = DEFAULT_ALL_NOTICES_PER_SOURCE,
 ) {
   const normalizedAllNoticesPerSource = normalizeAllNoticesPerSource(allNoticesPerSource);
+  const sourceNoticeCounts = sourceResults.map((result) => {
+    const extractedCount = Array.isArray(result?.allLinks) ? result.allLinks.length : 0;
+
+    return {
+      displayedCount: Math.min(extractedCount, normalizedAllNoticesPerSource),
+      extractedCount,
+      id: result?.sourceId || result?.source?.id || result?.sourceName || "unknown-source",
+      name: result?.sourceName || result?.source?.name || "이름 없는 출처",
+    };
+  });
 
   return {
     allLinks: mergeSourceNoticeLinks(sourceResults, "allLinks", {
@@ -202,6 +212,7 @@ function createScanSummary(
     }),
     allNoticesPerSource: normalizedAllNoticesPerSource,
     failedSources,
+    sourceNoticeCounts,
     fetchedAt: new Date().toISOString(),
     isBatch: sourceResults.length > 1 || failedSources.length > 0,
     knownCount: sourceResults.reduce((sum, result) => sum + result.knownCount, 0),
@@ -446,7 +457,7 @@ function ConfigPanel({
         </div>
 
         <label className="field source-limit-field">
-          <span>전체 공지 수 (출처당)</span>
+          <span>전체 공지 최대 표시 수 (출처당)</span>
           <input
             type="number"
             min={MIN_ALL_NOTICES_PER_SOURCE}
@@ -509,7 +520,7 @@ function ConfigPanel({
 function Metrics({ knownLinks, scan }) {
   const metrics = [
     { label: "스캔 출처", value: scan?.sourceCount ?? 0 },
-    { label: "추출 링크", value: scan?.allLinks.length ?? 0 },
+    { label: "전체 표시", value: scan?.allLinks.length ?? 0 },
     { label: "최신 링크", value: scan?.latestLinks.length ?? 0 },
     { label: "기존 기록", value: scan?.knownCount ?? knownLinks.length },
     { label: "마지막 스캔", value: formatScanTime(scan?.fetchedAt) },
@@ -528,9 +539,11 @@ function Metrics({ knownLinks, scan }) {
 }
 
 function ResultTable({
+  allNoticesPerSource,
   displayMode,
   failedSources = [],
   isAnalyzing,
+  sourceNoticeCounts = [],
   links,
   pendingLinkAction,
   onAnalyzeLink,
@@ -564,6 +577,15 @@ function ResultTable({
           <span>{links.length}개</span>
         </div>
       </header>
+
+      {displayMode === "all" && sourceNoticeCounts.length ? (
+        <p className="source-count-summary">
+          출처별 추출 결과: {sourceNoticeCounts.map((item) => (
+            <span key={item.id}>{item.name} {item.displayedCount}/{item.extractedCount}개</span>
+          ))}
+          <small>출처마다 최대 {allNoticesPerSource}개만 표시합니다.</small>
+        </p>
+      ) : null}
 
       {failedSources.length ? (
         <div className="scan-warning">
@@ -790,7 +812,7 @@ function Sidebar({ activeView, onNavigate, status }) {
 function HeroSummary({ health, savedCount, scan }) {
   const provider = providerLabels[health?.aiProvider] ?? "mock";
   const metrics = [
-    { label: "추출 링크", value: scan?.allLinks.length ?? 0, helper: "이번 스캔" },
+    { label: "전체 표시", value: scan?.allLinks.length ?? 0, helper: "출처별 제한 적용" },
     { label: "최신 링크", value: scan?.latestLinks.length ?? 0, helper: "마지막 스캔 이후" },
     { label: "저장한 공고", value: savedCount, helper: "관심 목록" },
   ];
@@ -1974,8 +1996,10 @@ function OpportunityAgentWorkbench() {
               <section className="result-section" aria-label="스캔 결과">
                 <Metrics knownLinks={knownLinks} scan={scan} />
                 <ResultTable
+                  allNoticesPerSource={scan?.allNoticesPerSource ?? DEFAULT_ALL_NOTICES_PER_SOURCE}
                   displayMode={displayMode}
                   failedSources={scan?.failedSources ?? []}
+                  sourceNoticeCounts={scan?.sourceNoticeCounts ?? []}
                   isAnalyzing={isAnalyzing || isRunning || isSavingAnalysis || Boolean(pendingLinkAction)}
                   links={displayLinks}
                   pendingLinkAction={pendingLinkAction}

@@ -103,3 +103,22 @@ test("공지 목록의 일반적인 날짜 표기를 ISO 게시일로 변환한�
   assert.equal(parseNoticePublishedAt("2026.13.40"), null);
   assert.equal(parseNoticePublishedAt("날짜 없음"), null);
 });
+
+test("keeps ten notices from each of three sources", () => {
+  const sources = ["source-a", "source-b", "source-c"].map((sourceId) => ({
+    allLinks: Array.from({ length: 12 }, (_, index) => ({
+      id: `${sourceId}-${index + 1}`,
+      index,
+      publishedAt: `2026-07-${String(28 - index).padStart(2, "0")}`,
+      title: `${sourceId} notice ${index + 1}`,
+      url: `https://example.com/${sourceId}/${index + 1}`,
+    })),
+  }));
+
+  const merged = mergeSourceNoticeLinks(sources, "allLinks", { perSourceLimit: 10 });
+
+  assert.equal(merged.length, 30);
+  assert.equal(merged.filter((link) => link.url.includes("source-a")).length, 10);
+  assert.equal(merged.filter((link) => link.url.includes("source-b")).length, 10);
+  assert.equal(merged.filter((link) => link.url.includes("source-c")).length, 10);
+});
