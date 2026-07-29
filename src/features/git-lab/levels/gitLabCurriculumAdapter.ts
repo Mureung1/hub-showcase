@@ -369,6 +369,22 @@ function createGoalCheck(level: CurriculumLevel): GitLabGoalCheck | undefined {
     }
   }
 
+  if (level.goal?.type === 'commandOutput') {
+    const condition = level.goal.condition ?? ''
+    const resolvedRefMatch = /lastResolvedRef === '([^']+)'/.exec(condition)
+    const logResultMatch = /\[([^\]]+)\]\.sort\(\)\.join\(\)/.exec(condition)
+    const expectedLogResult = logResultMatch
+      ? logResultMatch[1].split(',').map((token) => token.trim().replace(/^'|'$/g, ''))
+      : undefined
+
+    return {
+      type: 'commandOutput',
+      expectedResolvedRef: resolvedRefMatch?.[1],
+      expectedLogResult,
+      description,
+    }
+  }
+
   return undefined
 }
 

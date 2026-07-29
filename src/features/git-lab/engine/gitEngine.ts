@@ -6,6 +6,7 @@ import {
   remoteList,
 } from './remoteCommands'
 import { logTags, tag } from './tagCommands'
+import { logRange, show } from './revisionCommands'
 
 export type GitCommit = {
   id: string
@@ -107,6 +108,8 @@ export type GitCommand =
   | { type: 'branchRemoteList' }
   | { type: 'tag'; name: string; annotated: boolean; message?: string }
   | { type: 'logTags' }
+  | { type: 'show'; ref: string }
+  | { type: 'logRange'; from: string; to: string }
 
 export type GitCommandResult = {
   state: GitEngineState
@@ -286,6 +289,15 @@ export function parseGitCommand(input: string): GitCommand {
     return { type: 'merge', name: tokens[2] }
   }
 
+  if (tokens[1] === 'log' && tokens.length === 3 && tokens[2].includes('..')) {
+    const [from, to] = tokens[2].split('..')
+    return { type: 'logRange', from, to }
+  }
+
+  if (tokens[1] === 'show' && tokens.length === 3) {
+    return { type: 'show', ref: tokens[2] }
+  }
+
   if (tokens[1] === 'log' && tokens.length === 2) {
     return { type: 'log', oneline: false }
   }
@@ -372,6 +384,10 @@ export function executeGitCommand(state: GitEngineState, command: GitCommand): G
       return tag(state, command.name, command.annotated, command.message)
     case 'logTags':
       return logTags(state)
+    case 'show':
+      return show(state, command.ref)
+    case 'logRange':
+      return logRange(state, command.from, command.to)
   }
 }
 

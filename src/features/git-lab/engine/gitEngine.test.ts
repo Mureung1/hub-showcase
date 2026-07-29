@@ -120,6 +120,12 @@ describe('gitEngine', () => {
       message: 'Release 1.0',
     })
     expect(parseGitCommand('git log --tags')).toEqual({ type: 'logTags' })
+    expect(parseGitCommand('git show HEAD~2')).toEqual({ type: 'show', ref: 'HEAD~2' })
+    expect(parseGitCommand('git log master..experiment')).toEqual({
+      type: 'logRange',
+      from: 'master',
+      to: 'experiment',
+    })
   })
 
   it('handles boundary cases and normalizes input', () => {
