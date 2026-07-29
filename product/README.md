@@ -9,13 +9,31 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build    # dist/
 npm run lint
+npm test         # data/recompose.js 를 server 의 fixture 로 대조한다
 ```
 
 개발 서버는 `vite.config.js`의 proxy로 `/api` 요청을 `http://localhost:4000`의 Express로 넘긴다. 그래서 로컬에서는 화면과 서버가 같은 출처로 보이고 별도 설정이 필요 없다.
 
 ## API 주소
 
-React는 Vercel, Express는 Render로 서로 다른 출처에 뜬다. 배포에서는 상대경로 `/api/...`에 아무것도 없으므로 화면이 서버의 절대 주소를 알아야 한다. 그 주소가 `VITE_API_BASE`다.
+React는 Vercel, Express는 Render로 서로 다른 출처에 뜬다. 화면이 서버에 닿는 길은 둘이며, 이 저장소는 **Rewrite**를 쓴다.
+
+| 방식 | 브라우저가 부르는 주소 | 필요한 설정 |
+| --- | --- | --- |
+| **Rewrite (기본)** | Vercel 도메인 | `vercel.json`의 `rewrites`. `VITE_API_BASE`는 비운다 |
+| 직접 요청 | Render 도메인 | `VITE_API_BASE` + Express의 `ALLOWED_ORIGINS` |
+
+Rewrite는 Vercel이 `/api/...` 요청을 브라우저 밖에서 Express로 넘긴다. 브라우저는 한 출처만 보므로 교차 출처 검사가 일어나지 않고, 배포마다 주소가 바뀌는 Preview에서도 설정을 고치지 않는다. 대신 Express의 주소가 `vercel.json`에 적힌다. 그 주소는 비밀이 아니다.
+
+```json
+{ "source": "/api/:path*", "destination": "https://careersignal-server.onrender.com/api/:path*" }
+```
+
+이어지는 catch-all은 `api/`를 제외한다. 순서가 바뀌거나 제외가 빠지면 API 요청이 `index.html`로 떨어져 화면이 JSON 대신 HTML을 받는다.
+
+서버 주소가 바뀌면 이 파일을 고치고 다시 배포한다.
+
+아래는 직접 요청 방식의 설정이다. Rewrite를 쓰는 동안에는 `VITE_API_BASE`를 **비워 둔다.** 값이 있으면 화면이 Render를 직접 불러 Rewrite를 지나치고 교차 출처 검사가 되살아난다.
 
 모든 API 호출은 `src/data/api.js`의 `apiUrl(path)`를 거친다. `src/hooks/apiFetch.js`의 `fetchJson`이 이 함수를 부르고, 상태 코드를 직접 다루는 `PostingAnalyzePanel`도 같은 함수로 주소를 만든다. 화면 코드는 `/api/...` 경로만 넘긴다.
 
@@ -44,4 +62,8 @@ React는 Vercel, Express는 Render로 서로 다른 출처에 뜬다. 배포에�
 | `src/hooks/useJobs.js` | `GET /api/jobs` 직무 목록 |
 | `src/screens/` | 다섯 화면 |
 | `src/components/PostingAnalyzePanel.jsx` | 내 공고 직접 분석 |
+| `src/components/ScopeSwitch.jsx` | 해석·전략·로드맵 위쪽의 범위 전환 줄 |
+| `src/components/SectionNav.jsx` | 히스토리를 쌓지 않는 오른쪽 목차 |
+| `src/hooks/sectionJump.js` | 목차 클릭 처리(`replaceState` 로 해시만 교체) |
+| `src/data/recompose.js` | 내가 입력한 공고 로드맵의 체크 재조합 (`server/src/recompose.js` 와 같은 규칙) |
 | `vercel.json` | Vercel 빌드·SPA rewrite·정적 자산 캐시 |
