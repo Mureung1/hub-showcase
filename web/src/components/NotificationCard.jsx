@@ -1,16 +1,17 @@
+import { calculateDday } from '../utils/dday'
 import DdayBadge from './DdayBadge'
 import './NotificationCard.css'
 
-// ddayLabel은 임시 필드 — deadline에서 D-day 문구를 계산하는 로직은 이후 task에서 구현
 // 완료 버튼은 S2 임시 배치(카드 전체 클릭 아님) — 정식 위치는 S3 "완료로 표시" 버튼,
 // S3 React 이관 시 이어붙이고 이 임시 버튼은 제거한다.
-function NotificationCard({ notification, onComplete }) {
-  const { id, title, summary, priority, source, keywords, done, ddayLabel } = notification
+function NotificationCard({ notification, onComplete, today }) {
+  const { id, title, summary, deadline, priority, source, keywords, done } = notification
+  const label = done ? '완료 ✓' : calculateDday(deadline, today)
 
   return (
     <div className={`card${done ? ' card--done' : ''}`}>
       <div className="card-top">
-        <DdayBadge priority={priority} label={ddayLabel} />
+        {label && <DdayBadge priority={priority} label={label} />}
         <span className="card-src">{source}</span>
         {!done && (
           <button type="button" className="card-complete" onClick={() => onComplete(id)}>

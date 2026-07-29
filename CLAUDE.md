@@ -38,14 +38,15 @@
 - [x] 기획·조사 완료 (문제정의, S1~S6, IA, 와이어프레임, 채널 실측 — 신뢰 기기 1개월 면제 확인 포함) → docs/plan.md
 - [x] 디자인 시스템 (다크+보라 A안) → docs/design-system.md + tokens.css
 - [x] 프로토타입 S1~S4 + 화면 연결 완주 → docs/prototype/
-- [ ] 2주차: 수직슬라이스 (계획 초안) → docs/checklist.md
+- [ ] 2주차: 수직슬라이스 — S2 React 이관 완료(mock) → MSW로 API 흐름 검증 완료(GET/PATCH·로딩·에러) → docs/checklist.md
 
 세부 단위 진행 상황은 docs/checklist.md에서만 관리한다 (이 파일은 마일스톤 요약만 유지).
 
 ## 다음 세션 시작 시 참고
-- 2주차 계획은 커리큘럼 기반 초안 — React/Express 학습 후 착수 시점에 단계별로 구체화 (미리 확정하지 않음)
-- 첫 작업은 알림 스키마 확정(s3.html 빈칸 역산)으로 변동 없음
-- eclass 확인은 2주차 내 처리
+- 2주차 2번 착수. 순서는 D-day 계산 TDD(2-1) → Supabase 테이블(2-2) →
+  Express(2-3~2-5) → MSW를 실서버로 교체(2-6).
+  D-day가 먼저인 이유: 뱃지가 ddayLabel에 의존하는데 그 필드를 DB에 저장하지
+  않기로 해서, 계산 로직이 없으면 교체 순간 뱃지 4개가 빈칸이 됨.
 
 ## 참고
 @README.md
