@@ -3,7 +3,8 @@
   "title": "Green Connect",
   "summary": "증상과 생활 패턴을 분석해 필요한 성분을 추천하고, 이미 먹고 있는 영양제와의 성분 중복을 체크한 뒤 기업 규모와 무관하게 성분·품질 기준으로만 믿을 수 있는 건강기능식품을 연결해주는 개인 맞춤형 추천 서비스",
   "githubUser": "tyoonii(김태윤)",
-  "demoUrl": "",
+  "demoUrl": "https://greenconnect-psi.vercel.app",
+  "demoVideoUrl": "https://drive.google.com/file/d/1EwxvStdtyWCq4GL9IP5jhbRt5gd5OZO3/view?usp=sharing",
   "thumbnail": "hub/성분분석.png",
   "screenshots": [
     "hub/홈(증상 체크).png",
@@ -26,9 +27,7 @@
   "featureTags": [
     "성분 추천",
     "성분 중복 체크",
-    "개인 맞춤형",
-    "건강기능식품",
-    "상한 섭취량"
+    "개인 맞춤형"
   ],
   "techStack": [
     "React",
@@ -46,15 +45,15 @@
   "agent": {
     "summary": "Claude Code를 활용해 기획 문서(백로그, 아키텍처 문서)를 함께 정리하고, TDD 절차에 따라 테스트를 먼저 작성한 뒤 구현하는 방식으로 검증 로직을 추가했다. 성분-증상 매핑, 중복/상한 섭취량 체크, KDRIs 기반 개인화 로직을 함께 설계·구현했고, 네이버 쇼핑검색 API와 식약처 성분정보 API로 목업 데이터를 실제 데이터로 교체하는 작업도 함께 진행했다.",
     "agentTools": [
-      "파일 읽기/편집(백엔드·프론트엔드 코드)",
-      "Bash 명령 실행(DB 마이그레이션, 서버 실행)",
-      "외부 API 데이터 반영(네이버 쇼핑검색 API, 식약처 성분정보 API)"
+      { "name": "Explore", "type": "agent", "purpose": "커밋 내역과 코드베이스를 탐색해 이번 주 작업 내용을 정리" },
+      { "name": "tdd-backend-feature", "type": "skill", "purpose": "출생연도 유효성 검증 로직을 TDD(Red-Green) 절차로 구현" },
+      { "name": "design-system-lavender", "type": "skill", "purpose": "발표 자료 페이지에 프로젝트 디자인 시스템(색상·폰트·컴포넌트 톤) 적용" }
     ],
     "workflows": [
-      "기획 문서 정리 → 백로그 우선순위 결정 → 주차별 작업 분해",
-      "TDD: 테스트 먼저 작성(Red) → 구현(Green) 순서로 검증 로직 추가",
-      "실제 코드 기준으로 화면-API-DB 흐름을 재점검해 기획과 구현이 어긋난 지점(진단 기록 미저장, 인증 정보 누락 등) 발견 및 우선순위 반영",
-      "목업 데이터를 외부 API로 확인한 실제 데이터로 단계적으로 교체"
+      { "name": "기획 정리", "steps": ["백로그 우선순위 결정", "주차별 작업 분해"] },
+      { "name": "TDD", "steps": ["테스트 먼저 작성(Red)", "구현(Green) 순서로 검증 로직 추가"] },
+      { "name": "화면-API-DB 흐름 재점검", "steps": ["기획과 구현이 어긋난 지점(진단 기록 미저장, 인증 정보 누락 등) 발견", "다음 작업 우선순위 반영"] },
+      { "name": "데이터 실제화", "steps": ["목업 데이터를 외부 API로 확인", "실제 데이터로 단계적 교체"] }
     ]
   }
 }
