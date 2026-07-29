@@ -37,7 +37,17 @@ import {
   type WindowSize,
 } from "./data/windowRegistry";
 import { createQuestEventViaApi } from "./layers/storage/questLogApi";
-import type { CreateQuestEventRequest, ManagerContext } from "./layers/storage/questLogApi";
+import type { CreateQuestEventRequest, ManagerContext, QuestEventType } from "./layers/storage/questLogApi";
+import {
+  managerLlmPromptVersion,
+  requestManagerBehaviorIntentViaApi,
+  requestManagerDifficultyEvaluationViaApi,
+  requestManagerLineViaApi,
+  requestManagerQuestSuggestionViaApi,
+  requestManagerStatEvaluationViaApi,
+  type ManagerLlmOutputKind,
+  type ManagerLlmRequest,
+} from "./layers/storage/managerLlmApi";
 import { createQuestLogRepository } from "./layers/storage/questLogRepository";
 import { usePixelTvMode } from "./hooks/usePixelTvMode";
 import { questLogSyncMessages, useQuestLogSync, type QuestLogSyncState } from "./hooks/useQuestLogSync";
@@ -51,7 +61,7 @@ import { resolveBlinkFocusEffect, type BlinkEntryReason, type BlinkFocusMode } f
 import { getClimbPosition, type InteractionObject, type ResizeAxis } from "./domain/interactionObjects";
 import { applyManagerSpriteSelection } from "./domain/managerSpriteSelection";
 import { resolveManagerBehavior } from "./domain/managerBehaviorAdapter";
-import type { ManagerBehaviorIntent } from "./domain/managerBehaviorIntent";
+import { normalizeManagerBehaviorIntent, type ManagerBehaviorIntent } from "./domain/managerBehaviorIntent";
 import { getPersonaLine, resolveManagerPersona, type ManagerPersona } from "./domain/managerPersonaPolicy";
 import type { BehaviorContext, PetBehaviorMood, PetBehaviorRecentEvent, PetBehaviorStyle } from "./domain/petBehaviorStateMachine";
 import {
@@ -418,6 +428,7 @@ function normalizeManager(manager: ManagerState): ManagerState {
     ...manager,
     petId: manager.petId ?? defaultLumiPetId,
     behaviorStyle: normalizeBehaviorStyle(manager.behaviorStyle),
+    behaviorIntent: manager.behaviorIntent ? normalizeManagerBehaviorIntent(manager.behaviorIntent) : undefined,
     unlockedStages,
     selectedStage,
     soundEnabled: manager.soundEnabled === true,
@@ -547,12 +558,15 @@ function createQuestEventRequest(
     managerBefore?: ManagerState;
     managerAfter?: ManagerState;
     soundEnabled?: boolean;
+    statEvaluation?: ReturnType<typeof createRuleFallbackStatEvaluation>;
+    statEvaluationSource?: "llm" | "rule_fallback";
+    statEvaluationFallbackReason?: string;
   } = {},
 ): CreateQuestEventRequest {
   const eventType = getQuestEventType(result);
   const growthQuestType = result === "recovery" ? "recovery" : quest.type;
   const growthEventType = result === "recovery" ? "recovery_completed" : result === "failed" ? "quest_failed" : "quest_completed";
-  const statEvaluation = createRuleFallbackStatEvaluation({ questType: growthQuestType, eventType: growthEventType, difficulty: quest.difficulty });
+  const statEvaluation = options.statEvaluation ?? createRuleFallbackStatEvaluation({ questType: growthQuestType, eventType: growthEventType, difficulty: quest.difficulty });
   const statDeltas = statEvaluation.statDeltas;
   const rewardCandidates = getRewardCandidates(result);
   const recoveryRewardCandidates = getRecoveryRewardCandidates(growthEventType);
@@ -585,7 +599,9 @@ function createQuestEventRequest(
       statBudget: statEvaluation.statBudget,
       primaryStats: statEvaluation.primaryStats,
       statEvaluationReason: statEvaluation.reason,
-      statEvaluationSource: "rule_fallback",
+      statEvaluationSource: options.statEvaluationSource ?? "rule_fallback",
+      statEvaluationFallbackReason: options.statEvaluationFallbackReason,
+      llmPromptVersion: options.statEvaluationSource === "llm" ? managerLlmPromptVersion : undefined,
       rewardCandidates: [...new Set([...rewardCandidates, ...recoveryRewardCandidates])],
       unlockedStagesAfter,
       stageUnlocked,
@@ -665,6 +681,68 @@ function createManagerContextLine(context: ManagerContext, persona: ManagerPerso
   return getPersonaLine("context_idle", persona);
 }
 
+function createManagerLlmRequest(
+  outputKind: ManagerLlmOutputKind,
+  input: {
+    managerContext: ManagerContext;
+    profile: UserProfile;
+    manager: ManagerState;
+    quest: Quest;
+    questStatus: QuestStatus;
+    previousQuestTitle: string;
+    selectedFailureReason: string;
+    logs: QuestLog[];
+  },
+): ManagerLlmRequest {
+  const persona = getManagerPersona(input.manager, input.profile);
+  return {
+    promptVersion: managerLlmPromptVersion,
+    outputKind,
+    managerContext: input.managerContext,
+    profile: {
+      nickname: input.profile.nickname || "사용자",
+      goal: input.profile.goal,
+      category: input.profile.category,
+      dailyMinutes: input.profile.dailyMinutes,
+      questSize: input.profile.questSize,
+      managerTone: input.profile.managerTone,
+    },
+    persona: {
+      petId: input.manager.petId,
+      ...persona,
+    },
+    questState: {
+      status: input.questStatus,
+      currentQuest: input.quest,
+      previousQuestTitle: input.previousQuestTitle || null,
+      failureReason: input.questStatus === "failed" ? input.selectedFailureReason : null,
+    },
+    recentEvents: input.logs.slice(0, 8).map(toManagerLlmRecentEvent),
+  };
+}
+
+function toManagerLlmRecentEvent(log: QuestLog) {
+  return {
+    type: getQuestLogEventType(log),
+    title: log.title,
+    result: log.result,
+    difficulty: getQuestLogDifficulty(log),
+    createdAt: log.createdAt,
+  };
+}
+
+function getQuestLogEventType(log: QuestLog): QuestEventType {
+  if (log.result === "failed") return "quest_failed";
+  if (log.result === "recovery") return "recovery_completed";
+  return "quest_completed";
+}
+
+function getQuestLogDifficulty(log: QuestLog): Difficulty {
+  const value = log.metadata?.difficulty;
+  if (value === "easy" || value === "normal" || value === "hard") return value;
+  return "normal";
+}
+
 function usePrefersReducedMotion() {
   const [reducedMotion, setReducedMotion] = useState(() => {
     if (typeof window === "undefined" || !("matchMedia" in window)) return false;
@@ -725,9 +803,53 @@ export default function App() {
     () => createInteractionObjectsFromWindows(windowPositions, windowSizes),
     [windowPositions, windowSizes],
   );
+  const managerLlmStateRef = useRef({ profile, manager, quest, questStatus, previousQuestTitle, selectedFailureReason, logs });
+  useEffect(() => {
+    managerLlmStateRef.current = { profile, manager, quest, questStatus, previousQuestTitle, selectedFailureReason, logs };
+  }, [logs, manager, previousQuestTitle, profile, quest, questStatus, selectedFailureReason]);
+  const refreshManagerBehaviorIntent = useCallback(async (context: ManagerContext) => {
+    const snapshot = managerLlmStateRef.current;
+    try {
+      const lineOutput = await requestManagerLineViaApi(createManagerLlmRequest("managerLine", {
+        managerContext: context,
+        profile: snapshot.profile,
+        manager: snapshot.manager,
+        quest: snapshot.quest,
+        questStatus: snapshot.questStatus,
+        previousQuestTitle: snapshot.previousQuestTitle,
+        selectedFailureReason: snapshot.selectedFailureReason,
+        logs: snapshot.logs,
+      }));
+      setManager((current) => ({ ...current, line: lineOutput.managerLine }));
+    } catch {
+      // Rule fallback already updated the visible manager line.
+    }
+
+    try {
+      const behaviorOutput = await requestManagerBehaviorIntentViaApi(createManagerLlmRequest("behaviorIntent", {
+        managerContext: context,
+        profile: snapshot.profile,
+        manager: snapshot.manager,
+        quest: snapshot.quest,
+        questStatus: snapshot.questStatus,
+        previousQuestTitle: snapshot.previousQuestTitle,
+        selectedFailureReason: snapshot.selectedFailureReason,
+        logs: snapshot.logs,
+      }));
+      setManager((current) => ({
+        ...current,
+        behaviorStyle: behaviorOutput.behaviorIntent.behaviorStyle,
+        behaviorIntent: behaviorOutput.behaviorIntent,
+        line: behaviorOutput.behaviorIntent.line || current.line,
+      }));
+    } catch {
+      // Rule fallback already updated the visible manager behavior state.
+    }
+  }, []);
   const applyManagerContext = useCallback((context: ManagerContext) => {
     setManager((current) => ({ ...current, mood: context.currentMood, line: createManagerContextLine(context, getManagerPersona(current, profile)) }));
-  }, [profile]);
+    void refreshManagerBehaviorIntent(context);
+  }, [profile, refreshManagerBehaviorIntent]);
   const { logSync, setLogSync } = useQuestLogSync({
     enabled: screen === "desktop",
     ignoreLogsBefore: serverLogCutoffIso,
@@ -887,11 +1009,51 @@ export default function App() {
       count: current.result === result ? current.count + 1 : 1,
     }));
   }
+  async function enrichQuestEventWithLlmStatEvaluation(request: CreateQuestEventRequest): Promise<CreateQuestEventRequest> {
+    const snapshot = managerLlmStateRef.current;
+
+    try {
+      const output = await requestManagerStatEvaluationViaApi(createManagerLlmRequest("statEvaluation", {
+        managerContext: {
+          currentMood: request.managerMoodAfter ?? snapshot.manager.mood,
+          recentEventCount: snapshot.logs.length,
+          lastQuestResult: request.result ?? null,
+          memorySummary: `recent events ${snapshot.logs.length}`,
+          rewardHints: [],
+        },
+        profile: snapshot.profile,
+        manager: snapshot.manager,
+        quest: snapshot.quest,
+        questStatus: snapshot.questStatus,
+        previousQuestTitle: snapshot.previousQuestTitle,
+        selectedFailureReason: snapshot.selectedFailureReason,
+        logs: snapshot.logs,
+      }));
+
+      return {
+        ...request,
+        metadata: {
+          ...request.metadata,
+          statDeltas: output.statEvaluation.statDeltas,
+          statBudget: output.statEvaluation.statBudget,
+          primaryStats: output.statEvaluation.primaryStats,
+          statEvaluationReason: output.statEvaluation.reason,
+          statEvaluationSource: output.source,
+          statEvaluationFallbackReason: output.fallbackReason,
+          llmPromptVersion: output.source === "llm" ? output.promptVersion : undefined,
+        },
+      };
+    } catch {
+      return request;
+    }
+  }
+
   async function saveQuestEvent(request: CreateQuestEventRequest) {
     setLogSync({ status: "saving", message: questLogSyncMessages.saving });
 
     try {
-      const savedEvent = await createQuestEventViaApi(request);
+      const enrichedRequest = await enrichQuestEventWithLlmStatEvaluation(request);
+      const savedEvent = await createQuestEventViaApi(enrichedRequest);
       if (savedEvent.log) recordQuestLog(savedEvent.log);
       applyManagerContext(savedEvent.managerContext);
       setLogSync({ status: "success", message: questLogSyncMessages.saveSuccess });
@@ -900,6 +1062,61 @@ export default function App() {
       setManager((current) => ({ ...current, line: getPersonaLine("api_error", getManagerPersona(current, profile)) }));
     }
   }
+
+  const recommendQuestWithLlm = useCallback(async () => {
+    const snapshot = managerLlmStateRef.current;
+
+    try {
+      const output = await requestManagerQuestSuggestionViaApi(createManagerLlmRequest("questSuggestion", {
+        managerContext: {
+          currentMood: snapshot.manager.mood,
+          recentEventCount: snapshot.logs.length,
+          lastQuestResult: snapshot.logs[0]?.result ?? null,
+          memorySummary: `recent events ${snapshot.logs.length}`,
+          rewardHints: [],
+        },
+        profile: snapshot.profile,
+        manager: snapshot.manager,
+        quest: snapshot.quest,
+        questStatus: snapshot.questStatus,
+        previousQuestTitle: snapshot.previousQuestTitle,
+        selectedFailureReason: snapshot.selectedFailureReason,
+        logs: snapshot.logs,
+      }));
+      setQuest(output.questSuggestion);
+      if (output.managerLine) {
+        setManager((current) => ({ ...current, line: output.managerLine ?? current.line }));
+      }
+    } catch {
+      // The rule-created quest draft is already visible.
+    }
+  }, []);
+
+  const reevaluateQuestDifficultyBeforeAccept = useCallback(async (questDraft: Quest) => {
+    const snapshot = managerLlmStateRef.current;
+
+    try {
+      const output = await requestManagerDifficultyEvaluationViaApi(createManagerLlmRequest("difficultyEvaluation", {
+        managerContext: {
+          currentMood: snapshot.manager.mood,
+          recentEventCount: snapshot.logs.length,
+          lastQuestResult: snapshot.logs[0]?.result ?? null,
+          memorySummary: `recent events ${snapshot.logs.length}`,
+          rewardHints: [],
+        },
+        profile: snapshot.profile,
+        manager: snapshot.manager,
+        quest: questDraft,
+        questStatus: snapshot.questStatus,
+        previousQuestTitle: snapshot.previousQuestTitle,
+        selectedFailureReason: snapshot.selectedFailureReason,
+        logs: snapshot.logs,
+      }));
+      return output.difficultyEvaluation;
+    } catch {
+      return null;
+    }
+  }, []);
 
   const {
     openTodayQuest,
@@ -927,6 +1144,8 @@ export default function App() {
     getManagerPersona,
     recordOutcomeStreak,
     saveQuestEvent: (request) => void saveQuestEvent(request),
+    recommendQuest: () => void recommendQuestWithLlm(),
+    reevaluateQuestBeforeAccept: reevaluateQuestDifficultyBeforeAccept,
     createQuestEventRequest,
   });
 
@@ -2008,9 +2227,10 @@ function getNextOutsidePetRoamAnimation(
     reducedMotion,
   };
   const resolvedBehavior = resolveManagerBehavior({
-    rawIntent: createRuleFallbackManagerIntent(manager, tone, streak),
+    rawIntent: manager.behaviorIntent ?? createRuleFallbackManagerIntent(manager, tone, streak),
     context,
     randomValue: (Date.now() / 1000) % 1,
+    fallbackIntent: createRuleFallbackManagerIntent(manager, tone, streak),
   });
   const mappedAnimation = resolvedBehavior.animation;
 

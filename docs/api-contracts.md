@@ -7,6 +7,12 @@ Do not commit real values.
 ```env
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-5-nano
+OPENAI_FALLBACK_MODEL=gpt-5-mini
+LLM_MANAGER_ENABLED=
+LLM_MANAGER_MIN_INTERVAL_MS=
+LLM_MANAGER_DAILY_LIMIT=
 ```
 
 ## GET /api/health
@@ -160,3 +166,165 @@ Error codes:
 - `UNAUTHORIZED`
 - `RATE_LIMITED`
 - `INTERNAL_ERROR`
+
+## Manager LLM API v1
+
+React must call only these Hono routes. It must not call OpenAI or any other LLM provider directly.
+
+Routes:
+
+- `POST /api/manager/line`
+- `POST /api/manager/quest-suggestion`
+- `POST /api/manager/difficulty-evaluation`
+- `POST /api/manager/stat-evaluation`
+- `POST /api/manager/behavior-intent`
+
+Prompt version:
+
+- `manager-api-v1`
+
+Server env:
+
+- `OPENAI_API_KEY`: server-only secret. Never commit a real value.
+- `OPENAI_MODEL`: default `gpt-5-nano`.
+- `OPENAI_FALLBACK_MODEL`: default `gpt-5-mini`, reserved for later escalation.
+- `LLM_MANAGER_ENABLED`: set to `true` only in an environment where the server key is configured.
+- `LLM_MANAGER_MIN_INTERVAL_MS`: optional in-memory minimum interval per output kind. Default is `30000`.
+- `LLM_MANAGER_DAILY_LIMIT`: optional in-memory daily cap. Default is `80`.
+
+Request:
+
+```json
+{
+  "promptVersion": "manager-api-v1",
+  "outputKind": "behaviorIntent",
+  "managerContext": {
+    "currentMood": "waiting",
+    "recentEventCount": 1,
+    "lastQuestResult": "success",
+    "memorySummary": "recent events summary",
+    "rewardHints": ["character_animation"]
+  },
+  "profile": {
+    "nickname": "루카스",
+    "goal": "정보처리기사",
+    "category": "study",
+    "dailyMinutes": 30,
+    "questSize": "balanced",
+    "managerTone": "friendly"
+  },
+  "persona": {
+    "petId": "pink-manager",
+    "tone": "friendly",
+    "questStyle": "balanced",
+    "feedbackStyle": "playful",
+    "behaviorStyle": "balanced"
+  },
+  "questState": {
+    "status": "success",
+    "currentQuest": {
+      "title": "DB concept study 15min",
+      "type": "time",
+      "amount": 15,
+      "unit": "min",
+      "difficulty": "normal",
+      "deadline": "today 23:59",
+      "rewardExp": 20
+    },
+    "previousQuestTitle": null,
+    "failureReason": null
+  },
+  "recentEvents": [
+    {
+      "type": "quest_completed",
+      "title": "DB concept study 15min",
+      "result": "success",
+      "difficulty": "normal",
+      "createdAt": "2026-07-29T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+Success `200`:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "behaviorIntent": {
+      "behaviorStyle": "balanced",
+      "tone": "friendly",
+      "line": "오늘 페이스를 기억해둘게.",
+      "suggestedBehaviorBias": []
+    },
+    "source": "llm",
+    "promptVersion": "manager-api-v1"
+  }
+}
+```
+
+Fallback also returns `200` so the app flow can continue:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "behaviorIntent": {
+      "behaviorStyle": "balanced",
+      "tone": "friendly",
+      "line": "오늘 할 수 있는 작은 분량부터 같이 골라보자.",
+      "suggestedBehaviorBias": []
+    },
+    "source": "rule_fallback",
+    "fallbackReason": "LLM_DISABLED",
+    "promptVersion": "manager-api-v1"
+  }
+}
+```
+
+Fallback reasons:
+
+- `LLM_DISABLED`
+- `LLM_PROVIDER_ERROR`
+- `INVALID_LLM_OUTPUT`
+- `RATE_LIMITED`
+
+### POST /api/manager/difficulty-evaluation
+
+Use this route immediately before accepting an edited quest draft. The route evaluates the current quest title, amount, type, profile goal, persona, manager context, and recent event summary, then returns only a bounded difficulty and reward.
+
+Success `200`:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "difficultyEvaluation": {
+      "difficulty": "hard",
+      "rewardExp": 40,
+      "reason": "The edited quest is a long focused study block."
+    },
+    "source": "llm",
+    "promptVersion": "manager-api-v1"
+  }
+}
+```
+
+Rules:
+
+- `difficulty` must be `easy`, `normal`, or `hard`.
+- `rewardExp` must match the selected difficulty range.
+
+| difficulty | rewardExp range |
+|---|---|
+| `easy` | `5..15` |
+| `normal` | `16..35` |
+| `hard` | `36..60` |
+- If the provider is disabled, rate-limited, fails, or returns an invalid schema, the server returns rule fallback and React accepts the quest with the existing draft difficulty/reward.
+
+Privacy and storage rules:
+
+- Do not send API keys, Supabase keys, tokens, raw DB rows, DOM state, sprite paths, coordinates, school/location data, or personal schedule data.
+- Do not store raw prompts in Supabase.
+- Store only the final user-visible manager line and minimal metadata such as `source`, `fallbackReason`, and `promptVersion` when needed.

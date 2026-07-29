@@ -2,7 +2,7 @@
 
 ## Summary
 
-MVP에서는 실제 LLM API를 사용하지 않고 규칙 기반 Agent처럼 동작한다. 이후 확장 시 목표 해석, 퀘스트 생성, 실패 리밸런싱, 피드백 문장 생성을 LLM 또는 개인화 모델로 교체할 수 있게 한다.
+MVP v1에서는 규칙 기반 Agent 흐름을 기본값으로 유지하되, Hono 서버의 Manager LLM API를 통해 제한된 schema 출력만 선택적으로 받는다. 이후 확장 시 목표 해석, 퀘스트 생성, 실패 리밸런싱, 피드백 문장 생성을 더 넓은 LLM 또는 개인화 모델로 교체할 수 있게 한다.
 
 중요한 원칙은 매니저의 성격, 기억, 사용자 목표 데이터를 LLM 안에 묻지 않고 앱 데이터로 분리하는 것이다.
 
@@ -95,6 +95,21 @@ MVP에서는 실제 LLM API를 사용하지 않고 규칙 기반 Agent처럼 동
 오늘은 더 작은 분량으로 다시 시작하자.
 ```
 
+## MVP v1 LLM 연결 원칙
+
+- React는 OpenAI나 다른 LLM provider를 직접 호출하지 않는다.
+- React는 `/api/manager/*` Hono route만 호출한다.
+- API key는 server env에만 둔다.
+- prompt version은 `manager-api-v1`로 시작한다.
+- 기본 모델은 비용과 latency를 우선해 `gpt-5-nano`를 사용하고, 품질 고도화가 필요한 route만 이후 `gpt-5-mini` 후보로 올린다.
+- LLM 출력은 `managerLine`, `questSuggestion`, `difficultyEvaluation`, `statEvaluation`, `behaviorIntent` 중 하나의 제한 schema로만 받는다.
+- React 연결 지점은 `managerLine`/`behaviorIntent`는 manager context 갱신, `questSuggestion`은 사용자가 새 퀘스트 추천을 누를 때, `difficultyEvaluation`은 사용자가 편집한 퀘스트를 수락하기 직전, `statEvaluation`은 Quest Event 저장 직전으로 제한한다.
+- 비용 제한은 server-side daily cap과 output kind별 minimum interval로 적용한다.
+- `difficultyEvaluation`의 EXP는 난이도별 범위로 검증한다: `easy=5..15`, `normal=16..35`, `hard=36..60`.
+- schema 검증에 실패하거나 provider 호출이 실패하면 rule fallback을 사용한다.
+- 실패해도 퀘스트 수락, 완료, 실패, 복구 flow는 중단되지 않아야 한다.
+- raw prompt는 DB에 장기 저장하지 않는다. 필요하면 최종 출력, `promptVersion`, `source`, `fallbackReason`만 저장한다.
+
 ## MVP 규칙 기반 동작
 
 - 목표가 너무 짧거나 추상적이면 구체화 질문을 보여준다.
@@ -103,11 +118,11 @@ MVP에서는 실제 LLM API를 사용하지 않고 규칙 기반 Agent처럼 동
 - 어려운 난이도는 높은 EXP를 지급한다.
 - 실패 후 복구 퀘스트는 기존 분량보다 작게 만든다.
 - 실패 후 EXP는 감소하지 않는다.
-- 현재는 실제 LLM API 대신 `rule_fallback` 평가로 stat budget과 능력치 분배를 만들고, 이후 LLM 출력도 같은 검증 규칙을 통과해야 한다.
+- LLM API가 비활성화됐거나 실패하면 `rule_fallback` 평가로 stat budget과 능력치 분배를 만들고, LLM 출력도 같은 검증 규칙을 통과해야 한다.
 
 ## 확장 계획
 
-- `LLMAgentAdapter`를 추가해 LLM 기반 문장 생성으로 교체한다.
+- `LLMAgentAdapter`를 고도화해 LLM 기반 문장 생성, 퀘스트 제안, 능력치 평가를 route별로 점진 적용한다.
 - `ManagerMemory`를 추가해 사용자의 선호 난이도, 실패 이유, 자주 가능한 시간대를 저장한다.
 - 개인 LLM 또는 브라우저 모델은 MVP 이후 실험 모듈로 둔다.
 - 음성 입력, 웹캠 제스처, 소셜 탐색 기능은 [MVP 이후 확장 계획](future-expansion-plan.md)에서 관리한다.

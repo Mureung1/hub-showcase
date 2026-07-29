@@ -88,6 +88,11 @@
 - 2026-07-28 LLM-style 퀘스트 능력치 평가 경계 추가: 난이도별 stat budget을 `easy=3`, `normal=7`, `hard=15`로 두고, LLM이 제안한 능력치 분배는 총합/주요 능력치 비율/단일 능력치 최대치 검증을 통과해야 저장되는 구조로 정리. 현재 runtime은 같은 계약의 `rule_fallback` 평가를 사용
 - 2026-07-29 P0 flow 정돈: 기록 노트 열기/닫기 모두 blink outside transition을 재생하도록 `blinkFocusPolicy`와 React 연결을 정리하고, 시작 메뉴의 종료/다시 시작 성격을 `매니저 바꾸기`로 바꿔 profile, level, exp, logs, quest/window state를 유지한 채 manager sprite만 교체하도록 연결
 - 2026-07-29 P1 XP window consistency 정돈: 창 id, label, title icon, 초기 위치/크기, desktop/window icon asset, workflow 여부를 `src/data/windowRegistry.ts` 단일 registry로 모으고 `App.tsx`의 분산 Record 상수를 제거
+- 2026-07-29 T-603 승격: Hono Manager LLM API v1 route 5종(`/api/manager/line`, `/api/manager/quest-suggestion`, `/api/manager/difficulty-evaluation`, `/api/manager/stat-evaluation`, `/api/manager/behavior-intent`)을 추가하고, OpenAI `gpt-5-nano` 기본 provider wrapper, server env key, strict schema tool call, in-memory 호출 제한, rule fallback 응답을 연결
+- 2026-07-29 React Manager LLM v1 1차 연결: React는 provider를 직접 호출하지 않고 `/api/manager/behavior-intent`만 호출하며, 실패/비활성화/검증 실패 시 기존 persona/rule fallback line과 behavior intent를 유지하도록 연결
+- 2026-07-29 React Manager LLM v1 후보 4종 연결 완료: `managerLine`/`behaviorIntent`는 manager context 갱신 시, `questSuggestion`은 새 퀘스트 추천 시, `statEvaluation`은 Quest Event 저장 직전 호출하며, 각 호출은 실패해도 기존 rule fallback request/state를 유지하도록 연결. 서버 rate limit은 output kind별 최소 간격과 daily cap으로 조정
+- 2026-07-29 수락 직전 난이도 재평가 추가: `/api/manager/difficulty-evaluation` route와 strict schema(`easy|normal|hard`, 난이도별 `rewardExp`, `reason`)를 추가하고, 사용자가 편집한 퀘스트를 수락하기 직전에 React가 서버 route를 호출해 난이도/EXP를 갱신하도록 연결. 실패 시 기존 draft 난이도/보상으로 계속 진행
+- 2026-07-29 난이도별 EXP 검증 강화: LLM `difficultyEvaluation`의 `rewardExp`를 `easy=5..15`, `normal=16..35`, `hard=36..60` 범위로 검증하고, 난이도와 보상 범위가 맞지 않으면 `INVALID_LLM_OUTPUT` rule fallback을 사용하도록 서버 계약을 보강
 - 2026-07-29 P1 render boundary 정돈: `App.tsx`의 전역 1초 `now` state를 제거하고 QuestRunner countdown과 system tray clock이 각각 필요한 컴포넌트 내부에서만 갱신되도록 분리
 - 2026-07-29 P1 App responsibility/fallback 정돈: Pixel TV mode를 `usePixelTvMode` hook과 `pixelTvMode` domain policy로 분리하고, 기록 노트 서버 fetch sync를 `useQuestLogSync` hook으로 이동했으며, runtime fallback/placeholder 요소를 `src/data/runtimeFallbacks.ts`에 명시적으로 추적
 - 2026-07-29 P1/P2 App 책임 분리 추가 정돈: `useWindowManager`를 `src/hooks/useWindowManager.ts`로 이동하고 window chrome handler 생성을 hook 내부 `useCallback`/`useMemo` 경계로 묶었으며, window pet placement localStorage read를 `useWindowPetPlacementDrafts` hook으로 분리
@@ -148,6 +153,7 @@
 - 2026-07-28 LLM-style stat evaluation TDD 검증 통과: `npm.cmd test -- src/domain/statGrowth.test.ts`, `npm.cmd run typecheck`
 - 2026-07-29 기록 노트 blink와 manager sprite-only selection 검증 통과: `npm.cmd test -- src/domain/blinkFocusPolicy.test.ts src/domain/managerSpriteSelection.test.ts`, `npm.cmd run typecheck`
 - 2026-07-29 XP window registry 검증 통과: `npm.cmd test -- src/data/windowRegistry.test.ts`, `npm.cmd run typecheck`
+- 2026-07-29 Manager LLM API v1 검증 통과: `npm.cmd test`, `npm.cmd run typecheck`, `npm.cmd run typecheck:server`, `npm.cmd run build`
 - 2026-07-29 시간 포맷/카운트다운 분리 검증 통과: `npm.cmd test -- src/domain/timeFormatting.test.ts`, `npm.cmd run typecheck`
 - 2026-07-29 P1 책임 분리와 fallback 추적 검증 통과: `npm.cmd test -- src/hooks/useQuestLogSync.test.ts src/data/runtimeFallbacks.test.ts src/domain/pixelTvMode.test.ts`, `npm.cmd run typecheck`
 - 2026-07-29 P1/P2 window manager와 placement read 분리 검증 통과: `npm.cmd run typecheck`, `npm.cmd test` 24 files / 94 tests
@@ -164,7 +170,7 @@
 
 ## 다음 작업
 
-- 최종 목표 1순위: `T-709`, `T-711` 개인화 AI 매니저 adapter와 Persona/제한 선택지 연결. TDD로 만든 `ManagerBehaviorIntent`, `ManagerBehaviorAdapter`, Pet Behavior State Machine을 `managerRuntimeState`와 React Lumi animation state에 연결하고, 실제 LLM API 없이 rule fallback으로 검증한다.
+- 최종 목표 1순위: `T-709`, `T-711`, `T-603` 개인화 AI 매니저 adapter와 Persona/제한 선택지 연결. TDD로 만든 `ManagerBehaviorIntent`, `ManagerBehaviorAdapter`, Pet Behavior State Machine을 `managerRuntimeState`와 React Lumi animation state에 연결했고, Manager LLM API v1은 Hono route와 rule fallback으로 1차 연결됐다. 남은 작업은 실제 server env key를 로컬/배포 환경에만 설정한 뒤 브라우저 Network에서 LLM enabled 경로를 수동 확인하는 것이다.
 - 최종 목표 2순위: `T-712`, `T-703`, `T-713` 성장/보상/사운드 기반. metadata/기록 노트/stage 선택/sound toggle 1차 연결은 완료했고, 브라우저 Network 수동 확인과 실제 cyber-purr 음원 제작/검수가 남았다.
 - 최종 목표 3순위: `T-721`, `T-724`, `T-725` Pixel TV 묶음. 현실 픽셀화 TV prototype, Single-plane Pepper projection mode, Pixel TV photo capture 설계를 하나의 TV 확장 flow로 정리한다.
 - 최종 목표 4순위: `T-708`, `T-726`, `T-727` 하루의 흐름/사운드 분위기. 현실 시간 기반 해/달 asset, 빛의 강도/색상, XP desktop 배경 상태를 연결하고, 음악창 wav playlist와 클릭/전자매니저 웃음·실망·격려 효과음을 muted 기본값으로 연결한다.
@@ -179,6 +185,7 @@
 ## 차단 요소
 
 - Supabase Key와 API Key는 저장소에 넣지 않아야 하며, `.env`에는 로컬 실제 값만 둬야 함
+- Manager LLM API는 `LLM_MANAGER_ENABLED=true`와 `OPENAI_API_KEY`가 server env에 있을 때만 실제 provider를 호출하며, key가 없거나 비활성화된 환경에서는 rule fallback으로 동작함
 - Supabase env가 없는 새 환경에서는 서버가 memory store로 fallback하므로 `/api/health`로 storage mode를 먼저 확인해야 함
 - 이번 세션에서는 dev server가 실행 중이 아니어서 `/api/health` UI 재검증은 수행하지 못함
 - 현재 PowerShell 환경에 `Path`/`PATH` 중복이 있어 `Start-Process` 기반 자동 dev-server smoke test는 실패할 수 있음. 수동 브라우저 검증 또는 깨끗한 shell에서 `npm.cmd run dev`로 확인 필요

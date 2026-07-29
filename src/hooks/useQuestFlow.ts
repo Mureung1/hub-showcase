@@ -3,7 +3,7 @@ import type { WindowId } from "../data/windowRegistry";
 import type { CreateQuestEventRequest } from "../layers/storage/questLogApi";
 import type { ManagerState, UserProfile } from "../domain/appState";
 import { getPersonaLine } from "../domain/managerPersonaPolicy";
-import { applyQuestPatch, getQuestCompletionResult, getQuestWorkflowWindows, type QuestStatus } from "../domain/questFlowPolicy";
+import { applyDifficultyEvaluationToQuest, applyQuestPatch, getQuestCompletionResult, getQuestWorkflowWindows, type QuestStatus } from "../domain/questFlowPolicy";
 import { createRecoveryQuest, type Quest } from "../domain/questLogic";
 
 export interface UseQuestFlowInput {
@@ -24,6 +24,8 @@ export interface UseQuestFlowInput {
   getManagerPersona: (manager: ManagerState, profile: UserProfile) => Parameters<typeof getPersonaLine>[1];
   recordOutcomeStreak: (result: "success" | "failed") => void;
   saveQuestEvent: (request: CreateQuestEventRequest) => void;
+  recommendQuest?: () => void;
+  reevaluateQuestBeforeAccept?: (quest: Quest) => Promise<{ difficulty: Quest["difficulty"]; rewardExp: number } | null>;
   createQuestEventRequest: (
     quest: Quest,
     result: NonNullable<CreateQuestEventRequest["result"]>,
@@ -58,6 +60,8 @@ export function useQuestFlow({
   getManagerPersona,
   recordOutcomeStreak,
   saveQuestEvent,
+  recommendQuest,
+  reevaluateQuestBeforeAccept,
   createQuestEventRequest,
 }: UseQuestFlowInput) {
   function openTodayQuest() {
@@ -67,6 +71,7 @@ export function useQuestFlow({
       setPreviousQuestTitle("");
       setManager((current) => ({ ...current, mood: "waiting", line: getPersonaLine("quest_recommended", getManagerPersona(current, profile)) }));
       setWorkflowWindows(["quest", "manager"]);
+      recommendQuest?.();
       return;
     }
 
@@ -83,7 +88,20 @@ export function useQuestFlow({
     setQuest((current) => applyQuestPatch(current, patch));
   }
 
-  function acceptQuest() {
+  async function acceptQuest() {
+    let acceptedQuest = quest;
+    if (reevaluateQuestBeforeAccept) {
+      try {
+        const evaluation = await reevaluateQuestBeforeAccept(quest);
+        if (evaluation) {
+          acceptedQuest = applyDifficultyEvaluationToQuest(quest, evaluation);
+          setQuest(acceptedQuest);
+        }
+      } catch {
+        acceptedQuest = quest;
+      }
+    }
+
     setQuestStatus("active");
     setWorkflowWindows(["runner", "manager"]);
     setManager((current) => ({ ...current, mood: "focused", line: getPersonaLine("quest_started", getManagerPersona(current, profile)) }));

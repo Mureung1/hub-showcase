@@ -1,4 +1,5 @@
 import type { PetId, PetStageId } from "../data/assetManifest";
+import type { ManagerBehaviorIntent } from "./managerBehaviorIntent";
 import type { PetBehaviorStyle } from "./petBehaviorStateMachine";
 
 export type ManagerTone = "calm" | "friendly" | "firm";
@@ -24,6 +25,7 @@ export interface ManagerState {
   mood: "waiting" | "focused" | "happy" | "recovering";
   line: string;
   behaviorStyle: PetBehaviorStyle;
+  behaviorIntent?: ManagerBehaviorIntent;
   unlockedStages: PetStageId[];
   selectedStage: PetStageId | null;
   soundEnabled: boolean;

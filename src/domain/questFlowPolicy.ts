@@ -45,3 +45,14 @@ export function applyQuestPatch(current: Quest, patch: Partial<Quest>): Quest {
     rewardExp: calculateQuestReward(nextDifficulty, nextAmount, nextType),
   };
 }
+
+export function applyDifficultyEvaluationToQuest(
+  current: Quest,
+  evaluation: { difficulty: Difficulty; rewardExp: number; reason?: string },
+): Quest {
+  return {
+    ...current,
+    difficulty: evaluation.difficulty,
+    rewardExp: evaluation.rewardExp,
+  };
+}

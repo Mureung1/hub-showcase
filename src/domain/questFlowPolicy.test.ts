@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyQuestPatch, calculateQuestReward, getQuestWorkflowWindows, getQuestCompletionResult } from "./questFlowPolicy";
+import { applyDifficultyEvaluationToQuest, applyQuestPatch, calculateQuestReward, getQuestWorkflowWindows, getQuestCompletionResult } from "./questFlowPolicy";
 import type { Quest } from "./questLogic";
 
 const quest: Quest = {
@@ -34,6 +34,35 @@ describe("quest flow policy", () => {
       difficulty: "hard",
       unit: "개",
       rewardExp: calculateQuestReward("hard", 12, "quantity"),
+    });
+  });
+
+  it("applies a server difficulty evaluation before quest acceptance", () => {
+    expect(
+      applyDifficultyEvaluationToQuest(
+        {
+          title: "Read database chapters",
+          type: "time",
+          amount: 60,
+          unit: "min",
+          difficulty: "normal",
+          deadline: "today 23:59",
+          rewardExp: 16,
+        },
+        {
+          difficulty: "hard",
+          rewardExp: 52,
+          reason: "large study block",
+        },
+      ),
+    ).toEqual({
+      title: "Read database chapters",
+      type: "time",
+      amount: 60,
+      unit: "min",
+      difficulty: "hard",
+      deadline: "today 23:59",
+      rewardExp: 52,
     });
   });
 });
