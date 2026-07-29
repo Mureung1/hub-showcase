@@ -1,5 +1,6 @@
 const ApiError = require('./apiError');
 const { isValidRegion } = require('./regions');
+const { isKnownTag, POSITIVE_TAGS, NEGATIVE_TAGS, MAX_TAGS_PER_SIGN } = require('../constants/evaluationTags');
 
 // 카카오 오픈채팅 링크 패턴만 검증한다 (기획서 11번 — 그 이상 유효성은 확인하지 않음).
 const OPEN_CHAT_URL_PATTERN = /^https?:\/\/open\.kakao\.com\//;
@@ -198,11 +199,49 @@ function validateRespondStatus(body) {
   return status;
 }
 
+// POST /api/meetings/:id/evaluations 요청 본문. rateeId·attended는 필수, tags는 선택이다.
+// 태그 개수 상한을 여기서 막는 이유: 산식은 초과분을 조용히 버리므로(slice), 사용자가
+// 4개를 골랐는데 3개만 반영되면 화면과 결과가 어긋난다. 입력 단계에서 거절하는 게 정직하다.
+function validateEvaluationSubmission(body) {
+  const list = body && body.evaluations;
+  if (!Array.isArray(list) || list.length === 0) {
+    throw new ApiError('VALIDATION_ERROR', '평가할 대상이 없습니다');
+  }
+
+  return list.map((entry) => {
+    const rateeId = Number(entry?.rateeId);
+    if (!Number.isSafeInteger(rateeId) || rateeId <= 0) {
+      throw new ApiError('VALIDATION_ERROR', '평가 대상이 올바르지 않습니다');
+    }
+    if (typeof entry.attended !== 'boolean') {
+      throw new ApiError('VALIDATION_ERROR', '출석 여부를 선택해 주세요');
+    }
+
+    const tags = entry.tags ?? [];
+    if (!Array.isArray(tags)) {
+      throw new ApiError('VALIDATION_ERROR', '태그 형식이 올바르지 않습니다');
+    }
+    for (const tag of tags) {
+      if (!isKnownTag(tag)) throw new ApiError('VALIDATION_ERROR', '알 수 없는 태그입니다');
+    }
+    if (new Set(tags).size !== tags.length) {
+      throw new ApiError('VALIDATION_ERROR', '같은 태그를 여러 번 고를 수 없습니다');
+    }
+    if (tags.filter((t) => POSITIVE_TAGS.includes(t)).length > MAX_TAGS_PER_SIGN
+      || tags.filter((t) => NEGATIVE_TAGS.includes(t)).length > MAX_TAGS_PER_SIGN) {
+      throw new ApiError('VALIDATION_ERROR', `태그는 최대 ${MAX_TAGS_PER_SIGN}개까지 고를 수 있습니다`);
+    }
+
+    return { rateeId, attended: entry.attended, tags };
+  });
+}
+
 module.exports = {
   validateCreateMeeting,
   validateUpdateMeeting,
   validateBirthDate,
   validateRespondStatus,
   validateApplyAnswer,
+  validateEvaluationSubmission,
   OPEN_CHAT_URL_PATTERN,
 };

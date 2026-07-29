@@ -1,8 +1,9 @@
 const express = require('express');
 const requireAuth = require('../middleware/auth');
-const { validateCreateMeeting, validateRespondStatus } = require('../utils/validators');
+const { validateCreateMeeting, validateRespondStatus, validateEvaluationSubmission } = require('../utils/validators');
 const ApiError = require('../utils/apiError');
 const { createMeeting, listMeetings, getMeetingDetail, applyToMeeting, cancelParticipation, listParticipants, respondToApplicant, cancelMeeting, updateMeeting } = require('../services/meetingService');
+const { submitEvaluations } = require('../services/evaluationService');
 
 const router = express.Router();
 
@@ -149,6 +150,19 @@ router.patch('/:id/participants/:userId', requireAuth, async (req, res, next) =>
 
     const result = await respondToApplicant(id, req.session.userId, targetUserId, status);
     res.json({ data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/meetings/:id/evaluations — 모임 후 상호 평가 제출(3단계).
+// 모임장은 확정 참여자 여러 명을 한 번에, 참여자는 모임장 한 명을 평가한다.
+router.post('/:id/evaluations', requireAuth, async (req, res, next) => {
+  try {
+    const entries = validateEvaluationSubmission(req.body);
+    const id = parseIdParam(req.params.id);
+    const result = await submitEvaluations(id, req.session.userId, entries);
+    res.status(201).json({ data: result });
   } catch (err) {
     next(err);
   }

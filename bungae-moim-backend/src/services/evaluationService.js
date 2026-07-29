@@ -1,6 +1,12 @@
 const pool = require('../config/db');
 const { computeTrustScore } = require('../utils/trustScore');
 const { resolveEvaluations } = require('../utils/evaluationMatching');
+const withTransaction = require('../utils/withTransaction');
+const ApiError = require('../utils/apiError');
+
+// 수정은 제출 후 이 시간 안에 1회만(설계 4.5). 잘못 눌렀을 때의 구제책은 필요하지만,
+// 무기한 수정을 허용하면 상대의 평가를 보고 바꾸는 눈치 게임이 생긴다.
+const EDIT_WINDOW_HOURS = 24;
 
 // 평가 창은 종료 후 14일(설계 4.1). 오래된 모임의 기억은 부정확하고, 무한정 열어두면
 // "언제든 하지" 하고 안 한다.
@@ -174,4 +180,111 @@ async function recalculateTrustScore(client, userId) {
   return { score: rounded, evaluationCount: mine.length };
 }
 
-module.exports = { recalculateTrustScore, listPendingEvaluations, EVALUATION_WINDOW_DAYS };
+// 평가 제출(4.2, 4.5, 6.2). 모임장은 확정 참여자 여러 명을, 참여자는 모임장 한 명을
+// 평가한다. INSERT/UPDATE와 재계산이 한 트랜잭션 안에서 일어나야 한쪽만 반영되는 사고가 없다.
+async function submitEvaluations(meetingId, raterId, entries) {
+  return withTransaction(async (client) => {
+    const meetingRes = await client.query(
+      `SELECT host_id, status,
+              COALESCE(end_at, start_at) < now() AS is_past,
+              COALESCE(end_at, start_at) > now() - interval '${EVALUATION_WINDOW_DAYS} days' AS in_window
+         FROM meetings WHERE id = $1`,
+      [meetingId]
+    );
+    if (meetingRes.rows.length === 0) {
+      throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
+    }
+    const meeting = meetingRes.rows[0];
+    const hostId = Number(meeting.host_id);
+
+    // 자격 판정을 창 검사보다 먼저 한다 — 남의 모임의 종료 여부가 덜 새어나간다.
+    const isHost = hostId === Number(raterId);
+    let isConfirmedParticipant = false;
+    if (!isHost) {
+      const partRes = await client.query(
+        `SELECT 1 FROM meeting_participants
+          WHERE meeting_id = $1 AND user_id = $2 AND status IN ('confirmed','approved')`,
+        [meetingId, raterId]
+      );
+      isConfirmedParticipant = partRes.rows.length > 0;
+    }
+    if (!isHost && !isConfirmedParticipant) {
+      throw new ApiError('FORBIDDEN', '이 모임을 평가할 수 없습니다');
+    }
+
+    if (meeting.status === 'cancelled') {
+      throw new ApiError('VALIDATION_ERROR', '취소된 모임은 평가할 수 없습니다');
+    }
+    if (!meeting.is_past) {
+      throw new ApiError('VALIDATION_ERROR', '아직 끝나지 않은 모임입니다');
+    }
+    if (!meeting.in_window) {
+      throw new ApiError('VALIDATION_ERROR', '평가 기간이 지났습니다');
+    }
+
+    // 대상 자격: 모임장은 확정 참여자만, 참여자는 모임장만 평가한다(설계 4.2).
+    const allowedRes = await client.query(
+      isHost
+        ? `SELECT user_id AS id FROM meeting_participants
+            WHERE meeting_id = $1 AND status IN ('confirmed','approved')`
+        : 'SELECT host_id AS id FROM meetings WHERE id = $1',
+      [meetingId]
+    );
+    const allowed = new Set(allowedRes.rows.map((row) => Number(row.id)));
+    for (const entry of entries) {
+      if (!allowed.has(entry.rateeId)) {
+        throw new ApiError('VALIDATION_ERROR', '평가할 수 없는 대상입니다');
+      }
+    }
+
+    for (const entry of entries) {
+      const existing = await client.query(
+        `SELECT created_at, updated_at,
+                updated_at <> created_at AS already_edited,
+                created_at > now() - interval '${EDIT_WINDOW_HOURS} hours' AS editable
+           FROM meeting_evaluations
+          WHERE meeting_id = $1 AND rater_id = $2 AND ratee_id = $3`,
+        [meetingId, raterId, entry.rateeId]
+      );
+
+      if (existing.rows.length === 0) {
+        await client.query(
+          `INSERT INTO meeting_evaluations (meeting_id, rater_id, ratee_id, attended, tags)
+           VALUES ($1,$2,$3,$4,$5)`,
+          [meetingId, raterId, entry.rateeId, entry.attended, entry.tags]
+        );
+        continue;
+      }
+
+      const row = existing.rows[0];
+      if (row.already_edited) {
+        throw new ApiError('VALIDATION_ERROR', '평가는 한 번만 수정할 수 있습니다');
+      }
+      if (!row.editable) {
+        throw new ApiError('VALIDATION_ERROR', '평가 수정 시간(24시간)이 지났습니다');
+      }
+      await client.query(
+        `UPDATE meeting_evaluations
+            SET attended = $4, tags = $5, updated_at = now()
+          WHERE meeting_id = $1 AND rater_id = $2 AND ratee_id = $3`,
+        [meetingId, raterId, entry.rateeId, entry.attended, entry.tags]
+      );
+    }
+
+    // 재계산 대상이 한 명이 아니다. 내 제출이 상대의 판정을 뒤집을 수 있으므로
+    // rater와 모든 ratee를 함께 갱신한다(설계 6.2). 한쪽만 갱신하면 상대 점수가 낡은 판정에 머문다.
+    const targets = new Set([Number(raterId), ...entries.map((e) => e.rateeId)]);
+    for (const userId of targets) {
+      await recalculateTrustScore(client, userId);
+    }
+
+    return { submitted: entries.length };
+  });
+}
+
+module.exports = {
+  recalculateTrustScore,
+  listPendingEvaluations,
+  submitEvaluations,
+  EVALUATION_WINDOW_DAYS,
+};
