@@ -6,6 +6,7 @@ import MeetingListPage from './pages/MeetingListPage.jsx'
 import MeetingDetailPage from './pages/MeetingDetailPage.jsx'
 import MeetingCreatePage from './pages/MeetingCreatePage.jsx'
 import MeetingEditPage from './pages/MeetingEditPage.jsx'
+import MeetingEvaluatePage from './pages/MeetingEvaluatePage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import MyPage from './pages/MyPage.jsx'
 import BirthDateGate from './pages/BirthDateGate.jsx'
@@ -27,6 +28,7 @@ function AppContent() {
             <Route path="/" element={<HomePage />} />
             <Route path="/meetings" element={<MeetingListPage />} />
             <Route path="/meetings/new" element={<MeetingCreatePage />} />
+            <Route path="/meetings/:id/evaluate" element={<MeetingEvaluatePage />} />
             <Route path="/meetings/:id/edit" element={<MeetingEditPage />} />
             <Route path="/meetings/:id" element={<MeetingDetailPage />} />
             <Route path="/login" element={<LoginPage />} />

@@ -1,0 +1,7 @@
+<!-- 탭 아이콘. 기존 Vite 기본 로고(보라 #863bff)를 앱 브랜드 색으로 교체했다.
+     배경 = --ink(#1c1810), 번개 = --accent(#ea7a2b). 16px에서도 형태가 뭉개지지 않도록
+     디테일 없이 단색 두 개로만 그린다. 라이트·다크 탭바 어느 쪽에서도 대비가 확보된다. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#1c1810"/>
+  <path d="M36 8 L17 36 H28 L26 56 L47 27 H35 Z" fill="#ea7a2b"/>
+</svg>

@@ -9,11 +9,13 @@ import TrustBadge from '../components/TrustBadge.jsx'
 import { meetingStatusMeta, participationStatusMeta, isScheduleEnded } from '../utils/status.js'
 import { formatMeetingSchedule } from '../utils/date.js'
 import { fetchHostedMeetings, fetchJoinedMeetings } from '../api/users.js'
+import { fetchPendingEvaluations } from '../api/evaluations.js'
 
 export default function MyPage() {
   const { currentUser, isLoggedIn, logout } = useAppState()
   const [hosted, setHosted] = useState([])
   const [joined, setJoined] = useState([])
+  const [pendingEvaluations, setPendingEvaluations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [reloadKey, setReloadKey] = useState(0)
@@ -26,11 +28,18 @@ export default function MyPage() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    Promise.all([fetchHostedMeetings(), fetchJoinedMeetings()])
-      .then(([hostedRes, joinedRes]) => {
+    Promise.all([
+      fetchHostedMeetings(),
+      fetchJoinedMeetings(),
+      // 평가 목록 실패가 마이페이지 전체를 가리면 안 된다(hosted/joined는 필수, 이건 부가).
+      // 빈 목록으로 대체해 Promise.all이 "단위 실패"하지 않게 한다.
+      fetchPendingEvaluations().catch(() => ({ items: [] })),
+    ])
+      .then(([hostedRes, joinedRes, evaluationsRes]) => {
         if (cancelled) return
         setHosted(hostedRes.items)
         setJoined(joinedRes.items)
+        setPendingEvaluations(evaluationsRes.items)
         setLoading(false)
       })
       .catch((err) => {
@@ -80,7 +89,7 @@ export default function MyPage() {
           <span className="section-title" style={{ fontSize: 22 }}>
             {currentUser.nickname}
           </span>
-          <TrustBadge score={currentUser.trustScore} />
+          <TrustBadge score={currentUser.trustScore} evaluationCount={currentUser.evaluationCount} />
         </div>
         <p style={{ fontSize: 12.5, color: 'var(--cream-mute)' }}>
           신뢰도는 모든 사용자에게 공개되며, 소모임 모임장의 승인 판단 등에 참고돼요.
@@ -107,6 +116,30 @@ export default function MyPage() {
 
       {!loading && !error && (
         <>
+          {pendingEvaluations.length > 0 && (
+            <>
+              <h2 className="section-title" style={{ fontSize: 16 }}>
+                평가할 모임 ({pendingEvaluations.length})
+              </h2>
+              <div className="card-grid--2">
+                {pendingEvaluations.map((item) => (
+                  <Link key={item.meeting.id} to={`/meetings/${item.meeting.id}/evaluate`} className="meeting-card">
+                    <div className="meeting-card-top">
+                      <span className="eyebrow">
+                        {item.meeting.type === 'flash' ? '번개모임' : '소모임'} · {formatMeetingSchedule(item.meeting)}
+                      </span>
+                      <StatusPill tone="warning">평가 {item.targets.length}명</StatusPill>
+                    </div>
+                    <h3 className="meeting-card-title">{item.meeting.title}</h3>
+                    <span className="eyebrow">
+                      {item.role === 'host' ? '참여자를 평가해 주세요' : '모임장을 평가해 주세요'}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+
           <h2 className="section-title" style={{ fontSize: 16 }}>
             내가 등록한 모임 ({hostedActive.length})
           </h2>

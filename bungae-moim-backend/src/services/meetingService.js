@@ -5,6 +5,7 @@ const { evaluateApplicability } = require('../utils/participation');
 const { validateUpdateMeeting, validateApplyAnswer } = require('../utils/validators');
 const { isAdult } = require('../utils/age');
 const { createNotification, createNotifications, NOTIFICATION_TYPES } = require('./notificationService');
+const { recalculateTrustScore } = require('./evaluationService');
 
 // status 필터로 허용하는 값. 임의 문자열이 그대로 SQL 조건에 들어가지 않도록 화이트리스트로 검증한다.
 const ALLOWED_STATUS_FILTERS = ['recruiting', 'closed'];
@@ -345,10 +346,21 @@ async function applyToMeeting(meetingId, userId, rawAnswer) {
 }
 
 // DELETE /api/meetings/:id/apply — 참여/신청 취소(F2).
-// confirmed/approved 취소만 신뢰도 -3(0 미만 clamp) + flash가 closed면 recruiting으로 재오픈.
-// 감점은 반드시 SQL 상대 갱신으로 한다 — 한 사용자가 다른 두 모임을 동시 취소하면 모임 행
-// 잠금이 users 행을 지켜주지 못해 JS 읽기-쓰기는 갱신이 유실된다.
-// 이미 cancelled/rejected거나 신청이 없으면 아무 것도 하지 않는다(이중취소 감점 방지).
+// 더 이상 여기서 신뢰도를 직접 깎지 않는다(설계 7장 전환). 취소 사실을 participation_cancellations에
+// 이력으로 남기고(confirmed/approved였는지, 시작까지 남은 시간 스냅샷), recalculateTrustScore가
+// 그 이력 + 평가 이력에서 점수를 다시 계산해 users.trust_score에 캐시한다.
+// confirmed/approved 취소는 추가로 flash가 closed였다면 recruiting으로 재오픈한다.
+// 이미 cancelled/rejected거나 신청이 없으면 이력도 남기지 않고 404를 던진다(이중취소 방지).
+//
+// ⚠️ 과거에는 감점을 `UPDATE users SET trust_score = trust_score - 3`처럼 SQL 상대 갱신으로
+// 했다 — 한 사용자가 서로 다른 두 모임을 동시에 취소하면 각 트랜잭션이 잡는 FOR UPDATE 잠금은
+// meetings 행에만 걸리고 users 행은 잠기지 않아, 상대 갱신이 아니면(즉 JS에서 읽은 값에 -3을
+// 계산해 절대값으로 쓰면) 한쪽 갱신이 유실될 수 있었기 때문이다.
+// 지금의 recalculateTrustScore는 읽고-계산하고-쓰는(read-compute-write) 절대 갱신이라 같은
+// 문제가 이론적으로 남아있다 — READ COMMITTED에서 두 트랜잭션이 겹치면 둘 다 부분적인 이력만
+// 보고 계산할 수 있고, 나중에 커밋하는 UPDATE가 이긴다. 다만 이번엔 무해하다:
+// participation_cancellations와 meeting_evaluations는 append-only 원본이므로 진실은 보존되고,
+// 다음 재계산(다른 취소·평가 발생 시)이 캐시를 스스로 바로잡는다.
 async function cancelParticipation(meetingId, userId) {
   return withTransaction(async (client) => {
     // is_past는 신청(F1)과 똑같이 DB 시계로 계산한다 — JS Date로 다시 비교하면 목록과 어긋난다.
@@ -387,16 +399,25 @@ async function cancelParticipation(meetingId, userId) {
       [meetingId, userId]
     );
 
+    // 신뢰도는 더 이상 여기서 직접 깎지 않는다(설계 7장 전환). 취소 사실만 이력으로 남기고
+    // 점수는 재계산이 이력에서 만들어낸다 — 그래야 공식을 바꿔 전체 재계산할 수 있다.
+    // hours_before_start는 취소 당시의 판단이 맞으므로 스냅샷으로 굳힌다(E4로 시작 시각이
+    // 수정돼도 과거의 취소 평가가 흔들리지 않는다).
+    await client.query(
+      `INSERT INTO participation_cancellations (meeting_id, user_id, was_confirmed, hours_before_start)
+       SELECT $1, $2, $3, EXTRACT(EPOCH FROM (start_at - now())) / 3600
+         FROM meetings WHERE id = $1`,
+      [meetingId, userId, wasConfirmed]
+    );
+
     if (wasConfirmed) {
-      await client.query(
-        'UPDATE users SET trust_score = GREATEST(trust_score - 3, 0) WHERE id = $1',
-        [userId]
-      );
       // flash가 정원 마감(closed)이었다면 자리가 비므로 다시 모집 상태로.
       if (meeting.type === 'flash' && meeting.status === 'closed') {
         await client.query("UPDATE meetings SET status = 'recruiting' WHERE id = $1", [meetingId]);
       }
     }
+
+    await recalculateTrustScore(client, userId);
 
     return { status: 'cancelled' };
   });
@@ -510,8 +531,21 @@ async function respondToApplicant(meetingId, hostId, targetUserId, status) {
 // 참여자 신뢰도는 건드리지 않는다(감점은 본인이 확정 후 취소했을 때만). 재취소는
 // 상태를 다시 cancelled로 쓸 뿐 신뢰도 변화가 없어 무해하므로 FOR UPDATE는 불필요하고,
 // 404/403/이미취소 3-way 구분을 위해 SELECT를 먼저 한다.
+//
+// ⚠️ 종료된 모임은 취소할 수 없다(F2의 is_past 가드와 동일 이유·동일 에러 코드).
+// 신뢰도 상호 평가 도입 후 이게 없으면 구멍이 생긴다: 모임 종료 → 모임장이 A를
+// "안 왔음"으로 평가(-5) → 모임장이 이 시점에 모임을 취소하면 status가 cancelled로
+// 바뀌어 listPendingEvaluations의 창(IN_WINDOW: status <> 'cancelled')에서 빠지고
+// submitEvaluations도 취소된 모임을 거부한다 — A는 반박 평가를 영영 제출할 수 없는데
+// loadEvaluationPairs는 meeting 상태를 보지 않으므로 그 -5는 그대로 남는다.
+// 가드를 걸어 애초에 "종료 후 취소" 자체를 막는다(평가 이력을 취소 시점에 눈감아주는
+// 우회는 채택하지 않았다 — 그러면 모임장이 자기가 받은 나쁜 평가를 취소로 지울 수 있다).
 async function cancelMeeting(meetingId, hostId) {
-  const meetingRes = await pool.query('SELECT host_id, status FROM meetings WHERE id = $1', [meetingId]);
+  const meetingRes = await pool.query(
+    `SELECT host_id, status, COALESCE(end_at, start_at) < now() AS is_past
+       FROM meetings WHERE id = $1`,
+    [meetingId]
+  );
   if (meetingRes.rows.length === 0) {
     throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
   }
@@ -522,6 +556,9 @@ async function cancelMeeting(meetingId, hostId) {
   }
   if (row.status === 'cancelled') {
     throw new ApiError('VALIDATION_ERROR', '이미 취소된 모임입니다');
+  }
+  if (row.is_past) {
+    throw new ApiError('VALIDATION_ERROR', '이미 종료된 모임입니다');
   }
 
   await withTransaction(async (client) => {

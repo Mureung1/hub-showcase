@@ -8,6 +8,7 @@ const LABELS = {
   application_approved: '신청이 승인됐어요',
   application_rejected: '신청이 거절됐어요',
   meeting_cancelled: '모임이 취소됐어요',
+  evaluation_requested: '모임이 끝났어요, 평가해 주세요',
 }
 
 // createdAt은 서버의 timestamp(타임존 없음)를 pg가 Node 프로세스 로컬 시각으로 파싱해
@@ -125,8 +126,13 @@ export default function NotificationBell() {
       })
   }
 
-  function openMeeting(meetingId) {
+  function openMeeting(meetingId, type) {
     closePanel()
+    // 평가 요청 알림은 상세가 아니라 평가 화면으로 보낸다 — 상세엔 평가 진입점이 따로 없다.
+    if (type === 'evaluation_requested') {
+      navigate(`/meetings/${meetingId}/evaluate`)
+      return
+    }
     navigate(`/meetings/${meetingId}`)
   }
 
@@ -156,7 +162,7 @@ export default function NotificationBell() {
                   <button
                     type="button"
                     className={`notif-item${n.isRead ? '' : ' is-unread'}`}
-                    onClick={() => openMeeting(n.meetingId)}
+                    onClick={() => openMeeting(n.meetingId, n.type)}
                   >
                     <span className="notif-item-title">{LABELS[n.type] ?? '새 소식이 있어요'}</span>
                     <span className="notif-item-meta">

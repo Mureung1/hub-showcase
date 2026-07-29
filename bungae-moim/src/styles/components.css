@@ -182,6 +182,12 @@
   font-size: 13px;
 }
 
+/* 색은 명시하지 않는다 — .trust-badge의 color(라이트 ink-mute / .card--dark에서 cream)를
+   그대로 물려받아야 마이페이지 프로필(다크 카드) 위에서도 별도 다크모드 규칙 없이 읽힌다. */
+.trust-badge-count {
+  font-size: 11px;
+}
+
 /* 밴드 색. 흰 배경(라이트 테마 헤더·카드)과 어두운 배경(다크 테마 헤더·카드,
    card--dark)의 요구 명도가 서로 반대라 값 하나로는 양쪽 다 4.5:1을 못 채운다
    (계산 결과는 task-4-report.md 참고). 그래서 라이트 테마 기본값 + 다크
@@ -628,6 +634,90 @@
 .detail-capacity-fill {
   height: 100%;
   background: var(--accent);
+}
+
+/* ---- 상호 평가(3단계) ---- */
+.eval-target {
+  gap: 12px;
+}
+
+.eval-attend-group {
+  display: flex;
+  gap: 8px;
+}
+
+.eval-attend-btn {
+  flex: 1;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-mute);
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.eval-attend-btn:hover {
+  border-color: var(--accent);
+}
+
+.eval-attend-btn.is-selected {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--on-ink);
+}
+
+.eval-attend-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.eval-tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.eval-tag {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-mute);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.eval-tag:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.eval-tag--positive.is-selected {
+  background: rgba(74, 140, 95, 0.14);
+  border-color: var(--positive);
+  color: var(--positive);
+}
+
+.eval-tag--negative.is-selected {
+  background: rgba(201, 138, 31, 0.16);
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.eval-tag:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.eval-tag:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* ---- 좁은 화면: 1열로 접기 (데스크톱 우선, 모바일은 깨지지만 않게) ---- */

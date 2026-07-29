@@ -19,12 +19,15 @@ function normalizeUser(row) {
     nickname: row.nickname,
     birthDate: toDateString(row.birth_date),
     trustScore: Number(row.trust_score),
+    // integer 컬럼이라 pg가 이미 숫자로 준다(numeric인 trust_score와 다름). row에 컬럼이
+    // 없는 경우(SELECT 목록 누락)를 대비해 ?? 0으로 방어.
+    evaluationCount: row.evaluation_count ?? 0,
   };
 }
 
 async function findOrCreateUserByProvider({ provider, providerId, email, nickname }) {
   const existing = await pool.query(
-    'SELECT id, email, nickname, birth_date, trust_score FROM users WHERE provider = $1 AND provider_id = $2',
+    'SELECT id, email, nickname, birth_date, trust_score, evaluation_count FROM users WHERE provider = $1 AND provider_id = $2',
     [provider, providerId]
   );
 
@@ -35,7 +38,7 @@ async function findOrCreateUserByProvider({ provider, providerId, email, nicknam
   const inserted = await pool.query(
     `INSERT INTO users (provider, provider_id, email, nickname)
      VALUES ($1, $2, $3, $4)
-     RETURNING id, email, nickname, birth_date, trust_score`,
+     RETURNING id, email, nickname, birth_date, trust_score, evaluation_count`,
     [provider, providerId, email, nickname]
   );
 

@@ -11,7 +11,7 @@ const router = express.Router();
 router.get('/me', requireAuth, async (req, res, next) => {
   try {
     const { rows } = await pool.query(
-      'SELECT id, email, nickname, birth_date, trust_score FROM users WHERE id = $1',
+      'SELECT id, email, nickname, birth_date, trust_score, evaluation_count FROM users WHERE id = $1',
       [req.session.userId]
     );
 
@@ -36,7 +36,7 @@ router.patch('/me', requireAuth, async (req, res, next) => {
     // SELECT 후 UPDATE로 나누면 동시 요청이 둘 다 NULL을 읽어 통과하는 경쟁이 생긴다.
     const updated = await pool.query(
       `UPDATE users SET birth_date = $1 WHERE id = $2 AND birth_date IS NULL
-       RETURNING id, email, nickname, birth_date, trust_score`,
+       RETURNING id, email, nickname, birth_date, trust_score, evaluation_count`,
       [birthDate, req.session.userId]
     );
 

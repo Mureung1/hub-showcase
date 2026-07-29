@@ -17,6 +17,7 @@ import {
   respondToApplicant,
   deleteMeeting,
 } from '../api/meetings.js'
+import { fetchPendingEvaluations } from '../api/evaluations.js'
 
 export default function MeetingDetailPage() {
   const { id } = useParams()
@@ -44,11 +45,25 @@ export default function MeetingDetailPage() {
   // 두 번째 요청이 "이미 처리된 신청입니다"로 실패해 사용자에게 혼란스러운 에러가 뜬다.
   const [respondingUserId, setRespondingUserId] = useState(null)
   const [applyAnswer, setApplyAnswer] = useState('')
+  // 신청 직전에 미평가가 있으면 한 번만 권유한다(D6 소프트 게이트). 강제 제재가 아니므로
+  // "나중에 하기"로 건너뛸 수 있고, 그 뒤엔 gateAsked가 true라 다시 묻지 않는다.
+  const [gateAsked, setGateAsked] = useState(false)
+  const [evaluationPrompt, setEvaluationPrompt] = useState(null)
 
   // 신청/취소는 서버에 반영한 뒤 reloadKey를 올려 상세를 재조회한다. 번개모임은 신청 즉시
   // confirmed가 되어 openChatUrl이 새로 내려오므로 재조회가 필수다.
   async function handleApply() {
     setActionError(null)
+
+    if (!gateAsked) {
+      setGateAsked(true)
+      const pending = await fetchPendingEvaluations().catch(() => ({ items: [] }))
+      if (pending.items.length > 0) {
+        setEvaluationPrompt(pending.items[0])
+        return
+      }
+    }
+
     // 질문이 있으면 답변 없이 보내지 않는다. 서버도 400으로 막지만, 여기서 막아야
     // 사용자가 왕복 없이 바로 안다.
     if (meeting.applyQuestion && applyAnswer.trim() === '') {
@@ -62,6 +77,12 @@ export default function MeetingDetailPage() {
     } catch (err) {
       setActionError(err.message)
     }
+  }
+
+  // "나중에 하기": 권유를 닫고 그대로 신청을 진행한다(gateAsked가 이미 true라 재조회 없이 진행).
+  function handleSkipEvaluationPrompt() {
+    setEvaluationPrompt(null)
+    handleApply()
   }
 
   async function handleCancelParticipation() {
@@ -437,22 +458,39 @@ export default function MeetingDetailPage() {
                 // 신청 가능: 질문이 있으면 답변을 먼저 받는다. 서버가 canApply로 판정했으므로
                 // 신청 가능 여부 자체는 FE가 다시 따지지 않는다.
                 <>
-                  {meeting.applyQuestion && (
-                    <div className="field">
-                      <label htmlFor="applyAnswer">{meeting.applyQuestion}</label>
-                      <textarea
-                        id="applyAnswer"
-                        className="field-textarea"
-                        value={applyAnswer}
-                        onChange={(e) => setApplyAnswer(e.target.value)}
-                        placeholder="모임장에게 전할 답변을 적어주세요"
-                        maxLength={500}
-                      />
+                  {evaluationPrompt ? (
+                    // D6 소프트 게이트: 신청을 막지 않는다 — 평가하러 가거나 건너뛸 수 있다.
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <span style={{ fontSize: 13.5, color: 'var(--ink-mute)' }}>
+                        평가할 모임이 있어요. “{evaluationPrompt.meeting.title}”
+                      </span>
+                      <PillButton to={`/meetings/${evaluationPrompt.meeting.id}/evaluate`} variant="accent" size="sm">
+                        평가하러 가기
+                      </PillButton>
+                      <PillButton variant="ghost" size="sm" onClick={handleSkipEvaluationPrompt}>
+                        나중에 하기
+                      </PillButton>
                     </div>
+                  ) : (
+                    <>
+                      {meeting.applyQuestion && (
+                        <div className="field">
+                          <label htmlFor="applyAnswer">{meeting.applyQuestion}</label>
+                          <textarea
+                            id="applyAnswer"
+                            className="field-textarea"
+                            value={applyAnswer}
+                            onChange={(e) => setApplyAnswer(e.target.value)}
+                            placeholder="모임장에게 전할 답변을 적어주세요"
+                            maxLength={500}
+                          />
+                        </div>
+                      )}
+                      <PillButton variant="accent" block onClick={handleApply}>
+                        {meeting.type === 'flash' ? '참여 신청하기' : '참여 신청하기 (모임장 승인 필요)'}
+                      </PillButton>
+                    </>
                   )}
-                  <PillButton variant="accent" block onClick={handleApply}>
-                    {meeting.type === 'flash' ? '참여 신청하기' : '참여 신청하기 (모임장 승인 필요)'}
-                  </PillButton>
                 </>
               ) : (
                 // 신청 불가: 서버 blockReason에 맞는 안내 문구.
