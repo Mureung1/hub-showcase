@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "title": "PtoP",
+  "title": "PtoP - 포트폴리오 작성 도우미",
   "summary": "GitHub Repository와 짧은 회고를 바탕으로 프로젝트 경험을 포트폴리오 단서로 정리하는 서비스입니다.",
   "problem": "프로젝트를 완성한 뒤에도 내가 어떤 문제를 해결했고 어떤 판단을 했는지 Repository 기록만으로 다시 정리하기 어렵습니다.",
   "targetUsers": [
@@ -29,7 +29,7 @@
     "스프라이트 체크무늬 배경을 런타임 Canvas 처리로 투명화하고 방향별 프레임을 적용했습니다."
   ],
   "githubUser": "SubJeeLee(이준섭)",
-  "demoUrl": "",
+  "demoUrl": "https://youtu.be/e1vZnvBy5hA",
   "thumbnail": "thumbnail.png",
   "screenshots": [
     "screenshots/01-workspace.png",

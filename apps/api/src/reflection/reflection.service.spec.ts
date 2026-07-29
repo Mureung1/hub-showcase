@@ -86,7 +86,7 @@ describe("ReflectionService", () => {
     await expect(service.save("analysis-id", validDraft, candidates)).resolves.toMatchObject({
       reflectionAnalysis,
     });
-    expect(alignmentAnalyzer.analyze).toHaveBeenCalledWith(validDraft, candidates);
+    expect(alignmentAnalyzer.analyze).toHaveBeenCalledWith(validDraft, candidates, []);
     expect(persistence.save).toHaveBeenCalledWith("analysis-id", validDraft, reflectionAnalysis);
   });
 

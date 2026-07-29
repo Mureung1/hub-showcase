@@ -97,7 +97,7 @@ export function WorkspaceGame({
 
   return (
     <div className="absolute inset-0 z-0 h-full w-full bg-ptop-mint-soft">
-      <div ref={mountRef} className="h-full w-full [&_canvas]:block [&_canvas]:h-full [&_canvas]:w-full [&_canvas]:[image-rendering:pixelated] [&_canvas:focus-visible]:outline-3 [&_canvas:focus-visible]:outline-ptop-mint-dark [&_canvas:focus-visible]:-outline-offset-5" />
+      <div ref={mountRef} className="h-full w-full [&_canvas]:block [&_canvas]:h-full [&_canvas]:w-full [&_canvas:focus-visible]:outline-3 [&_canvas:focus-visible]:outline-ptop-mint-dark [&_canvas:focus-visible]:-outline-offset-5" />
       {loadError && (
         <div className="absolute inset-0 z-10 grid place-content-center justify-items-center gap-3 bg-white/[0.92] text-ptop-ink" role="alert">
           <strong className="text-sm">{loadError}</strong>

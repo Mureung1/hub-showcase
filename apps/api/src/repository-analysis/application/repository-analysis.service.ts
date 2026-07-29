@@ -8,6 +8,7 @@ import { RepositoryAnalysisPersistence } from "../infrastructure/persistence/rep
 import { createAnalysisDetails, createContributorMetrics } from "../domain/repository-analysis.analyzer";
 import { buildTechnicalChallengeContext } from "./technical-challenge/technical-challenge.context";
 import { TechnicalChallengeAnalyzer } from "./technical-challenge/technical-challenge.analyzer";
+import { buildRepositoryCodeReferences } from "./technical-challenge/technical-challenge.code-reference";
 import {
   calculateCommitActivityPercent,
   createResultHash,
@@ -63,6 +64,7 @@ export class RepositoryAnalysisService {
     const analysis = {
       ...baseAnalysis,
       technicalChallenges: technicalChallengeResult.candidates,
+      codeReferences: buildRepositoryCodeReferences(source, technicalChallengeResult.candidates),
       warnings: technicalChallengeResult.warning
         ? [...baseAnalysis.warnings, technicalChallengeResult.warning]
         : baseAnalysis.warnings,

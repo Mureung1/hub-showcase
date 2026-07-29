@@ -23,6 +23,7 @@ export class ReflectionDraftController {
         analysisId,
         request?.draft,
         request?.technicalChallenges,
+        request?.codeReferences,
       );
     } catch (error) {
       throw this.toHttpException(error);

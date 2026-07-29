@@ -4,10 +4,11 @@ import type {
   RepositoryAnalysisResult,
   TechnicalChallengeCandidate,
 } from "@ptop/contracts";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   createCustomTechnicalChallengeCandidate,
   getSelectionBlockMessage,
+  getSelectedCandidateIndex,
   toggleSelectedChallengeTitles,
 } from "./candidateSelection";
 import { rankCandidatesByReflection } from "./reflectionCandidateRanking";
@@ -207,10 +208,24 @@ function CandidateReport({
   repositoryEvidence: RepositoryAnalysisEvidence[];
   onCustomChallengeAdd?: (candidate: TechnicalChallengeCandidate) => void;
 }) {
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(() =>
+    getSelectedCandidateIndex(candidates, selectedChallengeTitles),
+  );
   const activeCandidate = candidates[activeIndex] ?? candidates[0];
   const [customTitle, setCustomTitle] = useState("");
   const [customNote, setCustomNote] = useState("");
+
+  useEffect(() => {
+    if (selectedChallengeTitles.length === 0) return;
+
+    const selectedIndex = getSelectedCandidateIndex(
+      candidates,
+      selectedChallengeTitles,
+    );
+    if (selectedIndex !== activeIndex) {
+      setActiveIndex(selectedIndex);
+    }
+  }, [activeIndex, candidates, selectedChallengeTitles]);
 
   if (!activeCandidate) {
     return null;

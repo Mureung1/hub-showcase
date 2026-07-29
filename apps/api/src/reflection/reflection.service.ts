@@ -1,5 +1,6 @@
 import { Injectable, Optional } from "@nestjs/common";
 import type {
+  RepositoryCodeReference,
   ReflectionDraft,
   TechnicalChallengeCandidate,
   ReflectionDraftSaveResponse,
@@ -25,13 +26,14 @@ export class ReflectionService {
     analysisResultId: string,
     draft: unknown,
     candidates: TechnicalChallengeCandidate[] = [],
+    codeReferences: RepositoryCodeReference[] = [],
   ): Promise<ReflectionDraftSaveResponse> {
     if (!analysisResultId.trim() || !isReflectionDraft(draft)) {
       throw new InvalidReflectionDraftError();
     }
 
     const reflectionAnalysis = this.alignmentAnalyzer
-      ? await this.alignmentAnalyzer.analyze(draft, candidates)
+      ? await this.alignmentAnalyzer.analyze(draft, candidates, codeReferences)
       : null;
     return this.persistence.save(analysisResultId, draft, reflectionAnalysis);
   }

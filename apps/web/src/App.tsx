@@ -1,5 +1,5 @@
 import type { ReflectionAnalysis, RepositoryAnalysisResult } from "@ptop/contracts";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { AnalysisPage } from "./pages/AnalysisPage";
 import { LandingPage } from "./pages/LandingPage";
 import { WorkspacePage } from "./pages/WorkspacePage";
@@ -38,7 +38,7 @@ export function App() {
   const [reflectionAnalysis, setReflectionAnalysis] = useState<ReflectionAnalysis | null>(null);
   const [savedPortfolio, setSavedPortfolio] = useState<SavedPortfolioProject | null>(null);
 
-  const showLanding = () => {
+  const showLanding = useCallback(() => {
     setView("landing");
     setAnalysisResult(null);
     setReflectionDraft(null);
@@ -47,9 +47,9 @@ export function App() {
     const url = new URL(window.location.href);
     url.searchParams.delete("view");
     url.searchParams.delete("start");
-    window.history.replaceState({}, "", url);
+    window.history.replaceState({ ptopView: "landing" }, "", url);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  }, []);
 
   const showAnalysis = (
     result: RepositoryAnalysisResult,

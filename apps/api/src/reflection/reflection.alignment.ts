@@ -1,6 +1,8 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type {
+  RepositoryCodeReference,
+  PortfolioCodeSnippet,
   ReflectionAlignment,
   ReflectionAnalysis,
   ReflectionDraft,
@@ -33,6 +35,7 @@ export class ReflectionAlignmentAnalyzer {
   async analyze(
     draft: ReflectionDraft,
     candidates: TechnicalChallengeCandidate[],
+    codeReferences: RepositoryCodeReference[] = [],
   ): Promise<ReflectionAnalysis> {
     const initialReflection = draft.memorableProblem.trim();
     const postAnalysisReflection = draft.postAnalysisReflection.trim();
@@ -68,6 +71,8 @@ export class ReflectionAlignmentAnalyzer {
           "portfolioDraft에는 기술적 도전의 핵심을 technicalChallenge에 쓰고, 실제로 확인되는 판단을 keyDecisions에 1~3개, 결과를 result에, 배운 점을 learnings에 1~3개 작성하세요.",
           "Solution은 한두 문장으로 끝내지 말고 implementationSteps에 실제 구현 단위를 1~5개 작성하세요.",
           "각 implementationStep에는 구현 내용 summary, 확인 가능한 filePath 또는 null, 왜 그렇게 구현했는지 rationale, 실제 근거의 referenceId·URL·filePath 중 확인 가능한 값만 evidenceRefs에 작성하세요.",
+          "제공된 codeReferences에서 선택한 기술적 도전을 설명하는 코드만 최대 3개 codeSnippets로 작성하세요. 각 스니펫은 4~14줄, 1,600자 이내로 제한하고 filePath·language·code·explanation·evidenceRefs를 채우세요.",
+          "codeSnippets의 code는 제공된 codeReferences 원문에서 그대로 가져와야 합니다. 원문에 없는 코드를 만들거나 전체 파일을 복사하지 마세요. 적절한 코드가 없으면 빈 배열을 반환하세요.",
           "decisionRationale에는 기술적 판단과 선택 이유를 1~3개, tradeoffs에는 확인된 트레이드오프를 최대 3개, validation에는 테스트·검증·결과 확인 방법을 최대 3개 작성하세요.",
           "코드 변경 내용이나 파일 경로가 제공된 근거에 없으면 추측하지 말고 filePath를 null로 두며 사용자 확인이 필요하다고 표시하세요.",
           "기술명, 성능 수치, 담당 범위, 해결 결과를 입력 근거 없이 만들지 마세요.",
@@ -79,7 +84,7 @@ export class ReflectionAlignmentAnalyzer {
           "보완 후보는 제공된 candidates의 Repository 근거만 재사용해야 하며, 새 URL·파일·수치·기술을 만들지 마세요.",
           "제공된 근거로도 보완 후보를 뒷받침할 수 없으면 suggestedChallenges를 빈 배열로 반환하세요.",
           "응답은 설명 없이 아래 JSON 구조만 반환하세요.",
-          '{"alignment":"matched|partial|mismatched|no_evidence","matchedChallengeTitle":"string|null","message":"string","portfolioSummary":"string|null","portfolioDraft":{"title":"string","technicalChallenge":"string","background":"string","problem":"string","solution":"string","implementationSteps":[{"summary":"string","filePath":"string|null","rationale":"string","evidenceRefs":["string"]}],"decisionRationale":["string"],"tradeoffs":["string"],"validation":["string"],"contribution":"string","keyDecisions":["string"],"result":"string","learnings":["string"],"evidenceSummary":"string","requiresUserReview":true},"requiresUserConfirmation":true,"suggestedChallenges":[{"title":"string","summary":"string","background":"string|null","problem":"string|null","solution":"string|null","technicalChallenge":"string","whyItMatters":"string","confidence":"high|medium|low","requiresUserConfirmation":true,"evidence":[{"evidenceType":"commit|pull_request|issue|discussion|project|file|config|release","referenceId":"string|null","title":"string","url":"string|null","filePath":"string|null","imageUrls":["string"]}]}]}',
+          '{"alignment":"matched|partial|mismatched|no_evidence","matchedChallengeTitle":"string|null","message":"string","portfolioSummary":"string|null","portfolioDraft":{"title":"string","technicalChallenge":"string","background":"string","problem":"string","solution":"string","implementationSteps":[{"summary":"string","filePath":"string|null","rationale":"string","evidenceRefs":["string"]}],"codeSnippets":[{"filePath":"string","language":"string","code":"string","explanation":"string","evidenceRefs":["string"],"startLine":1,"endLine":8}],"decisionRationale":["string"],"tradeoffs":["string"],"validation":["string"],"contribution":"string","keyDecisions":["string"],"result":"string","learnings":["string"],"evidenceSummary":"string","requiresUserReview":true},"requiresUserConfirmation":true,"suggestedChallenges":[{"title":"string","summary":"string","background":"string|null","problem":"string|null","solution":"string|null","technicalChallenge":"string","whyItMatters":"string","confidence":"high|medium|low","requiresUserConfirmation":true,"evidence":[{"evidenceType":"commit|pull_request|issue|discussion|project|file|config|release","referenceId":"string|null","title":"string","url":"string|null","filePath":"string|null","imageUrls":["string"]}]}]}',
         ].join("\n"),
         userPrompt: JSON.stringify(
           {
@@ -98,6 +103,7 @@ export class ReflectionAlignmentAnalyzer {
               draft.selectedChallengeTitles.length === 0 ||
               draft.selectedChallengeTitles.includes(candidate.title),
             ),
+            codeReferences,
           },
           null,
           2,
@@ -109,10 +115,21 @@ export class ReflectionAlignmentAnalyzer {
         parsed.suggestedChallenges ?? [],
         candidates,
       );
+      const sanitizedPortfolioDraft = parsed.portfolioDraft
+        ? sanitizePortfolioCodeSnippets(parsed.portfolioDraft, codeReferences)
+        : null;
+      const normalizedParsed = {
+        ...parsed,
+        portfolioDraft: sanitizedPortfolioDraft,
+      };
+
       if (parsed.alignment === "mismatched" || parsed.alignment === "no_evidence") {
         return createNoEvidenceResult(
-          "회고와 후보가 일치하지 않아 Repository 근거를 연결하지 않았습니다. 사용자 확인이 필요합니다.",
+          parsed.alignment === "mismatched"
+            ? "선택한 기술적 도전과 작성한 회고가 일치하지 않습니다. 선택한 후보를 다시 확인하거나 회고를 다시 작성해 주세요."
+            : "작성한 회고를 뒷받침할 Repository 근거를 찾지 못했습니다. 근거가 드러나도록 회고를 다시 작성해 주세요.",
           sanitizedSuggestions,
+          parsed.alignment,
         );
       }
       const matchedCandidate = parsed.matchedChallengeTitle
@@ -127,7 +144,7 @@ export class ReflectionAlignmentAnalyzer {
       }
 
       return {
-        ...parsed,
+        ...normalizedParsed,
         suggestedChallenges: sanitizedSuggestions,
         matchedChallengeEvidence: matchedCandidate?.evidence ?? [],
       };
@@ -190,9 +207,10 @@ export function parseReflectionAlignmentResponse(rawResponse: string): Omit<Refl
 function createNoEvidenceResult(
   message: string,
   suggestedChallenges: TechnicalChallengeCandidate[] = [],
+  alignment: ReflectionAlignment = "no_evidence",
 ): ReflectionAnalysis {
   return {
-    alignment: "no_evidence",
+    alignment,
     matchedChallengeTitle: null,
     matchedChallengeEvidence: [],
     message,
@@ -267,6 +285,10 @@ function isPortfolioDraft(value: unknown): value is PortfolioDraft {
       (Array.isArray(value.implementationSteps) &&
         value.implementationSteps.length <= 5 &&
         value.implementationSteps.every(isPortfolioImplementationStep))) &&
+    (value.codeSnippets === undefined ||
+      (Array.isArray(value.codeSnippets) &&
+        value.codeSnippets.length <= 3 &&
+        value.codeSnippets.every(isPortfolioCodeSnippet))) &&
     (value.decisionRationale === undefined || isStringArray(value.decisionRationale, 3)) &&
     (value.tradeoffs === undefined || isStringArray(value.tradeoffs, 3)) &&
     (value.validation === undefined || isStringArray(value.validation, 3)) &&
@@ -279,6 +301,53 @@ function isPortfolioDraft(value: unknown): value is PortfolioDraft {
     typeof value.evidenceSummary === "string" &&
     typeof value.requiresUserReview === "boolean"
   );
+}
+
+function isPortfolioCodeSnippet(value: unknown): value is PortfolioCodeSnippet {
+  if (!isRecord(value)) return false;
+
+  return (
+    typeof value.filePath === "string" &&
+    value.filePath.trim().length > 0 &&
+    typeof value.language === "string" &&
+    typeof value.code === "string" &&
+    value.code.trim().length > 0 &&
+    value.code.length <= 1_600 &&
+    typeof value.explanation === "string" &&
+    value.explanation.trim().length > 0 &&
+    isStringArray(value.evidenceRefs, 4) &&
+    (value.startLine === undefined || value.startLine === null || isPositiveInteger(value.startLine)) &&
+    (value.endLine === undefined || value.endLine === null || isPositiveInteger(value.endLine))
+  );
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value > 0;
+}
+
+function sanitizePortfolioCodeSnippets(
+  draft: PortfolioDraft,
+  codeReferences: RepositoryCodeReference[],
+): PortfolioDraft {
+  if (!draft.codeSnippets || draft.codeSnippets.length === 0) {
+    return draft;
+  }
+
+  const references = new Map(codeReferences.map((reference) => [reference.filePath, reference]));
+  const codeSnippets = draft.codeSnippets.flatMap((snippet) => {
+    const reference = references.get(snippet.filePath);
+    if (!reference || !normalizeCode(reference.content).includes(normalizeCode(snippet.code))) {
+      return [];
+    }
+
+    return [{ ...snippet, sourceUrl: reference.url }];
+  });
+
+  return { ...draft, codeSnippets };
+}
+
+function normalizeCode(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
 }
 
 function isPortfolioImplementationStep(value: unknown): value is PortfolioImplementationStep {

@@ -36,7 +36,7 @@ export function SiteHeader({
   }, [variant]);
 
   const headerClassName = [
-    "z-20 w-full border-b border-ptop-mint/50 bg-white/95 backdrop-blur-[16px]",
+    "z-20 w-full bg-white/95 backdrop-blur-[16px]",
     variant === "overlay"
       ? "fixed left-0 top-0 shadow-[0_1px_14px_rgb(21_24_23/0.08)]"
       : "sticky top-0",

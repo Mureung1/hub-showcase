@@ -14,6 +14,7 @@ export type SavedPortfolioProject = {
   repositoryName: string;
   challengeKey: string;
   challengeTitle: string;
+  workspaceSlot: number | null;
   status: "draft_completed" | "needs_user_review";
   portfolioDraft: PortfolioDraft;
   analysisResult: RepositoryAnalysisResult;
@@ -31,6 +32,7 @@ export type PortfolioProjectPayload = {
   repository_name: string;
   challenge_key: string;
   challenge_title: string;
+  workspace_slot: number | null;
   status: SavedPortfolioProject["status"];
   portfolio_draft: PortfolioDraft;
   analysis_result: RepositoryAnalysisResult;
@@ -53,11 +55,13 @@ export function createPortfolioProjectPayload({
   result,
   reflectionDraft,
   reflectionAnalysis,
+  workspaceSlot = null,
 }: {
   userId: string;
   result: RepositoryAnalysisResult;
   reflectionDraft: ReflectionDraft;
   reflectionAnalysis: ReflectionAnalysis;
+  workspaceSlot?: number | null;
 }): PortfolioProjectPayload {
   const portfolioDraft = reflectionAnalysis.portfolioDraft;
   if (!portfolioDraft) {
@@ -77,6 +81,7 @@ export function createPortfolioProjectPayload({
     repository_name: result.repository.name,
     challenge_key: createChallengeKey(challengeTitle),
     challenge_title: challengeTitle,
+    workspace_slot: workspaceSlot,
     status: reflectionAnalysis.requiresUserConfirmation
       ? "needs_user_review"
       : "draft_completed",
@@ -99,6 +104,7 @@ export function mapPortfolioProjectRow(
     repositoryName: String(row.repository_name),
     challengeKey: String(row.challenge_key),
     challengeTitle: String(row.challenge_title),
+    workspaceSlot: typeof row.workspace_slot === "number" ? row.workspace_slot : null,
     status: row.status === "needs_user_review" ? "needs_user_review" : "draft_completed",
     portfolioDraft: row.portfolio_draft as PortfolioDraft,
     analysisResult: row.analysis_result as RepositoryAnalysisResult,

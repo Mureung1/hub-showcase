@@ -1,4 +1,5 @@
 import type {
+  RepositoryCodeReference,
   TechnicalChallengeCandidate,
   TechnicalChallengeEvidenceReference,
 } from "./repository-analysis";
@@ -34,6 +35,17 @@ export type PortfolioImplementationStep = {
   evidenceRefs: string[];
 };
 
+export type PortfolioCodeSnippet = {
+  filePath: string;
+  sourceUrl?: string;
+  language: string;
+  code: string;
+  explanation: string;
+  evidenceRefs: string[];
+  startLine?: number | null;
+  endLine?: number | null;
+};
+
 export type PortfolioDraft = {
   title: string;
   technicalChallenge?: string;
@@ -42,6 +54,8 @@ export type PortfolioDraft = {
   solution: string;
   /** Solution을 구현 단위, 작성 이유, 검증 근거로 확장한 정보입니다. */
   implementationSteps?: PortfolioImplementationStep[];
+  /** 선택한 기술적 도전과 실제 파일 원문을 연결한 짧은 코드 근거입니다. */
+  codeSnippets?: PortfolioCodeSnippet[];
   decisionRationale?: string[];
   tradeoffs?: string[];
   validation?: string[];
@@ -80,6 +94,7 @@ export type ReflectionDraftSaveRequest = {
     requiresUserConfirmation: boolean;
     evidence: TechnicalChallengeEvidenceReference[];
   }>;
+  codeReferences?: RepositoryCodeReference[];
 };
 
 export type ReflectionDraftSaveResponse = {

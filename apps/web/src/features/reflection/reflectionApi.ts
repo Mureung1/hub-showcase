@@ -1,6 +1,7 @@
 import type {
   ReflectionDraft,
   ReflectionDraftSaveResponse,
+  RepositoryCodeReference,
   RepositoryAnalysisErrorCode,
   RepositoryAnalysisErrorResponse,
   TechnicalChallengeCandidate,
@@ -25,6 +26,7 @@ export async function saveReflectionDraftToApi(
   fetchImpl: typeof fetch = fetch,
   apiBaseUrl = getDefaultApiBaseUrl(),
   technicalChallenges: TechnicalChallengeCandidate[] = [],
+  codeReferences: RepositoryCodeReference[] = [],
 ): Promise<ReflectionDraftSaveResponse> {
   let response: Response;
 
@@ -34,7 +36,7 @@ export async function saveReflectionDraftToApi(
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ draft, technicalChallenges }),
+        body: JSON.stringify({ draft, technicalChallenges, codeReferences }),
       },
     );
   } catch {

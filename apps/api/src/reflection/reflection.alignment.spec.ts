@@ -98,6 +98,95 @@ describe("parseReflectionAlignmentResponse", () => {
     ]);
   });
 
+  it("keeps only code snippets that match a provided repository file", async () => {
+    const analyzer = new ReflectionAlignmentAnalyzer(
+      {
+        generate: jest.fn().mockResolvedValue(
+          JSON.stringify({
+            alignment: "matched",
+            matchedChallengeTitle: "분석 결과 연결",
+            message: "회고 내용이 후보와 일치합니다.",
+            portfolioSummary: "분석 흐름과 사용자 경험을 연결했습니다.",
+            portfolioDraft: {
+              title: "분석 흐름과 사용자 경험 연결",
+              technicalChallenge: "분석 근거와 회고를 연결하는 문제",
+              background: "분석 결과와 회고가 분리되어 있었습니다.",
+              problem: "사용자의 판단을 결과에 담기 어려웠습니다.",
+              solution: "저장 흐름을 하나로 연결했습니다.",
+              codeSnippets: [
+                {
+                  filePath: "src/analysis.ts",
+                  language: "TypeScript",
+                  code: "export function analyze() {}",
+                  explanation: "분석 진입점에서 결과를 구성합니다.",
+                  evidenceRefs: ["file-analysis"],
+                  startLine: 1,
+                  endLine: 1,
+                },
+                {
+                  filePath: "src/analysis.ts",
+                  language: "TypeScript",
+                  code: "export function doesNotExist() {}",
+                  explanation: "실제 원문에 없는 코드입니다.",
+                  evidenceRefs: ["file-analysis"],
+                },
+              ],
+              contribution: "분석 결과 화면을 구현했습니다.",
+              evidenceSummary: "분석 파일",
+              requiresUserReview: false,
+            },
+            requiresUserConfirmation: false,
+          }),
+        ),
+      },
+      { get: (key: string) => (key === "AI_MODEL" ? "gpt-test" : "test-key") } as never,
+    );
+
+    const result = await analyzer.analyze(
+      {
+        motivation: "",
+        role: "",
+        memorableProblem: "분석 결과와 회고를 연결했습니다.",
+        postAnalysisReflection: "",
+        attempts: "",
+        improvement: "",
+        customChallengeTitle: "",
+        customChallengeNote: "",
+        selectedChallengeTitles: ["분석 결과 연결"],
+        challengeAnswers: {},
+      },
+      [
+        {
+          title: "분석 결과 연결",
+          summary: "분석 흐름을 연결했습니다.",
+          background: null,
+          problem: null,
+          solution: null,
+          technicalChallenge: "분석 흐름",
+          whyItMatters: "회고에 활용",
+          confidence: "medium",
+          requiresUserConfirmation: true,
+          evidence: [],
+        },
+      ],
+      [
+        {
+          filePath: "src/analysis.ts",
+          url: "https://github.com/owner/repo/blob/main/src/analysis.ts",
+          language: "TypeScript",
+          content: "export function analyze() {}",
+        },
+      ],
+    );
+
+    expect(result.portfolioDraft?.codeSnippets).toEqual([
+      expect.objectContaining({
+        filePath: "src/analysis.ts",
+        sourceUrl: "https://github.com/owner/repo/blob/main/src/analysis.ts",
+      }),
+    ]);
+  });
+
   it("rejects malformed solution implementation details", () => {
     expect(() =>
       parseReflectionAlignmentResponse(
@@ -219,7 +308,7 @@ describe("parseReflectionAlignmentResponse", () => {
         },
       ]),
     ).resolves.toMatchObject({
-      alignment: "no_evidence",
+      alignment: "mismatched",
       portfolioDraft: null,
       requiresUserConfirmation: true,
     });
