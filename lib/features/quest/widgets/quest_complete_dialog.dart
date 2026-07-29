@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../core/constants/dialog_art.dart';
 import '../../../core/constants/reward_rules.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/celebration_badge.dart';
 import '../../../core/widgets/reward_showcase.dart';
 
 /// 퀘스트 완료 연출 — 트로피 + 퀘스트명 + 방금 받은 보상.
@@ -25,7 +27,8 @@ import '../../../core/widgets/reward_showcase.dart';
 /// 버튼·바깥 탭은 언제든 닫는다.
 ///
 /// 색 규칙(one-step-design):
-/// - 트로피·완료 문구·확인 버튼 = 그린(완료·성장·주요 행동).
+/// - 트로피 배지·완료 문구·확인 버튼 = 그린(완료·성장·주요 행동). 배지 안 그림은
+///   도트아트라 색이 파일에 박혀 있고, 채움 규칙은 [CelebrationBadge]가 쥔다.
 /// - 코인 노랑은 [RewardChip]이 전담한다. 이 파일은 노랑에 직접 접근하지 않는다.
 class QuestCompleteDialog extends StatefulWidget {
   const QuestCompleteDialog({
@@ -118,7 +121,8 @@ class _QuestCompleteDialogState extends State<QuestCompleteDialog>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 트로피 원형 — 그린 배경 위 흰 트로피. 튕겨 나오며 등장.
+              // 트로피 배지 — 옅은 그린 원 위 도트아트 트로피. 튕겨 나오며 등장.
+              // 폴백 🏆는 정본이 이 자리에 세워 둔 `Symbols.trophy`와 같은 뜻이다.
               AnimatedBuilder(
                 animation: _trophy,
                 builder: (context, child) {
@@ -128,19 +132,10 @@ class _QuestCompleteDialogState extends State<QuestCompleteDialog>
                     child: Transform.scale(scale: _trophy.value, child: child),
                   );
                 },
-                child: Container(
-                  width: 88,
-                  height: 88,
-                  decoration: BoxDecoration(
-                    color: scheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Symbols.trophy,
-                    fill: 1,
-                    size: 44,
-                    color: scheme.onPrimary,
-                  ),
+                child: const CelebrationBadge(
+                  asset: DialogArt.questComplete,
+                  fallbackEmoji: '🏆',
+                  semanticLabel: '퀘스트 완료',
                 ),
               ),
               AppSpacing.gapMd,

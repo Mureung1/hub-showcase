@@ -247,7 +247,8 @@ class _AchievementDetailSheetState extends State<AchievementDetailSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(quest.title, style: theme.textTheme.headlineLarge),
+                // 정본 `124:658` — 24/700. 화면 제목(32)이 아니라 시트 제목이다.
+                Text(quest.title, style: theme.textTheme.headlineMedium),
                 AppSpacing.gapSm,
 
                 // 난이도 + 완료 날짜(달력 아이콘).
@@ -292,12 +293,16 @@ class _AchievementDetailSheetState extends State<AchievementDetailSheet> {
       AppSpacing.gapSm,
       _photoView(),
 
-      // 편집 가능하면 하단에 "수정"(그린). 보기 전용 호출부는 이 버튼이 없다.
+      // 편집 가능하면 하단에 "수정". 보기 전용 호출부는 이 버튼이 없다.
+      //
+      // 정본 `124:676`은 **아웃라인(블루=보조 행동)** 이다. 기록은 이미 완료된
+      // 상태라 여기서 할 일이 남아 있지 않다 — 채운 그린을 쓰면 "아직 눌러야 할
+      // 주요 행동이 있다"로 읽힌다.
       if (widget.editable) ...[
         AppSpacing.gapLg,
         SizedBox(
           width: double.infinity,
-          child: FilledButton.icon(
+          child: OutlinedButton.icon(
             onPressed: _enterEdit,
             icon: const Icon(Symbols.edit),
             label: const Text('수정'),
@@ -396,7 +401,11 @@ class _AchievementDetailSheetState extends State<AchievementDetailSheet> {
   }
 }
 
-/// 좌측 accent 보더가 있는 메모 표시 박스.
+/// 메모 표시 박스 — 옅은 면 + 12 라운드(정본 `124:671`).
+///
+/// 좌측 그린 accent 보더를 두지 않는다. 정본에 없기도 하지만, 여기 메모는 이미
+/// 끝난 기록이라 강조 대상이 아니다(완료 전 인증을 권하는 메모 시트의 안내 박스와
+/// 역할이 다르다).
 class _MemoBox extends StatelessWidget {
   const _MemoBox({required this.memo});
 
@@ -413,7 +422,6 @@ class _MemoBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLow,
         borderRadius: AppRadius.mdAll,
-        border: Border(left: BorderSide(color: scheme.primary, width: 3)),
       ),
       child: Text(memo, style: theme.textTheme.bodyMedium),
     );
@@ -489,7 +497,14 @@ class _EditPhoto extends StatelessWidget {
   }
 }
 
-/// 완료 날짜 칩 — 달력 아이콘 + `yyyy년 M월 d일`(KST).
+/// 완료 날짜 — `yyyy년 M월 d일 완료`(KST).
+///
+/// 정본 `124:662`는 `7월 21일 완료` 한 줄이다(달력 아이콘 없음, 12/500). 아이콘을
+/// 뺀 대신 **날짜가 무엇의 날짜인지**를 '완료'로 밝힌다 — 옆 난이도 pill과 나란히
+/// 놓이는 자리라 아이콘이 없어도 두 조각이 섞이지 않는다.
+///
+/// 다만 **연도는 남긴다.** 정본 예시가 올해라 생략돼 있을 뿐이고, 보관함은 해가
+/// 바뀌어도 계속 쌓이는 화면이다.
 class _CompletedDate extends StatelessWidget {
   const _CompletedDate({required this.completedAt});
 
@@ -500,18 +515,11 @@ class _CompletedDate extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Symbols.calendar_today, size: 14, color: scheme.onSurfaceVariant),
-        AppSpacing.gapWXs,
-        Text(
-          _formatKstDate(completedAt),
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
-      ],
+    return Text(
+      '${_formatKstDate(completedAt)} 완료',
+      style: theme.textTheme.labelSmall?.copyWith(
+        color: scheme.onSurfaceVariant,
+      ),
     );
   }
 }
@@ -532,6 +540,10 @@ class _PhotoFrame extends StatelessWidget {
 }
 
 /// "사진 없음" 플레이스홀더 — 없음·실패·깨진 사진 공통. 중립 색만 쓴다.
+///
+/// 정본 `124:674`: 높이 120 · `surfaceContainerLow` · 가운데 글줄 하나(아이콘 없음).
+/// 아이콘을 빼는 이유는 "없음"을 그림으로 한 번 더 말할 필요가 없어서다 — 빈 면과
+/// 한 줄로 충분하고, 아이콘이 있으면 실제 사진이 들어찬 상태와 무게가 비슷해진다.
 class _PhotoPlaceholder extends StatelessWidget {
   const _PhotoPlaceholder();
 
@@ -542,27 +554,17 @@ class _PhotoPlaceholder extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      height: 96,
+      height: 120,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
+        color: scheme.surfaceContainerLow,
         borderRadius: AppRadius.mdAll,
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Symbols.image_not_supported,
-            color: scheme.onSurfaceVariant,
-            size: 28,
-          ),
-          AppSpacing.gapXs,
-          Text(
-            '사진 없음',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+      child: Text(
+        '사진 없음',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: scheme.onSurfaceVariant,
+        ),
       ),
     );
   }

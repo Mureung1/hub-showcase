@@ -203,7 +203,7 @@ void main() {
 
       await tester.tap(rebirthButton());
       await tester.pumpAndSettle();
-      await tester.tap(find.text('아직요'));
+      await tester.tap(find.text('아니요'));
       await tester.pumpAndSettle();
 
       expect(find.text('환생했어요!'), findsNothing);

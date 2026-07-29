@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:one_step/core/constants/dialog_art.dart';
 import 'package:one_step/core/constants/empty_art.dart';
 import 'package:one_step/core/constants/growth_rules.dart';
 import 'package:one_step/core/constants/shop_items.dart';
@@ -108,6 +109,25 @@ void main() {
           .toSet();
 
       expect(onDisk, kEmptyArt.toSet());
+    });
+  });
+
+  group('다이얼로그 배지 도트아트 5종', () {
+    // 빈 화면 일러스트와 같은 처방 — 리터럴을 다시 적지 않고 **화면이 실제로
+    // 넘기는 상수**를 검증한다(경로 오타는 이모지 폴백에 조용히 덮인다).
+    for (final asset in kDialogArt) {
+      test(asset, () async => expectUsable(asset));
+    }
+
+    test('kDialogArt가 assets/dialogs 디렉터리와 정확히 일치한다', () {
+      final onDisk = Directory('assets/dialogs')
+          .listSync()
+          .whereType<File>()
+          .map((f) => 'assets/dialogs/${f.uri.pathSegments.last}')
+          .where((p) => p.endsWith('.png'))
+          .toSet();
+
+      expect(onDisk, kDialogArt.toSet());
     });
   });
 }

@@ -91,15 +91,21 @@ class _QuestEditDialogState extends State<QuestEditDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('퀘스트 수정', style: theme.textTheme.titleLarge),
+              // 정본 `123:655` — 24/700. 아래 세 필드 라벨(12/500)과 두 단 벌어져
+              // "제목 하나 · 필드 셋"이라는 위계가 한눈에 잡힌다.
+              Text('퀘스트 수정', style: theme.textTheme.headlineMedium),
               AppSpacing.gapMd,
 
+              // 라벨을 입력칸 **밖**에 세운다(정본 `123:656`). InputDecoration의
+              // floating label은 포커스 여부에 따라 크기·위치가 달라져 아래 '난이도'·
+              // '예상 보상' 라벨과 줄이 맞지 않는다 — 세 라벨을 같은 스타일로 통일한다.
+              const _FieldLabel('제목'),
+              AppSpacing.gapSm,
               TextFormField(
                 controller: _titleController,
                 autofocus: true,
                 maxLength: 60,
                 textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(labelText: '제목'),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return '제목을 입력해 주세요.';
@@ -112,7 +118,7 @@ class _QuestEditDialogState extends State<QuestEditDialog> {
               ),
               AppSpacing.gapSm,
 
-              Text('난이도', style: theme.textTheme.titleMedium),
+              const _FieldLabel('난이도'),
               AppSpacing.gapSm,
               // 등록 화면과 **같은 위젯**([AppSegmentedButton])이다. 예전엔 M3
               // [SegmentedButton]이라 선택색이 M3 기본 `secondaryContainer`(🔵 블루)로
@@ -137,22 +143,14 @@ class _QuestEditDialogState extends State<QuestEditDialog> {
               ),
               AppSpacing.gapMd,
 
-              // 난이도를 바꾸면 예상 보상도 함께 바뀐다(등록 화면과 같은 미리보기).
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerLow,
-                  borderRadius: AppRadius.mdAll,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('예상 보상', style: theme.textTheme.labelMedium),
-                    RewardChip(reward: rewardFor(_difficulty)),
-                  ],
-                ),
-              ),
+              // 난이도를 바꾸면 예상 보상도 함께 바뀐다.
+              //
+              // 정본 `123:667`+`123:668`은 라벨 아래에 칩만 놓는다 — 틴트 상자도,
+              // 같은 줄 `spaceBetween`도 없다. 위 두 필드와 같은 「라벨 → 값」 리듬이
+              // 되고, 큰 글꼴 배율에서 라벨과 칩이 한 줄을 다투던 문제도 사라진다.
+              const _FieldLabel('예상 보상'),
+              AppSpacing.gapSm,
+              RewardChip(reward: rewardFor(_difficulty)),
               AppSpacing.gapLg,
 
               // 취소·저장을 가로로 나란히. Expanded 2개라 폭이 좁아도 세로로 쌓이지
@@ -178,6 +176,27 @@ class _QuestEditDialogState extends State<QuestEditDialog> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 입력 항목 라벨 — 정본 `123:656`·`123:659`·`123:667`(12/500, `onSurfaceVariant`).
+///
+/// 세 자리가 같은 스타일이어야 「제목 / 난이도 / 예상 보상」이 한 덩어리의 폼으로
+/// 읽힌다. 하나만 다르게 두면 그 항목이 별개 섹션처럼 튄다.
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Text(
+      text,
+      style: theme.textTheme.labelSmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
       ),
     );
   }

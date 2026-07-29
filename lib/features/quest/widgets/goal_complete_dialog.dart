@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../core/constants/dialog_art.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/celebration_badge.dart';
 
 /// 목표 완수 연출 (2단계) — 목표(폴더)의 마지막 퀘스트를 완료해 **폴더 전체가
 /// 보관함으로 옮겨지는 순간**에만 뜬다.
@@ -61,28 +62,20 @@ class _GoalCompleteDialogState extends State<GoalCompleteDialog>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 메달 원형 — 그린 배경 위 흰 아이콘(레벨업·스트릭 연출과 동일 규격).
-            // 완료 연출의 트로피와 구분되는 아이콘을 써, 완료 축하 바로 뒤에 이어
-            // 떠도 "또 같은 화면"으로 읽히지 않게 한다.
+            // 월계관 메달 배지 — 레벨업·스트릭 연출과 **같은 규격**
+            // ([CelebrationBadge]). 완료 연출의 트로피와 구분되는 그림을 써, 완료
+            // 축하 바로 뒤에 이어 떠도 "또 같은 화면"으로 읽히지 않게 한다.
+            // 폴백 🏅는 정본이 이 자리에 세워 둔 훈장 아이콘과 같은 뜻이다.
             AnimatedBuilder(
               animation: _pop,
               builder: (context, child) => Opacity(
                 opacity: _pop.value.clamp(0.0, 1.0),
                 child: Transform.scale(scale: _pop.value, child: child),
               ),
-              child: Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  color: scheme.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Symbols.workspace_premium,
-                  fill: 1,
-                  size: 44,
-                  color: scheme.onPrimary,
-                ),
+              child: const CelebrationBadge(
+                asset: DialogArt.goalComplete,
+                fallbackEmoji: '🏅',
+                semanticLabel: '목표 완수',
               ),
             ),
             AppSpacing.gapMd,

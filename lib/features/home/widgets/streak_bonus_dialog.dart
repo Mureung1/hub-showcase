@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../core/constants/dialog_art.dart';
 import '../../../core/constants/reward_rules.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/celebration_badge.dart';
 import '../../../core/widgets/reward_showcase.dart';
 
 /// 연속 출석 보너스 연출.
@@ -61,21 +63,13 @@ class StreakBonusDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 불꽃 원형 — 그린 배경 위 흰 아이콘(완료 연출의 트로피 원형과 동일 규격).
-            // 다크/라이트 모두 primary ↔ onPrimary 쌍이라 대비가 테마에서 보장된다.
-            Container(
-              width: 88,
-              height: 88,
-              decoration: BoxDecoration(
-                color: scheme.primary,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Symbols.local_fire_department,
-                fill: 1,
-                size: 44,
-                color: scheme.onPrimary,
-              ),
+            // 불꽃 배지 — 완료 연출의 트로피 배지와 **같은 규격**([CelebrationBadge]).
+            // 폴백 🔥는 정본이 이 자리에 세워 둔 `Symbols.local_fire_department`와
+            // 같은 뜻이다.
+            const CelebrationBadge(
+              asset: DialogArt.streak,
+              fallbackEmoji: '🔥',
+              semanticLabel: '연속 출석',
             ),
             AppSpacing.gapMd,
             Text(

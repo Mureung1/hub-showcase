@@ -59,7 +59,7 @@ void main() {
     expect(find.text('지원서 초안 쓰기'), findsOneWidget);
     expect(find.byType(RewardChip), findsOneWidget);
     // completedAt UTC 7/20 20:00 → KST 7/21 05:00. KST 변환이 없으면 7/20이 떠서 실패.
-    expect(find.text('2026년 7월 21일'), findsOneWidget);
+    expect(find.text('2026년 7월 21일 완료'), findsOneWidget);
   });
 
   testWidgets('메모가 있으면 전문을 보여준다', (tester) async {

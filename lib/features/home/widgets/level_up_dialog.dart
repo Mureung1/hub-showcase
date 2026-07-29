@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../../core/constants/dialog_art.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/celebration_badge.dart';
 
 /// 레벨업 연출 — `Lv.{from} → Lv.{to}`.
 ///
@@ -67,26 +69,18 @@ class _LevelUpDialogState extends State<LevelUpDialog>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 상승 원형 — 그린 배경 위 흰 아이콘(완료·스트릭 연출과 동일 규격).
+            // 상승 배지 — 완료·스트릭 연출과 **같은 규격**([CelebrationBadge]).
+            // 폴백 📈는 정본이 이 자리에 세워 둔 `Symbols.trending_up`과 같은 뜻이다.
             AnimatedBuilder(
               animation: _pop,
               builder: (context, child) => Opacity(
                 opacity: _pop.value.clamp(0.0, 1.0),
                 child: Transform.scale(scale: _pop.value, child: child),
               ),
-              child: Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  color: scheme.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Symbols.trending_up,
-                  fill: 1,
-                  size: 44,
-                  color: scheme.onPrimary,
-                ),
+              child: const CelebrationBadge(
+                asset: DialogArt.levelUp,
+                fallbackEmoji: '📈',
+                semanticLabel: '레벨 업',
               ),
             ),
             AppSpacing.gapMd,
