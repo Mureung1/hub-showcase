@@ -591,15 +591,19 @@ function MessageFlow({
     selectedPurposeId !== null &&
     speechStyleId !== null &&
     mode !== null &&
-    (mode === 'reply' ? receivedMessage.trim().length > 0 : situation.trim().length > 0)
+    (mode === 'reply'
+      ? receivedMessage.trim().length > 0 || situation.trim().length > 0
+      : situation.trim().length > 0)
 
   const generateGuide =
     selectedPurposeId === null
       ? '메시지 목적을 골라주세요.'
       : speechStyleId === null
         ? '평소 쓰는 말투를 골라주세요.'
-        : mode === 'reply' && receivedMessage.trim().length === 0
-          ? '받은 메시지를 붙여넣어주세요.'
+        : mode === 'reply' &&
+            receivedMessage.trim().length === 0 &&
+            situation.trim().length === 0
+          ? '받은 내용이나 상황 중 하나를 적어주세요.'
           : mode === 'initiate' && situation.trim().length === 0
             ? '상황을 적어주세요.'
             : null
@@ -976,15 +980,24 @@ function MessageFlow({
 
     const request =
       mode === 'reply'
-        ? {
-            route: 'manual_ai' as const,
-            mode: 'reply' as const,
-            scenarioId: selectedScenarioId,
-            purpose: selectedPurposeId,
-            speechStyleId,
-            receivedMessage,
-            ...(situation.trim() ? { situation } : {}),
-          }
+        ? receivedMessage.trim()
+          ? {
+              route: 'manual_ai' as const,
+              mode: 'reply' as const,
+              scenarioId: selectedScenarioId,
+              purpose: selectedPurposeId,
+              speechStyleId,
+              receivedMessage,
+              ...(situation.trim() ? { situation } : {}),
+            }
+          : {
+              route: 'manual_ai' as const,
+              mode: 'reply' as const,
+              scenarioId: selectedScenarioId,
+              purpose: selectedPurposeId,
+              speechStyleId,
+              situation,
+            }
         : {
             route: 'manual_ai' as const,
             mode: 'initiate' as const,
@@ -1368,11 +1381,11 @@ function MessageFlow({
               avatarAsset={catAssistantAssets[selectedScenario.id]}
               description={
                 mode === 'reply'
-                  ? '받은 메시지를 붙여넣고, 더 알려줄 상황이 있으면 덧붙여주세요.'
+                  ? '받은 내용을 적지 않아도 괜찮아요. 메시지를 붙여넣거나, 답장에 필요한 상황만 간단히 알려주세요.'
                   : '구체적인 사정을 평소 말하듯 적어주세요. 예: 약속을 미뤄야 해서 정중하게 사과하고 싶어요.'
               }
               headingRef={stepHeadingRef}
-              title={mode === 'reply' ? '받은 말을 조금 보여주라냥' : '상황을 조금 더 들려주라냥'}
+              title={mode === 'reply' ? '어떤 말을 받았는지 알려주라냥' : '상황을 조금 더 들려주라냥'}
             />
 
             <div className="chat-form-surface">

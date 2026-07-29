@@ -50,15 +50,25 @@ export type GuidedAiRequest = GenerationRequestBase & {
   situation?: never
 }
 
-export type ManualReplyAiRequest = GenerationRequestBase & {
+type ManualReplyAiRequestBase = GenerationRequestBase & {
   route: 'manual_ai'
   mode: 'reply'
   purpose: PurposeId
-  receivedMessage: string
-  situation?: string
   situationId?: never
   contextAnswers?: never
 }
+
+export type ManualReplyAiRequest = ManualReplyAiRequestBase &
+  (
+    | {
+        receivedMessage: string
+        situation?: string
+      }
+    | {
+        receivedMessage?: never
+        situation: string
+      }
+  )
 
 export type ManualInitiateAiRequest = GenerationRequestBase & {
   route: 'manual_ai'
@@ -203,19 +213,29 @@ export const parseGenerationRequest = (value: unknown): GenerationRequest | null
         'receivedMessage',
         'situation',
       ]) ||
-      typeof value.receivedMessage !== 'string' ||
+      (value.receivedMessage !== undefined && typeof value.receivedMessage !== 'string') ||
       (value.situation !== undefined && typeof value.situation !== 'string')
     ) {
       return null
     }
-    const receivedMessage = value.receivedMessage.trim()
+    const receivedMessage =
+      typeof value.receivedMessage === 'string' ? value.receivedMessage.trim() : ''
     const situation = typeof value.situation === 'string' ? value.situation.trim() : ''
     if (
-      !receivedMessage ||
+      (!receivedMessage && !situation) ||
       receivedMessage.length > receivedMessageMaxLength ||
       situation.length > situationMaxLength
     ) {
       return null
+    }
+    if (!receivedMessage) {
+      return {
+        ...base,
+        route: 'manual_ai',
+        mode: 'reply',
+        purpose: value.purpose,
+        situation,
+      }
     }
     return {
       ...base,

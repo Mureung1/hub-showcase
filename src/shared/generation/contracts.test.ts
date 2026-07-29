@@ -101,6 +101,25 @@ describe('생성 계약', () => {
     expect(
       isValidGenerationRequest({
         route: 'manual_ai',
+        mode: 'reply',
+        scenarioId: 'professor',
+        purpose: 'question',
+        speechStyleId: 'haeyo',
+        situation: '과제 제출 기한을 다시 확인해서 답장하고 싶어요.',
+      }),
+    ).toBe(true)
+    expect(
+      isValidGenerationRequest({
+        route: 'manual_ai',
+        mode: 'reply',
+        scenarioId: 'professor',
+        purpose: 'question',
+        speechStyleId: 'haeyo',
+      }),
+    ).toBe(false)
+    expect(
+      isValidGenerationRequest({
+        route: 'manual_ai',
         mode: 'initiate',
         scenarioId: 'professor',
         purpose: 'question',

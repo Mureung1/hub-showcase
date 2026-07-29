@@ -70,6 +70,7 @@ const buildManualUserContent = (
     `<scenario_id>${request.scenarioId}</scenario_id>`,
     `<purpose_id>${request.purpose}</purpose_id>`,
     `<speech_style_id>${request.speechStyleId}</speech_style_id>`,
+    `<mode>${request.mode}</mode>`,
     receivedMessage,
     situation,
     '</current_input>',

@@ -7,9 +7,9 @@ type ReceivedMessageInputProps = {
 function ReceivedMessageInput({ value, placeholder, onChange }: ReceivedMessageInputProps) {
   return (
     <label className="field">
-      <span>받은 메시지 붙여넣기 (필수)</span>
+      <span>받은 내용 (선택)</span>
       <textarea
-        aria-label="받은 메시지 붙여넣기 (필수)"
+        aria-label="받은 내용 (선택)"
         maxLength={500}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
