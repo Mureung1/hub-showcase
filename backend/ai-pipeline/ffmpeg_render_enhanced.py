@@ -53,7 +53,8 @@ def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=
         # 12초~15초: 크게 끝남 (scale=0.5*iw)해서 줌 아웃 효과
 
         caption_escaped = caption.replace("'", "\\'").replace('"', '\\"')
-        fontfile = "C\\:/Windows/Fonts/malgun.ttf"
+        # Linux/Render 호환 폰트 (시스템 기본 폰트 사용, 또는 명시 생략)
+        fontfile = ""  # 비워두면 시스템 기본 폰트 사용
 
         # 복합 필터: Ken Burns + 자막 애니메이션
         # 1. Ken Burns Effect (줌 인/아웃)
@@ -65,12 +66,11 @@ def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=
             "fps=30,"
             # Ken Burns 줌 인/아웃
             "format=yuv420p,"
-            # 자막: 페이드인 + 크기 변화
+            # 자막: 단순화 (FFmpeg 호환성 최우선)
             f"drawtext="
-            f"fontfile='{fontfile}':"
             f"text='{caption_escaped}':"
-            f"fontsize=if(lt(t\\,2)\\,24\\,if(lt(t\\,14)\\,28\\,24)):"  # 크기 애니메이션
-            f"fontcolor=white@if(lt(t\\,2)\\,0\\,if(lt(t\\,14)\\,1\\,if(lt(t\\,15)\\,0.5\\,0))):"  # 페이드 애니메이션
+            f"fontsize=28:"
+            f"fontcolor=white:"
             f"x=(w-text_w)/2:"
             f"y=h-120:"
             f"box=1:"
