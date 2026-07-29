@@ -9,6 +9,8 @@ import ChallengesPage from './pages/ChallengesPage.jsx'
 import GuidePage from './pages/GuidePage.jsx'
 import MyPage from './pages/MyPage.jsx'
 import AuthPage from './pages/AuthPage.jsx'
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
+import UpdatePasswordPage from './pages/UpdatePasswordPage.jsx'
 import TutorialPage from './pages/TutorialPage.jsx'
 
 function App() {
@@ -26,6 +28,8 @@ function App() {
         <Route path="/me" element={<MyPage />} />
         <Route path="/login" element={<AuthPage mode="login" />} />
         <Route path="/signup" element={<AuthPage mode="signup" />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/update-password" element={<UpdatePasswordPage />} />
       </Route>
     </Routes>
   )

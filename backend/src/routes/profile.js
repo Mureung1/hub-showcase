@@ -17,6 +17,7 @@ function toApiProfile(row) {
   return {
     id: row.id,
     nickname: row.nickname ?? null,
+    bio: row.bio ?? null,
     isBeginner: row.is_beginner ?? false,
     onboardedAt: row.onboarded_at ?? null,
   }
@@ -40,6 +41,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.patch('/', requireAuth, async (req, res) => {
   const patch = { id: req.user.id }
   if (req.body.nickname !== undefined) patch.nickname = req.body.nickname
+  if (req.body.bio !== undefined) patch.bio = req.body.bio
   if (req.body.isBeginner !== undefined) patch.is_beginner = req.body.isBeginner
   if (req.body.onboardedAt !== undefined) patch.onboarded_at = req.body.onboardedAt
 
