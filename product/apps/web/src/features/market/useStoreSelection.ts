@@ -82,10 +82,12 @@ export function useStoreSelection({
       setSelectedSearchResult(null);
       setSelectedReference({ id: null, name: null });
     },
-    selectListedStore: (name: string) => {
-      const store = nearbyStores.find((candidate) => candidate.name === name);
+    selectListedStore: (storeKey: string) => {
+      const store = nearbyStores.find(
+        (candidate) => (candidate.id ?? candidate.name) === storeKey,
+      );
       setSelectedSearchResult(null);
-      setSelectedReference({ id: store?.id ?? null, name });
+      setSelectedReference({ id: store?.id ?? null, name: store?.name ?? storeKey });
     },
     selectSearchResult: (result: MarketSearchResult) => {
       setSelectedSearchResult(result);

@@ -77,7 +77,7 @@ type MarketMapCanvasProps = {
   selected: MarketStore | null;
   score: number | null;
   sameCategoryCount: number;
-  onSelectStore: (name: string) => void;
+  onSelectStore: (storeKey: string) => void;
   visibleSupportedRegion: boolean;
   onEvidenceOpen: () => void;
 };
@@ -95,7 +95,7 @@ function StoreMarker({
   prefabMode: boolean;
   detailed: boolean;
   count: number;
-  onSelect: (name: string) => void;
+  onSelect: (storeKey: string) => void;
 }) {
   const isSelected = selectedName === store.name;
   const isPrefab = prefabMode && isSelected && count === 1 && !detailed;
@@ -128,7 +128,7 @@ function StoreMarker({
                 .filter(Boolean)
                 .join(" ")
         }
-        onClick={() => onSelect(store.name)}
+        onClick={() => onSelect(store.id ?? store.name)}
       >
         {isPrefab ? (
           <>
@@ -246,6 +246,9 @@ export function MarketMapCanvas({
   const footfallLabel = market.footfall.includes("조회 중")
     ? "유동인구 불러오는 중"
     : `유동인구 ${market.footfall}`;
+  const selectedDistanceLabel = selected
+    ? `${selected.category === selectedPresentation.label ? "" : `${selected.category} · `}상권 중심에서 ${selected.distance}`
+    : "";
 
   if (isTestEnvironment())
     return <div className="map-fallback">실제 지도는 브라우저 환경에서 표시됩니다.</div>;
@@ -405,31 +408,31 @@ export function MarketMapCanvas({
                 <SelectedIcon size={18} aria-hidden="true" />
               </span>
               <div className="selected-store-heading">
-                <div>
-                  <b>{selected.name}</b>
-                  <span className={`selected-store-category-chip ${selectedPresentation.tone}`}>
-                    {selectedPresentation.label}
-                  </span>
-                  <small>
-                    {selected.category === selectedPresentation.label
-                      ? selected.distance
-                      : `${selected.category} · ${selected.distance}`}
-                  </small>
+                <div className="selected-store-heading-copy">
+                  <div className="selected-store-title-line">
+                    <b>{selected.name}</b>
+                    <span className={`selected-store-category-chip ${selectedPresentation.tone}`}>
+                      {selectedPresentation.label}
+                    </span>
+                  </div>
+                  <small className="selected-store-distance">{selectedDistanceLabel}</small>
                 </div>
-                <span
-                  className={`selected-store-score ${score === null ? "is-loading" : ""}`}
-                  title="선택 점포가 속한 상권의 입지 점수"
-                >
-                  <small>입지 점수</small>
-                  <strong>{score === null ? "계산 중" : `${score}점`}</strong>
-                </span>
+                {score !== null && (
+                  <span
+                    className="selected-store-score"
+                    title={`${market.name}에서 ${selectedPresentation.label} 업종의 입지 조건을 나타내는 공통 점수`}
+                  >
+                    <small>상권·업종 점수</small>
+                    <strong>{score}점</strong>
+                  </span>
+                )}
               </div>
               <div className="selected-store-factors">
                 <span>
                   <UsersRound size={13} aria-hidden="true" /> {footfallLabel}
                 </span>
                 <span>
-                  <Target size={13} aria-hidden="true" /> 같은 업종 {sameCategoryCount}개
+                  <Target size={13} aria-hidden="true" /> 같은 업종 {sameCategoryCount}곳
                 </span>
               </div>
               <button type="button" onClick={onEvidenceOpen}>
