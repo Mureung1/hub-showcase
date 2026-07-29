@@ -269,3 +269,103 @@ export async function deleteMeal(mealId) {
   const { error } = await supabase.from('meals').delete().eq('id', mealId)
   if (error) await throwFriendly(error)
 }
+
+// ---------------------------------------------------------------------
+// 레벨/XP/퀘스트/뱃지 (게이미피케이션 v2) — supabase/migrations/2026-07-29_gamification.sql이
+// 적용된 뒤에만 동작한다. profiles.total_xp/quest_claims/badge_unlocks 전부 upsertProfile이 다루는
+// 신체정보와 무관하게 독립적으로 읽고 쓴다 — 온보딩 전 사용자도 XP를 쌓을 수 있어야 하기 때문이다.
+// ---------------------------------------------------------------------
+
+// 프로필 행이 아직 없으면(온보딩 전, XP도 아직 없음) 0을 반환한다.
+export async function getLevelState() {
+  const userId = await getCurrentUserId()
+  if (!userId) return { totalXp: 0 }
+
+  const { data, error } = await supabase.from('profiles').select('total_xp').eq('id', userId).maybeSingle()
+  if (error) await throwFriendly(error)
+  return { totalXp: data?.total_xp ?? 0 }
+}
+
+// CSV 복원 전용 "덮어쓰기". claimQuest처럼 증분하는 게 아니라 백업에 담긴 값을 그대로 심는다 —
+// 신체정보가 없어도(profiles 행이 아직 없어도) upsert로 안전하게 생성된다(age/sex 등은 전부
+// nullable, supabase/schema.sql 참고).
+export async function saveLevelState({ totalXp }) {
+  const userId = await getCurrentUserId()
+  if (!userId) throw new Error('로그인이 필요합니다.')
+
+  const { error } = await supabase.from('profiles').upsert({ id: userId, total_xp: totalXp }, { onConflict: 'id' })
+  if (error) await throwFriendly(error)
+  return { totalXp }
+}
+
+export async function getClaimedQuestIds(dateKey) {
+  const userId = await getCurrentUserId()
+  if (!userId) return []
+
+  const { data, error } = await supabase.from('quest_claims').select('quest_id').eq('user_id', userId).eq('date', dateKey)
+  if (error) await throwFriendly(error)
+  return (data ?? []).map((row) => row.quest_id)
+}
+
+// quest_claims의 (user_id,date,quest_id) 유니크 제약이 중복 수령의 최종 방어선이다 — insert가 유니크
+// 위반(23505)이면 이미 수령한 것이므로 XP를 다시 지급하지 않고 현재 totalXp만 돌려준다. insert가
+// 성공했을 때만 increment_total_xp RPC(원자적 증가)를 호출한다.
+export async function claimQuest(dateKey, questId, xpAwarded) {
+  const userId = await getCurrentUserId()
+  if (!userId) throw new Error('로그인이 필요합니다.')
+
+  const { error: insertError } = await supabase
+    .from('quest_claims')
+    .insert({ user_id: userId, date: dateKey, quest_id: questId, xp_awarded: xpAwarded })
+  if (insertError) {
+    if (insertError.code === '23505') {
+      const { totalXp } = await getLevelState()
+      return { alreadyClaimed: true, totalXp }
+    }
+    await throwFriendly(insertError)
+  }
+
+  const { data, error: rpcError } = await supabase.rpc('increment_total_xp', { p_delta: xpAwarded })
+  if (rpcError) await throwFriendly(rpcError)
+  return { alreadyClaimed: false, totalXp: Number(data) }
+}
+
+// quest_claims 전체를 quest_id만 select해 클라이언트에서 집계한다(getAllMeals와 같은 방식 — 유저당
+// "퀘스트 수 x 기록한 날 수" 정도라 서버 집계 쿼리 없이도 부담이 적다).
+export async function getQuestClaimStats() {
+  const userId = await getCurrentUserId()
+  if (!userId) return { totalCount: 0, countsByQuestId: {} }
+
+  const { data, error } = await supabase.from('quest_claims').select('quest_id').eq('user_id', userId)
+  if (error) await throwFriendly(error)
+
+  const countsByQuestId = {}
+  for (const row of data ?? []) {
+    countsByQuestId[row.quest_id] = (countsByQuestId[row.quest_id] ?? 0) + 1
+  }
+  return { totalCount: (data ?? []).length, countsByQuestId }
+}
+
+export async function getUnlockedBadgeIds() {
+  const userId = await getCurrentUserId()
+  if (!userId) return []
+
+  const { data, error } = await supabase.from('badge_unlocks').select('badge_id').eq('user_id', userId)
+  if (error) await throwFriendly(error)
+  return (data ?? []).map((row) => row.badge_id)
+}
+
+// badge_unlocks의 (user_id,badge_id) 유니크 제약이 중복 잠금해제의 최종 방어선이다.
+export async function unlockBadge(badgeId) {
+  const userId = await getCurrentUserId()
+  if (!userId) throw new Error('로그인이 필요합니다.')
+
+  const { error } = await supabase.from('badge_unlocks').insert({ user_id: userId, badge_id: badgeId })
+  if (error) {
+    if (error.code === '23505') {
+      return { alreadyUnlocked: true, unlockedIds: await getUnlockedBadgeIds() }
+    }
+    await throwFriendly(error)
+  }
+  return { alreadyUnlocked: false, unlockedIds: await getUnlockedBadgeIds() }
+}

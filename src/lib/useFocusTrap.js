@@ -11,6 +11,16 @@ const FOCUSABLE_SELECTOR =
 export function useFocusTrap(active, onEscape) {
   const containerRef = useRef(null)
   const previouslyFocusedRef = useRef(null)
+  // onEscape가 호출부에서 매 렌더 새 함수로 넘어와도(예: 인라인 화살표) 아래 트랩 설정 effect가
+  // 그 참조 변화만으로 재실행되지 않도록 ref에 최신값만 담아둔다. 안정성 점검 — 예전엔 onEscape가
+  // 아래 effect의 의존성에 직접 있어서, 컨트롤드 input을 가진 모달(ChatBotSheet)에서 타이핑할
+  // 때마다(리렌더 -> onEscape 참조 변경) 트랩이 매번 재설정되며 강제 blur/focus를 일으켰고, 그
+  // blur가 한글 IME 조합을 중간에 커밋시켜 종성이 분리되는 버그(예: "안녕"->"아ㄴ녀ㅇ")로 이어졌다.
+  const onEscapeRef = useRef(onEscape)
+
+  useEffect(() => {
+    onEscapeRef.current = onEscape
+  })
 
   useEffect(() => {
     if (!active) return undefined
@@ -25,7 +35,7 @@ export function useFocusTrap(active, onEscape) {
 
     function handleKeyDown(e) {
       if (e.key === 'Escape') {
-        onEscape?.()
+        onEscapeRef.current?.()
         return
       }
       if (e.key !== 'Tab') return
@@ -47,7 +57,7 @@ export function useFocusTrap(active, onEscape) {
       container.removeEventListener('keydown', handleKeyDown)
       previouslyFocusedRef.current?.focus?.()
     }
-  }, [active, onEscape])
+  }, [active])
 
   return containerRef
 }

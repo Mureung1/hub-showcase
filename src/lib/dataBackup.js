@@ -14,6 +14,7 @@
 // 쓰지 않으므로, 사용자가 다이얼로그를 취소해도 기존 데이터는 그대로다.
 import {
   BACKUP_FORMAT,
+  buildLevelRow,
   buildMealRows,
   buildProfileRows,
   MEAL_COLUMNS,
@@ -34,9 +35,13 @@ export { BACKUP_FORMAT, EXPECTED_FORMAT_EXAMPLE } from './backupFormat.js'
 // 있으면 { hasProfile, mealDayCount, itemCount, save }를 반환한다 — save는 fileExport.saveTextFile의
 // 결과(플랫폼별 완료 문구 + 네이티브 공유 함수)를 그대로 담고 있다.
 export async function exportBackupCSV() {
-  const [profileData, mealsByDate] = await Promise.all([dataStore.getProfile(), dataStore.getAllMealsByDate()])
+  const [profileData, mealsByDate, levelState] = await Promise.all([
+    dataStore.getProfile(),
+    dataStore.getAllMealsByDate(),
+    dataStore.getLevelState(),
+  ])
 
-  const profileRows = buildProfileRows(profileData?.profile)
+  const profileRows = [...buildProfileRows(profileData?.profile), ...buildLevelRow(levelState.totalXp)]
   const mealRows = buildMealRows(mealsByDate)
   if (profileRows.length === 0 && mealRows.length === 0) return null
 
@@ -69,9 +74,9 @@ export async function exportBackupCSV() {
 // 반환: { format, profile, mealsByDate, dates, duplicateDates, importedRows, failedRows }
 export async function parseBackupCSV(file) {
   const parsed = parseBackupText(await file.text())
-  const { profile, mealsByDate, importedRows, failedRows } = parsed
+  const { profile, totalXp, mealsByDate, importedRows, failedRows } = parsed
 
-  if (!profile && Object.keys(mealsByDate).length === 0) {
+  if (!profile && !totalXp && Object.keys(mealsByDate).length === 0) {
     throw new Error(
       importedRows + failedRows > 0
         ? '가져올 수 있는 행이 없습니다. 파일 내용을 확인해주세요.'
@@ -93,7 +98,7 @@ export async function parseBackupCSV(file) {
 // 실패 시 이미 쓴 부분을 쓰기 전 값으로 되돌린 뒤 던진다 — 절반만 반영된 채로 남지 않게 한다.
 // 반환: { profileRestored, mealDayCount, skippedDateCount, importedRows, failedRows }
 export async function applyBackup(parsed, { duplicateStrategy = 'overwrite' } = {}) {
-  const { profile, mealsByDate, duplicateDates } = parsed
+  const { profile, totalXp, mealsByDate, duplicateDates } = parsed
   const skipped = duplicateStrategy === 'skip' ? new Set(duplicateDates) : new Set()
   const targetDates = parsed.dates.filter((date) => !skipped.has(date))
 
@@ -101,6 +106,11 @@ export async function applyBackup(parsed, { duplicateStrategy = 'overwrite' } = 
   // 무심코 가져왔을 때 현재 프로필이 조용히 사라진다(guestMigration.js의 프로필 충돌 정책과 동일).
   const existingProfile = await dataStore.getProfile()
   const shouldWriteProfile = Boolean(profile) && !existingProfile?.profile
+
+  // 레벨(총 XP)은 신체정보와 달리 "더 큰 값이 곧 더 진행된 상태"이므로, 현재 값보다 클 때만 반영한다
+  // (다른 기기의 옛 백업을 잘못 가져와도 지금까지 쌓은 레벨이 갑자기 낮아지지 않도록).
+  const existingLevel = await dataStore.getLevelState()
+  const shouldWriteLevel = totalXp > existingLevel.totalXp
 
   // 쓰기 전 스냅샷 — 중간 실패 시 되돌리기 위해서다. 대상 날짜만 담으면 되므로 전체 조회 결과에서
   // 해당 날짜만 추린다(그 날짜에 기록이 없었으면 빈 배열 = "원래 비어 있었음").
@@ -111,6 +121,9 @@ export async function applyBackup(parsed, { duplicateStrategy = 'overwrite' } = 
   try {
     if (shouldWriteProfile) {
       await dataStore.saveProfile({ profile, recommended: calcRecommendedNutrients(profile) })
+    }
+    if (shouldWriteLevel) {
+      await dataStore.saveLevelState({ totalXp })
     }
     // 날짜 수와 무관하게 왕복 2회로 끝난다(delete 1회 + insert 1회) — 수용 기준의 "1,000행 3초 이내"는
     // 날짜마다 왕복하면 맞출 수 없다.
@@ -138,6 +151,7 @@ export async function applyBackup(parsed, { duplicateStrategy = 'overwrite' } = 
     profileSkipped: Boolean(profile) && !shouldWriteProfile,
     // 평면 형식(달력 탭)에는 신체정보가 아예 없다 — "덮어쓰지 않았다"와는 다른 상태라 구분해 알린다.
     profileAbsent: parsed.format === BACKUP_FORMAT.FLAT,
+    levelRestored: shouldWriteLevel,
     mealDayCount: written.length,
     skippedDateCount: skipped.size,
     importedRows,

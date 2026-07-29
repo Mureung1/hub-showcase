@@ -104,6 +104,12 @@ export function buildProfileRows(profile) {
   ]
 }
 
+// 게이미피케이션 v2(레벨/XP) — [profile] 섹션의 범용 key-value 구조에 행 하나만 얹는다. 0이면 굳이
+// CSV에 남기지 않아, 레벨 필드가 없던 옛 백업 파일과 형태가 같아진다(노이즈 최소화).
+export function buildLevelRow(totalXp) {
+  return totalXp > 0 ? [['totalXp', totalXp]] : []
+}
+
 export function buildMealRows(mealsByDate) {
   const rows = []
   for (const date of Object.keys(mealsByDate).sort()) {
@@ -128,17 +134,24 @@ export function buildMealRows(mealsByDate) {
 
 // ── 가져오기 1단계: 파싱 (아무 것도 쓰지 않는다) ─────────────────────────────
 
-// rows: [profile] 마커 다음 줄부터 [meals] 마커 전까지. 반환 { profile, failedRows }.
+// map.totalXp -> 음수/비숫자/누락은 전부 0(레벨 데이터 없는 옛 백업과 동일하게 취급).
+function parseTotalXp(raw) {
+  const n = Number(raw)
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0
+}
+
+// rows: [profile] 마커 다음 줄부터 [meals] 마커 전까지. 반환 { profile, totalXp, failedRows }.
 // 프로필 구간이 통째로 깨져 있어도 파일 전체를 막지 않고 "프로필만 못 읽음"으로 처리한다 — 식단
 // 기록이라도 살려서 가져오는 편이 사용자에게 이득이기 때문이다(행 단위 실패 정책과 같은 취지).
+// totalXp(게이미피케이션 v2)는 신체정보와 무관한 값이라, 프로필 자체가 무효해도 독립적으로 복구한다.
 function parseProfileSection(rows) {
-  if (rows.length === 0) return { profile: null, failedRows: 0 }
+  if (rows.length === 0) return { profile: null, totalXp: 0, failedRows: 0 }
 
   const [header, ...dataRows] = rows
   if (header.length !== 2 || header[0] !== PROFILE_COLUMNS[0] || header[1] !== PROFILE_COLUMNS[1]) {
     throw formatError()
   }
-  if (dataRows.length === 0) return { profile: null, failedRows: 0 }
+  if (dataRows.length === 0) return { profile: null, totalXp: 0, failedRows: 0 }
 
   const map = {}
   let failedRows = 0
@@ -150,6 +163,8 @@ function parseProfileSection(rows) {
     map[row[0]] = row[1]
   }
 
+  const totalXp = parseTotalXp(map.totalXp)
+
   const age = Number(map.age)
   const heightCm = Number(map.heightCm)
   const weightKg = Number(map.weightKg)
@@ -159,7 +174,7 @@ function parseProfileSection(rows) {
     SEX_VALUES.includes(map.sex) &&
     ACTIVITY_VALUES.includes(map.activity)
 
-  if (!valid) return { profile: null, failedRows: failedRows + dataRows.length }
+  if (!valid) return { profile: null, totalXp, failedRows: failedRows + dataRows.length }
 
   return {
     profile: {
@@ -171,6 +186,7 @@ function parseProfileSection(rows) {
       conditions: map.conditions ? map.conditions.split(';').filter(Boolean) : [],
       allergies: map.allergies ? map.allergies.split(';').filter(Boolean) : [],
     },
+    totalXp,
     failedRows,
   }
 }
@@ -348,13 +364,14 @@ export function parseBackupText(text) {
   const profileMarkerIdx = allRows.findIndex((r) => r.length === 1 && r[0].trim() === '[profile]')
   const mealsMarkerIdx = allRows.findIndex((r) => r.length === 1 && r[0].trim() === '[meals]')
   if (profileMarkerIdx !== -1 && mealsMarkerIdx !== -1 && mealsMarkerIdx > profileMarkerIdx) {
-    const { profile, failedRows: profileFailed } = parseProfileSection(
+    const { profile, totalXp, failedRows: profileFailed } = parseProfileSection(
       allRows.slice(profileMarkerIdx + 1, mealsMarkerIdx),
     )
     const { mealsByDate, importedRows, failedRows: mealFailed } = parseMealsSection(allRows.slice(mealsMarkerIdx + 1))
     return {
       format: BACKUP_FORMAT.SECTIONED,
       profile,
+      totalXp,
       mealsByDate,
       importedRows,
       failedRows: profileFailed + mealFailed,
@@ -365,8 +382,8 @@ export function parseBackupText(text) {
   const flatHeaderIdx = allRows.findIndex(isFlatHeader)
   if (flatHeaderIdx !== -1) {
     const { mealsByDate, importedRows, failedRows } = parseFlatRows(allRows.slice(flatHeaderIdx))
-    // 이 형식에는 신체정보가 없다 — profile: null이 정상이며 에러가 아니다.
-    return { format: BACKUP_FORMAT.FLAT, profile: null, mealsByDate, importedRows, failedRows }
+    // 이 형식에는 신체정보도 레벨 데이터도 없다 — profile: null, totalXp: 0이 정상이며 에러가 아니다.
+    return { format: BACKUP_FORMAT.FLAT, profile: null, totalXp: 0, mealsByDate, importedRows, failedRows }
   }
 
   // (c) 둘 다 아니면 이 앱이 만든 파일이 아니다.
