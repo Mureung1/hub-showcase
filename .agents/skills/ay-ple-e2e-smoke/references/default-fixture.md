@@ -1,22 +1,67 @@
-# Default AY-PLE Fixture Smoke
+# Default AY-PLE Dogfood Smoke
 
 Use this scenario for the repository's representative product smoke.
 
-## Target
+## Development roots
 
-Resolve this sibling fixture from the AY-PLE hub:
+Resolve these sibling paths from the AY-PLE hub:
 
 ```text
-../workspace/year-2-semester-1
+immutable seed:                    ../fixtures/year-2-semester-1
+generated, observable dogfood SemesterWorkspace:
+                                   ../workspace/year-2-semester-1
+built-in Product Skill catalog:    skills
 ```
 
-Do not recreate, bootstrap, clean, or commit it during the smoke.
+The seed is synthetic and non-personal. Never mutate it during a smoke. The
+generated target is replaceable only through the start-time reconcile contract
+below; retain it after the run so the user can inspect and reopen the actual
+dogfood result.
 
-The workspace is prepared from the synthetic, non-personal source fixture at
-`../fixtures/year-2-semester-1`. The source files intentionally cover known,
-unknown, superseded, and low-confidence academic facts. Judge proposals
-semantically against the contracts below rather than requiring a fixed
-SemesterModel serialization.
+Use this semester identity:
+
+```text
+year-level:        2
+term-key:          first-semester
+term-display-name: 1학기
+```
+
+## Start-time reconcile
+
+Run from the hub with all paths canonical and absolute:
+
+```bash
+node --import tsx \
+  .agents/skills/ay-ple-e2e-smoke/scripts/reconcile-dogfood-workspace.mts \
+  inspect \
+  --fixture-root "<canonical absolute ../fixtures/year-2-semester-1>" \
+  --workspace-root "<canonical absolute ../workspace/year-2-semester-1>" \
+  --built-in-skill-catalog-root "<canonical absolute skills>" \
+  --year-level 2 \
+  --term-key first-semester \
+  --term-display-name "1학기"
+```
+
+Interpret the result:
+
+| Classification | Meaning | Action |
+| --- | --- | --- |
+| `ready` | Exact generated Git root, clean status, empty baseline snapshot, current seed materials, current Product Skill catalog, and expected scaffold | Reuse it. |
+| `reseedable` | Missing target, an interrupted raw seed copy, a clean prior applied snapshot, or clean seed/catalog drift | Stop only a matching AY-PLE process, run `reseed`, then follow `$semester-workspace-init` with every returned `baselinePaths` entry. Inspect again and require `ready`. |
+| `conflict` | Dirty or untracked state, foreign or unrecognized Git history, unexpected committed paths, managed scaffold drift, or workspace identity mismatch | Fail closed and preserve every byte. |
+
+For `reseed`, repeat the same arguments, replace `inspect` with `reseed`, and
+append:
+
+```text
+--confirm-replace "<canonical absolute ../workspace/year-2-semester-1>"
+```
+
+The helper copies only regular seed files. It deliberately leaves the target
+unprepared; `$semester-workspace-init` remains the owner of Git, identity,
+Product Skills, Interaction MCP config, and checkpoints. This is a Codex
+development harness for one known generated target, not a refresh or migration
+mechanism for user SemesterWorkspaces.
 
 ## Browser shell and Chat
 
@@ -51,10 +96,11 @@ final-exam facts into the current SemesterModel snapshot:
 - The final is on `2026-06-16` from `10:30` through `11:20` in room `B201`.
 - The final covers weeks 9 through 14.
 
-The fixture does not state course grading weights. A proposal must not infer
-them. Judge the Review against the source contents and existing
+The seed does not state course grading weights. A proposal must not infer them.
+Judge the Review against the source contents and existing
 `workspace-state.json`; do not prescribe an exact serialization shape.
 
-In the default `review-only` run, reject the proposal. PASS requires that the
-Review resolves, the App remains usable, and the original
-`workspace-state.json`, `HEAD`, and complete Git status are preserved.
+Accept the Review. PASS requires that AY applies only the reviewed snapshot
+facts, preserves the envelope and source bytes, creates a meaningful clean Git
+checkpoint, and leaves AY-PLE usable. Retain the workspace, App process, and
+Browser tab after the run; the next smoke reconciles them at its start.
