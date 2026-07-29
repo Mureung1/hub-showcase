@@ -4,6 +4,7 @@
   "summary": "나중에 볼 URL, 텍스트, 이미지를 저장하면 Gemini가 내용을 분석해 한국어 제목과 요약, 카테고리를 만들어주는 콘텐츠 보관 서비스입니다.",
   "githubUser": "jennienn(김예진)",
   "demoUrl": "https://later-theta-fawn.vercel.app",
+  "demoVideoUrl": "https://youtu.be/Gy70h9Bd3eM",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
