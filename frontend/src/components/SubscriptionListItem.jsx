@@ -10,13 +10,13 @@ const SubscriptionListItem = ({ subscription }) => {
     <Link to={`/subscriptions/${id}`} className="subscription-list-item">
       <span className="subscription-dot" style={{ backgroundColor: getServiceColor(serviceName) }} />
       <div className="subscription-info">
-        <p className="subscription-name">{serviceName}</p>
+        <p className="subscription-name">
+          <span className="subscription-name-text">{serviceName}</span>
+          <RoleBadge role={role} />
+        </p>
         <p className="subscription-meta">매달 {billingDay}일 · {memberCount === 1 ? '개인' : `${memberCount}인 공유`}</p>
       </div>
-      <div className="subscription-summary">
-        <p className="subscription-amount">{myAmount.toLocaleString()}원</p>
-        <RoleBadge role={role} />
-      </div>
+      <p className="subscription-amount">{myAmount.toLocaleString()}원</p>
     </Link>
   )
 }
