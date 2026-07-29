@@ -4,6 +4,7 @@
   "summary": "CS 실습생을 위한 Unix/Git 명령어 사전 웹앱입니다.",
   "githubUser": "ParkSeong-min",
   "demoUrl": "https://c-dict.vercel.app",
+  "demoVideoUrl" : "https://drive.google.com/file/d/1oeWlIk5HfCXvdG8A6K_mB5vbXs7oWWo8/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp"
