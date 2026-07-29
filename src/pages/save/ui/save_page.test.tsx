@@ -218,6 +218,41 @@ describe('SavePage', () => {
     expect(onContextSkip).toHaveBeenCalledOnce();
   });
 
+  it('선택 정보를 저장하는 동안 입력을 변경하지 못하게 한다', () => {
+    render(
+      <DesignSystemProvider>
+        <SavePage
+          {...createContextProps()}
+          isContextSaving
+          onSave={vi.fn()}
+          onUrlChange={vi.fn()}
+          saveComplete
+          saveTitle=""
+          saveUrl="https://example.com/article"
+        />
+      </DesignSystemProvider>
+    );
+
+    expect(
+      (screen.getByRole('textbox', { name: '제목 (선택)' }) as HTMLInputElement)
+        .disabled
+    ).toBe(true);
+    expect(
+      (
+        screen.getByRole('textbox', {
+          name: '한 줄 메모 (선택)',
+        }) as HTMLTextAreaElement
+      ).disabled
+    ).toBe(true);
+    expect(
+      screen
+        .getByRole('combobox', {
+          name: '카테고리 (선택)',
+        })
+        .getAttribute('aria-disabled')
+    ).toBe('true');
+  });
+
   it('lets the app validation handle malformed URLs', () => {
     const { container } = render(
       <DesignSystemProvider>
