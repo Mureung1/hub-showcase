@@ -129,7 +129,7 @@ export default function ReaderDetail({ url }) {
     setPendingDecision(decision)
   }
 
-  async function handleCloseSheet(memo) {
+  async function handleSaveDecision(memo) {
     // decisions는 로그인 사용자별 데이터라 비로그인 상태에서는 저장을
     // 건너뛴다(llmService.js의 saveTermsToVocabulary와 동일한 패턴) — 저장
     // 실패를 setError로 올리면 방금 다 읽은 리더뷰가 에러 화면으로 덮인다.
@@ -163,6 +163,14 @@ export default function ReaderDetail({ url }) {
         })
     }
 
+    setPendingDecision(null)
+  }
+
+  // 저장 없이 바텀시트만 닫는다. 판단버튼 영역 도달 여부(hasReachedEndRef)는
+  // IntersectionObserver가 이미 별도로 추적하고 있으므로, 언마운트 시
+  // "판단 없는 완독"으로 자연스럽게 기록된다(handleSaveDecision과 달리 여기서
+  // readLoggedRef/logArticleRead를 직접 건드리지 않는다).
+  function handleDismissSheet() {
     setPendingDecision(null)
   }
 
@@ -201,7 +209,8 @@ export default function ReaderDetail({ url }) {
           decision={pendingDecision}
           marketSentiment={slowAnalysis?.marketSentiment}
           insight={slowAnalysis?.insight}
-          onClose={handleCloseSheet}
+          onSave={handleSaveDecision}
+          onDismiss={handleDismissSheet}
         />
       )}
 

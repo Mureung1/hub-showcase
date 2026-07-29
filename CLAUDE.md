@@ -29,7 +29,8 @@
    않음(블라인드 처리, state엔 보관).
 3. **투자심리 인터랙션 + 바텀시트** — 기사 최하단 정적 배치(sticky 아님)
    버튼 클릭 → 바텀시트에서 "나의 선택 vs marketSentiment" 비교 + `insight`
-   공개. 바텀시트 닫는 시점에 `POST /api/decisions` 저장.
+   공개. "인사이트 노트에 저장" 버튼을 눌러야 `POST /api/decisions` 저장(우측
+   상단 닫기 버튼/오버레이 클릭은 저장 없이 그냥 닫힘, 2026-07-29 변경).
 4. **데일리 단어장(플래시카드 복습 모드)** — 기사 분석 시 핵심 용어 3~5개를
    탭 여부와 무관하게 자동 적재, 최신순 정렬. 카드 앞면 = 단어+뜻, 탭하면
    뒤집혀 뒷면에 원문 발췌 문장(`excerpt`)과 그 한국어 번역
@@ -49,13 +50,15 @@
 | 사이드바 | `components/Sidebar.jsx` | Primary 버튼 + Menu 단일 그룹(대시보드·리더뷰·인사이트 노트·단어장), 카운트 뱃지 |
 | 대시보드 | `pages/Dashboard.jsx` | 오늘의 핵심 외신 3개 카드(풀사이즈, 탐색용) |
 | 리더뷰 | `pages/Reader.jsx` + `components/ReaderDetail.jsx` | 마스터(30%, 오늘의 핵심 외신 3개 압축 리스트) + 상세(70%, 문장 아코디언 번역·AI 요약·판단 버튼). `< 뒤로가기` 제거(마스터 리스트로 대체) |
-| 바텀시트 | `components/BottomSheet.jsx` | 판단 vs marketSentiment 비교 + insight 공개, 닫으면 저장 |
+| 바텀시트 | `components/BottomSheet.jsx` | 판단 vs marketSentiment 비교 + insight 공개, "인사이트 노트에 저장" 버튼으로만 저장(우측 상단 닫기/오버레이 클릭은 저장 없이 닫힘) |
 | 인사이트 노트 | `pages/InsightNote.jsx` | 히스토리 카드(기본: 판단 vs marketSentiment) + "AI 관점 해설 보기" 아코디언 |
 | 단어장 | `pages/Vocabulary.jsx` | 자동 적재된 용어 최신순, 플래시카드(탭하면 뒤집혀 원문 발췌 노출) |
 
 React 구현 메모:
 - 문장 번역/AI 요약 → 네이티브 `<details><summary>`
-- 판단 버튼 클릭은 트리거일 뿐, 실제 저장은 바텀시트 닫기(`handleCloseSheet`)에서
+- 판단 버튼 클릭은 트리거일 뿐, 실제 저장은 바텀시트의 "인사이트 노트에
+  저장" 버튼(`ReaderDetail.jsx`의 `handleSaveDecision`)에서. 우측 상단 닫기
+  버튼/오버레이 클릭(`handleDismissSheet`)은 저장 없이 그냥 닫힘
 - 블라인드 처리 → `analysis`는 state에 항상 보관, `{pendingDecision && <BottomSheet/>}`로만 조건부 렌더링
 - `marketSentiment` 라벨/톤 매핑은 `constants/sentiment.js`의 `SENTIMENT_META`로 공용화
 
@@ -172,16 +175,19 @@ hub/
   `requireAuth`가 401로 막음). `appendVocabulary`도 `userId` 없이는 호출하지
   않는다(`llmService.js`가 비로그인 시 저장 자체를 건너뜀). 프론트도 비로그인
   사용자를 위해 `Vocabulary.jsx`/`InsightNote.jsx`는 로그인 안내로 대체
-  렌더링하고, `Reader.jsx`의 `handleCloseSheet`는 비로그인 시 `saveDecision`
-  호출 자체를 건너뛴다(401로 리더뷰 전체가 에러 화면이 되는 것 방지).
+  렌더링하고, `ReaderDetail.jsx`의 `handleSaveDecision`은 비로그인 시
+  `saveDecision` 호출 자체를 건너뛴다(401로 리더뷰 전체가 에러 화면이 되는
+  것 방지).
 - **parse/analyze 분리 유지**: 합치면 스크래핑+LLM 지연 합산으로 타임아웃 위험.
   프론트는 parse 성공 후에만 analyze 호출.
 - **MOCK_LLM=true**: Claude 미호출, 더미 응답. 파라미터에 `FAIL_TEST` 포함 시
   의도적 실패 트리거(에러 UI 테스트용).
 - **state 보관 ≠ 화면 렌더링**: 블라인드 처리처럼, 받은 데이터를 state엔
   항상 두되 조건부 렌더링으로만 노출을 제어할 수 있다.
-- **저장 시점 = 확정 행동**: 클릭 즉시가 아니라 되돌릴 수 없이 확정되는
-  순간(예: 바텀시트 닫기)에 서버 저장 호출.
+- **저장 시점 = 명시적 확정 행동**: 클릭 즉시(판단 버튼)가 아니라 사용자가
+  명시적으로 확정하는 순간(예: 바텀시트의 "인사이트 노트에 저장" 버튼)에만
+  서버 저장 호출. 바텀시트를 닫는 것 자체는 더 이상 저장을 의미하지 않는다
+  (2026-07-29 변경 — 우측 상단 닫기/오버레이 클릭은 저장 없이 취소).
 - **공유 매핑 로직은 `constants/`로**: 여러 컴포넌트가 쓰는 로직(예:
   `sentiment.js`)은 중복 정의하지 않고 공용 모듈로 뺀다.
 - **대체된 컴포넌트는 즉시 삭제**: 죽은 코드 방지(예: `AiInsight.jsx`는

@@ -543,6 +543,7 @@ h2 {
 }
 
 .bottom-sheet {
+  position: relative;
   width: 100%;
   max-width: 720px;
   max-height: 55vh;
@@ -551,6 +552,30 @@ h2 {
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: var(--space-xl) var(--space-lg);
   animation: bottom-sheet-slide-up 0.2s ease;
+}
+
+.bottom-sheet-dismiss {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.bottom-sheet-dismiss:hover,
+.bottom-sheet-dismiss:focus-visible {
+  background: var(--surface-bg);
+  color: var(--text-primary);
 }
 
 .bottom-sheet-compare {
@@ -637,7 +662,7 @@ h2 {
   resize: vertical;
 }
 
-.bottom-sheet-close {
+.bottom-sheet-save {
   display: block;
   width: 100%;
   background: var(--brand-navy);
