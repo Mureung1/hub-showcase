@@ -535,16 +535,39 @@ DERIVED_TABLES: tuple[str, ...] = (
 )
 """파생이 행을 더하는 표. `analysis_claims` 는 늘리지 않는다."""
 
-OUTPUTS_PER_JOB = 37
-"""직무당 `analysis_outputs` 행 수. statistics 1 · interpretation 12 · strategy 12 · roadmap 12."""
+EXPECTED_POSTING_OUTPUT_COUNT = 9
+"""15건 구성에서 요구하는 recent 공고 해석 수."""
 
-OUTPUTS_PER_JOB_BY_TYPE: dict[str, int] = {
-    "statistics": 1,
-    "interpretation": 12,
-    "strategy": 12,
-    "roadmap": 12,
-}
-"""직무당 산출물 종류별 행 수. 파생 뒤 자기검사가 이 표와 맞춘다."""
+
+def expected_output_counts(posting_count: int) -> dict[str, int]:
+    """recent 공고 수에서 직무별 산출물 종류별 계약 행 수를 계산한다.
+
+    직무 조각은 overall 1행·기업군 6행을 공통으로 만들고, recent 공고마다
+    interpretation 1행을 만든다. 합치기는 같은 공고마다 strategy·roadmap 1행씩을
+    파생하므로 세 종류의 행 수가 모두 ``7 + posting_count`` 다.
+    """
+    scoped = 7 + posting_count
+    return {
+        "statistics": 1,
+        "interpretation": scoped,
+        "strategy": scoped,
+        "roadmap": scoped,
+    }
+
+
+def expected_output_total(posting_count: int) -> int:
+    """recent 공고 수에 대응하는 직무별 `analysis_outputs` 전체 행 수."""
+    return sum(expected_output_counts(posting_count).values())
+
+
+def posting_count_problem(job: str, posting_count: int) -> str | None:
+    """직무별 recent 공고 범위가 최종 목표와 다르면 실패 사유를 낸다."""
+    if posting_count == EXPECTED_POSTING_OUTPUT_COUNT:
+        return None
+    return (
+        f"{job}: posting 범위 interpretation 이 {posting_count}행이다 "
+        f"(기대값 {EXPECTED_POSTING_OUTPUT_COUNT})"
+    )
 
 _STEP_LABEL = re.compile(r"STEP\s*0*(\d+)")
 """`STEP 01 · 3주` 처럼 단계 번호를 품은 라벨에서 번호를 집는 무늬."""
@@ -933,16 +956,26 @@ def check_posting_scopes(
     for job in jobs:
         tables = parts[job]
         outputs = list(tables.get("analysis_outputs", ()))
+        posting_count = sum(
+            1
+            for row in outputs
+            if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+        )
+        count_problem = posting_count_problem(job, posting_count)
+        if count_problem:
+            problems.append(count_problem)
+        expected_counts = expected_output_counts(posting_count)
+        expected_total = expected_output_total(posting_count)
 
         # 1. 직무당 행 수
-        if len(outputs) != OUTPUTS_PER_JOB:
+        if len(outputs) != expected_total:
             problems.append(
-                f"{job}: analysis_outputs 가 {len(outputs)}행이다 ({OUTPUTS_PER_JOB}행이어야 한다)"
+                f"{job}: analysis_outputs 가 {len(outputs)}행이다 ({expected_total}행이어야 한다)"
             )
         counted: dict[str, int] = defaultdict(int)
         for row in outputs:
             counted[str(row["output_type"])] += 1
-        for output_type, expected in OUTPUTS_PER_JOB_BY_TYPE.items():
+        for output_type, expected in expected_counts.items():
             if counted.get(output_type, 0) != expected:
                 problems.append(
                     f"{job}: {output_type} 가 {counted.get(output_type, 0)}행이다 ({expected}행이어야 한다)"
@@ -1027,9 +1060,19 @@ def check_posting_scopes(
                 seen_keys.add(key)
 
     total = sum(len(parts[job].get("analysis_outputs", ())) for job in jobs)
-    if jobs and total != OUTPUTS_PER_JOB * len(jobs):
+    expected_grand_total = sum(
+        expected_output_total(
+            sum(
+                1
+                for row in parts[job].get("analysis_outputs", ())
+                if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+            )
+        )
+        for job in jobs
+    )
+    if jobs and total != expected_grand_total:
         problems.append(
-            f"analysis_outputs 전체가 {total}행이다 ({OUTPUTS_PER_JOB * len(jobs)}행이어야 한다)"
+            f"analysis_outputs 전체가 {total}행이다 ({expected_grand_total}행이어야 한다)"
         )
     return problems
 

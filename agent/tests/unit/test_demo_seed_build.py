@@ -851,11 +851,37 @@ def test_derive_posting_scopes_does_not_add_analysis_claims() -> None:
 
 
 def test_check_posting_scopes_catches_a_wrong_output_count() -> None:
-    """직무당 37행이 아니면 사유를 밝힌다."""
+    """허용된 5건·9건 전환 규모가 아니면 사유를 밝힌다."""
     parts = {"demo": _demo_part()}
     build_seed.derive_posting_scopes(parts, ["demo"])
     problems = build_seed.check_posting_scopes(parts, ["demo"])
     assert any("analysis_outputs 가 6행이다" in line for line in problems)
+
+
+def test_output_counts_follow_the_posting_scope_formula() -> None:
+    """공고 범위 수에서 직무별 산출물 수를 결정적으로 계산한다."""
+    assert build_seed.expected_output_counts(5) == {
+        "statistics": 1,
+        "interpretation": 12,
+        "strategy": 12,
+        "roadmap": 12,
+    }
+    assert build_seed.expected_output_counts(9) == {
+        "statistics": 1,
+        "interpretation": 16,
+        "strategy": 16,
+        "roadmap": 16,
+    }
+    assert build_seed.expected_output_total(5) == 37
+    assert build_seed.expected_output_total(9) == 49
+
+
+def test_final_gate_accepts_only_nine_posting_outputs() -> None:
+    """전환이 끝난 뒤에는 recent 9건 산출물만 허용한다."""
+    assert build_seed.posting_count_problem("demo", 9) is None
+    assert build_seed.posting_count_problem("demo", 5) == (
+        "demo: posting 범위 interpretation 이 5행이다 (기대값 9)"
+    )
 
 
 def test_check_posting_scopes_catches_a_mismatched_check_row_set() -> None:
@@ -919,25 +945,24 @@ def test_check_posting_scopes_catches_two_identical_payloads_in_one_cluster() ->
     reason="아직 build_demo_seed.py 를 돌리지 않았다",
 )
 def test_built_analysis_outputs_carry_posting_scoped_strategy_and_roadmap() -> None:
-    """만들어 둔 CSV 가 직무당 37행 · 전체 333행이고 공고마다 전략·로드맵이 있다."""
+    """전환 중인 실제 CSV 가 직무별 5건·9건 규모와 공고 산출물을 정확히 맞춘다."""
     csv.field_size_limit(1 << 30)
     path = AGENT_ROOT / "data" / "demo_seed" / "analysis_outputs.csv"
     with path.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
-    assert len(rows) == build_seed.OUTPUTS_PER_JOB * len(build_seed.JOB_PARTS) == 333
-
     for job in build_seed.JOB_PARTS:
         mine = [row for row in rows if row["job_role_id"] == job]
-        assert len(mine) == build_seed.OUTPUTS_PER_JOB
-        counted = {
-            output_type: len([row for row in mine if row["output_type"] == output_type])
-            for output_type in build_seed.OUTPUTS_PER_JOB_BY_TYPE
-        }
-        assert counted == build_seed.OUTPUTS_PER_JOB_BY_TYPE
-
         postings = {row["scope_id"] for row in mine
                     if row["output_type"] == "interpretation" and row["scope_level"] == "posting"}
-        assert len(postings) == 5
+        assert len(postings) == build_seed.EXPECTED_POSTING_OUTPUT_COUNT
+        expected = build_seed.expected_output_counts(len(postings))
+        assert len(mine) == build_seed.expected_output_total(len(postings))
+        counted = {
+            output_type: len([row for row in mine if row["output_type"] == output_type])
+            for output_type in expected
+        }
+        assert counted == expected
+
         for posting_id in postings:
             strategy = json.loads(
                 next(row["payload"] for row in mine
@@ -953,6 +978,17 @@ def test_built_analysis_outputs_carry_posting_scoped_strategy_and_roadmap() -> N
                 row["item_id"] for row in roadmap["check_rows"]
             }
             assert any(item["is_deviation"] for item in strategy["checklist"])
+
+    expected_total = sum(
+        build_seed.expected_output_total(
+            len({row["scope_id"] for row in rows
+                 if row["job_role_id"] == job
+                 and row["output_type"] == "interpretation"
+                 and row["scope_level"] == "posting"})
+        )
+        for job in build_seed.JOB_PARTS
+    )
+    assert len(rows) == expected_total
 
 
 @pytest.mark.skipif(

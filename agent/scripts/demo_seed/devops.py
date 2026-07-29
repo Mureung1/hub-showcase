@@ -222,7 +222,7 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 )
 
 
-# ============================================================ 3. 채용공고 9건
+# ============================================================ 3. 채용공고 15건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
 # 주석은 recent 5건에만 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
 #   ("base", 기준선 항목명, 해설)                  → base_n
@@ -508,12 +508,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_samsungsds",
         "company": "삼성에스디에스",
         "cluster": "si_enterprise",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입 채용",
         "career_label_raw": "신입",
         "edu_label_raw": "대졸 이상",
-        "posted_at": "2025-04-10T10:00:00+09:00",
+        "posted_at": "2026-04-10T10:00:00+09:00",
         "title": "클라우드 운영 엔지니어 신입 채용",
         "sections": (
             ("주요업무", (
@@ -537,12 +537,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_kurly",
         "company": "컬리",
         "cluster": "bigtech_platform",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력 4년 이상",
         "career_label_raw": "경력 4~9년",
         "edu_label_raw": "학력 무관",
-        "posted_at": "2025-02-18T10:00:00+09:00",
+        "posted_at": "2026-02-18T10:00:00+09:00",
         "title": "플랫폼 엔지니어 (인프라·배포)",
         "sections": (
             ("주요업무", (
@@ -567,12 +567,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_kakaopay",
         "company": "카카오페이",
         "cluster": "fintech_finance",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입·주니어",
         "career_label_raw": "신입~2년",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2024-12-02T10:00:00+09:00",
+        "posted_at": "2026-05-02T10:00:00+09:00",
         "title": "인프라 엔지니어 (신입·주니어)",
         "sections": (
             ("주요업무", (
@@ -597,12 +597,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_qmit",
         "company": "큐엠아이티",
         "cluster": "startup",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력 3년 이상",
         "career_label_raw": "경력 3~7년",
         "edu_label_raw": "학력 무관",
-        "posted_at": "2024-10-15T10:00:00+09:00",
+        "posted_at": "2026-06-15T10:00:00+09:00",
         "title": "DevOps 엔지니어",
         "sections": (
             ("주요업무", (
@@ -616,6 +616,176 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             ("우대사항", (
                 ("Terraform으로 인프라를 코드화해 본 경험", "iac-terraform", "foundation", None),
                 ("데이터 수집 파이프라인을 운영해 본 경험", None, "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "10",
+        "company_id": "co_musinsa",
+        "company": "무신사",
+        "cluster": "bigtech_platform",
+        "period": PRIOR,
+        "entry_label": "entry_junior",
+        "entry_label_raw": "신입 지원 가능",
+        "career_label_raw": "신입·주니어",
+        "edu_label_raw": "학력 무관",
+        "posted_at": "2024-03-18T10:00:00+09:00",
+        "title": "커머스 플랫폼 DevOps 엔지니어",
+        "sections": (
+            ("주요업무", (
+                ("상품 서비스의 Kubernetes 배포 환경을 운영합니다.", "kubernetes", "application", None),
+                ("서비스 지표와 로그를 대시보드로 관리합니다.", "observability", "foundation", None),
+            )),
+            ("자격요건", (
+                ("CI/CD 파이프라인을 구성하고 개선해 본 경험", "cicd-pipeline", "application", None),
+                ("VPC와 로드밸런서의 기본 구조를 이해하시는 분", "cloud-network", "foundation", None),
+            )),
+            ("우대사항", (
+                ("Terraform으로 개발 환경을 구성해 본 경험", "iac-terraform", "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "11",
+        "company_id": "co_wantedlab",
+        "company": "원티드랩",
+        "cluster": "startup",
+        "period": PRIOR,
+        "entry_label": "experienced",
+        "entry_label_raw": "경력 3년 이상",
+        "career_label_raw": "경력 3~7년",
+        "edu_label_raw": "학력 무관",
+        "posted_at": "2024-07-08T10:00:00+09:00",
+        "title": "채용 플랫폼 DevOps 엔지니어",
+        "sections": (
+            ("주요업무", (
+                ("Kubernetes 기반 서비스 환경을 소규모 팀과 운영합니다.", "kubernetes", "application", None),
+                ("배포 실패와 장애 원인을 지표와 로그로 분석합니다.", "observability", "application", None),
+            )),
+            ("자격요건", (
+                ("Terraform 모듈로 클라우드 자원을 관리해 본 경험", "iac-terraform", "application", None),
+                ("CI/CD 파이프라인의 배포 단계를 설계해 본 경험", "cicd-pipeline", "application", None),
+            )),
+            ("우대사항", (
+                ("VPC와 DNS 장애를 분석해 본 경험", "cloud-network", "application", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "12",
+        "company_id": "co_channelcorp",
+        "company": "주식회사 채널코퍼레이션",
+        "cluster": "b2b_saas",
+        "period": PRIOR,
+        "entry_label": "entry_junior",
+        "entry_label_raw": "신입 지원 가능",
+        "career_label_raw": "신입·주니어",
+        "edu_label_raw": "학력 무관",
+        "posted_at": "2024-11-12T10:00:00+09:00",
+        "title": "고객 지원 SaaS DevOps 엔지니어",
+        "sections": (
+            ("주요업무", (
+                ("고객사별 Kubernetes 워크로드의 배포 상태를 관리합니다.", "kubernetes", "application", None),
+                ("서비스 상태를 확인하는 모니터링 화면을 운영합니다.", "observability", "foundation", None),
+            )),
+            ("자격요건", (
+                ("CI/CD 도구로 애플리케이션을 배포해 본 경험", "cicd-pipeline", "foundation", None),
+                ("클라우드 네트워크의 서브넷과 보안 그룹을 이해하시는 분", "cloud-network", "foundation", None),
+            )),
+            ("우대사항", (
+                ("Terraform 코드의 변경 내역을 리뷰해 본 경험", "iac-terraform", "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "13",
+        "company_id": "co_kakaobank",
+        "company": "카카오뱅크",
+        "cluster": "fintech_finance",
+        "period": PRIOR,
+        "entry_label": "experienced",
+        "entry_label_raw": "경력 3년 이상",
+        "career_label_raw": "경력 3~8년",
+        "edu_label_raw": "학사 이상",
+        "posted_at": "2025-03-17T10:00:00+09:00",
+        "title": "금융 플랫폼 인프라 엔지니어",
+        "sections": (
+            ("주요업무", (
+                ("금융 서비스 Kubernetes 클러스터의 가용성을 관리합니다.", "kubernetes", "tradeoff", None),
+                ("SLO와 경보 기준을 정하고 장애 대응 절차를 개선합니다.", "observability", "tradeoff", None),
+            )),
+            ("자격요건", (
+                ("무중단 배포와 롤백을 포함한 CI/CD 운영 경험", "cicd-pipeline", "tradeoff", None),
+                ("Terraform으로 망 분리 환경을 관리해 본 경험", "iac-terraform", "application", None),
+                ("VPC 접근 통제와 감사 로그 정책을 설계해 본 경험", "cloud-network", "tradeoff", None),
+            )),
+            ("우대사항", (
+                ("재해 복구 훈련을 수행해 본 경험", None, "application", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "14",
+        "company_id": "co_samsungsds",
+        "company": "삼성에스디에스",
+        "cluster": "si_enterprise",
+        "period": PRIOR,
+        "entry_label": "entry_junior",
+        "entry_label_raw": "신입 지원 가능",
+        "career_label_raw": "신입·주니어",
+        "edu_label_raw": "대졸 이상",
+        "posted_at": "2025-07-07T10:00:00+09:00",
+        "title": "기업 클라우드 운영 엔지니어",
+        "sections": (
+            ("주요업무", (
+                ("고객사 Kubernetes 환경의 표준 구성을 적용합니다.", "kubernetes", "foundation", None),
+                ("운영 절차와 장애 처리 결과를 문서화합니다.", "observability", "foundation", None),
+            )),
+            ("자격요건", (
+                ("CI/CD 파이프라인의 기본 단계를 이해하시는 분", "cicd-pipeline", "foundation", None),
+                ("클라우드 네트워크 구성도를 읽을 수 있는 분", "cloud-network", "foundation", None),
+            )),
+            ("우대사항", (
+                ("Terraform 템플릿을 작성해 본 경험", "iac-terraform", "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "15",
+        "company_id": "co_smilegate",
+        "company": "스마일게이트",
+        "cluster": "game",
+        "period": PRIOR,
+        "entry_label": "experienced",
+        "entry_label_raw": "경력 3년 이상",
+        "career_label_raw": "경력 3~7년",
+        "edu_label_raw": "학력 무관",
+        "posted_at": "2025-11-03T10:00:00+09:00",
+        "title": "게임 라이브 인프라 엔지니어",
+        "sections": (
+            ("주요업무", (
+                ("라이브 게임의 Kubernetes 클러스터를 운영합니다.", "kubernetes", "tradeoff", None),
+                ("트래픽 급증 시 지표를 분석하고 용량을 조정합니다.", "observability", "application", None),
+            )),
+            ("자격요건", (
+                ("게임 서버의 CI/CD와 롤백 절차를 운영해 본 경험", "cicd-pipeline", "tradeoff", None),
+                ("Terraform으로 다중 리전 자원을 구성해 본 경험", "iac-terraform", "application", None),
+                ("로드밸런서와 DNS 장애를 대응해 본 경험", "cloud-network", "application", None),
+            )),
+            ("우대사항", (
+                ("대규모 이벤트의 트래픽 계획을 세워 본 경험", None, "application", None),
             )),
         ),
         "summary": "",
@@ -2467,7 +2637,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     t["wiki_revisions"] = revisions
     t["wiki_evidence"] = wiki_evidence
 
-    # --- 33 분석 산출물 27행
+    # --- 33 분석 산출물 31행
     outputs: list[dict[str, Any]] = []
 
     def add_output(output_type: str, agent: str, scope_level: str, scope_id: str,
@@ -3100,12 +3270,126 @@ def check_concepts(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
     return problems
 
 
+def check_posting_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """검사 6 — 공고 수·기간·기업군·진입 구분과 차원 표본이 계약에 맞는가."""
+    problems: list[str] = []
+    period_spec = {
+        RECENT: (9, "2026-01-01", "2026-06-30", {"entry_junior": 5, "experienced": 4}),
+        PRIOR: (6, "2024-03-01", "2025-11-30", {"entry_junior": 3, "experienced": 3}),
+    }
+    if len(POSTINGS) != 15 or len(tables["postings"]) != 15:
+        problems.append(f"공고 수 {len(POSTINGS)}/{len(tables['postings'])} != 15/15")
+    expected_ids = {posting_id(f"{number:02d}") for number in range(1, 16)}
+    actual_ids = {row["posting_id"] for row in tables["postings"]}
+    if actual_ids != expected_ids:
+        problems.append(f"공고 식별자 차이 {sorted(actual_ids ^ expected_ids)}")
+
+    expected_clusters = set(CLUSTER_ORDER)
+    for period, (expected_n, starts_on, ends_on, expected_labels) in period_spec.items():
+        group = [posting for posting in POSTINGS if posting["period"] == period]
+        if len(group) != expected_n:
+            problems.append(f"{period}: 공고 {len(group)}건 != {expected_n}건")
+        clusters = {posting["cluster"] for posting in group}
+        if clusters != expected_clusters:
+            problems.append(f"{period}: 기업군 차이 {sorted(clusters ^ expected_clusters)}")
+        labels = {
+            label: sum(1 for posting in group if posting["entry_label"] == label)
+            for label in expected_labels
+        }
+        if labels != expected_labels:
+            problems.append(f"{period}: entry_label {labels} != {expected_labels}")
+        for posting in group:
+            posted_on = posting["posted_at"][:10]
+            if not starts_on <= posted_on <= ends_on:
+                problems.append(f"{posting['nn']}: 게시일 {posted_on} 범위 밖")
+
+    recent_counts = {
+        cluster: sum(1 for posting in RECENT_POSTINGS if posting["cluster"] == cluster)
+        for cluster in CLUSTER_ORDER
+    }
+    if sorted(recent_counts.values()) != [1, 1, 1, 2, 2, 2]:
+        problems.append(f"recent 기업군 분포 {recent_counts} != 2·2·2·1·1·1")
+    prior_counts = {
+        cluster: sum(1 for posting in PRIOR_POSTINGS if posting["cluster"] == cluster)
+        for cluster in CLUSTER_ORDER
+    }
+    if set(prior_counts.values()) != {1}:
+        problems.append(f"prev 기업군 분포 {prior_counts} != 기업군별 1건")
+
+    for slug in DIM_SLUGS:
+        companies = {
+            posting["company_id"]
+            for posting in POSTINGS
+            if slug in DIMS_BY_POSTING[posting["nn"]]
+        }
+        if len(companies) < 2:
+            problems.append(f"{slug}: 독립 회사 {len(companies)}곳")
+    return problems
+
+
+def check_output_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """검사 7 — 산출물 31행과 recent 공고 해석 9행이 정확히 짝을 이루는가."""
+    outputs = tables["analysis_outputs"]
+    problems: list[str] = []
+    counts = {
+        output_type: sum(1 for row in outputs if row["output_type"] == output_type)
+        for output_type in ("statistics", "interpretation", "strategy", "roadmap")
+    }
+    expected = {"statistics": 1, "interpretation": 16, "strategy": 7, "roadmap": 7}
+    if len(outputs) != 31 or counts != expected:
+        problems.append(f"산출물 {len(outputs)}행, 종류별 {counts} != 31행, {expected}")
+    posting_interpretations = {
+        row["scope_id"] for row in outputs
+        if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+    }
+    recent_ids = {posting_id(posting["nn"]) for posting in RECENT_POSTINGS}
+    if posting_interpretations != recent_ids:
+        problems.append(
+            f"공고 해석 범위 차이 {sorted(posting_interpretations ^ recent_ids)}"
+        )
+    return problems
+
+
+def check_direct_contract_values(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """검사 8 — 출처·기간·대상군·데이터셋과 기준 회사 값을 직접 확인한다."""
+    problems: list[str] = []
+    catalog_companies = frozenset({
+        "co_navercloud", "co_viva", "co_kakao", "co_krafton", "co_upstage",
+        "co_samsungsds", "co_kurly", "co_kakaopay", "co_qmit", "co_musinsa",
+        "co_wantedlab", "co_channelcorp", "co_kakaobank", "co_smilegate",
+    })
+    expected_uses = set(ALLOWED_USES)
+    for row in tables["source_assessments"]:
+        if set(row["allowed_uses"]) != expected_uses:
+            problems.append(f"{row['assessment_id']}: allowed_uses 불일치")
+        actual = (row["source_tier"], str(row["reliability_score"]), row["assessment_version"])
+        if actual != ("A", "0.95000", "sa_v1"):
+            problems.append(f"{row['assessment_id']}: 출처 평가 기본값 불일치")
+
+    for row in tables["statistics_facts"]:
+        if row["period_id"] not in {RECENT, PRIOR}:
+            problems.append(f"{row['fact_id']}: 허용되지 않은 기간 {row['period_id']}")
+        if row["metric_family"] == "entry_label_advanced_signal_rate":
+            if row["entry_segment"] != SEGMENT_ENTRY:
+                problems.append(f"{row['fact_id']}: entry_segment {row['entry_segment']}")
+
+    if tables.get("dataset_versions"):
+        problems.append("devops 모듈이 dataset_versions 행을 만들었다")
+    for row in tables["postings"]:
+        if row["company_id"] not in catalog_companies:
+            problems.append(f"{row['posting_id']}: 기준 데이터에 없는 회사 {row['company_id']}")
+    return problems
+
+
 CHECKS = (
     ("1 근거 위치", check_spans),
     ("2 지표 재계산", check_numbers),
     ("3 외래키", check_foreign_keys),
     ("4 payload 키", check_payload_keys),
     ("5 체크 개념", check_concepts),
+    ("6 공고 모집단", check_posting_population),
+    ("7 산출물 범위", check_output_population),
+    ("8 직접 입력 계약", check_direct_contract_values),
 )
 
 
@@ -3134,9 +3418,6 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-
 
 
 
