@@ -66,6 +66,7 @@
 
 - 회원가입/로그인은 구글 로그인만 지원. 최초 로그인 시 자동으로 계정 생성.
 - 초대 링크로 진입한 사용자의 로그인→가입 전체 흐름은 3. 파티원 참고. 이 섹션은 그중 구글 로그인 자체(계정 생성, `state` 전달, JWT 발급)만 다룬다.
+- `state`는 "로그인 후 되돌아갈 FE 경로"를 실어 나르는 범용 파라미터(예: `/join/:id`, `/subscriptions/:id/settlements/:settlementId`) — 특정 도메인(초대 등)에 고정된 값이 아님.
 
 | Method | Path | 설명 | 인증 |
 | --- | --- | --- | --- |
@@ -75,18 +76,19 @@
 
 ### 구글 로그인 시작: `GET /api/auth/google`
 
-**Query**: `state` (선택, 초대 링크로 진입한 경우 초대된 구독의 `subscriptionId`)
+**Query**: `state` (선택, 로그인 후 되돌아갈 FE 경로 — 예: 초대 링크는 `/join/:id`, 정산 링크는 `/subscriptions/:id/settlements/:settlementId`)
 
-- 초대 링크(`joinUrl`) 클릭 시 미로그인 상태인 경우 `GET /api/auth/google?state=sub_1`로 이동.
-- 구글 OAuth consent 화면으로 302 리디렉션. `state`는 구글 콜백에 그대로 되돌아옴.
+- 초대 링크(`joinUrl`) 클릭 시 미로그인 상태인 경우 `GET /api/auth/google?state=%2Fjoin%2Fsub_1`로 이동(경로를 URL 인코딩해서 전달).
+- 서버가 `state`(경로)를 JWT로 서명(`signRedirectState`, 만료 10분, `purpose: 'redirect'`)해 구글 OAuth의 자체 `state` 파라미터에 실어 보냄 — 구글 콜백에 그대로 되돌아옴.
+- 구글 OAuth consent 화면으로 302 리디렉션.
 
 ### 구글 콜백 처리, JWT 발급: `GET /api/auth/google/callback`
 
-**Query**: `code`(구글 발급), `state`(요청 시 전달했던 값, 없을 수 있음)
+**Query**: `code`(구글 발급), `state`(요청 시 전달했던 값이 서명된 형태, 없을 수 있음)
 
 - 구글에서 받은 `code`로 프로필(이메일, 구글 계정 고유 ID, 이름)을 가져와 기존 사용자인지 확인하고, 없으면 새로 생성(=최초 로그인이 곧 회원가입).
 - JWT 발급.
-- `state`가 있으면 `/join/:state`를, 없으면 `/`를 복귀 경로로 계산(가입 처리는 하지 않음 — `state`의 유효성 검증은 FE가 복귀 경로에서 `POST /api/subscriptions/:id/join`을 호출할 때 이뤄짐).
+- `state`가 있으면 서명을 검증(`verifyRedirectState`)해 그 안의 경로를 복귀 경로로 사용, 없거나 위변조/만료됐으면 `/`로 복귀(가입 처리는 하지 않음 — 초대의 경우 `state`의 유효성 검증과 별개로 FE가 복귀 경로에서 `POST /api/subscriptions/:id/join`을 호출할 때 실제 가입이 이뤄짐).
 - `${FRONTEND_URL}/oauth/callback#token=<jwt>&redirect=<path>` 형태로 302 리디렉션. FE는 URL 프래그먼트에서 토큰을 읽어 저장하고, `redirect` 경로로 이동.
 
 **Error `400`**: 유효하지 않은 `code`
@@ -280,7 +282,7 @@
 - 가입 링크(`joinUrl`)는 별도 토큰 없이 `subscriptionId`를 그대로 사용 — 구독당 1개, 가입 여부와 무관하게 항상 동일. 파티장이 카카오톡 공유하기로 그룹원에게 전달.
 - 가입 흐름:
   - 이미 로그인된 사용자가 초대 링크를 클릭 → FE가 보유 토큰으로 바로 `POST /api/subscriptions/:id/join` 호출.
-  - 미로그인 사용자가 초대 링크를 클릭 → FE가 로그인 버튼을 보여주기 전에 먼저 `GET /api/subscriptions/:id/preview`로 링크 유효성을 확인 → 유효한 경우에만 `state=subscriptionId`로 구글 로그인 유도(1. 인증 참고) → 로그인 완료 후 `/join/:id`로 복귀해 동일하게 `POST /api/subscriptions/:id/join` 호출.
+  - 미로그인 사용자가 초대 링크를 클릭 → FE가 로그인 버튼을 보여주기 전에 먼저 `GET /api/subscriptions/:id/preview`로 링크 유효성을 확인 → 유효한 경우에만 `state=/join/:id`로 구글 로그인 유도(1. 인증 참고) → 로그인 완료 후 `/join/:id`로 복귀해 동일하게 `POST /api/subscriptions/:id/join` 호출.
   - 무효한 링크는 로그인 여부와 무관하게 안내 문구만 표시.
 - 모든 파티원은 로그인 회원.
 - `memberCount`는 구독 등록/수정 시 파티장이 입력하는 고정 정산 인원수이며, 실제 가입 완료 인원과 별개 — 초대는 보냈지만 아직 가입하지 않은 인원이 있으면 아래 파티원 목록 수가 `memberCount`보다 적을 수 있음. 파티원 가입/삭제로 자동으로 바뀌지 않으며, 정산 인원수를 바꾸려면 파티장이 `PATCH /subscriptions/:id`로 직접 조정.
@@ -537,6 +539,6 @@
 - `1. 인증`, `2. 구독 서비스`, `3. 파티원`, `4. 정산` 섹션은 `backend/prisma/schema.prisma`의 `User`/`Subscription`/`PartyMember`/`Settlement`/`SettlementMember` 모델로 DB 설계 완료. 나머지(만족도) 섹션은 아직 스키마 설계 전.
 - 구독 삭제(`DELETE /api/subscriptions/:id`) 시 연관 정산 이력(`Settlement`/`SettlementMember`)도 함께 삭제됨(cascade) — 확정.
 - `GET /api/subscriptions/dashboard`는 `GET /api/subscriptions/:id`와 경로가 겹치므로, 백엔드 구현 시 반드시 `/:id`보다 먼저 라우터에 등록할 것(순서가 바뀌면 `dashboard`가 `:id` 파라미터로 매칭돼 영영 도달 불가).
-- 초대용 `state` 파라미터는 `backend/src/lib/jwt.js`의 `signInviteState`/`verifyInviteState`로 서명·검증됨(만료 10분, `purpose: 'invite'` 클레임) — 위변조/만료된 state는 콜백에서 무조건 `/`로 리다이렉트되어 확정.
+- 로그인 후 복귀 경로를 실어 나르는 `state` 파라미터는 `backend/src/lib/jwt.js`의 `signRedirectState`/`verifyRedirectState`로 서명·검증됨(만료 10분, `purpose: 'redirect'` 클레임, 경로가 `/`로 시작하고 `//`·`://`를 포함하지 않는지도 검증해 오픈 리다이렉트 방지) — 위변조/만료된 state는 콜백에서 무조건 `/`로 리다이렉트되어 확정. 초대 링크(`/join/:id`)와 정산 링크(`/subscriptions/:id/settlements/:settlementId`) 모두 이 메커니즘을 공유.
 - `Subscription.accountNumber`/`accountHolderName`은 `backend/src/lib/crypto.js`(AES-256-GCM, `ACCOUNT_ENCRYPTION_KEY` 환경변수)로 암호화해 저장 — 확정. `bankName`은 평문 유지. API 응답 스키마(필드명/형태)는 변경 없음, DB 저장 형식만 암호문으로 바뀜.
 - 토스 딥링크(`supertoss://send?bank=...&accountNo=...&amount=...`)는 실기기 테스트로 정상 동작 확인됨 — 확정.

@@ -99,7 +99,12 @@ const SettlementDetail = () => {
   if (status === 'loading') {
     content = <p className="subscription-detail-message">불러오는 중...</p>
   } else if (status === 'unauthorized') {
-    content = <LoginRequired message="로그인 후 정산 내역을 확인할 수 있어요." />
+    content = (
+      <LoginRequired
+        message="로그인 후 정산 내역을 확인할 수 있어요."
+        state={`/subscriptions/${id}/settlements/${settlementId}`}
+      />
+    )
   } else if (status === 'notfound') {
     content = <p className="subscription-detail-message">존재하지 않는 정산이에요.</p>
   } else if (status === 'forbidden') {
