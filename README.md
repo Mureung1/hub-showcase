@@ -12,7 +12,25 @@ TODO 앱과 캘린더는 이미 많습니다. 하지만 정작 어려운 것은 
 
 <p>
     <img src="https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white">
+    <img src="https://img.shields.io/badge/React-black?style=for-the-badge&logo=react&logoColor=61DAFB">
+    <img src="https://img.shields.io/badge/Vercel%20AI%20SDK-black?style=for-the-badge&logo=vercel&logoColor=white">
+    <img src="https://img.shields.io/badge/Solar%20(Upstage)-black?style=for-the-badge">
+    <img src="https://img.shields.io/badge/Notion%20API-black?style=for-the-badge&logo=notion&logoColor=white">
+    <img src="https://img.shields.io/badge/Zod-black?style=for-the-badge&logo=zod&logoColor=3E67B1">
 </p>
+
+## 🔗 배포 링크
+
+[https://hub-ivory-nu.vercel.app/](https://hub-ivory-nu.vercel.app/)
+
+## 🚀 실행 방법
+
+```bash
+npm install
+npm run dev
+```
+
+`.env.local`에 필요한 환경변수(API key, Notion 토큰 등)는 [docs/prerequisites.md](docs/prerequisites.md) 참고.
 
 ## 📄 프로젝트 문서
 
@@ -34,6 +52,40 @@ TODO 앱과 캘린더는 이미 많습니다. 하지만 정작 어려운 것은 
 | [docs/verification-plan.md](docs/verification-plan.md) | Claude가 작업한 내용을 직접 검증하는 계획 |
 | [docs/verification-log.md](docs/verification-log.md) | 날짜별 검증 기록 |
 | [docs/harness-plan.md](docs/harness-plan.md) | AI 협업 실패를 계층별로 분류해서 대응하는 하네스 구조 |
+
+## 🗺️ 아키텍처 · 데이터 흐름
+
+목표를 입력하면 서버가 AI(Solar)에게 물어봐서 작은 할 일로 쪼개고 저장합니다. 오늘 할 일 화면은 그중 하나만 꺼내서 보여줍니다.
+
+```mermaid
+flowchart LR
+  subgraph 화면["화면 (Next.js)"]
+    In[목표 입력 화면]
+    Today[오늘 할 일 화면]
+    In -. 화면 전환 .-> Today
+  end
+
+  subgraph 서버["서버 (API Routes)"]
+    R1[POST 목표 분해 요청]
+    R2[GET 오늘 할 일 조회]
+  end
+
+  subgraph 외부["외부 서비스"]
+    Solar[Solar AI가 작은 할 일로 쪼갠다]
+    DB[(할 일을 저장·조회한다)]
+  end
+
+  In -- fetch --> R1
+  R1 --> Solar
+  R1 --> DB
+  Today -- fetch --> R2
+  R2 --> DB
+
+  classDef default fill:#fafafa,stroke:#333,color:#333
+  style 화면 fill:#ffffff,stroke:#333
+  style 서버 fill:#ffffff,stroke:#333
+  style 외부 fill:#ffffff,stroke:#333
+```
 
 ## 📁 폴더 구조
 
