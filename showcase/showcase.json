@@ -3,7 +3,8 @@
   "title": "미리캣 — 내 출근길의 보초",
   "summary": "매일 지자체·버스조합 게시판을 대신 확인해, 내 이동 경로에 영향을 주는 우회·통제 공지를 근거와 함께 알려주는 감시 에이전트입니다.",
   "githubUser": "jaehyun429(정재현)",
-  "demoUrl": "https://jaehyun429.github.io/hub/miricat-app.html",
+  "demoUrl": "https://hub-pi-lime.vercel.app",
+  "demoVideoUrl": "https://youtu.be/NLdvscvnPjY",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/route-register.webp",

@@ -7,6 +7,10 @@ export const SOURCE_LABEL = {
   daejeon_bus: "대전 버스조합",
   daejeon_city: "대전광역시",
   sejong_sctc: "세종교통공사",
+  seoul_topis: "서울 TOPIS",
+  gbis_route: "경기버스정보",
+  busan_bims: "부산 BIMS",
+  its_incident: "국가교통정보센터",
 };
 
 export function fmtDate(iso) {
@@ -21,7 +25,9 @@ export function norm(s) {
 }
 export function hit(value, token) {
   const a = norm(value), b = norm(token);
-  return !!a && !!b && (a === b || a.includes(b) || b.includes(a));
+  if (!a || !b) return false;
+  if (/^\d+$/.test(a) && /^\d+$/.test(b)) return a === b;   // 숫자 노선은 정확일치만 ("46"⊂"462" 오탐 방지)
+  return a === b || a.includes(b) || b.includes(a);
 }
 
 // ── 시간 유효성: analyst.py의 _is_current 미러 (끝난 사건은 경보 제외) ──
@@ -44,10 +50,16 @@ export function eventEnd(period) {
 }
 export function isCurrent(period) {
   if (!period) return true;
-  const end = eventEnd(period);
-  if (!end) return true;                    // 불명·열린 기간 → 보수적 유지
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  return end >= today;                      // 아직 안 끝났으면 유효(다가올 것 포함)
+  const end = eventEnd(period);
+  if (end) return end >= today;             // 종료일이 있으면 그날까지 유효(다가올 것 포함)
+  // 종료일 없이 시행일만("5.13부터~") → 시행 후 14일까지만 '새 소식' (옛 시간표 변경 경보 방지)
+  const m = (period || "").match(DATE_RE);
+  if (m) {
+    const start = new Date(+m[1], +m[2] - 1, +m[3]);
+    return (today - start) / 86400000 <= 14;
+  }
+  return true;                              // 날짜를 아예 못 읽으면 보수적 유지
 }
 
 // 경로 lines/stops/roads("B1, 급행2") → 토큰 배열 (표시·매칭 겸용)
@@ -65,8 +77,27 @@ export function roadTokens(route) {
   return route.roads.split(",").map((t) => t.trim()).filter(Boolean);
 }
 
+// ── 지역 게이팅: 공지 소스의 관할과 경로 좌표가 겹칠 때만 매칭 (타지역 오탐 방지) ──
+const REGIONS = {
+  daejeon_sejong: { minX: 127.15, maxX: 127.65, minY: 36.10, maxY: 36.75 },
+  sudogwon: { minX: 126.35, maxX: 127.85, minY: 36.85, maxY: 38.35 },
+  busan: { minX: 128.60, maxX: 129.40, minY: 34.95, maxY: 35.50 },
+};
+const SOURCE_REGION = {
+  daejeon_bus: "daejeon_sejong", daejeon_city: "daejeon_sejong", sejong_sctc: "daejeon_sejong",
+  seoul_topis: "sudogwon", gbis_route: "sudogwon",
+  busan_bims: "busan",
+};
+export function sameRegion(route, sourceId) {
+  const region = REGIONS[SOURCE_REGION[sourceId]];
+  const points = route?.path ?? [];
+  if (!region || !points.length) return true;   // 좌표 없는 옛 경로·미지정 소스는 보수적으로 통과
+  return points.some((p) => p.x >= region.minX && p.x <= region.maxX && p.y >= region.minY && p.y <= region.maxY);
+}
+
 // 이 공지가 내 경로와 겹치나 + 겹친 값들(강조용). analyst.py analyze와 미러.
 export function matchNotice(notice, route) {
+  if (!sameRegion(route, notice.source)) return new Set();   // 관할 밖 공지는 매칭 자체를 안 함
   const tokens = routeTokens(route);
   const roads = roadTokens(route);
   const hits = new Set();
@@ -81,6 +112,20 @@ export function matchNotice(notice, route) {
       const nr = norm(r);
       if (nr && hay.includes(nr)) hits.add(r);
     }
+    // 4층: 반경 — 사건 좌표(ITS 돌발 등)가 내 경로에서 300m 이내인가
+    if (ev.x && ev.y && route?.path?.length && nearRoute(ev.x, ev.y, route.path)) {
+      hits.add(ev.event_name || "경로 인근 사건");
+    }
   }
   return hits; // 비었으면 영향 없음
+}
+
+// 사건 좌표가 경로 좌표열의 어느 점에서든 radius_m 안이면 true (등장방형 근사 거리)
+function nearRoute(x, y, path, radiusM = 300) {
+  const cosLat = Math.cos((y * Math.PI) / 180);
+  return path.some((p) => {
+    const dx = (x - p.x) * 111320 * cosLat;
+    const dy = (y - p.y) * 110540;
+    return dx * dx + dy * dy <= radiusM * radiusM;
+  });
 }

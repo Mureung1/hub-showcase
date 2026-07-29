@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { SOURCE_LABEL, matchNotice, routeTokens, isCurrent } from "../lib/matching";
 import ReportMap from "../components/report/ReportMap";
+import { myRouteIds } from "../lib/myRoutes";
 import RealMap from "../components/report/RealMap";
 import AltVerdict from "../components/report/AltVerdict";
 import TraceList from "../components/report/TraceList";
@@ -32,9 +33,11 @@ export default function ReportPage() {
   useEffect(() => {
     let cancelled = false;   // 언마운트/재실행 후 도착한 응답이 화면을 덮지 않게
     async function load() {
+      // 내 경로 + (디스코드 링크로 들어온 경우) 링크에 실린 경로 — localStorage 없는 폰에서도 리포트가 온전하게
+      const ids = [...new Set([...myRouteIds(), searchParams.get("route")].filter(Boolean))];
       const [nRes, rRes] = await Promise.all([
         fetch(api(`/api/notices/${noticeId}`)),
-        fetch(api("/api/routes")),
+        fetch(api(ids.length ? `/api/routes?ids=${ids.join(",")}` : "/api/routes")),
       ]);
       if (cancelled) return;
       if (!nRes.ok) { setStatus("notfound"); return; }

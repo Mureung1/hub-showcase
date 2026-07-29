@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>미리캣 — 발표자료</title>
+<style>
+  :root{
+    --ink:#33261A; --paper:#FBF6EE; --mist:#ECE1CF; --slate:#8B7863;
+    --signal:#E4572E; --signal-soft:#FCE8DF;
+    --route:#3E7CB1; --route-soft:#E9F1F8;
+    --good:#5B8A5A; --good-soft:#E9F1E6;
+    --fur:#DCA96E; --fur-light:#F2DDB6; --fur-dark:#4A3423;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'IBM Plex Sans KR','Apple SD Gothic Neo',sans-serif;background:#2E2823;color:var(--ink);word-break:keep-all}
+  .slide{
+    width:100vw;height:100vh;display:none;flex-direction:column;
+    background:var(--paper);padding:64px 90px;overflow:hidden;position:relative;
+  }
+  .slide.on{display:flex}
+  .num{position:absolute;bottom:26px;right:36px;color:var(--slate);font-size:16px;font-family:'IBM Plex Mono',monospace}
+  h1{font-size:88px;line-height:1.2}
+  h2{font-size:54px;margin-bottom:8px}
+  .kicker{color:var(--signal);font-weight:700;font-size:22px;letter-spacing:.08em;margin-bottom:16px}
+  .body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:30px}
+  .big{font-size:34px;line-height:1.55}
+  .card{background:#fff;border:1px solid var(--mist);border-radius:18px;padding:34px 40px;box-shadow:0 2px 10px rgba(74,52,35,.06)}
+  .row{display:flex;gap:24px}
+  .row>.card{flex:1}
+  ul{list-style:none}
+  li{font-size:30px;line-height:1.8;padding-left:34px;position:relative}
+  li::before{content:'·';position:absolute;left:10px;color:var(--fur);font-weight:900}
+  .flow{display:flex;align-items:stretch;gap:14px;justify-content:center}
+  .node{background:#fff;border:2.5px solid var(--mist);border-radius:18px;padding:28px 26px;font-size:28px;font-weight:700;text-align:center;flex:1;display:flex;flex-direction:column;justify-content:center;min-height:240px}
+  .node small{display:block;font-weight:400;color:var(--slate);font-size:20px;margin-top:10px;line-height:1.5}
+  .node.hot{border-color:var(--signal);background:var(--signal-soft)}
+  .node.blue{border-color:var(--route);background:var(--route-soft)}
+  .node.green{border-color:var(--good);background:var(--good-soft)}
+  .node.fur{border-color:var(--fur)}
+  .arr{color:var(--slate);font-size:34px;font-weight:700;align-self:center}
+  table{border-collapse:collapse;width:100%;font-size:28px}
+  th,td{border-bottom:1px solid var(--mist);padding:18px 20px;text-align:left}
+  th{color:var(--slate);font-size:20px;font-weight:600}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  .meer{font-size:100px;line-height:1}
+  .note{font-size:24px;color:var(--slate);text-align:center}
+  .tag{display:inline-block;background:var(--route-soft);color:var(--route);border-radius:10px;padding:4px 16px;font-size:24px;font-weight:700}
+  .foot-hint{position:fixed;bottom:8px;left:50%;transform:translateX(-50%);color:#8B7863;font-size:12px;opacity:.6}
+  @media print{
+    body{background:#fff}
+    .slide{display:flex!important;page-break-after:always;width:100%;height:100vh}
+    .foot-hint{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- 1. 타이틀 -->
+<section class="slide on">
+  <div class="body" style="align-items:center;text-align:center">
+    <div class="meer">🐾</div>
+    <h1>미리캣</h1>
+    <p class="big" style="color:var(--slate)">내 출근길의 보초</p>
+    <p style="font-size:26px;color:var(--slate);margin-top:36px">Naver AI Agent Challenge · N157 정재현</p>
+  </div>
+  <div class="num">1</div>
+</section>
+
+<!-- 2. 문제 -->
+<section class="slide">
+  <p class="kicker">문제</p>
+  <h2>공지는 한 번 올라오고 묻힙니다</h2>
+  <div class="body">
+    <div class="row">
+      <div class="card">
+        <p class="big"><b>⏰ 시점이 안 맞습니다</b></p>
+        <p style="font-size:26px;color:var(--slate);margin-top:12px">공지는 올라올 때 한 번,<br>정작 필요한 건 출발 직전입니다</p>
+      </div>
+      <div class="card">
+        <p class="big"><b>🗂 게시판이 흩어져 있습니다</b></p>
+        <p style="font-size:26px;color:var(--slate);margin-top:12px">지자체, 버스조합, 교통공사...<br>사람이 매일 다 볼 수는 없습니다</p>
+      </div>
+    </div>
+    <div class="card" style="background:var(--fur-light);border-color:var(--fur);text-align:center">
+      <p class="big"><b>그래서 게시판 확인을 에이전트한테 맡겼습니다</b></p>
+      <p style="font-size:24px;color:var(--fur-dark);margin-top:8px">이상 없으면 한 줄 보고, 영향 있으면 근거 있는 경보</p>
+    </div>
+  </div>
+  <div class="num">2</div>
+</section>
+
+<!-- 3. 동작 흐름 -->
+<section class="slide">
+  <p class="kicker">동작</p>
+  <h2>등록은 한 번, 확인은 매일</h2>
+  <div class="body">
+    <div class="flow">
+      <div class="node blue">경로 등록<small>실제 버스 노선과<br>경유 도로를 검색해서 저장</small></div>
+      <span class="arr">→</span>
+      <div class="node hot">즉시 첫 점검<small>모아둔 공지 150건과<br>바로 대조</small></div>
+      <span class="arr">→</span>
+      <div class="node">매일 아침 순찰<small>게시판 6곳 +<br>전국 도로 돌발상황</small></div>
+      <span class="arr">→</span>
+      <div class="node green">디스코드 알림<small>경보 또는<br>이상 없음 한 줄</small></div>
+      <span class="arr">→</span>
+      <div class="node blue">리포트<small>지도에 영향 구간 표시<br>확인 과정 공개</small></div>
+    </div>
+  </div>
+  <div class="num">3</div>
+</section>
+
+<!-- 4. 시스템 구성 -->
+<section class="slide">
+  <p class="kicker">구성</p>
+  <h2>웹, API, 워커를 나눴습니다</h2>
+  <div class="body">
+    <div class="flow">
+      <div class="node blue">웹<small>React + Vite<br>Vercel</small></div>
+      <span class="arr">↔</span>
+      <div class="node">API 서버<small>Express<br>Render</small></div>
+      <span class="arr">↔</span>
+      <div class="node green">DB<small>Supabase<br>경로 · 공지 · 알림 이력</small></div>
+      <span class="arr">↔</span>
+      <div class="node hot">에이전트 워커<small>Python · LangGraph<br>국내 서버에서 매일 07:30</small></div>
+    </div>
+    <div class="row">
+      <div class="card" style="text-align:center"><p style="font-size:26px"><b>경로 데이터</b><br><span style="color:var(--slate);font-size:22px">ODsay(대중교통) · 네이버 지도(자가용)</span></p></div>
+      <div class="card" style="text-align:center"><p style="font-size:26px"><b>감시 소스 7곳</b><br><span style="color:var(--slate);font-size:22px">서울 · 경기 · 대전 · 세종 · 부산 게시판 + 국가교통정보센터(전국)</span></p></div>
+    </div>
+  </div>
+  <div class="num">4</div>
+</section>
+
+<!-- 5. 조사 그래프 -->
+<section class="slide">
+  <p class="kicker">에이전트</p>
+  <h2>추출이 틀리면 스스로 되돌아갑니다</h2>
+  <div class="body">
+    <div class="flow">
+      <div class="node">수집<small>게시판에서<br>공지를 가져오고</small></div>
+      <span class="arr">→</span>
+      <div class="node blue">추출<small>LLM이 노선 · 정류장 ·<br>기간을 뽑고</small></div>
+      <span class="arr">⇄</span>
+      <div class="node hot">검증<small>원문과 대조해서<br>틀리면 다시 추출</small></div>
+      <span class="arr">→</span>
+      <div class="node">매칭<small>내 경로와<br>4단계로 대조</small></div>
+      <span class="arr">→</span>
+      <div class="node green">알림<small>경보는 사건당 한 번<br>보고는 매일</small></div>
+    </div>
+    <p class="note">LangGraph 순환 구조 · 추출 정확도는 실제 공지로 만든 평가셋으로 회귀 테스트</p>
+  </div>
+  <div class="num">5</div>
+</section>
+
+<!-- 6. 매칭 -->
+<section class="slide">
+  <p class="kicker">매칭</p>
+  <h2>공지와 내 경로를 4단계로 대조합니다</h2>
+  <div class="body">
+    <table>
+      <tr><td><span class="tag">1</span></td><td><b>노선 번호</b></td><td>공지의 "107번 우회" ↔ 내가 타는 107번</td></tr>
+      <tr><td><span class="tag">2</span></td><td><b>정류장</b></td><td>미정차 정류장 ↔ 내가 지나는 정류장</td></tr>
+      <tr><td><span class="tag">3</span></td><td><b>도로명</b></td><td>통제 도로 ↔ 내가 지나는 도로 (자가용)</td></tr>
+      <tr><td><span class="tag">4</span></td><td><b>반경</b></td><td>사고 좌표가 내 경로 300m 안이면 잡습니다</td></tr>
+    </table>
+    <p class="note">+ 공지 관할 지역과 경로가 겹칠 때만 매칭하고, 끝난 사건은 걸러냅니다</p>
+  </div>
+  <div class="num">6</div>
+</section>
+
+<!-- 7. 문제 해결 -->
+<section class="slide">
+  <p class="kicker">부딪힌 문제</p>
+  <h2>실제로 쓰다가 잡은 것들</h2>
+  <div class="body">
+    <div class="card">
+      <p class="big"><b>서울 경로에 대전 공지가 경보로 갔습니다</b></p>
+      <p style="font-size:26px;color:var(--slate);margin-top:10px">46번이 462번에 포함돼서 매칭된 게 원인이었습니다.<br>숫자 노선은 정확히 일치할 때만 잡게 고치고, 그 공지를 평가셋에 넣어뒀습니다.</p>
+    </div>
+    <div class="card">
+      <p class="big"><b>도로 돌발 API가 해외 IP를 차단했습니다</b></p>
+      <p style="font-size:26px;color:var(--slate);margin-top:10px">GitHub Actions도 Render도 전부 타임아웃이 났습니다.<br>워커를 네이버클라우드 국내 서버로 옮겨서 해결했습니다.</p>
+    </div>
+  </div>
+  <div class="num">7</div>
+</section>
+
+<!-- 8. 개발 방식 -->
+<section class="slide">
+  <p class="kicker">개발 방식</p>
+  <h2>규칙 문서, Skill, Agent를 이렇게 썼습니다</h2>
+  <div class="body">
+    <div class="flow">
+      <div class="node fur">규칙 문서<small>CLAUDE.md<br>예측 금지 같은 원칙과<br>아키텍처를 고정</small></div>
+      <span class="arr">→</span>
+      <div class="node blue">Skill<small>학습 루틴, 커밋 규약,<br>감시 소스 추가 절차를<br>반복 가능하게 정리</small></div>
+      <span class="arr">→</span>
+      <div class="node green">Agent<small>planner는 작업을 쪼개고<br>verifier는 실행해서<br>판정만 합니다</small></div>
+      <span class="arr">→</span>
+      <div class="node">Memory<small>일정, 스택, 진행 상황을<br>세션이 바뀌어도 유지</small></div>
+    </div>
+    <div class="card" style="text-align:center">
+      <p style="font-size:28px">새로 배우는 개념은 원리를 익히고 직접 타이핑했고,<br>익힌 패턴의 반복은 AI에게 맡기되 코드마다 설명을 받으며 검증했습니다</p>
+    </div>
+  </div>
+  <div class="num">8</div>
+</section>
+
+<!-- 9. 마무리 -->
+<section class="slide">
+  <div class="body" style="align-items:center;text-align:center">
+    <div class="meer">🐾</div>
+    <h2 style="font-size:56px">매일 게시판 확인,<br>이제 미리캣이 합니다</h2>
+    <p style="font-size:24px;margin-top:30px" class="mono">hub-pi-lime.vercel.app · github.com/jaehyun429/hub</p>
+    <p style="font-size:20px;color:var(--slate)">N157 정재현</p>
+  </div>
+  <div class="num">9</div>
+</section>
+
+<p class="foot-hint">← → 방향키로 이동 · 인쇄(⌘P)하면 슬라이드별 PDF</p>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];let i=0;
+  function show(n){i=Math.max(0,Math.min(slides.length-1,n));slides.forEach((s,k)=>s.classList.toggle('on',k===i));}
+  addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown')show(i+1);
+    if(e.key==='ArrowLeft'||e.key==='PageUp')show(i-1);
+    if(e.key==='Home')show(0);if(e.key==='End')show(slides.length-1);
+  });
+  addEventListener('click',e=>{if(e.clientX>innerWidth/2)show(i+1);else show(i-1);});
+</script>
+</body>
+</html>

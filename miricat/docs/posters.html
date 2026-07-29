@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>미리캣 — A3 포스터 2장</title>
+<style>
+  :root{
+    --ink:#33261A; --paper:#FBF6EE; --mist:#ECE1CF; --slate:#8B7863;
+    --signal:#E4572E; --signal-soft:#FCE8DF;
+    --route:#3E7CB1; --route-soft:#E9F1F8;
+    --good:#5B8A5A; --good-soft:#E9F1E6;
+    --fur:#DCA96E; --fur-light:#F2DDB6; --fur-dark:#4A3423;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'IBM Plex Sans KR','Apple SD Gothic Neo',sans-serif;color:var(--ink);background:#888;word-break:keep-all}
+  .poster{
+    width:297mm;height:420mm;background:var(--paper);
+    padding:14mm 14mm 12mm;display:flex;flex-direction:column;
+    margin:10px auto;position:relative;overflow:hidden;
+  }
+  @page{size:A3 portrait;margin:0}
+  @media print{
+    body{background:none}
+    .poster{margin:0;page-break-after:always}
+  }
+  .head{text-align:center;margin-bottom:4mm}
+  .head .paw{font-size:34pt;line-height:1}
+  .head h1{font-size:44pt;letter-spacing:.02em}
+  .head .tag{font-size:16pt;color:var(--slate);margin-top:1mm}
+  .foot{margin-top:auto;text-align:center;font-size:13.5pt;color:var(--slate);padding-top:3mm}
+  .foot b{color:var(--ink)}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  .arrow-down{text-align:center;font-size:26pt;color:var(--slate);font-weight:700;line-height:1.2}
+
+  /* 화면 캡처 프레임 */
+  .shot{background:#fff;border:1mm solid var(--mist);border-radius:6mm;overflow:hidden;
+    box-shadow:0 2mm 6mm rgba(74,52,35,.10)}
+  .shot img{display:block;width:100%}
+  .cap{display:flex;align-items:center;gap:4mm;margin:0 0 2.5mm}
+  .cap .n{width:11mm;height:11mm;border-radius:50%;background:var(--route);color:#fff;
+    font-size:17pt;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+  .cap.red .n{background:var(--signal)}
+  .cap.green .n{background:var(--good)}
+  .cap .t{font-size:19pt;font-weight:800}
+
+  /* 포스터 1 */
+  .solve{background:var(--fur-light);border:1mm solid var(--fur);border-radius:6mm;
+    padding:4.5mm;text-align:center;margin-bottom:5mm}
+  .solve .t{font-size:20pt;font-weight:800}
+  .solve .t small{font-weight:400;font-size:15pt;color:var(--fur-dark)}
+  .duo{display:flex;gap:6mm}
+  .duo>div{flex:1}
+
+  /* 포스터 2 */
+  .srcs{display:flex;flex-wrap:wrap;gap:2.5mm;justify-content:center;margin-bottom:1mm}
+  .chip{background:#fff;border:0.7mm solid var(--mist);border-radius:20mm;padding:2.5mm 6.5mm;font-size:15pt;font-weight:600}
+  .chip.nat{border-color:#C98A00;background:#FBEFD2}
+  .flowwrap{position:relative;width:195mm;margin:0 auto}
+  .fnode{background:#fff;border:1.3mm solid var(--mist);border-radius:7mm;padding:8mm;text-align:center}
+  .fnode .t{font-size:27pt;font-weight:800}
+  .fnode .d{font-size:17pt;color:var(--slate);margin-top:1.5mm}
+  .fnode.blue{border-color:var(--route);background:var(--route-soft)}
+  .fnode.green{border-color:var(--good);background:var(--good-soft)}
+  .diamond-wrap{display:flex;justify-content:center}
+  .diamond{width:62mm;height:38mm;background:var(--signal-soft);border:1.2mm solid var(--signal);
+    display:flex;align-items:center;justify-content:center;font-size:19pt;font-weight:800;
+    clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);}
+</style>
+</head>
+<body>
+
+<!-- ════ 포스터 1 · 기획/주제 — 데모 화면 중심 ════ -->
+<section class="poster">
+  <div class="head">
+    <div class="paw">🐾</div>
+    <h1>미리캣</h1>
+    <div class="tag">내 출근길의 보초 — 이동 경로 상시 감시 에이전트</div>
+  </div>
+
+  <div class="solve">
+    <div class="t">우회 · 통제 공지는 게시판에 한 번 올라오고 묻힌다<br>
+    → 게시판 확인을 에이전트에게 맡긴다 &nbsp;<small>이상 없으면 한 줄 보고 · 영향 있으면 근거 있는 경보</small></div>
+  </div>
+
+  <div class="cap"><div class="n">1</div><div class="t">평소 다니는 경로를 한 번 등록하면</div></div>
+  <div class="shot"><img src="poster-assets/register.png" alt="경로 등록 화면"></div>
+
+  <div style="height:4mm"></div>
+  <div class="duo">
+    <div>
+      <div class="cap red"><div class="n">2</div><div class="t">영향 있는 날만 디스코드 경보</div></div>
+      <div class="shot"><img src="poster-assets/discord.png" alt="디스코드 경보"></div>
+    </div>
+    <div>
+      <div class="cap green"><div class="n">3</div><div class="t">지도 리포트로 확인</div></div>
+      <div class="shot"><img src="poster-assets/report-card.png" alt="리포트 화면"></div>
+    </div>
+  </div>
+
+  <div style="height:4mm"></div>
+  <div class="cap"><div class="n">🗺</div><div class="t">경보에 붙는 실제 지도 — 빨간 핀이 영향 지점</div></div>
+  <div class="shot"><img src="poster-assets/map.png" alt="경보 지도" style="max-height:88mm;object-fit:cover"></div>
+
+  <div class="foot"><b class="mono">hub-pi-lime.vercel.app</b> &nbsp;·&nbsp; N157 정재현 · Naver AI Agent Challenge</div>
+</section>
+
+<!-- ════ 포스터 2 · AI 에이전트 워크플로우 ════ -->
+<section class="poster">
+  <div class="head">
+    <div class="paw">🐾</div>
+    <h1 style="font-size:40pt">에이전트 워크플로우</h1>
+    <div class="tag">매일 아침 07:30 · 국내 서버 · LangGraph</div>
+  </div>
+
+  <div class="srcs">
+    <span class="chip">서울 TOPIS</span><span class="chip">경기 GBIS</span><span class="chip">대전광역시</span>
+    <span class="chip">대전 버스조합</span><span class="chip">세종교통공사</span><span class="chip">부산 BIMS</span>
+    <span class="chip nat">국가교통정보센터 · 전국 돌발</span>
+  </div>
+  <div class="arrow-down">↓</div>
+
+  <div class="flowwrap"><svg id="loopsvg" style="position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none"></svg>
+    <div class="fnode">
+      <div class="t">수집</div>
+      <div class="d">게시판 7곳의 새 공지</div>
+    </div>
+    <div class="arrow-down">↓</div>
+    <div class="fnode blue" id="n-extract">
+      <div class="t">추출</div>
+      <div class="d">LLM이 노선 · 정류장 · 기간을 뽑는다</div>
+    </div>
+    <div class="arrow-down">↓</div>
+    <div class="diamond-wrap">
+      <div class="diamond" id="n-check">원문과<br>일치?</div>
+    </div>
+    <div class="arrow-down">↓ <span style="font-size:13pt">예</span></div>
+    <div class="fnode blue">
+      <div class="t">매칭</div>
+      <div class="d">노선 · 정류장 · 도로명 · 반경 300m</div>
+    </div>
+    <div class="arrow-down">↓</div>
+    <div class="fnode green">
+      <div class="t">알림</div>
+      <div class="d">🚨 경보(사건당 한 번) 또는 🐾 이상 없음 한 줄</div>
+    </div>
+  </div>
+
+  <div style="height:6mm"></div>
+  <div class="cap green"><div class="n">🐾</div><div class="t">지금도 근무 중 — 서비스 화면의 실제 보초 상태</div></div>
+  <div class="shot"><img src="poster-assets/sentry-strip.png" alt="보초 상태"></div>
+
+  <div class="foot"><b class="mono">github.com/jaehyun429/hub</b> &nbsp;·&nbsp; N157 정재현</div>
+</section>
+
+<script>
+(function(){
+  const svg = document.getElementById('loopsvg');
+  const wrap = svg.parentElement.getBoundingClientRect();
+  const ex = document.getElementById('n-extract').getBoundingClientRect();
+  const di = document.getElementById('n-check').getBoundingClientRect();
+  const x1 = di.right - wrap.left + 4, y1 = di.top + di.height/2 - wrap.top;
+  const x2 = ex.right - wrap.left + 4, y2 = ex.top + ex.height/2 - wrap.top;
+  const xr = Math.max(x1, x2) + 66;
+  svg.innerHTML =
+    '<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">' +
+    '<path d="M0,0 L10,5 L0,10 z" fill="#E4572E"/></marker></defs>' +
+    '<path d="M ' + x1 + ' ' + y1 + ' H ' + (xr-16) + ' Q ' + xr + ' ' + y1 + ' ' + xr + ' ' + (y1-16) +
+    ' V ' + (y2+16) + ' Q ' + xr + ' ' + y2 + ' ' + (xr-16) + ' ' + y2 + ' H ' + (x2+10) + '"' +
+    ' fill="none" stroke="#E4572E" stroke-width="5" marker-end="url(#ah)"/>' +
+    '<text x="' + (xr+12) + '" y="' + ((y1+y2)/2 - 6) + '" fill="#E4572E" font-size="17" font-weight="700">아니오</text>' +
+    '<text x="' + (xr+12) + '" y="' + ((y1+y2)/2 + 16) + '" fill="#E4572E" font-size="17" font-weight="700">다시 추출</text>';
+})();
+</script>
+</body>
+</html>
