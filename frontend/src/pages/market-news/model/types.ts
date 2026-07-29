@@ -9,4 +9,8 @@ export interface MarketNewsItem {
   tags: string[]
   description: string
   easyInterpretation: string
+  originalUrl?: string
+  source?: string
+  provider?: string
+  publishedAt?: string
 }

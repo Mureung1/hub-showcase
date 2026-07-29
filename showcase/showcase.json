@@ -3,7 +3,7 @@
   "title": "GAZUA",
   "summary": "주식 초보자가 AI와 대화하며 시황과 관심 종목을 이해하고, 근거 있는 투자 판단을 준비하도록 돕는 서비스입니다.",
   "githubUser": "hoon-ground(김지훈)",
-  "demoUrl": "",
+  "demoUrl": "https://www.youtube.com/watch?v=r0J4PL75Pas",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
@@ -45,7 +45,7 @@
     "React Router로 홈, 종목 분석, 최근 분석, 시장 소식, 증시 캘린더, 투자 공부 화면을 라우팅했습니다.",
     "NestJS 백엔드 워크스페이스에 헬스체크, 환경 변수 검증, Supabase 클라이언트 기반을 마련해 이후 데이터 연동을 확장할 수 있게 했습니다."
   ],
-  "developmentWithAI": "저는 초보 투자자가 겪는 문제와 MVP 기능 범위를 정리했습니다. AI는 Feature-Sliced Design 구조, 화면별 컴포넌트 분리, mock 데이터 설계, 테스트 작성 방향을 제안하고 코드 초안을 만드는 데 도움을 주었습니다. 저는 실행 결과를 확인하며 화면 구성과 문구, 타입 구조를 프로젝트 목적에 맞게 다듬었습니다.",
+  "developmentWithAI": "저는 초보 투자자가 겪는 문제와 MVP 기능 범위를 정리했습니다. AI는 Feature-Sliced Design 구조, 화면별 컴포넌트 분리, 데이터 설계, 테스트 작성 방향을 제안하고 코드 초안을 만드는 데 도움을 주었습니다. 저는 실행 결과를 확인하며 화면 구성과 문구, 타입 구조를 프로젝트 목적에 맞게 다듬었습니다.",
   "agent": {
     "summary": "기획 문서 정리부터 화면 구현, 테스트 점검, 쇼케이스 작성까지 Agent와 Skill을 함께 사용했습니다.",
     "agentTools": [
@@ -82,7 +82,7 @@
           "초보 투자자의 문제 정의 작성",
           "핵심 기능과 화면 구조 정리",
           "FSD 레이어와 Slice 결정",
-          "페이지별 mock 데이터와 타입 설계",
+          "페이지별 데이터와 타입 설계",
           "React 컴포넌트와 Emotion 스타일 구현",
           "페이지 테스트 실행과 문구 점검"
         ]

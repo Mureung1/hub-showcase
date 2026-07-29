@@ -10,4 +10,8 @@ export interface CalendarEvent {
   title: string
   description: string
   impact: ImpactLevel
+  type?: string
+  detail?: string
+  scheduledAt?: string
+  provider?: string
 }

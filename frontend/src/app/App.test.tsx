@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { lazy } from 'react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { ROUTES } from '@/shared/config/routes'
 
@@ -39,7 +39,6 @@ describe('App shell', () => {
   })
 
   it('shows the spinner when a route render error is caught', () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const ThrowingPage = () => {
       throw new Error('route render failed')
     }
@@ -51,6 +50,5 @@ describe('App shell', () => {
     )
 
     expect(screen.getByRole('status', { name: 'Recovering page' })).toBeInTheDocument()
-    consoleErrorSpy.mockRestore()
   })
 })

@@ -1,16 +1,27 @@
+import { useParams } from 'react-router-dom'
+
 import { Button } from '@/shared/ui/Button'
 import { EasyInterpretationNote } from '@/shared/ui/EasyInterpretationNote'
 
-import { MOCK_STOCK_ANALYSIS } from '../model/mockAnalysis'
+import { getStockAnalysis } from '../model/stockAnalysisData'
 import { JudgmentSection } from './JudgmentSection'
 import { PriceScenarioSection } from './PriceScenarioSection'
 import { ReasonsRisksSection } from './ReasonsRisksSection'
 import { RelatedNewsCard } from './RelatedNewsCard'
 import { StockAnalysisHeader } from './StockAnalysisHeader'
-import { ContentWrapper, Disclaimer, Divider, FollowUpButtonWrapper, MetaText, PageRoot, ScrollArea } from './StockAnalysisPage.styles'
+import {
+  ContentWrapper,
+  Disclaimer,
+  Divider,
+  FollowUpButtonWrapper,
+  MetaText,
+  PageRoot,
+  ScrollArea,
+} from './StockAnalysisPage.styles'
 
 export default function StockAnalysisPage() {
-  const analysis = MOCK_STOCK_ANALYSIS
+  const { code } = useParams<{ code: string }>()
+  const analysis = getStockAnalysis(code)
 
   return (
     <PageRoot>
@@ -44,7 +55,9 @@ export default function StockAnalysisPage() {
             <Button variant="outline">이 분석에 추가 질문하기</Button>
           </FollowUpButtonWrapper>
 
-          <Disclaimer>가즈아는 투자 판단을 돕는 서비스이며, 최종 투자 결정과 책임은 사용자에게 있습니다.</Disclaimer>
+          <Disclaimer>
+            가즈아는 투자 판단을 돕는 서비스이며, 최종 투자 결정과 책임은 사용자에게 있습니다.
+          </Disclaimer>
         </ContentWrapper>
       </ScrollArea>
     </PageRoot>

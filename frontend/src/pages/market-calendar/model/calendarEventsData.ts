@@ -8,7 +8,7 @@ export const PERIOD_FILTERS: FilterChipOption<CalendarPeriod>[] = [
   { id: 'year', label: '연간' },
 ]
 
-export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
+export const CALENDAR_EVENTS: CalendarEvent[] = [
   {
     id: 'us-cpi',
     time: '오늘 21:30',
@@ -20,7 +20,7 @@ export const MOCK_CALENDAR_EVENTS: CalendarEvent[] = [
     id: 'oil-inventory',
     time: '오늘 23:00',
     title: '원유 재고 발표',
-    description: '유가와 정유·항공 업종에 영향',
+    description: '유가와 정유, 항공 업종에 영향을 주는 지표',
     impact: 'low',
   },
   {

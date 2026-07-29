@@ -15,7 +15,10 @@ describe('TossSecuritiesProvider', () => {
         return values[key]
       }),
     } as unknown as ConfigService<Env, true>
+    const requestedOptions: Array<{ url: string }> = []
     const requestJson = jest.fn((options: { url: string }) => {
+      requestedOptions.push(options)
+
       if (options.url.endsWith('/oauth2/token')) {
         return Promise.resolve({ access_token: 'token', expires_in: 3600 })
       }
@@ -28,9 +31,7 @@ describe('TossSecuritiesProvider', () => {
     await Promise.all([provider.getPrices(['005930']), provider.getStocks(['005930'])])
     await provider.getPrices(['005930'])
 
-    const tokenCalls = requestJson.mock.calls.filter(([options]) =>
-      String(options.url).endsWith('/oauth2/token'),
-    )
+    const tokenCalls = requestedOptions.filter((options) => options.url.endsWith('/oauth2/token'))
     expect(tokenCalls).toHaveLength(1)
   })
 })

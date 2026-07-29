@@ -1,13 +1,13 @@
-import { requestApi, type ApiResponse } from '@/shared/api/httpClient'
-
-import type {
-  EconomicCalendarEvent,
-  MarketCalendarEvent,
-  ServerMarketNewsItem,
-  StockAnalysisMetrics,
-  StockCandle,
-  StockQuote,
-} from '../model/types'
+import {
+  fetchDisclosuresData,
+  fetchEconomicCalendarData,
+  fetchMacroIndicatorsData,
+  fetchMarketCalendarData,
+  fetchMarketNewsData,
+  fetchStockAnalysisData,
+  fetchStockCandlesData,
+  fetchStockQuoteData,
+} from './marketDataApi'
 
 export interface MarketNewsParams {
   category?: string
@@ -51,37 +51,34 @@ export interface StockAnalysisParams {
 }
 
 export function fetchMarketNews(params: MarketNewsParams = {}) {
-  return requestApi<ApiResponse<ServerMarketNewsItem[]>>('/api/market/news', toQuery(params))
+  return fetchMarketNewsData(params)
 }
 
 export function fetchEconomicCalendar(params: EconomicCalendarParams = {}) {
-  return requestApi<ApiResponse<EconomicCalendarEvent[]>>('/api/market/calendar/economic', toQuery(params))
+  return fetchEconomicCalendarData(params)
 }
 
 export function fetchMarketCalendar(params: MarketCalendarParams = {}) {
-  return requestApi<ApiResponse<MarketCalendarEvent[]>>('/api/market/calendar', toQuery(params))
+  return fetchMarketCalendarData(params)
 }
 
 export function fetchDisclosures(params: DisclosureParams = {}) {
-  return requestApi<ApiResponse<unknown[]>>('/api/market/disclosures', toQuery(params))
+  void params
+  return fetchDisclosuresData()
 }
 
 export function fetchMacroIndicators(params: MacroIndicatorsParams = {}) {
-  return requestApi<ApiResponse<unknown[]>>('/api/market/macro/indicators', toQuery(params))
+  return fetchMacroIndicatorsData(params)
 }
 
 export function fetchStockQuote(symbol: string) {
-  return requestApi<ApiResponse<StockQuote>>(`/api/market/stocks/${symbol}/quote`)
+  return fetchStockQuoteData(symbol)
 }
 
 export function fetchStockCandles(symbol: string, params: StockCandlesParams = {}) {
-  return requestApi<ApiResponse<StockCandle[]>>(`/api/market/stocks/${symbol}/candles`, toQuery(params))
+  return fetchStockCandlesData(symbol, params)
 }
 
 export function fetchStockAnalysis(symbol: string, params: StockAnalysisParams = {}) {
-  return requestApi<ApiResponse<StockAnalysisMetrics>>(`/api/market/stocks/${symbol}/analysis`, toQuery(params))
-}
-
-function toQuery(params: object): Record<string, string | number | undefined> {
-  return { ...params } as Record<string, string | number | undefined>
+  return fetchStockAnalysisData(symbol, params)
 }

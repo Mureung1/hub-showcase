@@ -1,6 +1,6 @@
 import { ChevronRight } from 'lucide-react'
 
-import { QUICK_QUESTIONS } from '../model/quickQuestions'
+import { QUICK_QUESTIONS, type QuickQuestion } from '../model/quickQuestions'
 import {
   CardList,
   QuestionChevron,
@@ -12,10 +12,14 @@ import {
 } from './QuickQuestionList.styles'
 
 interface QuickQuestionListProps {
-  onSelectQuestion: (question: string) => void
+  onSelectQuestion: (quickQuestion: QuickQuestion) => void
+  isDisabled?: boolean
 }
 
-export const QuickQuestionList = ({ onSelectQuestion }: QuickQuestionListProps) => (
+export const QuickQuestionList = ({
+  onSelectQuestion,
+  isDisabled = false,
+}: QuickQuestionListProps) => (
   <CardList>
     {QUICK_QUESTIONS.map((quickQuestion) => {
       const Icon = quickQuestion.icon
@@ -24,7 +28,8 @@ export const QuickQuestionList = ({ onSelectQuestion }: QuickQuestionListProps) 
         <QuestionRow
           key={quickQuestion.id}
           type="button"
-          onClick={() => onSelectQuestion(quickQuestion.question)}
+          disabled={isDisabled}
+          onClick={() => onSelectQuestion(quickQuestion)}
         >
           <QuestionIcon>
             <Icon size={18} />

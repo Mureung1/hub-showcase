@@ -1,6 +1,13 @@
 import type { StudyTerm } from './types'
 
-export const CONCEPT_MAP_ORDER = ['interest-rate', 'base-rate', 'inflation', 'growth-stock', 'per', 'valuation']
+export const CONCEPT_MAP_ORDER = [
+  'interest-rate',
+  'base-rate',
+  'inflation',
+  'growth-stock',
+  'per',
+  'valuation',
+]
 
 export const STUDY_TERMS: Record<string, StudyTerm> = {
   'interest-rate': {
@@ -14,7 +21,8 @@ export const STUDY_TERMS: Record<string, StudyTerm> = {
     id: 'base-rate',
     label: '기준금리',
     description: '중앙은행이 정하는 기준이 되는 금리로, 시중 금리와 자산 가격의 출발점이 됩니다.',
-    easyExplanation: '기준금리가 오르면 예금 이자가 매력적으로 변해 주식에서 자금이 빠질 수 있습니다.',
+    easyExplanation:
+      '기준금리가 오르면 예금 이자가 매력적으로 변해 주식에서 자금이 빠질 수 있습니다.',
     relatedTermIds: ['interest-rate', 'inflation', 'exchange-rate'],
   },
   inflation: {
@@ -49,7 +57,8 @@ export const STUDY_TERMS: Record<string, StudyTerm> = {
     id: 'exchange-rate',
     label: '환율',
     description: '한 나라의 통화가 다른 나라 통화에 비해 갖는 교환 비율입니다.',
-    easyExplanation: '환율이 오르면(원화 약세) 수출 기업에는 유리하지만 수입 물가는 오를 수 있습니다.',
+    easyExplanation:
+      '환율이 오르면(원화 약세) 수출 기업에는 유리하지만 수입 물가는 오를 수 있습니다.',
     relatedTermIds: ['interest-rate', 'inflation'],
   },
 }

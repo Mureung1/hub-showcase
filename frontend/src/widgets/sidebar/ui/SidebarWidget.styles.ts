@@ -2,7 +2,7 @@ import { css } from '@emotion/react'
 import styled from '@emotion/styled'
 import { Link } from 'react-router-dom'
 
-import type { MarketDirection } from '../model/watchlistMock'
+import type { MarketDirection } from '../model/watchlistData'
 
 export const SidebarAside = styled.aside`
   display: flex;
@@ -72,7 +72,13 @@ export const SectionTitle = styled.p`
   padding: 0 ${({ theme }) => theme.space[3]} ${({ theme }) => theme.space[1]};
 `
 
-const navButtonStyles = ({ theme, isActive }: { theme: import('@emotion/react').Theme; isActive?: boolean }) => css`
+const navButtonStyles = ({
+  theme,
+  isActive,
+}: {
+  theme: import('@emotion/react').Theme
+  isActive?: boolean
+}) => css`
   display: flex;
   align-items: center;
   gap: ${theme.space[3]};
@@ -110,12 +116,22 @@ export const WatchlistSection = styled.div`
   border-top: 1px solid ${({ theme }) => theme.colors.border.subtle};
 `
 
-export const WatchlistRow = styled.div`
+export const WatchlistRow = styled(Link)`
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: ${({ theme }) => theme.space[2]} ${({ theme }) => theme.space[3]};
   border-radius: ${({ theme }) => theme.radius.sm};
+  text-decoration: none;
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.fill.neutralHover};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.border.focus};
+    outline-offset: 2px;
+  }
 `
 
 export const WatchlistInfo = styled.div`

@@ -30,6 +30,11 @@ export const QuestionRow = styled.button`
   &:hover {
     background: ${({ theme }) => theme.colors.fill.neutralHover};
   }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.72;
+  }
 `
 
 export const QuestionIcon = styled.span`

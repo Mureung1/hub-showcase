@@ -1,4 +1,13 @@
-import { CalendarClock, FileBarChart, LineChart, ShieldCheck } from 'lucide-react'
+import {
+  Activity,
+  BadgeDollarSign,
+  CalendarClock,
+  FileBarChart,
+  LineChart,
+  Newspaper,
+  ShieldCheck,
+  TrendingUp,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export interface QuickQuestion {
@@ -37,5 +46,33 @@ export const QUICK_QUESTIONS: QuickQuestion[] = [
     title: '다가오는 증시 일정을 정리할까요?',
     description: '증시에 영향을 줄 이벤트만 골라드려요',
     question: '다가오는 증시 일정을 정리할까요?',
+  },
+  {
+    id: 'nvidia-analysis',
+    icon: TrendingUp,
+    title: '엔비디아는 지금 어떤 구간일까요?',
+    description: '모멘텀과 과열 신호를 같이 볼게요',
+    question: '엔비디아는 지금 어떤 구간일까요?',
+  },
+  {
+    id: 'samsung-analysis',
+    icon: BadgeDollarSign,
+    title: '삼성전자 진입 타이밍을 볼까요?',
+    description: '메모리 업황과 가격 구간을 같이 정리해요',
+    question: '삼성전자 진입 타이밍을 볼까요?',
+  },
+  {
+    id: 'news-summary',
+    icon: Newspaper,
+    title: '오늘 중요한 뉴스만 추려볼까요?',
+    description: '시장에 영향이 큰 뉴스 위주로 요약해요',
+    question: '오늘 중요한 뉴스만 추려볼까요?',
+  },
+  {
+    id: 'risk-check',
+    icon: Activity,
+    title: '지금 시장 리스크를 점검할까요?',
+    description: '금리, 환율, 유가, 실적 변수로 나눠봐요',
+    question: '지금 시장 리스크를 점검할까요?',
   },
 ]
