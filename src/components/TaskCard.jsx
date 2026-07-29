@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { LEVEL_META } from "../lib/levelMeta";
 import { REASON_OPTIONS } from "../lib/taskOptions";
 import { getTaskDeadlinePresentation } from "../lib/taskDeadline";
@@ -196,6 +196,14 @@ function NextNudgeStatus({ isFocused, isThisTaskModalTarget, isNudgeModalOpen, n
   const [now, setNow] = useState(() => Date.now());
   const showsCountdown =
     !isFocused && !isNudgeModalOpen && typeof nextNudgeAt === "number";
+
+  // 모달이 열려 있는 동안(showsCountdown=false) 아래 interval이 멈춰 now가 그
+  // 시점에 고정된다. 모달이 닫혀 다시 true가 되는 첫 렌더에 옛 now로 계산하면
+  // 실제보다 부풀려진 초가 잠깐 보였다가 1초 뒤 갱신되며 아래로 "점프"한다 —
+  // 재개 즉시(페인트 전) now를 현재 시각으로 맞춰 그 잘못된 프레임 자체를 없앤다.
+  useLayoutEffect(() => {
+    if (showsCountdown) setNow(Date.now());
+  }, [showsCountdown]);
 
   useEffect(() => {
     if (!showsCountdown) return undefined;

@@ -314,6 +314,58 @@ describe("TaskCard 다음 알림 카운트다운", () => {
 
     expect(screen.getByText("다음 알림 · 자동 예약")).toBeInTheDocument();
   });
+
+  it("모달이 닫혀 카운트다운이 다시 보일 때, 모달이 열려 있던 동안 멈춰 있던 시각으로 부풀려진 값을 먼저 보여주지 않는다", () => {
+    const task = makeTask();
+    const { rerender } = render(
+      <TaskCard
+        task={task}
+        onClick={vi.fn()}
+        onDelete={vi.fn()}
+        now={BASE_TIME}
+        isNudgeModalOpen={false}
+        isThisTaskModalTarget={false}
+        nextNudgeAt={BASE_TIME.getTime() + 10 * 1000}
+      />,
+    );
+    expect(screen.getByText("다음 알림까지 10초")).toBeInTheDocument();
+
+    // 모달이 열림: 카운트다운이 마스킹되고, 그동안 실제 시간은 6초 흐른다
+    // (실 서비스에서는 넛지 확인/자동 닫힘 등으로 이 구간이 수 초~30초까지 걸릴 수 있다).
+    rerender(
+      <TaskCard
+        task={task}
+        onClick={vi.fn()}
+        onDelete={vi.fn()}
+        now={BASE_TIME}
+        isNudgeModalOpen={true}
+        isThisTaskModalTarget={true}
+        nextNudgeAt={null}
+      />,
+    );
+    expect(screen.getByText("알림 확인 중")).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(6000);
+    });
+
+    // 모달이 닫힘: HomePage가 이 시점 기준으로 새 nextNudgeAt(27초 뒤)을 예약한다.
+    rerender(
+      <TaskCard
+        task={task}
+        onClick={vi.fn()}
+        onDelete={vi.fn()}
+        now={BASE_TIME}
+        isNudgeModalOpen={false}
+        isThisTaskModalTarget={false}
+        nextNudgeAt={Date.now() + 27 * 1000}
+      />,
+    );
+
+    // 부풀려진 값(예: 33초, = 옛 now 기준)이 아니라 정확한 27초부터 보여야 한다.
+    expect(screen.getByText("다음 알림까지 27초")).toBeInTheDocument();
+    expect(screen.queryByText("다음 알림까지 33초")).not.toBeInTheDocument();
+  });
 });
 
 describe("TaskCard Lv별 얼굴 아이콘", () => {
