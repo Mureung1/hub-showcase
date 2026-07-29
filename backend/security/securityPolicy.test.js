@@ -155,6 +155,10 @@ test("Vercel serves restrictive document security headers", async () => {
   );
 
   assert.match(headers["content-security-policy"], /default-src 'self'/);
+  assert.match(
+    headers["content-security-policy"],
+    /script-src[^;]*https:\/\/cdn\.jsdelivr\.net/
+  );
   assert.match(headers["content-security-policy"], /object-src 'none'/);
   assert.match(headers["content-security-policy"], /frame-ancestors 'none'/);
   assert.equal(
