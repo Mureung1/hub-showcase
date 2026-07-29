@@ -654,7 +654,7 @@ export const mockRecipes = [
     cookTimeMinutes: 20,
     servings: 1,
     totalCost: 4200,
-    tip: '닭가슴살은 껍질이 붙어있는 것으로 준비하세요! 자세한 조리 방법은 위 영상을 참고해주세요.',
+    tip: '닭가슴살은 껍질이 붙어있는 것으로 준비하세요! 자세한 조리 방법은 위 영상을 참고해주세요. 다른 버전이 궁금하다면 이 영상도 참고: https://www.youtube.com/watch?v=s3Dt9q5epz0&t=2003s',
     ingredients: [
       { name: '닭가슴살', amount: '150g, 껍질 포함' },
       { name: '소금', amount: '약간' },
