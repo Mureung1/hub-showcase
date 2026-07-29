@@ -21,7 +21,7 @@
 }
 
 .live-map .map-marker.is-storefront-fallback {
-  opacity: 0.58;
+  opacity: 0.72;
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.52),
     0 0 0 3px rgba(39, 139, 86, 0.08),
@@ -56,17 +56,17 @@
 }
 
 .live-map .map-marker.is-storefront-fallback.is-deemphasized {
-  opacity: 0.18;
-  filter: saturate(0.72);
-  transform: scale(0.9);
+  opacity: 0.46;
+  filter: saturate(0.9);
+  transform: scale(0.96);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.4),
-    0 3px 8px rgba(25, 55, 34, 0.1);
+    0 0 0 1px rgba(255, 255, 255, 0.48),
+    0 3px 9px rgba(25, 55, 34, 0.12);
 }
 
 .live-map .map-marker.is-storefront-fallback.is-deemphasized:hover,
 .live-map .map-marker.is-storefront-fallback.is-deemphasized:focus-visible {
-  opacity: 0.82;
+  opacity: 0.92;
   filter: none;
   transform: scale(1);
   box-shadow:
@@ -235,22 +235,5 @@
   .selected-store-focus-anchor::after,
   .selected-store-focus-anchor svg {
     animation: none;
-  }
-}
-
-@media (max-width: 720px) {
-  .live-map .map-marker.is-detailed {
-    width: 40px;
-    height: 40px;
-  }
-
-  .live-map .map-marker.is-storefront-fallback.is-detailed {
-    width: 28px;
-    height: 28px;
-  }
-
-  .selected-store-focus-anchor {
-    width: 42px;
-    height: 42px;
   }
 }
