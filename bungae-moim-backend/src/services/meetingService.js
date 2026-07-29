@@ -5,6 +5,7 @@ const { evaluateApplicability } = require('../utils/participation');
 const { validateUpdateMeeting, validateApplyAnswer } = require('../utils/validators');
 const { isAdult } = require('../utils/age');
 const { createNotification, createNotifications, NOTIFICATION_TYPES } = require('./notificationService');
+const { recalculateTrustScore } = require('./evaluationService');
 
 // status 필터로 허용하는 값. 임의 문자열이 그대로 SQL 조건에 들어가지 않도록 화이트리스트로 검증한다.
 const ALLOWED_STATUS_FILTERS = ['recruiting', 'closed'];
@@ -387,16 +388,25 @@ async function cancelParticipation(meetingId, userId) {
       [meetingId, userId]
     );
 
+    // 신뢰도는 더 이상 여기서 직접 깎지 않는다(설계 7장 전환). 취소 사실만 이력으로 남기고
+    // 점수는 재계산이 이력에서 만들어낸다 — 그래야 공식을 바꿔 전체 재계산할 수 있다.
+    // hours_before_start는 취소 당시의 판단이 맞으므로 스냅샷으로 굳힌다(E4로 시작 시각이
+    // 수정돼도 과거의 취소 평가가 흔들리지 않는다).
+    await client.query(
+      `INSERT INTO participation_cancellations (meeting_id, user_id, was_confirmed, hours_before_start)
+       SELECT $1, $2, $3, EXTRACT(EPOCH FROM (start_at - now())) / 3600
+         FROM meetings WHERE id = $1`,
+      [meetingId, userId, wasConfirmed]
+    );
+
     if (wasConfirmed) {
-      await client.query(
-        'UPDATE users SET trust_score = GREATEST(trust_score - 3, 0) WHERE id = $1',
-        [userId]
-      );
       // flash가 정원 마감(closed)이었다면 자리가 비므로 다시 모집 상태로.
       if (meeting.type === 'flash' && meeting.status === 'closed') {
         await client.query("UPDATE meetings SET status = 'recruiting' WHERE id = $1", [meetingId]);
       }
     }
+
+    await recalculateTrustScore(client, userId);
 
     return { status: 'cancelled' };
   });

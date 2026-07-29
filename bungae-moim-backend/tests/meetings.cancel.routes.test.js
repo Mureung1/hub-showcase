@@ -1,5 +1,7 @@
 // DELETE /api/meetings/:id/apply — 참여/신청 취소(F2).
-// 핵심: confirmed 취소 시 감점+재오픈, pending 취소는 무감점, 이중취소는 감점 안 함.
+// 핵심: 취소는 즉시 감점하지 않고 이력만 남긴다(신뢰도는 이력에서 재계산된다).
+// confirmed 취소는 flash 재오픈 + 이력(was_confirmed=true), pending 취소는 이력만
+// (was_confirmed=false, 무감점), 이중취소는 이력이 늘지 않는다.
 jest.mock('../src/services/oauthClients');
 
 const request = require('supertest');
@@ -74,21 +76,31 @@ describe('DELETE /api/meetings/:id/apply', () => {
     expect(res.status).toBe(404);
   });
 
-  it('confirmed 취소 시 신뢰도가 3점 깎이고 flash가 재오픈된다', async () => {
+  it('확정 취소는 즉시 감점하지 않고 취소 이력만 남긴다', async () => {
+    // 새 신뢰도 시스템에서는 점수가 이력에서 계산된다. 취소 시점에 trust_score를
+    // 직접 깎으면 재계산이 그 값을 덮어써서 이중 감점 또는 유실이 생긴다.
     const host = await createUser('cancel-h1');
     const meetingId = await insertMeeting(host, { capacity: 1, status: 'closed' });
     const { agent, userId } = await loginAgent('cancel-u1');
     await insertParticipant(meetingId, userId, 'confirmed');
 
-    const before = await trustScore(userId);
     const res = await agent.delete(`/api/meetings/${meetingId}/apply`);
     expect(res.status).toBe(200);
-    expect(await trustScore(userId)).toBe(before - 3);
     expect(await meetingStatus(meetingId)).toBe('recruiting');
     expect(await participantStatus(meetingId, userId)).toBe('cancelled');
+
+    const { rows } = await pool.query(
+      'SELECT was_confirmed, hours_before_start FROM participation_cancellations WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, userId]
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].was_confirmed).toBe(true);
+    // 이 모임의 시작(2030-01-01)은 먼 미래라 24시간 임박 취소가 아니다 → 감점 없음.
+    expect(Number(rows[0].hours_before_start)).toBeGreaterThan(24);
+    expect(await trustScore(userId)).toBe(50);
   });
 
-  it('pending 취소는 감점이 없다', async () => {
+  it('pending 취소도 이력을 남기되 was_confirmed가 false이고 감점이 없다', async () => {
     const host = await createUser('cancel-h2');
     const meetingId = await insertMeeting(host, { type: 'small', capacity: null, endAt: '2030-12-31T10:00:00+09:00' });
     const { agent, userId } = await loginAgent('cancel-u2');
@@ -97,19 +109,30 @@ describe('DELETE /api/meetings/:id/apply', () => {
     const before = await trustScore(userId);
     await agent.delete(`/api/meetings/${meetingId}/apply`);
     expect(await trustScore(userId)).toBe(before);
+
+    const { rows } = await pool.query(
+      'SELECT was_confirmed FROM participation_cancellations WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, userId]
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].was_confirmed).toBe(false);
   });
 
-  it('이미 취소된 걸 다시 취소해도 감점되지 않는다(404, 신뢰도 불변)', async () => {
+  it('이미 취소된 걸 다시 취소해도 이력이 추가되지 않는다(404, 이력 1건 그대로)', async () => {
     const host = await createUser('cancel-h3');
     const meetingId = await insertMeeting(host);
     const { agent, userId } = await loginAgent('cancel-u3');
     await insertParticipant(meetingId, userId, 'confirmed');
 
-    await agent.delete(`/api/meetings/${meetingId}/apply`); // 첫 취소(-3)
-    const afterFirst = await trustScore(userId);
+    await agent.delete(`/api/meetings/${meetingId}/apply`); // 첫 취소(이력 1건)
     const res = await agent.delete(`/api/meetings/${meetingId}/apply`); // 이중 취소
     expect(res.status).toBe(404);
-    expect(await trustScore(userId)).toBe(afterFirst); // 더 안 깎임
+
+    const { rows } = await pool.query(
+      'SELECT id FROM participation_cancellations WHERE meeting_id = $1 AND user_id = $2',
+      [meetingId, userId]
+    );
+    expect(rows).toHaveLength(1); // 더 안 늘어남
   });
 
   // 이미 끝난 모임은 취소할 수 없다. 지난 모임을 "취소"한다는 게 말이 안 되기도 하지만,
