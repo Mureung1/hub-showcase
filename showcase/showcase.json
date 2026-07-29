@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "title": "나만의 레시피북",
-  "summary": "흩어진 레시피를 AI로 정리하고 수정해 나만의 레시피북에 보관하는 모바일 중심 웹 서비스입니다.",
+  "summary": "흩어진 레시피를 AI로 정리하고 수정해 나만의 레시피북에 보관하는 아카이빙 서비스입니다.",
   "githubUser": "ketru44(강성준)",
-  "demoUrl": "",
+  "demoUrl": "https://drive.google.com/file/d/1qiaIfg4x0xMBch0Ix8fwsqTZpBmH_8oP/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
   "screenshots": [],
   "problem": "직접 알고 있거나 인터넷에서 발견한 레시피는 여러 장소에 흩어져 있고 형식도 일정하지 않아, 다시 찾아 실제 요리에 활용하기 어렵습니다. 가족이나 가까운 사람에게 받은 레시피도 전달한 사람과의 관계와 기억을 함께 보관하기 어렵습니다.",
@@ -61,6 +61,16 @@
         "type": "skill",
         "name": "preserve-product-intent Skill",
         "purpose": "변경 전에 관련 제품·디자인·API 문서를 선택해 확인하고 구현이 제품 의도에서 벗어나지 않도록 점검합니다."
+      },
+      {
+        "type": "skill",
+        "name": "authenticated-form-submit Skill",
+        "purpose": "Firebase 인증이 필요한 폼의 중복 제출 방지, 오류 처리, 입력 유지와 성공 이동을 집중 테스트로 검증합니다."
+      },
+      {
+        "type": "skill",
+        "name": "database-migration-validation Skill",
+        "purpose": "순차 PostgreSQL 마이그레이션을 실제 데이터베이스에 적용하고 재실행, 컬럼, 제약 조건과 인덱스를 검증합니다."
       }
     ],
     "workflows": [
