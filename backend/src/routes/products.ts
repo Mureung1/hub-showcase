@@ -155,7 +155,7 @@ productsRouter.post("/check-overlap", requireAuth, async (req, res) => {
        AND (u.max_age IS NULL OR $3 <= u.max_age)
      WHERE EXISTS (
        SELECT 1 FROM unnest($1::text[]) AS term
-       WHERE p.name ILIKE '%' || term || '%'
+       WHERE p.name ILIKE '%' || term || '%' OR i.name ILIKE '%' || term || '%'
      )
      GROUP BY i.id, i.name, i.upper_limit_mg, u.upper_limit_mg, u.rda_mg`,
     [expandedProductNames, gender, age]
