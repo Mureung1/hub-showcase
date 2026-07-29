@@ -25,7 +25,18 @@ export function createApp(options = {}) {
       getCurrentDate: options.getCurrentDate,
     }),
   );
-  app.use("/api/spotify", createSpotifyRouter(options.searchSpotifyTracks));
+  app.use("/api/spotify", createSpotifyRouter({
+    searchSpotifyTracks: options.searchSpotifyTracks,
+    getSupabase: options.getSupabase,
+    getAdminSupabase: options.getAdminSupabase,
+    getAuthenticatedSupabase: options.getAuthenticatedSupabase,
+    getSpotifyUserAccessToken: options.getSpotifyUserAccessToken,
+    exportMonthlyRecapPlaylist: options.exportMonthlyRecapPlaylist,
+    fetchImpl: options.spotifyFetch,
+    now: options.getSpotifyNow?.(),
+    randomBytesFn: options.spotifyRandomBytes,
+    env: options.env,
+  }));
   app.use(
     "/api/feed",
     createFeedRouter({

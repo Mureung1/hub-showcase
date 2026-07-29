@@ -6,6 +6,7 @@ import { UserList } from "./components/UserList";
 import { FollowingFeed } from "./components/FollowingFeed";
 import { PublicProfile } from "./components/PublicProfile";
 import { MonthlyRecap } from "./components/MonthlyRecap";
+import { ThemeControl } from "./components/ThemeControl";
 import type { Session } from "@supabase/supabase-js";
 import { getCurrentSession, getProfile, signOut, subscribeToAuthChanges } from "./services/authService";
 import type { AuthProfile } from "./services/authService";
@@ -280,16 +281,27 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
   };
 
   if (initialView === "auth" && isAuthLoading) {
-    return <main className="auth-loading" role="status"><p className="eyebrow">SWIM</p><strong>당신의 음악 일기를 여는 중...</strong></main>;
+    return (
+      <div className="auth-page">
+        <header className="auth-utility"><ThemeControl /></header>
+        <main className="auth-loading" role="status"><p className="eyebrow">SWIM</p><strong>당신의 음악 일기를 여는 중...</strong></main>
+      </div>
+    );
   }
 
   if (initialView === "auth" && !session) {
-    return <AuthScreen initialNotice={authError} onAuthenticated={(nextSession) => applySession(nextSession).catch(() => undefined)} />;
+    return (
+      <div className="auth-page">
+        <header className="auth-utility"><ThemeControl /></header>
+        <AuthScreen initialNotice={authError} onAuthenticated={(nextSession) => applySession(nextSession).catch(() => undefined)} />
+      </div>
+    );
   }
 
   if (session?.access_token && selectedProfile) {
     return (
       <main className="app-shell">
+        <div className="profile-utility"><ThemeControl /></div>
         <PublicProfile
           nickname={selectedProfile}
           accessToken={session.access_token}
@@ -310,9 +322,12 @@ export function App({ initialRecords, initialView = "auth" }: AppProps) {
           <p className="eyebrow">SWIM</p>
           <strong>One Day. One Song. One Memory.</strong>
         </div>
-        <div className="header-account">
-          <span>{profile?.nickname ?? session?.user.email ?? "Music Diary"}</span>
-          <button type="button" onClick={() => handleSignOut().catch(() => undefined)} disabled={isSigningOut}>{isSigningOut ? "나가는 중..." : "로그아웃"}</button>
+        <div className="header-actions">
+          <ThemeControl />
+          <div className="header-account">
+            <span>{profile?.nickname ?? session?.user.email ?? "Music Diary"}</span>
+            <button type="button" onClick={() => handleSignOut().catch(() => undefined)} disabled={isSigningOut}>{isSigningOut ? "나가는 중..." : "로그아웃"}</button>
+          </div>
         </div>
       </header>
 

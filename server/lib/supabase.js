@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 let supabaseClient;
+let supabaseAdminClient;
 
 export function getSupabaseClient() {
   if (supabaseClient) return supabaseClient;
@@ -39,4 +40,21 @@ export function getAuthenticatedSupabaseClient(accessToken) {
       autoRefreshToken: false,
     },
   });
+}
+
+export function getSupabaseAdminClient() {
+  if (supabaseAdminClient) return supabaseAdminClient;
+
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("SUPABASE_URL과 SUPABASE_SERVICE_ROLE_KEY 환경변수가 필요합니다.");
+  }
+
+  supabaseAdminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+  return supabaseAdminClient;
 }

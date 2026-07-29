@@ -30,7 +30,7 @@ SWIM은 **음악을 중심으로 하루를 기록하는 새로운 방식의 SNS*
 - 팔로잉 음악 피드
 - 사용자별 좋아요·좋아요 취소
 
-현재 버전은 위 사용자 흐름과 Monthly Recap 화면까지 포트폴리오로 시연할 수 있습니다. 댓글, 알림, DM과 Spotify 플레이리스트 생성은 포함하지 않습니다.
+현재 버전은 위 사용자 흐름과 Monthly Recap, 월간 기록의 Spotify 비공개 플레이리스트 내보내기까지 포트폴리오로 시연할 수 있습니다. 댓글, 알림과 DM은 포함하지 않습니다.
 
 ---
 
@@ -66,14 +66,22 @@ Backend
 ```env
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 
 SPOTIFY_CLIENT_ID=
 SPOTIFY_CLIENT_SECRET=
+SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/api/spotify/callback
+SPOTIFY_TOKEN_ENCRYPTION_KEY=
+APP_FRONTEND_URL=http://localhost:5173
 ```
+
+`SPOTIFY_TOKEN_ENCRYPTION_KEY`는 `openssl rand -base64 32`처럼 생성한 32바이트 base64 값을 사용합니다. 실제 값과 Service Role Key는 서버 환경에만 두며 브라우저의 `VITE_` 환경변수로 만들지 않습니다. 암호화 키를 바꾸면 기존 Spotify 연결 토큰을 복호화할 수 없으므로 사용자의 재연결이 필요합니다.
+
+Spotify Developer Dashboard에도 `SPOTIFY_REDIRECT_URI`와 완전히 같은 callback URL을 등록해야 합니다.
 
 회원가입 전에 Supabase SQL Editor에서 `server/supabase/profiles.sql`을 실행해 `profiles` 테이블과 Auth 사용자 생성 트리거를 적용합니다. 새 사용자의 닉네임은 Auth 메타데이터에서 전달되며, 트리거가 Auth 사용자와 동일한 ID의 프로필을 한 건 생성합니다.
 
-이후 `server/supabase/follows.sql`, `server/supabase/music_records.sql`, `server/supabase/likes.sql` 순서로 실행합니다. `follows` 테이블이 먼저 있어야 음악 기록의 팔로잉 조회 RLS 정책을 적용할 수 있고, `music_records` 테이블이 있어야 좋아요 외래키를 생성할 수 있습니다. `music_records.user_id` 외래키와 인증 RLS 정책은 기존 익명 기록을 삭제하지 않고 `user_id = null`로 보존하며, 사용자별 앱 조회에서는 제외합니다. 소유자를 확인할 수 있을 때만 별도 SQL로 백필해야 합니다.
+이후 `server/supabase/follows.sql`, `server/supabase/music_records.sql`, `server/supabase/likes.sql`, `server/supabase/spotify_connections.sql` 순서로 실행합니다. `follows` 테이블이 먼저 있어야 음악 기록의 팔로잉 조회 RLS 정책을 적용할 수 있고, `music_records` 테이블이 있어야 좋아요 외래키를 생성할 수 있습니다. Spotify 연결 테이블은 RLS와 권한 회수로 브라우저 접근을 차단하고 서버 Service Role에서만 사용합니다.
 
 ## 4. Backend 실행
 
@@ -101,6 +109,10 @@ npm run dev
 - TypeScript
 - Vite
 - CSS
+
+### 화면 테마
+
+화면 오른쪽 위에서 `라이트`, `다크`, `시스템` 테마를 선택할 수 있습니다. 선택값은 로그인 정보와 분리된 브라우저 `localStorage`의 `swim-theme` 키에 저장됩니다. 첫 방문 또는 `시스템` 선택 시 운영체제의 `prefers-color-scheme`을 따르며, 운영체제 설정이 실행 중 바뀌면 화면에도 반영됩니다. 저장소 접근이 차단되거나 잘못된 값이 있어도 시스템 테마로 안전하게 실행됩니다.
 
 ## Backend
 
@@ -359,6 +371,22 @@ Supabase access token이 필요합니다. `year`는 네 자리 연도, `month`�
 | 기능 | Method | URL | 설명 |
 |------|--------|-----|------|
 | 노래 검색 | GET | `/api/spotify/search?q={keyword}` | 2자 이상의 Spotify 트랙 검색 |
+
+### Spotify 사용자 계정 연결 API
+
+| 기능 | Method | URL | SWIM 인증 |
+|---|---|---|---|
+| 연결 URL 생성 | GET | `/api/spotify/connect` | 필요 |
+| Spotify callback | GET | `/api/spotify/callback` | 일회용 state |
+| 연결 상태 조회 | GET | `/api/spotify/connection` | 필요 |
+| 연결 해제 | DELETE | `/api/spotify/connection` | 필요 |
+| Recap 플레이리스트 내보내기 | POST | `/api/spotify/playlists` | 필요 |
+
+`GET /api/spotify/connect`는 `playlist-modify-private` scope만 요청하는 Spotify authorize URL을 반환합니다. callback은 10분 동안 유효한 일회용 state를 소비하고 성공하면 `APP_FRONTEND_URL?spotify=connected`, 취소나 실패 시 `?spotify=error&reason=...`으로 이동합니다.
+
+Access Token과 Refresh Token은 AES-256-GCM으로 암호화되어 서버 전용 테이블에 저장됩니다. 연결 상태 API에는 표시 이름, scope와 만료 시각만 포함되고 Spotify token과 내부 사용자 ID는 반환하지 않습니다. 만료된 access token은 서버에서 refresh token으로 갱신하며 연결 해제는 저장된 token을 삭제합니다.
+
+`POST /api/spotify/playlists`는 `{ "year": 2026, "month": 7 }` 형식으로 요청합니다. 인증 사용자의 해당 월 기록 중 Spotify 트랙 ID가 있는 곡을 날짜별 기록 순서대로 비공개 플레이리스트에 추가합니다. 같은 곡을 여러 날 기록했다면 각 날짜의 기억을 유지하며, 곡은 최대 100개씩 나누어 전송합니다. 같은 사용자의 같은 연월은 저장된 Spotify 링크를 반환해 중복 생성을 막습니다. 곡 추가가 중간에 실패하면 생성 직후 저장한 playlist ID로 같은 플레이리스트의 내용을 교체해 복구합니다.
 
 ### 검색 응답 예시
 

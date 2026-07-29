@@ -10,6 +10,8 @@
 → 팔로우
 → 팔로잉 피드
 → 좋아요·취소
+→ Monthly Recap
+→ Spotify 사용자 계정 연결
 ```
 
 ## 애플리케이션 구조
@@ -27,7 +29,9 @@ React
 - 음악 기록, 사용자 검색, 팔로우, 피드, 좋아요는 Bearer token을 Express에 전달합니다.
 - Express 인증 미들웨어가 token을 검증하고 요청 사용자를 확정합니다.
 - Spotify Client ID와 Secret은 Express 환경변수에만 존재합니다.
+- Spotify 사용자 token은 서버에서 AES-256-GCM으로 암호화하며 브라우저와 일반 Supabase 사용자는 읽을 수 없습니다.
 - React는 Spotify Web API를 직접 호출하지 않습니다.
+- 화면 테마 설정은 서버나 사용자 프로필에 저장하지 않고 브라우저 `localStorage`의 `swim-theme` 키로 관리합니다.
 
 ## 데이터 모델
 
@@ -37,6 +41,9 @@ React
 | `music_records` | `id`, `user_id` | 사용자의 하루 음악 기록 |
 | `follows` | `(follower_id, following_id)` | 사용자 관계 |
 | `likes` | `(user_id, record_id)` | 사용자별 음악 기록 좋아요 |
+| `spotify_oauth_states` | `state_hash` | 10분 유효 일회용 OAuth state |
+| `spotify_connections` | `user_id` | 암호화된 Spotify 사용자 token |
+| `spotify_playlist_exports` | `user_id`, `recap_year`, `recap_month` | 월별 내보내기 결과와 Spotify 링크 |
 
 닉네임은 `lower(btrim(nickname))` 기준 고유 인덱스로 공개 식별자의 중복을 방지합니다. API는 사용자 검색·팔로우·피드에서 Auth UUID를 공개하지 않습니다.
 음악 기록은 `(user_id, record_date)` 부분 고유 인덱스로 인증 사용자당 하루 한 건만 허용합니다. 공개 다이어리의 지난 기록은 `record_date`, `created_at`, `id` 내림차순 keyset cursor로 페이지를 나눕니다.
@@ -51,6 +58,7 @@ React
 | `follows` SELECT·INSERT·DELETE | 인증 사용자의 `follower_id` 관계 |
 | `likes` SELECT·DELETE | 인증 사용자의 `user_id` 관계 |
 | `likes` INSERT | 인증 사용자이며 읽을 수 있는 음악 기록 |
+| Spotify OAuth 테이블 | Service Role 전용, anon·authenticated 권한 회수 |
 
 `follower_id`, `likes.user_id`, `music_records.user_id`는 클라이언트 요청값을 신뢰하지 않고 서버가 검증한 인증 사용자 ID를 사용합니다.
 
@@ -61,6 +69,9 @@ React
 | Method | Path | 인증 |
 |---|---|---|
 | GET | `/api/spotify/search?q=` | 불필요 |
+| GET | `/api/spotify/connect` | 필요 |
+| GET | `/api/spotify/callback` | 일회용 state |
+| GET·DELETE | `/api/spotify/connection` | 필요 |
 | GET·POST | `/api/music-records` | 필요 |
 | GET | `/api/users?q=` | 필요 |
 | GET | `/api/users/{nickname}` | 필요 |
@@ -77,6 +88,10 @@ React
 월간 Recap은 인증 사용자 ID와 `record_date`의 월 시작·다음 달 시작 경계로 본인 기록만 조회합니다. 집계 응답에는 사용자 ID나 이메일을 포함하지 않으며 DB 스키마 변경 없이 기존 음악 기록을 사용합니다.
 React의 `MonthlyRecap`은 현재 월을 기본값으로 요청하고 월 변경 시 진행 중인 요청을 취소합니다. API 응답을 별도 중복 저장하지 않고 한 화면 상태에서 대표 앨범, 요약, 첫·마지막 기록과 타임라인으로 표현합니다.
 
+Spotify 검색은 기존 Client Credentials를 유지합니다. 사용자 계정 연결만 Authorization Code Flow를 사용하며 `playlist-modify-private` 최소 scope를 요청합니다. connect 단계에서 난수 state의 SHA-256 해시만 저장하고 callback에서 한 번 삭제해 재사용을 막습니다. callback 이후 token은 서버 전용 암호화 키로 보호하며 만료 1분 전부터 refresh합니다.
+
+Recap 플레이리스트 내보내기는 인증 사용자의 월간 `music_records`만 조회해 날짜별 `spotify_track_id`를 URI로 변환합니다. Express가 사용자 OAuth token으로 비공개 플레이리스트를 만든 뒤 곡을 100개 단위로 추가합니다. `(user_id, recap_year, recap_month)` 기본 키와 생성 lease로 동시 중복 생성을 막습니다. playlist ID와 URL은 Spotify 생성 직후 보존하며, 부분 실패나 만료된 `creating` 상태의 재시도에서는 기존 플레이리스트의 첫 배치를 교체한 뒤 나머지를 추가해 중복 곡 없이 복구합니다.
+
 ## SQL 적용 순서
 
 ```text
@@ -85,6 +100,7 @@ profiles.sql
 → follows.sql
 → music_records.sql
 → likes.sql
+→ spotify_connections.sql
 ```
 
 SQL 적용 전 기존 닉네임의 공백·대소문자 중복 여부를 확인해야 합니다. 마이그레이션은 기존 중복 데이터를 자동 삭제하지 않습니다.
