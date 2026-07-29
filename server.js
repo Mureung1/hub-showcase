@@ -17,6 +17,8 @@ import {
   createGuestSessionRouter,
   mapGuestSessionError
 } from "./backend/features/guest-sessions/guestSessionRoutes.js";
+import { createAiChatRouter } from "./backend/features/ai-chat/aiChatRoutes.js";
+import { AiGenerationError } from "./backend/features/ai-chat/aiChatService.js";
 
 dotenv.config({ quiet: true });
 
@@ -27,6 +29,7 @@ export function createApp({
   createAnalysis,
   listAnalyses,
   authenticateGuest,
+  generateAiResponse,
   guestAuthenticationOptions,
   guestSessionOptions,
   trustProxy = serverConfig.trustProxy,
@@ -105,6 +108,15 @@ export function createApp({
     })
   );
 
+  app.use(
+    "/api/ai-chat",
+    createAiChatRouter({
+      authenticateGuest,
+      guestAuthenticationOptions,
+      generateResponse: generateAiResponse
+    })
+  );
+
   app.use((request, response) => {
   response.status(404).json({
     success: false,
@@ -167,6 +179,17 @@ export function createApp({
       error: {
         code: error.code,
         message: "The database operation failed."
+      }
+    });
+    return;
+  }
+
+  if (error instanceof AiGenerationError) {
+    response.status(error.status).json({
+      success: false,
+      error: {
+        code: error.code,
+        message: error.message
       }
     });
     return;
