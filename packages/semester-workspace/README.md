@@ -9,7 +9,7 @@
 | V4 identity codec | Root `workspace-state.json`의 exact `kind`, `formatVersion`, `workspaceId`, `semester`, opaque `snapshot`을 `1 MiB` 안에서 strict encode/decode한다. |
 | Shared validators | `workspace_[0-9a-f]{32}` identity, `1..20` year level, bounded term slug·display name을 startup과 registry가 같은 규칙으로 검증한다. |
 | Root classification | 유효한 v4는 strict decode하고, version marker가 있는 current-v2·historical v3는 내용을 academic schema로 해석하지 않은 채 역사 상태로 분류한다. Malformed·future·상한 초과 bytes는 `incompatible`이다. 분류는 입력 bytes를 재작성하지 않는다. |
-| Opaque snapshot | `snapshot`은 bounded JSON object인지까지만 검사한다. Package는 Course, material, Run, patch, confirmation, event 또는 apply schema를 정의하지 않는다. |
+| Opaque snapshot | `snapshot`은 현재 `SemesterModel`의 canonical serialization slot이지만 이 package는 bounded JSON object인지까지만 검사한다. Course, Assignment, Exam, ScheduleEvent, material, Run, patch, confirmation, event 또는 apply schema를 정의하지 않는다. |
 
 Public export는 v4 codec·classification과 위 shared validator만 제공한다. V3 admission·setup journey/store, bundle materializer/verifier, context guard, current-v2 decoder, test-only parity subpath와 package-managed workspace resource tree는 제거됐으며 alias·deprecated export·fallback이 없다.
 

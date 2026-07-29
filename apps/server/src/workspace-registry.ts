@@ -273,14 +273,10 @@ export function createWorkspaceRegistryStore(
           return { status: 'conflict' }
         }
       }
-      const conflictingRoot = current.workspaces.some(
-        (entry) =>
-          entry.canonicalRoot === canonicalRoot &&
-          entry.workspaceId !== identity.state.workspaceId,
-      )
-      if (conflictingRoot) return { status: 'conflict' }
       const workspaces = current.workspaces.filter(
-        (entry) => entry.workspaceId !== identity.state.workspaceId,
+        (entry) =>
+          entry.workspaceId !== identity.state.workspaceId &&
+          entry.canonicalRoot !== canonicalRoot,
       )
       workspaces.push({
         workspaceId: identity.state.workspaceId,

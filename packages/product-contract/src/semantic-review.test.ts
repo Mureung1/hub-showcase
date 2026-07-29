@@ -17,14 +17,11 @@ const review = {
       description: '강의계획서의 마감 안내를 반영합니다.',
       before: '미정',
       after: '2026-08-03 23:59',
-      evidence: [
+      citations: [
         {
-          relativePath: 'materials/syllabus.txt',
-          contentDigest: 'a'.repeat(64),
-          quote: '8월 3일 23:59까지 제출',
-          occurrence: 1,
-          contextBefore: '과제 안내: ',
-          contextAfter: ' (LMS)',
+          relativePath: 'materials/syllabus.pdf',
+          excerpt: '8월 3일 23:59까지 제출',
+          locationHint: '2쪽 과제 일정 표',
         },
       ],
     },
@@ -79,10 +76,10 @@ test('Review frame decoder accepts only requested, resolved, and continuity fail
         changes: [
           {
             ...review.changes[0],
-            evidence: [
+            citations: [
               {
-                ...review.changes[0].evidence[0],
-                locator: { type: 'text_quote', occurrence: 1 },
+                ...review.changes[0].citations[0],
+                contentDigest: 'a'.repeat(64),
               },
             ],
           },
@@ -94,9 +91,9 @@ test('Review frame decoder accepts only requested, resolved, and continuity fail
   }
 })
 
-test('Browser Review rejects UTF-8, cardinality, evidence projection, and requested-frame overflow', () => {
+test('Browser Review rejects UTF-8, cardinality, citation projection, and requested-frame overflow', () => {
   const change = review.changes[0]
-  const evidence = change.evidence[0]
+  const citation = change.citations[0]
   const invalidReviews: unknown[] = [
     { ...review, question: '가'.repeat(683) },
     { ...review, changes: [] },
@@ -113,10 +110,10 @@ test('Browser Review rejects UTF-8, cardinality, evidence projection, and reques
       changes: [
         {
           ...change,
-          evidence: [
+          citations: [
             {
-              ...evidence,
-              contextBefore: '가'.repeat(1366),
+              ...citation,
+              locationHint: '가'.repeat(683),
             },
           ],
         },
@@ -127,21 +124,17 @@ test('Browser Review rejects UTF-8, cardinality, evidence projection, and reques
       changes: [
         {
           ...change,
-          evidence: Array.from({ length: 8 }, () => ({
-            ...evidence,
-            quote: '가'.repeat(5461),
-            contextBefore: '가'.repeat(1365),
-            contextAfter: '가'.repeat(1365),
+          citations: Array.from({ length: 8 }, () => ({
+            ...citation,
+            excerpt: '가'.repeat(5461),
           })),
         },
         {
           ...change,
           label: '두 번째 변경',
-          evidence: Array.from({ length: 8 }, () => ({
-            ...evidence,
-            quote: '나'.repeat(5461),
-            contextBefore: '나'.repeat(1365),
-            contextAfter: '나'.repeat(1365),
+          citations: Array.from({ length: 8 }, () => ({
+            ...citation,
+            excerpt: '나'.repeat(5461),
           })),
         },
       ],

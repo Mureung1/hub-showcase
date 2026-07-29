@@ -32,6 +32,8 @@ const firstWorkspaceId =
   'workspace_0123456789abcdef0123456789abcdef'
 const secondWorkspaceId =
   'workspace_fedcba9876543210fedcba9876543210'
+const thirdWorkspaceId =
+  'workspace_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
 
 test('the registry codec enforces its exact envelope, uniqueness, active membership, entry bound, and absolute normalized roots', () => {
   const valid = {
@@ -476,6 +478,72 @@ test('registry loss followed by explicit reselect preserves workspace identity a
     )
     assert.deepEqual(await readFile(statePath), beforeState)
     assert.deepEqual(await readFile(gitBytesPath), beforeGit)
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
+test('explicit reselect replaces a stale identity binding at the same canonical root', async () => {
+  const fixture = await createFixture('same-root-reselect')
+  try {
+    await writeIdentity(fixture.firstRoot, firstWorkspaceId)
+    const store = createWorkspaceRegistryStore({
+      appDataRoot: fixture.appDataRoot,
+    })
+    const previous = await store.commitActiveWorkspace({
+      expectedAuthority: null,
+      canonicalRoot: fixture.firstRoot,
+      expectedWorkspaceId: firstWorkspaceId,
+    })
+    assert.equal(previous.status, 'written')
+    if (previous.status !== 'written') {
+      assert.fail('previous binding must be written')
+    }
+
+    await writeIdentity(fixture.secondRoot, thirdWorkspaceId)
+    const unrelated = await store.commitActiveWorkspace({
+      expectedAuthority: previous.authority,
+      canonicalRoot: fixture.secondRoot,
+      expectedWorkspaceId: thirdWorkspaceId,
+    })
+    assert.equal(unrelated.status, 'written')
+    if (unrelated.status !== 'written') {
+      assert.fail('unrelated binding must be written')
+    }
+
+    await writeIdentity(fixture.firstRoot, secondWorkspaceId)
+    const selected = await store.commitActiveWorkspace({
+      expectedAuthority: unrelated.authority,
+      canonicalRoot: fixture.firstRoot,
+      expectedWorkspaceId: secondWorkspaceId,
+    })
+
+    assert.equal(selected.status, 'written')
+    if (selected.status !== 'written') {
+      assert.fail('explicit reselect must replace the stale binding')
+    }
+    assert.deepEqual(selected.registry, {
+      kind: 'ay-ple.workspace-registry',
+      formatVersion: 1,
+      activeWorkspaceId: secondWorkspaceId,
+      workspaces: [
+        {
+          workspaceId: thirdWorkspaceId,
+          canonicalRoot: fixture.secondRoot,
+        },
+        {
+          workspaceId: secondWorkspaceId,
+          canonicalRoot: fixture.firstRoot,
+        },
+      ],
+    })
+    const reopened = await store.resolveActiveWorkspace()
+    assert.equal(reopened.status, 'available')
+    if (reopened.status !== 'available') {
+      assert.fail('new same-root binding must reopen')
+    }
+    assert.equal(reopened.workspace.workspaceId, secondWorkspaceId)
+    assert.equal(reopened.canonicalRoot, fixture.firstRoot)
   } finally {
     await fixture.cleanup()
   }

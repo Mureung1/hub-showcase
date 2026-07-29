@@ -136,7 +136,7 @@ export function PreparedWorkspaceApp() {
             selectionLocked: chat.operationActive,
             onInvoke: (relativePaths) => {
               setChatOpen(true)
-              void chat.invokeOrganizeSources(relativePaths)
+              void chat.invokeModelSemester(relativePaths)
             },
           }}
         />
@@ -147,7 +147,7 @@ export function PreparedWorkspaceApp() {
         >
           <PreparedProductChat
             controller={chat}
-            onNavigateEvidence={sources.navigateEvidence}
+            onNavigateCitation={sources.navigateCitation}
           />
         </aside>
       </div>

@@ -104,6 +104,8 @@ Root companion docs:
 | Codex session topology 조사 | [spikes/codex-session-topology/research.md](spikes/codex-session-topology/research.md) | 고정 topology를 피하면서 lifecycle 특성을 확인하는 근거 |
 | Codex local Memories 아키텍처 조사 | [spikes/codex-memory-architecture/research.md](spikes/codex-memory-architecture/research.md) | built-in Memories의 scope·privacy·수명 근거 |
 | 에이전트 실행 엔진 재사용 후보 조사 | [spikes/agent-runtime-reuse-landscape/research.md](spikes/agent-runtime-reuse-landscape/research.md) | ACP 또는 두 번째 엔진 요구가 생길 때의 비교 기준 |
+| skills.sh 설치형 Skill 생태계 조사 | [spikes/skills-ecosystem/research.md](spikes/skills-ecosystem/research.md) | project copy, lock, update와 version·migration 한계의 공식 근거 |
+| Built-in Skill capability surface 조사 | [spikes/built-in-skills-as-capabilities/research.md](spikes/built-in-skills-as-capabilities/research.md) | OpenClaw·Hermes Agent의 catalog, tool 경계와 local-change-aware update 패턴 |
 
 ### 완료·역사 기록
 

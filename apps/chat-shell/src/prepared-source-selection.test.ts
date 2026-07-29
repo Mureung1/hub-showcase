@@ -20,10 +20,10 @@ import {
 test('prepared source display and frozen action request preserve one mixed source-list order', async () => {
   const sources = [
     source('A.txt', 'text'),
-    source('A/a.txt', 'text'),
-    source('Z.txt', 'text'),
+    source('A/a.pdf', 'pdf'),
+    source('Z.pptx', 'unsupported'),
     source('a.txt', 'text'),
-    source('가.txt', 'text'),
+    source('가.pdf', 'pdf'),
   ]
   const expectedPaths = sources.map(({ relativePath }) => relativePath)
   let selected: readonly string[] = []
@@ -46,12 +46,11 @@ test('prepared source display and frozen action request preserve one mixed sourc
           selectedSource: undefined,
           selectedActionPaths: selected,
           previewView: { state: 'idle' },
-          evidenceFocus: undefined,
-          evidenceNotice: undefined,
+          citationNotice: undefined,
           reload: async () => undefined,
           selectSource: () => undefined,
           toggleActionSource: () => undefined,
-          navigateEvidence: () => undefined,
+          navigateCitation: () => undefined,
         } satisfies PreparedWorkspaceSourcesController,
         action: {
           invocationEnabled: true,
@@ -70,7 +69,7 @@ test('prepared source display and frozen action request preserve one mixed sourc
   const displayedEntries = expectedPaths.map((relativePath) => ({
     relativePath,
     position: markup.indexOf(
-      `aria-label="${relativePath} 정리 작업 선택`,
+      `aria-label="${relativePath} 학기 정보 정리 자료 선택`,
     ),
   }))
   assert.ok(displayedEntries.every(({ position }) => position >= 0))
@@ -110,17 +109,22 @@ test('prepared source display and frozen action request preserve one mixed sourc
   )
 })
 
-test('prepared action selection follows fresh source-list order and text intersection', () => {
+test('prepared action selection follows fresh source-list order and regular-file intersection', () => {
   const initialSources = [
     source('materials/alpha.txt', 'text'),
     source('materials/lecture.pdf', 'pdf'),
-    source('materials/zeta.md', 'text'),
+    source('materials/zeta.pptx', 'unsupported'),
   ]
   let selected: readonly string[] = []
 
   selected = togglePreparedActionPath(
     selected,
-    'materials/zeta.md',
+    'materials/zeta.pptx',
+    initialSources,
+  )
+  selected = togglePreparedActionPath(
+    selected,
+    'materials/lecture.pdf',
     initialSources,
   )
   selected = togglePreparedActionPath(
@@ -131,15 +135,21 @@ test('prepared action selection follows fresh source-list order and text interse
 
   assert.deepEqual(selected, [
     'materials/alpha.txt',
-    'materials/zeta.md',
+    'materials/lecture.pdf',
+    'materials/zeta.pptx',
   ])
   assert.deepEqual(
     reconcilePreparedActionPaths(selected, [
-      source('materials/zeta.md', 'pdf'),
-      source('materials/alpha.txt', 'text'),
+      source('materials/zeta.pptx', 'pdf'),
+      source('materials/alpha.txt', 'unsupported'),
       source('materials/new.txt', 'text'),
+      source('materials/lecture.pdf', 'text'),
     ]),
-    ['materials/alpha.txt'],
+    [
+      'materials/zeta.pptx',
+      'materials/alpha.txt',
+      'materials/lecture.pdf',
+    ],
   )
 })
 

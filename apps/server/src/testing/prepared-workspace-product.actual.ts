@@ -17,7 +17,10 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { promisify } from 'node:util'
 
-import type { ProposeStatePatchRequest } from '@ay-ple/interaction-mcp'
+import {
+  INTERACTION_BROKER_PROTOCOL_VERSION,
+  type ProposeStatePatchRequest,
+} from '@ay-ple/interaction-mcp'
 import {
   decodeProductReviewResult,
   type ProductReviewFrame,
@@ -31,6 +34,7 @@ import {
 import express from 'express'
 
 import type { PreparedServerApplication } from '../prepared-server-application.js'
+import { renderModelSemesterActionText } from '../model-semester-action.js'
 import { createPreparedServerApplication } from '../prepared-server-application.js'
 import {
   createInteractionBroker,
@@ -78,13 +82,47 @@ const initialAssignment = [
   '제출: 미정',
   '',
 ].join('\n')
-const acceptedAssignment = [
-  '# 첫 과제',
-  '',
-  '마감: 2026-08-03 23:59',
-  '제출: LMS 과제함',
-  '',
-].join('\n')
+const initialWorkspaceState = {
+  kind: 'ay-ple.semester-workspace',
+  formatVersion: 4,
+  workspaceId: 'workspace_0123456789abcdef0123456789abcdef',
+  semester: {
+    yearLevel: 2,
+    term: { key: 'fall', displayName: '2학기' },
+  },
+  snapshot: {
+    studentContext: {
+      campus: '서울',
+    },
+    courses: [
+      {
+        title: '문제해결글쓰기',
+        assignments: [
+          {
+            title: '첫 과제',
+            dueAt: {
+              knowledge: 'unknown',
+              explanation: '선택 자료를 확인하기 전입니다.',
+            },
+            submissionMethod: '미정',
+            notes: '학생 메모 보존',
+          },
+        ],
+      },
+    ],
+  },
+} as const
+const initialWorkspaceStateBytes =
+  `${JSON.stringify(initialWorkspaceState, null, 2)}\n`
+const modeledFirstAssignment = {
+  title: '첫 과제',
+  dueAt: {
+    knowledge: 'known',
+    value: '2026-08-03 23:59',
+  },
+  submissionMethod: 'LMS 과제함',
+} as const
+const modeledCourseTitle = '문제해결글쓰기'
 const syllabus = [
   '# 문제해결글쓰기',
   '',
@@ -94,7 +132,7 @@ const syllabus = [
 ].join('\n')
 
 test(
-  'invokes public organize_sources through exact Runtime, same-Turn Review, and AY-owned checkpoint',
+  'invokes public model_semester through exact Runtime, same-Turn Review, and AY-owned checkpoint',
   { timeout: 120_000 },
   async () => {
     const fixture = await prepareWorkspace()
@@ -143,7 +181,7 @@ test(
       const baseUrl = `http://127.0.0.1:${listener.port}`
       const original = await mutationSnapshot(fixture.workspaceRoot)
 
-      const acceptedTrace = await invokePublicOrganizeSources(baseUrl)
+      const acceptedTrace = await invokePublicModelSemester(baseUrl)
       const acceptedOperation = await acceptedTrace.until(
         (frame) => frame.type === 'operation.accepted',
       )
@@ -183,7 +221,7 @@ test(
       await assertAcceptedCheckpoint(fixture)
       const accepted = await mutationSnapshot(fixture.workspaceRoot)
 
-      const rejectedTrace = await invokePublicOrganizeSources(baseUrl)
+      const rejectedTrace = await invokePublicModelSemester(baseUrl)
       const rejectedReview = await rejectedTrace.until(
         (frame) => frame.type === 'review.requested',
       )
@@ -208,8 +246,8 @@ test(
         fixture,
       )
       assert.equal(
-        await readFile(path.join(fixture.root, 'outside-evidence.txt'), 'utf8'),
-        'outside evidence\n',
+        await readFile(path.join(fixture.root, 'outside-citation.txt'), 'utf8'),
+        'outside citation\n',
       )
 
       await preparedServer.application.close()
@@ -249,11 +287,28 @@ test(
     try {
       await assertBootstrapOutput(fixture)
       const original = await mutationSnapshot(fixture.workspaceRoot)
-      const proposal = fixture.assignmentSkill.propose(fixture.syllabusDigest)
+      const proposal = fixture.assignmentSkill.propose()
       const mainTrace = await startProductTrace(fixture.workspaceRoot)
       try {
         const reviseCall = mainTrace.adapter.callTool(proposal)
         const revisionReview = await mainTrace.nextRequested()
+        assert.deepEqual(
+          revisionReview.review.changes.flatMap(
+            (change) => change.citations ?? [],
+          ),
+          [
+            {
+              relativePath: 'syllabus.txt',
+              excerpt: '첫 과제 마감은 2026-08-03 23:59입니다.',
+              locationHint: '첫 과제 안내 문단',
+            },
+            {
+              relativePath: 'syllabus.txt',
+              excerpt: '제출 방식은 LMS 과제함입니다.',
+              locationHint: '첫 과제 안내 문단',
+            },
+          ],
+        )
         await assertUnchanged(fixture.workspaceRoot, original)
         await mainTrace.broker.settle(revisionReview.interactionId, {
           outcome: 'revise',
@@ -266,7 +321,6 @@ test(
 
         const acceptCall = mainTrace.adapter.callTool(
           fixture.assignmentSkill.propose(
-            fixture.syllabusDigest,
             '제출 방식을 더 분명하게 써 주세요.',
           ),
         )
@@ -318,7 +372,7 @@ test(
         await mainTrace.close('native_terminal')
       }
 
-      await assertEvidenceAndBusyFailures(fixture)
+      await assertCitationAndBusyFailures(fixture)
       await assertContinuityFailures(fixture)
       await assertNoCredentialResidue(fixture.workspaceRoot)
     } finally {
@@ -347,16 +401,12 @@ type WorkspaceFixture = {
   readonly root: string
   readonly workspaceRoot: string
   readonly initialScaffoldHead: string
-  readonly syllabusDigest: string
   readonly assignmentSkill: FirstAssignmentSkillDriver
   cleanup(): Promise<void>
 }
 
 type FirstAssignmentSkillDriver = {
-  propose(
-    contentDigest: string,
-    revisionFeedback?: string,
-  ): ProposeStatePatchRequest
+  propose(revisionFeedback?: string): ProposeStatePatchRequest
   applyAccepted(
     workspaceRoot: string,
     result: ProductReviewResult | undefined,
@@ -377,7 +427,7 @@ async function prepareWorkspace(): Promise<WorkspaceFixture> {
 
 async function populateWorkspace(root: string): Promise<WorkspaceFixture> {
   const workspaceRoot = path.join(root, 'semester-workspace')
-  const outside = path.join(root, 'outside-evidence.txt')
+  const outside = path.join(root, 'outside-citation.txt')
   await mkdir(workspaceRoot)
   await mkdir(path.join(workspaceRoot, 'materials'))
   await git(workspaceRoot, ['init', '--quiet'])
@@ -385,6 +435,10 @@ async function populateWorkspace(root: string): Promise<WorkspaceFixture> {
   await git(workspaceRoot, ['config', 'user.email', 'trace@ay-ple.invalid'])
   await Promise.all([
     writeFile(path.join(workspaceRoot, 'assignment.md'), initialAssignment),
+    writeFile(
+      path.join(workspaceRoot, 'workspace-state.json'),
+      initialWorkspaceStateBytes,
+    ),
     writeFile(path.join(workspaceRoot, 'syllabus.txt'), syllabus),
     writeFile(path.join(workspaceRoot, 'dirty-sentinel.txt'), 'tracked\n'),
     writeFile(
@@ -405,12 +459,13 @@ async function populateWorkspace(root: string): Promise<WorkspaceFixture> {
         path.join(browserFixtureRoot, path.basename(unselectedActionPath)),
       ),
     ),
-    writeFile(outside, 'outside evidence\n'),
+    writeFile(outside, 'outside citation\n'),
   ])
   await git(workspaceRoot, [
     'add',
     '--',
     'assignment.md',
+    'workspace-state.json',
     'syllabus.txt',
     'dirty-sentinel.txt',
     ...selectedActionPaths,
@@ -446,12 +501,11 @@ async function populateWorkspace(root: string): Promise<WorkspaceFixture> {
     await gitText(workspaceRoot, ['rev-parse', 'HEAD']),
     initialScaffoldHead,
   )
-  await assertInstalledFirstAssignmentSkillContract(workspaceRoot)
+  await assertInstalledSemesterModelingSkillContract(workspaceRoot)
   return {
     root,
     workspaceRoot,
     initialScaffoldHead,
-    syllabusDigest: sha256(Buffer.from(syllabus)),
     assignmentSkill: createFirstAssignmentSkillDriver(),
     cleanup: () => rm(root, { recursive: true, force: true }),
   }
@@ -505,14 +559,14 @@ async function readActiveLifecycle(workspaceRoot: string) {
   }
 }
 
-async function invokePublicOrganizeSources(
+async function invokePublicModelSemester(
   baseUrl: string,
 ): Promise<NdjsonTrace> {
   const response = await fetch(`${baseUrl}/api/product/actions`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      action: 'organize_sources',
+      action: 'model_semester',
       files: selectedActionPaths.map((relativePath) => ({ relativePath })),
     }),
   })
@@ -548,14 +602,12 @@ async function assertFirstAssignmentConformanceProviderEvidence(
 ): Promise<void> {
   const firstRequest = journal.requests[0]
   assert.ok(firstRequest)
-  const actionText = [
-    'ActionInvocation: organize_sources',
-    'Selected SemesterWorkspace file references:',
-    ...selectedActionPaths.map((relativePath) => `- ${JSON.stringify(relativePath)}`),
-  ].join('\n')
+  const actionText = renderModelSemesterActionText(
+    selectedActionPaths.map((relativePath) => ({ relativePath })),
+  )
   const skillPath = path.join(
     fixture.workspaceRoot,
-    '.agents/skills/ay-ple-first-assignment/SKILL.md',
+    '.agents/skills/ay-ple-semester-modeling/SKILL.md',
   )
   const skillBody = await readFile(skillPath, 'utf8')
   const skillIndex = firstRequest.userTexts.findIndex((text) =>
@@ -566,7 +618,7 @@ async function assertFirstAssignmentConformanceProviderEvidence(
   assert.notEqual(textIndex, -1)
   const skillBlock = firstRequest.userTexts[skillIndex] as string
   assert.equal(skillIndex, textIndex + 1)
-  assert.match(skillBlock, /<name>ay-ple-first-assignment<\/name>/u)
+  assert.match(skillBlock, /<name>ay-ple-semester-modeling<\/name>/u)
   assert.equal(skillBlock.includes(`<path>${skillPath}</path>`), true)
   assert.equal(skillBlock.includes(skillBody), true)
   assert.equal(
@@ -576,7 +628,7 @@ async function assertFirstAssignmentConformanceProviderEvidence(
   const expectedRuntimeInput = [
     {
       type: 'skill',
-      name: 'ay-ple-first-assignment',
+      name: 'ay-ple-semester-modeling',
       path: skillPath,
     },
     { type: 'text', text: actionText },
@@ -598,22 +650,39 @@ async function assertFirstAssignmentConformanceProviderEvidence(
   for (const selected of selectedActionPaths) {
     assert.equal(readCommand.includes(selected), true)
   }
+  assert.match(readCommand, /workspace-state\.json/u)
   assert.equal(readCommand.includes(unselectedActionPath), false)
 
   const readEvidence = parseJsonObjectOutput(
     journal.requests.flatMap((request) =>
       request.functionOutputs.map(({ output }) => output),
     ),
-    'selectedFileDigests',
+    'inputFileDigests',
   )
-  assert.deepEqual(readEvidence.selectedFileDigests, {
+  assert.deepEqual(readEvidence.inputFileDigests, {
     [selectedActionPaths[0]]: sha256(
       await readFile(path.join(fixture.workspaceRoot, selectedActionPaths[0])),
     ),
     [selectedActionPaths[1]]: sha256(
       await readFile(path.join(fixture.workspaceRoot, selectedActionPaths[1])),
     ),
+    'workspace-state.json': sha256(Buffer.from(initialWorkspaceStateBytes)),
   })
+  assert.deepEqual(
+    calls
+      .filter(
+        (call) =>
+          call.name === 'exec_command' &&
+          call.callId.includes('read'),
+      )
+      .map((call) => call.callId),
+    [
+      'call-action-read-selected',
+      'call-action-reread-after-revise',
+      'call-action-reread-before-apply',
+      'call-action-read-rejected',
+    ],
+  )
 
   assert.deepEqual(
     calls
@@ -652,7 +721,10 @@ async function assertFirstAssignmentConformanceProviderEvidence(
   assert.ok(mutationCall)
   assert.equal(mutationCall.name, 'exec_command')
   const mutationCommand = String(mutationCall.arguments.cmd)
-  assert.match(mutationCommand, /assignment\.md/u)
+  assert.match(mutationCommand, /workspace-state\.json/u)
+  assert.doesNotMatch(mutationCommand, /assignment\.md/u)
+  assert.match(mutationCommand, /reviewedInputDrift/u)
+  assert.match(mutationCommand, /hashlib\.sha256/u)
   assert.match(mutationCommand, /git[^&]+commit/u)
   for (const unrelated of [
     'dirty-sentinel.txt',
@@ -793,7 +865,7 @@ async function assertPublicFramesSafe(
     fixture.workspaceRoot,
     path.join(
       fixture.workspaceRoot,
-      '.agents/skills/ay-ple-first-assignment/SKILL.md',
+      '.agents/skills/ay-ple-semester-modeling/SKILL.md',
     ),
   ]) {
     assert.equal(serialized.includes(privateValue), false)
@@ -846,11 +918,11 @@ async function assertBootstrapOutput(fixture: WorkspaceFixture): Promise<void> {
     await readFile(
       path.join(
         fixture.workspaceRoot,
-        '.agents/skills/ay-ple-first-assignment/SKILL.md',
+        '.agents/skills/ay-ple-semester-modeling/SKILL.md',
       ),
     ),
     await readFile(
-      path.join(repositoryRoot, 'skills/ay-ple-first-assignment/SKILL.md'),
+      path.join(repositoryRoot, 'skills/ay-ple-semester-modeling/SKILL.md'),
     ),
   )
   assert.match(
@@ -868,29 +940,28 @@ async function assertBootstrapOutput(fixture: WorkspaceFixture): Promise<void> {
       .filter(Boolean)
       .sort(),
     [
-      '.agents/skills/ay-ple-first-assignment/SKILL.md',
+      '.agents/skills/ay-ple-semester-modeling/SKILL.md',
       '.codex/config.toml',
       'AGENTS.md',
-      'workspace-state.json',
     ],
   )
 }
 
-async function assertInstalledFirstAssignmentSkillContract(
+async function assertInstalledSemesterModelingSkillContract(
   workspaceRoot: string,
 ): Promise<void> {
   const source = await readFile(
     path.join(
       workspaceRoot,
-      '.agents/skills/ay-ple-first-assignment/SKILL.md',
+      '.agents/skills/ay-ple-semester-modeling/SKILL.md',
     ),
     'utf8',
   )
   for (const requiredInstruction of [
-    'call\n   `propose_state_patch` before changing any actual file',
-    'On `accept`',
-    'On `revise`, keep the actual file unchanged',
-    'On `reject`, keep the actual file unchanged',
+    'Before changing `workspace-state.json`, call `propose_state_patch`',
+    'On `accept`, obtain any required native file permission',
+    'On `revise`, keep `workspace-state.json` unchanged',
+    'On `reject`, keep `workspace-state.json` unchanged',
     'commit only the intended paths',
     'never ask or expect it to edit\na SemesterWorkspace file or run Git for AY',
   ]) {
@@ -900,8 +971,8 @@ async function assertInstalledFirstAssignmentSkillContract(
 
 function createFirstAssignmentSkillDriver(): FirstAssignmentSkillDriver {
   return Object.freeze({
-    propose(contentDigest, revisionFeedback) {
-      const proposal = reviewRequest(contentDigest)
+    propose(revisionFeedback) {
+      const proposal = reviewRequest()
       if (!revisionFeedback) return proposal
       return {
         ...proposal,
@@ -920,25 +991,21 @@ function createFirstAssignmentSkillDriver(): FirstAssignmentSkillDriver {
   })
 }
 
-function reviewRequest(contentDigest: string): ProposeStatePatchRequest {
+function reviewRequest(): ProposeStatePatchRequest {
   return {
     summary: '첫 과제 정보를 정리합니다.',
-    question: '이 변경을 실제 과제 파일에 반영할까요?',
+    question: '이 변경을 학기 정보에 반영할까요?',
     changes: [
       {
         label: '마감',
         description: '강의계획서의 마감을 반영합니다.',
         before: '미정',
         after: '2026-08-03 23:59',
-        evidence: [
+        citations: [
           {
             relativePath: 'syllabus.txt',
-            contentDigest,
-            locator: {
-              type: 'text_quote',
-              quote: '첫 과제 마감은 2026-08-03 23:59입니다.',
-              occurrence: 1,
-            },
+            excerpt: '첫 과제 마감은 2026-08-03 23:59입니다.',
+            locationHint: '첫 과제 안내 문단',
           },
         ],
       },
@@ -947,15 +1014,11 @@ function reviewRequest(contentDigest: string): ProposeStatePatchRequest {
         description: '강의계획서의 제출 방식을 반영합니다.',
         before: '미정',
         after: 'LMS 과제함',
-        evidence: [
+        citations: [
           {
             relativePath: 'syllabus.txt',
-            contentDigest,
-            locator: {
-              type: 'text_quote',
-              quote: '제출 방식은 LMS 과제함입니다.',
-              occurrence: 1,
-            },
+            excerpt: '제출 방식은 LMS 과제함입니다.',
+            locationHint: '첫 과제 안내 문단',
           },
         ],
       },
@@ -1151,7 +1214,7 @@ async function assertCredentialRevoked(
         'x-ay-ple-runtime-binding': credentials.binding,
       },
       body: JSON.stringify({
-        protocolVersion: 1,
+        protocolVersion: INTERACTION_BROKER_PROTOCOL_VERSION,
         kind: 'handshake',
         serverName: 'ay_ple_interaction',
         capabilities: ['propose_state_patch'],
@@ -1161,86 +1224,79 @@ async function assertCredentialRevoked(
   assert.equal(response.status, 403)
 }
 
-async function assertEvidenceAndBusyFailures(
+async function assertCitationAndBusyFailures(
   fixture: WorkspaceFixture,
 ): Promise<void> {
   const trace = await startProductTrace(fixture.workspaceRoot)
   try {
     const baseline = await mutationSnapshot(fixture.workspaceRoot)
-    const invalidDigest = await toolResult(
-      trace.adapter.callTool(reviewRequest('0'.repeat(64))),
-      true,
+    const missing = reviewRequest()
+    assert.equal(
+      await toolResult(
+        trace.adapter.callTool({
+          ...missing,
+          changes: missing.changes.map((change) => ({
+            ...change,
+            citations: change.citations?.map((citation) => ({
+              ...citation,
+              relativePath: 'missing-syllabus.txt',
+            })),
+          })),
+        }),
+        true,
+        'The interaction source citation is invalid.',
+      ),
+      undefined,
     )
-    assert.equal(invalidDigest, undefined)
     assert.equal(trace.frames.length, 0)
     await assertUnchanged(fixture.workspaceRoot, baseline)
 
-    const quoteDrift = reviewRequest(fixture.syllabusDigest)
+    const traversal = reviewRequest()
     assert.equal(
       await toolResult(
         trace.adapter.callTool({
-          ...quoteDrift,
-          changes: quoteDrift.changes.map((change) => ({
+          ...traversal,
+          changes: traversal.changes.map((change) => ({
             ...change,
-            evidence: change.evidence?.map((evidence) => ({
-              ...evidence,
-              locator: {
-                ...evidence.locator,
-                quote: `${evidence.locator.quote} drift`,
-              },
+            citations: change.citations?.map((citation) => ({
+              ...citation,
+              relativePath: '../outside-citation.txt',
             })),
           })),
         }),
         true,
+        'The interaction request is invalid.',
       ),
       undefined,
     )
     assert.equal(trace.frames.length, 0)
 
-    const invalidReference = reviewRequest(fixture.syllabusDigest)
-    assert.equal(
-      await toolResult(
-        trace.adapter.callTool({
-          ...invalidReference,
-          changes: invalidReference.changes.map((change) => ({
-            ...change,
-            evidence: change.evidence?.map((evidence) => ({
-              ...evidence,
-              relativePath: '../outside-evidence.txt',
-            })),
-          })),
-        }),
-        true,
-      ),
-      undefined,
-    )
-    assert.equal(trace.frames.length, 0)
-
-    const escaped = reviewRequest(sha256(Buffer.from('outside evidence\n')))
+    const escaped = reviewRequest()
     const escapedCall = trace.adapter.callTool({
       ...escaped,
       changes: escaped.changes.map((change) => ({
         ...change,
-        evidence: [
+        citations: [
           {
-            ...change.evidence![0],
+            ...change.citations![0],
             relativePath: 'escape-link.txt',
-            contentDigest: sha256(Buffer.from('outside evidence\n')),
-            locator: {
-              type: 'text_quote',
-              quote: 'outside evidence',
-              occurrence: 1,
-            },
           },
         ],
       })),
     })
-    assert.equal(await toolResult(escapedCall, true), undefined)
+    assert.equal(
+      await toolResult(
+        escapedCall,
+        true,
+        'The interaction source citation is invalid.',
+      ),
+      undefined,
+    )
     assert.equal(trace.frames.length, 0)
 
-    const held = trace.adapter.callTool(reviewRequest(fixture.syllabusDigest))
+    const held = trace.adapter.callTool(reviewRequest())
     await trace.nextRequested()
-    const busy = trace.adapter.callTool(reviewRequest(fixture.syllabusDigest))
+    const busy = trace.adapter.callTool(reviewRequest())
     assert.equal(await toolResult(busy, true), undefined)
     assert.equal(
       trace.frames.filter((frame) => frame.type === 'review.requested').length,
@@ -1279,7 +1335,7 @@ async function assertContinuityFailures(
     const baseline = await mutationSnapshot(fixture.workspaceRoot)
     try {
       const call = trace.adapter.callTool(
-        reviewRequest(fixture.syllabusDigest),
+        reviewRequest(),
       )
       await trace.nextRequested()
       if (scenario === 'browser_disconnect') {
@@ -1362,23 +1418,98 @@ async function assertUnchanged(
 }
 
 async function applyAcceptedChange(workspaceRoot: string): Promise<void> {
-  await writeFile(path.join(workspaceRoot, 'assignment.md'), acceptedAssignment)
-  await git(workspaceRoot, ['add', '--', 'assignment.md'])
+  const statePath = path.join(workspaceRoot, 'workspace-state.json')
+  const currentState = JSON.parse(await readFile(statePath, 'utf8')) as {
+    readonly snapshot: Readonly<Record<string, unknown>>
+  }
+  const currentCourses = Array.isArray(currentState.snapshot.courses)
+    ? currentState.snapshot.courses
+    : []
+  const matchingCourse = currentCourses.find(
+    (course) =>
+      isRecord(course) &&
+      course.title === modeledCourseTitle,
+  )
+  const currentAssignments =
+    isRecord(matchingCourse) && Array.isArray(matchingCourse.assignments)
+      ? matchingCourse.assignments
+      : []
+  const matchingAssignment = currentAssignments.find(
+    (assignment) =>
+      isRecord(assignment) &&
+      assignment.title === modeledFirstAssignment.title,
+  )
+  const updatedCourse = {
+    ...(isRecord(matchingCourse) ? matchingCourse : {}),
+    title: modeledCourseTitle,
+    assignments: [
+      ...currentAssignments.filter(
+        (assignment) =>
+          !isRecord(assignment) ||
+          assignment.title !== modeledFirstAssignment.title,
+      ),
+      {
+        ...(isRecord(matchingAssignment) ? matchingAssignment : {}),
+        ...modeledFirstAssignment,
+      },
+    ],
+  }
+  const updatedState = {
+    ...currentState,
+    snapshot: {
+      ...currentState.snapshot,
+      courses: [
+        ...currentCourses.filter(
+          (course) =>
+            !isRecord(course) ||
+            course.title !== modeledCourseTitle,
+        ),
+        updatedCourse,
+      ],
+    },
+  }
+  await writeFile(statePath, `${JSON.stringify(updatedState, null, 2)}\n`)
+  await git(workspaceRoot, ['add', '--', 'workspace-state.json'])
   await git(workspaceRoot, [
     'commit',
     '--quiet',
     '--only',
     '-m',
-    'feat: record accepted first assignment',
+    'feat: model accepted first assignment',
     '--',
-    'assignment.md',
+    'workspace-state.json',
   ])
 }
 
 async function assertAcceptedCheckpoint(fixture: WorkspaceFixture): Promise<void> {
   assert.equal(
     await readFile(path.join(fixture.workspaceRoot, 'assignment.md'), 'utf8'),
-    acceptedAssignment,
+    initialAssignment,
+  )
+  assert.deepEqual(
+    JSON.parse(
+      await readFile(
+        path.join(fixture.workspaceRoot, 'workspace-state.json'),
+        'utf8',
+      ),
+    ),
+    {
+      ...initialWorkspaceState,
+      snapshot: {
+        ...initialWorkspaceState.snapshot,
+        courses: [
+          {
+            title: modeledCourseTitle,
+            assignments: [
+              {
+                ...modeledFirstAssignment,
+                notes: '학생 메모 보존',
+              },
+            ],
+          },
+        ],
+      },
+    },
   )
   assert.equal(
     await gitText(fixture.workspaceRoot, [
@@ -1387,11 +1518,11 @@ async function assertAcceptedCheckpoint(fixture: WorkspaceFixture): Promise<void
       '--name-only',
       'HEAD',
     ]),
-    'assignment.md',
+    'workspace-state.json',
   )
   assert.equal(
     await gitText(fixture.workspaceRoot, ['log', '-1', '--pretty=%s']),
-    'feat: record accepted first assignment',
+    'feat: model accepted first assignment',
   )
   assert.equal(
     await readFile(
@@ -1589,14 +1720,24 @@ function startAdapter(options: {
 async function toolResult(
   response: Promise<JsonRpcResponse>,
   expectError = false,
+  expectedFailureMessage?: string,
 ): Promise<ProductReviewResult | undefined> {
   const value = await response
   assert.equal(value.error, undefined)
   const result = value.result as {
+    readonly content?: readonly {
+      readonly type?: unknown
+      readonly text?: unknown
+    }[]
     readonly isError: boolean
     readonly structuredContent?: ProductReviewResult
   }
   assert.equal(result.isError, expectError)
+  if (expectedFailureMessage !== undefined) {
+    assert.deepEqual(result.content, [
+      { type: 'text', text: expectedFailureMessage },
+    ])
+  }
   return result.structuredContent
 }
 
@@ -1638,6 +1779,10 @@ async function gitText(root: string, args: readonly string[]): Promise<string> {
 
 function sha256(bytes: Uint8Array): string {
   return createHash('sha256').update(bytes).digest('hex')
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function escapeRegex(value: string): string {

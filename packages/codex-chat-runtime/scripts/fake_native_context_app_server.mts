@@ -117,12 +117,12 @@ function skillsResult(id: unknown, cwd: string): JsonObject {
               relativeRoot: ['.system', 'bundled-system-skill'],
             }),
             skill(cwd, {
-              name: 'ay-ple-first-assignment',
+              name: 'ay-ple-semester-modeling',
               scope: 'repo',
               relativeRoot: [
                 '.agents',
                 'skills',
-                'ay-ple-first-assignment',
+                'ay-ple-semester-modeling',
               ],
             }),
           ],

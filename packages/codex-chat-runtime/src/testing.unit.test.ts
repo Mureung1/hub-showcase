@@ -82,10 +82,10 @@ test('deterministic runtime returns isolated native-context projections and reco
   }
   const scriptedSkills = [
     {
-      name: 'ay-ple-first-assignment',
+      name: 'ay-ple-semester-modeling',
       enabled: true,
       sourceRoot:
-        '/deterministic/workspace/.agents/skills/ay-ple-first-assignment',
+        '/deterministic/workspace/.agents/skills/ay-ple-semester-modeling',
     },
   ]
   const runtime = new DeterministicCodexChatRuntime({
@@ -452,11 +452,13 @@ test('deterministic product turn snapshots an optional Skill without adding prod
       serviceTier: 'fast' as const,
     },
     skill: {
-      name: 'ay-ple-first-assignment',
+      name: 'ay-ple-semester-modeling',
       path:
-        '/deterministic/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+        '/deterministic/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md',
     },
-    text: 'ActionInvocation: organize_sources\n- "materials/notice.md"',
+    text:
+      'ActionInvocation: model_semester\n' +
+      '- [notice.md](materials/notice.md)',
   }
   const expectedInput = structuredClone(input)
   const runtime = new DeterministicCodexChatRuntime({

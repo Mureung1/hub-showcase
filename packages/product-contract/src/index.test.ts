@@ -17,7 +17,7 @@ test('package root exposes only the target Browser-safe contract', () => {
   assert.deepEqual(Object.keys(productContract).sort(), [
     'PRODUCT_ACTION_FILE_REF_MAX_ENTRIES',
     'PRODUCT_JSON_ENVELOPE_MAX_BYTES',
-    'PRODUCT_REVIEW_EVIDENCE_MAX_BYTES',
+    'PRODUCT_REVIEW_CITATIONS_MAX_BYTES',
     'PRODUCT_REVIEW_REQUESTED_FRAME_MAX_BYTES',
     'PRODUCT_WORKSPACE_SOURCE_LIST_MAX_BYTES',
     'PRODUCT_WORKSPACE_SOURCE_LIST_MAX_ENTRIES',
@@ -69,7 +69,7 @@ test('target Chat request excludes academic material selection', () => {
     () =>
       decodeTargetProductChatRequest({
         text: request.text,
-        action: 'organize_sources',
+        action: 'model_semester',
       }),
     ProductContractError,
   )
@@ -85,7 +85,7 @@ test('target Chat request excludes academic material selection', () => {
 
 test('target ActionInvocation decodes one ordered workspace file reference', () => {
   const request = {
-    action: 'organize_sources',
+    action: 'model_semester',
     files: [{ relativePath: '운영체제/과제 안내.md' }],
   } as const
 
@@ -97,7 +97,7 @@ test('target ActionInvocation decodes one ordered workspace file reference', () 
 
 test('target ActionInvocation preserves sixteen references and optional Turn settings', () => {
   const request = {
-    action: 'organize_sources',
+    action: 'model_semester',
     files: Array.from(
       { length: PRODUCT_ACTION_FILE_REF_MAX_ENTRIES },
       (_, index) => ({
@@ -121,15 +121,15 @@ test('target ActionInvocation rejects open, duplicate, unsafe, and oversized inp
   const file = { relativePath: '자료/과제.md' }
   for (const invalid of [
     { action: 'unknown', files: [file] },
-    { action: 'organize_sources', files: [file], skill: 'unsafe' },
+    { action: 'model_semester', files: [file], skill: 'unsafe' },
     {
-      action: 'organize_sources',
+      action: 'model_semester',
       files: [{ ...file, content: 'unsafe' }],
     },
-    { action: 'organize_sources', files: [] },
-    { action: 'organize_sources', files: [file, file] },
+    { action: 'model_semester', files: [] },
+    { action: 'model_semester', files: [file, file] },
     {
-      action: 'organize_sources',
+      action: 'model_semester',
       files: Array.from(
         { length: PRODUCT_ACTION_FILE_REF_MAX_ENTRIES + 1 },
         (_, index) => ({
@@ -137,18 +137,18 @@ test('target ActionInvocation rejects open, duplicate, unsafe, and oversized inp
         }),
       ),
     },
-    { action: 'organize_sources', files: [{ relativePath: '/자료.md' }] },
-    { action: 'organize_sources', files: [{ relativePath: '../자료.md' }] },
+    { action: 'model_semester', files: [{ relativePath: '/자료.md' }] },
+    { action: 'model_semester', files: [{ relativePath: '../자료.md' }] },
     {
-      action: 'organize_sources',
+      action: 'model_semester',
       files: [{ relativePath: '자료\\과제.md' }],
     },
     {
-      action: 'organize_sources',
+      action: 'model_semester',
       files: [{ relativePath: '자료/\0과제.md' }],
     },
     {
-      action: 'organize_sources',
+      action: 'model_semester',
       files: [
         {
           relativePath: '가'.repeat(
@@ -158,13 +158,13 @@ test('target ActionInvocation rejects open, duplicate, unsafe, and oversized inp
       ],
     },
     {
-      action: 'organize_sources',
+      action: 'model_semester',
       files: Array.from({ length: 5 }, (_, index) => ({
         relativePath: `${index}-${'a'.repeat(3_900)}.md`,
       })),
     },
     {
-      action: 'organize_sources',
+      action: 'model_semester',
       files: [file],
       codexSettings: {
         model: 'gpt-5.4',

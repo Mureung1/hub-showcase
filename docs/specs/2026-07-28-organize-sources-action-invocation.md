@@ -6,6 +6,18 @@
 - Surface: local-spec
 - Next actor: none
 
+## 완료 후 정정
+
+초기 구현 뒤 official Codex Desktop·terminal source와 실제 Browser 동작을 다시 확인해 file selection과 native carrier 경계를 다음처럼 정정했다. 아래 본문의 구현·검증 기준도 이 최종 상태를 반영한다.
+
+| 초기 제약 | 최종 구현 |
+| --- | --- |
+| `text` preview kind만 action 선택 가능 | Source list에 노출된 safe regular file은 `text | pdf | unsupported` preview kind와 무관하게 선택 가능 |
+| Relative path를 JSON string line으로 렌더링 | Codex Desktop의 local-file link와 같은 basename label·workspace-relative destination의 Markdown reference를 `TextInput`에 렌더링 |
+| Local file carrier가 부족하면 `MentionInput` 검토 | `MentionInput`은 app·plugin·Skill resource identity이며 generic local file carrier가 아니다. 실제 current-path failure가 생기면 필요한 보장을 먼저 정의 |
+
+이 정정은 PDF extraction, OCR 또는 page/range evidence를 추가하지 않는다. Preview capability와 action file-reference eligibility만 분리한다. 현재 구현 정본은 [AY–App Interaction Layer](../architecture/ay-app-interaction-layer.md)와 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다.
+
 ## Problem Statement
 
 현재 AY-PLE은 prepared SemesterWorkspace의 actual file을 source explorer에서 보고 normal Chat을 시작할 수 있으며, AY가 `propose_state_patch`를 호출하면 App의 inline Review에서 `accept | revise | reject`를 받아 같은 Product Turn을 이어 갈 수 있다. 그러나 source explorer에서 이미 고른 자료를 목적이 분명한 AY 작업으로 전달하는 App-originated 방향은 없다. Preview focus와 selection은 AY 입력에 영향을 주지 않고, 사용자는 같은 file path를 Chat prompt에 다시 적어야 한다.
@@ -36,7 +48,7 @@ Source explorer에 preview focus와 독립적인 multi-file selection을 추가�
 Server의 typed `organize_sources` action definition은 하나의 Product operation lease 안에서 다음 preflight를 수행한다.
 
 1. 현재 workspace lifecycle과 Codex account·Turn 설정을 확인한다.
-2. 선택 path가 exact active SemesterWorkspace 안의 현재 안전한 text-classified regular file인지 fresh 검증한다.
+2. 선택 path가 exact active SemesterWorkspace 안의 현재 안전한 regular file인지 preview kind와 무관하게 fresh 검증한다.
 3. native effective Skill catalog에서 enabled workspace-local `ay-ple-first-assignment`를 확인하고 host-only `SKILL.md` path를 resolve한다.
 4. action identity와 ordered relative refs만 담은 bounded text를 렌더링한다.
 5. startup-approved thread에 `[SkillInput, TextInput]` 순서로 fresh Product Turn 하나를 시작한다.
@@ -45,7 +57,7 @@ Server의 typed `organize_sources` action definition은 하나의 Product operat
 
 ## User Stories
 
-1. As a student, I want source explorer에서 여러 text 자료를 선택해 `선택한 자료 정리하기`를 실행하기를 원한다, so that 이미 표현한 맥락을 Chat prompt로 다시 적지 않아도 된다.
+1. As a student, I want source explorer에서 여러 자료를 preview 지원 여부와 무관하게 선택해 `선택한 자료 정리하기`를 실행하기를 원한다, so that 이미 표현한 맥락을 Chat prompt로 다시 적지 않아도 된다.
 2. As a student, I want file preview와 action selection이 서로 독립적이기를 원한다, so that 자료를 열어 보는 행동만으로 AY 작업이 시작되거나 입력이 바뀌지 않는다.
 3. As a student, I want action을 실행한 시점의 선택 목록을 확인하기를 원한다, so that AY가 어떤 actual file을 대상으로 작업하는지 알 수 있다.
 4. As a student, I want action 진행과 Review를 기존 AY Chat transcript에서 보기를 원한다, so that 별도 run 화면이나 workflow UI를 배울 필요가 없다.
@@ -105,7 +117,7 @@ Server의 typed `organize_sources` action definition은 하나의 Product operat
 | Module | 소유하는 책임 | 소유하지 않는 책임 |
 | --- | --- | --- |
 | `@ay-ple/product-contract` | Closed ActionInvocation request type·strict decoder와 file-ref cardinality·path·JSON bound | Absolute root, Skill path, native input, HTTP·NDJSON framing |
-| `apps/chat-shell` source workbench | Preview와 독립적인 text-source selection, selected count, explicit action control | File validity authority, Skill resolution, durable selection |
+| `apps/chat-shell` source workbench | Preview와 독립적인 safe regular-file selection, selected count, explicit action control | File validity authority, Skill resolution, durable selection |
 | `apps/chat-shell` product operation controller | Action request freeze, action transcript entry, existing stream reducer·Review·interrupt 사용 | Native thread identity, App workflow engine, result apply |
 | `apps/server` ActionInvocation Module | Closed action dispatch, active-root file resolver, expected Skill resolver, bounded text renderer와 permission policy | Skill workflow, selected file contents, actual file mutation·Git |
 | `apps/server` Product operation infrastructure | Chat·ActionInvocation의 one-at-a-time admission, account/settings, activity stream, disconnect·interrupt·terminal settlement | Action payload의 학업 의미, durable run |
@@ -170,10 +182,10 @@ Browser adapter는 `POST /api/product/actions`에 이 body를 보내고 `applica
 | Required Skill root | `<SemesterWorkspace>/.agents/skills/ay-ple-first-assignment` |
 | Native permission | `workspace_write` |
 | File cardinality | `1..16` |
-| Supported source kind | Current source policy의 `text`만 |
+| Supported source kind | Current source list의 safe regular file |
 | Native input | One `SkillInput`, then one bounded `TextInput` |
 
-PDF와 `unsupported` file은 source explorer에서 계속 preview하거나 unsupported 상태로 볼 수 있지만 이 action의 checkbox는 disabled다. PDF text extraction·page/range evidence가 실제로 구현·검증되기 전에는 path를 전달할 수 있다는 이유만으로 action 지원을 표시하지 않는다.
+`text | pdf | unsupported`는 App의 preview capability만 나타낸다. PDF나 unsupported file도 safe source list에 남아 있는 regular file이면 action checkbox를 사용할 수 있다. 이는 PDF text extraction·page/range evidence를 보장한다는 뜻이 아니라 AY에게 current file reference를 전달할 수 있다는 뜻이다.
 
 이 definition은 arbitrary workspace action manifest, dynamic UI schema나 generic native-input builder가 아니다. Public decoder는 closed union으로 남고 Server dispatch도 exhaustive `switch` 또는 동등한 static mapping으로 unknown action을 fail closed한다. 두 번째 실제 action에서 variation이 확인될 때만 공통 definition primitive를 넓힌다.
 
@@ -181,25 +193,25 @@ PDF와 `unsupported` file은 source explorer에서 계속 preview하거나 unsup
 
 Action은 Browser source list나 preview cache를 authority로 사용하지 않는다. Product operation lease를 claim한 뒤, native Turn을 시작하기 직전에 active root의 current filesystem에서 request refs를 모두 다시 확인한다.
 
-Server-private source safety Module은 selected ref마다 다음을 수행한다.
+Server-private `WorkspaceFileAccess` safe-open boundary는 selected ref마다 다음을 수행한다.
 
 1. Existing source path syntax와 excluded path policy를 다시 적용한다.
 2. Exact active root를 기준으로 resolve하고 root identity가 startup 때 고정한 identity와 같은지 확인한다.
 3. Candidate를 `lstat`하고 symlink가 아닌 regular file인지 확인한다.
 4. `realpath`가 lexical candidate와 같고 exact root 안에 남는지 확인한다.
 5. `O_RDONLY | O_NOFOLLOW`로 열어 `fstat` device·inode가 pre-open identity와 같은지 확인한다.
-6. Current size와 extension을 existing source classifier에 적용해 `text`인지 확인한다.
+6. Open 전후 directory chain과 file identity·size가 그대로인지 다시 확인한다.
 7. Handle을 닫고 Browser 입력 순서의 relative ref만 반환한다.
 
 모든 ref가 통과한 뒤에만 initial action preflight가 성공한다. 일부만 남겨 Turn을 시작하거나 missing ref를 자동으로 목록에서 제거하지 않는다. `operation.preparing` 전달 뒤 dispatch gate는 effective Skill과 모든 ref를 다시 관찰하고 rendered input이 initial 결과와 같은지 확인한다. Resolver는 file bytes를 읽거나 digest·snapshot·open handle을 Turn 수명까지 보존하지 않는다.
 
-이 action의 `WorkspaceFileRef`는 **path identity에 대한 request-scoped reference**이지 `EvidenceRef`가 아니다.
+이 action의 `WorkspaceFileRef`는 **current-path lookup을 위한 request-scoped reference**이지 `EvidenceRef`가 아니다.
 
 - Browser preview digest를 request에 포함하지 않는다.
 - 같은 safe relative path의 bytes가 list/preview 뒤 바뀌어도 action은 현재 file을 읽는 요청으로 해석한다.
 - File content가 preflight 뒤 바뀌는 것은 App-owned stale snapshot failure가 아니다. AY와 Skill이 actual file을 읽고 Review 직전·apply 직전 drift를 다시 확인한다.
-- Initial 또는 dispatch gate가 관찰한 missing, symlink, root escape, hidden·secret-like·scaffold path, non-regular file 또는 current non-text classification은 Turn 전 failure다.
-- Dispatch gate도 검증 handle을 닫고 relative path text만 전달하므로 그 뒤 AY의 actual read 전 pathname 교체를 같은 inode에 원자적으로 bind하지 않는다. 이는 current path-reference semantics의 unsupported reader boundary이며 별도 native same-open identity 또는 immutable carrier를 채택하기 전까지 App이 보장하지 않는다.
+- Initial 또는 dispatch gate가 관찰한 missing, symlink, root escape, hidden·secret-like·scaffold path 또는 non-regular file은 Turn 전 failure다.
+- Dispatch gate도 검증 handle을 닫고 relative path text만 전달하므로 그 뒤 AY의 actual read 전 pathname 교체를 같은 inode에 원자적으로 bind하지 않는다. 이는 current path-reference semantics에서 채택한 boundary이며 App이 보장하지 않는다. Exact-version 처리가 구체적인 제품 요구가 될 때만 별도 native same-open identity 또는 immutable carrier 결정을 다시 연다.
 
 이 구분은 old source snapshot/rebaseline state machine을 복원하지 않으면서 actual-file authority를 유지한다.
 
@@ -219,17 +231,17 @@ Skill observation은 operation-local bounded `AbortSignal`을 사용한다. Shut
 
 ### 5. Bounded action text
 
-Action definition은 selected path를 content나 Markdown link가 아닌 JSON-escaped POSIX relative string으로 렌더링한다. Exact line order는 다음과 같다.
+Action definition은 selected path를 Codex Desktop local-file link와 같은 Markdown reference로 렌더링하되 link destination에는 Browser-safe POSIX workspace-relative path를 사용한다. Exact line order는 다음과 같다.
 
 ```text
 ActionInvocation: organize_sources
 Selected SemesterWorkspace file references:
-- "materials/assignment-notice.md"
-- "materials/syllabus.md"
+- [assignment-notice.md](materials/assignment-notice.md)
+- [syllabus.md](materials/syllabus.md)
 ```
 
 - 첫 두 line은 exact fixed text다.
-- 각 ref는 request order대로 `- ${JSON.stringify(relativePath)}` 한 line으로 렌더링한다.
+- 각 ref는 request order대로 `- [escaped basename](escaped relativePath)` 한 line으로 렌더링한다.
 - Line ending은 `\n`이고 trailing newline은 없다.
 - Whole rendered text는 최대 `32 KiB` UTF-8다. Public `16 KiB` request bound를 통과해도 escaping·fixed overhead 뒤 이 bound를 넘으면 Turn 전에 거절한다.
 - File content, digest, absolute root, Skill path와 hidden workflow instruction을 넣지 않는다.
@@ -287,12 +299,10 @@ Action의 순서는 다음과 같다.
 strict HTTP decode
 → Product operation reserve
 → account/settings validation
-→ all file refs fresh resolve
-→ expected Skill fresh resolve
-→ action text render
+→ current file refs + expected Skill + rendered input initial validation
 → client continuity recheck
 → operation.preparing
-→ all file refs → effective Skill → all file refs + rendered input dispatch revalidation
+→ current file refs + effective Skill + prepared input dispatch revalidation
 → client continuity recheck
 → native Product Turn start
 → existing stream / nested interaction / terminal
@@ -314,16 +324,16 @@ Source workbench controller는 다음 transient state를 구분한다.
 | State | 의미 |
 | --- | --- |
 | `selectedSource` | 하나의 preview focus |
-| `selectedActionPaths` | `organize_sources`에 사용할 ordered unique text path 목록 |
+| `selectedActionPaths` | `organize_sources`에 사용할 ordered unique safe regular-file path 목록 |
 | Product operation state | 실행 중인 Chat 또는 ActionInvocation 하나 |
 
 UI behavior는 다음과 같다.
 
 - Initial action selection은 empty다. 첫 preview file을 자동으로 action 선택하지 않는다.
-- Text source row는 preview control과 별도 checkbox를 가진다. Row preview click은 checkbox를 바꾸지 않고 checkbox click은 Turn을 시작하지 않는다.
-- PDF·unsupported row는 preview할 수 있지만 이 action checkbox는 disabled이고 text-only 범위를 accessible label로 설명한다.
+- 모든 safe source row는 preview control과 별도 checkbox를 가진다. Row preview click은 checkbox를 바꾸지 않고 checkbox click은 Turn을 시작하지 않는다.
+- `text | pdf | unsupported`는 App preview capability만 나타낸다. PDF와 unsupported row도 action checkbox를 사용할 수 있다.
 - Selection은 source list order를 사용하고 최대 `16`개다. Limit에 도달하면 미선택 checkbox를 disable하고 이유를 표시한다.
-- Explicit reload는 fresh list에 남아 있고 여전히 text인 selected path만 교집합으로 보존한다.
+- Explicit reload는 fresh safe source list에 남아 있는 selected path만 교집합으로 보존한다.
 - `선택한 자료 정리하기` button은 selected count를 표시하며 selection이 empty이거나 workspace/account/settings가 unavailable, 다른 Product operation이 active, Review/clarification response가 pending이면 disabled다.
 - Button click은 current path array를 immutable request value와 Browser-local action transcript entry로 freeze한다. 그 뒤 source state가 바뀌어도 in-flight request를 변경하지 않는다.
 - Action entry는 `kind: "action"`, label과 frozen relative path 목록을 표시한다. Typed Chat message로 가장하지 않고 public wire에 별도 durable action record를 요구하지 않는다.
@@ -340,7 +350,7 @@ Chat operation hook은 Chat과 action의 request 시작 전 transcript entry만 
 | --- | --- | --- |
 | Unknown action, missing/extra field, empty·duplicate·`>16` refs, absolute/invalid path, oversized request | `400 invalid_request` JSON | 시작하지 않음 |
 | Current ref가 missing, symlink, out-of-root, hidden/excluded, non-regular 또는 replaced identity | `409 action_context_stale` JSON | 시작하지 않음 |
-| Current ref가 `pdf | unsupported` 또는 rendered text bound 초과 | `409 action_context_invalid` JSON | 시작하지 않음 |
+| Rendered action text가 action bound 초과 | `409 action_context_invalid` JSON | 시작하지 않음 |
 | Expected workspace Skill missing·disabled·wrong root·unsafe file | `409 action_unavailable` JSON | 시작하지 않음 |
 | Effective Skill observation 자체가 unavailable 또는 Runtime cleanup failure | `503 product_unavailable` 또는 existing recovery projection | 시작하지 않음 |
 | 다른 Chat/Action Turn active | `409 action_busy` JSON | 시작하지 않음 |
@@ -368,12 +378,12 @@ sequenceDiagram
     participant M as Interaction MCP
     participant W as SemesterWorkspace
 
-    U->>UI: Text 자료 checkbox 선택
+    U->>UI: 자료 checkbox 선택
     Note over UI,AY: Preview·selection만으로 Turn 없음
     U->>UI: 선택한 자료 정리하기
     UI->>A: organize_sources + relative refs
     A->>S: current refs fresh resolve
-    S-->>A: safe ordered text refs
+    S-->>A: safe ordered regular-file refs
     A->>R: effective workspace Skill 확인
     R-->>A: enabled workspace Skill root
     A->>R: SkillInput + TextInput Product Turn
@@ -395,7 +405,7 @@ sequenceDiagram
 - Existing normal Chat, model settings, source list/text/PDF preview, general clarification와 Semantic Review wire는 backward-compatible하게 유지한다.
 - Removed Course/material/First Assignment/retry routes와 `/api/product-mcp`, `/api/runtime/*`, `/api/codex-chat/*`를 alias로 복원하지 않는다.
 - Existing v2/v3 workspace bytes를 읽거나 migration하지 않는다.
-- `@ay-ple/codex-chat-runtime` README의 text-only Product Turn 설명은 implementation과 함께 optional Skill+text mapping으로 갱신한다.
+- `@ay-ple/codex-chat-runtime` README의 `TextInput`-only Product Turn 설명은 implementation과 함께 optional Skill+text mapping으로 갱신한다.
 - `@ay-ple/product-contract`, Server와 Chat Shell README는 current action route·UI·지원 kind를 자신의 범위에서 갱신한다.
 - 구현이 green일 때 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)의 current gap과 [개발 백로그](../product/ay-ple-development-backlog.md)의 ActionInvocation 완료 상태를 owning docs에서 먼저 갱신한다.
 - Prototype branch code는 implementation branch에 merge하지 않는다. 관찰한 input order와 test oracle만 production code/tests에 다시 구현한다.
@@ -409,7 +419,7 @@ sequenceDiagram
 | `MentionInput` | 사용하지 않음 | Verified need가 없고 rendered path로 first action이 성립한다. |
 | SDK patch | 추가하지 않음 | Public official SDK input으로 mapping이 완결된다. |
 | File reference integrity | Relative path only, digest 없음 | Action은 current actual file을 읽는 요청이며 version-bound Review evidence나 snapshot이 아니다. |
-| Supported kind | `text` only | Historical vertical과 current prototype evidence가 text file이며 PDF extraction은 별도 backlog다. |
+| Supported kind | Source list의 safe regular file | Action은 path reference를 전달하므로 preview kind나 extraction capability와 결합하지 않는다. PDF extraction·page evidence는 별도 backlog다. |
 | Cardinality | `1..16` | Single notice부터 작은 course bundle까지 수용하면서 첫 action을 human-scale·bounded하게 유지한다. |
 | Public endpoint | Closed `POST /api/product/actions` | Chat과 intent를 분리하고 future closed union을 허용하되 dynamic action bus를 만들지 않는다. |
 | Operation lifecycle | Existing Product Turn admission·stream 재사용 | Native Turn의 실제 concurrency·interrupt·terminal owner가 이미 있다. |
@@ -429,10 +439,10 @@ sequenceDiagram
   - Whole JSON envelope overflow
   - Chat decoder가 action·files field를 계속 거절함
 - Server source safety
-  - Current safe text regular file success와 request order preservation
+  - Current safe regular file success, preview kind 독립성과 request order preservation
   - Missing, renamed, symlink, root escape, hidden/managed/secret/scaffold path
   - Directory, device와 open 전후 inode mismatch
-  - PDF, unsupported와 text size classification drift
+  - PDF, unsupported와 preview limit 초과 file도 action preflight 성공
   - Root identity replacement과 all-or-nothing preflight
   - Resolver가 file content·digest·snapshot을 반환하지 않음
 
@@ -441,7 +451,7 @@ sequenceDiagram
 - Expected enabled Skill의 exact workspace root를 resolve하고 `SKILL.md` path만 Runtime에 전달한다.
 - Missing, disabled, global-only, wrong-root와 symlink Skill은 Turn 전에 실패한다.
 - Hub authoring Skill과 digest equality를 요구하거나 workspace copy를 rewrite하지 않는다.
-- Renderer가 fixed header, JSON-escaped ordered refs와 `32 KiB` bound를 지킨다.
+- Renderer가 fixed header, escaped ordered Markdown file refs와 `32 KiB` bound를 지킨다.
 - Action이 `workspace_write`, current optional settings, one Skill과 one text를 service에 전달한다.
 - Initial File/Skill/settings/account failure는 Runtime `startProductTurn` 호출과 `operation.preparing` frame이 0회다.
 - Preparing 대기 중 File/Skill/render drift는 dispatch revalidation 뒤 Runtime start 없이 exact safe `failed` terminal로 끝난다.
@@ -463,7 +473,7 @@ sequenceDiagram
 ### Browser unit and E2E tests
 
 - Preview click, checkbox toggle와 action click을 각각 분리해 preview·selection만으로 network action/Turn이 0회임을 확인한다.
-- Initial selection empty, text-only checkbox, max 16, reload intersection과 active-operation lock을 확인한다.
+- Initial selection empty, 모든 preview kind의 checkbox, max 16, reload intersection과 active-operation lock을 확인한다.
 - Action click이 exact path 목록을 freeze하고 이후 UI selection 변화가 request body를 바꾸지 않는다.
 - Action transcript entry는 label·frozen refs를 표시하고 user Chat message로 렌더링하지 않는다.
 - Action 시작 시 Chat dock이 열리고 hide/show 뒤에도 stream이 유지된다.
@@ -525,9 +535,9 @@ Blocking open question은 없다.
 
 | 관찰 항목 | 후속 조건 |
 | --- | --- |
-| PDF를 `organize_sources`에서 직접 사용할 필요 | Deterministic extraction strategy와 actual provider trace가 green일 때 supported kind를 별도 spec으로 확장한다. |
+| PDF extraction·page evidence | 실제 학업 use case와 deterministic extraction strategy가 생기면 file-reference selection과 별도 capability로 확장한다. |
 | 두 번째 App-originated action | 실제 composition variation을 확인한 뒤 static definition의 공통 primitive를 추출한다. |
-| Rendered relative path가 부족한 file case | 구체적 failure를 재현한 뒤에만 `MentionInput` 또는 다른 official carrier를 probe한다. |
+| Rendered relative path가 부족한 file case | 구체적 failure와 필요한 보장을 먼저 정의한 뒤 그 보장에 맞는 official carrier만 probe한다. |
 | Action transcript 재표시 | Native thread read/resume UX가 채택될 때 conversation projection으로 다루고 App action ledger는 만들지 않는다. |
 
 ## Completion

@@ -18,16 +18,15 @@ import {
   type PreparedTranscriptEntry,
   usePreparedProductChat,
 } from './use-prepared-product-chat.js'
-import type { PreparedEvidenceTarget } from './prepared-source-workbench.js'
 
 type PreparedChatController = ReturnType<typeof usePreparedProductChat>
 
 export function PreparedProductChat({
   controller,
-  onNavigateEvidence,
+  onNavigateCitation,
 }: {
   readonly controller: PreparedChatController
-  readonly onNavigateEvidence?: (target: PreparedEvidenceTarget) => void
+  readonly onNavigateCitation?: (relativePath: string) => void
 }) {
   const onSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -84,7 +83,7 @@ export function PreparedProductChat({
                 onReview={controller.settleReview}
                 onAnswer={controller.answerClarification}
                 onCancel={controller.cancelClarification}
-                onNavigateEvidence={onNavigateEvidence}
+                onNavigateCitation={onNavigateCitation}
               />
             ))}
           </ol>
@@ -251,7 +250,7 @@ function PreparedTranscriptRow({
   onReview,
   onAnswer,
   onCancel,
-  onNavigateEvidence,
+  onNavigateCitation,
 }: {
   readonly entry: PreparedTranscriptEntry
   readonly responsePending: boolean
@@ -269,8 +268,8 @@ function PreparedTranscriptRow({
   readonly onCancel: (
     interaction: PreparedClarificationEntry,
   ) => Promise<void>
-  readonly onNavigateEvidence:
-    | ((target: PreparedEvidenceTarget) => void)
+  readonly onNavigateCitation:
+    | ((relativePath: string) => void)
     | undefined
 }) {
   if (entry.kind === 'semantic-review') {
@@ -280,7 +279,7 @@ function PreparedTranscriptRow({
           review={entry}
           disabled={responsePending}
           onReview={onReview}
-          onNavigateEvidence={onNavigateEvidence}
+          onNavigateCitation={onNavigateCitation}
         />
       </li>
     )
@@ -300,9 +299,9 @@ function PreparedTranscriptRow({
   if (entry.kind === 'action') {
     return (
       <li className="product-transcript-row is-action">
-        <strong>자료 정리 Action</strong>
+        <strong>학기 정보 정리 Action</strong>
         <p>{entry.label}</p>
-        <ul className="action-source-list" aria-label="정리할 자료">
+        <ul className="action-source-list" aria-label="학기 정보에 반영할 자료">
           {entry.relativePaths.map((relativePath) => (
             <li key={relativePath}>{relativePath}</li>
           ))}
@@ -330,7 +329,7 @@ function PreparedReviewCard({
   review,
   disabled,
   onReview,
-  onNavigateEvidence,
+  onNavigateCitation,
 }: {
   readonly review: PreparedSemanticReviewEntry
   readonly disabled: boolean
@@ -341,8 +340,8 @@ function PreparedReviewCard({
       | { readonly outcome: 'revise'; readonly feedback: string }
       | { readonly outcome: 'reject'; readonly feedback?: string },
   ) => Promise<void>
-  readonly onNavigateEvidence:
-    | ((target: PreparedEvidenceTarget) => void)
+  readonly onNavigateCitation:
+    | ((relativePath: string) => void)
     | undefined
 }) {
   const [feedback, setFeedback] = useState('')
@@ -374,35 +373,27 @@ function PreparedReviewCard({
                 {change.before ?? '없음'} → {change.after ?? '없음'}
               </small>
             ) : null}
-            {change.evidence?.map((evidence, evidenceIndex) => (
+            {change.citations?.map((citation, citationIndex) => (
               <figure
-                className="semantic-evidence"
-                key={`${evidence.relativePath}:${evidence.occurrence}:${evidence.contentDigest}:${evidenceIndex}`}
+                className="semantic-citation"
+                key={`${citation.relativePath}:${citationIndex}`}
               >
                 <figcaption>
-                  {evidence.relativePath} · occurrence {evidence.occurrence}
-                  <span>SHA-256 {evidence.contentDigest}</span>
+                  <span>AY가 제시한 근거</span>
+                  <strong>{citation.relativePath}</strong>
+                  {citation.locationHint ? (
+                    <span>위치 설명: {citation.locationHint}</span>
+                  ) : null}
                 </figcaption>
-                <blockquote>
-                  {evidence.contextBefore}
-                  <mark>{evidence.quote}</mark>
-                  {evidence.contextAfter}
-                </blockquote>
-                {onNavigateEvidence ? (
+                <blockquote>{citation.excerpt}</blockquote>
+                {onNavigateCitation ? (
                   <button
-                    className="semantic-evidence-open"
+                    className="semantic-citation-open"
                     type="button"
-                    onClick={() =>
-                      onNavigateEvidence({
-                        relativePath: evidence.relativePath,
-                        contentDigest: evidence.contentDigest,
-                        quote: evidence.quote,
-                        occurrence: evidence.occurrence,
-                      })
-                    }
+                    onClick={() => onNavigateCitation(citation.relativePath)}
                   >
                     <FileSearch size={13} />
-                    {evidence.relativePath} 근거 열기
+                    {citation.relativePath} 근거 자료 열기
                   </button>
                 ) : null}
               </figure>

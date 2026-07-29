@@ -1,0 +1,6 @@
+interface:
+  display_name: "AY-PLE E2E Smoke"
+  short_description: "Run the retained AY-PLE dogfood smoke"
+  default_prompt: "Use $ay-ple-e2e-smoke to run the default Codex development dogfood smoke, reconcile its generated SemesterWorkspace at start, apply the reviewed change, and retain the environment for inspection."
+policy:
+  allow_implicit_invocation: true

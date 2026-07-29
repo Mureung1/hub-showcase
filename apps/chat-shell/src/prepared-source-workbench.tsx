@@ -25,12 +25,6 @@ import {
   preparedWorkspacePdfUrl,
   PreparedProductApiError,
 } from './prepared-product-api.js'
-import {
-  resolvePreparedEvidenceHighlight,
-  type PreparedEvidenceTarget,
-} from './prepared-source-evidence.js'
-
-export type { PreparedEvidenceTarget } from './prepared-source-evidence.js'
 
 type SourceListView =
   | { readonly state: 'idle' | 'loading' }
@@ -72,12 +66,11 @@ export type PreparedWorkspaceSourcesController = {
   readonly selectedSource: ProductWorkspaceSource | undefined
   readonly selectedActionPaths: readonly string[]
   readonly previewView: SourcePreviewView
-  readonly evidenceFocus: PreparedEvidenceTarget | undefined
-  readonly evidenceNotice: string | undefined
+  readonly citationNotice: string | undefined
   readonly reload: () => Promise<void>
   readonly selectSource: (source: ProductWorkspaceSource) => void
   readonly toggleActionSource: (source: ProductWorkspaceSource) => void
-  readonly navigateEvidence: (target: PreparedEvidenceTarget) => void
+  readonly navigateCitation: (relativePath: string) => void
 }
 
 export type PreparedSourceActionControls = {
@@ -97,8 +90,7 @@ export function usePreparedWorkspaceSources(
   const [previewView, setPreviewView] = useState<SourcePreviewView>({
     state: 'idle',
   })
-  const [evidenceFocus, setEvidenceFocus] = useState<PreparedEvidenceTarget>()
-  const [evidenceNotice, setEvidenceNotice] = useState<string>()
+  const [citationNotice, setCitationNotice] = useState<string>()
   const [previewRefresh, setPreviewRefresh] = useState(0)
   const listGeneration = useRef(0)
   const previewGeneration = useRef(0)
@@ -154,8 +146,7 @@ export function usePreparedWorkspaceSources(
       setSelectedPath(undefined)
       setSelectedActionPaths([])
       setPreviewView({ state: 'idle' })
-      setEvidenceFocus(undefined)
-      setEvidenceNotice(undefined)
+      setCitationNotice(undefined)
       return
     }
     const controller = new AbortController()
@@ -223,19 +214,16 @@ export function usePreparedWorkspaceSources(
     [loadSources],
   )
   const selectSource = useCallback((source: ProductWorkspaceSource) => {
-    setEvidenceFocus(undefined)
-    setEvidenceNotice(undefined)
+    setCitationNotice(undefined)
     setSelectedPath(source.relativePath)
     setPreviewRefresh((current) => current + 1)
   }, [])
   const toggleActionSource = useCallback(
     (source: ProductWorkspaceSource) => {
       if (
-        source.previewKind !== 'text' ||
         !sources.some(
           (candidate) =>
-            candidate.relativePath === source.relativePath &&
-            candidate.previewKind === 'text',
+            candidate.relativePath === source.relativePath,
         )
       ) {
         return
@@ -246,24 +234,22 @@ export function usePreparedWorkspaceSources(
     },
     [sources],
   )
-  const navigateEvidence = useCallback(
-    (target: PreparedEvidenceTarget) => {
-      setEvidenceFocus(undefined)
-      setEvidenceNotice(undefined)
+  const navigateCitation = useCallback(
+    (relativePath: string) => {
+      setCitationNotice(undefined)
       void loadSources().then((freshSources) => {
         if (!freshSources) return
         if (
           !freshSources.some(
-            (source) => source.relativePath === target.relativePath,
+            (source) => source.relativePath === relativePath,
           )
         ) {
-          setEvidenceNotice(
-            '이 근거 파일은 현재 안전한 자료 목록에서 열 수 없습니다.',
+          setCitationNotice(
+            '이 인용 자료는 현재 안전한 자료 목록에서 열 수 없습니다.',
           )
           return
         }
-        setEvidenceFocus(target)
-        setSelectedPath(target.relativePath)
+        setSelectedPath(relativePath)
         setPreviewRefresh((current) => current + 1)
       })
     },
@@ -275,12 +261,11 @@ export function usePreparedWorkspaceSources(
     selectedSource,
     selectedActionPaths,
     previewView,
-    evidenceFocus,
-    evidenceNotice,
+    citationNotice,
     reload,
     selectSource,
     toggleActionSource,
-    navigateEvidence,
+    navigateCitation,
   }
 }
 
@@ -352,11 +337,11 @@ function SourceExplorer({
             action.onInvoke([...controller.selectedActionPaths])
           }
         >
-          선택한 자료 정리하기 · {controller.selectedActionPaths.length}개
+          선택한 자료로 학기 정보 정리하기 · {controller.selectedActionPaths.length}개
         </button>
         <p id="source-action-status">
           {controller.selectedActionPaths.length === 0
-            ? '텍스트 자료를 선택하면 AY에게 정리 작업을 맡길 수 있습니다.'
+            ? '자료를 선택하면 AY에게 학기 정보 정리를 맡길 수 있습니다.'
             : action.invocationEnabled
               ? '선택한 actual file만 명시적인 AY 작업에 전달합니다.'
               : '현재 AY 작업을 시작할 수 없어 선택만 유지합니다.'}
@@ -497,16 +482,13 @@ function SourcePreview({
           </div>
         </div>
       ) : null}
-      {controller.evidenceNotice ? (
+      {controller.citationNotice ? (
         <div className="preview-notice is-error" role="status">
-          {controller.evidenceNotice}
+          {controller.citationNotice}
         </div>
       ) : null}
       <section className="paper-preview">
-        <PreviewBody
-          preview={controller.previewView}
-          evidenceFocus={controller.evidenceFocus}
-        />
+        <PreviewBody preview={controller.previewView} />
       </section>
     </main>
   )
@@ -514,10 +496,8 @@ function SourcePreview({
 
 function PreviewBody({
   preview,
-  evidenceFocus,
 }: {
   readonly preview: SourcePreviewView
-  readonly evidenceFocus: PreparedEvidenceTarget | undefined
 }) {
   if (preview.state === 'idle') {
     return (
@@ -574,7 +554,6 @@ function PreviewBody({
     <TextPreview
       source={preview.source}
       preview={preview.preview}
-      evidenceFocus={evidenceFocus}
     />
   )
 }
@@ -622,55 +601,18 @@ function PdfPreview({
 function TextPreview({
   source,
   preview,
-  evidenceFocus,
 }: {
   readonly source: ProductWorkspaceSource
   readonly preview: ProductWorkspaceTextPreview
-  readonly evidenceFocus: PreparedEvidenceTarget | undefined
 }) {
-  const marker = useRef<HTMLElement>(null)
-  const evidence = resolvePreparedEvidenceHighlight(
-    source.relativePath,
-    preview,
-    evidenceFocus,
-  )
-  const quoteIndex = evidence.state === 'focused' ? evidence.quoteIndex : -1
-  const focusedQuote =
-    evidence.state === 'focused'
-      ? evidenceFocus?.quote
-      : undefined
-
-  useEffect(() => {
-    if (!focusedQuote) return
-    marker.current?.scrollIntoView({ block: 'center' })
-    marker.current?.focus({ preventScroll: true })
-  }, [focusedQuote])
-
   return (
     <article className="source-document">
       <div className="source-document-meta">
         <span>텍스트 원문</span>
         <span>{formatBytes(source.size)}</span>
-        <span>현재 파일 확인됨</span>
+        <span>현재 파일 미리보기</span>
       </div>
-      <EvidenceStatus evidence={evidence} />
-      <pre aria-label={`${preview.relativePath} 원문`}>
-        {focusedQuote ? (
-          <>
-            {preview.text.slice(0, quoteIndex)}
-            <mark
-              ref={marker}
-              tabIndex={-1}
-              aria-label="선택한 원문 근거"
-            >
-              {focusedQuote}
-            </mark>
-            {preview.text.slice(quoteIndex + focusedQuote.length)}
-          </>
-        ) : (
-          preview.text
-        )}
-      </pre>
+      <pre aria-label={`${preview.relativePath} 원문`}>{preview.text}</pre>
       {preview.truncated ? (
         <p className="preview-truncated">
           안전한 미리보기 범위까지만 표시했습니다.
@@ -678,38 +620,6 @@ function TextPreview({
       ) : null}
     </article>
   )
-}
-
-function EvidenceStatus({
-  evidence,
-}: {
-  readonly evidence: ReturnType<typeof resolvePreparedEvidenceHighlight>
-}) {
-  if (evidence.state === 'digest_mismatch') {
-    return (
-      <p className="preview-notice is-error" role="status">
-        검토 근거와 현재 파일의 내용이 달라 근거 위치를 표시하지
-        못했습니다.
-      </p>
-    )
-  }
-  if (evidence.state === 'outside_preview') {
-    return (
-      <p className="preview-notice" role="status">
-        현재 파일은 검토 근거와 일치하지만 근거 위치가 안전한 미리보기
-        범위 밖에 있습니다.
-      </p>
-    )
-  }
-  if (evidence.state === 'locator_mismatch') {
-    return (
-      <p className="preview-notice is-error" role="status">
-        현재 파일은 검토 근거와 일치하지만 지정된 근거 위치를 찾지
-        못했습니다.
-      </p>
-    )
-  }
-  return null
 }
 
 function SourceIcon({
@@ -754,11 +664,7 @@ export function reconcilePreparedActionPaths(
 ): readonly string[] {
   const selected = new Set(current)
   return sources
-    .filter(
-      (source) =>
-        source.previewKind === 'text' &&
-        selected.has(source.relativePath),
-    )
+    .filter((source) => selected.has(source.relativePath))
     .map((source) => source.relativePath)
     .slice(0, PRODUCT_ACTION_FILE_REF_MAX_ENTRIES)
 }
@@ -792,8 +698,8 @@ function actionSelectionLabel(
     selectionLocked,
   )
   return reason
-    ? `${source.relativePath} 정리 작업 선택 불가: ${reason}`
-    : `${source.relativePath} 정리 작업 선택`
+    ? `${source.relativePath} 학기 정보 정리 자료 선택 불가: ${reason}`
+    : `${source.relativePath} 학기 정보 정리 자료 선택`
 }
 
 function actionSelectionDisabledReason(
@@ -801,9 +707,6 @@ function actionSelectionDisabledReason(
   selectedActionPaths: readonly string[],
   selectionLocked: boolean,
 ): string | undefined {
-  if (source.previewKind !== 'text') {
-    return '텍스트 자료만 선택할 수 있습니다.'
-  }
   if (selectionLocked) {
     return 'AY 작업 중에는 선택을 바꿀 수 없습니다.'
   }

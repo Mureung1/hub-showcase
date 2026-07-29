@@ -139,7 +139,7 @@ export async function streamPreparedAction(
   const request = decodeShared(
     decodeTargetProductActionInvocationRequest,
     {
-      action: 'organize_sources',
+      action: 'model_semester',
       files: input.files,
       ...(input.codexSettings === undefined
         ? {}

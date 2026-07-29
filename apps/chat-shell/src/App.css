@@ -712,25 +712,33 @@
   line-height: 1.45;
 }
 
-.semantic-evidence {
+.semantic-citation {
   margin: 8px 0 0;
   padding-top: 7px;
   border-top: 1px solid var(--line);
 }
 
-.semantic-evidence figcaption {
+.semantic-citation figcaption {
+  display: grid;
+  gap: 2px;
   color: var(--muted);
   font-size: 11px;
   overflow-wrap: anywhere;
 }
 
-.semantic-evidence figcaption span {
-  display: block;
+.semantic-citation figcaption strong,
+.semantic-citation figcaption span {
   overflow-wrap: anywhere;
 }
 
-.semantic-evidence blockquote {
-  margin: 4px 0 0;
+.semantic-citation figcaption strong {
+  color: var(--ink);
+}
+
+.semantic-citation blockquote {
+  margin: 6px 0 0;
+  padding-left: 9px;
+  border-left: 2px solid rgba(69, 183, 167, 0.32);
   color: var(--muted);
   font-size: 11px;
   line-height: 1.45;
@@ -738,13 +746,7 @@
   overflow-wrap: anywhere;
 }
 
-.semantic-evidence mark {
-  padding: 1px 2px;
-  color: inherit;
-  background: rgba(242, 184, 75, 0.3);
-}
-
-.semantic-evidence-open {
+.semantic-citation-open {
   display: inline-flex;
   align-items: center;
   gap: 5px;
