@@ -6,7 +6,7 @@ import {
   utf8Bytes,
 } from './contract-values.js'
 
-export const PRODUCT_REVIEW_EVIDENCE_MAX_BYTES = 256 * 1024
+export const PRODUCT_REVIEW_CITATIONS_MAX_BYTES = 256 * 1024
 export const PRODUCT_REVIEW_REQUESTED_FRAME_MAX_BYTES = 512 * 1024
 
 const summaryMaximumBytes = 2 * 1024
@@ -15,21 +15,17 @@ const labelMaximumBytes = 256
 const descriptionMaximumBytes = 2 * 1024
 const beforeAfterMaximumBytes = 8 * 1024
 const relativePathMaximumBytes = 4 * 1024
-const quoteMaximumBytes = 16 * 1024
-const contextMaximumBytes = 4 * 1024
+const excerptMaximumBytes = 16 * 1024
+const locationHintMaximumBytes = 2 * 1024
 const feedbackMaximumBytes = 8 * 1024
 const maximumChanges = 32
-const maximumEvidencePerChange = 8
-const maximumEvidencePerReview = 16
-const maximumOccurrence = 1024
+const maximumCitationsPerChange = 8
+const maximumCitationsPerReview = 16
 
-export type BrowserSafeTextQuoteEvidence = {
+export type BrowserSafeSourceCitation = {
   readonly relativePath: string
-  readonly contentDigest: string
-  readonly quote: string
-  readonly occurrence: number
-  readonly contextBefore: string
-  readonly contextAfter: string
+  readonly excerpt: string
+  readonly locationHint?: string
 }
 
 export type BrowserSafeSemanticReview = {
@@ -40,7 +36,7 @@ export type BrowserSafeSemanticReview = {
     readonly description: string
     readonly before?: string
     readonly after?: string
-    readonly evidence?: readonly BrowserSafeTextQuoteEvidence[]
+    readonly citations?: readonly BrowserSafeSourceCitation[]
   }[]
 }
 
@@ -87,14 +83,19 @@ export function decodeBrowserSafeSemanticReview(
     throw invalidContract()
   }
 
-  const evidenceProjection: BrowserSafeTextQuoteEvidence[] = []
+  const citationProjection: BrowserSafeSourceCitation[] = []
   for (const change of value.changes) {
-    decodeChange(change, evidenceProjection)
-    if (evidenceProjection.length > maximumEvidencePerReview) {
+    decodeChange(change, citationProjection)
+    if (citationProjection.length > maximumCitationsPerReview) {
       throw invalidContract()
     }
   }
-  if (!hasJsonByteBound(evidenceProjection, PRODUCT_REVIEW_EVIDENCE_MAX_BYTES)) {
+  if (
+    !hasJsonByteBound(
+      citationProjection,
+      PRODUCT_REVIEW_CITATIONS_MAX_BYTES,
+    )
+  ) {
     throw invalidContract()
   }
   return value as unknown as BrowserSafeSemanticReview
@@ -194,7 +195,7 @@ export function decodeProductReviewFrame(value: unknown): ProductReviewFrame {
 
 function decodeChange(
   value: unknown,
-  evidenceProjection: BrowserSafeTextQuoteEvidence[],
+  citationProjection: BrowserSafeSourceCitation[],
 ): void {
   if (!isRecord(value)) throw invalidContract()
   const keys = [
@@ -202,7 +203,7 @@ function decodeChange(
     'label',
     ...(Object.hasOwn(value, 'after') ? ['after'] : []),
     ...(Object.hasOwn(value, 'before') ? ['before'] : []),
-    ...(Object.hasOwn(value, 'evidence') ? ['evidence'] : []),
+    ...(Object.hasOwn(value, 'citations') ? ['citations'] : []),
   ]
   if (
     !isExactObject(value, keys) ||
@@ -224,40 +225,36 @@ function decodeChange(
   ) {
     throw invalidContract()
   }
-  if (!Object.hasOwn(value, 'evidence')) return
+  if (!Object.hasOwn(value, 'citations')) return
   if (
-    !Array.isArray(value.evidence) ||
-    value.evidence.length < 1 ||
-    value.evidence.length > maximumEvidencePerChange
+    !Array.isArray(value.citations) ||
+    value.citations.length < 1 ||
+    value.citations.length > maximumCitationsPerChange
   ) {
     throw invalidContract()
   }
-  for (const evidence of value.evidence) {
-    decodeEvidence(evidence)
-    evidenceProjection.push(evidence as BrowserSafeTextQuoteEvidence)
+  for (const citation of value.citations) {
+    decodeCitation(citation)
+    citationProjection.push(citation as BrowserSafeSourceCitation)
   }
 }
 
-function decodeEvidence(value: unknown): void {
+function decodeCitation(value: unknown): void {
+  if (!isRecord(value)) throw invalidContract()
+  const keys = [
+    'excerpt',
+    ...(Object.hasOwn(value, 'locationHint') ? ['locationHint'] : []),
+    'relativePath',
+  ]
   if (
-    !isExactObject(value, [
-      'contentDigest',
-      'contextAfter',
-      'contextBefore',
-      'occurrence',
-      'quote',
-      'relativePath',
-    ]) ||
+    !isExactObject(value, keys) ||
     !isWorkspaceRelativePath(value.relativePath) ||
-    typeof value.contentDigest !== 'string' ||
-    !/^[0-9a-f]{64}$/.test(value.contentDigest) ||
-    !isBoundedString(value.quote, quoteMaximumBytes) ||
-    value.quote.length === 0 ||
-    !Number.isSafeInteger(value.occurrence) ||
-    Number(value.occurrence) < 1 ||
-    Number(value.occurrence) > maximumOccurrence ||
-    !isBoundedString(value.contextBefore, contextMaximumBytes) ||
-    !isBoundedString(value.contextAfter, contextMaximumBytes)
+    !isTrimmedNonEmptyBoundedString(value.excerpt, excerptMaximumBytes) ||
+    (Object.hasOwn(value, 'locationHint') &&
+      !isTrimmedNonEmptyBoundedString(
+        value.locationHint,
+        locationHintMaximumBytes,
+      ))
   ) {
     throw invalidContract()
   }

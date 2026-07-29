@@ -28,7 +28,7 @@ test('built STDIO Adapter handshakes before initialize and maps one held POST to
   })
   const broker = await startBroker(async (request) => {
     if (request.kind === 'handshake') {
-      return { protocolVersion: 1, kind: 'handshake_accepted' }
+      return { protocolVersion: 2, kind: 'handshake_accepted' }
     }
     return heldResponse
   })
@@ -65,6 +65,18 @@ test('built STDIO Adapter handshakes before initialize and maps one held POST to
       ),
       ['propose_state_patch'],
     )
+    const advertisedSchema = JSON.stringify(
+      (
+        listed.result as {
+          tools: { inputSchema: unknown }[]
+        }
+      ).tools[0]?.inputSchema,
+    )
+    assert.match(advertisedSchema, /"citations"/)
+    assert.match(advertisedSchema, /"excerpt"/)
+    assert.match(advertisedSchema, /"locationHint"/)
+    assert.doesNotMatch(advertisedSchema, /"evidence"/)
+    assert.doesNotMatch(advertisedSchema, /"contentDigest"/)
 
     client.send({
       jsonrpc: '2.0',
@@ -89,7 +101,7 @@ test('built STDIO Adapter handshakes before initialize and maps one held POST to
     await broker.waitForRequests(3)
     assert.equal(broker.requests.length, 3)
     assert.deepEqual(broker.requests[2], {
-      protocolVersion: 1,
+      protocolVersion: 2,
       kind: 'capability_call',
       capability: 'propose_state_patch',
       request: validRequest,
@@ -97,7 +109,7 @@ test('built STDIO Adapter handshakes before initialize and maps one held POST to
     assert.equal(client.pendingOutputCount(), 0)
 
     releaseCall?.({
-      protocolVersion: 1,
+      protocolVersion: 2,
       kind: 'capability_result',
       capability: 'propose_state_patch',
       result: { outcome: 'accept' },
@@ -131,7 +143,7 @@ test('initialize waits until the Broker accepts one held lifecycle channel', asy
   const broker = await startBroker(
     async (request) => {
       if (request.kind === 'handshake') {
-        return { protocolVersion: 1, kind: 'handshake_accepted' }
+        return { protocolVersion: 2, kind: 'handshake_accepted' }
       }
       return new Promise<InteractionBrokerResponse>(() => undefined)
     },
@@ -169,7 +181,7 @@ test('initialize waits until the Broker accepts one held lifecycle channel', asy
 test('held lifecycle stays available when global fetch would expire its response body', async () => {
   const broker = await startBroker(async (request) => {
     if (request.kind === 'handshake') {
-      return { protocolVersion: 1, kind: 'handshake_accepted' }
+      return { protocolVersion: 2, kind: 'handshake_accepted' }
     }
     return new Promise<InteractionBrokerResponse>(() => undefined)
   })
@@ -256,7 +268,7 @@ test('invalid environment and rejected handshake never produce a successful init
   }
 
   const broker = await startBroker(async () => ({
-    protocolVersion: 1,
+    protocolVersion: 2,
     kind: 'error',
     code: 'forbidden',
     displayMessage: 'The Broker rejected the handshake.',
@@ -287,13 +299,13 @@ test('invalid environment and rejected handshake never produce a successful init
   const lifecycleRejectedBroker = await startBroker(
     async (request) => {
       if (request.kind === 'handshake') {
-        return { protocolVersion: 1, kind: 'handshake_accepted' }
+        return { protocolVersion: 2, kind: 'handshake_accepted' }
       }
       return new Promise<InteractionBrokerResponse>(() => undefined)
     },
     {
       lifecycleResponse: {
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'error',
         code: 'broker_unavailable',
         displayMessage: 'The lifecycle channel is unavailable.',
@@ -328,12 +340,12 @@ test('Broker failure and transport loss are bounded MCP failures without retry o
   let calls = 0
   const broker = await startBroker(async (request, rawResponse) => {
     if (request.kind === 'handshake') {
-      return { protocolVersion: 1, kind: 'handshake_accepted' }
+      return { protocolVersion: 2, kind: 'handshake_accepted' }
     }
     calls += 1
     if (calls === 1) {
       return {
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'error',
         code: 'busy',
         displayMessage: 'Another interaction is already pending.',
@@ -380,7 +392,7 @@ test('Broker failure and transport loss are bounded MCP failures without retry o
 test('MCP cancellation aborts the held POST without retry or a normal result', async () => {
   const broker = await startBroker(async (request) => {
     if (request.kind === 'handshake') {
-      return { protocolVersion: 1, kind: 'handshake_accepted' }
+      return { protocolVersion: 2, kind: 'handshake_accepted' }
     }
     return new Promise<InteractionBrokerResponse>(() => undefined)
   })
@@ -418,12 +430,12 @@ test('MCP cancellation aborts the held POST without retry or a normal result', a
 test('202 acknowledgement is rejected as unavailable without polling or retry', async () => {
   const broker = await startBroker(async (request, response) => {
     if (request.kind === 'handshake') {
-      return { protocolVersion: 1, kind: 'handshake_accepted' }
+      return { protocolVersion: 2, kind: 'handshake_accepted' }
     }
     response.writeHead(202, { 'content-type': 'application/json' })
     response.end(
       JSON.stringify({
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'error',
         code: 'broker_unavailable',
         displayMessage: 'Poll for the result later.',
@@ -621,7 +633,7 @@ async function startBroker(
     if (value.kind === 'lifecycle_open') {
       await options.lifecycleGate
       const lifecycleResponse = options.lifecycleResponse ?? {
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'lifecycle_accepted',
       }
       response.writeHead(

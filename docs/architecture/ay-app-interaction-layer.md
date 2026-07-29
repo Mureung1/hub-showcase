@@ -101,7 +101,7 @@ sequenceDiagram
         A->>M: propose_state_patch(request)
         M->>B: Authenticated typed request
         B->>G: Inline Review projection
-        G-->>U: 원문·변경안·선택지 표시
+        G-->>U: AY가 제시한 source citation·변경안·선택지 표시
         U->>G: accept | revise | reject
         G->>B: Closed user result
         B-->>M: 같은 MCP call의 result
@@ -162,7 +162,7 @@ Explicit file reference가 없다는 사실 자체는 failure나 clarification t
 
 `SemesterModeling`의 source context는 여러 actual workspace file일 수 있지만 accepted canonical write target은 root `workspace-state.json`의 `snapshot`이다. Skill은 `SemesterWorkspaceState` envelope의 format·workspace·semester identity를 보존하고 학업 사실만 snapshot에 반영한다. Exact Course·Assignment·Exam·ScheduleEvent field schema와 lint는 아직 후속 contract이며, 이 storage placement 결정만으로 Skill body가 임의 field roster를 정본으로 만들지는 않는다.
 
-Snapshot update는 deterministic merge engine이 아니라 AY가 수행하는 incremental reconciliation이다. Skill은 기존 snapshot을 먼저 읽고 현재 작업과 무관한 학업 사실을 보존하며, 새 evidence와 기존 사실의 충돌을 숨은 overwrite로 처리하지 않는 frame을 제공한다. `known | unknown | ambiguous`, 설명·근거와 Review는 정직성을 위한 guardrail이고, 어떤 source가 더 최신·신뢰할 만한지, conflict가 실제 모순인지와 어떤 질문이 필요한지는 AY가 대화와 workspace 문맥에서 판단한다. 사용자가 전체 재구성을 명시하지 않은 작업을 자동 full rebuild로 번역하지 않는다.
+Snapshot update는 deterministic merge engine이 아니라 AY가 수행하는 incremental reconciliation이다. Skill은 기존 snapshot을 먼저 읽고 현재 작업과 무관한 학업 사실을 보존하며, 새 source information과 기존 사실의 충돌을 숨은 overwrite로 처리하지 않는 frame을 제공한다. `known | unknown | ambiguous`, 설명·근거와 Review는 정직성을 위한 guardrail이고, 어떤 source가 더 최신·신뢰할 만한지, conflict가 실제 모순인지와 어떤 질문이 필요한지는 AY가 대화와 workspace 문맥에서 판단한다. 사용자가 전체 재구성을 명시하지 않은 작업을 자동 full rebuild로 번역하지 않는다.
 
 ### Review-before-write harness
 
@@ -207,7 +207,7 @@ App-facing contract와 Codex-native input 사이에는 Adapter seam을 둔다.
 | Action settings | Current advertised model·reasoning·service tier와 action permission policy를 native Turn 설정으로 번역한다. |
 | Product operation | Native thread·turn identity와 activity stream을 Browser-safe frame, interrupt와 terminal 상태로 투영한다. |
 
-`WorkspaceFileRef`는 한 invocation이 active SemesterWorkspace의 실제 사용자 file을 가리키는 request-scoped relative reference다. Path 목록은 invocation에 고정되지만 content version은 고정되지 않으므로 같은 safe path의 bytes가 바뀌면 AY는 actual read 시점의 current file을 만난다. Exact version을 Review 근거로 묶는 `EvidenceRef`, `RawMaterial`, source copy나 filesystem permission이 아니다.
+`WorkspaceFileRef`는 한 invocation이 active SemesterWorkspace의 실제 사용자 file을 가리키는 request-scoped relative reference다. Path 목록은 invocation에 고정되지만 content version은 고정되지 않으므로 같은 safe path의 bytes가 바뀌면 AY는 actual read 시점의 current file을 만난다. Review의 `SourceCitation`, `RawMaterial`, source copy나 filesystem permission이 아니다. `SourceCitation`도 version binding이 아니라 AY가 source에서 근거로 해석한 excerpt와 optional location hint를 투명하게 전달하는 별도 presentation data다.
 
 Initial native mapping은 official SDK가 이미 제공하는 `SkillInput`과 bounded `TextInput`을 순서대로 사용한다. App action definition은 effective catalog에서 확인한 workspace-local Skill의 host-only name·path를 `SkillInput`으로 전달하고, 선택한 actual file은 basename label·workspace-relative destination의 Codex-style Markdown file-reference text로 bounded `TextInput`에 렌더링한다. 여기서 escaping은 general CommonMark URL encoding이 아니라 Desktop composer의 lossless file-path serializer를 따른다. Absolute path를 사용하는 Desktop composer와 달리 AY-PLE은 exact workspace root를 Runtime `cwd`로 고정하고 Browser에 root를 노출하지 않으므로 POSIX relative path를 link destination으로 사용한다.
 
@@ -227,7 +227,7 @@ Current single action은 `model-semester-action` definition이 required `ay-ple-
 
 `InteractionCapability`는 AY가 작업 중 MCP tool을 호출하면 App이 기능별 UI를 보여주고 closed result를 같은 MCP call과 Turn에 반환하는 Interface다. `propose_state_patch`와 Semantic Review는 첫 구현 사례다.
 
-Typed MCP request/result, App Broker의 authenticated Runtime binding, pending slot, once-only settlement, capability-specific UI, evidence resolution과 continuity failure의 상세 contract는 [InteractionCapability 아키텍처](ay-app-interaction-capabilities.md)가 소유한다.
+Typed MCP request/result, App Broker의 authenticated Runtime binding, pending slot, once-only settlement, capability-specific UI, source citation projection과 continuity failure의 상세 contract는 [InteractionCapability 아키텍처](ay-app-interaction-capabilities.md)가 소유한다.
 
 새 AY-originated 기능은 다음 세 부분을 추가한다.
 
@@ -270,16 +270,16 @@ ActionInvocation으로 시작한 Turn도 project-discovered Interaction MCP를 �
 
 | 주체 | 소유하는 것 | 소유하지 않는 것 |
 | --- | --- | --- |
-| 사용자 | 명시적 GUI action, capability UI의 최종 선택, 학기 자료의 의미 | Native protocol과 correlation |
-| AY·Skill | Workflow, 자료 해석, InteractionCapability 호출 시점과 result 해석, 실제 file mutation·Git checkpoint | App UI lifecycle과 Browser transport |
+| 사용자 | 명시적 GUI action, capability UI의 최종 선택, AY가 제시한 citation과 학기 자료 의미의 판단 | Native protocol과 correlation |
+| AY·Skill | Workflow, 자료 해석과 citation claim, InteractionCapability 호출 시점과 result 해석, 실제 file mutation·Git checkpoint | App UI lifecycle과 Browser transport |
 | App SourceProjection | Current filesystem의 bounded on-demand read-only list·preview와 request-boundary safety validation | Actual file authority, reusable snapshot·cache, file mutation·Git |
 | App action definition | GUI intent 의미, request-scoped path 목록과 freshness semantics, Turn 전 안전 검증, workspace Skill 요구와 native composition 요청 | Exact content snapshot, AY reader identity, Skill prompt sequence, file apply와 Git |
-| Interaction MCP Module | AY-originated typed request/result와 App UI round trip | ActionInvocation과 학업 workflow |
+| Interaction MCP Module | AY-originated typed request/result, citation path safety와 App UI round trip | Citation content verification, ActionInvocation과 학업 workflow |
 | Product operation infrastructure | Active Runtime·thread admission, stream, interrupt와 terminal settlement | Durable run history와 기능 payload 의미 |
 | Codex Runtime Adapter | Capability-neutral native input·Turn 실행과 activity projection | App action·MCP UI의 제품 의미 |
 | SemesterWorkspace | 실제 학기 file, `workspace-state.json.snapshot`의 `SemesterModel`, workspace-local Skill·config와 Git history | Pending invocation·interaction과 Runtime identity |
 
-Durable state는 actual workspace file, tracked Skill·config, Git history, `WorkspaceRegistry`와 native conversation에 둔다. Browser selection, ActionInvocation의 frozen path 목록, Product operation, pending InteractionCapability, validated evidence preview와 settled inline presentation은 transient다. `WorkspaceFileRef`의 current-path semantics와 `EvidenceRef`의 exact content-version semantics를 서로 대신 사용하지 않는다.
+Durable state는 actual workspace file, tracked Skill·config, Git history, `WorkspaceRegistry`와 native conversation에 둔다. Browser selection, ActionInvocation의 frozen path 목록, Product operation, pending InteractionCapability, `SourceCitation`과 settled inline presentation은 transient다. `WorkspaceFileRef`는 App이 동결한 invocation input이고 `SourceCitation`은 AY가 제시한 source interpretation이므로 서로 대신 사용하지 않는다. 둘 다 file content version을 고정하지 않으며 exact version binding은 현재 Interface의 보장이 아니다.
 
 ## 현재 구현과 확장 target
 
@@ -290,7 +290,7 @@ Durable state는 actual workspace file, tracked Skill·config, Git history, `Wor
 | Native input | Normal Chat은 `[TextInput]`, action은 workspace-local `[SkillInput, TextInput]` | Local file carrier 변경은 actual case와 official contract 검증 뒤 별도 채택 |
 | Product contract | Chat·source projection·interaction result와 별도 closed ActionInvocation request·shared stream | Unknown action·native input·absolute path를 계속 거절 |
 | Server operation | `sendChat`과 validated action이 같은 admission·stream·interaction lifecycle을 사용 | 기능별 validation만 action definition에 추가 |
-| AY-originated UI | `propose_state_patch` MCP와 general native clarification | 기존 Interface 유지, 새 typed MCP capability 추가 가능 |
+| AY-originated UI | `propose_state_patch` MCP가 semantic before/after change, optional `SourceCitation`과 closed Review result를 왕복하고 normal Chat은 후속 clarification을 사용 | 기존 Interface 유지, 새 typed MCP capability 추가 가능 |
 | 실행 기록 | Native Turn과 process-local operation | 유지. Durable `ModelingRun`을 복원하지 않음 |
 
 현재 구현은 reverse InteractionCapability와 normal Chat에 더해 GUI의 explicit source selection을 `model_semester` Product Turn으로 연결한다. First Assignment 대표 vertical은 이 양방향 seam과 `SemesterModel` snapshot write까지 완료됐다. 현재 package topology와 검증 표면은 [Codex Chat 구현 지도](codex-chat-implementation-map.md), 후속 범위는 [개발 백로그](../product/ay-ple-development-backlog.md)가 소유한다.
@@ -303,8 +303,8 @@ Durable state는 actual workspace file, tracked Skill·config, Git history, `Wor
 | ActionInvocation Module | Exact action→Skill 요구, fresh file validation, input order·bound와 failure-before-Turn을 검증한다. |
 | Runtime Adapter | Official SDK로 exact Skill+text/file input을 전달하고 existing patch stack을 늘리지 않는다. |
 | Server operation | Chat과 action이 같은 admission·interrupt·terminal 규칙을 따르고 MCP request가 같은 action-started Turn에 결합된다. |
-| Browser E2E | Preview·selection만으로 Turn이 시작되지 않고 명시적 action에서만 선택 file이 전달된다. |
-| Actual workspace trace | Workspace-local Skill이 actual file을 읽고 InteractionCapability round trip 뒤 AY가 `workspace-state.json.snapshot`과 Git checkpoint를 소유한다. |
+| Browser E2E | Preview·selection만으로 Turn이 시작되지 않고 명시적 action에서만 선택 file이 전달되며, AY가 제시한 citation과 Review result가 안전하게 표시된다. |
+| Actual workspace trace | Workspace-local Skill이 actual file을 읽고 SourceCitation을 포함할 수 있는 InteractionCapability round trip 뒤 AY가 `workspace-state.json.snapshot`과 Git checkpoint를 소유한다. |
 
 Production Browser→Server Adapter와 deterministic Browser fixture는 같은 ActionInvocation contract와 Product operation frame decoder를 검증한다. Production Broker와 in-memory UI Adapter는 같은 InteractionCapability Interface를 검증한다. Raw SDK·MCP identity를 테스트 편의를 위해 제품 Interface에 추가하지 않는다.
 

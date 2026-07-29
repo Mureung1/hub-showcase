@@ -17,7 +17,7 @@ test('package root exposes only the target Browser-safe contract', () => {
   assert.deepEqual(Object.keys(productContract).sort(), [
     'PRODUCT_ACTION_FILE_REF_MAX_ENTRIES',
     'PRODUCT_JSON_ENVELOPE_MAX_BYTES',
-    'PRODUCT_REVIEW_EVIDENCE_MAX_BYTES',
+    'PRODUCT_REVIEW_CITATIONS_MAX_BYTES',
     'PRODUCT_REVIEW_REQUESTED_FRAME_MAX_BYTES',
     'PRODUCT_WORKSPACE_SOURCE_LIST_MAX_BYTES',
     'PRODUCT_WORKSPACE_SOURCE_LIST_MAX_ENTRIES',

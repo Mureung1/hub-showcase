@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import {
   mkdir,
   mkdtemp,
@@ -46,19 +45,13 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
   const workspaceRoot = await realpath(
     await mkdtemp(path.join(tmpdir(), 'prepared-public-browser-')),
   )
-  const evidenceQuote = '마감은 8월 3일입니다.'
-  const evidenceText =
-    `초기 안내: ${evidenceQuote}\n` +
-    `강의계획서 안내: ${evidenceQuote} LMS에서 제출해 주세요.`
-  const evidenceDigest = createHash('sha256')
-    .update(evidenceText)
-    .digest('hex')
-  const lateEvidenceQuote = 'AY가 새로 만든 요약 자료입니다.'
-  const lateEvidenceText = `${lateEvidenceQuote}\n검토 후 제출해 주세요.`
-  const lateEvidenceDigest = createHash('sha256')
-    .update(lateEvidenceText)
-    .digest('hex')
-  await writeFile(path.join(workspaceRoot, 'assignment.txt'), evidenceText)
+  const assignmentExcerpt = '마감은 8월 3일입니다.'
+  const assignmentText =
+    `초기 안내: ${assignmentExcerpt}\n` +
+    `강의계획서 안내: ${assignmentExcerpt} LMS에서 제출해 주세요.`
+  const lateCitationExcerpt = 'AY가 새로 만든 요약 자료입니다.'
+  const lateCitationText = `${lateCitationExcerpt}\n검토 후 제출해 주세요.`
+  await writeFile(path.join(workspaceRoot, 'assignment.txt'), assignmentText)
   await writeFile(
     path.join(workspaceRoot, 'syllabus.txt'),
     '학기 정보 정리 순서를 확인합니다.',
@@ -171,11 +164,11 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
       .click()
     await expect(assignmentSelection).not.toBeChecked()
     await expect(page.getByLabel('assignment.txt 원문')).toContainText(
-      evidenceQuote,
+      assignmentExcerpt,
     )
     await syllabusSelection.check()
     await expect(page.getByLabel('assignment.txt 원문')).toContainText(
-      evidenceQuote,
+      assignmentExcerpt,
     )
     await assignmentSelection.check()
     await expect(assignmentSelection).toBeChecked()
@@ -410,7 +403,7 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
       .getByRole('button', { name: 'assignment.txt 미리보기' })
       .click()
     await expect(page.getByLabel('assignment.txt 원문')).toContainText(
-      evidenceQuote,
+      assignmentExcerpt,
     )
     await unlink(path.join(workspaceRoot, 'syllabus.txt'))
     const selectedReload = page.waitForResponse((response) => {
@@ -479,7 +472,7 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
           method: 'POST',
           headers,
           body: JSON.stringify({
-            protocolVersion: 1,
+            protocolVersion: 2,
             kind: 'handshake',
             serverName: 'ay_ple_interaction',
             capabilities: ['propose_state_patch'],
@@ -493,7 +486,7 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
         method: 'POST',
         headers,
         body: JSON.stringify({
-          protocolVersion: 1,
+          protocolVersion: 2,
           kind: 'lifecycle_open',
         }),
       },
@@ -508,7 +501,7 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
     expect(
       JSON.parse(new TextDecoder().decode(lifecycleAccepted.value)),
     ).toEqual({
-      protocolVersion: 1,
+      protocolVersion: 2,
       kind: 'lifecycle_accepted',
     })
     await expect(
@@ -518,13 +511,13 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
     ).toHaveCount(0)
     await writeFile(
       path.join(workspaceRoot, 'generated-summary.txt'),
-      lateEvidenceText,
+      lateCitationText,
     )
     const held = fetch(`${apiUrl}/api/_private/interaction-mcp/`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'capability_call',
         capability: 'propose_state_patch',
         request: {
@@ -536,15 +529,16 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
               description: '마감 정보를 actual file에 반영합니다.',
               before: '미정',
               after: '8월 3일',
-              evidence: [
+              citations: [
                 {
                   relativePath: 'assignment.txt',
-                  contentDigest: evidenceDigest,
-                  locator: {
-                    type: 'text_quote',
-                    quote: evidenceQuote,
-                    occurrence: 2,
-                  },
+                  excerpt: assignmentExcerpt,
+                  locationHint: '강의계획서 안내 문단',
+                },
+                {
+                  relativePath: 'lecture.pdf',
+                  excerpt: '과제 마감은 8월 3일로 안내되어 있습니다.',
+                  locationHint: '첫 페이지 과제 일정',
                 },
               ],
             },
@@ -553,15 +547,10 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
               description: 'AY가 방금 만든 actual file을 검토합니다.',
               before: '없음',
               after: 'generated-summary.txt',
-              evidence: [
+              citations: [
                 {
                   relativePath: 'generated-summary.txt',
-                  contentDigest: lateEvidenceDigest,
-                  locator: {
-                    type: 'text_quote',
-                    quote: lateEvidenceQuote,
-                    occurrence: 1,
-                  },
+                  excerpt: lateCitationExcerpt,
                 },
               ],
             },
@@ -571,39 +560,47 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
     })
     const card = page.getByRole('region', { name: '검토 대기' })
     await expect(card).toContainText('과제 파일 변경')
-    const evidence = card
-      .locator('figure.semantic-evidence')
+    const citation = card
+      .locator('figure.semantic-citation')
       .filter({ hasText: 'assignment.txt' })
-    const lateEvidence = card
-      .locator('figure.semantic-evidence')
+    const pdfCitation = card
+      .locator('figure.semantic-citation')
+      .filter({ hasText: 'lecture.pdf' })
+    const lateCitation = card
+      .locator('figure.semantic-citation')
       .filter({ hasText: 'generated-summary.txt' })
-    await expect(evidence).toContainText('assignment.txt')
-    await expect(evidence).toContainText('occurrence 2')
-    await expect(evidence).toContainText(`SHA-256 ${evidenceDigest}`)
-    await expect(evidence.locator('blockquote')).toContainText(
-      '강의계획서 안내:',
+    await expect(citation).toContainText('AY가 제시한 근거')
+    await expect(citation).toContainText('assignment.txt')
+    await expect(citation).toContainText('위치 설명: 강의계획서 안내 문단')
+    await expect(citation.locator('blockquote')).toHaveText(
+      assignmentExcerpt,
     )
-    await expect(evidence.locator('mark')).toHaveText(evidenceQuote)
-    await expect(evidence.locator('blockquote')).toContainText(
-      'LMS에서 제출해 주세요.',
+    await expect(citation).not.toContainText('SHA-256')
+    await expect(citation).not.toContainText('occurrence')
+    await expect(citation.locator('mark')).toHaveCount(0)
+    await expect(pdfCitation).toContainText('첫 페이지 과제 일정')
+    await expect(pdfCitation.locator('blockquote')).toHaveText(
+      '과제 마감은 8월 3일로 안내되어 있습니다.',
     )
-    await expect(lateEvidence).toContainText('generated-summary.txt')
+    await expect(lateCitation).toContainText('generated-summary.txt')
     const refreshedList = page.waitForResponse((response) => {
       const url = new URL(response.url())
       return url.pathname === '/api/product/sources'
     })
-    const lateEvidenceRead = page.waitForResponse((response) => {
+    const lateCitationRead = page.waitForResponse((response) => {
       const url = new URL(response.url())
       return (
         url.pathname === '/api/product/sources/text' &&
         url.searchParams.get('relativePath') === 'generated-summary.txt'
       )
     })
-    await lateEvidence
-      .getByRole('button', { name: 'generated-summary.txt 근거 열기' })
+    await lateCitation
+      .getByRole('button', {
+        name: 'generated-summary.txt 근거 자료 열기',
+      })
       .click()
     await refreshedList
-    await lateEvidenceRead
+    await lateCitationRead
     await expect(
       sources.getByRole('button', {
         name: 'generated-summary.txt 미리보기',
@@ -611,61 +608,20 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
     ).toBeVisible()
     await expect(
       page.getByLabel('generated-summary.txt 원문'),
-    ).toContainText(lateEvidenceText)
-    await expect(page.getByLabel('선택한 원문 근거')).toHaveText(
-      lateEvidenceQuote,
-    )
-    await sources
-      .getByRole('button', { name: 'assignment.txt 미리보기' })
-      .click()
-    await expect(page.getByLabel('assignment.txt 원문')).toContainText(
-      evidenceText,
-    )
-    await writeFile(
-      path.join(workspaceRoot, 'assignment.txt'),
-      `${evidenceText}\n파일이 변경되었습니다.`,
-    )
-    const driftRead = page.waitForResponse((response) => {
-      const url = new URL(response.url())
-      return (
-        url.pathname === '/api/product/sources/text' &&
-        url.searchParams.get('relativePath') === 'assignment.txt'
-      )
-    })
-    await evidence
-      .getByRole('button', { name: 'assignment.txt 근거 열기' })
-      .click()
-    await driftRead
-    await expect(
-      page.getByText(
-        '검토 근거와 현재 파일의 내용이 달라 근거 위치를 표시하지 못했습니다.',
-      ),
-    ).toBeVisible()
+    ).toContainText(lateCitationText)
     await expect(page.getByLabel('선택한 원문 근거')).toHaveCount(0)
-    await writeFile(
-      path.join(workspaceRoot, 'assignment.txt'),
-      evidenceText,
-    )
-    const restoredRead = page.waitForResponse((response) => {
+    const citedPdfRead = page.waitForResponse((response) => {
       const url = new URL(response.url())
       return (
-        url.pathname === '/api/product/sources/text' &&
-        url.searchParams.get('relativePath') === 'assignment.txt'
+        url.pathname === '/api/product/sources/pdf' &&
+        url.searchParams.get('relativePath') === 'lecture.pdf'
       )
     })
-    await evidence
-      .getByRole('button', { name: 'assignment.txt 근거 열기' })
+    await pdfCitation
+      .getByRole('button', { name: 'lecture.pdf 근거 자료 열기' })
       .click()
-    await restoredRead
-    const focusedEvidence = page.getByLabel('선택한 원문 근거')
-    await expect(focusedEvidence).toHaveText(evidenceQuote)
-    expect(
-      await focusedEvidence.evaluate((element) =>
-        element.previousSibling?.textContent?.endsWith(
-          '강의계획서 안내: ',
-        ),
-      ),
-    ).toBe(true)
+    expect((await citedPdfRead).status()).toBe(200)
+    await expect(page.getByLabel('lecture.pdf PDF 미리보기')).toBeVisible()
     await card.getByRole('button', { name: '수락' }).click()
     const heldResponse = await held
     expect(heldResponse.status).toBe(200)
@@ -689,7 +645,7 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
       method: 'POST',
       headers,
       body: JSON.stringify({
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'capability_call',
         capability: 'propose_state_patch',
         request: {
@@ -728,7 +684,7 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
       method: 'POST',
       headers,
       body: JSON.stringify({
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'capability_call',
         capability: 'propose_state_patch',
         request: {
@@ -797,7 +753,7 @@ test('prepared Browser invokes model_semester beside AY Chat and settles inline 
     await expect(assignmentSelection).toBeChecked()
     await expect(retainedAction).toBeEnabled()
 
-    await writeFile(path.join(workspaceRoot, 'assignment.txt'), evidenceText)
+    await writeFile(path.join(workspaceRoot, 'assignment.txt'), assignmentText)
     const retryActionRequest = page.waitForRequest((request) => {
       const url = new URL(request.url())
       return url.pathname === '/api/product/actions'

@@ -101,16 +101,17 @@ test('SemesterModeling Skill defines the incremental Review harness', async () =
     'Assignment',
     'Exam',
     'ScheduleEvent',
-    'evidence digests',
+    '`citations`',
+    'honestly represents',
+    "does not certify",
     'If a reviewed input drifted',
   ]) {
     assert.match(skill, new RegExp(escapeRegex(phrase)))
   }
   for (const field of [
     'relativePath',
-    'contentDigest',
-    'text_quote',
-    'occurrence',
+    'excerpt',
+    'locationHint',
   ]) {
     assert.match(skill, new RegExp(`\\\`${field}\\\``))
   }
@@ -132,7 +133,7 @@ test('SemesterModeling Skill defines the incremental Review harness', async () =
   )
   assert.doesNotMatch(
     skill,
-    /courseId|baseRevision|RawMaterial|StatePatch|UserConfirmation|ModelingRun|revision-bound/i,
+    /courseId|baseRevision|RawMaterial|StatePatch|UserConfirmation|ModelingRun|revision-bound|contentDigest|text_quote|occurrence/i,
   )
 })
 

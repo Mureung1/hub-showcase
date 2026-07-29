@@ -269,7 +269,7 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
       if (parsedBody.kind === 'lifecycle_open') {
         response.write(
           `${JSON.stringify({
-            protocolVersion: 1,
+            protocolVersion: 2,
             kind: 'lifecycle_accepted',
           })}\n`,
         )
@@ -277,7 +277,7 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
       }
       response.end(
         JSON.stringify({
-          protocolVersion: 1,
+          protocolVersion: 2,
           kind: 'handshake_accepted',
         }),
       )
@@ -423,7 +423,7 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
       {
         authorization: `Bearer ${token}`,
         body: {
-          protocolVersion: 1,
+          protocolVersion: 2,
           kind: 'handshake',
           serverName: 'ay_ple_interaction',
           capabilities: ['propose_state_patch'],
@@ -433,7 +433,7 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
       {
         authorization: `Bearer ${token}`,
         body: {
-          protocolVersion: 1,
+          protocolVersion: 2,
           kind: 'lifecycle_open',
         },
         runtimeBinding,

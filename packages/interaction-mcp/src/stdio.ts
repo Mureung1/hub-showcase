@@ -49,34 +49,18 @@ const proposeStatePatchInputSchema = {
           description: { type: 'string', minLength: 1 },
           before: { type: 'string' },
           after: { type: 'string' },
-          evidence: {
+          citations: {
             type: 'array',
             minItems: 1,
             maxItems: 8,
             items: {
               type: 'object',
               additionalProperties: false,
-              required: ['relativePath', 'contentDigest', 'locator'],
+              required: ['relativePath', 'excerpt'],
               properties: {
                 relativePath: { type: 'string', minLength: 1 },
-                contentDigest: {
-                  type: 'string',
-                  pattern: '^[0-9a-f]{64}$',
-                },
-                locator: {
-                  type: 'object',
-                  additionalProperties: false,
-                  required: ['type', 'quote', 'occurrence'],
-                  properties: {
-                    type: { const: 'text_quote' },
-                    quote: { type: 'string', minLength: 1 },
-                    occurrence: {
-                      type: 'integer',
-                      minimum: 1,
-                      maximum: 1024,
-                    },
-                  },
-                },
+                excerpt: { type: 'string', minLength: 1 },
+                locationHint: { type: 'string', minLength: 1 },
               },
             },
           },
@@ -222,7 +206,7 @@ async function handleLine(line: string): Promise<void> {
         {
           name: PROPOSE_STATE_PATCH_CAPABILITY,
           description:
-            'Ask the user to review one semantic state change proposal.',
+            'Ask the user to review one semantic state change proposal. Optional source citations identify existing workspace files and present AY-authored excerpts without claiming that the App verified their contents.',
           inputSchema: proposeStatePatchInputSchema,
         },
       ],

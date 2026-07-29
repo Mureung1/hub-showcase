@@ -13,7 +13,7 @@ import {
   type ProposeStatePatchResult,
 } from './capability.js'
 
-export const INTERACTION_BROKER_PROTOCOL_VERSION = 1
+export const INTERACTION_BROKER_PROTOCOL_VERSION = 2
 export const INTERACTION_MCP_SERVER_NAME = 'ay_ple_interaction'
 export const PROPOSE_STATE_PATCH_CAPABILITY = 'propose_state_patch'
 
@@ -21,24 +21,24 @@ export type InteractionBrokerErrorCode =
   | 'invalid_request'
   | 'forbidden'
   | 'busy'
-  | 'evidence_invalid'
+  | 'citation_invalid'
   | 'interaction_interrupted'
   | 'runtime_inactive'
   | 'broker_unavailable'
 
 export type InteractionBrokerRequest =
   | {
-      readonly protocolVersion: 1
+      readonly protocolVersion: 2
       readonly kind: 'handshake'
       readonly serverName: 'ay_ple_interaction'
       readonly capabilities: readonly ['propose_state_patch']
     }
   | {
-      readonly protocolVersion: 1
+      readonly protocolVersion: 2
       readonly kind: 'lifecycle_open'
     }
   | {
-      readonly protocolVersion: 1
+      readonly protocolVersion: 2
       readonly kind: 'capability_call'
       readonly capability: 'propose_state_patch'
       readonly request: ProposeStatePatchRequest
@@ -46,21 +46,21 @@ export type InteractionBrokerRequest =
 
 export type InteractionBrokerResponse =
   | {
-      readonly protocolVersion: 1
+      readonly protocolVersion: 2
       readonly kind: 'handshake_accepted'
     }
   | {
-      readonly protocolVersion: 1
+      readonly protocolVersion: 2
       readonly kind: 'lifecycle_accepted'
     }
   | {
-      readonly protocolVersion: 1
+      readonly protocolVersion: 2
       readonly kind: 'capability_result'
       readonly capability: 'propose_state_patch'
       readonly result: ProposeStatePatchResult
     }
   | {
-      readonly protocolVersion: 1
+      readonly protocolVersion: 2
       readonly kind: 'error'
       readonly code: InteractionBrokerErrorCode
       readonly displayMessage: string
@@ -70,7 +70,7 @@ const errorCodes = new Set<InteractionBrokerErrorCode>([
   'invalid_request',
   'forbidden',
   'busy',
-  'evidence_invalid',
+  'citation_invalid',
   'interaction_interrupted',
   'runtime_inactive',
   'broker_unavailable',

@@ -4,10 +4,7 @@ import {
   randomUUID,
   timingSafeEqual,
 } from 'node:crypto'
-import { constants } from 'node:fs'
-import { lstat, open, realpath } from 'node:fs/promises'
 import type { IncomingMessage } from 'node:http'
-import path from 'node:path'
 
 import {
   INTERACTION_BROKER_BODY_MAX_BYTES,
@@ -17,12 +14,11 @@ import {
   type InteractionBrokerErrorCode,
   type InteractionBrokerResponse,
   type ProposeStatePatchRequest,
-  type TextQuoteEvidenceRef,
 } from '@ay-ple/interaction-mcp'
 import {
   decodeProductReviewFrame,
   type BrowserSafeSemanticReview,
-  type BrowserSafeTextQuoteEvidence,
+  type BrowserSafeSourceCitation,
   type ProductReviewFrame,
   type ProductReviewResult,
 } from '@ay-ple/product-contract'
@@ -32,15 +28,17 @@ import express, {
   type Router,
 } from 'express'
 
-const uniqueFileMaxBytes = 1024 * 1024
-const aggregateFileMaxBytes = 8 * 1024 * 1024
-const contextMaxBytes = 4 * 1024
+import {
+  createWorkspaceFileAccess,
+  type WorkspaceFileAccess,
+} from './workspace-file-access.js'
+
 const defaultLifecycleDeadlineMs = 5_000
 const safeMessages: Record<InteractionBrokerErrorCode, string> = {
   invalid_request: 'The interaction request is invalid.',
   forbidden: 'The interaction request is not authorized.',
   busy: 'Another interaction is already pending.',
-  evidence_invalid: 'The interaction evidence is invalid.',
+  citation_invalid: 'The interaction source citation is invalid.',
   interaction_interrupted: 'The interaction was interrupted.',
   runtime_inactive: 'The product Turn is not active.',
   broker_unavailable: 'The interaction broker is unavailable.',
@@ -67,11 +65,6 @@ export type CreateInteractionBrokerOptions = {
   ) => void | Promise<void>
   readonly teardownRuntime?: () => void | Promise<void>
   readonly lifecycleDeadlineMs?: number
-  /** Test-only fault injection at the filesystem boundary. */
-  readonly evidenceReadTestHook?: (
-    phase: 'before_open' | 'after_open_stat',
-    relativePath: string,
-  ) => void | Promise<void>
 }
 
 export type InteractionBrokerCredentials = {
@@ -120,22 +113,6 @@ type PendingInteraction = {
     | 'settled'
 }
 
-type EvidenceSnapshot = {
-  readonly bytes: Buffer
-  readonly text: string
-}
-
-type FileIdentity = {
-  readonly device: number
-  readonly inode: number
-}
-
-type EvidenceCandidate = {
-  readonly path: string
-  readonly relativePath: string
-  readonly identity: FileIdentity
-}
-
 export class InteractionSettlementError extends Error {
   readonly code: 'conflict' | 'delivery_failed'
 
@@ -149,10 +126,9 @@ export class InteractionSettlementError extends Error {
 export async function createInteractionBroker(
   options: CreateInteractionBrokerOptions,
 ): Promise<InteractionBroker> {
-  const workspace = await requireExactWorkspaceRoot(
+  const workspaceFileAccess = await createWorkspaceFileAccess(
     options.workspaceRoot,
   )
-  const workspaceRoot = workspace.path
   const credentials = Object.freeze({
     token: randomBytes(32).toString('base64url'),
     binding: `runtime_${randomBytes(16).toString('hex')}`,
@@ -372,11 +348,9 @@ export async function createInteractionBroker(
 
     let requested: ProductReviewFrame & { readonly type: 'review.requested' }
     try {
-      const review = await resolveReviewEvidence(
-        workspaceRoot,
-        workspace.identity,
+      const review = await resolveReviewCitations(
+        workspaceFileAccess,
         decoded.request,
-        options.evidenceReadTestHook,
       )
       requested = {
         type: 'review.requested',
@@ -389,7 +363,7 @@ export async function createInteractionBroker(
       rejectBeforePublication(current)
       await writeResponse(
         response,
-        errorResponse('evidence_invalid'),
+        errorResponse('citation_invalid'),
         400,
       )
       return
@@ -623,51 +597,38 @@ export async function createInteractionBroker(
   }
 }
 
-async function resolveReviewEvidence(
-  workspaceRoot: string,
-  workspaceRootIdentity: FileIdentity,
+async function resolveReviewCitations(
+  fileAccess: WorkspaceFileAccess,
   request: ProposeStatePatchRequest,
-  testHook:
-    | CreateInteractionBrokerOptions['evidenceReadTestHook']
-    | undefined,
 ): Promise<BrowserSafeSemanticReview> {
-  await assertWorkspaceRootIdentity(
-    workspaceRoot,
-    workspaceRootIdentity,
-  )
-  const snapshots = new Map<string, EvidenceSnapshot>()
-  let aggregateBytes = 0
+  await fileAccess.assertPinnedWorkspaceCurrent()
+  const validatedPaths = new Set<string>()
   const changes: BrowserSafeSemanticReview['changes'][number][] = []
 
   for (const change of request.changes) {
-    const evidence: BrowserSafeTextQuoteEvidence[] = []
-    for (const reference of change.evidence ?? []) {
-      const resolvedPath = await resolveContainedPath(
-        workspaceRoot,
-        workspaceRootIdentity,
-        reference.relativePath,
-      )
-      let snapshot = snapshots.get(resolvedPath.path)
-      if (!snapshot) {
-        snapshot = await readEvidenceSnapshot(
-          resolvedPath,
-          testHook,
+    const citations: BrowserSafeSourceCitation[] = []
+    for (const citation of change.citations ?? []) {
+      if (!validatedPaths.has(citation.relativePath)) {
+        await fileAccess.assertRegularFile(
+          citation.relativePath.split('/'),
         )
-        aggregateBytes += snapshot.bytes.byteLength
-        if (aggregateBytes > aggregateFileMaxBytes) {
-          throw new EvidenceError()
-        }
-        snapshots.set(resolvedPath.path, snapshot)
+        validatedPaths.add(citation.relativePath)
       }
-      evidence.push(projectEvidence(reference, snapshot))
+      citations.push({
+        relativePath: citation.relativePath,
+        excerpt: citation.excerpt,
+        ...(Object.hasOwn(citation, 'locationHint')
+          ? { locationHint: citation.locationHint }
+          : {}),
+      })
     }
     const projected = {
       label: change.label,
       description: change.description,
       ...(Object.hasOwn(change, 'before') ? { before: change.before } : {}),
       ...(Object.hasOwn(change, 'after') ? { after: change.after } : {}),
-      ...(change.evidence
-        ? { evidence }
+      ...(change.citations
+        ? { citations }
         : {}),
     }
     changes.push(projected)
@@ -677,261 +638,8 @@ async function resolveReviewEvidence(
     question: request.question,
     changes,
   }
-  await assertWorkspaceRootIdentity(
-    workspaceRoot,
-    workspaceRootIdentity,
-  )
+  await fileAccess.assertPinnedWorkspaceCurrent()
   return review
-}
-
-async function resolveContainedPath(
-  workspaceRoot: string,
-  workspaceRootIdentity: FileIdentity,
-  relativePath: string,
-): Promise<EvidenceCandidate> {
-  const candidate = path.resolve(workspaceRoot, relativePath)
-  const relativeCandidate = path.relative(workspaceRoot, candidate)
-  if (
-    relativeCandidate.length === 0 ||
-    relativeCandidate.startsWith(`..${path.sep}`) ||
-    relativeCandidate === '..' ||
-    path.isAbsolute(relativeCandidate)
-  ) {
-    throw new EvidenceError()
-  }
-  const candidateStats = await lstat(candidate).catch(() => {
-    throw new EvidenceError()
-  })
-  if (!candidateStats.isFile() || candidateStats.isSymbolicLink()) {
-    throw new EvidenceError()
-  }
-  const resolved = await realpath(candidate).catch(() => {
-    throw new EvidenceError()
-  })
-  const relative = path.relative(workspaceRoot, resolved)
-  if (
-    resolved !== candidate ||
-    relative.length === 0 ||
-    relative.startsWith(`..${path.sep}`) ||
-    relative === '..' ||
-    path.isAbsolute(relative)
-  ) {
-    throw new EvidenceError()
-  }
-  await assertWorkspaceRootIdentity(
-    workspaceRoot,
-    workspaceRootIdentity,
-  )
-  return {
-    path: resolved,
-    relativePath,
-    identity: {
-      device: candidateStats.dev,
-      inode: candidateStats.ino,
-    },
-  }
-}
-
-async function readEvidenceSnapshot(
-  candidate: EvidenceCandidate,
-  testHook:
-    | CreateInteractionBrokerOptions['evidenceReadTestHook']
-    | undefined,
-): Promise<EvidenceSnapshot> {
-  await testHook?.('before_open', candidate.relativePath)
-  const handle = await open(
-    candidate.path,
-    constants.O_RDONLY | constants.O_NOFOLLOW,
-  ).catch(() => {
-    throw new EvidenceError()
-  })
-  try {
-    const stat = await handle.stat()
-    if (
-      !stat.isFile() ||
-      stat.dev !== candidate.identity.device ||
-      stat.ino !== candidate.identity.inode ||
-      stat.size > uniqueFileMaxBytes
-    ) {
-      throw new EvidenceError()
-    }
-    await testHook?.('after_open_stat', candidate.relativePath)
-    const bytes = await readBoundedFile(handle, uniqueFileMaxBytes)
-    if (
-      bytes.byteLength > uniqueFileMaxBytes ||
-      bytes.byteLength !== stat.size
-    ) {
-      throw new EvidenceError()
-    }
-    let text
-    try {
-      text = new TextDecoder('utf-8', { fatal: true }).decode(bytes)
-    } catch {
-      throw new EvidenceError()
-    }
-    return { bytes, text }
-  } finally {
-    await handle.close()
-  }
-}
-
-async function readBoundedFile(
-  handle: Awaited<ReturnType<typeof open>>,
-  maximumBytes: number,
-): Promise<Buffer> {
-  const chunks: Buffer[] = []
-  let bytesReadTotal = 0
-  while (bytesReadTotal <= maximumBytes) {
-    const chunk = Buffer.allocUnsafe(
-      Math.min(64 * 1024, maximumBytes + 1 - bytesReadTotal),
-    )
-    const { bytesRead } = await handle.read(
-      chunk,
-      0,
-      chunk.byteLength,
-      null,
-    )
-    if (bytesRead === 0) break
-    chunks.push(chunk.subarray(0, bytesRead))
-    bytesReadTotal += bytesRead
-  }
-  if (bytesReadTotal > maximumBytes) throw new EvidenceError()
-  return Buffer.concat(chunks, bytesReadTotal)
-}
-
-function projectEvidence(
-  reference: TextQuoteEvidenceRef,
-  snapshot: EvidenceSnapshot,
-): BrowserSafeTextQuoteEvidence {
-  if (sha256(snapshot.bytes) !== reference.contentDigest) {
-    throw new EvidenceError()
-  }
-  const text = snapshot.text.startsWith('\ufeff')
-    ? snapshot.text.slice(1)
-    : snapshot.text
-  const position = findOccurrence(
-    text,
-    reference.locator.quote,
-    reference.locator.occurrence,
-  )
-  if (position < 0) throw new EvidenceError()
-  const afterPosition = position + reference.locator.quote.length
-  return {
-    relativePath: reference.relativePath,
-    contentDigest: reference.contentDigest,
-    quote: reference.locator.quote,
-    occurrence: reference.locator.occurrence,
-    contextBefore: suffixWithinBytes(
-      text.slice(0, position),
-      contextMaxBytes,
-    ),
-    contextAfter: prefixWithinBytes(
-      text.slice(afterPosition),
-      contextMaxBytes,
-    ),
-  }
-}
-
-function findOccurrence(
-  text: string,
-  quote: string,
-  occurrence: number,
-): number {
-  let from = 0
-  for (let index = 1; index <= occurrence; index += 1) {
-    const found = text.indexOf(quote, from)
-    if (found < 0) return -1
-    if (index === occurrence) return found
-    from = found + quote.length
-  }
-  return -1
-}
-
-function prefixWithinBytes(value: string, maximumBytes: number): string {
-  let result = ''
-  for (const character of value) {
-    if (Buffer.byteLength(result + character, 'utf8') > maximumBytes) break
-    result += character
-  }
-  return result
-}
-
-function suffixWithinBytes(value: string, maximumBytes: number): string {
-  const characters = [...value]
-  let result = ''
-  for (let index = characters.length - 1; index >= 0; index -= 1) {
-    const next = characters[index] + result
-    if (Buffer.byteLength(next, 'utf8') > maximumBytes) break
-    result = next
-  }
-  return result
-}
-
-async function requireExactWorkspaceRoot(input: string): Promise<{
-  readonly path: string
-  readonly identity: FileIdentity
-}> {
-  if (!path.isAbsolute(input)) {
-    throw new TypeError('The interaction workspace root is invalid.')
-  }
-  const normalized = path.resolve(input)
-  const canonical = await realpath(normalized)
-  if (canonical !== normalized) {
-    throw new TypeError('The interaction workspace root is invalid.')
-  }
-  const candidateStats = await lstat(canonical)
-  if (!candidateStats.isDirectory() || candidateStats.isSymbolicLink()) {
-    throw new TypeError('The interaction workspace root is invalid.')
-  }
-  const handle = await open(
-    canonical,
-    constants.O_RDONLY | constants.O_NOFOLLOW,
-  )
-  let identity: FileIdentity
-  try {
-    const stats = await handle.stat()
-    if (
-      !stats.isDirectory() ||
-      stats.dev !== candidateStats.dev ||
-      stats.ino !== candidateStats.ino
-    ) {
-      throw new TypeError('The interaction workspace root is invalid.')
-    }
-    identity = {
-      device: stats.dev,
-      inode: stats.ino,
-    }
-  } finally {
-    await handle.close()
-  }
-  await assertWorkspaceRootIdentity(canonical, identity).catch(() => {
-    throw new TypeError('The interaction workspace root is invalid.')
-  })
-  return {
-    path: canonical,
-    identity,
-  }
-}
-
-async function assertWorkspaceRootIdentity(
-  workspaceRoot: string,
-  expected: FileIdentity,
-): Promise<void> {
-  const [canonical, stats] = await Promise.all([
-    realpath(workspaceRoot),
-    lstat(workspaceRoot),
-  ]).catch(() => {
-    throw new EvidenceError()
-  })
-  if (
-    canonical !== workspaceRoot ||
-    !stats.isDirectory() ||
-    stats.isSymbolicLink() ||
-    stats.dev !== expected.device ||
-    stats.ino !== expected.inode
-  ) {
-    throw new EvidenceError()
-  }
 }
 
 function authenticate(
@@ -995,7 +703,7 @@ function errorResponse(
 }
 
 function statusForError(code: InteractionBrokerErrorCode): number {
-  if (code === 'invalid_request' || code === 'evidence_invalid') return 400
+  if (code === 'invalid_request' || code === 'citation_invalid') return 400
   if (code === 'forbidden') return 403
   if (code === 'busy' || code === 'runtime_inactive') return 409
   return 503
@@ -1092,11 +800,6 @@ type Deferred<T> = {
   readonly resolve: (value: T) => void
 }
 
-function sha256(value: Buffer): string {
-  return createHash('sha256').update(value).digest('hex')
-}
-
-class EvidenceError extends Error {}
 class LifecycleDeadlineError extends Error {}
 
 function settleWithin(

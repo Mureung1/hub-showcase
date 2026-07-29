@@ -12,7 +12,7 @@ export {
 export type {
   ProposeStatePatchRequest,
   ProposeStatePatchResult,
-  TextQuoteEvidenceRef,
+  SourceCitation,
 } from './capability.js'
 
 export {

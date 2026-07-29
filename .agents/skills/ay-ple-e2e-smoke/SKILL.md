@@ -110,9 +110,9 @@ Inspect the Review semantically:
 - it exposes uncertainty instead of inventing dates, relationships, or course
   facts.
 
-Open one evidence target when the Review supplies one and verify it navigates
-back to the relevant source. Do not require evidence when AY reasonably omitted
-it.
+Open one source citation when the Review supplies one and verify it opens the
+relevant source preview. Do not require exact-text highlighting or a citation
+when AY reasonably omitted one.
 
 In `review-only`, click `거절` and verify the Review resolves as rejected. In
 explicit `apply`, click `수락`, then verify only the reviewed snapshot change

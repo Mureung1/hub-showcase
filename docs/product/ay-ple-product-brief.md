@@ -75,7 +75,7 @@ OpenClaw·Hermes Agent가 built-in Skill과 runtime Tool을 나누고 catalog up
 | 1 | 사용자가 App 실행 전 Codex CLI에서 Init Skill을 실행해 한 학기 Git repository를 준비한다. | AY·Skill이 일반 file·Git 도구를 사용하고 최소 `AGENTS.md`, `workspace-state.json`, workspace Skill copy와 설치 결과를 workspace history에 남긴다. |
 | 2 | 사용자가 prepared root로 AY-PLE을 시작한다. | App은 exact Git root, complete effective Interaction declaration과 Broker-owned held Adapter lifecycle을 검증한 뒤 active path를 기록하고 startup thread를 정상 Product Turn에 재사용한다. |
 | 3 | 사용자가 source explorer에서 공지와 계획서를 선택하고 `선택한 자료로 학기 정보 정리하기`를 실행한다. | App이 `model_semester` selection을 request-scoped ActionInvocation으로 동결하고 workspace-local `ay-ple-semester-modeling` Skill과 file reference가 포함된 native Turn을 시작한다. |
-| 4 | AY가 `propose_state_patch`를 호출한다. | Interaction MCP Module이 도메인 중립적인 semantic before/after change와 선택적인 `EvidenceRef`를 AY Chat의 inline Review card로 투영한다. |
+| 4 | AY가 `propose_state_patch`를 호출한다. | Interaction MCP Module이 도메인 중립적인 semantic before/after change와 선택적인 `SourceCitation`을 AY Chat의 inline Review card로 투영한다. Citation은 AY가 어느 file의 어떤 부분을 근거로 해석했는지 보여 주며 App이 원문을 인증했다는 뜻은 아니다. |
 | 5 | 사용자가 수락·수정 요청·거절한다. | Pending 동안 composer·steer는 닫고 전체 Turn interrupt만 별도 control로 유지한다. App은 `accept | revise | reject`와 feedback을 같은 MCP call에 반환하고 해당 card를 read-only outcome으로 남긴다. |
 | 6 | AY가 선택을 해석한다. | 수락이면 실제 workspace file을 변경하고, 수정 요청이면 다시 검토해 필요할 때 fresh call·새 card로 제안하며, 거절이면 적용하지 않는다. |
 | 7 | AY가 자연스러운 checkpoint에서 commit한다. | Git이 실제 파일 변경의 장기 history와 rollback을 소유한다. |
@@ -121,7 +121,7 @@ Action을 workspace-local Skill과 file/text input으로 compose하는 exact con
 - Pending Review는 AY Chat의 inline card 하나로 표시하고 composer·steer를 잠근다. Modal·별도 approval page와 입력 queue는 만들지 않는다.
 - Card에는 capability action만 두며 전체 Turn interrupt는 Review result와 분리된 native conversation control로 유지한다.
 - Settled card는 read-only로 남기고 fresh call은 새 card로 append한다. 기존 card를 교체·재개하지 않으며 별도 App Review ledger를 만들지 않는다.
-- Optional `EvidenceRef`는 active SemesterWorkspace에서 on-demand로 bounded read하고 path·digest·locator를 모두 검증한 뒤 card에 투영한다. 하나라도 invalid면 partial Review 없이 call 전체를 실패시키며 file registry·copy·cache를 만들지 않는다.
+- Optional `SourceCitation`은 active SemesterWorkspace 안에 실제 존재하는 regular non-symlink file의 relative path, AY가 제시한 excerpt와 optional location hint를 card에 투영한다. App은 path safety만 확인하고 excerpt를 parse·인증하지 않으며, 하나라도 invalid citation이면 partial Review 없이 call 전체를 실패시킨다.
 - Pending request와 response를 장기 학업 event로 저장하지 않는다.
 - 일반 clarification은 built-in `request_user_input`을 사용할 수 있다.
 - 하나의 Review 결정을 custom MCP와 built-in `request_user_input`에 이중으로 걸치지 않는다.
@@ -129,7 +129,7 @@ Action을 workspace-local Skill과 file/text input으로 compose하는 exact con
 
 첫 capability인 `propose_state_patch`의 의미는 변경을 App이 적용하라는 명령이 아니다. AY가 사용자에게 변경안을 보여주고 다음 행동을 결정하기 위한 transient Review request다.
 
-공개 request는 Assignment·Course schema나 raw Git diff에 결합하지 않는다. 사람이 이해할 설명과 순서가 있는 semantic change를 사용하고, 각 change는 label·설명, before/after와 선택적인 evidence를 가진다.
+공개 request는 Assignment·Course schema나 raw Git diff에 결합하지 않는다. 사람이 이해할 설명과 순서가 있는 semantic change를 사용하고, 각 change는 label·설명, before/after와 선택적인 `SourceCitation { relativePath, excerpt, locationHint? }`을 가진다.
 
 ## SemesterWorkspace와 상태 소유권
 
@@ -187,7 +187,7 @@ SemesterWorkspace actual file
    → AY-owned file mutation / Git checkpoint
 ```
 
-두 경로는 같은 actual file을 가리키지만 authority는 다르다. Source explorer·preview는 current filesystem을 읽어 보여주는 transient UI이고, AY만 일반 file·Git 도구로 내용을 변경한다. Explorer의 선택은 Chat request나 Review evidence를 암묵적으로 바꾸지 않는다. 선택 자체는 inert하며 명시적인 ActionInvocation만 request-scoped input을 만든다.
+두 경로는 같은 actual file을 가리키지만 authority는 다르다. Source explorer·preview는 current filesystem을 읽어 보여주는 transient UI이고, AY만 일반 file·Git 도구로 내용을 변경한다. Explorer의 선택은 Chat request나 Review citation을 암묵적으로 바꾸지 않는다. 선택 자체는 inert하며 명시적인 ActionInvocation만 request-scoped input을 만든다.
 
 초기 구현이 사용했던 app-owned `RawMaterial → ModelingRun → durable StatePatch → UserConfirmation → Server-owned apply` 흐름은 interaction round trip을 확인한 historical 동기다. 이 객체와 apply transaction은 current product contract와 persistence에서 제거됐다. Exact package·endpoint topology는 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md), 후속 순서는 [개발 백로그](ay-ple-development-backlog.md)가 소유한다.
 
@@ -201,10 +201,10 @@ SemesterWorkspace actual file
 | Source-grounded workbench | Active root의 안전한 일반 file을 folder-relative explorer에서 보고 UTF-8 text·PDF를 preview하며, unsupported·stale·read failure는 명시적 상태로 표시한다. 이 read-only projection은 AY Chat·Review와 한 3-pane desktop surface에 공존하되 registry·copy·watcher·durable selection을 만들지 않는다. |
 | `model_semester` ActionInvocation | Preview와 독립적인 ordered file selection을 explicit action에서만 동결하고, fresh 검증한 자료와 `ay-ple-semester-modeling` Skill을 한 Product Turn에 전달한다. |
 | `propose_state_patch` MCP | Prepared workspace의 required interaction 연결을 사용해 typed 변경 제안과 `accept | revise | reject` 결과가 한 요청으로 왕복한다. |
-| Capability-specific Review UI | Semantic before/after change, active workspace에서 atomic preflight한 선택적 evidence와 세 action을 AY Chat inline card에서 이해할 수 있다. |
+| Capability-specific Review UI | Semantic before/after change, AY가 제시하고 App이 file path safety를 확인한 선택적 SourceCitation과 세 action을 AY Chat inline card에서 이해할 수 있다. |
 | AY-owned apply | App이 학기 state를 대신 mutate하지 않고 AY가 result 뒤 실제 파일을 변경한다. |
 | Git checkpoint | 의미 있는 accepted 변경을 AY가 commit하고 dirty tree를 강제로 막지 않는다. |
-| Failure settlement | Turn interrupt·disconnect·Runtime terminal과 invalid evidence가 partial Review나 허위 apply 없이 끝난다. |
+| Failure settlement | Turn interrupt·disconnect·Runtime terminal과 invalid citation이 partial Review나 허위 apply 없이 끝난다. |
 | End-to-end confidence | Browser action과 prepared workspace가 같은 ActionInvocation·InteractionCapability 사용자 경험을 통과한다. 세부 검증 표면은 [Codex Chat 구현 지도](../architecture/codex-chat-implementation-map.md)가 소유한다. |
 
 ## 의도적으로 만들지 않는 것
@@ -230,7 +230,7 @@ SemesterWorkspace actual file
 | App의 차별화 | 일반 채팅보다 나은 capability-specific 판단 UI를 제공하는가? |
 | GUI intent 전달 | 명시적 App action과 그 시점의 검증된 맥락이 사용자의 prompt 재작성 없이 native AY 작업으로 전달되는가? |
 | 왕복 완결성 | 한 MCP call 안에서 요청·UI·사용자 선택·structured result 반환이 끝나는가? |
-| 근거 정직성 | Evidence가 active workspace의 exact content version과 일치할 때만 card 전체가 표시되는가? |
+| 근거 투명성 | AY가 어느 active-workspace file의 어떤 부분을 근거로 제시했는지 사용자가 알 수 있고, App이 인증하지 않은 excerpt를 검증된 사실처럼 표현하지 않는가? |
 | Runtime 정직성 | Effective Interaction declaration이 정확하지 않거나 actual Adapter의 held Broker lifecycle이 연결되지 않으면 prepared-workspace startup이 성공하지 않는가? |
 | 경계의 깊이 | Skill이 correlation·Browser lifecycle·revision을 알지 않아도 되는가? |
 | Capability leverage | 새 built-in Skill이 기존 AY–App Interaction Interface를 재사용하고, 새 typed interaction은 실제로 필요한 여러 Skill에 leverage를 제공하는가? |
@@ -244,5 +244,5 @@ SemesterWorkspace actual file
 | 질문 | 소유할 후속 결정 |
 | --- | --- |
 | `workspace-state.json`에 반드시 필요한 최소 학기 metadata는 무엇인가? | SemesterWorkspace init spec |
-| Text 이외 evidence preview가 실제로 필요할 때 어떤 file codec과 locator를 추가할 것인가? | 관찰된 사용 사례에 따른 capability spec |
+| 실제 file preview에서 citation 위치 이동·highlight가 필요해질 때 어떤 형식부터 parser·typed locator와 optional version binding을 추가할 것인가? | 관찰된 사용 사례에 따른 progressive capability spec |
 | 첫 Review 뒤 추가할 두 번째 MCP capability는 무엇인가? | 실제 dogfood에서 반복되는 사용자 판단을 관찰한 뒤 결정 |

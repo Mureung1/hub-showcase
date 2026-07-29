@@ -225,7 +225,7 @@ test('prepared public composition exposes workspace sources beside AY Chat and i
         await postJson(
           `${baseUrl}/api/_private/interaction-mcp/`,
           {
-            protocolVersion: 1,
+            protocolVersion: 2,
             kind: 'handshake',
             serverName: 'ay_ple_interaction',
             capabilities: ['propose_state_patch'],
@@ -242,7 +242,7 @@ test('prepared public composition exposes workspace sources beside AY Chat and i
     const held = postJson(
       `${baseUrl}/api/_private/interaction-mcp/`,
       {
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'capability_call',
         capability: 'propose_state_patch',
         request: {
@@ -412,7 +412,7 @@ test('public model_semester starts one Skill-backed Product operation with order
         await postJson(
           `${baseUrl}/api/_private/interaction-mcp/`,
           {
-            protocolVersion: 1,
+            protocolVersion: 2,
             kind: 'handshake',
             serverName: 'ay_ple_interaction',
             capabilities: ['propose_state_patch'],
@@ -429,7 +429,7 @@ test('public model_semester starts one Skill-backed Product operation with order
     const held = postJson(
       `${baseUrl}/api/_private/interaction-mcp/`,
       {
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'capability_call',
         capability: 'propose_state_patch',
         request: {
@@ -693,7 +693,7 @@ test('a local Product Turn start rejection leaves the Interaction Broker availab
       postJson(
         `${baseUrl}/api/_private/interaction-mcp/`,
         {
-          protocolVersion: 1,
+          protocolVersion: 2,
           kind: 'handshake',
           serverName: 'ay_ple_interaction',
           capabilities: ['propose_state_patch'],
@@ -927,7 +927,7 @@ test('prepared Adapter loss preserves transport_failed through the public Review
         await postJson(
           `${baseUrl}/api/_private/interaction-mcp/`,
           {
-            protocolVersion: 1,
+            protocolVersion: 2,
             kind: 'handshake',
             serverName: 'ay_ple_interaction',
             capabilities: ['propose_state_patch'],
@@ -944,7 +944,7 @@ test('prepared Adapter loss preserves transport_failed through the public Review
     const held = postJson(
       `${baseUrl}/api/_private/interaction-mcp/`,
       {
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'capability_call',
         capability: 'propose_state_patch',
         request: {
@@ -1395,7 +1395,7 @@ async function openBrokerLifecycle(
         'x-ay-ple-runtime-binding': credentials.binding,
       },
       body: JSON.stringify({
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'lifecycle_open',
       }),
     },
@@ -1408,7 +1408,7 @@ async function openBrokerLifecycle(
   assert.deepEqual(
     JSON.parse(new TextDecoder().decode(accepted.value)),
     {
-      protocolVersion: 1,
+      protocolVersion: 2,
       kind: 'lifecycle_accepted',
     },
   )

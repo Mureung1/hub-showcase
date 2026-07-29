@@ -35,7 +35,7 @@ export type {
 } from './interaction-request.js'
 
 export {
-  PRODUCT_REVIEW_EVIDENCE_MAX_BYTES,
+  PRODUCT_REVIEW_CITATIONS_MAX_BYTES,
   PRODUCT_REVIEW_REQUESTED_FRAME_MAX_BYTES,
   decodeBrowserSafeSemanticReview,
   decodeProductReviewFrame,
@@ -43,7 +43,7 @@ export {
 } from './semantic-review.js'
 export type {
   BrowserSafeSemanticReview,
-  BrowserSafeTextQuoteEvidence,
+  BrowserSafeSourceCitation,
   ProductReviewFrame,
   ProductReviewResult,
 } from './semantic-review.js'

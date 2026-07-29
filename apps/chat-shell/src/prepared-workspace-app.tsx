@@ -147,7 +147,7 @@ export function PreparedWorkspaceApp() {
         >
           <PreparedProductChat
             controller={chat}
-            onNavigateEvidence={sources.navigateEvidence}
+            onNavigateCitation={sources.navigateCitation}
           />
         </aside>
       </div>

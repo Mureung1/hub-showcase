@@ -36,12 +36,12 @@ SemesterWorkspace 안에서 한 과목을 나타내는 학업 객체다. 정체�
 _Avoid_: 디렉터리, thread, 태그
 
 **WorkspaceFileRef**:
-ActionInvocation이 한 번의 요청에서 active SemesterWorkspace 안의 현재 file path를 가리키는 상대 참조다. Action을 실행할 때 참조할 path 목록은 고정하지만 file의 content version은 고정하지 않는다. Exact content version에 대한 근거가 필요하면 EvidenceRef를 사용한다.
-_Avoid_: EvidenceRef, file snapshot, App-owned source identity, durable selection, 열린 file handle
+ActionInvocation이 한 번의 요청에서 active SemesterWorkspace 안의 현재 file path를 가리키는 상대 참조다. Action을 실행할 때 참조할 path 목록은 고정하지만 file의 content version은 고정하지 않는다.
+_Avoid_: SourceCitation, file snapshot, App-owned source identity, durable selection, 열린 file handle
 
-**EvidenceRef**:
-WorkspaceFileRef와 달리 relative path, exact content digest와 locator로 AY가 제안한 값의 특정 content version과 위치를 Review에 전달하는 선택적 field-level 참조다. App은 Review 요청 때 active SemesterWorkspace의 relative path를 on-demand로 bounded read하고 exact content digest와 locator를 검증해 transient preview를 만들 뿐, 모든 file operation을 추적하지 않는다.
-_Avoid_: 필수 global file registry, 최신 파일만 가리키는 링크, App-owned source copy·cache, 일부만 검증된 preview, Agent 활동 로그
+**SourceCitation**:
+AY가 Review에서 자신의 판단과 연결해 제시하는 SemesterWorkspace file의 상대 경로, 인용 excerpt와 선택적인 위치 설명이다. App은 안전한 file 연결을 확인해 표시하지만 excerpt의 원문 일치나 AY 판단의 사실성을 인증하지 않는다.
+_Avoid_: EvidenceRef, 검증된 원문 증거, exact content snapshot, parser 결과, 필수 global file registry
 
 **SemesterModel**:
 SemesterWorkspace가 과목과 학업 사실을 구조화해 보존할 때 사용하는 현재 학기 snapshot이다. Agent 대화 기록이나 App-owned aggregate가 아니다.
@@ -66,12 +66,12 @@ _Avoid_: 과제 마감 복제, 시험 일시 복제, 파생 timeline 행
 ## 제안과 신뢰
 
 **StatePatch**:
-AY가 Review를 위해 학생에게 보여주는 일시적인 구조화 변경 제안이다. 도메인 중립적인 semantic before/after change와 선택적인 EvidenceRef를 담지만 App의 durable entity나 학기 자료를 바꿀 권한은 아니다.
+AY가 Review를 위해 학생에게 보여주는 일시적인 구조화 변경 제안이다. 도메인 중립적인 semantic before/after change와 선택적인 SourceCitation을 담지만 App의 durable entity나 학기 자료를 바꿀 권한은 아니다.
 _UI alias_: 변경 제안
 _Avoid_: App-owned pending record, Agent 최종 답변, 자동 반영, raw protocol event
 
 **Review**:
-학생이 StatePatch와 연결된 학기 자료의 근거를 확인하고 수락·수정 요청·거절한 결과를 같은 AY 작업에 돌려주는 InteractionCapability다.
+학생이 StatePatch와 AY가 제시한 SourceCitation을 확인하고 수락·수정 요청·거절한 결과를 같은 AY 작업에 돌려주는 InteractionCapability다.
 _Avoid_: 코드 리뷰, 실행 권한 승인, Agent self-review
 
 **UserConfirmation**:

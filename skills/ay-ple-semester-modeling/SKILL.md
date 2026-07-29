@@ -28,21 +28,23 @@ description: Reconcile academic facts from SemesterWorkspace sources into the Se
    because it is the only plausible object in the snapshot; preserve the
    uncertain relationship unless the sources or conversation establish it.
 4. Draft the proposed snapshot change without writing it. Re-read
-   `workspace-state.json` and the relevant source bytes immediately before
-   Review. Confirm that the envelope, snapshot, and evidence digests still match
-   the inputs used for the proposal. If an input drifted, discard the draft and
-   reconcile against the current bytes before proposing. For a read-only
+   `workspace-state.json` and the relevant sources immediately before Review.
+   If an input drifted from what informed the draft, discard the draft and
+   reconcile against the current information before proposing. For a read-only
    extraction or answer, return the result without proposing a mutation.
 5. Before changing `workspace-state.json`, call `propose_state_patch`. Provide a
    short `summary`, a `question`, and ordered semantic `changes` with readable
    `label`, `description`, and meaningful `before` and/or `after` values. When
-   exact file evidence helps the user review a change, include its POSIX
-   workspace-relative `relativePath`, whole-file lowercase SHA-256
-   `contentDigest`, and a locator with type `text_quote`, an exact `quote`, and
-   its 1-based `occurrence`.
+   showing the source behind a change helps the user judge it, add `citations`.
+   Give each citation a POSIX workspace-relative `relativePath`, a concise
+   `excerpt` that honestly represents the part of the source AY relied on, and
+   an optional free-form `locationHint` when it helps the user find that part.
+   The App checks the file link and presents AY's citation; it does not certify
+   that the excerpt exactly matches the file or that AY's interpretation is
+   correct.
 6. Treat the structured result as the decision about this proposal:
    - On `accept`, obtain any required native file permission, re-read
-     `workspace-state.json` and the evidence-bearing sources to detect drift.
+     `workspace-state.json` and the citation-bearing sources to detect drift.
      If a reviewed input drifted, keep the state unchanged and start a fresh
      reconciliation and Review instead of rebasing the accepted change.
      Otherwise, apply only the reviewed snapshot changes with native file tools
@@ -56,7 +58,9 @@ description: Reconcile academic facts from SemesterWorkspace sources into the Se
    `AGENTS.md` and native permission policy. When the change is a meaningful
    checkpoint, inspect the exact diff and commit only the intended paths.
 
-Rely on the App only to return the Review result; never ask or expect it to edit
-a SemesterWorkspace file or run Git for AY. Keep a Review result independent
-from native execution approval. If the Review call fails or its result is
-unavailable, preserve the current state and do not infer an outcome.
+Rely on the App only to validate safe citation file links, present the Review,
+and return its result; never ask or expect it to edit
+a SemesterWorkspace file or run Git for AY. Never ask it to verify AY's source
+interpretation. Keep a Review result independent from native execution
+approval. If the Review call fails or its result is unavailable, preserve the
+current state and do not infer an outcome.

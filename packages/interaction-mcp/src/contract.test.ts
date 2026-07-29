@@ -19,15 +19,11 @@ const validRequest = {
       description: '강의계획서의 마감 안내를 반영합니다.',
       before: '미정',
       after: '2026-08-03 23:59',
-      evidence: [
+      citations: [
         {
-          relativePath: 'materials/syllabus.txt',
-          contentDigest: 'a'.repeat(64),
-          locator: {
-            type: 'text_quote',
-            quote: '8월 3일 23:59까지 제출',
-            occurrence: 1,
-          },
+          relativePath: 'materials/syllabus.pdf',
+          excerpt: '8월 3일 23:59까지 제출',
+          locationHint: '2쪽 과제 일정 표',
         },
       ],
     },
@@ -71,32 +67,32 @@ test('target contract rejects donor academic durability and double-confirmation 
 
 test('private Broker wire decodes only exact handshake, lifecycle, call, result, and safe error envelopes', () => {
   const handshake = {
-    protocolVersion: 1,
+    protocolVersion: 2,
     kind: 'handshake',
     serverName: 'ay_ple_interaction',
     capabilities: ['propose_state_patch'],
   } as const
   const lifecycleOpen = {
-    protocolVersion: 1,
+    protocolVersion: 2,
     kind: 'lifecycle_open',
   } as const
   const capabilityCall = {
-    protocolVersion: 1,
+    protocolVersion: 2,
     kind: 'capability_call',
     capability: 'propose_state_patch',
     request: validRequest,
   } as const
   const responses = [
-    { protocolVersion: 1, kind: 'handshake_accepted' },
-    { protocolVersion: 1, kind: 'lifecycle_accepted' },
+    { protocolVersion: 2, kind: 'handshake_accepted' },
+    { protocolVersion: 2, kind: 'lifecycle_accepted' },
     {
-      protocolVersion: 1,
+      protocolVersion: 2,
       kind: 'capability_result',
       capability: 'propose_state_patch',
       result: { outcome: 'accept' },
     },
     {
-      protocolVersion: 1,
+      protocolVersion: 2,
       kind: 'error',
       code: 'interaction_interrupted',
       displayMessage: 'The interaction was interrupted.',
@@ -123,9 +119,11 @@ test('private Broker wire decodes only exact handshake, lifecycle, call, result,
   }
 
   for (const invalid of [
+    { ...handshake, protocolVersion: 1 },
     { ...handshake, capabilities: ['propose_state_patch', 'other'] },
     { ...lifecycleOpen, generation: 'untrusted' },
     { ...capabilityCall, operationId: `operation_${'1'.repeat(32)}` },
+    { ...responses[0], protocolVersion: 1 },
     { ...responses[1], result: { outcome: 'timeout' } },
     { ...responses[2], code: 'raw_transport_error' },
     { ...responses[2], nativeTurnId: 'turn-private' },
@@ -150,7 +148,7 @@ test('private Broker wire decodes only exact handshake, lifecycle, call, result,
 })
 
 test('public codecs enforce UTF-8 byte, cardinality, path, and union bounds', () => {
-  const evidence = validRequest.changes[0].evidence[0]
+  const citation = validRequest.changes[0].citations[0]
   const change = validRequest.changes[0]
   const invalidRequests: unknown[] = [
     { ...validRequest, summary: '가'.repeat(683) },
@@ -173,14 +171,14 @@ test('public codecs enforce UTF-8 byte, cardinality, path, and union bounds', ()
     },
     {
       ...validRequest,
-      changes: [{ ...change, evidence: [] }],
+      changes: [{ ...change, citations: [] }],
     },
     {
       ...validRequest,
       changes: [
         {
           ...change,
-          evidence: Array.from({ length: 9 }, () => evidence),
+          citations: Array.from({ length: 9 }, () => citation),
         },
       ],
     },
@@ -189,11 +187,59 @@ test('public codecs enforce UTF-8 byte, cardinality, path, and union bounds', ()
       changes: Array.from({ length: 3 }, (_, index) => ({
         ...change,
         label: `변경 ${index}`,
-        evidence: Array.from(
+        citations: Array.from(
           { length: index === 2 ? 1 : 8 },
-          () => evidence,
+          () => citation,
         ),
       })),
+    },
+    {
+      ...validRequest,
+      changes: [
+        {
+          ...change,
+          citations: [
+            {
+              relativePath: 'materials/syllabus.pdf',
+              excerpt: '',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      ...validRequest,
+      changes: [
+        {
+          ...change,
+          citations: [
+            {
+              relativePath: 'materials/syllabus.pdf',
+              excerpt: '인용',
+              locationHint: '',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      ...validRequest,
+      changes: [
+        {
+          ...change,
+          evidence: [
+            {
+              relativePath: 'materials/syllabus.txt',
+              contentDigest: 'a'.repeat(64),
+              locator: {
+                type: 'text_quote',
+                quote: '8월 3일 23:59까지 제출',
+                occurrence: 1,
+              },
+            },
+          ],
+        },
+      ],
     },
   ]
   for (const relativePath of [
@@ -208,38 +254,11 @@ test('public codecs enforce UTF-8 byte, cardinality, path, and union bounds', ()
       changes: [
         {
           ...change,
-          evidence: [{ ...evidence, relativePath }],
+          citations: [{ ...citation, relativePath }],
         },
       ],
     })
   }
-  for (const locator of [
-    { ...evidence.locator, quote: '' },
-    { ...evidence.locator, occurrence: 0 },
-    { ...evidence.locator, occurrence: 1025 },
-    { ...evidence.locator, occurrence: 1.5 },
-  ]) {
-    invalidRequests.push({
-      ...validRequest,
-      changes: [
-        {
-          ...change,
-          evidence: [{ ...evidence, locator }],
-        },
-      ],
-    })
-  }
-  invalidRequests.push({
-    ...validRequest,
-    changes: [
-      {
-        ...change,
-        evidence: [
-          { ...evidence, contentDigest: evidence.contentDigest.toUpperCase() },
-        ],
-      },
-    ],
-  })
 
   for (const invalid of invalidRequests) {
     assert.throws(

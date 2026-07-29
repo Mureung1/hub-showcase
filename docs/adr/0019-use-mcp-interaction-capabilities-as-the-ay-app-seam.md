@@ -47,23 +47,25 @@ AY-PLE의 차별점은 Codex를 단순히 채팅 UI에 넣는 것이 아니다. 
 - 각 MCP tool은 하나의 구체적인 사용자 capability를 typed input과 closed result union으로 표현한다. 하나의 범용 event bus, 임의 schema renderer 또는 모든 App event를 운반하는 `ProductInteraction` envelope은 만들지 않는다.
 - MCP caller는 `workspaceId`, `courseId`, `baseRevision`, `requestKey`, native `threadId`·`turnId`·`requestId` 같은 host binding을 보내지 않는다. Interaction MCP Module이 현재 Runtime·Turn에 tool server를 결합하고 correlation, 한 번만 응답하기, 취소, disconnect와 UI lifecycle을 내부에서 소유한다.
 - Browser UI는 capability별 Adapter다. 동일 Interface의 in-memory Adapter가 정상 `request → UI projection → user result → MCP result`와 비정상 `request → MCP failure`를 검증하는 주 테스트 seam이 된다. 테스트 편의를 위해 내부 correlation이나 persistence shape를 공개 Interface에 추가하지 않는다.
-- `propose_state_patch`는 첫 InteractionCapability로 유지한다. 요청은 특정 Assignment·Course schema나 raw Git diff가 아니라 **도메인 중립적인 semantic Review presentation model**이다. 짧은 설명과 순서가 있는 change를 보내며, 각 change는 사람이 이해할 label·설명, 변경 전·후 값과 선택적인 `EvidenceRef`를 가진다. 추가·삭제에서는 전·후 중 한쪽을 생략할 수 있다. 정상 result는 `accept | revise | reject`와 필요한 경우 feedback만 반환한다. Turn interrupt, `busy`, timeout, disconnect와 Runtime terminal은 네 번째 `cancel` result가 아니라 MCP failure다. `StatePatch`는 이 호출 동안의 transient presentation payload이고 `UserConfirmation`은 별도 durable App entity가 아니라 그 호출의 정상 사용자 result다.
+- `propose_state_patch`는 첫 InteractionCapability로 유지한다. 요청은 특정 Assignment·Course schema나 raw Git diff가 아니라 **도메인 중립적인 semantic Review presentation model**이다. 짧은 설명과 순서가 있는 change를 보내며, 각 change는 사람이 이해할 label·설명, 변경 전·후 값과 선택적인 `SourceCitation { relativePath, excerpt, locationHint? }`을 가진다. 추가·삭제에서는 전·후 중 한쪽을 생략할 수 있다. 정상 result는 `accept | revise | reject`와 필요한 경우 feedback만 반환한다. Turn interrupt, `busy`, timeout, disconnect와 Runtime terminal은 네 번째 `cancel` result가 아니라 MCP failure다. `StatePatch`는 이 호출 동안의 transient presentation payload이고 `UserConfirmation`은 별도 durable App entity가 아니라 그 호출의 정상 사용자 result다.
 - `propose_state_patch`는 AY가 사용자 판단을 받을 수 있게 하는 capability이지 native file write를 가로채는 mutation gate가 아니다. Tool description은 semantic change를 적용하기 전 Review 용도를 분명히 하고 Skill은 result에 따른 workflow를 지시하지만, Broker·App은 tool 호출 여부와 이후 filesystem diff를 결합해 쓰기를 허용·차단하지 않는다.
-- `EvidenceRef`가 있으면 App Broker는 Browser projection 전에 현재 Runtime binding의 exact SemesterWorkspace에서 workspace-relative path를 on-demand로 bounded read한다. Resolved target이 root 안에 있는 regular file인지 확인하고 exact content digest와 locator를 검증한다. 모든 ref가 통과해야 card를 한 번에 만들며 path escape, missing·oversized file, digest·locator drift 하나라도 있으면 partial card 없이 MCP call 전체를 실패시킨다. 검증한 preview는 현재 interaction의 transient projection일 뿐 `RawMaterial` registry, reusable cache·snapshot이나 durable evidence store가 아니다.
+- `SourceCitation`은 App이 사실로 인증한 원문 조각이 아니라 **AY가 어떤 workspace file의 어떤 부분을 근거로 해석했는지 사용자에게 투명하게 전달하는 citation claim**이다. `relativePath`는 active SemesterWorkspace 안에 존재하는 regular non-symlink file만 가리켜야 하고, `excerpt`는 AY가 사용자에게 보여 주려는 인용 또는 근거 문자열이며, optional `locationHint`는 `42–47행`, `3쪽 상단`, `시험 일정 표`처럼 사람이 원문을 찾는 데 도움이 되는 자유 형식 단서다.
+- `SourceCitation`이 있으면 App Broker는 Browser projection 전에 현재 Runtime binding의 exact SemesterWorkspace에서 workspace-relative path의 containment와 실제 regular non-symlink file 존재만 검증한다. Path escape, missing file, directory 또는 symlink citation이 하나라도 있으면 partial card 없이 MCP call 전체를 `citation_invalid` failure로 끝낸다. App은 file content를 읽거나 parse해 `excerpt`·`locationHint`의 정확성을 검증하지 않고, digest·occurrence·line/page locator를 요구하거나 “검증된 근거”로 승격하지 않는다.
+- Browser는 citation을 “AY가 제시한 근거”로 안전하게 투영하고 사용자가 semantic before/after change와 함께 판단할 수 있게 한다. 실제 file preview를 열 수는 있지만 현재 contract는 excerpt highlight나 exact 위치 이동을 보장하지 않는다. 향후 실제 사용 근거가 생기면 App이 이해하는 file type에 한해 parser, typed locator, highlight와 content-version binding을 progressive enhancement로 추가할 수 있으며, 이런 기능이 기본 Review나 다른 file type의 citation을 막아서는 안 된다.
 - Source explorer·preview는 InteractionCapability와 별개의 sibling product surface로 유지한다. App은 active SemesterWorkspace의 안전한 일반 file을 bounded read-only projection으로 나열하고 text·PDF를 보여줄 수 있다. 이 projection은 `Course`·`RawMaterial`, copy·snapshot·watcher·durable selection이나 file/Git mutation authority를 만들지 않으며, Browser-local source 선택을 MCP input이나 AY 작업 지시로 **암묵적으로** 승격하지 않는다. 사용자가 명시적인 ActionInvocation을 실행할 때만 선택을 request-scoped 입력으로 동결할 수 있다.
 - 하나의 Review 결정은 `propose_state_patch` 호출 하나로 완료한다. 같은 결정을 built-in `request_user_input`과 custom MCP에 나누어 운반하지 않는다. Canonical Product Turn은 Default collaboration mode를 사용하므로 current pin에서 built-in `request_user_input`을 일반 clarification surface로 가정하지 않는다. Rich UI가 필요 없는 질문은 normal Chat의 후속 Turn으로 이어 가며, same-Turn structured clarification이 실제로 필요해질 때 native capability를 별도로 평가한다.
-- `ModelingRun`은 App이 복제해 보존하는 학업 객체가 아니라 native Codex Turn과 그 관측 상태로 대체한다. `RawMaterial`은 App admission을 통과해야 생기는 객체가 아니라 SemesterWorkspace의 일반 사용자 파일이다. `EvidenceRef`는 richer Review UI에 필요한 경우 쓰는 typed presentation data이지 모든 file operation을 App이 추적하게 만드는 전역 계약이 아니다.
+- `ModelingRun`은 App이 복제해 보존하는 학업 객체가 아니라 native Codex Turn과 그 관측 상태로 대체한다. `RawMaterial`은 App admission을 통과해야 생기는 객체가 아니라 SemesterWorkspace의 일반 사용자 파일이다. `SourceCitation`은 richer Review UI에 필요한 경우 쓰는 typed presentation data이지 모든 file operation을 App이 추적하거나 AY의 source interpretation을 재검증하게 만드는 전역 계약이 아니다.
 - Native command·file·network approval은 Codex execution 권한을 결정한다. InteractionCapability의 사용자 결과는 AY의 workflow 판단을 돕는다. 어느 한쪽도 다른 쪽의 권한을 암묵적으로 승인하지 않는다.
 
 ## 역할 경계
 
 | 주체 | 소유하는 것 | 소유하지 않는 것 |
 | --- | --- | --- |
-| 사용자 | App UI에서의 최종 선택과 학기 자료의 의미 | MCP correlation, native protocol |
-| AY·Skill | 작업 계획, interaction 요청 시점, 결과 해석, 실제 파일 변경과 Git checkpoint | App UI lifecycle, Browser transport |
+| 사용자 | App UI에서의 최종 선택, AY가 제시한 citation과 학기 자료 의미의 판단 | MCP correlation, native protocol |
+| AY·Skill | 작업 계획, source 해석과 citation claim, interaction 요청 시점, 결과 해석, 실제 파일 변경과 Git checkpoint | App UI lifecycle, Browser transport |
 | `@ay-ple/interaction-mcp` | Project config로 발견되는 built STDIO executable, typed MCP Interface와 authenticated Broker transport contract | App listener·UI lifecycle, 학업 workflow 순서 |
-| `apps/server`의 Interaction Broker | Endpoint·token value, Runtime binding, correlation, 취소·disconnect, Browser projection과 결과 반환 | Workspace file apply, Skill workflow |
-| `@ay-ple/product-contract`·`apps/chat-shell` | Browser-safe capability와 read-only source projection, 화면과 사용자 입력 수집 | Raw MCP·private Broker transport, source registry·mutation, Agent의 다음 행동 |
+| `apps/server`의 Interaction Broker | Endpoint·token value, Runtime binding, correlation, 취소·disconnect, citation path safety, Browser projection과 결과 반환 | Citation excerpt 검증, workspace file apply, Skill workflow |
+| `@ay-ple/product-contract`·`apps/chat-shell` | Browser-safe capability·citation과 read-only source projection, 화면과 사용자 입력 수집 | Raw MCP·private Broker transport, citation 사실 인증, source registry·mutation, Agent의 다음 행동 |
 | SemesterWorkspace | 실제 학기 파일, `SemesterModel` snapshot과 Git history | Runtime correlation, pending UI interaction |
 | `@ay-ple/codex-chat-runtime` | Thread·Turn 실행, generic child environment 전달, effective native config의 capability-neutral projection과 permission | Capability schema, Broker·UI 의미, live Adapter health, 학기 SSOT |
 
@@ -74,7 +76,7 @@ AY-PLE의 차별점은 Codex를 단순히 채팅 UI에 넣는 것이 아니다. 
 | App이 `ModelingRun → StatePatch → UserConfirmation → apply` workflow를 소유 | 거절 | App과 Skill이 같은 학업 순서를 중복해서 알고 native Turn까지 별도 객체로 복제한다. |
 | 일반 Codex Chat만 제공하고 custom MCP를 제거 | 거절 | Agent 의도를 domain-rich UI로 바꾸고 사용자 선택을 다시 Agent에게 돌려주는 AY-PLE의 핵심 가치를 잃는다. |
 | 모든 상호작용을 하나의 generic event/schema protocol로 통합 | 거절 | 작은 Interface 뒤에 복잡성을 숨기지 못하고 UI·workflow·transport variation을 caller에게 떠넘긴다. |
-| 모든 사용자 질문을 built-in `request_user_input`으로 처리 | 거절 | Current Default collaboration mode의 보장된 surface가 아니고 원본 preview, diff, evidence와 capability-specific action을 표현하는 AY-PLE UI도 제공하지 못한다. |
+| 모든 사용자 질문을 built-in `request_user_input`으로 처리 | 거절 | Current Default collaboration mode의 보장된 surface가 아니고 원본 preview, diff, source citation과 capability-specific action을 표현하는 AY-PLE UI도 제공하지 못한다. |
 | App이 매 thread마다 전체 MCP config를 override | 거절 | Project-native declaration과 사용자 config precedence를 우회하고 App이 Skill·MCP discovery까지 소유하게 한다. Dynamic endpoint·secret은 config가 아니라 Runtime environment로 결합할 수 있다. |
 | Bootstrap Skill이 `../workspace/` parent를 전역 trust로 기록 | 거절 | Current Codex trust lookup은 하위 Git repository로 parent trust를 상속하지 않는다. Exact workspace thread start의 native trust가 실제 Git root를 기록하고 config를 즉시 reload한다. |
 | MCP entrypoint를 absolute user path, `npx`·global install 또는 appData copy로 실행 | 거절 | Personal source checkout인 `hub/`가 구현 authority다. Workspace-relative declaration은 machine-specific absolute path와 별도 설치·복사 lifecycle을 피하고, root가 이동하면 명시적인 Bootstrap Update와 Git diff로 다시 결합한다. |
@@ -89,7 +91,9 @@ AY-PLE의 차별점은 Codex를 단순히 채팅 UI에 넣는 것이 아니다. 
 | Review를 modal이나 별도 approval page로 표시 | 거절 | AY의 요청 맥락과 사용자 결정을 transcript에서 분리하고 별도 navigation·focus lifecycle을 만든다. Inline card가 같은 Turn의 기다림을 직접 표현한다. |
 | Pending Review 중 composer·steer를 계속 허용 | 거절 | 같은 Turn이 MCP result를 기다리는 동안 별도 입력 흐름과 두 번째 interaction을 만들 수 있다. 정상 Review action과 전체 Turn interrupt만 남긴다. |
 | `revise` 뒤 기존 card를 새 proposal로 교체·재개 | 거절 | 서로 다른 MCP call의 요청과 result를 한 UI identity에 합쳐 chronology와 once-only settlement를 흐린다. 이전 결정을 read-only로 남기고 fresh call을 새 card로 append한다. |
-| Evidence 일부가 invalid여도 나머지 change로 partial card 표시 | 거절 | 사용자가 proposal 전체와 근거의 일관성을 확인할 수 없고 stale evidence가 조용히 누락된다. 모든 ref를 atomic preflight하고 실패하면 AY가 fresh call로 바로잡게 한다. |
+| Invalid citation을 숨기고 나머지 change로 partial card 표시 | 거절 | AY가 실제 workspace file과 연결해 제시했다는 citation claim 일부가 조용히 사라진다. 모든 citation path를 함께 검증하고 실패하면 AY가 fresh call로 바로잡게 한다. |
+| App이 `excerpt`를 raw file bytes에서 exact match하고 digest·locator를 요구 | 거절 | Review의 투명성 목적을 content verification으로 바꾸고 App이 AY가 읽을 수 있는 모든 file format의 parser를 중복 소유하게 한다. Text 외 형식은 Review 자체가 실패하며 source interpretation ownership도 AY에서 App으로 이동한다. |
+| 모든 file type의 parser·typed locator·preview highlight를 기본 contract로 선행 구현 | 보류 | 사용자가 citation claim을 보고 원문을 여는 현재 경험에는 필요하지 않다. 실제 형식별 탐색 요구가 확인되면 기본 `SourceCitation`을 유지한 채 점진적으로 추가한다. |
 | `cancel`을 `propose_state_patch`의 네 번째 정상 result로 추가 | 거절 | `reject`라는 명시적인 사용자 판단과 Turn interrupt·continuity failure를 같은 success union에 섞는다. 정상 result는 세 가지로 닫고 나머지는 MCP failure path로 분리한다. |
 | 처음부터 더 긴 `tool_timeout_sec`과 App-level 연장·keepalive를 추가 | 보류 | 5분을 넘기는 Review 요구가 아직 확인되지 않았다. Current pinned native default를 먼저 사용하고 실제 사용 근거가 생길 때만 복잡성을 추가한다. |
 
