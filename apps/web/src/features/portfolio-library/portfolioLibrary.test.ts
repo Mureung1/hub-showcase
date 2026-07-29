@@ -106,4 +106,5 @@ test("portfolio payload keeps repository and selected challenge as the library i
     },
   );
   assert.equal(payload.portfolio_draft.title, "렌더링 병목 개선");
+  assert.equal(payload.workspace_slot, null);
 });

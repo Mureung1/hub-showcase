@@ -7,6 +7,8 @@ import {
   type SavedPortfolioProject,
 } from "./portfolioLibrary";
 
+const WORKSPACE_MONITOR_SLOT_COUNT = 8;
+
 export async function savePortfolioProject({
   userId,
   result,
@@ -18,11 +20,42 @@ export async function savePortfolioProject({
   reflectionDraft: ReflectionDraft;
   reflectionAnalysis: ReflectionAnalysis;
 }): Promise<SavedPortfolioProject> {
+  const { data: existingRows, error: existingRowsError } = await supabase
+    .from("portfolio_projects")
+    .select("id, repository_url, challenge_key, workspace_slot")
+    .eq("user_id", userId);
+
+  if (existingRowsError) {
+    throw new Error("저장된 작업실 위치를 확인하지 못했습니다.");
+  }
+
+  const repositoryUrl = result.repository.url;
+  const challengeKey = createPortfolioProjectPayload({
+    userId,
+    result,
+    reflectionDraft,
+    reflectionAnalysis,
+  }).challenge_key;
+  const existingRow = (existingRows ?? []).find(
+    (row) => row.repository_url === repositoryUrl && row.challenge_key === challengeKey,
+  );
+  const existingWorkspaceSlot = existingRow?.workspace_slot;
+  const occupiedSlots = new Set(
+    (existingRows ?? [])
+      .map((row) => row.workspace_slot)
+      .filter((slot): slot is number => Number.isInteger(slot) && slot >= 0 && slot < WORKSPACE_MONITOR_SLOT_COUNT),
+  );
+  const workspaceSlot = typeof existingWorkspaceSlot === "number" && Number.isInteger(existingWorkspaceSlot)
+    ? existingWorkspaceSlot
+    : Array.from({ length: WORKSPACE_MONITOR_SLOT_COUNT }, (_, index) => index).find(
+        (index) => !occupiedSlots.has(index),
+      ) ?? null;
   const payload = createPortfolioProjectPayload({
     userId,
     result,
     reflectionDraft,
     reflectionAnalysis,
+    workspaceSlot,
   });
   const { data, error } = await supabase
     .from("portfolio_projects")
