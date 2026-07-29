@@ -11,6 +11,7 @@ Express는 payload를 만들지 않는다. 판단이 필요한 자리는 FastAPI
 | `GET /api/health` | 상태 확인 | 불필요 |
 | `GET /api/jobs` | 화면 선택지용 직무 목록 | 불필요 |
 | `GET /api/stats` | 활성 버전의 `statistics` payload | 불필요 |
+| `GET /api/postings` | 직무의 공고 목록(기업군 포함) | 불필요 |
 | `POST /api/reverse` | 활성 버전의 `interpretation` payload | 불필요 |
 | `POST /api/conditions` | 활성 버전의 `strategy` payload | 불필요 |
 | `POST /api/roadmap` | 활성 버전의 `roadmap` payload와 체크 상태 재조합 | 불필요 |
@@ -18,7 +19,7 @@ Express는 payload를 만들지 않는다. 판단이 필요한 자리는 FastAPI
 | `POST /api/postings/analyze` (캐시 미적중) | 온디맨드 해석·전략·로드맵 | **필요** |
 | `POST /api/extract` | 공고 원문 구조화 추출 | **필요** |
 
-화면 조회 다섯 경로와 체크리스트 재조합, 캐시가 적중하는 공고 입력은 Express만으로 동작한다. FastAPI는 캐시가 없는 공고의 온디맨드 분석과 `/api/extract`에만 필요하다.
+화면 조회 여섯 경로와 체크리스트 재조합, 캐시가 적중하는 공고 입력은 Express만으로 동작한다. FastAPI는 캐시가 없는 공고의 온디맨드 분석과 `/api/extract`에만 필요하다.
 
 ## 로드맵 재조합
 

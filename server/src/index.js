@@ -274,6 +274,30 @@ function createApp(options = {}) {
     }
   })
 
+  // 직무의 공고 목록. 화면의 공고 선택지가 기업군에 매이지 않게 하려고 둔다.
+  // 저장된 개별 해석이 있는 공고만 나오고, 줄마다 그 공고의 기업군이 함께 실린다.
+  // 기업군 단위 목록(`postings_in_cluster`)은 다른 화면이 쓰므로 그대로 둔다.
+  app.get('/api/postings', async (req, res) => {
+    const job = req.query.job
+    try {
+      const role = await findJobRole(job)
+      if (!role) {
+        return fail(res, 400, job, 'UNSUPPORTED_JOB', `지원하지 않는 직무입니다: ${job || '(없음)'}`)
+      }
+      const analysisVersion = await db.getActiveAnalysis(job)
+      if (!analysisVersion) {
+        return fail(res, 503, job, 'NO_ACTIVE_ANALYSIS', '활성 분석 버전이 없습니다')
+      }
+      return res.json(await db.getPostingsForJob(job))
+    } catch (e) {
+      if (sendKnownError(res, job, e)) return
+      return res.status(500).json({
+        job: job || null,
+        error: { code: 'POSTINGS_FAILED', message: '공고 목록 조회에 실패했습니다' },
+      })
+    }
+  })
+
   // 해석·전략·로드맵 조회의 공통 앞단. 직무·범위 검사와 활성 버전 조회를 한 번에 한다.
   async function prepare(res, body) {
     const { job, scope } = body || {}

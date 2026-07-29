@@ -5,6 +5,7 @@ import PostingAnalyzePanel, { ConfBadge, PostingInterpretation } from '../compon
 import ScopeSwitch from '../components/ScopeSwitch'
 import SectionNav from '../components/SectionNav'
 import useScrollSpy from '../hooks/useScrollSpy'
+import usePostings from '../hooks/usePostings'
 import { jumpToSection } from '../hooks/sectionJump'
 import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
 import { DEFAULT_CLUSTER } from '../data/clusters'
@@ -14,6 +15,7 @@ import { DEFAULT_CLUSTER } from '../data/clusters'
 // 데이터는 POST /api/reverse 실통신(저장된 활성 결과 + DB 공고 목록)으로 받는다.
 // 직무는 App 이 내려주는 job prop({ job_role_id, display_name })을 쓴다.
 // 범위를 고르는 자리는 맨 위 ScopeSwitch 하나뿐이다 — 기업군 칩과 공고 목록도 그 안에 있다.
+// 공고 목록은 기업군 응답이 아니라 hooks/usePostings(직무 전체)가 받아 그 블록으로 넘긴다.
 
 const NAV_IDS = ['baseline', 'cluster', 'posting', 'my-posting']
 const NAV_ITEMS = [['baseline', '전체 baseline'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해석'], ['my-posting', '내 공고 직접 분석']]
@@ -37,6 +39,8 @@ function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
   const [detailScope, setDetailScope] = useState(null) // 그 응답이 실제로 쓴 범위
   const [status, setStatus] = useState('loading') // loading | ready | error | notready
   const [detailStatus, setDetailStatus] = useState(postingId ? 'loading' : 'idle')
+  // 공고 선택지는 범위와 무관한 직무 전체 목록이다. 기업군 응답에 딸려 오지 않는다.
+  const { postings, status: postingsStatus } = usePostings(jobRoleId)
   const activeSection = useScrollSpy(NAV_IDS)
 
   useEffect(() => {
@@ -99,8 +103,6 @@ function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
     )
   }
 
-  // 공고 목록은 화면이 그리지 않고 ScopeSwitch 의 3단으로 넘긴다.
-  const postings = data?.postings_in_cluster || []
 
   return (
     <>
@@ -117,7 +119,7 @@ function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
             scope={scope}
             jobLabel={jobLabel}
             postings={postings}
-            postingsLoading={status === 'loading'}
+            postingsStatus={postingsStatus}
             myPosting={myPosting}
             payloadScope={detailScope}
             hint={scope.level === 'mine' ? '내가 입력한 공고의 해석은 아래 「내 공고 직접 분석」 섹션에 있습니다.' : null}

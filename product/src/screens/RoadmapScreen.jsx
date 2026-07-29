@@ -4,6 +4,7 @@ import AnalysisNotice from '../components/AnalysisNotice'
 import ScopeSwitch from '../components/ScopeSwitch'
 import SectionNav from '../components/SectionNav'
 import useScrollSpy from '../hooks/useScrollSpy'
+import usePostings from '../hooks/usePostings'
 import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
 import { DEFAULT_CLUSTER, apiScope } from '../data/clusters'
 import { HELD_LABEL, recompose } from '../data/recompose'
@@ -17,6 +18,7 @@ import { HELD_LABEL, recompose } from '../data/recompose'
 // 이미 받아 둔 payload 라서, 같은 규칙을 옮긴 data/recompose.js 가 화면에서 재조합한다.
 // 직무는 App 이 내려주는 job prop({ job_role_id, display_name })을 쓴다.
 // 범위를 고르는 자리는 맨 위 ScopeSwitch 하나뿐이다 — 기업군 칩과 공고 목록도 그 안에 있다.
+// 공고 목록은 기업군 응답이 아니라 hooks/usePostings(직무 전체)가 받아 그 블록으로 넘긴다.
 
 const PRIO = { vhigh: ['우선순위 매우 높음', 'prio--vhigh'], high: ['우선순위 높음', 'prio--high'], mid: ['우선순위 중간', 'prio--mid'], track: ['전형 대비 · 별도 트랙', 'prio--mid'] }
 const KIND_LABEL = { project: '프로젝트', story: '서사', study: '학습 · 면접' }
@@ -52,6 +54,8 @@ function RoadmapScreen({ go, job, checks, setChecks, scope, setScope, myPosting 
   const applied = appliedByScope[scopeKey] || EMPTY_CHECKS
   const [status, setStatus] = useState('loading')
   const activeSection = useScrollSpy(NAV_IDS)
+  // 공고 선택지는 범위와 무관한 직무 전체 목록이다. 기업군 응답에 딸려 오지 않는다.
+  const { postings, status: postingsStatus } = usePostings(jobRoleId)
 
   // 붙여넣은 공고의 재조합. 서버가 하는 것과 같은 조건으로 부른다 —
   // 체크가 비어 있으면 저장된 payload 를 그대로 쓰고, 있으면 recompose 를 한 번 적용한다.
@@ -135,8 +139,6 @@ function RoadmapScreen({ go, job, checks, setChecks, scope, setScope, myPosting 
   const totalWeeks = steps.reduce((a, s) => a + s.weeks, 0)
   const fillCount = rows.filter((r) => r.source_step !== HELD_LABEL).length
   const haveRows = rows.filter((r) => ck[r.item_id])
-  // 공고 목록은 화면이 그리지 않고 ScopeSwitch 의 3단으로 넘긴다.
-  const postings = data?.postings_in_cluster || []
 
   return (
     <>
@@ -153,7 +155,7 @@ function RoadmapScreen({ go, job, checks, setChecks, scope, setScope, myPosting 
             scope={scope}
             jobLabel={job.display_name}
             postings={postings}
-            postingsLoading={viewStatus === 'loading'}
+            postingsStatus={postingsStatus}
             myPosting={myPosting}
             payloadScope={view?.scope}
             onSelect={changeScope}

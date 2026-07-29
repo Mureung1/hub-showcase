@@ -4,6 +4,7 @@ import AnalysisNotice from '../components/AnalysisNotice'
 import ScopeSwitch from '../components/ScopeSwitch'
 import SectionNav from '../components/SectionNav'
 import useScrollSpy from '../hooks/useScrollSpy'
+import usePostings from '../hooks/usePostings'
 import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
 import { DEFAULT_CLUSTER, apiScope } from '../data/clusters'
 
@@ -15,6 +16,7 @@ import { DEFAULT_CLUSTER, apiScope } from '../data/clusters'
 // 요청할 필요가 없다.
 // 직무는 App 이 내려주는 job prop({ job_role_id, display_name })을 쓴다.
 // 범위를 고르는 자리는 맨 위 ScopeSwitch 하나뿐이다 — 기업군 칩과 공고 목록도 그 안에 있다.
+// 공고 목록은 기업군 응답이 아니라 hooks/usePostings(직무 전체)가 받아 그 블록으로 넘긴다.
 
 const CH_LABEL = { essay: '자소서', portfolio: '포트폴리오', interview: '면접' }
 const NAV_IDS = ['summary', 'checklist', 'portfolio', 'essay', 'interview']
@@ -41,6 +43,8 @@ function ChecklistScreen({ go, job, checks, setChecks, scope, setScope, myPostin
   const [data, setData] = useState(null)
   const [status, setStatus] = useState('loading')
   const activeSection = useScrollSpy(NAV_IDS)
+  // 공고 선택지는 범위와 무관한 직무 전체 목록이다. 기업군 응답에 딸려 오지 않는다.
+  const { postings, status: postingsStatus } = usePostings(jobRoleId)
 
   useEffect(() => {
     if (mine) {
@@ -101,8 +105,6 @@ function ChecklistScreen({ go, job, checks, setChecks, scope, setScope, myPostin
   const haveCnt = list.filter((c) => ck[c.item_id]).length
   const reqMissing = list.filter((c) => c.required && !ck[c.item_id]).length
   const prefMissing = list.filter((c) => !c.required && !ck[c.item_id]).length
-  // 공고 목록은 화면이 그리지 않고 ScopeSwitch 의 3단으로 넘긴다.
-  const postings = data?.postings_in_cluster || []
 
   return (
     <>
@@ -119,7 +121,7 @@ function ChecklistScreen({ go, job, checks, setChecks, scope, setScope, myPostin
             scope={scope}
             jobLabel={job.display_name}
             postings={postings}
-            postingsLoading={viewStatus === 'loading'}
+            postingsStatus={postingsStatus}
             myPosting={myPosting}
             payloadScope={view?.scope}
             onSelect={changeScope}

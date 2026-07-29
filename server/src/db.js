@@ -159,6 +159,97 @@ async function getPostingsInCluster(jobRoleId, clusterId) {
     .sort((a, b) => (String(a.posted_at) < String(b.posted_at) ? 1 : -1))
 }
 
+// 한 직무의 공고 전체. 화면의 공고 선택지가 기업군에 매이지 않게 하려고 둔다.
+// 기업군을 하나씩 눌러 보지 않아도 직무의 공고를 한 목록에서 바로 고를 수 있어야 한다.
+//
+// 선택지는 `getPostingsInCluster` 와 같은 규칙으로 "저장된 개별 해석이 있는 공고" 로 한정한다.
+// 해석이 없는 공고를 넣으면 고르는 순간 폴백으로 떨어져 다른 범위의 결과가 보인다.
+//
+// 줄마다 그 공고가 속한 기업군(`cluster_id`·표시명)을 함께 낸다. 화면은 공고를 고를 때
+// 기업군까지 같이 올려야 하고(CONTRACT 5.B 의 scope.cluster_tag), 목록에서도 어느 기업군
+// 공고인지 배지로 보여야 하기 때문이다. 소속은 `valid_to IS NULL` 인 현재 소속만 쓴다.
+async function getPostingsForJob(jobRoleId) {
+  const db = supabase()
+
+  const analysisVersion = await getActiveAnalysis(jobRoleId)
+  if (!analysisVersion) return []
+
+  const postings = await db
+    .from('postings')
+    .select('posting_id, company_id')
+    .eq('job_role_id', jobRoleId)
+  if (postings.error) throw unavailable('postings', postings.error)
+  const rows = postings.data || []
+  if (rows.length === 0) return []
+
+  const outputs = await db
+    .from('analysis_outputs')
+    .select('scope_id')
+    .eq('analysis_version', analysisVersion)
+    .eq('scope_level', 'posting')
+    .eq('output_type', 'interpretation')
+    .in('scope_id', rows.map((row) => row.posting_id))
+  if (outputs.error) throw unavailable('analysis_outputs', outputs.error)
+  const analyzed = new Set((outputs.data || []).map((row) => row.scope_id))
+
+  const selected = rows.filter((row) => analyzed.has(row.posting_id))
+  if (selected.length === 0) return []
+
+  const companyIds = [...new Set(selected.map((row) => row.company_id))]
+
+  const memberships = await db
+    .from('company_cluster_memberships')
+    .select('company_id, cluster_id')
+    .in('company_id', companyIds)
+    .is('valid_to', null)
+  if (memberships.error) throw unavailable('company_cluster_memberships', memberships.error)
+  const clusterOf = new Map((memberships.data || []).map((row) => [row.company_id, row.cluster_id]))
+
+  const clusters = await db
+    .from('company_clusters')
+    .select('cluster_id, display_name')
+  if (clusters.error) throw unavailable('company_clusters', clusters.error)
+  const clusterName = new Map((clusters.data || []).map((row) => [row.cluster_id, row.display_name]))
+
+  const versions = await db
+    .from('posting_versions')
+    .select('posting_id, title, posted_at')
+    .in('posting_id', selected.map((row) => row.posting_id))
+    .order('posted_at', { ascending: false })
+  if (versions.error) throw unavailable('posting_versions', versions.error)
+
+  const companies = await db
+    .from('companies')
+    .select('company_id, display_name')
+    .in('company_id', companyIds)
+  if (companies.error) throw unavailable('companies', companies.error)
+  const companyName = new Map((companies.data || []).map((row) => [row.company_id, row.display_name]))
+
+  // 한 공고에 버전이 여럿이면 가장 최근 것만 쓴다.
+  const latest = new Map()
+  for (const version of versions.data || []) {
+    if (!latest.has(version.posting_id)) latest.set(version.posting_id, version)
+  }
+
+  return selected
+    // 현재 소속 기업군이 없는 공고는 뺀다. 고르는 순간 보낼 cluster_tag 가 없어
+    // 목록에 두면 선택이 400 으로 떨어진다.
+    .filter((row) => clusterOf.has(row.company_id))
+    .map((row) => {
+      const version = latest.get(row.posting_id)
+      const clusterId = clusterOf.get(row.company_id)
+      return {
+        posting_id: row.posting_id,
+        company: companyName.get(row.company_id) || row.company_id,
+        title: version ? version.title : null,
+        posted_at: version ? version.posted_at : null,
+        cluster_id: clusterId,
+        cluster_tag: clusterName.get(clusterId) || clusterId,
+      }
+    })
+    .sort((a, b) => (String(a.posted_at) < String(b.posted_at) ? 1 : -1))
+}
+
 // --- 사용자 입력 공고 캐시 (CONTRACT 6.1·6.3) ------------------------------
 //
 // 캐시 조회는 Express 소관이다(docs/architecture.md 11장). 원문 해시로 공고를 찾고
@@ -212,6 +303,7 @@ module.exports = {
   getJobRoles,
   getClusters,
   getPostingsInCluster,
+  getPostingsForJob,
   getUserPostingByHash,
   getUserPostingAnalyses,
   getLegacyPostingSamples,
