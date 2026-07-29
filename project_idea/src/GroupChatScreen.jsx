@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import TaxiLoader from "./TaxiLoader";
 import { API_BASE } from "./apiBase";
-import { describeCost, estimateCost } from "./describeCost";
+import { describeCostByAmount, estimateCost } from "./describeCost";
 
 const AVATAR_COLORS = ["#C8102E", "#2F8F5B", "#C98A1F", "#5B6472"];
 
@@ -109,7 +109,7 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
   const isFull = count >= 4;
   const canBoard = isFull || confirmed;
   const cost = estimateCost(count, candidate?.cityHub);
-  const costInfo = describeCost(count);
+  const costInfo = describeCostByAmount(cost);
 
   async function respond(requestId, accept) {
     setRespondError(null);

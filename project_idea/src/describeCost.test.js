@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest'
-import { describeCost, baseFareForHub, estimateCost, fareTiersFor } from './describeCost.js'
+import { describeCost, describeCostByAmount, baseFareForHub, estimateCost, fareTiersFor } from './describeCost.js'
 
 test('1인이면 황제 값이다', () => {
   expect(describeCost(1)).toEqual({ icon: '👑', label: '황제 값' })
@@ -15,6 +15,42 @@ test('3인이면 햄버거 한 개 값이다', () => {
 
 test('4인이면 음료 한 잔 값이다', () => {
   expect(describeCost(4)).toEqual({ icon: '🥤', label: '음료 한 잔 값' })
+})
+
+test('2000원이면 생수 한 병 값이다', () => {
+  expect(describeCostByAmount(2000)).toEqual({ icon: '🥤', label: '생수 한 병 값' })
+})
+
+test('2100원이면 아메리카노 한 잔 값이다', () => {
+  expect(describeCostByAmount(2100)).toEqual({ icon: '☕', label: '아메리카노 한 잔 값' })
+})
+
+test('경계값 4000원이면 아직 아메리카노 한 잔 값이다', () => {
+  expect(describeCostByAmount(4000)).toEqual({ icon: '☕', label: '아메리카노 한 잔 값' })
+})
+
+test('4500원이면 빵 한 개 값이다', () => {
+  expect(describeCostByAmount(4500)).toEqual({ icon: '🥐', label: '빵 한 개 값' })
+})
+
+test('7000원이면 햄버거 한 개 값이다', () => {
+  expect(describeCostByAmount(7000)).toEqual({ icon: '🍔', label: '햄버거 한 개 값' })
+})
+
+test('9000원이면 라면 한 그릇 값이다', () => {
+  expect(describeCostByAmount(9000)).toEqual({ icon: '🍜', label: '라면 한 그릇 값' })
+})
+
+test('11000원이면 도시락 한 개 값이다', () => {
+  expect(describeCostByAmount(11000)).toEqual({ icon: '🍱', label: '도시락 한 개 값' })
+})
+
+test('13000원이면 피자 한 조각 값이다', () => {
+  expect(describeCostByAmount(13000)).toEqual({ icon: '🍕', label: '피자 한 조각 값' })
+})
+
+test('14000원 초과면 치킨 한 마리 값이다', () => {
+  expect(describeCostByAmount(15000)).toEqual({ icon: '🍗', label: '치킨 한 마리 값' })
 })
 
 test('가까운 거점(대구공항)은 기본요금이 낮다', () => {
