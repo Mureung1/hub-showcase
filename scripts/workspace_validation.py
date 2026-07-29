@@ -76,6 +76,56 @@ REQUIRED_BEHAVIOR_MANIFEST_FIELDS = (
     "테스트 입력",
     "결과 보고",
 )
+PROJECT_CREATIVE_AGENT_ID_RE = re.compile(
+    r"^PCA-[a-z0-9]+(?:[-_][a-z0-9]+)*$"
+)
+PROJECT_CREATIVE_AGENT_STATUSES = (
+    "active",
+    "retired",
+)
+PROJECT_CREATIVE_AGENT_TYPES = (
+    "design_creative_planner",
+    "scenario_designer",
+    "scenario_writer",
+)
+PROJECT_CREATIVE_REVIEW_POLICIES = (
+    "self_and_main",
+    "independent_high_risk",
+    "independent_always",
+)
+PROJECT_CREATIVE_CANONICAL_ROLES = (
+    "game_overview",
+    "world_setting",
+    "scenario",
+    "system",
+    "content",
+    "ui",
+    "technical",
+)
+REQUIRED_PROJECT_CREATIVE_RULE_FIELDS = (
+    "프로젝트 창작 에이전트 ID",
+    "프로젝트 ID",
+    "규칙 슬러그",
+    "상태",
+    "버전",
+    "분야",
+    "canonical document role",
+    "기본 agent_type",
+    "검수 정책",
+    "적용 검수 정책",
+    "reviewer",
+)
+REQUIRED_PROJECT_CREATIVE_RULE_HEADINGS = (
+    "## Metadata",
+    "## Applicability",
+    "## Creative Direction",
+    "## Sources",
+    "## Authority Boundary",
+    "## Output And Provenance",
+    "## Review Contract",
+    "## Rule Mismatch And Replanning",
+    "## Change History",
+)
 
 
 @dataclass(frozen=True)
@@ -124,6 +174,23 @@ class ProvenanceRecord:
     category: str
     origin: str
     evidence: str
+
+
+@dataclass(frozen=True)
+class ProjectCreativeAgentRule:
+    """프로젝트 로컬 창작 행동 규칙의 검증용 메타데이터."""
+
+    agent_id: str
+    project_id: str
+    rule_slug: str
+    status: str
+    version: str
+    domain: str
+    canonical_role: str
+    base_agent_type: str
+    review_policy: str
+    review_contract_policy: str
+    reviewer: str
 
 
 REQUIRED_PROJECT_DIRECTORIES = (
@@ -304,6 +371,311 @@ def validate_project_structure(
                 )
             )
 
+    issues.extend(validate_project_creative_agents(project, repo_root))
+    return issues
+
+
+def parse_project_creative_agent_rule(
+    rule_path: Path,
+) -> ProjectCreativeAgentRule:
+    """프로젝트 창작 규칙의 한 줄 메타데이터를 읽는다."""
+
+    fields = {
+        match.group("key").strip(): _strip_code_span(match.group("value").strip())
+        for match in MANIFEST_FIELD_RE.finditer(read_text(rule_path))
+    }
+    return ProjectCreativeAgentRule(
+        agent_id=fields.get("프로젝트 창작 에이전트 ID", ""),
+        project_id=fields.get("프로젝트 ID", ""),
+        rule_slug=fields.get("규칙 슬러그", ""),
+        status=fields.get("상태", ""),
+        version=fields.get("버전", ""),
+        domain=fields.get("분야", ""),
+        canonical_role=fields.get("canonical document role", ""),
+        base_agent_type=fields.get("기본 agent_type", ""),
+        review_policy=fields.get("검수 정책", ""),
+        review_contract_policy=fields.get("적용 검수 정책", ""),
+        reviewer=fields.get("reviewer", ""),
+    )
+
+
+def validate_project_creative_agents(
+    project: ProjectRecord,
+    repo_root: Path,
+) -> list[ValidationIssue]:
+    """선택적으로 존재하는 프로젝트 창작 규칙 구조와 메타데이터를 검사한다."""
+
+    repo_root = repo_root.resolve()
+    project_root = _resolve_repo_path(repo_root, project.root)
+    agents_root = project_root / "agents"
+    if not agents_root.exists():
+        return []
+    if not agents_root.is_dir():
+        return [
+            ValidationIssue(
+                "project-creative-agents-not-directory",
+                agents_root,
+                "프로젝트 agents 경로가 디렉터리가 아닙니다.",
+            )
+        ]
+
+    issues: list[ValidationIssue] = []
+    index_path = agents_root / "README.md"
+    rules_root = agents_root / "rules"
+
+    if not index_path.is_file():
+        issues.append(
+            ValidationIssue(
+                "missing-project-creative-agent-index",
+                index_path,
+                "프로젝트 창작 규칙 색인이 없습니다.",
+            )
+        )
+    if not rules_root.is_dir():
+        issues.append(
+            ValidationIssue(
+                "missing-project-creative-agent-rules-directory",
+                rules_root,
+                "프로젝트 창작 규칙 디렉터리가 없습니다.",
+            )
+        )
+
+    for markdown_path in agents_root.glob("*.md"):
+        if markdown_path.name != "README.md":
+            issues.append(
+                ValidationIssue(
+                    "project-creative-common-rule-forbidden",
+                    markdown_path,
+                    "agents 루트에는 공통 창작 규칙을 둘 수 없습니다.",
+                )
+            )
+
+    if not rules_root.is_dir():
+        return issues
+
+    rule_paths = sorted(path for path in rules_root.glob("*.md") if path.is_file())
+    if not rule_paths:
+        issues.append(
+            ValidationIssue(
+                "empty-project-creative-agent-rules",
+                rules_root,
+                "agents 구조는 첫 분야별 창작 규칙과 함께 생성해야 합니다.",
+            )
+        )
+
+    indexed_paths: set[Path] = set()
+    if index_path.is_file():
+        index_fields = {
+            match.group("key").strip(): _strip_code_span(
+                match.group("value").strip()
+            )
+            for match in MANIFEST_FIELD_RE.finditer(read_text(index_path))
+        }
+        if index_fields.get("프로젝트 ID") != project.project_id:
+            issues.append(
+                ValidationIssue(
+                    "project-creative-index-project-mismatch",
+                    index_path,
+                    "창작 규칙 색인의 프로젝트 ID가 프로젝트와 다릅니다.",
+                )
+            )
+
+        for link in extract_markdown_links(index_path):
+            local_target = _local_link_target(link.target)
+            if local_target is None:
+                continue
+            resolved = (index_path.parent / local_target).resolve()
+            if _is_within(resolved, rules_root.resolve()):
+                indexed_paths.add(resolved)
+
+    seen_agent_ids: set[str] = set()
+    for rule_path in rule_paths:
+        text = read_text(rule_path)
+        fields = {
+            match.group("key").strip(): _strip_code_span(
+                match.group("value").strip()
+            )
+            for match in MANIFEST_FIELD_RE.finditer(text)
+        }
+        for field in REQUIRED_PROJECT_CREATIVE_RULE_FIELDS:
+            if not fields.get(field, "").strip():
+                issues.append(
+                    ValidationIssue(
+                        "missing-project-creative-rule-field",
+                        rule_path,
+                        f"프로젝트 창작 규칙 필드가 비어 있습니다: {field}",
+                    )
+                )
+        for heading in REQUIRED_PROJECT_CREATIVE_RULE_HEADINGS:
+            if heading not in text:
+                issues.append(
+                    ValidationIssue(
+                        "missing-project-creative-rule-section",
+                        rule_path,
+                        f"프로젝트 창작 규칙 섹션이 없습니다: {heading}",
+                    )
+                )
+
+        rule = parse_project_creative_agent_rule(rule_path)
+        expected_agent_id = f"PCA-{project.project_id}-{rule_path.stem}"
+        if (
+            not PROJECT_CREATIVE_AGENT_ID_RE.fullmatch(rule.agent_id)
+            or rule.agent_id != expected_agent_id
+        ):
+            issues.append(
+                ValidationIssue(
+                    "invalid-project-creative-agent-id",
+                    rule_path,
+                    f"창작 에이전트 ID는 경로와 일치해야 합니다: {expected_agent_id}",
+                )
+            )
+        if rule.agent_id in seen_agent_ids:
+            issues.append(
+                ValidationIssue(
+                    "duplicate-project-creative-agent-id",
+                    rule_path,
+                    f"프로젝트 창작 에이전트 ID가 중복되었습니다: {rule.agent_id}",
+                )
+            )
+        seen_agent_ids.add(rule.agent_id)
+
+        if rule.project_id != project.project_id:
+            issues.append(
+                ValidationIssue(
+                    "project-creative-rule-project-mismatch",
+                    rule_path,
+                    "창작 규칙의 프로젝트 ID가 대상 프로젝트와 다릅니다.",
+                )
+            )
+        if rule.rule_slug != rule_path.stem:
+            issues.append(
+                ValidationIssue(
+                    "project-creative-rule-slug-mismatch",
+                    rule_path,
+                    "규칙 슬러그가 파일명과 다릅니다.",
+                )
+            )
+        if rule.status not in PROJECT_CREATIVE_AGENT_STATUSES:
+            issues.append(
+                ValidationIssue(
+                    "invalid-project-creative-rule-status",
+                    rule_path,
+                    f"허용되지 않은 창작 규칙 상태입니다: {rule.status or '(없음)'}",
+                )
+            )
+        try:
+            version = int(rule.version)
+        except ValueError:
+            version = 0
+        if version < 1 or str(version) != rule.version:
+            issues.append(
+                ValidationIssue(
+                    "invalid-project-creative-rule-version",
+                    rule_path,
+                    "창작 규칙 버전은 1 이상의 정수여야 합니다.",
+                )
+            )
+        if not rule.domain:
+            issues.append(
+                ValidationIssue(
+                    "missing-project-creative-rule-domain",
+                    rule_path,
+                    "창작 분야가 비어 있습니다.",
+                )
+            )
+        if rule.canonical_role not in PROJECT_CREATIVE_CANONICAL_ROLES:
+            issues.append(
+                ValidationIssue(
+                    "invalid-project-creative-canonical-role",
+                    rule_path,
+                    f"허용되지 않은 canonical role입니다: "
+                    f"{rule.canonical_role or '(없음)'}",
+                )
+            )
+        if rule.base_agent_type not in PROJECT_CREATIVE_AGENT_TYPES:
+            issues.append(
+                ValidationIssue(
+                    "invalid-project-creative-base-agent",
+                    rule_path,
+                    f"허용되지 않은 기본 agent_type입니다: "
+                    f"{rule.base_agent_type or '(없음)'}",
+                )
+            )
+        if rule.review_policy not in PROJECT_CREATIVE_REVIEW_POLICIES:
+            issues.append(
+                ValidationIssue(
+                    "invalid-project-creative-review-policy",
+                    rule_path,
+                    f"허용되지 않은 검수 정책입니다: "
+                    f"{rule.review_policy or '(없음)'}",
+                )
+            )
+        if rule.review_contract_policy != rule.review_policy:
+            issues.append(
+                ValidationIssue(
+                    "project-creative-review-policy-mismatch",
+                    rule_path,
+                    "Metadata와 Review Contract의 검수 정책이 다릅니다.",
+                )
+            )
+
+        is_scenario_agent = rule.base_agent_type in {
+            "scenario_designer",
+            "scenario_writer",
+        }
+        if is_scenario_agent and rule.canonical_role != "scenario":
+            issues.append(
+                ValidationIssue(
+                    "scenario-agent-role-mismatch",
+                    rule_path,
+                    "시나리오 실행 agent의 canonical role은 scenario여야 합니다.",
+                )
+            )
+        if (
+            rule.base_agent_type == "design_creative_planner"
+            and rule.canonical_role == "scenario"
+        ):
+            issues.append(
+                ValidationIssue(
+                    "design-agent-scenario-role-forbidden",
+                    rule_path,
+                    "일반 기획 창작 agent는 scenario 규칙을 실행할 수 없습니다.",
+                )
+            )
+        if is_scenario_agent and rule.review_policy != "independent_always":
+            issues.append(
+                ValidationIssue(
+                    "scenario-independent-review-required",
+                    rule_path,
+                    "일반 시나리오와 대본 창작 규칙은 independent_always여야 합니다.",
+                )
+            )
+        expected_reviewer = "main"
+        if is_scenario_agent:
+            expected_reviewer = "scenario_reviewer"
+        elif rule.review_policy in {
+            "independent_high_risk",
+            "independent_always",
+        }:
+            expected_reviewer = "design_creative_reviewer"
+        if rule.reviewer != expected_reviewer:
+            issues.append(
+                ValidationIssue(
+                    "project-creative-reviewer-mismatch",
+                    rule_path,
+                    f"검수 정책에 필요한 reviewer는 {expected_reviewer}입니다.",
+                )
+            )
+
+        if rule_path.resolve() not in indexed_paths:
+            issues.append(
+                ValidationIssue(
+                    "unindexed-project-creative-rule",
+                    rule_path,
+                    "프로젝트 창작 규칙이 agents/README.md에 연결되지 않았습니다.",
+                )
+            )
+
     return issues
 
 
@@ -333,6 +705,10 @@ def navigation_markdown_files(
         design_root = project_root / "design"
         if design_root.is_dir():
             paths.update(path for path in design_root.rglob("*.md") if path.is_file())
+
+        agents_root = project_root / "agents"
+        if agents_root.is_dir():
+            paths.update(path for path in agents_root.rglob("*.md") if path.is_file())
 
     return sorted(paths)
 

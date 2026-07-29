@@ -30,9 +30,11 @@
    분류한다. 메인 Codex가 창작 가능한 공백의 허가 여부를 묻고, 사실 정보는
    질문 또는 `TBD`로 남긴다.
 10. 사용자가 비시나리오 창작 보완을 명시적으로 허가하면
-    정확한 GAP ID를 `design_creative_planner`의 `generate_options` Phase에
-    전달해 `docs/skills/design_creative_completion.md`를 적용하되, 대안 선택을
-    승인으로 간주하지 않는다.
+    정확한 GAP ID와 해당 분야의 active 프로젝트 창작 규칙을
+    `design_creative_planner`의 `generate_options` Phase에 전달해
+    `docs/skills/design_creative_completion.md`를 적용한다. 규칙이 없으면
+    `docs/workflows/project_creative_agent_setup.md`로 중단·라우팅하며 대안
+    선택을 승인으로 간주하지 않는다.
 
 ## Output
 

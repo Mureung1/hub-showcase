@@ -35,10 +35,12 @@
    기록한다.
 6. 메인 Codex가 비시나리오 `creative_fillable` GAP을 사용자에게 한 번에
    보여주고 창작 보완 여부를 묻는다. 명시적 허가를 받으면 정확한 GAP ID를
+   해당 분야의 active 프로젝트 창작 규칙과 함께
    `design_creative_planner`의 `generate_options` Phase에 전달해
    `docs/skills/design_creative_completion.md`에 따른 복수 대안을 만들며,
    허가받지 않은 공백은 `TBD`로 둔다. 일반 시나리오의 사건 구조 개선은 8단계의
-   Scenario Improvement Review로 처리한다.
+   Scenario Improvement Review로 처리한다. 규칙이 없으면
+   `docs/workflows/project_creative_agent_setup.md`로 중단·라우팅한다.
 7. 다른 역할의 상세 내용을 발견하면 현재 문서에 복제하지 않고 원본 소유
    문서와 필요한 링크를 표시한다.
 8. 문서 타입이 `scenario`이면 `scenario_designer`가
@@ -50,7 +52,8 @@
    `CP-*` 각주와 함께 Draft에 넣는다. 선택은 승인이 아니다.
 10. 서브에이전트의 read-only handoff와 필수 검수 결과를 메인 Codex가 확인한
     뒤에만 같은 프로젝트의 승인 큐에 `docs/templates/approval_item.md` 형식의
-    `pending` 항목을 만든다.
+    `pending` 항목을 만든다. 프로젝트 창작 규칙이 독립 검수를 요구하면
+    `design_creative_reviewer`의 필수 finding을 먼저 해소한다.
 
 ## Approval Rule
 

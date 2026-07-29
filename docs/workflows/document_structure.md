@@ -17,6 +17,11 @@
 | UI | `ui` | `design/ui/` | 화면, 입력, 표시 정보, 상태와 UI 예외 |
 | 기술 | `technical` | `design/technical/` | 런타임 책임, 데이터 계약, 저장, 연동과 기술 예외 |
 
+`workspace/projects/<project_slug>/agents/rules/`의 프로젝트 창작 규칙은 위
+canonical document role의 상세 문서가 아니라 행동 설정이다. 규칙은 대상
+role을 메타데이터로 가리킬 수 있지만 게임 사실을 소유하거나 `design/`
+문서를 대신하지 않는다.
+
 `scenario`의 챕터별 플레이어 노출 대본과 씬 구현 명세는
 `design/narrative/scripts/<chapter_slug>_ingame_script.md`를 표준 경로로 사용한다.
 상위 시나리오는 사건·분기 구조를 소유하고 인게임 스크립트는 승인된 범위의
@@ -86,6 +91,8 @@ Improvement, `CW-*`·`NR-*` 규칙을 우선한다.
 7. 모든 확정 문서 생성·수정은 Approval Queue와 원본 재확인 절차를 따른다.
 8. Draft의 누락은 GAP으로 분류하고, 창작 가능한 공백은 명시적 허가와 대안
    선택 후에도 갱신된 `pending` 승인을 거친다.
+9. 창작 규칙을 작성할 때도 하나의 규칙이 여러 canonical role을 소유하게 하지
+   않는다. 다중 역할 창작 요청은 역할별 독립 규칙으로 분리한다.
 
 ## Link Rules
 

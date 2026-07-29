@@ -61,10 +61,16 @@
   design_creative_planner`
 - 작업 Phase·범위:
 - Specialist Task Packet 검증: `complete | blocked_missing_handoff`
+- 프로젝트 창작 에이전트 규칙:
+  `해당 없음 | <PCA-ID> · <version> · <SHA-256>`
+- 프로젝트 창작 규칙 검증:
+  `complete | blocked_missing_creative_rule | blocked_creative_rule_mismatch |
+  needs_creative_rule_reconfirmation`
 - 전달한 사용자 사실·선택·금지사항:
 - 전달한 권한:
 - 명시적으로 부여하지 않은 권한:
-- 독립 검수 에이전트: `scenario_reviewer | 해당 없음`
+- 독립 검수 에이전트:
+  `scenario_reviewer | design_creative_reviewer | 해당 없음`
 - 검수 판정: `pass | revision_required | blocked | main_review_passed`
 - 검수한 원본:
 - 최초 필수 결과와 조치:

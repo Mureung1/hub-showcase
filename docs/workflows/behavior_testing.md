@@ -32,6 +32,10 @@ Version History 또는 `design/`에 승격하지 않는다. 사용자가 테스�
 같은 내용을 실제 제안으로 명시하더라도 새 사용자 입력으로 다시 출처를
 기록하고 일반 승인 흐름을 처음부터 따른다.
 
+프로젝트 창작 규칙 설정을 테스트하면 합성 규칙과 `agents/README.md`도 실행
+작업 경로 안에서만 만들고 첫 내용에 `[TEST FIXTURE: SYNTHETIC]`을 표시한다.
+이를 실제 프로젝트의 active 규칙으로 복사하거나 등록하지 않는다.
+
 ## Two-Tier Isolation
 
 ### Tier 1: Dedicated Synthetic Fixture
@@ -87,4 +91,3 @@ Version History 또는 `design/`에 승격하지 않는다. 사용자가 테스�
 - 모든 쓰기가 `/tmp`의 선언된 실행 작업 경로 안에서만 발생했다.
 - 테스트 전후 원본 비교 결과가 기록되었다.
 - 네 가지 필수 결과 보고 필드가 사용자 안내에 포함되었다.
-

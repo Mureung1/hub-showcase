@@ -7,6 +7,12 @@
 `scenario_reviewer`는 작성 결과를 프로젝트 원본과 직접 대조해 독립 검수하며,
 메인 Codex는 프로젝트·범위 확정, 검수 라우팅과 승인안 저장을 담당한다.
 
+일반 시나리오 작성·변경에는
+`docs/workflows/project_creative_agent_setup.md`의 active 프로젝트 창작 규칙과
+`independent_always` 검수 계약이 필요하다. 검토 전용 요청은 규칙 없이 문제를
+판정할 수 있지만, 구체적인 대체 구조나 새 개선 권고를 만들려면 규칙이
+필요하다.
+
 이 스킬은 인게임 스크립트 집필용 `scenario_writer`를 대신하지 않는다.
 플레이어 노출 대본과 씬 명세를 작성하는 요청은
 `docs/workflows/write_ingame_script.md`와 `docs/skills/scenario_writing.md`를
@@ -23,6 +29,8 @@ Outcome 개선을 대신하지 않는다. 이 범위는 `Scenario Improvement Re
   작성·변경은 `scenario_designer`, 검토 전용 요청은 `scenario_reviewer`에
   위임한다. 작성 결과의 독립 검수를 확인한 뒤에만 사용자에게 제시하거나
   Approval Queue에 저장한다.
+- 메인 Codex는 작성 전에 정확한 프로젝트 창작 규칙 ID·경로·버전·SHA-256을
+  Task Packet에 기록하고 결과와 재검수까지 같은 규칙인지 확인한다.
 - `scenario_designer`: 프로젝트별 Scenario Designer's Brief를 구성하고 원안
   기반 Draft, GAP 목록과 분리된 `Scenario Improvement Review`를 작성한다.
 - `scenario_reviewer`: 작성자의 요약에 의존하지 않고 원본을 직접 읽어 출처
@@ -53,12 +61,13 @@ Outcome 개선을 대신하지 않는다. 이 범위는 `Scenario Improvement Re
 ## Source Rules
 
 1. 대상 프로젝트와 사용자 요청 범위를 먼저 확정한다.
-2. 사용자 제공 자료, Project Brief, 게임 개요와 대상 시나리오를 읽는다.
-3. 관련된 확정 세계관, 시스템, 콘텐츠와 기존 시나리오를 필요한 범위에서
+2. 작성·변경이면 색인에서 선택한 정확한 프로젝트 창작 규칙 하나를 읽는다.
+3. 사용자 제공 자료, Project Brief, 게임 개요와 대상 시나리오를 읽는다.
+4. 관련된 확정 세계관, 시스템, 콘텐츠와 기존 시나리오를 필요한 범위에서
    확인한다.
-4. 승인 항목과 임시 아이디어는 사용자가 입력 근거로 지정한 경우에만 사용하고
+5. 승인 항목과 임시 아이디어는 사용자가 입력 근거로 지정한 경우에만 사용하고
    확정 자료와 구분한다.
-5. `docs/dev-log/`는 현재 시나리오의 근거나 운영 규칙으로 사용하지 않는다.
+6. `docs/dev-log/`는 현재 시나리오의 근거나 운영 규칙으로 사용하지 않는다.
 
 `scenario_designer`와 `scenario_reviewer`는 각각 관련 원본을 직접 읽는다.
 검수자는 작성자의 Source 요약만 근거로 통과 판정을 내리지 않는다.
@@ -101,6 +110,8 @@ Outcome 개선을 대신하지 않는다. 이 범위는 `Scenario Improvement Re
    독립 검수한다.
 8. `authorial_reconsideration`은 자동 수정 지시가 아니며, 채택하려면 기존과
    같은 Scenario Improvement 선택·재확인 절차를 거친다.
+9. 작성·선택·재검수 사이에 프로젝트 창작 규칙 버전이나 SHA-256이 바뀌면
+   `needs_creative_rule_reconfirmation`으로 중단한다.
 
 ## Selection And Approval
 

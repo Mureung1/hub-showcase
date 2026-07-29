@@ -13,6 +13,18 @@
 - canonical document role:
 - 대상 문서·섹션·산출물:
 
+## Project Creative Agent Rule
+
+- 창작 규칙 필요: `예 | 아니요`
+- 규칙 미사용 이유: `해당 없음 | classify | 검색·요약 | 검토 전용 | 비창작 구조화 | 기계적 적용`
+- 프로젝트 창작 에이전트 ID:
+- 규칙 경로:
+- 규칙 버전:
+- 규칙 SHA-256:
+- 규칙 적용 범위:
+- 검수 정책: `self_and_main | independent_high_risk | independent_always | 해당 없음`
+- 독립 reviewer: `design_creative_reviewer | scenario_reviewer | 해당 없음`
+
 ## User Intent
 
 - 현재 사용자 목표:

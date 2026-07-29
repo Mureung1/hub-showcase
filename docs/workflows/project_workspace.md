@@ -53,6 +53,10 @@ workspace/projects/<project_slug>/
 11. 실제 상세 문서와 `design/` 하위 경로는 해당 문서가 승인될 때 생성하며,
     생성된 문서는 프로젝트 루트 `README.md`, `design/README.md`와
     `game_overview`의 Document Map에 연결한다.
+12. 새 프로젝트에는 `agents/`나 창작 규칙을 만들지 않는다. 사용자가 실제
+    창작 기능을 요청하고 `docs/workflows/project_creative_agent_setup.md`의
+    Plan mode 설정과 명시적 구현 요청을 완료했을 때만 첫 `agents/` 구조를
+    만든다.
 
 ## Project README Role
 
@@ -62,6 +66,9 @@ workspace/projects/<project_slug>/
   기록한다. 승인 전 문서, 예정 경로나 임시 아이디어는 확정 문서 목록에 넣지 않는다.
 - Project Brief, Design Index, Temporary Ideas, Approval Queue, Decision Log와
   Version History로 이동하는 작업 문서 링크를 제공한다.
+- 프로젝트 창작 규칙이 하나 이상 존재할 때만 `agents/README.md`를 Project
+  Creative Agents 작업 문서로 링크한다. 이 색인과 규칙은 canonical detail
+  owner가 아니다.
 - 프로젝트 README는 canonical detail owner가 아니며 상세 설정을 복제하지 않는다.
 - 확정 문서 생성·삭제·이동 또는 담당 범위 변경이 승인 적용되면 같은 승인
   범위에서 README의 목록·설명과 `마지막 동기화`를 갱신한다.
@@ -84,6 +91,8 @@ workspace/projects/<project_slug>/
 
 - 대상 프로젝트를 식별하지 못한 상태에서 프로젝트 파일을 수정하지 않는다.
 - 한 승인 항목은 하나의 프로젝트에만 속한다.
+- 프로젝트 창작 규칙은 같은 프로젝트 안에서만 사용하며 다른 프로젝트로
+  복사·상속하지 않는다.
 - Decision Log와 Version History는 같은 프로젝트의 승인 항목만 참조한다.
 - 검색 결과는 프로젝트별로 구분하며 다른 프로젝트의 내용을 현재 프로젝트의 확정 사실로 사용하지 않는다.
 - 프로젝트 삭제·병합·이동은 영향 범위를 검토한 별도 승인 절차를 거친다.

@@ -22,6 +22,11 @@
 - 일반 시나리오는 `scenario_designer`, 인게임 스크립트는 `scenario_writer`,
   두 산출물의 독립 검수는 `scenario_reviewer`, 일반 기획 창작 보완은
   `design_creative_planner`에 위임한다.
+- 창작 역할은 프로젝트 생성 시 미리 만들지 않는다. 사용자가 실제 창작을
+  요청했을 때 분야별 프로젝트 창작 규칙을 Plan mode에서 설계하고, 구현
+  요청으로 활성화한 뒤 기존 전문 agent가 그 규칙을 읽어 동작한다.
+- 비시나리오 프로젝트 창작 규칙은 검수 정책을 반드시 정하며, 독립 검수가
+  필요한 결과는 `design_creative_reviewer`가 같은 규칙과 원본을 직접 확인한다.
 - 전문 에이전트 호출 전 현재 요청과 이전 사용자 결정·금지사항을
   Specialist Task Packet으로 명시하고, 전체 대화 상속 없이 정확한 전문 역할에
   전달한다.
@@ -42,6 +47,22 @@
    상속하지 않는다.
 5. 전문 에이전트는 Task Packet 누락 시 `blocked_missing_handoff`를 반환하며,
    메인 Codex는 반환 결과를 Packet과 대조한 뒤에만 다음 단계로 진행한다.
+6. 창작 작업이면 프로젝트 창작 에이전트 ID, 규칙 경로·버전·SHA-256, 적용
+   범위와 검수 정책을 Packet에 포함한다. 규칙 없음·범위 불일치·규칙 변경
+   상태에서는 창작 결과를 만들지 않는다.
+
+### 공통: 프로젝트 창작 에이전트 규칙
+
+1. 새 프로젝트와 기존 프로젝트에 규칙을 자동 생성하지 않는다.
+2. 첫 창작 요청에서 정확한 분야 규칙이 없으면 대안·Draft를 만들지 않고
+   Plan mode에서 적용 범위, 실행 agent, 창작 원칙, 금지사항, 근거, 출력과
+   검수 정책을 결정한다.
+3. 사용자의 구현 요청으로 `agents/README.md`와 독립 분야 규칙을 active
+   상태로 저장한다. 규칙은 행동 설정이며 Approval Queue나 canonical design
+   문서를 소유하지 않는다.
+4. 기존 규칙은 사용자가 개정을 요청할 때만 Plan mode에서 바꾼다.
+5. 일반 시나리오와 대본은 항상 독립 검수한다. 비시나리오는 규칙마다
+   `self_and_main | independent_high_risk | independent_always`를 결정한다.
 
 ### 공통: 동작 테스트 출처와 격리
 
@@ -82,11 +103,14 @@
 4. 일반 기획 Draft의 누락은 `design_creative_planner`의 `classify` Phase에
    위임한다. 메인 Codex가 결과를 검토해 창작 가능한 GAP을 한 번에 보여준 뒤
    창작 보완 여부를 묻는다.
-5. 사용자가 허가한 정확한 GAP ID만 `generate_options` Phase에 전달해 위험도별
-   2~3개 대안과 추천안을 만든다. 선택 후 원본을 재확인하고
+5. 사용자가 허가한 정확한 GAP ID와 active 프로젝트 창작 규칙만
+   `generate_options` Phase에 전달해 위험도별 2~3개 대안과 추천안을 만든다.
+   규칙이 독립 검수를 요구하면 `design_creative_reviewer` 검수를 거친다.
+   선택 후 원본과 규칙 버전을 재확인하고
    `incorporate_selection` Phase에서 선택안만 `CP-*`로 공개한다. 사실 정보는
    `TBD`, 수치 가설은 `provisional`로 둔다.
-6. 시나리오 문서이면 `scenario_designer`가 관련 자료를 읽고 원안 기반 Draft와
+6. 시나리오 문서이면 active 일반 시나리오 창작 규칙을
+   `scenario_designer`에 전달한다. 에이전트가 관련 자료를 읽고 원안 기반 Draft와
    별도 개선 권고를 작성한다. `scenario_reviewer`가 인과, 동기, 긴장, 정보
    공개, 선택과 분기를 독립 검수하며 필수 수정은 작성자에게 되돌린다.
 7. 프로젝트 README, `design/README.md`와 개요서에는 상세 내용을 복제하지
@@ -100,7 +124,8 @@
 2. Codex는 관련 확정 문서를 확인한다.
 3. 충돌 가능성, 영향 범위, 누락 정보를 정리한다.
 4. `design_creative_planner`가 누락을 GAP으로 분류하고, 사용자가 허가한
-   `creative_fillable`에만 복수 창작 대안을 만든다. 선택된 안은 `CP-*`와 함께
+   `creative_fillable`과 active 프로젝트 창작 규칙에만 복수 창작 대안을
+   만든다. 선택된 안은 `CP-*`와 함께
    변경 Draft에 넣되 일반 시나리오 구조와 인게임 스크립트에는 각 전용 규칙을
    우선한다.
 5. 시나리오 변경이면 `scenario_designer`가 요청 Draft와 추가 구조 개선 권고를
@@ -129,7 +154,8 @@
 ### 3.6 인게임 스크립트 작성
 
 1. 사용자가 시나리오를 실제 플레이용 대본으로 작성해 달라고 요청한다.
-2. Codex는 `scenario_writer`에 대상 챕터의 초안 작성을 위임한다.
+2. Codex는 active 인게임 스크립트 창작 규칙을 확인한 뒤
+   `scenario_writer`에 대상 챕터의 초안 작성을 위임한다.
 3. 에이전트는 프로젝트 Brief, 게임 개요, 세계관, 상위 시나리오와 기존 승인
    대본에서 프로젝트별 작가 정체성과 Writer's Brief를 구성한다.
 4. 원본보다 나은 사건 순서, 공개 시점, 분기, Outcome 또는 인물 동기가 있으면

@@ -25,6 +25,11 @@ changes, but actual project changes must go through approval-oriented flows.
 - Document ownership and standard paths: `docs/workflows/document_structure.md`
 - Reusable task skills: `docs/skills/`
 - Design creative completion: `docs/skills/design_creative_completion.md`
+- Project creative agent setup: `docs/workflows/project_creative_agent_setup.md`
+- Project creative agent rule template:
+  `docs/templates/project_creative_agent_rule.md`
+- Project creative agent index template:
+  `docs/templates/project_creative_agent_index.md`
 - Scenario authoring and review: `docs/skills/scenario_review.md`
 - Specialist agent handoff: `docs/workflows/specialist_agent_handoff.md`
 - Specialist task packet template: `docs/templates/specialist_task_packet.md`
@@ -36,6 +41,8 @@ changes, but actual project changes must go through approval-oriented flows.
 - General scenario designer agent: `.codex/agents/scenario_designer.toml`
 - Independent scenario reviewer agent: `.codex/agents/scenario_reviewer.toml`
 - Design creative planner agent: `.codex/agents/design_creative_planner.toml`
+- Independent design creative reviewer agent:
+  `.codex/agents/design_creative_reviewer.toml`
 - In-game script workflow: `docs/workflows/write_ingame_script.md`
 
 ## Archive Notes
@@ -111,7 +118,8 @@ changes, but actual project changes must go through approval-oriented flows.
   and `실제 프로젝트 사실로 채택`. The adoption value for synthetic test data is
   always `아님`.
 - Before every call to `scenario_designer`, `scenario_writer`,
-  `scenario_reviewer`, or `design_creative_planner`, follow
+  `scenario_reviewer`, `design_creative_planner`, or
+  `design_creative_reviewer`, follow
   `docs/workflows/specialist_agent_handoff.md` and complete
   `docs/templates/specialist_task_packet.md`. Reconcile the current request and
   every material prior user fact, selection, prohibition, scope change, approval
@@ -119,6 +127,40 @@ changes, but actual project changes must go through approval-oriented flows.
   `current_user_input`, `prior_user_input`, `confirmed_document`,
   `proposal_input`, or `synthetic_test_fixture`. Do not call a specialist while
   a required packet field or provenance is missing or contradictory.
+- Before creative option generation, scenario authoring, in-game script writing,
+  or selection incorporation, follow
+  `docs/workflows/project_creative_agent_setup.md`. Resolve the exact active
+  project creative rule from `workspace/projects/<project_slug>/agents/README.md`
+  and record its ID, path, version, SHA-256, applicability, and review contract
+  in the Specialist Task Packet. `design_creative_planner` `classify`, search,
+  summary, review-only, non-creative source structuring, temporary-idea capture,
+  and mechanical application do not require a creative rule.
+- If no matching project creative rule exists, do not call an authoring or
+  creative-generation specialist and do not generate alternatives. Return
+  `blocked_missing_creative_rule` and use the planning-only setup workflow. If
+  an existing rule is out of scope or conflicts with the request, return
+  `blocked_creative_rule_mismatch`; do not automatically revise the rule or
+  enter Plan mode unless the user explicitly requests rule creation or revision.
+- Project creative rule creation and revision happen only through a
+  decision-complete Plan mode result followed by the user's explicit
+  implementation request. That implementation request activates the behavioral
+  rule directly without Approval Queue, Decision Log, or Version History; it
+  never authorizes a simultaneous change to confirmed design documents.
+- Keep project creative rules as independent field-specific files. Do not create
+  a shared creative-direction file, copy another project's rule, or create a new
+  `.codex/agents/*.toml` for each project rule. Existing specialist agent types
+  execute the selected project rule.
+- Every project creative rule must choose a review policy. General scenario and
+  in-game script authoring always use `independent_always` with
+  `scenario_reviewer`. Non-scenario rules choose
+  `self_and_main | independent_high_risk | independent_always` during Plan mode;
+  required independent review uses `design_creative_reviewer`.
+- Treat a project creative rule as behavioral guidance, never as the canonical
+  source of a game fact. Global workflow, confirmed canonical documents,
+  provenance, approval, and ownership rules take precedence. If a rule version
+  or SHA-256 changes between generation, selection, and incorporation, return
+  `needs_creative_rule_reconfirmation` and stop until the current rule and
+  sources are reconfirmed.
 - Spawn a named custom specialist with its exact `agent_type`,
   `fork_turns: "none"`, and the complete Specialist Task Packet as the task
   message. Never combine a custom `agent_type` with an omitted or `"all"`
@@ -214,6 +256,12 @@ changes, but actual project changes must go through approval-oriented flows.
 - `workspace/projects/<project_slug>/README.md`: project description, current focus,
   confirmed-document map, and working-record links; never a canonical detail owner.
 - `workspace/projects/<project_slug>/project_brief.md`: project identity, focus, and constraints.
+- `workspace/projects/<project_slug>/agents/README.md`: optional index of active
+  and retired project creative agent rules; created only with the first
+  explicitly implemented rule.
+- `workspace/projects/<project_slug>/agents/rules/`: optional independent,
+  field-specific behavioral rules for existing creative specialist agents;
+  never a canonical game-fact owner.
 - `workspace/projects/<project_slug>/design/`: confirmed project design documents.
 - `workspace/projects/<project_slug>/design/assets/`: canonical approved image assets.
 - `workspace/projects/<project_slug>/design/game/`: game overview and top-level design direction.

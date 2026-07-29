@@ -25,6 +25,11 @@ Approval Queue 저장을 담당한다.
 인게임 스크립트의 구체 창작과 구조 변경에는 일반 기획용 `CP-*`를 중복
 사용하지 않고 각각 `CW-*`, `NR-*`를 사용한다.
 
+이 창작 권한만으로 집필을 시작하지 않는다. 해당 프로젝트의 인게임 스크립트
+창작 규칙이 active 상태여야 하며, 없으면
+`docs/workflows/project_creative_agent_setup.md`의 Plan mode 설정을 먼저
+완료한다. 규칙의 검수 정책은 `independent_always`다.
+
 ## Source Order
 
 1. 사용자가 이번 요청에서 명시한 범위와 제약
@@ -64,42 +69,47 @@ Approval Queue 저장을 담당한다.
 
 1. `project_workspace`에 따라 프로젝트를 하나로 확정한다.
 2. 대상 시나리오 파일과 챕터·Scene, 포함·제외 범위를 확인한다.
-3. Source Order에 따라 게임 정체성, 상위 사건, 정사·규칙, 기존 승인 문체와
+3. `agents/README.md`에서 정확한 인게임 스크립트 창작 규칙을 선택하고 ID,
+   버전, SHA-256과 적용 범위를 확인한다.
+4. Source Order에 따라 게임 정체성, 상위 사건, 정사·규칙, 기존 승인 문체와
    구현 계약을 조사한다.
-4. 사건, 조건, 분기, Outcome, 공개 정보와 인물 제약의 근거 지도를 만들고
+5. 사건, 조건, 분기, Outcome, 공개 정보와 인물 제약의 근거 지도를 만들고
    확정 사실, 충돌, 공백과 작가 제안을 구분한다.
-5. 원본의 인과, 동기, 긴장 상승, 속도, 정보 공개, 선택의 의미, 분기 비용과
+6. 원본의 인과, 동기, 긴장 상승, 속도, 정보 공개, 선택의 의미, 분기 비용과
    합류를 진단하고 `Writer's Brief`를 작성한다.
-6. 원본보다 나은 구조가 있으면 사건 순서, 씬 경계, 정보 공개, 분기, Outcome
+7. 프로젝트 창작 규칙의 목표, 우선 원칙, 금지 요소와 검수 기준을 Writer's
+   Brief와 작가 판단에 적용하되 규칙을 canonical fact로 취급하지 않는다.
+8. 원본보다 나은 구조가 있으면 사건 순서, 씬 경계, 정보 공개, 분기, Outcome
    또는 인물 동기를 개선한 하나의 최적안으로 바로 집필한다. 원본 충실본을
    별도 대안으로 만들지 않는다.
-7. `docs/skills/scenario_writing.md`에 따라 사건을 입력 대기 또는 확정 결과
+9. `docs/skills/scenario_writing.md`에 따라 사건을 입력 대기 또는 확정 결과
    전달 단위의 씬으로 나누고 `docs/templates/ingame_script.md`로 작성한다.
    `Outcomes and State`는 구현 연결용 `Outcome Routing` 표와 설명용
    `Outcome Details`로 분리하고, Outcome ID·순서·값·각주를 1:1로
    일치시킨다. 씬 전체 `Information Visibility`는 별도 유지한다.
-8. 구체적인 창작 문장과 필드는 `CW-*` 각주로, 원본 서사 구조와 달라진 부분은
+10. 구체적인 창작 문장과 필드는 `CW-*` 각주로, 원본 서사 구조와 달라진 부분은
    `NR-*` Narrative Revision Log로 각각 공개한다.
-9. 씬 데이터 조합을 UI·기술 문서와 대조한다. 확정되지 않은 판정값, 등록
+11. 씬 데이터 조합을 UI·기술 문서와 대조한다. 확정되지 않은 판정값, 등록
    에셋 ID와 데이터 값은 `TBD` 또는 공개된 창작 제안으로 둔다.
-10. 세계관 정사나 시스템 규칙 변경이 필요한 개선안은 별도 고위험 승인 항목으로
+12. 세계관 정사나 시스템 규칙 변경이 필요한 개선안은 별도 고위험 승인 항목으로
     분리하고, 의존하는 대본 필드는 해당 항목이 적용될 때까지 `TBD`로 둔다.
-11. 신규 챕터의 미래 canonical 경로를
+13. 신규 챕터의 미래 canonical 경로를
     `design/narrative/scripts/<chapter_slug>_ingame_script.md`로 정한다.
-12. 상위 시나리오 변경이 있으면 상위 시나리오 update, 스크립트 create/update와
+14. 상위 시나리오 변경이 있으면 상위 시나리오 update, 스크립트 create/update와
     모든 링크 갱신을 하나의 `restructure` 승인 항목에 넣는다. 신규 스크립트와
     색인 링크를 함께 만드는 경우도 `restructure`로 처리한다.
-13. `scenario_writer`는 파일을 수정하지 않고 초안과
+15. `scenario_writer`는 파일을 수정하지 않고 초안과
     `ready_for_independent_review` handoff를 메인 Codex에 반환한다.
-14. 메인 Codex는 초안과 범위를 `scenario_reviewer`에 전달한다. 검수자는 원본을
+16. 메인 Codex는 초안, 범위와 같은 프로젝트 창작 규칙을
+    `scenario_reviewer`에 전달한다. 검수자는 원본을
     직접 확인하고 `pass | revision_required | blocked` 판정과 `SRV-*` 결과를
     반환한다.
-15. `blocking` 또는 `required_revision`이 있으면 메인 Codex가 원래 작업을
+17. `blocking` 또는 `required_revision`이 있으면 메인 Codex가 원래 작업을
     `scenario_writer`에 되돌려 수정하고 재검수한다. 선택적 작가 판단은 자동
     반영하지 않으며, 채택하면 필요한 `NR-*`·`CW-*` 공개를 추가한다.
-16. 검수 통과 후 메인 Codex가 Writer's Brief, NR·CW 공개, `TBD`, 충돌,
+18. 검수 통과 후 메인 Codex가 Writer's Brief, NR·CW 공개, `TBD`, 충돌,
     의존성과 승인 범위를 최종 확인한다.
-17. 저장 요청이 있으면 메인 Codex가 기준 Git 커밋, 대상별 비교 범위와 현재
+19. 저장 요청이 있으면 메인 Codex가 기준 Git 커밋, 대상별 비교 범위와 현재
     SHA-256, 검수 요약과 의존 승인 항목을 기록해 프로젝트 Approval Queue에
     `pending`으로 저장한 뒤 사용자에게 전달한다.
 

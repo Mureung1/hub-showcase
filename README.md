@@ -15,6 +15,9 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
 - 기획 창작: 프로젝트 적응형 `design_creative_planner`가 기획서의 빈 부분을
   창작 가능한 GAP과 사용자 확인이 필요한 사실로 구분한다. 사용자가 허가한
   GAP에만 복수 대안과 추천안을 만들고, 선택된 창작 내용은 `CP-*`로 공개한다.
+- 프로젝트별 창작 규칙: 창작 역할을 미리 만들지 않고 실제 요청이 생기면
+  Plan mode에서 분야별 독립 규칙을 설계한다. 사용자의 구현 요청으로 활성화한
+  규칙을 기존 전문 에이전트가 읽어 해당 프로젝트 전용 창작자로 동작한다.
 - 시나리오 창작·검수: `scenario_designer`가 원안 기반 시나리오 Draft와 구조
   개선안을 분리해 작성하고 `scenario_reviewer`가 원본을 직접 대조해 독립
   검수한다.
@@ -111,6 +114,8 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
   만들지 않는다.
 - 메인 Codex가 전체 GAP 목록과 “창작으로 채울까요?”를 먼저 제시한다.
   사용자가 허가한 정확한 GAP ID만 `generate_options` Phase에 전달한다.
+- `generate_options`와 `incorporate_selection`에는 해당 프로젝트·분야의
+  active 창작 규칙이 필요하다. `classify`에는 규칙이 필요하지 않다.
 - 허가된 저·중위험 GAP에는 대안 2개, 고위험 GAP에는 대안 3개와 추천안을
   제시한다. 선택된 안만 Draft에 `CP-*` 각주로 넣고 모든 대안과 영향을
   `Creative Proposal Log`에 보존한다.
@@ -122,6 +127,27 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
   승인 뒤에만 확정 문서에 반영한다.
 - 일반 시나리오 구조는 `Scenario Improvement Review`, 인게임 스크립트는
   `CW-*`·`NR-*`를 우선하며 같은 내용에 `CP-*`를 중복 사용하지 않는다.
+
+### Project Creative Agent Rules
+
+- 새 프로젝트와 기존 프로젝트에 창작 규칙을 자동 생성하지 않는다.
+- 첫 창작 요청에 맞는 규칙이 없으면 결과를 만들지 않고
+  `blocked_missing_creative_rule`로 중단한 뒤 Plan mode에서 분야, 적용 범위,
+  기존 실행 agent, 창작 원칙, 금지사항, 근거와 검수 정책을 정한다.
+- 완성 계획의 구현 요청을 받으면
+  `workspace/projects/<project_slug>/agents/rules/`에 active 규칙을 저장한다.
+  규칙은 행동 설정이며 세계관·시스템·콘텐츠 사실을 소유하지 않는다.
+- 각 분야 규칙은 독립 파일이다. 공통 창작 방향 문서나 규칙별 custom
+  agent 설정을 만들지 않고 기존 `design_creative_planner`,
+  `scenario_designer`, `scenario_writer`가 규칙을 실행한다.
+- 기존 규칙이 요청과 맞지 않으면 `blocked_creative_rule_mismatch`로
+  중단한다. 사용자가 개정을 요청하기 전에는 자동 수정하거나 자동으로 Plan
+  mode에 들어가지 않는다.
+- 시나리오와 대본은 항상 `scenario_reviewer`가 독립 검수한다. 비시나리오는
+  규칙 생성 Plan에서 검수 정책을 반드시 정하고, 필요한 독립 검수는
+  `design_creative_reviewer`가 수행한다.
+- Task Packet은 규칙 ID·경로·버전·SHA-256과 검수 계약을 전달한다. 창작 단계
+  사이에 규칙이 바뀌면 `needs_creative_rule_reconfirmation`으로 중단한다.
 
 ### Specialist Agent Handoff
 
@@ -308,6 +334,7 @@ README.md
 .codex/
   agents/
     design_creative_planner.toml
+    design_creative_reviewer.toml
     scenario_designer.toml
     scenario_reviewer.toml
     scenario_writer.toml
@@ -326,6 +353,9 @@ workspace/
     <project_slug>/
       README.md
       project_brief.md
+      agents/                 # 첫 창작 규칙 구현 시에만 생성
+        README.md
+        rules/
       design/
         assets/
         game/
@@ -348,7 +378,10 @@ workspace/
 - `AGENTS.md`: Codex가 이 저장소에서 반드시 지켜야 하는 전체 규칙
 - `docs/workflows/project_workspace.md`: 대상 프로젝트 선택과 새 프로젝트 생성·분리 절차
 - `docs/workflows/specialist_agent_handoff.md`: 전문 에이전트 필수 인계 정보, 호환 호출 방식과 반환 검증
+- `docs/workflows/project_creative_agent_setup.md`: 프로젝트별 JIT 창작 규칙의 Plan mode 설정, 저장, 실행과 검수 절차
 - `docs/templates/specialist_task_packet.md`: 부모 대화 대신 전문 에이전트에 전달할 작업 계약 형식
+- `docs/templates/project_creative_agent_rule.md`: 분야별 프로젝트 창작 규칙 형식
+- `docs/templates/project_creative_agent_index.md`: 프로젝트 창작 규칙 색인 형식
 - `docs/workflows/behavior_testing.md`: 합성 동작 테스트의 출처 표시, 격리 실행과 결과 보고 규칙
 - `docs/templates/behavior_test_manifest.md`: 동작 테스트 전에 작성하는 출처·환경 계약
 - `docs/workflows/`: 작업별 실행 절차. 문서 관련 요청은 `document_change`를 먼저 따른다.
@@ -366,6 +399,7 @@ workspace/
 - `.codex/agents/scenario_designer.toml`: 일반 시나리오 Draft와 분리 개선안을 작성하는 custom agent
 - `.codex/agents/scenario_reviewer.toml`: 일반 시나리오와 인게임 스크립트를 독립 검수하는 custom agent
 - `.codex/agents/design_creative_planner.toml`: 일반 기획 GAP을 분류하고 허가된 GAP의 대안을 만드는 custom agent
+- `.codex/agents/design_creative_reviewer.toml`: 규칙이 요구한 비시나리오 창작 결과를 독립 검수하는 custom agent
 - `workspace/project_registry.md`: 프로젝트 목록과 현재 기본 프로젝트
 - `workspace/projects/`: 프로젝트별 실제 기획 문서와 작업 상태
 
@@ -383,7 +417,8 @@ python3 -m unittest discover -s tests -v
 테스트 코드는 등록 프로젝트의 필수 구조, 실제 탐색 문서의 로컬 링크, 승인
 ID 중복과 제목·Metadata 일치, `applied` 승인 항목의 Decision Log·Version
 History 연결, 테스트 입력의 출처 분류와 Behavior Test Manifest의 격리
-조건을 검사한다. 템플릿의 예시 경로, Approval Queue 안의 역사적 Draft
+조건, 선택적으로 존재하는 프로젝트 창작 규칙의 ID·분야·실행 agent·검수
+정책·색인 연결을 검사한다. 템플릿의 예시 경로, Approval Queue 안의 역사적 Draft
 링크, 외부 URL과 코드 블록은 링크 검사에서 제외한다.
 
 자동 판정하기 어려운 에이전트 행동과 기획 품질은 변경 후 다음 항목을 별도로
@@ -405,6 +440,10 @@ History 연결, 테스트 입력의 출처 분류와 Behavior Test Manifest의 �
   단계를 모두 거쳤는가
 - 일반 기획 창작이 `design_creative_planner`의 Phase와 사용자 허가 GAP 범위를
   지켰는가
+- 창작 규칙이 없는 요청에서 Draft·대안이 생성되지 않고 Plan mode 설정으로
+  라우팅되었는가
+- 프로젝트 창작 규칙이 다른 프로젝트의 사실이나 규칙과 섞이지 않았으며,
+  지정한 검수 정책을 거쳤는가
 - 기획 문서와 변경안이 `docs/templates/`의 형식을 따르는가
 - 상세 정보가 올바른 canonical owner 문서에 있고 개요서에는 요약과 링크만 있는가
 - 프로젝트 루트 README가 간단한 소개와 현재 존재하는 확정 문서만 보여주며

@@ -47,6 +47,7 @@ Codex는 분류 결과를 검토하고 사용자에게 전체 GAP 목록을 제�
 
 ## Creative Completion Routing
 
+- `classify` Phase와 GAP 목록 작성은 프로젝트 창작 규칙 없이 수행할 수 있다.
 - 메인 Codex는 신규·수정·재구성 비시나리오 Draft와 다중 역할 Draft의
   비시나리오 부분을 `design_creative_planner`의 `classify` Phase에 위임한다.
   일반 시나리오와 인게임 스크립트는 각 전담 작성 에이전트가 누락 분류와
@@ -56,11 +57,13 @@ Codex는 분류 결과를 검토하고 사용자에게 전체 GAP 목록을 제�
   묻는다.
 - 명시적 허가 전에는 대안을 만들거나 Draft에 창작 내용을 넣지 않는다.
 - 사용자가 비시나리오 GAP의 창작을 허가하면 정확한 GAP ID를
-  `design_creative_planner`의
+  해당 분야의 active 프로젝트 창작 규칙과 함께 `design_creative_planner`의
   `generate_options` Phase에 전달하고
   `docs/skills/design_creative_completion.md`를 따른다.
 - 일반 시나리오 구조와 인게임 스크립트는 각각 기존 Scenario Improvement,
   `CW-*`·`NR-*` 규칙을 우선한다.
+- 창작 규칙이 없으면 `blocked_missing_creative_rule`, 요청 범위가 다르면
+  `blocked_creative_rule_mismatch`로 두고 대안을 만들지 않는다.
 
 ## Output
 

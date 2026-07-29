@@ -9,10 +9,12 @@ from scripts.workspace_validation import (
     format_issues,
     navigation_markdown_files,
     parse_approval_records,
+    parse_project_creative_agent_rule,
     validate_applied_approval_references,
     validate_approval_records,
     validate_behavior_test_manifest,
     validate_markdown_links,
+    validate_project_creative_agents,
     validate_project_registry,
     validate_project_structure,
     validate_provenance_record,
@@ -113,6 +115,85 @@ class WorkspaceFixture:
             "```\n",
         )
 
+    def write_creative_rule(
+        self,
+        rule_slug: str = "system_creation",
+        *,
+        project_id: str | None = None,
+        agent_id: str | None = None,
+        canonical_role: str = "system",
+        base_agent_type: str = "design_creative_planner",
+        review_policy: str = "independent_high_risk",
+        indexed: bool = True,
+        missing_field: str | None = None,
+    ) -> Path:
+        project_id = project_id or self.project_id
+        agent_id = agent_id or f"PCA-{project_id}-{rule_slug}"
+        agents_root = self.project_root / "agents"
+        rules_root = agents_root / "rules"
+        rules_root.mkdir(parents=True, exist_ok=True)
+        rule_path = rules_root / f"{rule_slug}.md"
+
+        metadata = {
+            "프로젝트 창작 에이전트 ID": f"`{agent_id}`",
+            "프로젝트 ID": f"`{project_id}`",
+            "규칙 슬러그": f"`{rule_slug}`",
+            "상태": "`active`",
+            "버전": "`1`",
+            "분야": "`sample_system`",
+            "canonical document role": f"`{canonical_role}`",
+            "기본 agent_type": f"`{base_agent_type}`",
+            "검수 정책": f"`{review_policy}`",
+        }
+        if missing_field:
+            metadata.pop(missing_field)
+        metadata_text = "\n".join(
+            f"- {key}: {value}" for key, value in metadata.items()
+        )
+        reviewer = (
+            "scenario_reviewer"
+            if base_agent_type in {"scenario_designer", "scenario_writer"}
+            else (
+                "design_creative_reviewer"
+                if review_policy
+                in {"independent_high_risk", "independent_always"}
+                else "main"
+            )
+        )
+        self._write(
+            rule_path,
+            "[TEST FIXTURE: SYNTHETIC]\n\n"
+            "# Project Creative Agent Rule\n\n"
+            "## Metadata\n\n"
+            f"{metadata_text}\n\n"
+            "## Applicability\n\n- 적용 요청: 합성 시스템 창작\n\n"
+            "## Creative Direction\n\n- 창작 목표: 합성 검증\n\n"
+            "## Sources\n\n- 필수 근거 파일: project_brief.md\n\n"
+            "## Authority Boundary\n\n- 반드시 TBD로 둘 항목: 없음\n\n"
+            "## Output And Provenance\n\n- provenance 체계: CP-*\n\n"
+            "## Review Contract\n\n"
+            f"- 적용 검수 정책: `{review_policy}`\n"
+            f"- reviewer: `{reviewer}`\n"
+            "- 통과 기준: 합성 검증\n\n"
+            "## Rule Mismatch And Replanning\n\n- 자동 개정: 금지\n\n"
+            "## Change History\n\n| 버전 | 날짜 | 변경 |\n|---|---|---|\n"
+            "| 1 | 2026-07-30 | 합성 생성 |\n",
+        )
+
+        rule_link = (
+            f"[규칙](rules/{rule_slug}.md)" if indexed else "색인 링크 없음"
+        )
+        self._write(
+            agents_root / "README.md",
+            "[TEST FIXTURE: SYNTHETIC]\n\n"
+            "# Project Creative Agents\n\n"
+            f"- 프로젝트 ID: `{self.project_id}`\n\n"
+            "## Rules\n\n"
+            "| ID | 규칙 |\n|---|---|\n"
+            f"| `{agent_id}` | {rule_link} |\n",
+        )
+        return rule_path
+
     @staticmethod
     def _write(path: Path, text: str) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -191,6 +272,114 @@ class ProjectRegistryTests(unittest.TestCase):
 
             self.assertEqual(["missing-project-file"], [issue.code for issue in issues])
             self.assertIn("approval_queue.md", str(issues[0]))
+
+
+class ProjectCreativeAgentRuleTests(unittest.TestCase):
+    def test_창작_규칙이_없는_프로젝트도_정상이다(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            fixture = WorkspaceFixture(Path(temp_dir)).create()
+
+            issues = validate_project_creative_agents(fixture.project, fixture.root)
+
+            self.assertEqual([], issues, format_issues(issues))
+
+    def test_유효한_분야별_창작_규칙을_읽는다(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            fixture = WorkspaceFixture(Path(temp_dir)).create()
+            rule_path = fixture.write_creative_rule()
+
+            rule = parse_project_creative_agent_rule(rule_path)
+            issues = validate_project_creative_agents(fixture.project, fixture.root)
+
+            self.assertEqual("PCA-sample-project-system_creation", rule.agent_id)
+            self.assertEqual("independent_high_risk", rule.review_policy)
+            self.assertEqual([], issues, format_issues(issues))
+
+    def test_창작_규칙_필수_필드가_빠지면_실패한다(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            fixture = WorkspaceFixture(Path(temp_dir)).create()
+            fixture.write_creative_rule(missing_field="검수 정책")
+
+            issues = validate_project_creative_agents(fixture.project, fixture.root)
+
+            self.assertIn(
+                "missing-project-creative-rule-field",
+                [issue.code for issue in issues],
+            )
+
+    def test_다른_프로젝트_ID의_규칙을_실패로_판정한다(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            fixture = WorkspaceFixture(Path(temp_dir)).create()
+            fixture.write_creative_rule(project_id="another-project")
+
+            issues = validate_project_creative_agents(fixture.project, fixture.root)
+            codes = [issue.code for issue in issues]
+
+            self.assertIn("project-creative-rule-project-mismatch", codes)
+            self.assertIn("invalid-project-creative-agent-id", codes)
+
+    def test_시나리오_창작은_항상_독립_검수여야_한다(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            fixture = WorkspaceFixture(Path(temp_dir)).create()
+            fixture.write_creative_rule(
+                rule_slug="scenario_creation",
+                canonical_role="scenario",
+                base_agent_type="scenario_designer",
+                review_policy="self_and_main",
+            )
+
+            issues = validate_project_creative_agents(fixture.project, fixture.root)
+
+            self.assertIn(
+                "scenario-independent-review-required",
+                [issue.code for issue in issues],
+            )
+
+    def test_색인에_없는_창작_규칙을_실패로_판정한다(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            fixture = WorkspaceFixture(Path(temp_dir)).create()
+            fixture.write_creative_rule(indexed=False)
+
+            issues = validate_project_creative_agents(fixture.project, fixture.root)
+
+            self.assertIn(
+                "unindexed-project-creative-rule",
+                [issue.code for issue in issues],
+            )
+
+    def test_중복_프로젝트_창작_에이전트_ID를_실패로_판정한다(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            fixture = WorkspaceFixture(Path(temp_dir)).create()
+            first_rule = fixture.write_creative_rule()
+            duplicate_id = parse_project_creative_agent_rule(first_rule).agent_id
+            fixture.write_creative_rule(
+                rule_slug="content_creation",
+                agent_id=duplicate_id,
+                canonical_role="content",
+            )
+
+            issues = validate_project_creative_agents(fixture.project, fixture.root)
+
+            self.assertIn(
+                "duplicate-project-creative-agent-id",
+                [issue.code for issue in issues],
+            )
+
+    def test_agents_루트의_공통_창작_문서를_금지한다(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            fixture = WorkspaceFixture(Path(temp_dir)).create()
+            fixture.write_creative_rule()
+            fixture._write(
+                fixture.project_root / "agents/creative_direction.md",
+                "# 금지된 공통 창작 규칙\n",
+            )
+
+            issues = validate_project_creative_agents(fixture.project, fixture.root)
+
+            self.assertIn(
+                "project-creative-common-rule-forbidden",
+                [issue.code for issue in issues],
+            )
 
 
 class MarkdownLinkTests(unittest.TestCase):
@@ -613,6 +802,7 @@ class SpecialistAgentHandoffContractTests(unittest.TestCase):
 
         for required_section in (
             "## Routing",
+            "## Project Creative Agent Rule",
             "## User Intent",
             "## Material Conversation Context",
             "## Authority Boundary",
@@ -626,6 +816,7 @@ class SpecialistAgentHandoffContractTests(unittest.TestCase):
     def test_모든_전문_에이전트는_누락된_인계를_차단한다(self) -> None:
         for agent_name in (
             "design_creative_planner",
+            "design_creative_reviewer",
             "scenario_designer",
             "scenario_reviewer",
             "scenario_writer",
@@ -642,6 +833,52 @@ class SpecialistAgentHandoffContractTests(unittest.TestCase):
                 self.assertIn("blocked_missing_handoff", agent_config)
                 self.assertIn("Specialist Task Packet", agent_config)
                 self.assertIn("Do not spawn further subagents", agent_config)
+
+    def test_창작_전문_에이전트가_프로젝트_규칙_게이트를_검증한다(
+        self,
+    ) -> None:
+        workflow = (
+            REPO_ROOT / "docs/workflows/project_creative_agent_setup.md"
+        ).read_text(encoding="utf-8")
+        packet_template = (
+            REPO_ROOT / "docs/templates/specialist_task_packet.md"
+        ).read_text(encoding="utf-8")
+
+        for required_text in (
+            "blocked_missing_creative_rule",
+            "blocked_creative_rule_mismatch",
+            "needs_creative_rule_reconfirmation",
+            "Plan mode",
+            "사용자의 명시적 규칙 작성·개정 요청",
+        ):
+            with self.subTest(text=required_text):
+                self.assertIn(required_text, workflow)
+
+        for required_text in (
+            "프로젝트 창작 에이전트 ID",
+            "규칙 경로",
+            "규칙 버전",
+            "규칙 SHA-256",
+            "검수 정책",
+        ):
+            with self.subTest(packet_field=required_text):
+                self.assertIn(required_text, packet_template)
+
+        for agent_name in (
+            "design_creative_planner",
+            "design_creative_reviewer",
+            "scenario_designer",
+            "scenario_reviewer",
+            "scenario_writer",
+        ):
+            with self.subTest(agent=agent_name):
+                agent_config = (
+                    REPO_ROOT / f".codex/agents/{agent_name}.toml"
+                ).read_text(encoding="utf-8")
+                self.assertIn("Project Creative Agent Rule", agent_config)
+                self.assertIn("blocked_missing_creative_rule", agent_config)
+                self.assertIn("blocked_creative_rule_mismatch", agent_config)
+                self.assertIn("needs_creative_rule_reconfirmation", agent_config)
 
 
 class BehaviorTestContractTests(unittest.TestCase):
@@ -676,6 +913,7 @@ class BehaviorTestContractTests(unittest.TestCase):
     def test_모든_전문_에이전트가_테스트_출처_오류를_차단한다(self) -> None:
         for agent_name in (
             "design_creative_planner",
+            "design_creative_reviewer",
             "scenario_designer",
             "scenario_reviewer",
             "scenario_writer",
