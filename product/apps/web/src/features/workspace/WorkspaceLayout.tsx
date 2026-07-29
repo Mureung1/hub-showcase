@@ -67,11 +67,12 @@ export function WorkspaceLayout({
 
   function selectAndFocusStore(storeKey: string) {
     const store = storefronts.visibleStores.find(
-      (candidate) => (candidate.id ?? candidate.name) === storeKey,
+      (candidate) =>
+        (candidate.id ?? candidate.name) === storeKey || candidate.name === storeKey,
     );
     if (!store) return;
     viewport.setStorefront3dUnavailable(false);
-    storefronts.storeSelection.selectListedStore(storeKey);
+    storefronts.storeSelection.selectListedStore(store.id ?? store.name);
     panels.setInspectorOpen(true);
     selection.applyCategorySelection(storeCategorySelection(store.category, store.categoryCode));
     viewport.focusCenter([store.longitude, store.latitude], true);
