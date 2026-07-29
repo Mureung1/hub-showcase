@@ -5,9 +5,15 @@ import { sendChatMessage } from '../lib/chatBot.js'
 import { useFocusTrap } from '../lib/useFocusTrap.js'
 import { colors, font, layout, radius, shadow, spacing } from '../styles/theme.js'
 
+function formatMessageTime(timestamp) {
+  if (!timestamp) return ''
+  return new Date(timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+}
+
 // FR-6 — Meal-Bot. 대화 이력은 이 컴포넌트의 state에만 있고(서버에 영구 저장 안 함), 새로고침하면
 // 사라진다 — 스스로 트리거 버튼과 시트를 함께 관리해(WaterIntakeCard/BarcodeScanButton과 같은
-// self-contained 패턴) 홈 화면(Analyze.jsx)에는 <ChatBotSheet/> 한 줄만 놓으면 된다.
+// self-contained 패턴) AppShell.jsx가 <ChatBotSheet/> 한 줄만 놓으면 된다(리텐션 강화 v4 — 예전엔
+// 홈 화면(Analyze.jsx)에만 있었지만, MY 탭을 제외한 4개 탭 어디서나 뜨도록 AppShell로 옮겨졌다).
 export default function ChatBotSheet() {
   const { effectiveRecommended, todayMealsTotal } = useUser()
   const [open, setOpen] = useState(false)
@@ -24,7 +30,7 @@ export default function ChatBotSheet() {
 
     setError('')
     setInput('')
-    const nextMessages = [...messages, { role: 'user', text }]
+    const nextMessages = [...messages, { role: 'user', text, timestamp: Date.now() }]
     setMessages(nextMessages)
     setSending(true)
     try {
@@ -33,7 +39,7 @@ export default function ChatBotSheet() {
         history: messages,
         dailyContext: { recommended: effectiveRecommended, todayTotal: todayMealsTotal },
       })
-      setMessages([...nextMessages, { role: 'bot', text: reply }])
+      setMessages([...nextMessages, { role: 'bot', text: reply, timestamp: Date.now() }])
     } catch (err) {
       setError(err.message || '답변을 받지 못했어요. 잠시 후 다시 시도해주세요.')
     } finally {
@@ -49,31 +55,58 @@ export default function ChatBotSheet() {
 
   return (
     <>
-      <button
-        type="button"
-        className="tds-press"
-        onClick={() => setOpen(true)}
+      {/* 리텐션 강화 v4 — 존재감 강화: 단색 원형 버튼에 은은한 펄스 링(colors.primary 하나만 사용,
+          theme.js가 명시한 "포인트 컬러는 그린 1개만" 원칙 준수)과 "AI" 배지를 더해 봇 느낌을 낸다.
+          aria-label은 그대로 둬 접근성 트리·기존 테스트의 버튼 이름 조회에 영향이 없다. */}
+      <div
         style={{
           position: 'fixed',
           right: spacing.lg,
-          // 탭바 높이를 담은 별도 토큰이 없어 실측 근사치(64px)를 직접 더한다 — 탭바 스타일이
-          // 바뀌면 이 값도 같이 확인해야 한다.
           bottom: `calc(64px + ${spacing.lg}px + env(safe-area-inset-bottom))`,
           width: 52,
           height: 52,
-          borderRadius: radius.pill,
-          border: 'none',
-          background: colors.primary,
-          color: '#fff',
-          fontSize: font.size.lg,
-          boxShadow: shadow.card,
-          cursor: 'pointer',
           zIndex: 50,
         }}
-        aria-label="영양 상담 챗봇 열기"
       >
-        💬
-      </button>
+        <span aria-hidden="true" className="tds-chatbot-pulse" style={{ position: 'absolute', inset: 0, borderRadius: radius.pill, background: colors.primary }} />
+        <button
+          type="button"
+          className="tds-press"
+          onClick={() => setOpen(true)}
+          style={{
+            position: 'relative',
+            width: 52,
+            height: 52,
+            borderRadius: radius.pill,
+            border: 'none',
+            background: colors.primary,
+            color: '#fff',
+            fontSize: font.size.lg,
+            boxShadow: shadow.card,
+            cursor: 'pointer',
+          }}
+          aria-label="영양 상담 챗봇 열기"
+        >
+          🤖
+        </button>
+        <span
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            top: -2,
+            right: -2,
+            background: '#fff',
+            color: colors.primary,
+            border: `1.5px solid ${colors.primary}`,
+            fontSize: 9,
+            fontWeight: 800,
+            padding: '1px 5px',
+            borderRadius: radius.pill,
+          }}
+        >
+          AI
+        </span>
+      </div>
 
       {open && (
         <div
@@ -121,31 +154,59 @@ export default function ChatBotSheet() {
                   오늘 드신 음식을 참고해서 답해드려요. 궁금한 걸 편하게 물어보세요.
                 </p>
               )}
-              {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  style={{
-                    margin: `0 0 ${spacing.sm}px`,
-                    textAlign: msg.role === 'user' ? 'right' : 'left',
-                  }}
-                >
-                  <span
+              {/* 실제 DM처럼 아바타+이름표+시간을 함께 보여준다(리텐션 강화 v4) — 유저는
+                  flexDirection을 뒤집어 오른쪽에 붙인다. */}
+              {messages.map((msg, i) => {
+                const isUser = msg.role === 'user'
+                return (
+                  <div
+                    key={i}
                     style={{
-                      display: 'inline-block',
-                      maxWidth: '85%',
-                      padding: `${spacing.sm}px ${spacing.md}px`,
-                      borderRadius: radius.md,
-                      background: msg.role === 'user' ? colors.primary : colors.bg,
-                      color: msg.role === 'user' ? '#fff' : colors.textStrong,
-                      fontSize: font.size.sm,
-                      textAlign: 'left',
-                      whiteSpace: 'pre-wrap',
+                      display: 'flex',
+                      flexDirection: isUser ? 'row-reverse' : 'row',
+                      alignItems: 'flex-end',
+                      gap: spacing.xs,
+                      margin: `0 0 ${spacing.sm}px`,
                     }}
                   >
-                    {msg.text}
-                  </span>
-                </div>
-              ))}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0, width: 36 }}>
+                      <div
+                        aria-hidden="true"
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 14,
+                          background: isUser ? colors.bg : colors.primarySurface,
+                        }}
+                      >
+                        {isUser ? '🙂' : '🤖'}
+                      </div>
+                      <span style={{ fontSize: 9, color: colors.textSub, marginTop: 2 }}>{isUser ? '나' : 'Meal-Bot'}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: isUser ? 'flex-end' : 'flex-start', maxWidth: '75%' }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          padding: `${spacing.sm}px ${spacing.md}px`,
+                          borderRadius: radius.md,
+                          background: isUser ? colors.primary : colors.bg,
+                          color: isUser ? '#fff' : colors.textStrong,
+                          fontSize: font.size.sm,
+                          textAlign: 'left',
+                          whiteSpace: 'pre-wrap',
+                        }}
+                      >
+                        {msg.text}
+                      </span>
+                      <span style={{ fontSize: 9, color: colors.textSub, marginTop: 2 }}>{formatMessageTime(msg.timestamp)}</span>
+                    </div>
+                  </div>
+                )
+              })}
               {sending && <Spinner size={16} />}
             </div>
 

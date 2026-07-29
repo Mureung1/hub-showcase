@@ -2,50 +2,44 @@ import { useEffect, useState } from 'react'
 import AppButton from './AppButton.jsx'
 import { NutrientBars } from './NutritionCard.jsx'
 import SegmentedControl from './SegmentedControl.jsx'
-import Spinner from './Spinner.jsx'
 import TextField from './TextField.jsx'
-import { buildComboAnalysis, DEFAULT_SERVING_GRAMS } from '../lib/comboBuilder.js'
-import { fetchFoodItems } from '../lib/foodItemsApi.js'
+import { COMBO_INGREDIENTS } from '../data/comboIngredients.js'
+import { buildComboAnalysis } from '../lib/comboBuilder.js'
+import { claimQuest } from '../lib/dataStore.js'
+import { logicalDateKey } from '../lib/logicalDate.js'
+import { COMBO_BUILDER_TRY_ID, FEATURE_TRY_XP } from '../lib/quests.js'
 import { colors, font, radius, spacing } from '../styles/theme.js'
 
-// foodDB.json의 실제 category 8종(side/soup/kimchi/main/rice/dessert/drink/noodle)을 베이스/토핑/
-// 국물·음료 3그룹으로 묶는다 — "소스" 카테고리는 DB에 없어 이 범위에서 제외했다(FR-19 PRD 참고).
+// 리텐션 강화 v4 — 손수 큐레이션한 재료 데이터(comboIngredients.js)로 실제 맥도날드/서브웨이식
+// 모듈형 커스텀(베이스 하나 + 토핑 여러 개 + 국물·음료)을 흉내낸다. "국물·음료" 그룹만 soup+drink
+// 두 원천을 합쳐서 보여준다(DB 조회 시절과 달리 이제 카테고리가 아니라 이 파일이 직접 그룹을 나눈다).
 const GROUPS = [
-  { key: 'base', label: '베이스', categories: ['rice', 'noodle'] },
-  { key: 'topping', label: '토핑', categories: ['main', 'side', 'kimchi', 'dessert'] },
-  { key: 'extra', label: '국물·음료', categories: ['soup', 'drink'] },
+  { key: 'base', label: '베이스' },
+  { key: 'topping', label: '토핑' },
+  { key: 'extra', label: '국물·음료' },
 ]
 
-// 홈 화면 "커스텀 조합" 탭(FR-19) — 베이스/토핑/국물·음료를 이름 매칭 없이 DB 항목에서 직접 골라
-// 담는다(Gemini 호출이 전혀 없어 응답이 빠르고, 매칭이 필요 없을 만큼 확정적인 선택이라 정확하다).
-// 담을 때마다 buildComboAnalysis(comboBuilder.js)로 실시간 합산 미리보기를 보여주고, "완료"를 누르면
-// 그 결과({items,total})를 그대로 onComplete에 넘긴다 — 이후 흐름(AnalysisResultCard/저장)은 기존
+function ingredientsFor(groupKey) {
+  if (groupKey === 'extra') return [...COMBO_INGREDIENTS.soup, ...COMBO_INGREDIENTS.drink]
+  return COMBO_INGREDIENTS[groupKey] ?? []
+}
+
+// 홈 화면 "커스텀 조합" 탭(FR-19) — 베이스/토핑/국물·음료를 이름 매칭 없이 큐레이션된 재료 목록에서
+// 직접 골라 담는다(Gemini 호출도, 서버 왕복도 없어 응답이 즉시다). 담을 때마다
+// buildComboAnalysis(comboBuilder.js)로 실시간 합산 미리보기를 보여주고, "완료"를 누르면 그
+// 결과({items,total})를 그대로 onComplete에 넘긴다 — 이후 흐름(AnalysisResultCard/저장)은 기존
 // 사진/텍스트 분석 결과와 동일하게 처리된다.
 export default function CustomComboBuilder({ onComplete }) {
   const [activeGroup, setActiveGroup] = useState(GROUPS[0].key)
   const [query, setQuery] = useState('')
-  const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [items, setItems] = useState(ingredientsFor(GROUPS[0].key))
   const [selected, setSelected] = useState([]) // [{name, nutrients, baseQuantity, servingGrams, qty}]
 
+  // 재료가 전부 로컬 데이터라 fetch/로딩 상태가 필요 없다 — 그룹/검색어가 바뀌면 즉시 다시 필터링한다.
   useEffect(() => {
-    const group = GROUPS.find((g) => g.key === activeGroup)
-    let cancelled = false
-    setLoading(true)
-    // 그룹 하나가 여러 DB category로 이루어질 수 있어(예: 토핑=main+side+kimchi+dessert) 병렬 조회 후 합친다.
-    Promise.all(group.categories.map((category) => fetchFoodItems({ category, q: query, limit: 20 })))
-      .then((lists) => {
-        if (!cancelled) setItems(lists.flat())
-      })
-      .catch(() => {
-        if (!cancelled) setItems([])
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
+    const pool = ingredientsFor(activeGroup)
+    const q = query.trim()
+    setItems(q ? pool.filter((item) => item.name.includes(q)) : pool)
   }, [activeGroup, query])
 
   function handleAdd(item) {
@@ -62,7 +56,7 @@ export default function CustomComboBuilder({ onComplete }) {
           name: item.name,
           nutrients: item.nutrients,
           baseQuantity: item.baseQuantity,
-          servingGrams: item.servSize ?? DEFAULT_SERVING_GRAMS,
+          servingGrams: item.servingGrams,
           qty: 1,
         },
       ]
@@ -81,7 +75,7 @@ export default function CustomComboBuilder({ onComplete }) {
         커스텀 조합
       </h3>
       <p style={{ margin: `0 0 ${spacing.md}px`, color: colors.textSub, fontSize: font.size.sm }}>
-        베이스·토핑·국물을 직접 골라 담으면 실시간으로 영양을 합산해드려요.
+        베이스·토핑·국물·음료를 직접 골라 담으면 실시간으로 영양을 합산해드려요.
       </p>
 
       <SegmentedControl
@@ -95,15 +89,11 @@ export default function CustomComboBuilder({ onComplete }) {
         id="combo-search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="예: 돈까스"
+        placeholder="예: 치즈"
       />
 
       <div style={{ maxHeight: 220, overflowY: 'auto', border: `1px solid ${colors.border}`, borderRadius: radius.md, marginTop: spacing.sm }}>
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: spacing.lg }}>
-            <Spinner size={20} />
-          </div>
-        ) : items.length === 0 ? (
+        {items.length === 0 ? (
           <p style={{ margin: 0, padding: spacing.md, fontSize: font.size.sm, color: colors.textSub }}>
             검색 결과가 없어요.
           </p>
@@ -177,7 +167,16 @@ export default function CustomComboBuilder({ onComplete }) {
         </div>
       )}
 
-      <AppButton onClick={() => onComplete(analysis)} disabled={selected.length === 0} style={{ marginTop: spacing.lg }}>
+      <AppButton
+        onClick={() => {
+          // week-try-combo(FR-16 다양화) 유도용 마커 클레임 — 하루 1회만 의미 있으면 되고(quest_claims
+          // 유니크 제약이 중복을 막아줌), 실패해도 조합 완료 자체는 막지 않는 장식적 부가 동작이다.
+          claimQuest({ dateKey: logicalDateKey(new Date()), questId: COMBO_BUILDER_TRY_ID, xpAwarded: FEATURE_TRY_XP }).catch(() => {})
+          onComplete(analysis)
+        }}
+        disabled={selected.length === 0}
+        style={{ marginTop: spacing.lg }}
+      >
         완료
       </AppButton>
     </div>

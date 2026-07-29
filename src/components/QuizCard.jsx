@@ -1,57 +1,40 @@
 import { useEffect, useState } from 'react'
 import { useUser } from '../context/UserContext.jsx'
+import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
 import ProgressBarFill from './ProgressBarFill.jsx'
 import { playConfetti } from '../lib/confetti.js'
-import { buildQuizChoices, pickTodayQuizFood } from '../lib/calorieQuiz.js'
 import { claimQuest, getClaimedQuestIds } from '../lib/dataStore.js'
 import { logicalDateKey } from '../lib/logicalDate.js'
-import { fetchCalorieNeighbors } from '../lib/quizApi.js'
-import { QUIZ_FOOD_POOL } from '../lib/quizFoodPool.js'
+import { pickTodayTrivia } from '../lib/nutritionTrivia.js'
+import { NUTRITION_TRIVIA_POOL } from '../lib/nutritionTriviaPool.js'
 import { colors, font, radius, spacing } from '../styles/theme.js'
 
 const QUIZ_XP = 15
 const TIMER_MS = 10000
 const FEEDBACK_MS = 1200
 
-// MY 탭 — 식단 퀴즈 & 밸런스게임(FR-17). 오늘의 대상 음식(quizFoodPool.js)을 결정적으로 골라
-// "○○ 1인분과 칼로리가 비슷한 음식은?" 10초 제한 4지선다를 낸다. 정답이면 하루 1회 quest_claims에
-// 'special-quiz'로 기록하고(quest_claims의 (user_id,date,quest_id) 유니크 제약이 "하루 1회"를
-// 공짜로 보장) XP를 지급한다. 오답/시간초과는 페널티 없이 다시 도전할 수 있다(claimQuest를 호출하지
-// 않으므로 "오늘 시도를 소진"시키지 않음 — FR-16의 week-quiz-N 주간 퀘스트가 이 클레임 여부로
-// "이번 주 퀴즈 정답 일수"를 센다).
+// MY 탭 — 식단 퀴즈 & 밸런스게임(FR-17, 리텐션 강화 v4에서 상식 퀴즈로 전면 교체). 예전엔 MY 탭에
+// 들어오는 즉시 문제를 불러오고 10초 타이머가 바로 돌았지만, 지금은 "퀴즈 시작" 버튼을 눌러야만
+// 문제가 나오고 그때부터 타이머가 돈다. 정답이면 하루 1회 quest_claims에 'special-quiz'로 기록하고
+// (quest_claims의 (user_id,date,quest_id) 유니크 제약이 "하루 1회"를 공짜로 보장) XP를 지급한다.
+// 오답/시간초과는 페널티 없이 다시 도전할 수 있다(claimQuest를 호출하지 않으므로 "오늘 시도를
+// 소진"시키지 않음 — FR-16의 week-quiz-N 주간 퀘스트가 이 클레임 여부로 "이번 주 퀴즈 정답 일수"를 센다).
 export default function QuizCard() {
   const { effectiveUserId } = useUser()
-  const [state, setState] = useState('loading') // loading | ready | answered | completed | unavailable
-  const [quiz, setQuiz] = useState(null) // { food, dateKey, choices, correctIndex }
+  const [state, setState] = useState('checking') // checking | idle | ready | answered | completed | unavailable
+  const [quiz, setQuiz] = useState(null) // { id, question, choices, correctIndex, dateKey }
   const [selectedIndex, setSelectedIndex] = useState(null)
   const [barPercent, setBarPercent] = useState(100)
 
+  // 마운트 시엔 오늘 이미 완료했는지만 확인한다(문제 선택/타이머는 시작 버튼을 눌러야 시작).
   useEffect(() => {
     let cancelled = false
     async function init() {
       const dateKey = logicalDateKey(new Date())
       const claimed = await getClaimedQuestIds(dateKey).catch(() => [])
       if (cancelled) return
-      if (claimed.includes('special-quiz')) {
-        setState('completed')
-        return
-      }
-      const food = pickTodayQuizFood(QUIZ_FOOD_POOL, effectiveUserId, dateKey)
-      if (!food) {
-        setState('unavailable')
-        return
-      }
-      const data = await fetchCalorieNeighbors(food)
-      if (cancelled) return
-      const built = data ? buildQuizChoices(data.neighbors, data.farOptions, `${effectiveUserId}:${dateKey}`) : null
-      if (!built) {
-        setState('unavailable')
-        return
-      }
-      setQuiz({ food: data.targetFood, dateKey, ...built })
-      setSelectedIndex(null)
-      setState('ready')
+      setState(claimed.includes('special-quiz') ? 'completed' : 'idle')
     }
     init()
     return () => {
@@ -59,9 +42,21 @@ export default function QuizCard() {
     }
   }, [effectiveUserId])
 
+  function handleStart() {
+    const dateKey = logicalDateKey(new Date())
+    const trivia = pickTodayTrivia(NUTRITION_TRIVIA_POOL, effectiveUserId, dateKey)
+    if (!trivia) {
+      setState('unavailable')
+      return
+    }
+    setQuiz({ ...trivia, dateKey })
+    setSelectedIndex(null)
+    setState('ready')
+  }
+
   // 10초 카운트다운은 JS 인터벌이 아니라 CSS transition으로 그린다(프로젝트 모션 규칙 —
-  // transform만 애니메이션). 마운트 직후 100%에서 다음 틱에 0%로 값을 바꿔 10초짜리 transition이
-  // 걸리게 하고, 실제 "시간 초과" 판정은 별도 setTimeout 하나로 처리한다.
+  // transform만 애니메이션). "ready"가 되는 순간(=시작 버튼을 누른 순간)에만 걸리고, 마운트 시점엔
+  // 걸리지 않는다.
   useEffect(() => {
     if (state !== 'ready') return undefined
     setBarPercent(100)
@@ -101,7 +96,7 @@ export default function QuizCard() {
     }
   }
 
-  if (state === 'loading' || state === 'unavailable') return null
+  if (state === 'checking' || state === 'unavailable') return null
 
   return (
     <Card>
@@ -113,11 +108,16 @@ export default function QuizCard() {
         <p style={{ margin: 0, fontSize: font.size.sm, color: colors.textSub }}>
           오늘의 퀴즈를 완료했어요! 내일 새 문제로 만나요.
         </p>
-      ) : (
+      ) : state === 'idle' ? (
         <>
           <p style={{ margin: `0 0 ${spacing.md}px`, fontSize: font.size.sm, color: colors.textSub }}>
-            <strong style={{ color: colors.textStrong }}>{quiz.food}</strong> 1인분과 칼로리가 비슷한 음식은?
+            10초 안에 맞히면 XP를 받아요. 준비되면 시작해보세요!
           </p>
+          <AppButton onClick={handleStart}>퀴즈 시작</AppButton>
+        </>
+      ) : (
+        <>
+          <p style={{ margin: `0 0 ${spacing.md}px`, fontSize: font.size.sm, color: colors.textStrong, fontWeight: 600 }}>{quiz.question}</p>
           <div
             style={{
               height: 6,

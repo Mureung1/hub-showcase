@@ -12,10 +12,18 @@ import { get, set } from '../lib/storage.js'
 import * as dataStore from '../lib/dataStore.js'
 import { fetchWithTimeout } from '../lib/fetchWithTimeout.js'
 import { checkMigrationPrompt, declineMigration, migrateGuestData } from '../lib/guestMigration.js'
+import { applyStreakBonus, getLevelProgress } from '../lib/levelSystem.js'
 import { sumMealRecordsNutrients, sumNutrients } from '../lib/mealStore.js'
 import { calcAssumedRecommendedNutrients } from '../lib/nutrition.js'
+import { resolveAllClearBonuses } from '../lib/quests.js'
 import { toDateKey } from '../lib/records.js'
 import { supabase } from '../lib/supabase.js'
+import { findLevelPillRect, playXpFly } from '../lib/xpFlyAnimation.js'
+
+// claimQuestsAndCelebrate가 XP 획득 시 재생하는 "날아가는 +XP" 연출의 지속시간(xpFlyAnimation.js
+// 기본값과 동일) — setTimeout으로 totalXp state 반영/레벨업 팝업 노출을 이 시간만큼 늦춰, 숫자가
+// 애니메이션이 도착하는 시점에 맞춰 바뀌게 한다.
+const XP_FLY_DURATION_MS = 700
 
 export const UserContext = createContext(null)
 
@@ -38,6 +46,12 @@ export function UserProvider({ children }) {
   const [migrationPrompt, setMigrationPrompt] = useState(null) // { hasProfile, mealDayCount } | null
   const [migrating, setMigrating] = useState(false)
   const [migrationError, setMigrationError] = useState('')
+  // 게이미피케이션(FR-12, 리텐션 강화 v4) — totalXp/레벨업 팝업을 앱 전체가 공유하는 단일 소스로
+  // 여기 둔다. 예전엔 Analyze.jsx가 로컬 state로만 들고 있어 QuestBoard.jsx(MY 탭)의 마운트 시 자동
+  // 클레임은 화면에 아무 표시도 안 남았다 — claimQuestsAndCelebrate(아래)를 모든 클레임 경로가
+  // 공유하게 해서 어느 화면에서 완료하든 즉시 반영되게 한다.
+  const [totalXp, setTotalXp] = useState(0)
+  const [levelUpPopup, setLevelUpPopup] = useState(null) // { level } | null
 
   // 최초 진입 시 이미 있는 세션(새로고침·앱 재시작 등)을 복원하고, 이후 로그인/로그아웃/토큰 갱신을
   // 모두 이 한 리스너로 받는다(supabase-js가 세션을 localStorage에 유지하므로 PRD FR-1.2의 "자동
@@ -119,6 +133,20 @@ export function UserProvider({ children }) {
     }
   }, [currentUserId])
 
+  // 게스트<->로그인 전환 시 누적 XP도 다시 불러온다(신체정보/오늘 식단과 같은 패턴).
+  useEffect(() => {
+    let cancelled = false
+    dataStore
+      .getLevelState()
+      .then(({ totalXp: xp }) => {
+        if (!cancelled) setTotalXp(xp)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [currentUserId])
+
   const refetchTodayMeals = useCallback(async () => {
     setTodayMealsLoading(true)
     setTodayMealsError('')
@@ -173,6 +201,61 @@ export function UserProvider({ children }) {
     return null
   }, [recommended, tempSex])
   const isTempRecommended = Boolean(!recommended && tempSex)
+
+  const levelProgress = useMemo(() => getLevelProgress(totalXp), [totalXp])
+  const dismissLevelUpPopup = useCallback(() => setLevelUpPopup(null), [])
+
+  // 게이미피케이션 — 퀘스트 클레임을 부르는 모든 곳(useQuestBoard.js의 자동 클레임, 앞으로 추가될
+  // "기능 써보기" 마커 클레임 등)이 공유하는 단일 진입점. claimQuest 반복 호출 + 올클리어 보너스 +
+  // XP 애니메이션(playXpFly) + totalXp state 갱신(모든 useUser() 소비자가 즉시 재렌더) + 레벨업 팝업
+  // 세팅까지 한 번에 처리해, 어느 화면에서 클레임이 일어나든 항상 같은 피드백이 보이게 한다.
+  // authLoading 중에는 호출부(useQuestBoard.js)가 애초에 부르지 않지만, 방어적으로 한 번 더 막는다.
+  const claimQuestsAndCelebrate = useCallback(
+    async ({ newlyCompleted, dailyQuests, weeklyQuests, dailyClaimedIds, weeklyClaimedIds, dateKey, weekKey, streakCurrent }) => {
+      if (authLoading) return { dailyClaimedIds, weeklyClaimedIds, totalXp }
+
+      const { totalXp: totalXpBefore } = await dataStore.getLevelState()
+      let totalXpAfter = totalXpBefore
+      let nextDaily = dailyClaimedIds
+      let nextWeekly = weeklyClaimedIds
+
+      for (const quest of newlyCompleted ?? []) {
+        const xpAwarded = applyStreakBonus(quest.xp, streakCurrent)
+        const claimDateKey = quest.period === 'weekly' ? weekKey : dateKey
+        // eslint-disable-next-line no-await-in-loop
+        const result = await dataStore.claimQuest({ dateKey: claimDateKey, questId: quest.id, xpAwarded })
+        totalXpAfter = result.totalXp
+        if (quest.period === 'weekly') nextWeekly = [...nextWeekly, quest.id]
+        else nextDaily = [...nextDaily, quest.id]
+      }
+
+      const bonuses = resolveAllClearBonuses({ dailyQuests, dailyClaimedIds: nextDaily, weeklyQuests, weeklyClaimedIds: nextWeekly })
+      for (const bonus of bonuses) {
+        const xpAwarded = applyStreakBonus(bonus.xp, streakCurrent)
+        const claimDateKey = bonus.period === 'weekly' ? weekKey : dateKey
+        // eslint-disable-next-line no-await-in-loop
+        const result = await dataStore.claimQuest({ dateKey: claimDateKey, questId: bonus.id, xpAwarded })
+        totalXpAfter = result.totalXp
+        if (bonus.period === 'weekly') nextWeekly = [...nextWeekly, bonus.id]
+        else nextDaily = [...nextDaily, bonus.id]
+      }
+
+      if (totalXpAfter > totalXpBefore) {
+        const fromRect = { x: window.innerWidth / 2, y: window.innerHeight * 0.35 }
+        playXpFly({ fromRect, toRect: findLevelPillRect() ?? fromRect, amount: totalXpAfter - totalXpBefore })
+
+        const progressBefore = getLevelProgress(totalXpBefore)
+        const progressAfter = getLevelProgress(totalXpAfter)
+        setTimeout(() => {
+          setTotalXp(totalXpAfter)
+          if (progressAfter.level > progressBefore.level) setLevelUpPopup({ level: progressAfter.level })
+        }, XP_FLY_DURATION_MS)
+      }
+
+      return { dailyClaimedIds: nextDaily, weeklyClaimedIds: nextWeekly, totalXp: totalXpAfter }
+    },
+    [authLoading, totalXp],
+  )
 
   // 회원가입(PRD FR-1.1): 아이디/비밀번호/닉네임만 받아 즉시 가입 + 자동 로그인까지 끝낸다. 아이디는
   // authId.js의 규칙대로 인증용 이메일로 변환해 넘기고(그 이메일은 사용자에게 노출되지 않는다),
@@ -399,6 +482,11 @@ export function UserProvider({ children }) {
       migrationError,
       acceptGuestMigration,
       declineGuestMigration,
+      totalXp,
+      levelProgress,
+      levelUpPopup,
+      dismissLevelUpPopup,
+      claimQuestsAndCelebrate,
     }),
     [
       authUser,
@@ -432,6 +520,11 @@ export function UserProvider({ children }) {
       migrationError,
       acceptGuestMigration,
       declineGuestMigration,
+      totalXp,
+      levelProgress,
+      levelUpPopup,
+      dismissLevelUpPopup,
+      claimQuestsAndCelebrate,
     ],
   )
 

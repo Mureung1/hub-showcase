@@ -1,10 +1,18 @@
 import { useEffect, useRef } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import BottomTabBar from './BottomTabBar.jsx'
+import ChatBotSheet from './ChatBotSheet.jsx'
+import LevelUpPopup from './LevelUpPopup.jsx'
+import { useUser } from '../context/UserContext.jsx'
 import { navDirection } from '../lib/useTabTransition.js'
 import { colors, layout } from '../styles/theme.js'
 
 const TAB_BAR_CLEARANCE = 76 // 탭바(고정 위치)에 콘텐츠 마지막 줄이 가리지 않도록 확보하는 하단 여백
+
+// 챗봇 런처(리텐션 강화 v4)를 띄울 탭 — MY(/profile)는 제외. AppShell은 이 4개 외에도 /login·
+// /signup·/forgot-password(hideTabBar)와 /·/result·404에도 재사용되므로, "/profile만 제외" 대신
+// "이 4개만 허용"하는 화이트리스트로 짜야 로그인/가입/404 화면에 새어나가지 않는다.
+const CHATBOT_PATHS = ['/analyze', '/meals', '/calendar', '/map']
 
 // 탭별 스크롤 위치를 기억해 되돌아왔을 때 복원한다(PRD v2.0 §4의 "탭 전환 시 각 탭의 스크롤 위치가
 // 유지되는지 확인하고, 깨진다면 유지되도록 처리"). 라우트가 통째로 언마운트/마운트되는 구조라
@@ -20,6 +28,8 @@ export default function AppShell({ hideTabBar = false }) {
   const { pathname } = useLocation()
   const pathRef = useRef(pathname)
   pathRef.current = pathname
+  const { levelUpPopup, dismissLevelUpPopup } = useUser()
+  const showChatBot = CHATBOT_PATHS.some((p) => pathname.startsWith(p))
 
   // 슬라이드 방향을 <html data-nav-direction>에 반영한다. useTabTransition이 탭바 클릭 시 미리
   // 세팅하지만(View Transitions 스냅샷 전에 값이 있어야 하므로), 탭바를 거치지 않는 이동
@@ -63,6 +73,12 @@ export default function AppShell({ hideTabBar = false }) {
         <Outlet />
       </div>
       {!hideTabBar && <BottomTabBar />}
+      {/* 어느 탭에서 퀘스트를 클레임했든(홈의 runGamification, MY 탭 QuestBoard의 자동 클레임 등) 항상
+          같은 자리에서 레벨업 팝업이 뜨도록 레이아웃 라우트에 올려둔다 — Analyze.jsx 로컬 렌더에서 이동. */}
+      {levelUpPopup && <LevelUpPopup level={levelUpPopup.level} onDone={dismissLevelUpPopup} />}
+      {/* 챗봇도 같은 이유로 레이아웃 라우트에 올려 MY 탭을 제외한 4개 탭 어디서나 뜨게 한다(리텐션
+          강화 v4) — 예전엔 Analyze.jsx 안에서만 렌더됐다. */}
+      {showChatBot && <ChatBotSheet />}
     </div>
   )
 }

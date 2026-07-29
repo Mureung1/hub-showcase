@@ -40,3 +40,12 @@ export function playXpFly({ fromRect, toRect, amount, durationMs = 700 }) {
   })
   animation.onfinish = () => el.remove()
 }
+
+// 클레임이 어느 화면(홈의 LevelPill, MY 탭의 LevelCard)에서 일어났든 지금 실제로 마운트된 레벨 표시
+// 쪽으로 날아가게 한다 — 홈 화면이 열려 있으면 #home-level-pill, MY 탭이면 #my-level-pill, 둘 다
+// 없으면(레이아웃 전환 중 등) null을 돌려줘 호출부가 화면 중앙 같은 대체 좌표를 쓰게 한다.
+export function findLevelPillRect() {
+  if (typeof document === 'undefined') return null
+  const el = document.getElementById('home-level-pill') ?? document.getElementById('my-level-pill')
+  return el?.getBoundingClientRect() ?? null
+}

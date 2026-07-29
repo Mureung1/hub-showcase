@@ -34,19 +34,36 @@ function ctx(overrides = {}) {
     hasLabelScanItem: false,
     weekLoggedDays: 0,
     weekThreeMealDays: 0,
+    weekBreakfastDays: 0,
+    weekDinnerDays: 0,
     weekWaterMetDays: 0,
     weekSupplementDays: 0,
     weekSodiumOkDays: 0,
     weekLongestStreak: 0,
     weekQuizDays: 0,
+    weekProteinOkDays: 0,
+    weekCarbsOkDays: 0,
+    weekFatOkDays: 0,
+    weekFiberOkDays: 0,
+    weekCalorieOkDays: 0,
+    weekUniqueFoodCount: 0,
+    weekComboBuilderDays: 0,
+    weekMapDuelDays: 0,
     ...overrides,
   }
 }
 
 describe('DAILY_QUEST_POOL / WEEKLY_QUEST_POOL', () => {
-  it('일간 풀은 30개, 주간 풀은 20개다', () => {
-    expect(DAILY_QUEST_POOL).toHaveLength(30)
-    expect(WEEKLY_QUEST_POOL).toHaveLength(20)
+  it('일간 풀은 34개, 주간 풀은 36개다', () => {
+    expect(DAILY_QUEST_POOL).toHaveLength(34)
+    expect(WEEKLY_QUEST_POOL).toHaveLength(36)
+  })
+
+  it('모든 퀘스트가 category를 갖는다(로테이션 카테고리 상한 계산에 필요)', () => {
+    for (const quest of [...DAILY_QUEST_POOL, ...WEEKLY_QUEST_POOL]) {
+      expect(typeof quest.category).toBe('string')
+      expect(quest.category.length).toBeGreaterThan(0)
+    }
   })
 
   it('기존 7개 퀘스트 id가 그대로 보존된다(뱃지 시스템이 참조)', () => {
@@ -123,8 +140,61 @@ describe('evaluateQuest', () => {
     expect(evaluateQuest('week-quiz-3', ctx({ weekQuizDays: 3 }))).toBe(true)
   })
 
+  it('새로 추가된 주간 퀘스트(다양화)도 주간 카운터를 그대로 비교한다', () => {
+    expect(evaluateQuest('week-protein-3', ctx({ weekProteinOkDays: 2 }))).toBe(false)
+    expect(evaluateQuest('week-protein-3', ctx({ weekProteinOkDays: 3 }))).toBe(true)
+    expect(evaluateQuest('week-carbs-3', ctx({ weekCarbsOkDays: 3 }))).toBe(true)
+    expect(evaluateQuest('week-fat-3', ctx({ weekFatOkDays: 3 }))).toBe(true)
+    expect(evaluateQuest('week-fiber-3', ctx({ weekFiberOkDays: 3 }))).toBe(true)
+    expect(evaluateQuest('week-calorie-5', ctx({ weekCalorieOkDays: 4 }))).toBe(false)
+    expect(evaluateQuest('week-calorie-5', ctx({ weekCalorieOkDays: 5 }))).toBe(true)
+    expect(evaluateQuest('week-variety-5', ctx({ weekUniqueFoodCount: 4 }))).toBe(false)
+    expect(evaluateQuest('week-variety-5', ctx({ weekUniqueFoodCount: 5 }))).toBe(true)
+    expect(evaluateQuest('week-try-combo', ctx({ weekComboBuilderDays: 1 }))).toBe(true)
+    expect(evaluateQuest('week-try-mapduel', ctx({ weekMapDuelDays: 1 }))).toBe(true)
+  })
+
+  it('리텐션 강화 v5에서 새로 추가된 daily/weekly 퀘스트도 정상 판정된다', () => {
+    expect(evaluateQuest('carbs-50', ctx({ todayTotal: { carbs: 150 } }))).toBe(true) // 300의 50%
+    expect(evaluateQuest('carbs-100', ctx({ todayTotal: { carbs: 200 } }))).toBe(false)
+    expect(evaluateQuest('carbs-100', ctx({ todayTotal: { carbs: 300 } }))).toBe(true)
+    expect(evaluateQuest('fiber-50', ctx({ todayTotal: { fiber: 12 } }))).toBe(false) // 25의 50%=12.5
+    expect(evaluateQuest('fiber-50', ctx({ todayTotal: { fiber: 13 } }))).toBe(true)
+    expect(evaluateQuest('fat-50', ctx({ todayTotal: { fat: 29 } }))).toBe(false) // 60의 50%=30
+    expect(evaluateQuest('fat-50', ctx({ todayTotal: { fat: 30 } }))).toBe(true)
+
+    expect(evaluateQuest('week-breakfast-3', ctx({ weekBreakfastDays: 2 }))).toBe(false)
+    expect(evaluateQuest('week-breakfast-3', ctx({ weekBreakfastDays: 3 }))).toBe(true)
+    expect(evaluateQuest('week-dinner-3', ctx({ weekDinnerDays: 3 }))).toBe(true)
+    expect(evaluateQuest('week-streak-3', ctx({ weekLongestStreak: 2 }))).toBe(false)
+    expect(evaluateQuest('week-streak-3', ctx({ weekLongestStreak: 3 }))).toBe(true)
+    expect(evaluateQuest('week-quiz-1', ctx({ weekQuizDays: 1 }))).toBe(true)
+    expect(evaluateQuest('week-try-both', ctx({ weekComboBuilderDays: 1, weekMapDuelDays: 0 }))).toBe(false)
+    expect(evaluateQuest('week-try-both', ctx({ weekComboBuilderDays: 1, weekMapDuelDays: 1 }))).toBe(true)
+  })
+
   it('알 수 없는 id는 false', () => {
     expect(evaluateQuest('nonexistent', ctx())).toBe(false)
+  })
+})
+
+describe('selectRotation 카테고리 상한(같은 행동 미션 최대 2개)', () => {
+  it('일간 로테이션은 어떤 시드에서도 같은 카테고리가 2개를 넘지 않는다', () => {
+    for (let i = 0; i < 40; i++) {
+      const daily = selectDailyQuests('2026-07-29', `user-${i}`, 3)
+      const counts = {}
+      for (const q of daily) counts[q.category] = (counts[q.category] ?? 0) + 1
+      expect(Object.values(counts).every((c) => c <= 2)).toBe(true)
+    }
+  })
+
+  it('주간 로테이션도 같은 카테고리가 2개를 넘지 않는다', () => {
+    for (let i = 0; i < 40; i++) {
+      const weekly = selectWeeklyQuests('2026-07-27', `user-${i}`, 5)
+      const counts = {}
+      for (const q of weekly) counts[q.category] = (counts[q.category] ?? 0) + 1
+      expect(Object.values(counts).every((c) => c <= 2)).toBe(true)
+    }
   })
 })
 
@@ -147,6 +217,10 @@ describe('selectDailyQuests / selectWeeklyQuests', () => {
     expect(weekly.every((q) => weeklyIds.has(q.id))).toBe(true)
   })
 
+  it('n을 생략하면 주간은 기본 5개를 반환한다', () => {
+    expect(selectWeeklyQuests('2026-07-27', 'u1')).toHaveLength(5)
+  })
+
   it('사용자가 다르면 대체로 다른 조합이 나온다', () => {
     const a = selectDailyQuests('2026-07-29', 'u1', 3).map((q) => q.id)
     const b = selectDailyQuests('2026-07-29', 'u2', 3).map((q) => q.id)
@@ -166,7 +240,7 @@ describe('getQuestBoard', () => {
   it('daily/weekly 각각 completed/claimed 상태를 붙여 반환한다', () => {
     const board = getQuestBoard(ctx({ mealCount: 1 }), opts)
     expect(board.daily).toHaveLength(3)
-    expect(board.weekly).toHaveLength(3)
+    expect(board.weekly).toHaveLength(5)
     expect(board.daily.every((q) => typeof q.completed === 'boolean' && typeof q.claimed === 'boolean')).toBe(true)
   })
 
@@ -201,7 +275,8 @@ describe('findNewlyCompletedAutoQuests', () => {
   })
 
   it('로테이션 밖의 퀘스트는 조건을 만족해도 절대 포함되지 않는다', () => {
-    // 모든 daily/weekly 조건을 만족시키는 풍부한 ctx를 줘도, 결과는 항상 그날/그주 로테이션(3개씩) 이내다.
+    // 모든 daily/weekly 조건을 만족시키는 풍부한 ctx를 줘도, 결과는 항상 그날(3개)/그주(5개)
+    // 로테이션 이내다.
     const richCtx = ctx({
       mealCount: 3,
       todayTotal: { protein: 60, sodium: 1000, carbs: 300, fat: 55, fiber: 25, calories: 2000 },
@@ -221,10 +296,20 @@ describe('findNewlyCompletedAutoQuests', () => {
       weekSodiumOkDays: 5,
       weekLongestStreak: 5,
       weekQuizDays: 5,
+      weekProteinOkDays: 7,
+      weekCarbsOkDays: 7,
+      weekFatOkDays: 7,
+      weekFiberOkDays: 7,
+      weekCalorieOkDays: 7,
+      weekUniqueFoodCount: 10,
+      weekComboBuilderDays: 1,
+      weekMapDuelDays: 1,
+      weekBreakfastDays: 7,
+      weekDinnerDays: 7,
     })
     const result = findNewlyCompletedAutoQuests(richCtx, opts)
     expect(result.filter((q) => q.period === 'daily')).toHaveLength(3)
-    expect(result.filter((q) => q.period === 'weekly')).toHaveLength(3)
+    expect(result.filter((q) => q.period === 'weekly')).toHaveLength(5)
   })
 })
 
@@ -271,6 +356,50 @@ describe('buildWeeklyStats', () => {
     expect(stats.weekWaterMetDays).toBe(1)
     expect(stats.weekSupplementDays).toBe(1)
     expect(stats.weekQuizDays).toBe(1)
+  })
+
+  it('새로 추가된 영양소/다양성/기능사용 집계도 정확히 카운트한다', () => {
+    const days = [
+      {
+        dayNumber: 100,
+        mealCount: 1,
+        proteinOk: true,
+        carbsOk: true,
+        fatOk: true,
+        fiberOk: true,
+        calorieOk: true,
+        breakfast: true,
+        dinner: false,
+        foodNames: ['김치찌개', '공기밥'],
+        usedComboBuilder: true,
+        usedMapDuel: false,
+      },
+      {
+        dayNumber: 101,
+        mealCount: 1,
+        proteinOk: false,
+        carbsOk: true,
+        fatOk: false,
+        fiberOk: true,
+        calorieOk: false,
+        breakfast: false,
+        dinner: true,
+        foodNames: ['공기밥', '라면'],
+        usedComboBuilder: false,
+        usedMapDuel: true,
+      },
+    ]
+    const stats = buildWeeklyStats(days)
+    expect(stats.weekProteinOkDays).toBe(1)
+    expect(stats.weekCarbsOkDays).toBe(2)
+    expect(stats.weekFatOkDays).toBe(1)
+    expect(stats.weekFiberOkDays).toBe(2)
+    expect(stats.weekCalorieOkDays).toBe(1)
+    expect(stats.weekBreakfastDays).toBe(1)
+    expect(stats.weekDinnerDays).toBe(1)
+    expect(stats.weekUniqueFoodCount).toBe(3) // 김치찌개/공기밥/라면 — 공기밥 중복 제거
+    expect(stats.weekComboBuilderDays).toBe(1)
+    expect(stats.weekMapDuelDays).toBe(1)
   })
 
   it('연속 기록일수(weekLongestStreak)를 정확히 계산한다', () => {

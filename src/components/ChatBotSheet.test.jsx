@@ -67,6 +67,19 @@ describe('ChatBotSheet', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 
+  it('메시지마다 DM처럼 아바타와 이름표를 보여준다(리텐션 강화 v4)', async () => {
+    sendChatMessage.mockResolvedValue('오늘 단백질이 조금 부족해요.')
+    render(<ChatBotSheet />)
+    fireEvent.click(screen.getByRole('button', { name: '영양 상담 챗봇 열기' }))
+
+    fireEvent.change(screen.getByPlaceholderText('예: 오늘 저녁 뭐 먹을까요?'), { target: { value: '오늘 단백질 어때요?' } })
+    fireEvent.click(screen.getByRole('button', { name: '보내기' }))
+
+    await screen.findByText('오늘 단백질이 조금 부족해요.')
+    expect(screen.getByText('나')).toBeInTheDocument()
+    expect(screen.getByText('Meal-Bot')).toBeInTheDocument()
+  })
+
   it('연속 입력 중에도 입력창 포커스가 유지된다(한글 조합 깨짐 회귀 방지)', () => {
     render(<ChatBotSheet />)
     fireEvent.click(screen.getByRole('button', { name: '영양 상담 챗봇 열기' }))

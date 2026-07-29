@@ -1,98 +1,65 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import QuestBoard from './QuestBoard.jsx'
-import { useUser } from '../context/UserContext.jsx'
-import { claimQuest, getClaimedQuestIds, getMealsByDateRange } from '../lib/dataStore.js'
-import { findNewlyCompletedAutoQuests, getQuestBoard, resolveAllClearBonuses } from '../lib/quests.js'
+import { useQuestBoard } from '../lib/useQuestBoard.js'
 
-vi.mock('../context/UserContext.jsx', () => ({ useUser: vi.fn() }))
-vi.mock('../lib/dataStore.js', () => ({
-  claimQuest: vi.fn(),
-  getClaimedQuestIds: vi.fn(),
-  getMealsByDateRange: vi.fn(),
-}))
-vi.mock('../lib/quests.js', () => ({
-  buildItemFlags: vi.fn(() => ({})),
-  buildWeeklyStats: vi.fn(() => ({})),
-  findNewlyCompletedAutoQuests: vi.fn(() => []),
-  getQuestBoard: vi.fn(),
-  resolveAllClearBonuses: vi.fn(() => []),
-  selectDailyQuests: vi.fn(() => []),
-  selectWeeklyQuests: vi.fn(() => []),
-}))
+// QuestBoard.jsx는 리텐션 강화 v4부터 조회+자동클레임 로직을 전부 useQuestBoard.js(HomeQuestCard.jsx와
+// 공유)로 옮기고 순수 프레젠테이션만 남았다 — 그 훅 자체의 동작(authLoading 게이팅, 자동클레임 등)은
+// useQuestBoard.test.jsx가 검증하므로, 여기서는 훅을 모킹해 렌더 결과만 확인한다.
+vi.mock('../lib/useQuestBoard.js', () => ({ useQuestBoard: vi.fn() }))
 
 function quest(overrides = {}) {
   return { id: 'q', title: '퀘스트', description: '설명', xp: 10, completed: false, claimed: false, ...overrides }
 }
 
-function emptyBoard(overrides = {}) {
+function board(overrides = {}) {
   return { daily: [], weekly: [], dailyAllClear: false, weeklyAllClear: false, ...overrides }
 }
 
 describe('QuestBoard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    localStorage.clear()
-    useUser.mockReturnValue({
-      effectiveUserId: 'u1',
-      todayMeals: [],
-      todayMealsTotal: {},
-      effectiveRecommended: { protein: 60, sodium: 2000 },
-      profile: { weightKg: 60, activity: 'moderate' },
-    })
-    getMealsByDateRange.mockResolvedValue({})
-    getClaimedQuestIds.mockResolvedValue([])
-    claimQuest.mockResolvedValue({ totalXp: 100 })
-    getQuestBoard.mockReturnValue(emptyBoard())
-    findNewlyCompletedAutoQuests.mockReturnValue([])
-    resolveAllClearBonuses.mockReturnValue([])
   })
 
-  it('오늘/이번 주 퀘스트 섹션과 각 항목을 렌더한다', async () => {
-    getQuestBoard.mockReturnValue(
-      emptyBoard({
+  it('board가 없으면(로딩 중) 아무 것도 그리지 않는다', () => {
+    useQuestBoard.mockReturnValue({ board: null, refresh: vi.fn(), loading: true })
+    const { container } = render(<QuestBoard />)
+    expect(container).toBeEmptyDOMElement()
+  })
+
+  it('오늘/이번 주 퀘스트 섹션과 각 항목을 렌더한다', () => {
+    useQuestBoard.mockReturnValue({
+      board: board({
         daily: [quest({ id: 'd1', title: '오늘 한 끼 기록', claimed: true }), quest({ id: 'd2' }), quest({ id: 'd3' })],
-        weekly: [quest({ id: 'w1' }), quest({ id: 'w2' }), quest({ id: 'w3' })],
+        weekly: [quest({ id: 'w1' }), quest({ id: 'w2' }), quest({ id: 'w3' }), quest({ id: 'w4' }), quest({ id: 'w5' })],
       }),
-    )
+      refresh: vi.fn(),
+      loading: false,
+    })
     render(<QuestBoard />)
 
-    await waitFor(() => expect(screen.getByText('오늘의 퀘스트')).toBeInTheDocument())
+    expect(screen.getByText('오늘의 퀘스트')).toBeInTheDocument()
     expect(screen.getByText('이번 주 퀘스트')).toBeInTheDocument()
     expect(screen.getByText('오늘 한 끼 기록')).toBeInTheDocument()
     expect(screen.getAllByText('완료 ✓')).toHaveLength(1)
-    expect(screen.getAllByText('진행 중')).toHaveLength(5)
+    expect(screen.getAllByText('진행 중')).toHaveLength(7)
   })
 
-  it('dailyAllClear/weeklyAllClear이면 각각의 배너 문구를 보여준다', async () => {
-    getQuestBoard.mockReturnValue(emptyBoard({ dailyAllClear: true, weeklyAllClear: true }))
+  it('dailyAllClear/weeklyAllClear이면 각각의 배너 문구를 보여준다', () => {
+    useQuestBoard.mockReturnValue({
+      board: board({ dailyAllClear: true, weeklyAllClear: true }),
+      refresh: vi.fn(),
+      loading: false,
+    })
     render(<QuestBoard />)
 
-    await waitFor(() => expect(screen.getByText(/오늘의 퀘스트를 모두 완료했어요/)).toBeInTheDocument())
+    expect(screen.getByText(/오늘의 퀘스트를 모두 완료했어요/)).toBeInTheDocument()
     expect(screen.getByText(/이번 주 퀘스트를 모두 완료했어요/)).toBeInTheDocument()
   })
 
-  it('마운트 시 새로 완료된 퀘스트를 조용히 수령한다', async () => {
-    findNewlyCompletedAutoQuests.mockReturnValue([{ id: 'first-meal-today', xp: 10, period: 'daily' }])
+  it('weeklyCount:5로 훅을 호출한다', () => {
+    useQuestBoard.mockReturnValue({ board: board(), refresh: vi.fn(), loading: false })
     render(<QuestBoard />)
-
-    await waitFor(() =>
-      expect(claimQuest).toHaveBeenCalledWith(expect.objectContaining({ questId: 'first-meal-today', xpAwarded: 10 })),
-    )
-  })
-
-  it('일간/주간 로테이션을 전부 수령하면 올클리어 보너스도 함께 수령한다', async () => {
-    resolveAllClearBonuses.mockReturnValue([{ id: 'daily-all-clear', xp: 10, period: 'daily' }])
-    render(<QuestBoard />)
-
-    await waitFor(() =>
-      expect(claimQuest).toHaveBeenCalledWith(expect.objectContaining({ questId: 'daily-all-clear', xpAwarded: 10 })),
-    )
-  })
-
-  it('완료된 퀘스트가 없으면 claimQuest를 호출하지 않는다', async () => {
-    render(<QuestBoard />)
-    await waitFor(() => expect(screen.queryByText('오늘의 퀘스트')).toBeInTheDocument())
-    expect(claimQuest).not.toHaveBeenCalled()
+    expect(useQuestBoard).toHaveBeenCalledWith({ weeklyCount: 5 })
   })
 })

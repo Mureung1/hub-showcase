@@ -142,6 +142,38 @@ a {
   animation: tds-levelup-badge-in 480ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* 챗봇 런처(리텐션 강화 v4) — "존재감 강화" 요청에 따라 은은한 펄스 링을 무한 반복한다
+   (transform+opacity만, colors.primary 하나만 써 theme.js의 단일 포인트 컬러 원칙을 지킨다). */
+@keyframes tds-chatbot-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+.tds-chatbot-pulse {
+  animation: tds-chatbot-pulse 2.2s ease-out infinite;
+}
+
+/* 리더보드 시상대(리텐션 강화 v4) 등장 — 블록마다 약간의 지연(animation-delay, 컴포넌트에서 지정)을
+   줘 순서대로 튀어 오르는 느낌을 준다(transform+opacity만). */
+@keyframes tds-podium-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tds-podium-in {
+  animation: tds-podium-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 /* 화면 전환 — 폴백 경로(View Transitions 미지원 브라우저).
    들어오는 화면만 방향대로 슬라이드-인 한다. 방향은 <html data-nav-direction>이 정한다. */
 @keyframes tds-screen-in-forward {
@@ -279,6 +311,12 @@ a {
     animation: tds-fade-in 150ms ease-out;
   }
   .tds-tab-bounce {
+    animation: none;
+  }
+  .tds-chatbot-pulse {
+    animation: none;
+  }
+  .tds-podium-in {
     animation: none;
   }
   .tds-press,

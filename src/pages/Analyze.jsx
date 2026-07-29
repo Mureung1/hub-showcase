@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import AnalysisResultCard from '../components/AnalysisResultCard.jsx'
-import ChatBotSheet from '../components/ChatBotSheet.jsx'
 import CustomComboBuilder from '../components/CustomComboBuilder.jsx'
-import DailyMissionCard from '../components/DailyMissionCard.jsx'
+import HomeQuestCard from '../components/HomeQuestCard.jsx'
 import PhotoUpload from '../components/PhotoUpload.jsx'
 import LabelScan from '../components/LabelScan.jsx'
 import LevelPill from '../components/LevelPill.jsx'
-import LevelUpPopup from '../components/LevelUpPopup.jsx'
 import Spinner from '../components/Spinner.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import AppButton from '../components/AppButton.jsx'
@@ -23,9 +21,7 @@ import { evaluateBadges } from '../lib/badgeSystem.js'
 import { cacheProduct } from '../lib/barcodeCache.js'
 import { playConfetti } from '../lib/confetti.js'
 import {
-  claimQuest,
   getClaimedQuestIds,
-  getLevelState,
   getMealsByDateRange,
   getQuestClaimStats,
   getUnlockedBadgeIds,
@@ -35,24 +31,16 @@ import { pickBestFoodMatch, searchFoodDB } from '../lib/fooddb.js'
 import { normalizeFoodSearchName } from '../lib/foodNameMap.js'
 import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
 import { GEMINI_TEMPERATURE, IDENTIFICATION_SCHEMA, LABEL_SCAN_SCHEMA } from '../lib/geminiSchemas.js'
-import { applyStreakBonus, getLevelProgress } from '../lib/levelSystem.js'
+import { getLevelProgress } from '../lib/levelSystem.js'
 import { logicalDateKey, logicalWeekKey } from '../lib/logicalDate.js'
 import { getRecommendedMealType, MEAL_TYPE_LABELS } from '../lib/mealType.js'
 import { sumMealRecordsNutrients, sumNutrients } from '../lib/mealStore.js'
-import { isMet } from '../lib/nutrientCriteria.js'
-import {
-  buildItemFlags,
-  buildWeeklyStats,
-  findNewlyCompletedAutoQuests,
-  resolveAllClearBonuses,
-  selectDailyQuests,
-  selectWeeklyQuests,
-} from '../lib/quests.js'
+import { buildItemFlags, buildWeeklyStats, findNewlyCompletedAutoQuests, selectDailyQuests, selectWeeklyQuests } from '../lib/quests.js'
+import { buildWeekDays } from '../lib/questWeekContext.js'
 import { toDateKey } from '../lib/records.js'
 import { calcStreak } from '../lib/streak.js'
 import { useDocumentTitle } from '../lib/useDocumentTitle.js'
 import { getWaterIntake, getWaterTargetMl } from '../lib/waterIntake.js'
-import { playXpFly } from '../lib/xpFlyAnimation.js'
 import {
   clampEstimatedGrams,
   clampToPlausibleNutrients,
@@ -74,23 +62,6 @@ function daysAgo(n) {
   const d = new Date()
   d.setDate(d.getDate() - n)
   return d
-}
-
-// FR-16 — 주간 퀘스트 집계용 헬퍼. QuestBoard.jsx와 동일한 로직을 별도로 갖는다(quests.js는 순수
-// 함수만 두는 계약이라 I/O 루프는 호출부마다 둔다 — daysAgo 중복 정의와 같은 결).
-function dateKeyToDayNumber(dateKey) {
-  const [y, m, d] = dateKey.split('-').map(Number)
-  return Math.floor(Date.UTC(y, m - 1, d) / 86400000)
-}
-
-function weekDateKeys(weekKey) {
-  const [y, m, d] = weekKey.split('-').map(Number)
-  const monday = new Date(y, m - 1, d)
-  return Array.from({ length: 7 }, (_, i) => {
-    const day = new Date(monday)
-    day.setDate(monday.getDate() + i)
-    return toDateKey(day)
-  })
 }
 
 // AI에게는 "무슨 음식인지"와 "양"만 판단시킨다. 실제 영양수치는 이후 식약처 DB 조회로 채우고,
@@ -552,7 +523,19 @@ const STATUS = {
 
 export default function Analyze() {
   useDocumentTitle('홈')
-  const { authUser, profile, tempSex, addTodayMeal, setTempSex, effectiveRecommended, effectiveUserId, todayMeals } = useUser()
+  const {
+    authUser,
+    profile,
+    tempSex,
+    addTodayMeal,
+    setTempSex,
+    effectiveRecommended,
+    effectiveUserId,
+    todayMeals,
+    authLoading,
+    totalXp,
+    claimQuestsAndCelebrate,
+  } = useUser()
   const { showToast } = useToast()
   const navigate = useNavigate()
   const location = useLocation()
@@ -574,24 +557,6 @@ export default function Analyze() {
   // PhotoUpload는 미리보기를 내부 state로 들고 있어서 부모가 직접 지울 수 없다. "다시 찍기"에서 이 값을
   // 올려 컴포넌트를 새로 마운트시키는 방식으로 초기화한다.
   const [photoResetKey, setPhotoResetKey] = useState(0)
-
-  // 게이미피케이션(FR-12) — 홈 화면 상시 노출 레벨 표시(LevelPill)와 레벨업 팝업. totalXp는 이 화면이
-  // 직접 들고 있어야 끼니 저장 직후 XP 지급 결과를 애니메이션과 함께 정확한 전/후 값으로 반영할 수
-  // 있다(LevelCard.jsx는 MY 탭 방문 시점의 값만 보여주면 되는 것과 다른 이유).
-  const [totalXp, setTotalXp] = useState(0)
-  const [levelUpPopup, setLevelUpPopup] = useState(null) // { level } | null
-
-  useEffect(() => {
-    let cancelled = false
-    getLevelState()
-      .then(({ totalXp: xp }) => {
-        if (!cancelled) setTotalXp(xp)
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [effectiveUserId])
 
   // 결과 카드 썸네일용. 사진 경로면 분석에 쓴 사진, 라벨 스캔이면 스캔한 사진, 텍스트 경로면 null이다.
   // PhotoUpload가 canvas.toDataURL로 만든 **data URL**이라 URL.revokeObjectURL 대상이 아니다
@@ -756,6 +721,10 @@ export default function Analyze() {
   // useUser()의 todayMeals는 이 함수 호출 시점의 렌더 클로저 값(저장 전 상태)이라, 방금 만든 record를
   // 직접 합쳐야 "오늘 이 끼니까지 포함한" 정확한 값이 나온다.
   async function runGamification(record) {
+    // 세션 복원이 끝나기 전(authLoading)이면 effectiveUserId가 게스트에서 실제 uid로 곧 바뀔 수 있어,
+    // 지금 계산하면 잘못된 시드로 퀘스트 로테이션이 캐시된다(useQuestBoard.js 헤더 주석과 같은 이유).
+    // 이번 저장은 게이미피케이션을 건너뛰고, 다음 저장이나 MY 탭 방문 때 자연히 다시 잡힌다.
+    if (authLoading) return
     try {
       const now = new Date()
       const dateKey = logicalDateKey(now)
@@ -772,25 +741,14 @@ export default function Analyze() {
       const water = getWaterIntake(effectiveUserId, todayCalendarKey)
       const itemFlags = buildItemFlags(mergedMeals)
 
-      const days = []
-      for (const dayKey of weekDateKeys(weekKey).filter((k) => k <= todayCalendarKey)) {
-        const meals = dayKey === todayCalendarKey ? mergedMeals : (byDate[dayKey] ?? [])
-        const mealCount = meals.length
-        const types = new Set(meals.map((m) => m.mealType))
-        const total = sumMealRecordsNutrients(meals)
-        const dayWater = dayKey === todayCalendarKey ? water : getWaterIntake(effectiveUserId, dayKey)
-        // eslint-disable-next-line no-await-in-loop
-        const dayClaimed = await getClaimedQuestIds(dayKey)
-        days.push({
-          dayNumber: dateKeyToDayNumber(dayKey),
-          mealCount,
-          threeMeals: ['breakfast', 'lunch', 'dinner'].every((t) => types.has(t)),
-          sodiumOk: mealCount > 0 && isMet('sodium', total.sodium, effectiveRecommended?.sodium),
-          waterMet: dayWater.mlConsumed >= targetMl * 0.8,
-          supplementTaken: dayWater.supplementTaken,
-          quizSuccess: dayClaimed.includes('special-quiz'),
-        })
-      }
+      const days = await buildWeekDays({
+        weekKey,
+        todayCalendarKey,
+        mealsForDate: (dayKey) => (dayKey === todayCalendarKey ? mergedMeals : (byDate[dayKey] ?? [])),
+        effectiveUserId,
+        targetMl,
+        effectiveRecommended,
+      })
 
       const ctx = {
         mealCount: mergedMeals.length,
@@ -805,8 +763,8 @@ export default function Analyze() {
         ...buildWeeklyStats(days),
       }
 
-      let dailyClaimedIds = await getClaimedQuestIds(dateKey)
-      let weeklyClaimedIds = await getClaimedQuestIds(weekKey)
+      const dailyClaimedIds = await getClaimedQuestIds(dateKey)
+      const weeklyClaimedIds = await getClaimedQuestIds(weekKey)
       const newlyCompleted = findNewlyCompletedAutoQuests(ctx, {
         dateKey,
         weekKey,
@@ -815,42 +773,20 @@ export default function Analyze() {
         weeklyClaimedIds,
       })
 
-      const { totalXp: totalXpBefore } = await getLevelState()
-      let totalXpAfter = totalXpBefore
-      for (const quest of newlyCompleted) {
-        const xpAwarded = applyStreakBonus(quest.xp, streak.current)
-        const claimDateKey = quest.period === 'weekly' ? weekKey : dateKey
-        const result = await claimQuest({ dateKey: claimDateKey, questId: quest.id, xpAwarded })
-        totalXpAfter = result.totalXp
-        if (quest.period === 'weekly') weeklyClaimedIds = [...weeklyClaimedIds, quest.id]
-        else dailyClaimedIds = [...dailyClaimedIds, quest.id]
-      }
-
       const dailyQuests = selectDailyQuests(dateKey, effectiveUserId)
       const weeklyQuests = selectWeeklyQuests(weekKey, effectiveUserId)
-      const bonuses = resolveAllClearBonuses({ dailyQuests, dailyClaimedIds, weeklyQuests, weeklyClaimedIds })
-      for (const bonus of bonuses) {
-        const xpAwarded = applyStreakBonus(bonus.xp, streak.current)
-        const claimDateKey = bonus.period === 'weekly' ? weekKey : dateKey
-        const result = await claimQuest({ dateKey: claimDateKey, questId: bonus.id, xpAwarded })
-        totalXpAfter = result.totalXp
-      }
-
-      const xpGained = totalXpAfter - totalXpBefore
-      if (xpGained > 0) {
-        const fromRect = { x: window.innerWidth / 2, y: window.innerHeight * 0.35 }
-        const toRect = document.getElementById('home-level-pill')?.getBoundingClientRect() ?? fromRect
-        playXpFly({ fromRect, toRect, amount: xpGained })
-
-        const progressBefore = getLevelProgress(totalXpBefore)
-        const progressAfter = getLevelProgress(totalXpAfter)
-        setTimeout(() => {
-          setTotalXp(totalXpAfter)
-          if (progressAfter.level > progressBefore.level) {
-            setLevelUpPopup({ level: progressAfter.level })
-          }
-        }, 700)
-      }
+      // UserContext.jsx의 공유 진입점 — claimQuest 반복 호출 + 올클리어 보너스 + XP 애니메이션 +
+      // totalXp state 갱신 + 레벨업 팝업까지 한 번에 처리한다(어느 화면에서 클레임이 일어나든 동일).
+      const { totalXp: totalXpAfter } = await claimQuestsAndCelebrate({
+        newlyCompleted,
+        dailyQuests,
+        weeklyQuests,
+        dailyClaimedIds,
+        weeklyClaimedIds,
+        dateKey,
+        weekKey,
+        streakCurrent: streak.current,
+      })
 
       // XP 정산 이후 뱃지 조건을 확인한다(레벨 상승분이 이번에 딴 뱃지에 반영되도록).
       const questStats = await getQuestClaimStats()
@@ -942,7 +878,7 @@ export default function Analyze() {
       {/* 연속 기록 배지 + 오늘의 미션(트랙 1) — 연속이 0일이거나 recommended가 없으면(위
           SexPromptCard가 뜬 상태) 각자 스스로 아무 것도 그리지 않으므로 중복/공허한 안내가 되지 않는다. */}
       <StreakBadge />
-      <DailyMissionCard />
+      <HomeQuestCard />
 
       {/* 분석 중에는 탭을 바꿔 결과가 뒤섞이지 않게 잠근다. */}
       <ModeTabs mode={mode} onChange={setMode} disabled={status !== STATUS.IDLE} />
@@ -1036,9 +972,6 @@ export default function Analyze() {
         />
       )}
 
-      <ChatBotSheet />
-
-      {levelUpPopup && <LevelUpPopup level={levelUpPopup.level} onDone={() => setLevelUpPopup(null)} />}
     </div>
   )
 }

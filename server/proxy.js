@@ -13,7 +13,7 @@ import { findSecurityQuestion, normalizeSecurityAnswer, validateQuestionId, vali
 import { isSupportedUniversity } from '../src/lib/universities.js'
 import { getSecurityQuestionByLoginId, registerSecurityQuestion, verifyAndResetPassword } from './auth/securityQuestionStore.js'
 import * as cnuUnivMealAdapter from './univMealAdapters/cnu.js'
-import { findByCaloriesNear, listByCategory, lookupFood, toFoodItemResponse } from './nutrition/foodLookup.js'
+import { lookupFood, toFoodItemResponse } from './nutrition/foodLookup.js'
 import { analyzeTray } from './nutrition/precisionEngine.js'
 import { getSupabaseAdmin } from './supabaseAdmin.js'
 
@@ -463,42 +463,6 @@ app.get('/api/food-serving', (req, res) => {
     return res.json({ servingGram: null, matched: false, matchType: null })
   }
   res.json({ servingGram: result.item.servingGram ?? null, matched: true, matchType: result.matchType })
-})
-
-// GET /api/quiz/calorie-neighbors?food=◯◯ - FR-17 식단 퀴즈용 1인분 칼로리 근접/원거리 후보 조회.
-// 외부 API 호출·과금 없이 서버 메모리(foodDB.json)만 조회하므로 /api/food-serving과 동일하게
-// 전역 apiLimiter만 적용한다(전용 리미터 불필요).
-app.get('/api/quiz/calorie-neighbors', (req, res) => {
-  if (typeof req.query.food !== 'string') {
-    return res.status(400).json({ error: 'food is required' })
-  }
-  const food = req.query.food.trim()
-  if (!food) {
-    return res.status(400).json({ error: 'food is required' })
-  }
-  res.set('Cache-Control', 'no-store')
-
-  const result = findByCaloriesNear(food)
-  if (!result) {
-    return res.status(404).json({ error: '해당 음식을 찾을 수 없습니다' })
-  }
-  res.json(result)
-})
-
-// GET /api/food-items?category=◯◯&q=◯◯&limit=30 - FR-19 커스텀 조합 빌더용 카테고리별 재료 목록.
-// 서버 메모리(foodDB.json) 조회뿐이라 전역 apiLimiter만 적용한다.
-const FOOD_ITEM_CATEGORIES = new Set(['side', 'soup', 'kimchi', 'main', 'rice', 'dessert', 'drink', 'noodle'])
-app.get('/api/food-items', (req, res) => {
-  const category = typeof req.query.category === 'string' ? req.query.category.trim() : ''
-  if (!FOOD_ITEM_CATEGORIES.has(category)) {
-    return res.status(400).json({ error: `category는 다음 중 하나여야 합니다: ${[...FOOD_ITEM_CATEGORIES].join(', ')}` })
-  }
-  const q = typeof req.query.q === 'string' ? req.query.q.trim() : ''
-  const limitRaw = Number(req.query.limit)
-  const limit = Number.isInteger(limitRaw) && limitRaw > 0 && limitRaw <= 100 ? limitRaw : 30
-  res.set('Cache-Control', 'no-store')
-
-  res.json({ items: listByCategory(category, { q, limit }) })
 })
 
 // ── FR-21: 비밀번호 찾기(보안 질문 방식) ──────────────────────────────────────────

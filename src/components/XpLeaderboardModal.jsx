@@ -1,13 +1,19 @@
+import LeaderboardPodium from './LeaderboardPodium.jsx'
 import { useFocusTrap } from '../lib/useFocusTrap.js'
 import { colors, font, layout, radius, shadow, spacing } from '../styles/theme.js'
 
 const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' }
 
 // 듀오링고 스타일 전체 XP 리더보드(FR-15) — ConfirmDialog.jsx와 동일한 시트 셸을 재사용한다.
-// rows: xpLeaderboard.js의 getXpLeaderboard() 결과(rank/nickname/totalXp/level/isMe), 상위 3명은
-// 메달 아이콘으로, 내 행은 배경색으로 강조한다.
+// rows: xpLeaderboard.js의 getXpLeaderboard() 결과(rank/nickname/totalXp/level/isMe), rank는 항상
+// 1부터 연속(row_number() 기반)이라 배열 위치 그대로 순위와 일치한다. 3명 이상이면 상위 3명을
+// LeaderboardPodium(리텐션 강화 v4, 시상대 UI)으로 먼저 보여주고, 아래 목록은 4등부터 시작한다 —
+// 데이터가 3명 미만인 환경(개발 초기 등)에서는 시상대 없이 전체를 그대로 나열한다.
 export default function XpLeaderboardModal({ rows, onClose }) {
   const containerRef = useFocusTrap(true, onClose)
+  const hasPodium = rows.length >= 3
+  const podiumRows = hasPodium ? rows.slice(0, 3) : []
+  const listRows = hasPodium ? rows.slice(3) : rows
 
   return (
     <div
@@ -52,7 +58,8 @@ export default function XpLeaderboardModal({ rows, onClose }) {
           <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.sm }}>아직 리더보드에 아무도 없어요.</p>
         ) : (
           <div>
-            {rows.map((row, i) => (
+            {hasPodium && <LeaderboardPodium top3={podiumRows} />}
+            {listRows.map((row, i) => (
               <div
                 key={row.rank}
                 style={{

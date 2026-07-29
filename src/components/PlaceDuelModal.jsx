@@ -1,6 +1,10 @@
+import { useEffect } from 'react'
 import PlaceDuelComparisonList from './PlaceDuelComparisonList.jsx'
+import { claimQuest } from '../lib/dataStore.js'
+import { logicalDateKey } from '../lib/logicalDate.js'
 import { useFocusTrap } from '../lib/useFocusTrap.js'
 import { compareTwoPlaces } from '../lib/placeDuel.js'
+import { FEATURE_TRY_XP, MAP_DUEL_TRY_ID } from '../lib/quests.js'
 import { colors, font, layout, radius, shadow, spacing } from '../styles/theme.js'
 
 const WINNER_TEXT = {
@@ -15,6 +19,13 @@ const WINNER_TEXT = {
 export default function PlaceDuelModal({ placeA, placeB, todayTotal, recommended, onClose }) {
   const containerRef = useFocusTrap(true, onClose)
   const { rows, overallWinner } = compareTwoPlaces(placeA.expected, placeB.expected, { todayTotal, recommended })
+
+  // week-try-mapduel(FR-16 다양화) 유도용 마커 클레임 — 결과를 처음 보여줄 때 한 번(quest_claims
+  // 유니크 제약이 하루 중복을 막아줌). 실패해도 비교 화면 자체는 그대로 보여야 하는 장식적 부가 동작이다.
+  useEffect(() => {
+    claimQuest({ dateKey: logicalDateKey(new Date()), questId: MAP_DUEL_TRY_ID, xpAwarded: FEATURE_TRY_XP }).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div
