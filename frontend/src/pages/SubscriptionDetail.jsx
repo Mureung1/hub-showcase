@@ -165,7 +165,7 @@ const SubscriptionDetail = () => {
   if (status === 'loading') {
     content = <p className="subscription-detail-message">불러오는 중...</p>
   } else if (status === 'unauthorized') {
-    content = <LoginRequired message="로그인 후 파티 상세 정보를 확인할 수 있어요." />
+    content = <LoginRequired message="로그인하고 파티 상세 정보를 확인해보세요!" />
   } else if (status === 'notfound') {
     content = <p className="subscription-detail-message">존재하지 않는 파티예요.</p>
   } else if (status === 'forbidden') {

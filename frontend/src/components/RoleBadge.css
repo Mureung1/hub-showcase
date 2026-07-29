@@ -1,4 +1,5 @@
 .role-badge {
+  flex-shrink: 0;
   font-size: var(--font-size-caption);
   font-weight: 600;
   padding: 2px 12px;

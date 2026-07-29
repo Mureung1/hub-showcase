@@ -90,7 +90,7 @@ const SubscriptionEdit = () => {
   if (loadStatus === 'loading') {
     content = <p className="subscription-edit-message">불러오는 중...</p>
   } else if (loadStatus === 'unauthorized') {
-    content = <LoginRequired message="로그인 후 구독 서비스를 수정할 수 있어요." />
+    content = <LoginRequired message="로그인하고 구독 서비스 정보를 수정해보세요!" />
   } else if (loadStatus === 'notfound') {
     content = <p className="subscription-edit-message">존재하지 않는 파티예요.</p>
   } else if (loadStatus === 'forbidden') {
