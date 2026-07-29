@@ -130,6 +130,32 @@ describe('DELETE /api/meetings/:id', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe('VALIDATION_ERROR');
   });
+
+  // 종료된 모임은 취소할 수 없다(F2와 동일 가드·동일 에러 코드). 신뢰도 상호 평가 도입 후
+  // 이게 없으면: 모임 종료 → 모임장이 참여자를 "안 왔음"으로 평가 → 모임장이 모임을 취소해
+  // status를 cancelled로 만들면 평가 대상 목록·제출 API 둘 다 취소된 모임을 걸러내
+  // 참여자가 반박 평가를 영영 제출할 수 없는데, 이미 반영된 감점은 그대로 남는다.
+  it('종료된 모임은 취소할 수 없다(400) — 평가 반박 경로를 지우는 것을 막는다', async () => {
+    const { agent, userId: hostId } = await loginAgent('d-h7');
+    const meetingId = await insertMeeting(hostId, {
+      startAt: '2020-01-01T10:00:00+09:00', endAt: '2020-01-01T12:00:00+09:00',
+    });
+    const res = await agent.delete(`/api/meetings/${meetingId}`);
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDATION_ERROR');
+
+    const meeting = await pool.query('SELECT status FROM meetings WHERE id = $1', [meetingId]);
+    expect(meeting.rows[0].status).toBe('recruiting');
+  });
+
+  it('시작은 지났지만 아직 끝나지 않은 소모임(end_at 미래)은 취소할 수 있다', async () => {
+    const { agent, userId: hostId } = await loginAgent('d-h8');
+    const meetingId = await insertMeeting(hostId, {
+      startAt: '2020-01-01T10:00:00+09:00', endAt: '2099-01-01T10:00:00+09:00',
+    });
+    const res = await agent.delete(`/api/meetings/${meetingId}`);
+    expect(res.status).toBe(200);
+  });
 });
 
 describe('모임 취소 알림(C)', () => {

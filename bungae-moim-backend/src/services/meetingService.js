@@ -531,8 +531,21 @@ async function respondToApplicant(meetingId, hostId, targetUserId, status) {
 // 참여자 신뢰도는 건드리지 않는다(감점은 본인이 확정 후 취소했을 때만). 재취소는
 // 상태를 다시 cancelled로 쓸 뿐 신뢰도 변화가 없어 무해하므로 FOR UPDATE는 불필요하고,
 // 404/403/이미취소 3-way 구분을 위해 SELECT를 먼저 한다.
+//
+// ⚠️ 종료된 모임은 취소할 수 없다(F2의 is_past 가드와 동일 이유·동일 에러 코드).
+// 신뢰도 상호 평가 도입 후 이게 없으면 구멍이 생긴다: 모임 종료 → 모임장이 A를
+// "안 왔음"으로 평가(-5) → 모임장이 이 시점에 모임을 취소하면 status가 cancelled로
+// 바뀌어 listPendingEvaluations의 창(IN_WINDOW: status <> 'cancelled')에서 빠지고
+// submitEvaluations도 취소된 모임을 거부한다 — A는 반박 평가를 영영 제출할 수 없는데
+// loadEvaluationPairs는 meeting 상태를 보지 않으므로 그 -5는 그대로 남는다.
+// 가드를 걸어 애초에 "종료 후 취소" 자체를 막는다(평가 이력을 취소 시점에 눈감아주는
+// 우회는 채택하지 않았다 — 그러면 모임장이 자기가 받은 나쁜 평가를 취소로 지울 수 있다).
 async function cancelMeeting(meetingId, hostId) {
-  const meetingRes = await pool.query('SELECT host_id, status FROM meetings WHERE id = $1', [meetingId]);
+  const meetingRes = await pool.query(
+    `SELECT host_id, status, COALESCE(end_at, start_at) < now() AS is_past
+       FROM meetings WHERE id = $1`,
+    [meetingId]
+  );
   if (meetingRes.rows.length === 0) {
     throw new ApiError('NOT_FOUND', '모임을 찾을 수 없습니다');
   }
@@ -543,6 +556,9 @@ async function cancelMeeting(meetingId, hostId) {
   }
   if (row.status === 'cancelled') {
     throw new ApiError('VALIDATION_ERROR', '이미 취소된 모임입니다');
+  }
+  if (row.is_past) {
+    throw new ApiError('VALIDATION_ERROR', '이미 종료된 모임입니다');
   }
 
   await withTransaction(async (client) => {
