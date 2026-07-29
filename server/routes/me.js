@@ -8,7 +8,7 @@ import { notifyProjectMembers } from '../lib/notify.js'
 
 // 파일 업로드 정책 (기획서 "파일 남용" 규칙)
 const FILE_BUCKET = 'uploads'
-const MAX_FILE_BYTES = 10 * 1024 * 1024 // 10MB
+const MAX_FILE_BYTES = 4 * 1024 * 1024 // 4MB (Vercel serverless 요청 본문 4.5MB 한계 대응)
 const MAX_FILES_PER_TASK = 5
 const ALLOWED_EXT = new Set(['.png', '.jpg', '.jpeg', '.pdf', '.docx', '.pptx', '.xlsx', '.zip'])
 
@@ -491,7 +491,7 @@ me.post('/api/me/tasks/:taskId/uploads/file', (req, res) => {
   fileUpload.single('file')(req, res, async (mErr) => {
     try {
       if (mErr) {
-        if (mErr.code === 'LIMIT_FILE_SIZE') throw fail(400, '파일은 10MB 이하만 올릴 수 있습니다.')
+        if (mErr.code === 'LIMIT_FILE_SIZE') throw fail(400, '파일은 4MB 이하만 올릴 수 있습니다.')
         throw mErr.status ? mErr : fail(400, mErr.message)
       }
       if (!req.file) throw fail(400, '파일을 선택해 주세요.')

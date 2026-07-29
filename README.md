@@ -116,6 +116,29 @@ npm run preview   # 빌드 결과물 미리보기
 
 ---
 
+## ☁️ 배포 (Vercel · 단일 오리진)
+
+프론트(Vite 정적) + Express를 **같은 도메인**에서 서빙한다. Express는 Vercel Serverless Function으로 감싼다(`api/index.js` → `server/app.js`의 앱을 export). 같은 오리진이라 httpOnly 쿠키 인증이 CORS 설정 없이 그대로 동작한다.
+
+- **구조**: `server/app.js`(앱 구성, listen 없음) ↔ `server/index.js`(로컬 dev용 listen) / `api/index.js`(Vercel 진입점) / `vercel.json`(`/api/*`→함수, 나머지→SPA 폴백).
+
+**배포 절차**
+
+1. 변경을 커밋하고 GitHub 레포에 push.
+2. [vercel.com](https://vercel.com) → **New Project** → 이 레포 Import (Framework는 Vite 자동 감지).
+3. **Environment Variables**에 로컬 `.env`와 같은 값 4개 입력:
+   `SUPABASE_URL` · `SUPABASE_SECRET_KEY` · `JWT_SECRET` · `ANTHROPIC_API_KEY`
+   (`NODE_ENV`는 Vercel이 production으로 자동 설정 → 쿠키 `secure` 활성화.)
+4. **Deploy** → 발급된 `*.vercel.app`에서 전체 플로우 확인.
+
+**주의**
+
+- Supabase **비공개 버킷 `uploads`**가 있어야 파일 업로드가 동작한다(최초 설정 4번).
+- Vercel Serverless는 요청 본문 **4.5MB** 한계가 있어 **파일 업로드 상한은 4MB**다(그 이상은 브라우저→Storage 직접 서명 업로드 필요, 후속 과제).
+- Supabase 무료 티어는 7일 미사용 시 일시정지 → 배포/시연 전 대시보드 접속으로 깨우기.
+
+---
+
 ## 📝 개발 진행
 
 > **진행 현황·체크리스트는 [docs/plan.md](./docs/plan.md)의 "개발 진행 체크리스트" 참고** — 완료/남은 작업과 결정·검증 로그를 한 곳에서 관리한다.

@@ -36,7 +36,7 @@
 - [x] 프로젝트 관리 조회 — `ProjectsTab.jsx` ↔ `/api/me/projects`
 - [x] 태스크 상태 변경 (할 일 / 진행 중 / 완료) — `POST /api/me/tasks/:taskId/status` (자기 태스크만), `ProgressTab.jsx` 상태 버튼 3개
 - [x] 링크 업로드 + 코멘트(100자) — `POST /api/me/tasks/:taskId/uploads` · `DELETE /api/me/uploads/:uploadId` (자기 태스크·본인 자료만), `ProgressTab.jsx` UploadForm/✕, `activity_log 'upload'` → 잔디·최근활동
-- [x] 파일 업로드 (multer + Storage 비공개 버킷 + 서명 URL 다운로드) — `POST /api/me/tasks/:taskId/uploads/file`(화이트리스트·10MB·태스크당 5개) · `GET /api/me/uploads/:id/download`(팀원, 1시간 서명 URL 302), 삭제 시 Storage 객체 정리, `ProgressTab.jsx` 📁 파일/다운로드 링크
+- [x] 파일 업로드 (multer + Storage 비공개 버킷 + 서명 URL 다운로드) — `POST /api/me/tasks/:taskId/uploads/file`(화이트리스트·4MB·태스크당 5개) · `GET /api/me/uploads/:id/download`(팀원, 1시간 서명 URL 302), 삭제 시 Storage 객체 정리, `ProgressTab.jsx` 📁 파일/다운로드 링크
 - [x] 프로젝트 삭제 / 완료(취소) / 메인 지정 / 순서 변경 — `DELETE /api/projects/:id`·`POST /:id/complete`·`/:id/main`(생성자/팀원 권한 구분) + `POST /api/me/projects/reorder`, `ProjectsTab.jsx` 액션 4종
 
 ### 프로젝트 생성 ~ 배정 플로우 — ⬜ 화면만 완성, BE/DB 미연결
@@ -63,7 +63,7 @@
 - [x] 인앱 알림 (합류·공개·교환·업로드) — `notifyProjectMembers`(server/lib/notify.js) 이벤트 팬아웃 + `GET /api/me/notifications`·`POST …/read-all`, 헤더 `NotificationBell`(안 읽음 배지·드롭다운·45s 폴링). *마감은 배정(reveal)에 통합*
 - [ ] 진행률 주간 스냅샷 자동화 (KST)
 - [ ] 검증 에이전트 `.claude/agents/verifier.md` + 결함 수정
-- [ ] vercel에 배포
+- [~] 배포 설정 (Vercel 한 프로젝트 · 같은 오리진) — 정적 프론트 + Express serverless: `api/index.js`(=export app)·`vercel.json`(`/api`→함수, SPA 폴백) / FE 상대경로 `/api`·`credentials:'same-origin'` / BE `auth.js` SameSite=Lax(CORS 없음) / 업로드 4MB. **실제 배포(Vercel 연결+환경변수+Deploy)는 사용자 수행**
 ### 알려진 후속 과제
 - ~~**조장 DB 정합**: 조장이 "조장+실무" 2역이 되면 `assignments`의 `unique(project_id, member_id)`와 충돌~~ → **해결**: unique를 `(project_id, member_id, role_id)`로 변경해 한 사람이 여러 역할(조장 표식 + 실무)을 각각 1행으로 저장. me.js가 member별 역할을 묶어 표시
 - `shell-quote`(concurrently 하위 의존성) high 취약점 — 개발 도구라 배포 영향 없음, 추후 정리
@@ -187,7 +187,7 @@
 |---|------|------|-----------|-----------|
 | 1 | 홈 (랜딩) | `images/홈화면.png` | 상단 네비(로고·메뉴·로그인·시작하기), 히어로, Smart Agents 카드 2(역할 배정·플래닝), 사용 가이드 8단계, CTA 배너, 푸터 | 가입/로그인 진입, "데모 보기"는 가이드 섹션으로 스크롤 |
 | 2 | 로그인·회원가입 | `images/로그인.png`, `images/회원가입.png` | 로그인: 아이디·비밀번호(보기 토글)·"로그인 상태 유지"·아이디/비밀번호 찾기 링크(기능은 향후 확장). 회원가입: 이름, 아이디+[중복확인]("사용중인 아이디입니다"), 이메일(선택), 비밀번호(8자 이상 영문/숫자 조합), 비밀번호 확인, 약관 안내 | 계정 정보 입력·중복확인 |
-| 3 | 프로젝트 생성 위저드 (구현 완료) | 시안 없음 — Soft Mint 통일 | 3스텝: ① 유형 힌트 카드 → 제목 → 주제 설명(200자)·파일 드롭존(png/jpg/pdf, 10MB) 2열 ② 마감일 DatePicker + 기피 날짜 캘린더(마감일 빨강·기피 회색·범위 밖 비활성) + 마감일·D-day·진행 가능 기간 표시 ③ 팀원 수 스테퍼(3~8) | 제목·주제·마감일·인원 필수, 유형·첨부·기피 날짜 선택 |
+| 3 | 프로젝트 생성 위저드 (구현 완료) | 시안 없음 — Soft Mint 통일 | 3스텝: ① 유형 힌트 카드 → 제목 → 주제 설명(200자)·파일 드롭존(png/jpg/pdf, 4MB) 2열 ② 마감일 DatePicker + 기피 날짜 캘린더(마감일 빨강·기피 회색·범위 밖 비활성) + 마감일·D-day·진행 가능 기간 표시 ③ 팀원 수 스테퍼(3~8) | 제목·주제·마감일·인원 필수, 유형·첨부·기피 날짜 선택 |
 | 4 | AI 계획 검토 (생성자 전용) | — | 마일스톤 타임라인, 태스크 목록, 역할 정의 | 인라인 수정(태스크·역할), "다시 제안받기"(3회 카운터), "이대로 확정"(=초대 링크 발급) |
 | 5 | 초대 (join) | — | 프로젝트 미리보기(팀 이름·참여 현황) | 즉시 회원가입 + 닉네임 |
 | 6 | 팀원 설문 | — | 역할 카드, "m/n명 제출" 현황 | 순위·기피·경험·리더 의향 제출. (생성자) 수동 마감 — 정원 미달 시 "전체 참여 인원을 m명으로 수정할까요?" 확인 후 진행 |
@@ -233,7 +233,7 @@
 | 재생성 남용(비용) | "다시 제안받기" 프로젝트당 3회, 확정 후 잠금 — 서버에서 강제 |
 | 아이디 중복 | 실시간 검사 API + DB unique 제약 이중화(가입 시점 레이스 대비), 동일 문구("사용중인 아이디입니다") 처리 |
 | 초대 정원 초과·동시 가입 | 정원·닉네임 중복 검사를 트랜잭션으로 묶어 레이스 방지, 링크 유출 시 정원 제한이 방어선 |
-| 파일 남용 | 형식 화이트리스트(png/jpg/pdf/docx/pptx/xlsx/zip), 파일당 10MB, 태스크당 5개(재업로드는 교체), 비공개 버킷+서명 URL |
+| 파일 남용 | 형식 화이트리스트(png/jpg/pdf/docx/pptx/xlsx/zip), 파일당 4MB(Vercel serverless 요청 본문 4.5MB 한계 대응), 태스크당 5개, 비공개 버킷+서명 URL |
 | 잔디·스냅샷 날짜 어긋남 | 활동 날짜와 주간 진행률 스냅샷은 서버에서 KST 기준으로 확정 (배포 서버 UTC 문제 방지). 첫 주는 "지난주 대비" 미표시 |
 | 알림 누락·중복 | 알림은 서버 이벤트 발생 시점에 1회 생성, 읽음 상태를 사용자별로 저장 |
 | Supabase 무료 티어 | 7일 미사용 시 일시정지 — 시연 전 접속으로 깨우기 체크리스트화 |
@@ -256,6 +256,36 @@
 ## 개발 로그 (결정·검증)
 
 > 작업(슬라이스/커밋 단위)마다 **왜 그렇게 구현했는지 + 어떻게 검증했는지**를 짧게 남긴다. 최신이 위로.
+
+### 2026-07-29 · Vercel-only 배포로 복귀 (분리 배포 → 같은 오리진)
+- **왜**: 배포 방식을 다시 **Vercel 한 프로젝트**(정적 프론트 + Express serverless, **같은 오리진**)로 통일. 같은 오리진이면 분리 배포용 추가물이 불필요할 뿐 아니라 일부는 **보안이 느슨** — CORS `origin:true+credentials`는 아무 사이트나 인증요청 반영, 쿠키 `SameSite=None`은 CSRF 방어를 약화. 전부 되돌려 더 단순·안전하게.
+- **방식**:
+  - **FE `client.js`**: `API_BASE`/`VITE_API_BASE_URL`·`fileUrl` 제거, 상대경로 `/api` + `credentials:'same-origin'` 복귀. `ProgressTab` 다운로드 앵커도 상대경로로.
+  - **BE**: `server/app.js`에서 `cors` 제거(같은 오리진이라 불필요). `server/lib/auth.js` 쿠키를 항상 `sameSite:'lax'`(+prod에선 `secure`) — Lax면 같은 오리진에 충분하고 크로스사이트 요청엔 쿠키가 안 실려 CSRF 방어. `npm uninstall cors`.
+  - **Vercel serverless**: `api/index.js`(=`export default app`) 재생성, `vercel.json`은 `/api/(.*)`→함수 + `/(.*)`→SPA 폴백. `render.yaml` 삭제. `.env.example`의 분리 배포 섹션 제거 + Vercel 대시보드 env 안내(NODE_ENV는 Vercel이 자동).
+  - **업로드 10MB→4MB 복원**: Vercel serverless 요청 본문 4.5MB 한계(초과 시 413) 대응. `me.js` 상수·에러 문구·정책표 갱신.
+  - **배포 절차**(사용자 수행): 커밋/푸시 → Vercel Import(Vite 자동) → env 5개(SUPABASE_URL·SUPABASE_SECRET_KEY·JWT_SECRET·ANTHROPIC_API_KEY·CLAUDE_MODEL) → Deploy → `/api/health` 확인 → 전 플로우 확인.
+- **검증(로컬)**: `oxlint`(exit 0)·`build`(dist) 통과. 스크립트 **8/8 통과** — 쿠키 로직(프로덕션 Lax+Secure / 로컬 Lax·비Secure, **None 아님**) · 프로덕션 서버 실제 `Set-Cookie: …HttpOnly; Secure; SameSite=Lax`(포트 3010) · 쿠키로 `/api/auth/me` 200 · **CORS 헤더 없음**(ACAO=null) · 업로드 4MB 경계(초과 400 "4MB"/이하 통과). 실 Vercel 라우팅은 배포 후 사용자가 확인.
+
+### 2026-07-28 · 분리 배포 대응 (FE Vercel + BE Render) — ⚠️ 2026-07-29 vercel-only로 되돌림(위 참조)
+- **왜**: 배포를 **FE=Vercel / BE=Render 분리**로 변경(오리진이 갈림). 브라우저 same-origin 정책 때문에 코드 수정이 "선택"이 아니라 **필수** — (1) FE가 BE 절대주소를 알아야 하고, (2) BE가 그 FE 오리진을 CORS로 허용하고, (3) 로그인 쿠키가 크로스사이트로 나가야(SameSite=None) 함. all-Vercel용 산출물(`api/index.js`·`vercel.json` 함수 rewrite·업로드 4MB)은 되돌림.
+- **방식**:
+  - **FE `client.js`**: 모든 fetch에 `API_BASE = VITE_API_BASE_URL`(Render 절대주소) 접두 + `credentials:'include'`. 다운로드 앵커용 `fileUrl()` export(ProgressTab 적용). 로컬은 env 비우면 상대경로+Vite 프록시 그대로.
+  - **BE**: `server/app.js`에 `cors({ origin: FRONTEND_ORIGIN||true, credentials:true })`(라우트 앞). `server/lib/auth.js` 쿠키를 프로덕션에서 `sameSite:'none'+secure:true`, 로컬은 `lax`로 분기 — **Render에 `NODE_ENV=production` 없으면 크로스사이트 로그인 실패**(핵심 함정).
+  - **Render**: `package.json`에 `start:"node server/index.js"`(상시 서버, `PORT` 주입). `render.yaml` 블루프린트(비밀 env는 `sync:false`). serverless 4.5MB 한계가 없어 **업로드 10MB 복원**.
+  - **Vercel=정적 전용**: `api/index.js` 제거, `vercel.json`은 SPA 폴백만. `.env.example`에 `NODE_ENV`·`FRONTEND_ORIGIN`(BE)·`VITE_API_BASE_URL`(FE) 위치 명시. `npm i cors`.
+  - **배포 절차**(사용자 수행): BE→Render(env+NODE_ENV=production, `/api/health` 확인) → FE→Vercel(VITE_API_BASE_URL=Render주소) → Render에 FRONTEND_ORIGIN=Vercel주소 넣고 재배포 → DevTools·Render 로그·Supabase로 확인.
+- **검증(로컬)**: `oxlint`(exit 0)·`build` 통과. 스크립트 **9/9 통과** — 쿠키 로직(프로덕션 None+Secure / 로컬 Lax) · 프로덕션 서버 실제 `Set-Cookie: …SameSite=None; Secure` · 쿠키로 `/api/auth/me` 200 · CORS 응답(ACAO=지정 오리진, credentials true)·프리플라이트 204 · 업로드 10MB 경계(초과 400/이하 통과). 실제 크로스오리진은 배포 후 사용자가 확인.
+
+### 2026-07-28 · Vercel 배포 준비 (전부 Vercel · 같은 오리진) — ✅ 2026-07-29 이 방식으로 복귀(최상단 참조)
+- **왜**: 핵심 기능이 끝나 배포 베이스라인 확보. 같은 오리진 배포면 현재 httpOnly 쿠키 인증(`credentials:'same-origin'`, `secure` 이미 prod 대응)이 CORS 없이 그대로 동작. Vercel은 상시 Express를 못 돌리므로 **serverless로 래핑**해야 한다.
+- **방식**:
+  - **앱 분리**: `server/app.js`(미들웨어·라우트·`/api/health` + `export default app`, listen 없음) ↔ `server/index.js`(로컬 dev용 `app.listen`) / `api/index.js`(Vercel 진입점, `export default app`). `npm run dev`는 그대로.
+  - `vercel.json`: `framework:vite`·`outputDirectory:dist`·`functions.maxDuration:60`(플래너 Claude 호출 대비) + rewrites(`/api/(.*)`→`/api` 함수, `/(.*)`→`/` SPA 폴백). `package.json engines.node:"22.x"`.
+  - **업로드 10MB→4MB**: Vercel serverless 요청 본문 4.5MB 한계(초과 시 413 FUNCTION_PAYLOAD_TOO_LARGE)와 충돌 → 상한을 4MB로. (10MB 유지는 브라우저→Storage 서명 업로드 필요, 후속.) `me.js` 상수·에러 문구·정책표 갱신.
+  - `README`에 배포 절차(GitHub push → Vercel Import → 환경변수 4개 → Deploy) + 4MB·버킷 주의. 프론트는 상대경로 `/api`만 써서 그대로 동작, `.env`는 이미 gitignore.
+  - **실제 배포는 사용자 수행**(내 계정으로 배포 불가) — 커밋/푸시와 동일 원칙.
+- **검증(로컬)**: `oxlint`(exit 0)·`build`(dist) 통과. 분리 스모크 스크립트 **5/5 통과** — `api/index.js` default export가 호출가능 함수(Express app) · 분리 후 `/api/health` 200+env 로드 · 가입→`/api/auth/me` 200(라우트 무결) · **4MB 초과 400**(LIMIT_FILE_SIZE, multer가 auth보다 먼저) · 4MB 이하는 크기 통과(401=미인증). 실 Vercel 라우팅은 배포 시 확인(선택 `vercel dev`).
 
 ### 2026-07-28 · 인앱 알림 (팀 이벤트 → 개인 알림 + 헤더 벨) — phase ④ 완료
 - **왜**: 팀 이벤트가 `activity_log`(프로젝트 피드)에만 남고 **각 팀원 개인에게 도달하는 알림이 없었다**. `notifications` 테이블은 있는데 `AppLayout`의 🔔은 목업이었다. 합류·공개·교환·업로드 시 팀원에게 알림을 쌓고 헤더 벨로 확인·읽음 처리 → phase ④ 마무리.

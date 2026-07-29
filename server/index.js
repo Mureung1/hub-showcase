@@ -1,32 +1,6 @@
-import 'dotenv/config'
-import express from 'express'
-import cookieParser from 'cookie-parser'
-import { auth } from './routes/auth.js'
-import { me } from './routes/me.js'
-import { projects } from './routes/projects.js'
-import { join } from './routes/join.js'
-
-const app = express()
-
-app.use(express.json())
-app.use(cookieParser())
-app.use(auth)
-app.use(me)
-app.use(projects)
-app.use(join)
-
-// 서버 생존 확인 + 필수 환경변수 로드 여부 (값 자체는 절대 노출하지 않음)
-app.get('/api/health', (req, res) => {
-  res.json({
-    ok: true,
-    env: {
-      supabaseUrl: Boolean(process.env.SUPABASE_URL),
-      supabaseSecretKey: Boolean(process.env.SUPABASE_SECRET_KEY),
-      jwtSecret: Boolean(process.env.JWT_SECRET),
-      anthropicApiKey: Boolean(process.env.ANTHROPIC_API_KEY),
-    },
-  })
-})
+// 로컬 개발 진입점 — Express 앱을 포트 3001에서 실행한다.
+// (Vercel 배포는 app.listen 없이 api/index.js가 app을 serverless 핸들러로 export한다.)
+import app from './app.js'
 
 const port = Number(process.env.PORT) || 3001
 

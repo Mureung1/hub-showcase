@@ -13,7 +13,7 @@ import { parseDate, toDateInputValue, addDays, diffDays } from '../../src/utils/
 
 const DEFAULT_TYPE = 'presentation'
 // claude-api 스킬 기본값. 학생 프로젝트라 비용이 부담이면 .env에 ANTHROPIC_MODEL로 교체 가능
-const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-opus-4-8'
+const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-5'
 
 /* 구조화 출력 스키마 — Claude가 이 모양의 JSON만 내도록 강제한다.
    (구조화 출력 제약: 모든 object에 additionalProperties:false + required, 수치·문자열 길이 constraint 미사용) */

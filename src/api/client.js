@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
+// 프론트와 API가 같은 오리진(Vercel 한 프로젝트)이라 상대경로 /api 로 호출한다.
 // GET 호출 래퍼 — 비 2xx면 서버가 준 error 메시지로 throw. 세션 쿠키를 함께 보낸다.
 export async function api(path) {
   const res = await fetch(path, { credentials: 'same-origin' })
