@@ -2,6 +2,7 @@ import { createApiApp } from "./app";
 import type { ApiRuntimeInfo } from "./app";
 import { createMemoryQuestEventStore } from "./lib/questEventStore";
 import type { QuestEventStore } from "./lib/questEventStore";
+import { createManagerLlmRuntimeFromEnv } from "./lib/managerLlmProvider";
 import { createSupabaseConfigFromEnv, createSupabaseQuestEventStore } from "./lib/supabase";
 
 export interface ServerEnv {
@@ -13,7 +14,7 @@ export function createServer(env: ServerEnv) {
   const app = createApiApp(runtime.store, {
     storageMode: runtime.storageMode,
     supabaseConfigured: runtime.supabaseConfigured,
-  });
+  }, createManagerLlmRuntimeFromEnv((name) => env.get(name)?.trim()));
   return (request: Request) => app.fetch(request);
 }
 

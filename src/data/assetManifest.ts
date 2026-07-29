@@ -724,6 +724,17 @@ export function getPetAnimationAsset(petId: PetId, stage: PetStageId, state: Pet
   return animation;
 }
 
+export function hasPetAnimationAsset(petId: PetId, stage: PetStageId, state: PetAnimationState): boolean {
+  const petCatalog = petAnimationCatalog[petId] as Partial<Record<PetStageId, Partial<Record<PetAnimationState, SpriteAnimationAsset>>>> | undefined;
+  return Boolean(petCatalog?.[stage]?.[state]);
+}
+
+export function resolveSupportedPetAnimationState(petId: PetId, stage: PetStageId, state: PetAnimationState): PetAnimationState {
+  if (hasPetAnimationAsset(petId, stage, state)) return state;
+  if (hasPetAnimationAsset(petId, stage, "idle")) return "idle";
+  return state;
+}
+
 export function getDesktopIconAsset(id: DesktopIconId) {
   return desktopIconAssets[id];
 }

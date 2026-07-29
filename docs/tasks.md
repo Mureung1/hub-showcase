@@ -89,7 +89,8 @@
 | T-706 | P1 | Backlog | 기억 조각 구현 | 완료/복구 Quest Event가 기록 노트 또는 월드에 memory fragment로 표시된다 | db-schema.md |
 | T-707 | P1 | Backlog | 사운드 feedback 구현 | 완료/복구/레벨업 사운드가 muted 기본값과 함께 동작한다 | future-expansion-plan.md |
 | T-708 | P1 | Backlog | 하루의 흐름 web theme 구현 | 현실 시간에 따라 해/달 asset이 배경에 뜨고, 시간대별 빛의 강도와 색상이 XP desktop 배경/루미 idle/theme state에 반영된다 | future-expansion-plan.md |
-| T-709 | P1 | Review | 개인화 AI 매니저 adapter 구현 | ManagerBehaviorIntent 정규화와 behavior adapter가 React manager runtime에 rule fallback으로 연결됐고, 실제 LLM API 연결은 `T-603` 고도화 범위로 분리됐다 | agent-design.md |
+| T-709 | P1 | Review | 개인화 AI 매니저 adapter 구현 | ManagerBehaviorIntent 정규화와 behavior adapter가 React manager runtime에 연결됐고, Manager LLM API v1은 Hono route를 통해 제한 schema/fallback으로 연동한다 | agent-design.md |
+| T-603 | P1 | Review | 개인 LLM 매니저 API v1 | React는 `/api/manager/*`만 호출하고, Hono 서버가 OpenAI server env key로 manager line, quest suggestion, 수락 직전 difficulty evaluation, stat evaluation, behavior intent 제한 schema 출력과 rule fallback을 제공한다 | agent-design.md |
 | T-710 | P1 | Review | blink focus scene 구현 | 서비스 진입과 서비스 나가기 직전에 눈 깜빡임/blur/fade overlay가 동작하고, 새로고침 시에는 재생되지 않으며 reduced-motion fallback이 있다. 브라우저 시각 확인이 남았다 | dynamic-asset-requirements.md |
 | T-711 | P1 | Review | 전자 매니저 Persona와 제한 선택지 설계 | 매니저 선택과 말투 선택이 `balanced/adventurous/shy` behaviorStyle로 제한 매핑되고, 성공/실패 streak가 behavior bias로 반영된다. 브라우저 체감 검수가 남았다 | future-expansion-plan.md |
 | T-712 | P1 | Review | 퀘스트 능력치 growth 설계 | 퀘스트 타입/결과별 stat delta가 Quest Event metadata와 기록 노트 chip 표시로 연결됐고, 브라우저 Network 수동 확인이 남았다 | db-schema.md |
@@ -104,11 +105,11 @@
 
 | ID | 우선순위 | 상태 | Task | 완료 기준 | 연결 문서 |
 |---|---|---|---|---|---|
-| T-721 | P2 | Backlog | 현실 픽셀화 TV prototype | 로컬 이미지 또는 권한 허용 웹캠 프레임이 canvas에서 픽셀화되어 TV 안에 표시된다 | future-expansion-plan.md |
+| T-721 | P2 | Review | 현실 픽셀화 TV prototype | 로컬 이미지 또는 권한 허용 웹캠 프레임이 canvas에서 픽셀화되어 TV 안에 표시된다 | future-expansion-plan.md |
 | T-722 | P2 | Backlog | 공개 퀘스트 탐색 read-only prototype | `anonymous_public` Quest Event를 공개 탐색 오브젝트로 표시하고 기본 비공개를 유지한다 | future-expansion-plan.md |
 | T-723 | P2 | Backlog | 웹캠 손 제스처 탐색 prototype | 손 제스처가 공개 탐색 화면의 보조 입력으로 동작하고 마우스/터치 fallback이 유지된다 | future-expansion-plan.md |
 | T-724 | P2 | Review | Single-plane Pepper projection mode 설계 | Pixel TV 우클릭 속성 창에서 projection 연결 변환/원복이 가능하고, 변환된 TV 아이콘 실행 시 hidden route `?projection=pepper`로 연결된다 | dynamic-asset-requirements.md |
-| T-725 | P2 | Backlog | Pixel TV photo capture 설계 | TV에 나온 사용자 화면과 전자 매니저 projection 장면을 함께 캡처하는 screenshot flow, 권한 안내, 저장/공유 범위가 정의된다 | future-expansion-plan.md |
+| T-725 | P2 | In Progress | Pixel TV photo capture 설계 | TV에 나온 사용자 화면과 전자 매니저 projection 장면을 함께 캡처하는 screenshot flow, 권한 안내, 저장/공유 범위가 정의된다 | future-expansion-plan.md |
 | T-726 | P2 | Backlog | 음악창 desktop player 구현 | 음악창 desktop icon을 클릭하면 재생 패널이 열리고, 미리 지정한 wav playlist를 재생/일시정지/다음곡으로 조작하며 마지막 곡 다음은 첫 곡으로 순환한다 | dynamic-asset-requirements.md |
 | T-727 | P2 | Backlog | XP/매니저 효과음 set 구현 | 클릭음, 전자매니저 웃음/실망/격려 효과음을 muted 기본값과 함께 UI action 및 manager mood에 연결한다 | dynamic-asset-requirements.md |
 
@@ -129,7 +130,7 @@
 |---|---|---|---|---|---|
 | T-601 | P3 | Backlog | 테마 마켓/프리셋 확장 | 여러 테마 조합을 저장하고 관리할 수 있다 | future-expansion-plan.md |
 | T-602 | P3 | Backlog | 주간 리포트 초안 | 완료/실패/복구 기록을 요약하는 기준이 있다 | future-expansion-plan.md |
-| T-603 | P3 | Backlog | 개인 LLM 매니저 고도화 | 장기 memory, 평가, 비용 제한, 프롬프트 버전 관리가 정리된다 | future-expansion-plan.md |
+| T-603A | P3 | Backlog | 개인 LLM 매니저 고도화 | 장기 memory, route별 모델 승격, 평가 리포트, 비용 대시보드, 프롬프트 버전 관리 고도화가 정리된다 | future-expansion-plan.md |
 | T-604 | P3 | Backlog | 음성 입력 설계 | 텍스트 fallback이 유지되는 입력 구조가 있다 | future-expansion-plan.md |
 | T-605 | P3 | Backlog | 공개 퀘스트 moderation 고도화 | 신고, 차단, 필터링, 공개 범위 정책이 구현된다 | future-expansion-plan.md |
 | T-606 | P3 | Backlog | 픽셀 월드 렌더러 고도화 | CSS/Canvas 한계를 넘을 때 PixiJS renderer를 실험한다 | future-expansion-plan.md |
@@ -155,7 +156,7 @@
 
 이제 기간 내 모든 확장을 시도하지 않고, 아래 4개 묶음을 최종 목표로 확정한다. 이 4개 외 작업은 시연 안정화와 플로우 정돈에 필요한 경우에만 보조로 진행한다.
 
-1. `T-709`, `T-711` 개인화 AI 매니저 adapter와 Persona/제한 선택지 연결: ManagerContext, rule fallback, 제한된 ManagerBehaviorIntent, Persona style을 React manager runtime에 연결한다.
+1. `T-709`, `T-711`, `T-603` 개인화 AI 매니저 adapter와 Persona/제한 선택지 연결: ManagerContext, rule fallback, 제한된 ManagerBehaviorIntent, Persona style, Hono Manager LLM API v1을 React manager runtime에 연결한다.
 2. `T-712`, `T-703`, `T-713` 성장/보상/사운드 기반: 퀘스트 능력치 growth, 외적 성장 보상, cyber-purr 사운드 후보를 묶어 매니저 성장감을 만든다.
 3. `T-721`, `T-724`, `T-725` Pixel TV 묶음: 현실 픽셀화 TV prototype, Single-plane Pepper projection mode, Pixel TV photo capture 설계를 하나의 TV 확장 흐름으로 정리한다.
 4. `T-708`, `T-726`, `T-727` 하루의 흐름/사운드 분위기: 현실 시간 기반 해/달 asset, 빛의 강도/색상, 배경 상태를 XP desktop에 반영하고, 음악창 wav playlist와 클릭/웃음/실망/격려 효과음을 muted 기본값으로 연결한다.

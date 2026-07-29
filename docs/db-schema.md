@@ -74,7 +74,7 @@ Expansion notes:
 
 - `quest_logs.metadata`에 한 번만 쓰이고 조회하지 않는 값은 그대로 둔다.
 - 여러 화면에서 반복 조회하거나 정렬/필터링할 값은 별도 컬럼 또는 별도 테이블로 승격한다.
-- LLM prompt 원문을 장기 저장하지 않는다. 대신 `ManagerContext`, event summary, persona setting을 저장한다.
+- LLM prompt 원문을 장기 저장하지 않는다. 대신 `ManagerContext`, event summary, persona setting을 저장하고, 필요 시 최종 출력에 대한 `promptVersion`, `source`, `fallbackReason` 같은 최소 metadata만 남긴다.
 - webcam frame, raw gesture frame, audio recording은 DB에 저장하지 않는다.
 - public 기능은 `visibility = 'anonymous_public'`인 이벤트만 별도 view로 노출한다.
 - Supabase RLS는 user auth를 붙이는 시점에 `profile_id` 또는 `user_id` 기준으로 작성한다.

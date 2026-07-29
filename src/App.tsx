@@ -1,9 +1,11 @@
 ﻿import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { AnimationEvent, CSSProperties, FormEvent, MouseEvent, PointerEvent, ReactNode } from "react";
+import type { AnimationEvent, ChangeEvent, CSSProperties, FormEvent, MouseEvent, PointerEvent, ReactNode } from "react";
 import { CanvasSpriteAnimator } from "./components/CanvasSpriteAnimator";
+import { useCallback } from "react";
 import {
   getDesktopIconAsset,
   getPetAnimationAsset,
+  hasPetAnimationAsset,
   getLumiAnimationAsset,
   getRenderablePetStage,
   getUnlockedPetStages,
@@ -13,6 +15,7 @@ import {
   defaultLumiPetId,
   lumiMoodToSpriteState,
   resolvePetStageFromLevel,
+  resolveSupportedPetAnimationState,
   type DesktopIconId,
   type InteractionObjectAsset,
   type PetAnimationState,
@@ -23,108 +26,82 @@ import {
 import { prependQuestLog, questLogMarks, questLogResultLabels } from "./data/questLogs";
 import type { QuestLog } from "./data/questLogs";
 import {
-  readWindowPetPlacementDrafts,
   resolveWindowPetPosition,
   runtimeWindowPetSlots,
 } from "./data/windowPetPlacements";
-import { createQuestEventViaApi, fetchManagerContextViaApi, fetchQuestEventsViaApi } from "./layers/storage/questLogApi";
-import type { CreateQuestEventRequest, ManagerContext } from "./layers/storage/questLogApi";
+import {
+  defaultOpenWindowIds,
+  initialWindowPositions,
+  initialWindowSizes,
+  windowRegistry,
+  type WindowId,
+  type WindowPosition,
+  type WindowSize,
+} from "./data/windowRegistry";
+import { createQuestEventViaApi } from "./layers/storage/questLogApi";
+import type { CreateQuestEventRequest, ManagerContext, QuestEventType } from "./layers/storage/questLogApi";
+import {
+  managerLlmPromptVersion,
+  requestManagerBehaviorIntentViaApi,
+  requestManagerDifficultyEvaluationViaApi,
+  requestManagerLineViaApi,
+  requestManagerQuestSuggestionViaApi,
+  requestManagerStatEvaluationViaApi,
+  type ManagerLlmOutputKind,
+  type ManagerLlmRequest,
+} from "./layers/storage/managerLlmApi";
 import { createQuestLogRepository } from "./layers/storage/questLogRepository";
+import { usePixelTvMode } from "./hooks/usePixelTvMode";
+import { questLogSyncMessages, useQuestLogSync, type QuestLogSyncState } from "./hooks/useQuestLogSync";
+import { useWindowManager, type WindowRect } from "./hooks/useWindowManager";
+import { useWindowPetPlacementDrafts } from "./hooks/useWindowPetPlacementDrafts";
+import { useOutsidePetRuntime } from "./hooks/useOutsidePetRuntime";
+import { useQuestFlow } from "./hooks/useQuestFlow";
+import { getRestartServiceTarget } from "./domain/appLifecyclePolicy";
+import type { ManagerState, ManagerTone, QuestOutcomeStreak, QuestSize, UserProfile } from "./domain/appState";
+import { resolveBlinkFocusEffect, type BlinkEntryReason, type BlinkFocusMode } from "./domain/blinkFocusPolicy";
 import { getClimbPosition, type InteractionObject, type ResizeAxis } from "./domain/interactionObjects";
+import { applyManagerSpriteSelection } from "./domain/managerSpriteSelection";
 import { resolveManagerBehavior } from "./domain/managerBehaviorAdapter";
-import type { ManagerBehaviorIntent } from "./domain/managerBehaviorIntent";
+import { normalizeManagerBehaviorIntent, type ManagerBehaviorIntent } from "./domain/managerBehaviorIntent";
 import { getPersonaLine, resolveManagerPersona, type ManagerPersona } from "./domain/managerPersonaPolicy";
 import type { BehaviorContext, PetBehaviorMood, PetBehaviorRecentEvent, PetBehaviorStyle } from "./domain/petBehaviorStateMachine";
-import { createRecoveryQuest, type Difficulty, type Quest, type QuestType } from "./domain/questLogic";
+import {
+  outsidePetFieldRect,
+  outsidePetInitialState,
+  outsidePetSpriteSize,
+  resolveRenderedOutsidePet,
+  shouldMirrorOutsidePet,
+  type InteractionSpritePosition,
+  type OutsidePetSide,
+  type OutsidePetState,
+} from "./domain/outsidePetRuntime";
+import { canPixelizeSource, createPixelizerPlan, getPixelizerPreviewSize, type PixelizerPlan } from "./domain/pixelizer";
+import {
+  calculateQuestReward,
+  type QuestStatus,
+} from "./domain/questFlowPolicy";
+import { type Difficulty, type Quest, type QuestType } from "./domain/questLogic";
 import { getRecoveryRewardCandidates } from "./domain/rewardProgression";
 import { resolveSoundAssetId, type SoundEvent } from "./domain/soundPolicy";
 import { createRuleFallbackStatEvaluation, type StatDelta, type StatKey } from "./domain/statGrowth";
+import { formatKoreanClockTime, formatRemainingUntilEndOfDay } from "./domain/timeFormatting";
 import "./styles.css";
 
 type AppScreen = "manager-select" | "wizard" | "manager-created" | "desktop";
-type QuestStatus = "draft" | "active" | "success" | "failed" | "recovery";
-type ManagerTone = "calm" | "friendly" | "firm";
-type QuestSize = "tiny" | "balanced" | "challenge";
-type WindowId = "quest" | "runner" | "failure" | "recovery" | "manager" | "profile" | "journal" | "trash" | "settings" | "pixelTvProperties" | "ladderObject" | "platformObject";
-type QuestLogSyncStatus = "idle" | "loading" | "saving" | "success" | "error";
-type BlinkFocusMode = "start_day" | "end_day" | "outside_transition";
-type PixelTvMode = "default" | "projection";
 type OutsidePetPhase = "inside" | "blink" | "peek_from_edge" | "walk_in" | "free_roam" | "returning";
-type OutsidePetSide = "left" | "right";
 type ManagerRuntimeLocation = "manager_window" | "window_edge" | "outside" | "transition";
 type ManagerWindowInteractionState = "none" | "quest_hanging" | "recovery_hiding";
-
-interface UserProfile {
-  name: string;
-  nickname: string;
-  goal: string;
-  category: "study" | "exercise" | "hobby" | "career" | "habit";
-  goalPeriod: string;
-  dailyMinutes: number;
-  questSize: QuestSize;
-  managerTone: ManagerTone;
-  focusAnswer: string;
-}
-
-interface ManagerState {
-  name: string;
-  petId: PetId;
-  level: number;
-  exp: number;
-  mood: "waiting" | "focused" | "happy" | "recovering";
-  line: string;
-  behaviorStyle: PetBehaviorStyle;
-  unlockedStages: PetStageId[];
-  selectedStage: PetStageId | null;
-  soundEnabled: boolean;
-}
-
-
-interface WindowPosition {
-  x: number;
-  y: number;
-}
-
-interface WindowSize {
-  width: number;
-  height: number;
-}
-
-interface WindowRect extends WindowPosition, WindowSize {}
-
-interface InteractionSpritePosition {
-  x: number;
-  y: number;
-}
-
-interface QuestLogSyncState {
-  status: QuestLogSyncStatus;
-  message: string;
-}
-
-interface QuestOutcomeStreak {
-  result: "success" | "failed" | null;
-  count: number;
-}
 
 interface BlinkFocusState {
   id: number;
   mode: BlinkFocusMode;
+  reducedMotion: "fade" | "full";
 }
 
 interface DesktopContextMenuState {
   x: number;
   y: number;
-}
-
-interface OutsidePetState {
-  phase: OutsidePetPhase;
-  side: OutsidePetSide;
-  position: InteractionSpritePosition;
-  direction: 1 | -1;
-  animation: PetAnimationState;
-  roamTicks: number;
-  attachedObjectId?: string;
 }
 
 interface ManagerRuntimeState {
@@ -150,8 +127,8 @@ interface ManagerRuntimeStateInput {
 interface StartMenuProps {
   questStatus: QuestStatus;
   onOpenWindow: (id: WindowId) => void;
-  onExitService: () => void;
   onRestart: () => void;
+  onOpenManagerSelect: () => void;
 }
 
 interface DesktopContextMenuProps {
@@ -163,6 +140,23 @@ interface DesktopContextMenuProps {
 interface PixelTvPropertiesWindowProps {
   connected: boolean;
   onToggle: () => void;
+}
+
+interface PixelTvSourceState {
+  url: string;
+  name: string;
+}
+
+interface PixelTvSourceSize {
+  width: number;
+  height: number;
+}
+
+type PixelTvCameraState = "idle" | "requesting" | "live" | "error";
+
+interface PixelTvWindowProps {
+  manager: ManagerState;
+  stage: PetStageId;
 }
 
 interface BlinkFocusOverlayProps {
@@ -195,7 +189,6 @@ interface QuestWindowProps {
 
 interface QuestRunnerWindowProps {
   quest: Quest;
-  remainingTime: string;
   onComplete: () => void;
   onFail: () => void;
 }
@@ -294,100 +287,8 @@ interface DesktopPetProps {
 
 const profileKey = "manager-xp.profile.v1";
 const managerKey = "manager-xp.manager.v1";
-const pixelTvModeKey = "manager-xp.pixel-tv-mode.v1";
+const lifecycleResetAtKey = "manager-xp.lifecycle-reset-at.v1";
 const questLogRepository = createQuestLogRepository();
-
-const initialWindowPositions: Record<WindowId, WindowPosition> = {
-  quest: { x: 190, y: 118 },
-  runner: { x: 285, y: 156 },
-  failure: { x: 455, y: 180 },
-  recovery: { x: 455, y: 180 },
-  manager: { x: 850, y: 132 },
-  profile: { x: 170, y: 104 },
-  journal: { x: 285, y: 392 },
-  trash: { x: 895, y: 405 },
-  settings: { x: 610, y: 142 },
-  pixelTvProperties: { x: 360, y: 185 },
-  ladderObject: { x: 650, y: 294 },
-  platformObject: { x: 735, y: 350 },
-};
-
-const initialWindowSizes: Partial<Record<WindowId, WindowSize>> = {
-  ladderObject: { width: 86, height: 184 },
-  platformObject: { width: 280, height: 124 },
-};
-
-const outsidePetFieldRect = { x: 190, y: 430, width: 780, height: 116 };
-const outsidePetSpriteSize = 96;
-const outsidePetInitialState: OutsidePetState = {
-  phase: "inside",
-  side: "left",
-  position: { x: outsidePetFieldRect.x, y: outsidePetFieldRect.y },
-  direction: 1,
-  animation: "idle",
-  roamTicks: 0,
-};
-
-const workflowWindowIds = new Set<WindowId>(["quest", "runner", "failure", "recovery", "manager", "journal"]);
-
-function replaceWorkflowWindows(current: WindowId[], next: WindowId[]) {
-  return [...current.filter((windowId) => !workflowWindowIds.has(windowId)), ...next];
-}
-
-const windowLabels: Record<WindowId, string> = {
-  quest: "오늘의 퀘스트",
-  runner: "QuestRunner.exe",
-  failure: "실패 이유",
-  recovery: "복구 퀘스트",
-  manager: "Manager.exe",
-  profile: "내 프로필",
-  journal: "기록 노트",
-  trash: "휴지통",
-  settings: "설정",
-  pixelTvProperties: "Pixel TV 속성",
-  ladderObject: "사다리",
-  platformObject: "평지",
-};
-
-const windowTitleIcons: Record<WindowId, string> = {
-  quest: "Q",
-  runner: ">",
-  failure: "!",
-  recovery: "+",
-  manager: "◇",
-  profile: "P",
-  journal: "N",
-  trash: "T",
-  settings: "S",
-  pixelTvProperties: "TV",
-  ladderObject: "L",
-  platformObject: "_",
-};
-
-const desktopIconAssetIds: Partial<Record<WindowId, DesktopIconId>> = {
-  quest: "quest",
-  manager: "manager",
-  profile: "profile",
-  journal: "journal",
-  trash: "trash",
-  settings: "theme-settings",
-  pixelTvProperties: "pixel-tv",
-};
-
-const windowIconAssetIds: Partial<Record<WindowId, DesktopIconId>> = {
-  quest: "quest",
-  runner: "runner",
-  recovery: "recovery",
-  manager: "manager",
-  profile: "profile",
-  journal: "journal",
-  trash: "trash",
-  settings: "theme-settings",
-};
-
-const legacyWindowIconAssets: Partial<Record<WindowId, string>> = {
-  failure: "/assets/icons/failure.svg",
-};
 
 const categoryLabels: Record<UserProfile["category"], string> = {
   study: "공부",
@@ -529,6 +430,7 @@ function normalizeManager(manager: ManagerState): ManagerState {
     ...manager,
     petId: manager.petId ?? defaultLumiPetId,
     behaviorStyle: normalizeBehaviorStyle(manager.behaviorStyle),
+    behaviorIntent: manager.behaviorIntent ? normalizeManagerBehaviorIntent(manager.behaviorIntent) : undefined,
     unlockedStages,
     selectedStage,
     soundEnabled: manager.soundEnabled === true,
@@ -595,12 +497,6 @@ function isGoalAbstract(goal: string) {
   return normalized.length < 8 || vagueWords.some((word) => normalized === word);
 }
 
-function getQuestUnit(type: QuestType) {
-  if (type === "time") return "분";
-  if (type === "quantity") return "개";
-  return "회";
-}
-
 function getDifficultyFromSize(size: QuestSize): Difficulty {
   if (size === "tiny") return "easy";
   if (size === "challenge") return "hard";
@@ -613,33 +509,12 @@ function getAmountFromProfile(profile: UserProfile) {
   return Math.max(15, Math.round(profile.dailyMinutes / 2));
 }
 
-function calculateReward(difficulty: Difficulty, amount: number, type: QuestType) {
-  const base = difficulty === "easy" ? 6 : difficulty === "hard" ? 28 : 16;
-  const amountBonus = type === "time" ? Math.floor(amount / 10) * 4 : Math.floor(amount / 5) * 3;
-  return Math.max(5, Math.min(60, base + amountBonus));
-}
-
 function createQuest(profile: UserProfile): Quest {
   const amount = getAmountFromProfile(profile);
   const difficulty = getDifficultyFromSize(profile.questSize);
   const focus = profile.focusAnswer ? `${profile.focusAnswer} ` : "";
   const target = profile.goal.replace("자격증 취득", "").replace("완성", "").trim() || categoryLabels[profile.category];
-  return { title: `${target} ${focus}핵심 정리 ${amount}분`, type: "time", amount, unit: "분", difficulty, deadline: "오늘 23:59", rewardExp: calculateReward(difficulty, amount, "time") };
-}
-
-function formatTime(date: Date) {
-  return date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
-}
-
-
-function formatRemaining(now: Date) {
-  const deadline = new Date(now);
-  deadline.setHours(23, 59, 59, 999);
-  const diff = Math.max(0, deadline.getTime() - now.getTime());
-  const hours = Math.floor(diff / 3_600_000);
-  const minutes = Math.floor((diff % 3_600_000) / 60_000);
-  const seconds = Math.floor((diff % 60_000) / 1000);
-  return [hours, minutes, seconds].map((value) => String(value).padStart(2, "0")).join(":");
+  return { title: `${target} ${focus}핵심 정리 ${amount}분`, type: "time", amount, unit: "분", difficulty, deadline: "오늘 23:59", rewardExp: calculateQuestReward(difficulty, amount, "time") };
 }
 
 function addExp(manager: ManagerState, exp: number, line: string): ManagerState {
@@ -685,12 +560,15 @@ function createQuestEventRequest(
     managerBefore?: ManagerState;
     managerAfter?: ManagerState;
     soundEnabled?: boolean;
+    statEvaluation?: ReturnType<typeof createRuleFallbackStatEvaluation>;
+    statEvaluationSource?: "llm" | "rule_fallback";
+    statEvaluationFallbackReason?: string;
   } = {},
 ): CreateQuestEventRequest {
   const eventType = getQuestEventType(result);
   const growthQuestType = result === "recovery" ? "recovery" : quest.type;
   const growthEventType = result === "recovery" ? "recovery_completed" : result === "failed" ? "quest_failed" : "quest_completed";
-  const statEvaluation = createRuleFallbackStatEvaluation({ questType: growthQuestType, eventType: growthEventType, difficulty: quest.difficulty });
+  const statEvaluation = options.statEvaluation ?? createRuleFallbackStatEvaluation({ questType: growthQuestType, eventType: growthEventType, difficulty: quest.difficulty });
   const statDeltas = statEvaluation.statDeltas;
   const rewardCandidates = getRewardCandidates(result);
   const recoveryRewardCandidates = getRecoveryRewardCandidates(growthEventType);
@@ -723,7 +601,9 @@ function createQuestEventRequest(
       statBudget: statEvaluation.statBudget,
       primaryStats: statEvaluation.primaryStats,
       statEvaluationReason: statEvaluation.reason,
-      statEvaluationSource: "rule_fallback",
+      statEvaluationSource: options.statEvaluationSource ?? "rule_fallback",
+      statEvaluationFallbackReason: options.statEvaluationFallbackReason,
+      llmPromptVersion: options.statEvaluationSource === "llm" ? managerLlmPromptVersion : undefined,
       rewardCandidates: [...new Set([...rewardCandidates, ...recoveryRewardCandidates])],
       unlockedStagesAfter,
       stageUnlocked,
@@ -803,122 +683,66 @@ function createManagerContextLine(context: ManagerContext, persona: ManagerPerso
   return getPersonaLine("context_idle", persona);
 }
 
-function useWindowManager(
-  initialOpenWindows: WindowId[],
-  initialPositions: Record<WindowId, WindowPosition>,
-  initialSizes: Partial<Record<WindowId, WindowSize>> = {},
-) {
-  const [openWindows, setOpenWindows] = useState<WindowId[]>(initialOpenWindows);
-  const [windowPositions, setWindowPositions] = useState<Record<WindowId, WindowPosition>>(initialPositions);
-  const [windowSizes, setWindowSizes] = useState<Partial<Record<WindowId, WindowSize>>>(initialSizes);
-  const [windowRects, setWindowRects] = useState<Partial<Record<WindowId, WindowRect>>>({});
-  const [minimizedWindows, setMinimizedWindows] = useState<WindowId[]>([]);
-  const [focusedWindow, setFocusedWindow] = useState<WindowId | null>(initialOpenWindows[initialOpenWindows.length - 1] ?? null);
-  const visibleWindows = openWindows.filter((windowId) => !minimizedWindows.includes(windowId));
-  const activeWindow = focusedWindow && visibleWindows.includes(focusedWindow) ? focusedWindow : visibleWindows[visibleWindows.length - 1];
-
-  function openWindow(id: WindowId) {
-    setOpenWindows((current) => (current.includes(id) ? current : [...current, id]));
-    setMinimizedWindows((current) => current.filter((windowId) => windowId !== id));
-    setFocusedWindow(id);
-  }
-
-  function closeWindow(id: WindowId) {
-    setOpenWindows((current) => {
-      const nextWindows = current.filter((windowId) => windowId !== id);
-      setFocusedWindow((currentFocused) => (currentFocused === id ? nextWindows[nextWindows.length - 1] ?? null : currentFocused));
-      return nextWindows;
-    });
-    setMinimizedWindows((current) => current.filter((windowId) => windowId !== id));
-  }
-
-  function minimizeWindow(id: WindowId) {
-    setMinimizedWindows((current) => (current.includes(id) ? current : [...current, id]));
-    setFocusedWindow((currentFocused) => {
-      if (currentFocused !== id) return currentFocused;
-      const nextVisibleWindows = openWindows.filter((windowId) => windowId !== id && !minimizedWindows.includes(windowId));
-      return nextVisibleWindows[nextVisibleWindows.length - 1] ?? null;
-    });
-  }
-
-  function moveWindow(id: WindowId, position: WindowPosition) {
-    setWindowPositions((current) => ({ ...current, [id]: position }));
-  }
-
-  function resizeWindow(id: WindowId, size: WindowSize) {
-    setWindowSizes((current) => ({ ...current, [id]: size }));
-  }
-
-  function measureWindow(id: WindowId, rect: WindowRect) {
-    setWindowRects((current) => {
-      const previous = current[id];
-      if (
-        previous &&
-        Math.abs(previous.x - rect.x) < 0.5 &&
-        Math.abs(previous.y - rect.y) < 0.5 &&
-        Math.abs(previous.width - rect.width) < 0.5 &&
-        Math.abs(previous.height - rect.height) < 0.5
-      ) {
-        return current;
-      }
-
-      return { ...current, [id]: rect };
-    });
-  }
-
-  function setWorkflowWindows(nextWindows: WindowId[]) {
-    setOpenWindows((current) => {
-      const nextOpenWindows = replaceWorkflowWindows(current, nextWindows);
-      setMinimizedWindows((minimized) => minimized.filter((windowId) => nextOpenWindows.includes(windowId) && !nextWindows.includes(windowId)));
-      return nextOpenWindows;
-    });
-    setFocusedWindow(nextWindows[nextWindows.length - 1] ?? null);
-  }
-
-  function resetOpenWindows(nextWindows: WindowId[]) {
-    setOpenWindows(nextWindows);
-    setMinimizedWindows([]);
-    setFocusedWindow(nextWindows[nextWindows.length - 1] ?? null);
-  }
-
-  function resetWindowPositions() {
-    setWindowPositions(initialPositions);
-  }
-
-  function windowChrome(id: WindowId) {
-    return {
-      id,
-      position: windowPositions[id],
-      size: windowSizes[id],
-      zIndex: (activeWindow === id ? 40 : 10) + openWindows.indexOf(id),
-      isActive: activeWindow === id,
-      onFocus: () => openWindow(id),
-      onMove: (position: WindowPosition) => moveWindow(id, position),
-      onResize: (size: WindowSize) => resizeWindow(id, size),
-      onMeasure: (rect: WindowRect) => measureWindow(id, rect),
-      onMinimize: () => minimizeWindow(id),
-      onClose: () => closeWindow(id),
-    };
-  }
-
-  function isWindowVisible(id: WindowId) {
-    return openWindows.includes(id) && !minimizedWindows.includes(id);
-  }
-
+function createManagerLlmRequest(
+  outputKind: ManagerLlmOutputKind,
+  input: {
+    managerContext: ManagerContext;
+    profile: UserProfile;
+    manager: ManagerState;
+    quest: Quest;
+    questStatus: QuestStatus;
+    previousQuestTitle: string;
+    selectedFailureReason: string;
+    logs: QuestLog[];
+  },
+): ManagerLlmRequest {
+  const persona = getManagerPersona(input.manager, input.profile);
   return {
-    activeWindow,
-    isWindowVisible,
-    closeWindow,
-    openWindow,
-    openWindows,
-    resetOpenWindows,
-    resetWindowPositions,
-    setWorkflowWindows,
-    windowChrome,
-    windowPositions,
-    windowSizes,
-    windowRects,
+    promptVersion: managerLlmPromptVersion,
+    outputKind,
+    managerContext: input.managerContext,
+    profile: {
+      nickname: input.profile.nickname || "사용자",
+      goal: input.profile.goal,
+      category: input.profile.category,
+      dailyMinutes: input.profile.dailyMinutes,
+      questSize: input.profile.questSize,
+      managerTone: input.profile.managerTone,
+    },
+    persona: {
+      petId: input.manager.petId,
+      ...persona,
+    },
+    questState: {
+      status: input.questStatus,
+      currentQuest: input.quest,
+      previousQuestTitle: input.previousQuestTitle || null,
+      failureReason: input.questStatus === "failed" ? input.selectedFailureReason : null,
+    },
+    recentEvents: input.logs.slice(0, 8).map(toManagerLlmRecentEvent),
   };
+}
+
+function toManagerLlmRecentEvent(log: QuestLog) {
+  return {
+    type: getQuestLogEventType(log),
+    title: log.title,
+    result: log.result,
+    difficulty: getQuestLogDifficulty(log),
+    createdAt: log.createdAt,
+  };
+}
+
+function getQuestLogEventType(log: QuestLog): QuestEventType {
+  if (log.result === "failed") return "quest_failed";
+  if (log.result === "recovery") return "recovery_completed";
+  return "quest_completed";
+}
+
+function getQuestLogDifficulty(log: QuestLog): Difficulty {
+  const value = log.metadata?.difficulty;
+  if (value === "easy" || value === "normal" || value === "hard") return value;
+  return "normal";
 }
 
 function usePrefersReducedMotion() {
@@ -947,33 +771,33 @@ export default function App() {
   const [profile, setProfile] = useState<UserProfile>(storedProfile ?? defaultProfile);
   const [wizardDraft, setWizardDraft] = useState<UserProfile>(storedProfile ?? defaultProfile);
   const [manager, setManager] = useState<ManagerState>(() => normalizeManager(readStorage(managerKey, defaultManager)));
+  const [serverLogCutoffIso, setServerLogCutoffIso] = useState<string | null>(() => readStorage<string | null>(lifecycleResetAtKey, null));
   const [selectedPetId, setSelectedPetId] = useState<PetId>(() => normalizeManager(readStorage(managerKey, defaultManager)).petId);
   const [logs, setLogs] = useState<QuestLog[]>(() => questLogRepository.get());
   const [quest, setQuest] = useState<Quest>(() => createQuest(storedProfile ?? defaultProfile));
   const [questStatus, setQuestStatus] = useState<QuestStatus>("draft");
   const {
     activeWindow,
+    closeWindow,
     isWindowVisible,
     openWindow,
     openWindows,
     resetOpenWindows,
+    resetWindowLayout,
     resetWindowPositions,
     setWorkflowWindows,
     windowChrome,
     windowPositions,
     windowSizes,
     windowRects,
-  } = useWindowManager(["quest", "manager", "ladderObject", "platformObject"], initialWindowPositions, initialWindowSizes);
-  const [now, setNow] = useState(() => new Date());
+  } = useWindowManager([...defaultOpenWindowIds], initialWindowPositions, initialWindowSizes);
   const [needsClarify, setNeedsClarify] = useState(false);
   const [selectedFailureReason, setSelectedFailureReason] = useState(failureReasons[0]);
   const [previousQuestTitle, setPreviousQuestTitle] = useState("");
   const [startOpen, setStartOpen] = useState(false);
-  const [logSync, setLogSync] = useState<QuestLogSyncState>({ status: "idle", message: "" });
   const [questOutcomeStreak, setQuestOutcomeStreak] = useState<QuestOutcomeStreak>({ result: null, count: 0 });
   const [blinkFocus, setBlinkFocus] = useState<BlinkFocusState | null>(null);
-  const [exitAfterBlink, setExitAfterBlink] = useState(false);
-  const [pixelTvMode, setPixelTvMode] = useState<PixelTvMode>(() => readStorage<PixelTvMode>(pixelTvModeKey, "default"));
+  const { pixelTvConnected, resetPixelTvMode, togglePixelTvMode } = usePixelTvMode();
   const [pixelTvContextMenu, setPixelTvContextMenu] = useState<DesktopContextMenuState | null>(null);
   const [outsidePet, setOutsidePet] = useState<OutsidePetState>(outsidePetInitialState);
   const reducedMotion = usePrefersReducedMotion();
@@ -981,201 +805,103 @@ export default function App() {
     () => createInteractionObjectsFromWindows(windowPositions, windowSizes),
     [windowPositions, windowSizes],
   );
-
+  const managerLlmStateRef = useRef({ profile, manager, quest, questStatus, previousQuestTitle, selectedFailureReason, logs });
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
+    managerLlmStateRef.current = { profile, manager, quest, questStatus, previousQuestTitle, selectedFailureReason, logs };
+  }, [logs, manager, previousQuestTitle, profile, quest, questStatus, selectedFailureReason]);
+  const refreshManagerBehaviorIntent = useCallback(async (context: ManagerContext) => {
+    const snapshot = managerLlmStateRef.current;
+    try {
+      const lineOutput = await requestManagerLineViaApi(createManagerLlmRequest("managerLine", {
+        managerContext: context,
+        profile: snapshot.profile,
+        manager: snapshot.manager,
+        quest: snapshot.quest,
+        questStatus: snapshot.questStatus,
+        previousQuestTitle: snapshot.previousQuestTitle,
+        selectedFailureReason: snapshot.selectedFailureReason,
+        logs: snapshot.logs,
+      }));
+      setManager((current) => ({ ...current, line: lineOutput.managerLine }));
+    } catch {
+      // Rule fallback already updated the visible manager line.
+    }
+
+    try {
+      const behaviorOutput = await requestManagerBehaviorIntentViaApi(createManagerLlmRequest("behaviorIntent", {
+        managerContext: context,
+        profile: snapshot.profile,
+        manager: snapshot.manager,
+        quest: snapshot.quest,
+        questStatus: snapshot.questStatus,
+        previousQuestTitle: snapshot.previousQuestTitle,
+        selectedFailureReason: snapshot.selectedFailureReason,
+        logs: snapshot.logs,
+      }));
+      setManager((current) => ({
+        ...current,
+        behaviorStyle: behaviorOutput.behaviorIntent.behaviorStyle,
+        behaviorIntent: behaviorOutput.behaviorIntent,
+        line: behaviorOutput.behaviorIntent.line || current.line,
+      }));
+    } catch {
+      // Rule fallback already updated the visible manager behavior state.
+    }
   }, []);
+  const applyManagerContext = useCallback((context: ManagerContext) => {
+    setManager((current) => ({ ...current, mood: context.currentMood, line: createManagerContextLine(context, getManagerPersona(current, profile)) }));
+    void refreshManagerBehaviorIntent(context);
+  }, [profile, refreshManagerBehaviorIntent]);
+  const { logSync, setLogSync } = useQuestLogSync({
+    enabled: screen === "desktop",
+    ignoreLogsBefore: serverLogCutoffIso,
+    onLogsLoaded: setLogs,
+    onManagerContextLoaded: applyManagerContext,
+  });
 
   useEffect(() => { if (screen === "desktop" || screen === "manager-created") writeStorage(profileKey, profile); }, [profile, screen]);
   useEffect(() => { writeStorage(managerKey, manager); }, [manager]);
   useEffect(() => { questLogRepository.set(logs); }, [logs]);
-  useEffect(() => { writeStorage(pixelTvModeKey, pixelTvMode); }, [pixelTvMode]);
 
-  useEffect(() => {
-    if (screen !== "desktop") return undefined;
-
-    let cancelled = false;
-    setLogSync({ status: "loading", message: "서버 기록을 불러오는 중이야." });
-    Promise.all([fetchQuestEventsViaApi(), fetchManagerContextViaApi()])
-      .then(([serverLogs, managerContext]) => {
-        if (cancelled) return;
-        setLogs(serverLogs);
-        applyManagerContext(managerContext);
-        setLogSync({ status: "success", message: "서버 기록을 불러왔어." });
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setLogSync({ status: "error", message: "서버 기록을 불러오지 못했어. 로컬 화면 흐름은 계속 사용할 수 있어." });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [screen]);
-
-  useEffect(() => {
-    if (outsidePet.phase !== "peek_from_edge") return undefined;
-
-    const timer = window.setTimeout(() => {
-      setOutsidePet((current) => ({
-        ...current,
-        phase: "walk_in",
-        animation: "walk",
-        position: {
-          x: current.side === "left" ? outsidePetFieldRect.x - 42 : outsidePetFieldRect.x + outsidePetFieldRect.width - outsidePetSpriteSize + 42,
-          y: outsidePetFieldRect.y,
-        },
-      }));
-    }, 820);
-
-    return () => window.clearTimeout(timer);
-  }, [outsidePet.phase]);
-
-  useEffect(() => {
-    if (outsidePet.phase !== "walk_in") return undefined;
-
-    const targetX = outsidePet.side === "left" ? outsidePetFieldRect.x + 64 : outsidePetFieldRect.x + outsidePetFieldRect.width - outsidePetSpriteSize - 64;
-    const timer = window.setInterval(() => {
-      setOutsidePet((current) => {
-        if (current.phase !== "walk_in") return current;
-
-        const step = current.side === "left" ? 18 : -18;
-        const nextX = current.position.x + step;
-        const reachedTarget = current.side === "left" ? nextX >= targetX : nextX <= targetX;
-        if (reachedTarget) {
-          return {
-            ...current,
-            phase: "free_roam",
-            animation: "idle",
-            roamTicks: 0,
-            attachedObjectId: undefined,
-            position: { ...current.position, x: targetX },
-          };
-        }
-
-        return { ...current, position: { ...current.position, x: nextX }, direction: step > 0 ? 1 : -1 };
-      });
-    }, 90);
-
-    return () => window.clearInterval(timer);
-  }, [outsidePet.phase, outsidePet.side]);
-
-  useEffect(() => {
-    if (outsidePet.phase !== "free_roam") return undefined;
-
-    const timer = window.setInterval(() => {
-      setOutsidePet((current) => {
-        if (current.phase !== "free_roam") return current;
-
-        const nextRoamTicks = current.roamTicks + 1;
-        const petRect = { x: current.position.x, y: current.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize };
-        const attachedObject = current.attachedObjectId
-          ? interactionObjects.find((object) => object.id === current.attachedObjectId)
-          : undefined;
-        const nextAnimation = getNextOutsidePetRoamAnimation(current, interactionObjects, manager, profile.managerTone, questOutcomeStreak, reducedMotion);
-        const nextDirection = resolveOutsidePetDirection(current, interactionObjects);
-        const speed = nextAnimation === "run" ? 42 : nextAnimation === "jump" ? 28 : nextAnimation === "climbing" ? 0 : 22;
-        const rawX = current.position.x + speed * nextDirection;
-        const minX = outsidePetFieldRect.x;
-        const maxX = outsidePetFieldRect.x + outsidePetFieldRect.width - outsidePetSpriteSize;
-        const clampedX = Math.min(Math.max(rawX, minX), maxX);
-        const nextAttachedObject = nextAnimation === "climbing"
-          ? attachedObject?.type === "ladder"
-            ? attachedObject
-            : getNearbyLadder(petRect, interactionObjects)
-          : undefined;
-        const nextPosition = nextAttachedObject
-          ? resolveOutsidePetAttachmentPosition(nextAttachedObject, nextAnimation)
-          : resolveOutsidePetRoamPosition(current, nextAnimation, { x: clampedX, y: nextAnimation === "jump" ? outsidePetFieldRect.y - 26 : outsidePetFieldRect.y }, interactionObjects);
-
-        return {
-          ...current,
-          animation: nextAnimation,
-          attachedObjectId: nextAttachedObject?.id,
-          direction: clampedX === minX ? 1 : clampedX === maxX ? -1 : nextDirection,
-          roamTicks: nextRoamTicks,
-          position: nextPosition,
-        };
-      });
-    }, 1100);
-
-    return () => window.clearInterval(timer);
-  }, [outsidePet.phase, interactionObjects, manager, profile.managerTone, questOutcomeStreak, reducedMotion]);
-
-  useEffect(() => {
-    if (outsidePet.phase !== "free_roam" || outsidePet.animation !== "climbing" || !outsidePet.attachedObjectId) return;
-
-    const attachedObject = interactionObjects.find((object) => object.id === outsidePet.attachedObjectId);
-    if (!attachedObject || attachedObject.type !== "ladder") return;
-
-    const nextPosition = resolveOutsidePetAttachmentPosition(attachedObject, "climbing");
-    setOutsidePet((current) => {
-      if (current.phase !== "free_roam" || current.animation !== "climbing" || current.attachedObjectId !== attachedObject.id) return current;
-      if (current.position.x === nextPosition.x && current.position.y === nextPosition.y) return current;
-      return { ...current, position: nextPosition };
-    });
-  }, [interactionObjects, outsidePet.phase, outsidePet.animation, outsidePet.attachedObjectId]);
-
-  useEffect(() => {
-    if (outsidePet.phase !== "free_roam" || openWindows.includes("journal")) return;
-
-    setOutsidePet((current) => {
-      if (current.phase !== "free_roam") return current;
-
-      const side = getNearestOutsidePetSide(current.position);
-      return {
-        ...current,
-        phase: "returning",
-        side,
-        animation: "walk",
-        attachedObjectId: undefined,
-        direction: side === "left" ? -1 : 1,
-        position: { ...current.position, y: outsidePetFieldRect.y },
-      };
-    });
-  }, [openWindows, outsidePet.phase]);
-
-  useEffect(() => {
-    if (outsidePet.phase !== "returning") return undefined;
-
-    const timer = window.setInterval(() => {
-      setOutsidePet((current) => {
-        if (current.phase !== "returning") return current;
-
-        const step = current.side === "left" ? -22 : 22;
-        const nextX = current.position.x + step;
-        const reachedEdge = current.side === "left" ? nextX <= -outsidePetSpriteSize : nextX >= window.innerWidth;
-        if (reachedEdge) return outsidePetInitialState;
-
-        return {
-          ...current,
-          animation: nextX < 16 || nextX > window.innerWidth - outsidePetSpriteSize - 16 ? "hiding" : "walk",
-          direction: step > 0 ? 1 : -1,
-          position: { x: nextX, y: outsidePetFieldRect.y },
-        };
-      });
-    }, 100);
-
-    return () => window.clearInterval(timer);
-  }, [outsidePet.phase]);
-
-  const remainingTime = formatRemaining(now);
   const managerDisplayStage = getManagerDisplayStage(manager);
-  const projectionModeAsset = projectionModeAssets.find((asset) => asset.mode === "single_plane_pepper");
-  const pixelTvConnected = pixelTvMode === "projection";
+  const getNextRoamAnimation = useCallback(
+    (pet: OutsidePetState, objects: InteractionObject[]) =>
+      resolveSupportedPetAnimationState(
+        manager.petId,
+        managerDisplayStage,
+        getNextOutsidePetRoamAnimation(pet, objects, manager, profile.managerTone, questOutcomeStreak, reducedMotion),
+      ),
+    [manager, managerDisplayStage, profile.managerTone, questOutcomeStreak, reducedMotion],
+  );
+  useOutsidePetRuntime({
+    outsidePet,
+    setOutsidePet,
+    interactionObjects,
+    openWindows,
+    getNextRoamAnimation,
+  });
 
-  function triggerBlinkFocus(mode: BlinkFocusMode) { setBlinkFocus({ id: Date.now(), mode }); }
+  const projectionModeAsset = projectionModeAssets.find((asset) => asset.mode === "single_plane_pepper");
+
+  function triggerBlinkFocus(reason: BlinkEntryReason) {
+    const effect = resolveBlinkFocusEffect(reason, reducedMotion);
+    if (!effect) return;
+    setBlinkFocus({ id: Date.now(), ...effect });
+  }
+
   function enterDesktop() {
-    triggerBlinkFocus("start_day");
+    triggerBlinkFocus("onboarding_completed");
     setScreen("desktop");
   }
-  function exitService() {
-    setStartOpen(false);
-    setExitAfterBlink(true);
-    triggerBlinkFocus("end_day");
-  }
+
   function continueWithSelectedManager() {
+    if (profile.name.trim()) {
+      setManager((current) => applyManagerSpriteSelection(current, selectedPetId));
+      setStartOpen(false);
+      setScreen("desktop");
+      return;
+    }
+
     const persona = resolveManagerPersona({ petId: selectedPetId, tone: defaultProfile.managerTone, questStyle: defaultProfile.questSize });
     const nextManager = normalizeManager({ ...defaultManager, petId: selectedPetId, behaviorStyle: persona.behaviorStyle, line: getPersonaLine("setup", persona) });
     setManager(nextManager);
@@ -1183,12 +909,23 @@ export default function App() {
     setNeedsClarify(false);
     setScreen("wizard");
   }
-  function restartService() {
-    window.localStorage.removeItem(profileKey);
-    window.localStorage.removeItem(managerKey);
-    questLogRepository.set([]);
+
+  function openManagerSelectMenu() {
     setStartOpen(false);
     setScreen("manager-select");
+    setSelectedPetId(manager.petId);
+  }
+
+  function restartService() {
+    const restartTarget = getRestartServiceTarget();
+    const resetAt = new Date().toISOString();
+    window.localStorage.removeItem(profileKey);
+    window.localStorage.removeItem(managerKey);
+    writeStorage(lifecycleResetAtKey, resetAt);
+    questLogRepository.set([]);
+    setServerLogCutoffIso(resetAt);
+    setStartOpen(false);
+    setScreen(restartTarget.screen);
     setProfile(defaultProfile);
     setWizardDraft(defaultProfile);
     setManager(defaultManager);
@@ -1201,10 +938,13 @@ export default function App() {
     setQuestOutcomeStreak({ result: null, count: 0 });
     setOutsidePet(outsidePetInitialState);
     setBlinkFocus(null);
-    setExitAfterBlink(false);
-    resetOpenWindows(["quest", "manager", "ladderObject", "platformObject"]);
-    resetWindowPositions();
+    setPixelTvContextMenu(null);
+    setLogSync({ status: "idle", message: "" });
+    resetPixelTvMode();
+    resetOpenWindows(restartTarget.openWindows);
+    resetWindowLayout();
   }
+
   function finishBlinkFocus() {
     setBlinkFocus(null);
     if (outsidePet.phase === "blink") {
@@ -1221,18 +961,20 @@ export default function App() {
       return;
     }
 
-    if (!exitAfterBlink) return;
-    setExitAfterBlink(false);
-    resetOpenWindows(["quest", "manager"]);
-    setScreen("manager-created");
-  }
-  function togglePixelTvMode() {
-    setPixelTvMode((current) => (current === "projection" ? "default" : "projection"));
   }
   function openAppWindow(id: WindowId) {
     openWindow(id);
-    if (id === "journal") triggerOutsidePetFromJournal();
+    if (id === "journal") {
+      triggerBlinkFocus("journal_opened");
+      triggerOutsidePetFromJournal();
+    }
   }
+
+  function closeAppWindow(id: WindowId) {
+    if (id === "journal") triggerBlinkFocus("journal_closed");
+    closeWindow(id);
+  }
+
   function triggerOutsidePetFromJournal() {
     if (outsidePet.phase !== "inside") return;
 
@@ -1248,7 +990,6 @@ export default function App() {
       animation: "hiding",
       roamTicks: 0,
     });
-    triggerBlinkFocus("outside_transition");
   }
   function openPixelTvContextMenu(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
@@ -1260,7 +1001,7 @@ export default function App() {
   }
   function launchProjectionMode() {
     if (!pixelTvConnected) {
-      openPixelTvProperties();
+      openAppWindow("pixelTv");
       return;
     }
 
@@ -1275,51 +1016,145 @@ export default function App() {
       count: current.result === result ? current.count + 1 : 1,
     }));
   }
-  function applyManagerContext(context: ManagerContext) {
-    setManager((current) => ({ ...current, mood: context.currentMood, line: createManagerContextLine(context, getManagerPersona(current, profile)) }));
+  async function enrichQuestEventWithLlmStatEvaluation(request: CreateQuestEventRequest): Promise<CreateQuestEventRequest> {
+    const snapshot = managerLlmStateRef.current;
+
+    try {
+      const output = await requestManagerStatEvaluationViaApi(createManagerLlmRequest("statEvaluation", {
+        managerContext: {
+          currentMood: request.managerMoodAfter ?? snapshot.manager.mood,
+          recentEventCount: snapshot.logs.length,
+          lastQuestResult: request.result ?? null,
+          memorySummary: `recent events ${snapshot.logs.length}`,
+          rewardHints: [],
+        },
+        profile: snapshot.profile,
+        manager: snapshot.manager,
+        quest: snapshot.quest,
+        questStatus: snapshot.questStatus,
+        previousQuestTitle: snapshot.previousQuestTitle,
+        selectedFailureReason: snapshot.selectedFailureReason,
+        logs: snapshot.logs,
+      }));
+
+      return {
+        ...request,
+        metadata: {
+          ...request.metadata,
+          statDeltas: output.statEvaluation.statDeltas,
+          statBudget: output.statEvaluation.statBudget,
+          primaryStats: output.statEvaluation.primaryStats,
+          statEvaluationReason: output.statEvaluation.reason,
+          statEvaluationSource: output.source,
+          statEvaluationFallbackReason: output.fallbackReason,
+          llmPromptVersion: output.source === "llm" ? output.promptVersion : undefined,
+        },
+      };
+    } catch {
+      return request;
+    }
   }
 
   async function saveQuestEvent(request: CreateQuestEventRequest) {
-    setLogSync({ status: "saving", message: "퀘스트 이벤트를 서버에 저장하는 중이야." });
+    setLogSync({ status: "saving", message: questLogSyncMessages.saving });
 
     try {
-      const savedEvent = await createQuestEventViaApi(request);
+      const enrichedRequest = await enrichQuestEventWithLlmStatEvaluation(request);
+      const savedEvent = await createQuestEventViaApi(enrichedRequest);
       if (savedEvent.log) recordQuestLog(savedEvent.log);
       applyManagerContext(savedEvent.managerContext);
-      setLogSync({ status: "success", message: "퀘스트 이벤트를 서버에 저장했어." });
+      setLogSync({ status: "success", message: questLogSyncMessages.saveSuccess });
     } catch {
-      setLogSync({ status: "error", message: "기록 저장에 실패했어. 화면 흐름은 유지되고, 기록 노트에서 다시 확인할 수 있어." });
+      setLogSync({ status: "error", message: questLogSyncMessages.saveError });
       setManager((current) => ({ ...current, line: getPersonaLine("api_error", getManagerPersona(current, profile)) }));
     }
   }
 
-  function openTodayQuest() {
-    if (questStatus === "success") {
-      setQuest(createQuest(profile));
-      setQuestStatus("draft");
-      setPreviousQuestTitle("");
-      setManager((current) => ({ ...current, mood: "waiting", line: getPersonaLine("quest_recommended", getManagerPersona(current, profile)) }));
-      setWorkflowWindows(["quest", "manager"]);
-      return;
-    }
+  const recommendQuestWithLlm = useCallback(async () => {
+    const snapshot = managerLlmStateRef.current;
 
-    if (questStatus === "active") {
-      setWorkflowWindows(["runner", "manager"]);
-      return;
+    try {
+      const output = await requestManagerQuestSuggestionViaApi(createManagerLlmRequest("questSuggestion", {
+        managerContext: {
+          currentMood: snapshot.manager.mood,
+          recentEventCount: snapshot.logs.length,
+          lastQuestResult: snapshot.logs[0]?.result ?? null,
+          memorySummary: `recent events ${snapshot.logs.length}`,
+          rewardHints: [],
+        },
+        profile: snapshot.profile,
+        manager: snapshot.manager,
+        quest: snapshot.quest,
+        questStatus: snapshot.questStatus,
+        previousQuestTitle: snapshot.previousQuestTitle,
+        selectedFailureReason: snapshot.selectedFailureReason,
+        logs: snapshot.logs,
+      }));
+      setQuest(output.questSuggestion);
+      if (output.managerLine) {
+        setManager((current) => ({ ...current, line: output.managerLine ?? current.line }));
+      }
+    } catch {
+      // The rule-created quest draft is already visible.
     }
+  }, []);
 
-    if (questStatus === "failed") {
-      setWorkflowWindows(["failure", "manager"]);
-      return;
+  const reevaluateQuestDifficultyBeforeAccept = useCallback(async (questDraft: Quest) => {
+    const snapshot = managerLlmStateRef.current;
+
+    try {
+      const output = await requestManagerDifficultyEvaluationViaApi(createManagerLlmRequest("difficultyEvaluation", {
+        managerContext: {
+          currentMood: snapshot.manager.mood,
+          recentEventCount: snapshot.logs.length,
+          lastQuestResult: snapshot.logs[0]?.result ?? null,
+          memorySummary: `recent events ${snapshot.logs.length}`,
+          rewardHints: [],
+        },
+        profile: snapshot.profile,
+        manager: snapshot.manager,
+        quest: questDraft,
+        questStatus: snapshot.questStatus,
+        previousQuestTitle: snapshot.previousQuestTitle,
+        selectedFailureReason: snapshot.selectedFailureReason,
+        logs: snapshot.logs,
+      }));
+      return output.difficultyEvaluation;
+    } catch {
+      return null;
     }
+  }, []);
 
-    if (questStatus === "recovery") {
-      setWorkflowWindows(["recovery", "manager"]);
-      return;
-    }
-
-    openWindow("quest");
-  }
+  const {
+    openTodayQuest,
+    updateQuest,
+    acceptQuest,
+    completeQuest,
+    startFailureFlow,
+    createRecovery,
+    editRecovery,
+  } = useQuestFlow({
+    quest,
+    questStatus,
+    profile,
+    manager,
+    selectedFailureReason,
+    setQuest,
+    setQuestStatus,
+    setManager,
+    setPreviousQuestTitle,
+    setWorkflowWindows,
+    resetOpenWindows,
+    openWindow,
+    createQuest,
+    addExp,
+    getManagerPersona,
+    recordOutcomeStreak,
+    saveQuestEvent: (request) => void saveQuestEvent(request),
+    recommendQuest: () => void recommendQuestWithLlm(),
+    reevaluateQuestBeforeAccept: reevaluateQuestDifficultyBeforeAccept,
+    createQuestEventRequest,
+  });
 
   function submitWizard(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1336,53 +1171,6 @@ export default function App() {
     resetWindowPositions();
     setNeedsClarify(false);
     setScreen("manager-created");
-  }
-
-  function updateQuest(patch: Partial<Quest>) {
-    setQuest((current) => {
-      const nextType = patch.type ?? current.type;
-      const nextAmount = patch.amount ?? current.amount;
-      const nextDifficulty = patch.difficulty ?? current.difficulty;
-      const nextUnit = patch.type && patch.type !== current.type ? getQuestUnit(patch.type) : patch.unit ?? current.unit;
-      return { ...current, ...patch, type: nextType, amount: nextAmount, difficulty: nextDifficulty, unit: nextUnit, rewardExp: calculateReward(nextDifficulty, nextAmount, nextType) };
-    });
-  }
-
-  function acceptQuest() {
-    setQuestStatus("active");
-    setWorkflowWindows(["runner", "manager"]);
-    setManager((current) => ({ ...current, mood: "focused", line: getPersonaLine("quest_started", getManagerPersona(current, profile)) }));
-  }
-
-  function completeQuest() {
-    const result = questStatus === "recovery" ? "recovery" : "success";
-    recordOutcomeStreak("success");
-    const eventLine = getPersonaLine("quest_completed", getManagerPersona(manager, profile));
-    const nextManager = addExp(manager, quest.rewardExp, eventLine);
-    setManager((current) => addExp(current, quest.rewardExp, getPersonaLine("quest_completed", getManagerPersona(current, profile))));
-    void saveQuestEvent(createQuestEventRequest(quest, result, quest.rewardExp, "happy", { managerLine: eventLine, managerBefore: manager, managerAfter: nextManager, soundEnabled: manager.soundEnabled }));
-    setQuestStatus("success");
-    setWorkflowWindows(["manager"]);
-  }
-
-  function startFailureFlow() {
-    setQuestStatus("failed");
-    setManager((current) => ({ ...current, mood: "recovering", line: getPersonaLine("quest_failed", getManagerPersona(current, profile)) }));
-    setWorkflowWindows(["failure", "manager"]);
-  }
-
-  function createRecovery() {
-    recordOutcomeStreak("failed");
-    setPreviousQuestTitle(quest.title);
-    void saveQuestEvent(createQuestEventRequest(quest, "failed", 0, "recovering", { failureReason: selectedFailureReason, managerLine: getPersonaLine("quest_failed", getManagerPersona(manager, profile)), managerBefore: manager, managerAfter: manager, soundEnabled: manager.soundEnabled }));
-    setQuest(createRecoveryQuest(quest));
-    setQuestStatus("recovery");
-    setWorkflowWindows(["recovery", "manager"]);
-    setManager((current) => ({ ...current, mood: "recovering", line: getPersonaLine("recovery_created", getManagerPersona(current, profile)) }));
-  }
-
-  function editRecovery() {
-    resetOpenWindows(["quest"]);
   }
 
   function saveProfile(nextProfile: UserProfile) {
@@ -1431,7 +1219,7 @@ export default function App() {
         <DesktopIcon label="기록 노트" type="journal" onClick={() => openAppWindow("journal")} />
         <DesktopIcon
           label={pixelTvConnected ? "Projection TV" : "Pixel TV"}
-          type="pixelTvProperties"
+          type="pixelTv"
           assetId="pixel-tv"
           overrideIdleSrc={pixelTvConnected ? projectionModeAsset?.connectedIconSrc : undefined}
           overrideHoverSrc={pixelTvConnected ? projectionModeAsset?.connectedIconHoverSrc : undefined}
@@ -1455,22 +1243,27 @@ export default function App() {
 
       {isWindowVisible("quest") && <XpWindow className="quest-window" title={questStatus === "recovery" ? "복구 퀘스트" : "오늘의 퀘스트"} {...windowChrome("quest")}><QuestWindow quest={quest} status={questStatus} previousQuestTitle={previousQuestTitle} onQuestChange={updateQuest} onAccept={acceptQuest} onOpenRunner={() => openWindow("runner")} onRecommendNext={openTodayQuest} /></XpWindow>}
       {managerRuntimeState.windowInteraction === "quest_hanging" && <WindowPetInteraction state="hanging" petId={manager.petId} stage={managerRuntimeState.stage} placement="below-quest" position={windowPositions.quest} measuredRect={windowRects.quest} zIndex={10 + openWindows.indexOf("quest")} />}
-      {isWindowVisible("runner") && <XpWindow className="runner-window" title="QuestRunner.exe" {...windowChrome("runner")}><QuestRunnerWindow quest={quest} remainingTime={remainingTime} onComplete={completeQuest} onFail={startFailureFlow} /></XpWindow>}
+      {isWindowVisible("runner") && <XpWindow className="runner-window" title="QuestRunner.exe" {...windowChrome("runner")}><QuestRunnerWindow quest={quest} onComplete={completeQuest} onFail={startFailureFlow} /></XpWindow>}
       {isWindowVisible("failure") && <XpWindow className="failure-window" title="퀘스트가 소멸했어" {...windowChrome("failure")}><FailureWindow selectedFailureReason={selectedFailureReason} onReasonChange={setSelectedFailureReason} onCreateRecovery={createRecovery} /></XpWindow>}
       {isWindowVisible("recovery") && <XpWindow className="recovery-window" title="복구 퀘스트" {...windowChrome("recovery")}><RecoveryWindow quest={quest} onEdit={editRecovery} onAccept={acceptQuest} /></XpWindow>}
       {managerRuntimeState.windowInteraction === "recovery_hiding" && <WindowPetInteraction state="hiding" petId={manager.petId} stage={managerRuntimeState.stage} placement="beside-recovery" position={windowPositions.recovery} measuredRect={windowRects.recovery} zIndex={10 + openWindows.indexOf("recovery")} />}
       {isWindowVisible("manager") && <XpWindow className="manager-window" title="매니저" {...windowChrome("manager")}><ManagerWindow manager={manager} petAway={managerRuntimeState.petAwayFromManagerWindow} /></XpWindow>}
       {isWindowVisible("profile") && <XpWindow className="profile-window" title="내 프로필" {...windowChrome("profile")}><ProfileWindow profile={profile} onSave={saveProfile} /></XpWindow>}
-      {isWindowVisible("journal") && <XpWindow className="journal-window" title="기록 노트" {...windowChrome("journal")}><JournalWindow logs={logs} sync={logSync} /></XpWindow>}
+      {isWindowVisible("journal") && <XpWindow className="journal-window" title="기록 노트" {...windowChrome("journal")} onClose={() => closeAppWindow("journal")}><JournalWindow logs={logs} sync={logSync} /></XpWindow>}
       {isWindowVisible("trash") && <XpWindow className="trash-window" title="휴지통" {...windowChrome("trash")}><div className="empty-trash">비어 있음</div></XpWindow>}
       {isWindowVisible("settings") && <XpWindow className="settings-window" title="설정" {...windowChrome("settings")}><SettingsWindow manager={manager} onSelectStage={selectManagerStage} onToggleSound={toggleManagerSound} /></XpWindow>}
+      {isWindowVisible("pixelTv") && (
+        <XpWindow className="pixel-tv-window" title="Pixel TV" {...windowChrome("pixelTv")}>
+          <PixelTvWindow manager={manager} stage={managerRuntimeState.stage} />
+        </XpWindow>
+      )}
       {isWindowVisible("pixelTvProperties") && (
         <XpWindow className="pixel-tv-properties-window" title="Pixel TV 속성" {...windowChrome("pixelTvProperties")}>
           <PixelTvPropertiesWindow connected={pixelTvConnected} onToggle={togglePixelTvMode} />
         </XpWindow>
       )}
       {isWindowVisible("ladderObject") && (
-        <XpWindow className="interaction-object-window ladder-object-window" title="사다리" resizeAxis="vertical" {...windowChrome("ladderObject")}>
+        <XpWindow className="interaction-object-window ladder-object-window" title="" resizeAxis="vertical" {...windowChrome("ladderObject")}>
           <LadderObjectWindow />
         </XpWindow>
       )}
@@ -1483,22 +1276,22 @@ export default function App() {
       <BlinkFocusOverlay effect={blinkFocus} onDone={finishBlinkFocus} />
       <footer className="taskbar">
         <button className="start-button" type="button" onClick={() => setStartOpen((value) => !value)}><span className="start-mark" />시작</button>
-        {startOpen && <StartMenu questStatus={questStatus} onOpenWindow={openAppWindow} onExitService={exitService} onRestart={restartService} />}
+        {startOpen && <StartMenu questStatus={questStatus} onOpenWindow={openAppWindow} onRestart={restartService} onOpenManagerSelect={openManagerSelectMenu} />}
         <div className="taskbar-items">
           {openWindows.map((windowId) => (
             <button className={activeWindow === windowId ? "active" : ""} key={windowId} type="button" onClick={() => openWindow(windowId)}>
               <WindowIconMark id={windowId} className="taskbar-icon" />
-              <span className="taskbar-label">{windowLabels[windowId]}</span>
+              <span className="taskbar-label">{windowRegistry[windowId].label}</span>
             </button>
           ))}
         </div>
-        <div className="system-tray"><span>Lv.{manager.level}</span><span>{formatTime(now)}</span></div>
+        <div className="system-tray"><span>Lv.{manager.level}</span><SystemTrayClock /></div>
       </footer>
     </main>
   );
 }
 
-function StartMenu({ questStatus, onOpenWindow, onExitService, onRestart }: StartMenuProps) {
+function StartMenu({ questStatus, onOpenWindow, onRestart, onOpenManagerSelect }: StartMenuProps) {
   return (
     <div className="start-menu">
       <strong>Manager.exe</strong>
@@ -1516,9 +1309,9 @@ function StartMenu({ questStatus, onOpenWindow, onExitService, onRestart }: Star
         <span className="menu-icon text-icon" aria-hidden="true">RS</span>
         <span>다시 시작</span>
       </button>
-      <button type="button" onClick={onExitService}>
-        <span className="menu-icon text-icon" aria-hidden="true">IO</span>
-        <span>서비스 종료</span>
+      <button type="button" onClick={onOpenManagerSelect}>
+        <span className="menu-icon text-icon" aria-hidden="true">MS</span>
+        <span>매니저 바꾸기</span>
       </button>
     </div>
   );
@@ -1563,6 +1356,199 @@ function DesktopContextMenu({ x, y, onOpenProperties }: DesktopContextMenuProps)
   );
 }
 
+const pixelTvPreviewFrame = { width: 320, height: 180 };
+
+function PixelTvWindow({ manager, stage }: PixelTvWindowProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const [source, setSource] = useState<PixelTvSourceState | null>(null);
+  const [sourceSize, setSourceSize] = useState<PixelTvSourceSize | null>(null);
+  const [cameraState, setCameraState] = useState<PixelTvCameraState>("idle");
+  const [captureSrc, setCaptureSrc] = useState<string | null>(null);
+  const [pixelScale, setPixelScale] = useState(8);
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (source) URL.revokeObjectURL(source.url);
+    };
+  }, [source]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    if (!canvas || !video || cameraState !== "live") return undefined;
+
+    const drawFrame = () => {
+      if (canPixelizeSource(video.videoWidth, video.videoHeight)) {
+        const plan = createPixelizerPlan(video.videoWidth, video.videoHeight, { scale: pixelScale });
+        setSourceSize((current) => current?.width === plan.sourceWidth && current.height === plan.sourceHeight ? current : { width: plan.sourceWidth, height: plan.sourceHeight });
+        renderPixelizedSource(video, canvas, plan);
+      }
+
+      frameRef.current = window.requestAnimationFrame(drawFrame);
+    };
+
+    frameRef.current = window.requestAnimationFrame(drawFrame);
+    return () => {
+      if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    };
+  }, [cameraState, pixelScale]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !source || cameraState === "live") {
+      if (cameraState !== "live") setSourceSize(null);
+      return;
+    }
+
+    let disposed = false;
+    const image = new Image();
+    image.onload = () => {
+      if (disposed) return;
+
+      const plan = createPixelizerPlan(image.naturalWidth, image.naturalHeight, { scale: pixelScale });
+      setSourceSize({ width: plan.sourceWidth, height: plan.sourceHeight });
+      renderPixelizedSource(image, canvas, plan);
+    };
+    image.onerror = () => {
+      if (!disposed) setSourceSize(null);
+    };
+    image.src = source.url;
+
+    return () => {
+      disposed = true;
+    };
+  }, [cameraState, pixelScale, source]);
+
+  async function startCamera() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraState("error");
+      return;
+    }
+
+    setCameraState("requesting");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "user" } });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setSource(null);
+      setCameraState("live");
+    } catch {
+      setCameraState("error");
+    }
+  }
+
+  function stopCamera() {
+    if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
+    frameRef.current = null;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
+    setCameraState("idle");
+    setSourceSize(null);
+  }
+
+  function handleSourceChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    stopCamera();
+    setSource({ url: URL.createObjectURL(file), name: file.name });
+    event.target.value = "";
+  }
+
+  function capturePhoto() {
+    const canvas = canvasRef.current;
+    if (!canvas || canvas.width === 0 || canvas.height === 0) return;
+    setCaptureSrc(canvas.toDataURL("image/png"));
+  }
+
+  const signalLabel = cameraState === "live" ? "CAM LIVE" : source ? "FILE INPUT" : cameraState === "requesting" ? "REQUESTING" : cameraState === "error" ? "CAM BLOCKED" : "NO SIGNAL";
+
+  return (
+    <section className="pixel-tv-panel">
+      <video ref={videoRef} className="pixel-tv-video-source" playsInline muted />
+      <div className="pixel-tv-screen">
+        <canvas ref={canvasRef} className="pixel-tv-canvas" aria-label="픽셀화 미리보기" />
+        {cameraState !== "live" && !source && <span>{signalLabel}</span>}
+      </div>
+      <div className="pixel-tv-controls">
+        {cameraState === "live" ? (
+          <button className="xp-button" type="button" onClick={stopCamera}>정지</button>
+        ) : (
+          <button className="xp-button primary" type="button" onClick={startCamera} disabled={cameraState === "requesting"}>
+            카메라
+          </button>
+        )}
+        <button className="xp-button" type="button" onClick={capturePhoto} disabled={!sourceSize}>사진</button>
+        <label className="xp-button pixel-tv-file-button">
+          <span>파일</span>
+          <input type="file" accept="image/*" onChange={handleSourceChange} />
+        </label>
+        <label className="pixel-tv-scale-control">
+          <span>픽셀</span>
+          <input
+            type="range"
+            min="2"
+            max="24"
+            step="1"
+            value={pixelScale}
+            onChange={(event) => setPixelScale(Number(event.target.value))}
+          />
+          <strong>{pixelScale}</strong>
+        </label>
+      </div>
+      <div className="pixel-tv-status">
+        <span>{cameraState === "live" ? "WEBCAM" : source?.name ?? signalLabel}</span>
+        <strong>{sourceSize ? `${sourceSize.width}x${sourceSize.height}` : "--"}</strong>
+      </div>
+      <div className="pixel-tv-photo-slot">
+        {captureSrc ? (
+          <div className="pixel-tv-photo-card">
+            <img src={captureSrc} alt="" />
+            <DesktopPet mood={manager.mood} petId={manager.petId} stage={stage} />
+            <span>{manager.name} + Pixel TV</span>
+          </div>
+        ) : (
+          <span>PHOTO EMPTY</span>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function renderPixelizedSource(source: CanvasImageSource, canvas: HTMLCanvasElement, plan: PixelizerPlan) {
+  const previewSize = getPixelizerPreviewSize(plan, pixelTvPreviewFrame);
+  const sampleCanvas = document.createElement("canvas");
+  sampleCanvas.width = plan.sampleWidth;
+  sampleCanvas.height = plan.sampleHeight;
+  const sampleContext = sampleCanvas.getContext("2d");
+  const previewContext = canvas.getContext("2d");
+  if (!sampleContext || !previewContext) return;
+
+  canvas.width = previewSize.width;
+  canvas.height = previewSize.height;
+  sampleContext.imageSmoothingEnabled = true;
+  sampleContext.clearRect(0, 0, plan.sampleWidth, plan.sampleHeight);
+  sampleContext.drawImage(source, 0, 0, plan.sampleWidth, plan.sampleHeight);
+  previewContext.imageSmoothingEnabled = plan.smoothing;
+  previewContext.clearRect(0, 0, previewSize.width, previewSize.height);
+  previewContext.drawImage(sampleCanvas, 0, 0, previewSize.width, previewSize.height);
+}
+
 function PixelTvPropertiesWindow({ connected, onToggle }: PixelTvPropertiesWindowProps) {
   return (
     <section className="pixel-tv-properties-panel">
@@ -1594,7 +1580,7 @@ function BlinkFocusOverlay({ effect, onDone }: BlinkFocusOverlayProps) {
   return (
     <div
       key={effect.id}
-      className={`blink-focus-overlay ${effect.mode}`}
+      className={`blink-focus-overlay ${effect.mode} ${effect.reducedMotion}`}
       aria-hidden="true"
       onAnimationEnd={handleAnimationEnd}
     >
@@ -1616,7 +1602,15 @@ function QuestWindow({ quest, status, previousQuestTitle, onQuestChange, onAccep
   return <section className="quest-draft">{status === "recovery" ? <div className="recovery-summary"><strong>다시 시작할 수 있는 작은 퀘스트로 줄였어</strong><span>기존: {previousQuestTitle}</span><span>복구: {quest.title}</span></div> : <div className="quest-summary"><span>오늘 수행할 퀘스트 초안</span><strong>3 / 4 완료</strong></div>}<form className="quest-form"><label htmlFor="quest-title">제목</label><input className="xp-input" id="quest-title" value={quest.title} onChange={(event) => onQuestChange({ title: event.target.value })} /><label htmlFor="quest-type">유형</label><select className="xp-select" id="quest-type" value={quest.type} onChange={(event) => onQuestChange({ type: event.target.value as QuestType })}><option value="time">시간형</option><option value="quantity">수량형</option><option value="action">행동형</option></select><label htmlFor="quest-amount">분량</label><div className="form-pair"><input className="xp-input" id="quest-amount" type="number" min={1} value={quest.amount} onChange={(event) => onQuestChange({ amount: Number(event.target.value) })} /><select className="xp-select" aria-label="분량 단위" value={quest.unit} onChange={(event) => onQuestChange({ unit: event.target.value })}><option>분</option><option>개</option><option>회</option><option>페이지</option></select></div><span>난이도</span><div className="difficulty" aria-label="난이도 선택">{(["easy", "normal", "hard"] as Difficulty[]).map((difficulty) => { const inputId = `difficulty-${difficulty}`; return <span className="choice-field" key={difficulty}><input id={inputId} name="difficulty" type="radio" checked={quest.difficulty === difficulty} onChange={() => onQuestChange({ difficulty })} /><label htmlFor={inputId}>{difficultyLabels[difficulty]}</label></span>; })}</div><label htmlFor="quest-deadline">제한 시간</label><select className="xp-select" id="quest-deadline" value={quest.deadline} onChange={(event) => onQuestChange({ deadline: event.target.value })}><option>오늘 23:59</option><option>오늘 18:00</option><option>오늘 21:00</option></select></form><div className="quest-footer"><span className="reward">예상 보상: EXP {quest.rewardExp}</span><button className="xp-button primary" type="button" onClick={onAccept}>수락</button></div></section>;
 }
 
-function QuestRunnerWindow({ quest, remainingTime, onComplete, onFail }: QuestRunnerWindowProps) {
+function QuestRunnerWindow({ quest, onComplete, onFail }: QuestRunnerWindowProps) {
+  const [now, setNow] = useState(() => new Date());
+  const remainingTime = formatRemainingUntilEndOfDay(now);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <section className="runner-program">
       <div className="runner-menubar">
@@ -1651,6 +1645,17 @@ function QuestRunnerWindow({ quest, remainingTime, onComplete, onFail }: QuestRu
       </div>
     </section>
   );
+}
+
+function SystemTrayClock() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return <span>{formatKoreanClockTime(now)}</span>;
 }
 
 function FailureWindow({ selectedFailureReason, onReasonChange, onCreateRecovery }: FailureWindowProps) {
@@ -1837,7 +1842,7 @@ function XpWindow({ id, title, titlebarIcon, className, children, position, size
         zIndex,
       } as CSSProperties & Record<"--window-x" | "--window-y", string>)
     : undefined;
-  const icon = titlebarIcon ?? (id ? windowTitleIcons[id] : "M");
+  const icon = titlebarIcon ?? (id ? windowRegistry[id].titleIcon : "M");
 
   useLayoutEffect(() => {
     if (!onMeasure) return undefined;
@@ -1969,11 +1974,11 @@ function XpWindow({ id, title, titlebarIcon, className, children, position, size
 }
 
 function WindowIconMark({ id, fallback, className }: WindowIconMarkProps) {
-  const manifestId = id ? windowIconAssetIds[id] : undefined;
-  const asset = manifestId ? getDesktopIconAsset(manifestId).idleSrc : id ? legacyWindowIconAssets[id] : undefined;
+  const manifestId = id ? windowRegistry[id].windowIconAssetId : undefined;
+  const asset = manifestId ? getDesktopIconAsset(manifestId).idleSrc : id ? windowRegistry[id].legacyWindowIconAsset : undefined;
   return (
     <span className={className} aria-hidden="true">
-      {asset ? <img src={asset} alt="" /> : fallback ?? (id ? windowTitleIcons[id] : "M")}
+      {asset ? <img src={asset} alt="" /> : fallback ?? (id ? windowRegistry[id].titleIcon : "M")}
     </span>
   );
 }
@@ -1989,7 +1994,7 @@ function DesktopIcon({
   disabled = false,
 }: DesktopIconProps) {
   const [iconState, setIconState] = useState<"idle" | "hover" | "active">("idle");
-  const manifestId = assetId ?? desktopIconAssetIds[type];
+  const manifestId = assetId ?? windowRegistry[type].desktopIconAssetId;
   const asset = manifestId ? getDesktopIconAsset(manifestId) : undefined;
   const idleSrc = overrideIdleSrc ?? asset?.idleSrc;
   const hoverSrc = overrideHoverSrc ?? asset?.hoverSrc;
@@ -2066,7 +2071,7 @@ function OutsidePetLayer({ pet, petId, stage }: OutsidePetLayerProps) {
 function WindowPetInteraction({ state, petId, stage, placement, position, measuredRect, zIndex }: WindowPetInteractionProps) {
   const animation = getLumiAnimationAsset(state, petId, stage);
   const renderableStage = getRenderablePetStage(petId, stage);
-  const placementDrafts = readWindowPetPlacementDrafts((key) => window.localStorage.getItem(key));
+  const placementDrafts = useWindowPetPlacementDrafts();
   const runtimeSlot = runtimeWindowPetSlots[placement];
   const selectedPlacement = placementDrafts[runtimeSlot.motion][runtimeSlot.edge];
   const targetPosition = measuredRect ? { x: measuredRect.x, y: measuredRect.y } : position;
@@ -2095,11 +2100,9 @@ function WindowPetInteraction({ state, petId, stage, placement, position, measur
 }
 
 function getInteractionPrototypeAnimation(petId: PetId, stage: PetStageId, state: PetAnimationState) {
-  try {
-    return getPetAnimationAsset(petId, stage, state);
-  } catch {
-    return getPetAnimationAsset(defaultLumiPetId, "stage-2", state);
-  }
+  if (hasPetAnimationAsset(petId, stage, state)) return getPetAnimationAsset(petId, stage, state);
+  if (hasPetAnimationAsset(petId, stage, "idle")) return getPetAnimationAsset(petId, stage, "idle");
+  return getPetAnimationAsset(defaultLumiPetId, "stage-2", state);
 }
 
 function getInteractionObjectAsset(type: InteractionObjectAsset["type"]): InteractionObjectAsset {
@@ -2229,19 +2232,15 @@ function getNextOutsidePetRoamAnimation(
     reducedMotion,
   };
   const resolvedBehavior = resolveManagerBehavior({
-    rawIntent: createRuleFallbackManagerIntent(manager, tone, streak),
+    rawIntent: manager.behaviorIntent ?? createRuleFallbackManagerIntent(manager, tone, streak),
     context,
     randomValue: (Date.now() / 1000) % 1,
+    fallbackIntent: createRuleFallbackManagerIntent(manager, tone, streak),
   });
   const mappedAnimation = resolvedBehavior.animation;
 
   if (mappedAnimation === "hanging" || mappedAnimation === "hiding") return "idle";
   return mappedAnimation;
-}
-
-function getNearestOutsidePetSide(position: InteractionSpritePosition): OutsidePetSide {
-  const fieldCenter = outsidePetFieldRect.x + outsidePetFieldRect.width / 2;
-  return position.x < fieldCenter ? "left" : "right";
 }
 
 function getBehaviorMoodFromManagerMood(mood: ManagerState["mood"]): PetBehaviorMood {
@@ -2252,120 +2251,6 @@ function getRecentBehaviorEvent(streak: QuestOutcomeStreak): PetBehaviorRecentEv
   if (streak.result === "success") return "quest_completed";
   if (streak.result === "failed") return "quest_failed";
   return null;
-}
-
-function resolveOutsidePetRoamPosition(
-  pet: OutsidePetState,
-  animation: PetAnimationState,
-  fallbackPosition: InteractionSpritePosition,
-  objects: InteractionObject[],
-): InteractionSpritePosition {
-  const petRect = { x: pet.position.x, y: pet.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize };
-
-  if (animation === "climbing") {
-    const ladder = getNearbyLadder(petRect, objects);
-    if (ladder) return resolveOutsidePetAttachmentPosition(ladder, animation);
-  }
-
-  if (animation === "jump") {
-    const platform = getNearbyPlatform(petRect, objects);
-    if (platform) return { x: platform.rect.x + platform.rect.width / 2 - outsidePetSpriteSize / 2, y: platform.rect.y - outsidePetSpriteSize + 12 };
-  }
-
-  const standingPlatform = getStandingPlatform({ x: fallbackPosition.x, y: pet.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize }, objects);
-  if (standingPlatform) return { x: fallbackPosition.x, y: standingPlatform.rect.y - outsidePetSpriteSize + 12 };
-
-  return { x: fallbackPosition.x, y: outsidePetFieldRect.y };
-}
-
-function resolveOutsidePetAttachmentPosition(object: InteractionObject, animation: PetAnimationState): InteractionSpritePosition {
-  if (animation === "climbing" && object.type === "ladder") {
-    const climbPosition = getClimbPosition(object.rect, 0.48);
-    return { x: climbPosition.x - outsidePetSpriteSize / 2, y: climbPosition.y - outsidePetSpriteSize / 2 };
-  }
-
-  return { x: object.rect.x + object.rect.width / 2 - outsidePetSpriteSize / 2, y: outsidePetFieldRect.y };
-}
-
-function resolveRenderedOutsidePet(pet: OutsidePetState, objects: InteractionObject[]): OutsidePetState {
-  if (pet.phase !== "free_roam" || pet.animation !== "climbing" || !pet.attachedObjectId) return pet;
-
-  const attachedObject = objects.find((object) => object.id === pet.attachedObjectId);
-  if (!attachedObject || attachedObject.type !== "ladder") return pet;
-
-  return {
-    ...pet,
-    position: resolveOutsidePetAttachmentPosition(attachedObject, "climbing"),
-  };
-}
-
-function resolveOutsidePetDirection(pet: OutsidePetState, objects: InteractionObject[]): 1 | -1 {
-  const minX = outsidePetFieldRect.x;
-  const maxX = outsidePetFieldRect.x + outsidePetFieldRect.width - outsidePetSpriteSize;
-  if (pet.position.x <= minX + 12) return 1;
-  if (pet.position.x >= maxX - 12) return -1;
-
-  const targetDirection = getInteractionObjectApproachDirection(pet, objects);
-  if (targetDirection) return targetDirection;
-
-  const shouldTurn = pet.roamTicks > 0 && pet.roamTicks % 7 === 0;
-  if (shouldTurn) return pet.direction === 1 ? -1 : 1;
-  return pet.direction;
-}
-
-function getInteractionObjectApproachDirection(pet: OutsidePetState, objects: InteractionObject[]): 1 | -1 | null {
-  const objectTargets = objects
-    .filter((object) => object.type === "ladder" || object.type === "platform")
-    .map((object) => ({ object, distance: Math.abs(getRectCenterX(object.rect) - (pet.position.x + outsidePetSpriteSize / 2)) }))
-    .sort((a, b) => a.distance - b.distance);
-  const nearest = objectTargets[0];
-  if (!nearest || nearest.distance < 36 || nearest.distance > 340) return null;
-  return getRectCenterX(nearest.object.rect) > pet.position.x + outsidePetSpriteSize / 2 ? 1 : -1;
-}
-
-function shouldMirrorOutsidePet(pet: OutsidePetState): boolean {
-  return pet.direction < 0;
-}
-
-function getNearbyLadder(petRect: { x: number; y: number; width: number; height: number }, objects: InteractionObject[]): InteractionObject | undefined {
-  return objects.find((object) => object.type === "ladder" && isNearObject(petRect, object.rect, 96));
-}
-
-function getNearbyPlatform(petRect: { x: number; y: number; width: number; height: number }, objects: InteractionObject[]): InteractionObject | undefined {
-  return objects.find((object) => {
-    if (object.type !== "platform") return false;
-
-    const petFootX = petRect.x + petRect.width / 2;
-    const petFootY = petRect.y + petRect.height;
-    const horizontalReach = petFootX >= object.rect.x - 72 && petFootX <= object.rect.x + object.rect.width + 72;
-    const verticalReach = Math.abs(petFootY - object.rect.y) <= 150;
-    return horizontalReach && verticalReach;
-  });
-}
-
-function getStandingPlatform(petRect: { x: number; y: number; width: number; height: number }, objects: InteractionObject[]): InteractionObject | undefined {
-  return objects.find((object) => {
-    if (object.type !== "platform") return false;
-
-    const petFootX = petRect.x + petRect.width / 2;
-    const petFootY = petRect.y + petRect.height;
-    const insidePlatform = petFootX >= object.rect.x && petFootX <= object.rect.x + object.rect.width;
-    const closeToTop = Math.abs(petFootY - object.rect.y) <= 28;
-    return insidePlatform && closeToTop;
-  });
-}
-
-function getRectCenterX(rect: { x: number; width: number }): number {
-  return rect.x + rect.width / 2;
-}
-
-function isNearObject(a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }, threshold: number): boolean {
-  return (
-    a.x < b.x + b.width + threshold &&
-    a.x + a.width > b.x - threshold &&
-    a.y < b.y + b.height + threshold &&
-    a.y + a.height > b.y - threshold
-  );
 }
 
 function DesktopPet({ mood, petId, stage, large = false }: DesktopPetProps) {

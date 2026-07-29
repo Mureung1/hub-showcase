@@ -1,14 +1,15 @@
 {
   "schemaVersion": 1,
   "title": "전자 생물 AI 매니저",
-  "summary": "목표 관리를 XP 데스크톱 게임처럼 재구성해, 전자 생물 매니저와 함께 오늘의 퀘스트를 수행하고 성장하는 서비스입니다.",
+  "summary": "목표 관리를 XP 데스크톱형 게임 경험으로 바꾸고, 전자 생물 매니저와 함께 오늘의 퀘스트를 수행하며 성장하는 서비스입니다.",
   "githubUser": "YIFNEN(김동민)",
   "demoUrl": "https://github.com/YIFNEN/hub",
+  "demoVideoUrl": "https://drive.google.com/file/d/1ijejeUDljFUR5o_lJnJmMKL4KLRw8sDm/view?usp=drive_link",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp"
   ],
-  "problem": "할 일 목록은 실패가 쌓일수록 부담이 커지고, 사용자의 실패 이유와 회복 과정을 다음 행동으로 자연스럽게 이어주기 어렵습니다.",
+  "problem": "일반적인 할 일 목록은 실패가 쌓일수록 부담이 커지고, 사용자의 실패 이유와 회복 과정을 다음 행동으로 자연스럽게 이어주기 어렵습니다.",
   "targetUsers": [
     "공부, 운동, 습관 형성 목표를 작게 쪼개 실행하고 싶은 사용자",
     "실패 후 다시 시작할 수 있는 회복형 목표 관리 경험이 필요한 사용자",
@@ -17,9 +18,7 @@
   "features": [
     "프로필과 목표를 바탕으로 오늘의 퀘스트를 만들고 QuestRunner.exe 흐름으로 실행합니다.",
     "완료, 실패, 복구 이벤트를 Hono API와 Supabase quest_logs에 저장하고 기록 노트에서 다시 조회합니다.",
-    "실패 이유를 기록한 뒤 더 작은 복구 퀘스트로 이어가며, Lumi 매니저의 상태와 대사가 최근 흐름을 반영합니다.",
-    "Canvas sprite animation, blink focus scene, Pixel TV projection mode, sprite review tool로 전자 생물 매니저의 게임성을 강화합니다.",
-    "TDD로 성장, 보상, 상호작용 오브젝트, 매니저 행동 state machine 같은 확장 규칙을 먼저 고정했습니다."
+    "Canvas sprite animation, blink focus scene, Pixel TV, Agent workflow로 전자 생물 매니저의 게임성을 강화합니다."
   ],
   "featureTags": [
     "퀘스트 관리",
@@ -36,18 +35,18 @@
     "Mermaid"
   ],
   "techHighlights": [
-    "React state와 컴포넌트 분리로 XP 데스크톱형 창, 퀘스트 실행, 기록 노트 흐름을 구현했습니다.",
+    "React state와 컴포넌트 분리로 XP 데스크톱의 창, 퀘스트 실행, 기록 노트 흐름을 구현했습니다.",
     "Vite middleware, Hono contract parser, Supabase quest_logs를 연결해 Quest Event 저장/조회 수직 슬라이스를 완성했습니다.",
-    "ManagerBehaviorIntent와 behavior adapter로 LLM 확장 경계를 제한하고, Agent/Skill workflow로 요구사항 분석, TDD, 검증, 문서화를 분리했습니다."
+    "ManagerBehaviorIntent와 TDD/Verifier/Skill 기반 Agent workflow로 LLM 확장 경계와 검증 절차를 분리했습니다."
   ],
-  "developmentWithAI": "저는 서비스 컨셉, 핵심 사용자 흐름, 확장 우선순위, 수동 검증 결과를 결정했습니다. AI Agent는 현재 저장소를 조사하고 계획을 만들고, 승인된 범위에서 코드와 문서를 수정했습니다. 구현 후에는 타입 검사, 빌드, 하네스, sprite verifier, 수동 Network 확인을 분리해 검증했습니다.",
+  "developmentWithAI": "저는 서비스 컨셉, 핵심 사용자 흐름, 확장 우선순위, 수동 검증 결과를 결정했습니다. AI Agent는 현재 저장소를 조사하고 구현 계획을 나눈 뒤, 승인된 범위에서 코드와 문서를 수정했습니다. 구현 후에는 typecheck, build, 하네스 검증, 브라우저 Network 확인 시나리오를 분리해 검증했습니다.",
   "agent": {
-    "summary": "기획, 구현, TDD, 검증, Wiki/문서 정리를 Agent와 Skill로 나누어 진행했습니다.",
+    "summary": "기획, 구현, TDD, 검증, Wiki와 학습 문서 정리를 Agent와 Skill로 나누어 진행했습니다.",
     "agentTools": [
       {
         "type": "agent",
         "name": "tdd_workflow",
-        "purpose": "작은 spec을 RED, GREEN, REFACTOR 순서로 구현하고 검증 역할에 넘깁니다."
+        "purpose": "작은 spec을 RED, GREEN, REFACTOR 순서로 구현하고 검증할 수 있게 합니다."
       },
       {
         "type": "agent",
@@ -67,7 +66,7 @@
       {
         "type": "skill",
         "name": "wiki-query",
-        "purpose": "Wiki에서 근거가 있는 내용만 찾아 설명하고 stale 정보를 구분합니다."
+        "purpose": "Wiki에서 근거가 있는 내용만 찾아 설명하고 오래된 정보를 구분합니다."
       }
     ],
     "workflows": [
@@ -78,7 +77,7 @@
           "create-plan으로 수정 파일과 검증 방법 분리",
           "테스트 가능한 규칙은 tdd_workflow로 RED/GREEN 구현",
           "implementer가 승인된 범위만 수정",
-          "verifier가 typecheck, build, harness, 수동 시나리오를 확인"
+          "verifier가 typecheck, build, harness, 수동 시나리오 확인"
         ]
       },
       {
@@ -94,7 +93,7 @@
       {
         "name": "문서와 Wiki 최신화 Workflow",
         "steps": [
-          "status.md와 tasks.md에 완료/남은 작업 반영",
+          "status.md와 tasks.md에 완료/잔여 작업 반영",
           "architecture-data-flow.md에 실제 코드 흐름을 Mermaid로 정리",
           "db-schema.md에 Supabase 정규화 후보 기록",
           "wiki-query로 stale synthesis 확인",

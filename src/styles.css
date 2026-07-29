@@ -2355,6 +2355,156 @@ label {
   width: 360px;
 }
 
+.pixel-tv-window {
+  width: 372px;
+}
+
+.pixel-tv-panel {
+  display: grid;
+  gap: 8px;
+}
+
+.pixel-tv-screen {
+  width: 320px;
+  height: 180px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: #89ffba;
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0;
+  background:
+    linear-gradient(rgb(255 255 255 / 6%) 50%, rgb(0 0 0 / 0%) 50%),
+    #111414;
+  background-size: 100% 4px;
+  border: 3px solid #403b35;
+  box-shadow:
+    inset 2px 2px 0 #050606,
+    inset -2px -2px 0 #6f665d,
+    1px 1px 0 #ffffff;
+}
+
+.pixel-tv-canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.pixel-tv-controls {
+  display: grid;
+  grid-template-columns: 64px 54px 54px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.pixel-tv-video-source {
+  display: none;
+}
+
+.pixel-tv-file-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 25px;
+  overflow: hidden;
+}
+
+.pixel-tv-file-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.pixel-tv-scale-control {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 24px;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  color: #1f1f1f;
+  font-size: 12px;
+}
+
+.pixel-tv-scale-control input {
+  width: 100%;
+}
+
+.pixel-tv-scale-control strong {
+  text-align: right;
+}
+
+.pixel-tv-status {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 4px 6px;
+  color: #55514a;
+  font-size: 11px;
+  background: #f8f6ee;
+  border: 1px solid #aca899;
+  box-shadow: inset 1px 1px 0 #ffffff;
+}
+
+.pixel-tv-status span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pixel-tv-photo-slot {
+  min-height: 76px;
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  color: #55514a;
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  background: #dfdccf;
+  border: 1px solid #aca899;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #b6b0a4;
+}
+
+.pixel-tv-photo-card {
+  width: 188px;
+  display: grid;
+  grid-template-columns: 92px 64px;
+  grid-template-rows: 58px auto;
+  align-items: end;
+  justify-content: center;
+  gap: 3px 8px;
+  padding: 6px;
+  color: #1f1f1f;
+  background: #fffdf6;
+  border: 1px solid #8f897c;
+  box-shadow: 1px 1px 0 #ffffff, 2px 2px 0 rgb(0 0 0 / 18%);
+}
+
+.pixel-tv-photo-card img {
+  width: 92px;
+  height: 52px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  background: #111414;
+  border: 1px solid #403b35;
+}
+
+.pixel-tv-photo-card .desktop-pet {
+  width: 64px;
+  height: 58px;
+}
+
+.pixel-tv-photo-card > span {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .pixel-tv-properties-panel {
   display: grid;
   gap: 12px;

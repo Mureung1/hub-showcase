@@ -1,5 +1,5 @@
-export type BlinkEntryReason = "onboarding_completed" | "stored_profile_refresh" | "service_exit";
-export type BlinkFocusMode = "start_day" | "end_day";
+export type BlinkEntryReason = "onboarding_completed" | "stored_profile_refresh" | "service_exit" | "journal_opened" | "journal_closed";
+export type BlinkFocusMode = "start_day" | "end_day" | "outside_transition";
 
 export interface BlinkFocusEffect {
   mode: BlinkFocusMode;
@@ -10,7 +10,13 @@ export function resolveBlinkFocusEffect(reason: BlinkEntryReason, reducedMotion 
   if (reason === "stored_profile_refresh") return null;
 
   return {
-    mode: reason === "service_exit" ? "end_day" : "start_day",
+    mode: getBlinkFocusMode(reason),
     reducedMotion: reducedMotion ? "fade" : "full",
   };
+}
+
+function getBlinkFocusMode(reason: Exclude<BlinkEntryReason, "stored_profile_refresh">): BlinkFocusMode {
+  if (reason === "service_exit") return "end_day";
+  if (reason === "journal_opened" || reason === "journal_closed") return "outside_transition";
+  return "start_day";
 }
