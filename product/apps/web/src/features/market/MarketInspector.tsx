@@ -15,6 +15,7 @@ import {
 } from "./MarketInspectorSections";
 import type { AnalysisScope, AnalysisTopic, CategorySelection, Market, MarketStore } from "./types";
 import type { AnalysisState, FlowState } from "./useMarketAnalysis";
+import "./MarketInspector.css";
 
 type MarketInspectorProps = {
   market: Market;
