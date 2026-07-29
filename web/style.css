@@ -315,6 +315,25 @@ body[data-state="error"] .starter {
   background: var(--fail);
 }
 
+/*
+ * 트렌드 — 이 서비스의 하이라이트 3. 5단계의 결과물이라 과정 로그가 아니라
+ * 결과 카드와 같은 위계로 그린다. 타임라인의 마지막에 놓이므로 아래 여백을 넉넉히 준다.
+ */
+.entry--trend {
+  margin: 1.3rem 0 1.4rem;
+  padding: 1.15rem 1.3rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--fail);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(22, 32, 43, 0.04);
+}
+
+.entry--trend::before {
+  top: 1.35rem;
+  background: var(--fail);
+}
+
 /* ── 결과 없음 — 에러가 아니다. 빨강도, 경고 아이콘도 쓰지 않는다 ── */
 .entry--neutral {
   margin: 1.1rem 0 1.4rem;
@@ -601,6 +620,78 @@ body[data-state="error"] .timeline {
 .badge--abstract {
   border: 1px solid var(--line-2);
   background: var(--surface-2);
+  color: var(--ink-3);
+}
+
+/* ── 트렌드 블록 (9-1) ─────────────────────────────────────────── */
+
+/*
+ * 결과 카드와 같은 위계로 둔다 — 트렌드는 과정이 아니라 결과물이다.
+ * 다만 카드와 색을 나눠 "개별 논문"과 "논문 사이"를 구별한다(--fail = 트렌드 강조,
+ * 토큰 정의 주석 참고). 이 색은 실패에도 쓰이지만 트렌드에서는 배경 없이
+ * 테두리와 제목에만 얹어, 경고로 읽히지 않게 한다.
+ */
+.trend__heading {
+  margin: 0;
+  color: var(--fail);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trend__subheading {
+  margin: 0.1rem 0 0.9rem;
+  color: var(--ink-2);
+  font-size: 0.86rem;
+}
+
+/*
+ * 번호는 CSS가 매긴다. gap이 없으면 항목이 하나 줄어들 뿐 번호는 어긋나지 않는다.
+ * 기본 마커 대신 counter를 쓰는 이유는 와이어프레임의 `1 · 제목` 형식 때문이다.
+ */
+.trend__flows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: flow;
+}
+
+.trend__flow {
+  counter-increment: flow;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.trend__flow:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.trend__flow-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.98rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.trend__flow-title::before {
+  content: counter(flow) " · ";
+  color: var(--fail);
+  font-weight: 700;
+}
+
+.trend__flow-body {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+/* 빈 곳(gap)은 야심찬 항목이다. 흐름과 같은 자리에 두되 톤만 한 단계 낮춘다. */
+.trend__flow--gap .trend__flow-body {
   color: var(--ink-3);
 }
 

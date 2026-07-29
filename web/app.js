@@ -347,10 +347,87 @@
   }
 
   /**
+   * 흐름 하나(제목 + 본문)를 만든다. `gap`도 같은 모양을 쓴다.
+   *
+   * gap을 따로 떼지 않는 이유: 떼면 부록처럼 보인다. 연구자에게 트렌드의 가치는
+   * 무엇이 유행인가보다 **무엇이 비어 있는가**라서, 흐름들과 같은 번호를 달고
+   * 같은 목록에 들어가야 한다 (wireframe_done.svg의 `3 · 아직 비어 있는 곳`).
+   *
+   * 번호는 `<ol>`이 매긴다 — JS로 문자열에 박으면 항목이 빠질 때 번호가 어긋난다.
+   */
+  function buildFlow(title, bodyText, modifier) {
+    const item = document.createElement("li");
+    item.className = modifier === undefined ? "trend__flow" : `trend__flow ${modifier}`;
+
+    const heading = document.createElement("p");
+    heading.className = "trend__flow-title";
+    heading.textContent = title;
+
+    const paragraph = document.createElement("p");
+    paragraph.className = "trend__flow-body";
+    paragraph.textContent = bodyText;
+
+    item.append(heading, paragraph);
+    return item;
+  }
+
+  /**
+   * `done.trend` — 5단계(트렌드 추론)의 결과물. **타임라인의 마지막에 붙는다.**
+   *
+   * 맨 위로 올리지 않는다. 작업을 지켜본 사용자의 스크롤은 이미 맨 아래에 있고,
+   * 트렌드가 거기 도착하는 것이 시간순이라는 사실도 지킨다(wireframe_done.svg 주석).
+   * 위로 올라갔거나 나중에 들어온 사용자를 위해서는 대신 **상단 헤더를 고정한다**(9-3).
+   * 둘은 한 쌍이라, 트렌드를 아래에 두는 결정은 헤더 없이는 성립하지 않는다.
+   *
+   * 과정 로그("논문 간 연결점을 종합하는 중")는 덮지도 지우지도 않는다 — 감사 기록이다.
+   *
+   * 논문 칩(`flows[].papers`)은 9-2에서 붙인다. 여기서는 읽지 않는다.
+   *
+   * @param {{flows: Array<object>, gap: ?string}} trend - `done.trend`
+   * @param {number} succeeded - 카드가 그려진 논문 수. 헤딩의 "N편"이 된다
+   */
+  function appendTrend(trend, succeeded) {
+    // 계약상 `gap`은 null일 수 있고, fallback으로 `flows`가 빈 배열일 수도 있다.
+    // 서버가 보낸 모양을 그대로 믿지 않고 여기서 한 번 좁힌다.
+    const payload = trend === null || trend === undefined ? {} : trend;
+    const flows = Array.isArray(payload.flows) ? payload.flows : [];
+    const gap = typeof payload.gap === "string" ? payload.gap.trim() : "";
+
+    // 흐름도 gap도 없으면 **블록 자체를 만들지 않는다.**
+    // `agent.py`의 fallback이 `{"flows": [], "gap": None}`이라 실제로 도달하는 경로다.
+    // 제목만 덩그러니 남으면 사용자는 에이전트가 고장난 것으로 읽는다.
+    // 시도했다는 기록은 과정 로그에 이미 남아 있으므로 여기서 침묵해도 잃는 것이 없다.
+    if (flows.length === 0 && gap === "") return;
+
+    const item = appendEntry("entry--trend");
+
+    const heading = document.createElement("p");
+    heading.className = "trend__heading";
+    heading.textContent = `${succeeded}편을 관통하는 흐름`;
+
+    const subheading = document.createElement("p");
+    subheading.className = "trend__subheading";
+    subheading.textContent = "에이전트가 논문들을 서로 연결해 정리했습니다";
+
+    const list = document.createElement("ol");
+    list.className = "trend__flows";
+
+    for (const flow of flows) {
+      list.appendChild(buildFlow(flow.title, flow.body));
+    }
+
+    if (gap !== "") {
+      list.appendChild(buildFlow("아직 비어 있는 곳", gap, "trend__flow--gap"));
+    }
+
+    item.append(heading, subheading, list);
+  }
+
+  /**
    * `done` — 정상 종결.
    *
    * **진행 로그를 지우거나 초기화하지 않는다.** 로그는 감사 기록이라 완료 후에도 남는다.
-   * 트렌드 블록과 상단 완료 헤더는 Week 4 범위이므로 여기서는 종결 표시까지만 한다.
+   * 트렌드 블록을 붙인 뒤 종결 로그로 끝낸다. 상단 완료 헤더는 9-3 범위다.
    *
    * @returns {string} 화면에 실제로 그린 것에 맞는 상태 이름
    */
@@ -366,6 +443,10 @@
       appendNoResult(scanned, []);
       return "empty";
     }
+
+    // 트렌드가 먼저, 종결 로그가 마지막이다. 트렌드는 `done`이 실어 온 결과물이고
+    // 종결 로그는 "여기서 끝났다"는 표시라, 순서가 뒤집히면 끝난 뒤에 결과가 나온다.
+    appendTrend(event.trend, succeeded);
 
     const parts = [`브리핑 완료 · ${succeeded}/${selected}편`];
     if (failed > 0) parts.push(`${failed}편은 요약하지 못했습니다`);
