@@ -16,6 +16,7 @@ describe("createServerConfig", () => {
         CLIENT_URL: "https://example.com, http://localhost:5173",
         API_RATE_LIMIT_WINDOW_MS: "60000",
         API_RATE_LIMIT_MAX: "25",
+        AI_RATE_LIMIT_MAX: "7",
         JSON_BODY_LIMIT: "200kb",
         TRUST_PROXY_HOPS: "1"
       })
@@ -28,6 +29,7 @@ describe("createServerConfig", () => {
       ],
       rateLimitWindowMs: 60_000,
       rateLimitMaximum: 25,
+      aiRateLimitMaximum: 7,
       jsonBodyLimit: "200kb",
       trustProxy: 1
     });

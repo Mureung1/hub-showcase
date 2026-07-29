@@ -39,7 +39,8 @@ export function createApp({
       typeof process.env.GUEST_KEY_PEPPER === "string" &&
       process.env.GUEST_KEY_PEPPER.length >= 32
   }),
-  rateLimitOptions = {}
+  rateLimitOptions = {},
+  aiRateLimitOptions = {}
 } = {}) {
   const app = express();
   app.set("trust proxy", trustProxy);
@@ -58,6 +59,22 @@ export function createApp({
       });
     },
     ...rateLimitOptions
+  });
+  const aiRateLimiter = rateLimit({
+    windowMs: serverConfig.rateLimitWindowMs,
+    limit: serverConfig.aiRateLimitMaximum,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    handler(request, response) {
+      response.status(429).json({
+        success: false,
+        error: {
+          code: "AI_RATE_LIMIT_EXCEEDED",
+          message: "Too many AI response requests. Please try again later."
+        }
+      });
+    },
+    ...aiRateLimitOptions
   });
 
   app.disable("x-powered-by");
@@ -110,6 +127,7 @@ export function createApp({
 
   app.use(
     "/api/ai-chat",
+    aiRateLimiter,
     createAiChatRouter({
       authenticateGuest,
       guestAuthenticationOptions,

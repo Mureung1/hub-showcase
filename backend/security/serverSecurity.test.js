@@ -70,4 +70,34 @@ describe("Express security baseline", () => {
 
     expect(response.status).toBe(200);
   });
+
+  it("applies a tighter limit to generative AI requests", async () => {
+    const baseUrl = await startServer({
+      authenticateGuest: async () => ({ session: { id: "guest" } }),
+      generateAiResponse: async () => ({
+        response: "테스트 답변",
+        source: "gemini"
+      }),
+      rateLimitOptions: { windowMs: 60_000, limit: 100 },
+      aiRateLimitOptions: { windowMs: 60_000, limit: 1 }
+    });
+    const options = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "안녕" })
+    };
+
+    expect(
+      (await fetch(`${baseUrl}/api/ai-chat/responses`, options)).status
+    ).toBe(200);
+    const blockedResponse = await fetch(
+      `${baseUrl}/api/ai-chat/responses`,
+      options
+    );
+
+    expect(blockedResponse.status).toBe(429);
+    await expect(blockedResponse.json()).resolves.toMatchObject({
+      error: { code: "AI_RATE_LIMIT_EXCEEDED" }
+    });
+  });
 });

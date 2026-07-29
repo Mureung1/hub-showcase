@@ -8,6 +8,7 @@ export const SERVER_DEFAULTS = Object.freeze({
   allowedOrigins: DEFAULT_ALLOWED_ORIGINS,
   rateLimitWindowMs: 15 * 60 * 1000,
   rateLimitMaximum: 100,
+  aiRateLimitMaximum: 10,
   jsonBodyLimit: "100kb",
   trustProxy: false
 });
@@ -68,6 +69,10 @@ export function createServerConfig(environment = {}) {
     rateLimitMaximum: readPositiveInteger(
       environment.API_RATE_LIMIT_MAX,
       SERVER_DEFAULTS.rateLimitMaximum
+    ),
+    aiRateLimitMaximum: readPositiveInteger(
+      environment.AI_RATE_LIMIT_MAX,
+      SERVER_DEFAULTS.aiRateLimitMaximum
     ),
     jsonBodyLimit: readBodyLimit(environment.JSON_BODY_LIMIT),
     trustProxy: readPositiveInteger(

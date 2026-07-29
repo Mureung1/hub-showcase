@@ -23,3 +23,5 @@ services:
         sync: false
       - key: GEMINI_MODEL
         value: gemini-2.5-flash-lite
+      - key: AI_RATE_LIMIT_MAX
+        value: 10
