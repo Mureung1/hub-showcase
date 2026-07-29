@@ -695,6 +695,59 @@ body[data-state="error"] .timeline {
   color: var(--ink-3);
 }
 
+/*
+ * 논문 칩 (9-2) — 주장에 붙는 근거다. 흐름 본문 바로 아래에 둬서
+ * "이 주장은 이 논문들에서 나왔다"가 한 덩어리로 읽히게 한다.
+ */
+.trend__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.trend__chip {
+  max-width: 100%;
+  padding: 0.12rem 0.55rem;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 0.76rem;
+  text-decoration: none;
+  white-space: nowrap;
+
+  /* 제목이 길면 자른다. 전문은 title 속성에 있다(app.js). */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 호버·포커스에서 트렌드 색으로 물든다 — 도착할 카드의 강조색과 같은 색이다. */
+.trend__chip:hover,
+.trend__chip:focus-visible {
+  border-color: var(--fail);
+  color: var(--fail);
+}
+
+/*
+ * 칩을 눌러 도착한 카드. 스크롤만 하면 어디에 왔는지 모르므로 한 번 물들였다 뺀다.
+ * 상태가 아니라 사건이라 남지 않는다 — app.js가 animationend에서 클래스를 지운다.
+ */
+@keyframes card-flash {
+  from {
+    border-color: var(--fail);
+    background: #fdf2ed;
+  }
+  to {
+    border-color: var(--line);
+    background: var(--surface);
+  }
+}
+
+.entry--flash {
+  animation: card-flash 1.2s ease-out;
+}
+
 /* 펼침 요소 — 화면을 바꾸지 않고 제자리에서 펼친다. 맥락을 잃지 않기 위해. */
 .disclosure > summary {
   cursor: pointer;

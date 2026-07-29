@@ -347,6 +347,78 @@
   }
 
   /**
+   * 논문 카드로 이동하고, **도착한 곳을 눈에 띄게** 한다.
+   *
+   * 스크롤만 하면 화면이 순간이동한 것처럼 보여 사용자가 어디에 왔는지 모른다.
+   * 강조색은 칩과 같은 것(`--fail`)을 써서 "저기서 여기로 왔다"가 색으로 이어지게 한다.
+   *
+   * @param {number} index - `paper_done`의 index
+   */
+  function revealCard(index) {
+    const card = document.getElementById(`paper-${index}`);
+    if (card === null) return; // 칩을 만든 뒤에 사라졌을 수도 있으니 다시 확인한다
+
+    card.scrollIntoView({ block: "center", behavior: "smooth" });
+
+    // 같은 칩을 연달아 누르면 클래스가 이미 붙어 있어 애니메이션이 다시 돌지 않는다.
+    // 뺐다가 다시 넣되, 사이에 리플로를 강제해 브라우저가 두 변경을 하나로 묶지 않게 한다.
+    card.classList.remove("entry--flash");
+    void card.offsetWidth;
+
+    // 정리를 타이머가 아니라 애니메이션 자신에게 맡긴다 — 지속시간을 CSS에서만 바꿔도
+    // 어긋나지 않고, 클래스가 남아 다음 강조를 막는 일도 없다.
+    card.addEventListener("animationend", () => card.classList.remove("entry--flash"), {
+      once: true,
+    });
+    card.classList.add("entry--flash");
+  }
+
+  /**
+   * 흐름의 근거 논문들을 칩으로 만든다. **이 서비스에서 주장과 근거를 잇는 지점이다.**
+   *
+   * 칩은 의미상 진짜 링크(문서 안 앵커로 이동)라 `<a href="#paper-N">`으로 만든다.
+   * 버튼으로 흉내 내면 JS가 죽었을 때 아무 일도 일어나지 않고, 스크린리더에도
+   * "이동한다"는 뜻이 전달되지 않는다. JS는 부드러운 스크롤과 강조만 얹는다.
+   *
+   * **카드가 없는 index는 칩을 만들지 않는다.** `agent.py`의 `trend()`는 성공한
+   * 요약만 넘겨받으므로 실패한 논문이 여기 들어올 일은 없지만, 프론트가 그걸
+   * 신뢰하지 않는다 — 존재 확인이 곧 이동 대상 확인이라 따로 드는 비용도 없다.
+   *
+   * @param {Array<number>} papers - `flows[].papers`
+   * @returns {?HTMLDivElement} 만들 칩이 하나도 없으면 null
+   */
+  function buildChips(papers) {
+    const indexes = Array.isArray(papers) ? papers : [];
+    const chips = document.createElement("div");
+    chips.className = "trend__chips";
+
+    for (const index of indexes) {
+      if (document.getElementById(`paper-${index}`) === null) continue;
+
+      // 번호만 쓰면 무엇으로 이동하는지 몰라 클릭할 이유가 없다. 제목은 read에서 받아뒀다.
+      const info = readInfo.get(index);
+      const label = info !== undefined && info.title ? info.title : `논문 ${index}`;
+
+      const chip = document.createElement("a");
+      chip.className = "trend__chip";
+      chip.href = `#paper-${index}`;
+      chip.textContent = `↑ ${label}`;
+      chip.title = label; // 제목이 길면 CSS가 자르므로 전문은 여기 남긴다
+
+      // 클로저가 잡는 것은 숫자 하나다. 카드 노드를 캡처하면 그 노드가 DOM에서
+      // 빠진 뒤에도 핸들러가 살아 있는 한 힙에 남는다.
+      chip.addEventListener("click", (event) => {
+        event.preventDefault();
+        revealCard(index);
+      });
+
+      chips.appendChild(chip);
+    }
+
+    return chips.childElementCount > 0 ? chips : null;
+  }
+
+  /**
    * 흐름 하나(제목 + 본문)를 만든다. `gap`도 같은 모양을 쓴다.
    *
    * gap을 따로 떼지 않는 이유: 떼면 부록처럼 보인다. 연구자에게 트렌드의 가치는
@@ -413,7 +485,15 @@
     list.className = "trend__flows";
 
     for (const flow of flows) {
-      list.appendChild(buildFlow(flow.title, flow.body));
+      const flowItem = buildFlow(flow.title, flow.body);
+
+      // 근거가 없는 흐름은 칩 없이 주장만 남는다. 블록은 깨지지 않는다 —
+      // 프롬프트(trend.md)가 근거 없는 흐름을 애초에 못 만들게 하고 있지만,
+      // 그 약속이 지켜지지 않아도 화면은 살아 있어야 한다.
+      const chips = buildChips(flow.papers);
+      if (chips !== null) flowItem.appendChild(chips);
+
+      list.appendChild(flowItem);
     }
 
     if (gap !== "") {
