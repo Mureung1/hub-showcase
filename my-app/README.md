@@ -1,16 +1,59 @@
-# React + Vite
+# 알리장 (AlriJang)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**AI가 함께하는 소상공인 홍보 에이전트**
 
-Currently, two official plugins are available:
+전체 기획은 [PROJECT.md](PROJECT.md), API 계약은 [../docs/api-spec.md](../docs/api-spec.md) 참고.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 서비스 설명
 
-## React Compiler
+기존 생성형 AI는 홍보글 작성은 도와주지만 "무엇을 홍보해야 하는지"는 사용자가 직접 정해야 한다. 알리장은 접속하는 순간 AI가 먼저 블로그 운영 현황·계절·업종 트렌드를 분석해 **오늘의 브리핑**(추천 주제 + 근거)을 제시하고, 사용자는 그 제안을 바탕으로 홍보글/공지사항을 작성하거나 직접 작성을 선택한다. 이후 대화형 인터뷰로 브랜드에 맞는 콘텐츠를 생성하고, 발행 시간 추천과 게시 후 운영 분석(블로그 건강도)까지 이어지는 하나의 흐름을 제공한다.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 주요 기능
 
-## Expanding the ESLint configuration
+| 기능 | 설명 |
+| --- | --- |
+| 브랜드 온보딩 | 대화형 AI 인터뷰로 업종·상호명·타겟고객 등을 수집해 브랜드 요약과 키워드 생성. 네이버 로그인(OAuth)으로 blogId 후보를 자동 확인하고, 실패 시 수동 입력으로 폴백 |
+| 오늘의 AI 브리핑 | 접속 시 블로그 건강도, 계절/업종 트렌드, 추천 홍보 주제와 근거를 가장 먼저 제시 |
+| AI 홍보글 작성 | 신메뉴·이벤트·일반 홍보 등 목적별 인터뷰로 제목·본문·SEO 키워드·해시태그 생성, 사진 업로드(Supabase Storage) 지원 |
+| AI 공지사항 작성 | 휴무·품절·영업시간 변경 등 2~3단계 인터뷰로 정중한 공지문 생성 |
+| 예약 발행 추천 | 업종·계절·기존 게시 패턴을 분석해 최적 발행 시간과 이유 제시 |
+| 네이버 반자동 발행 | AI가 만든 글을 클립보드에 복사하고 네이버 글쓰기 페이지를 새 탭으로 오픈, 게시 완료는 RSS 자동 탐지로 확인(실패 시 URL 수동 입력) |
+| 블로그 운영 분석 | blogId 연동 시 RSS 기반으로 게시글 수·최근 게시일·게시 주기 조회 |
+| 인사이트 | 블로그 건강도 점수/등급과 근거·예상효과를 포함한 AI 홍보 기회 추천 |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 기술적 특징
+
+- **구조**: React 19(Vite, Tailwind v4) 프론트 + Express 백엔드 + Supabase(PostgreSQL), `docs/api-spec.md`를 프론트-백엔드 계약으로 삼아 개발
+- **LLM 연동**: Claude API(Sonnet 5)로 브랜드 요약/키워드, 홍보글/공지사항 본문, 브리핑 추천 문구를 실제 생성. 초기엔 프롬프트만으로 JSON을 요청했다가 설명 문구가 섞여 파싱 에러가 났고, `output_config.format`으로 스키마를 강제하는 구조화 출력 방식으로 전환해 해결
+- **네이버 블로그 연동, 두 갈래로 분리**:
+  - *발행*: 공식 포스팅 API가 폐지된 상태라, 완전 자동화(Playwright) 대신 **반자동**(AI가 만든 글을 클립보드 복사 + 네이버 글쓰기 페이지 새 탭 오픈 → 사용자가 직접 붙여넣고 게시) 방식을 채택 — 계정 정지·캡차 리스크 회피가 목적
+  - *조회*: blogId 확보는 네이버 로그인(OAuth)으로, 게시글 통계는 로그인 없이 **RSS 피드 파싱**으로 처리 — 방문자 수처럼 RSS로 계산 불가능한 값은 스코프에서 제외
+  - *게시 완료 확인*: 최초엔 사용자가 URL을 직접 입력해야 했으나, 서버가 RSS에서 제목이 비슷한 최근 글을 먼저 찾아 "이 글이 맞나요?" 확인만 받는 방식으로 개선(못 찾으면 수동 입력 폴백)
+- **테스트**: vitest + supertest, mock 없이 실제 Supabase에 붙는 통합 테스트 중심(LLM 호출만 비결정적이라 목업)
+
+## 주요 문제 해결
+
+| 문제 | 해결 |
+| --- | --- |
+| 소상공인이 "뭘/언제/어떻게" 홍보할지 판단하기 어려움 | 오늘의 AI 브리핑이 계절/업종 트렌드 + 블로그 현황을 분석해 먼저 제안 |
+| 네이버 공식 포스팅 API 폐지 | 반자동 발행(복사+새 탭)으로 계정 정지 위험 없이 발행 흐름 유지 |
+| blogId를 사용자가 직접 알아내야 하는 번거로움 | 네이버 로그인(OAuth)으로 후보를 자동 확인, 실패 시에만 수동 입력 |
+| 게시 완료 확인 시 URL을 매번 직접 입력해야 하는 번거로움 | RSS 자동 탐지로 후보 글을 먼저 찾아 확인만 받는 흐름으로 개선 |
+| 홍보글/공지사항 콘텐츠 품질 (템플릿 문자열 수준) | Claude API 연동으로 브랜드 톤에 맞는 자연스러운 문장 생성 |
+| 테스트 없이 쌓인 기존 기능의 신뢰성 검증 | code-verifier 에이전트로 문서 대조 + 분기별 테스트 매칭 후 보완 |
+
+## 에이전트 활용 방식
+
+- **Plan mode 우선 원칙**: Agent를 쓸 때는 항상 Plan mode로 먼저 설계·계획을 거친 뒤 단계적으로 진행. AI가 짠 설계를 그대로 받지 않고 작업 크기·순서·빠진 부분을 직접 검토 후 확정
+- **`test-codegen` 스킬** (직접 제작): `server/` 소스에 vitest+supertest 테스트를 생성하는 스킬. 코드 실행 결과를 베끼는 게 아니라 `docs/api-spec.md` 같은 문서/도메인 규칙을 근거로 기댓값을 먼저 정하도록 설계했고, 순수 함수/Repo/라우트 세 유형별로 테스트 전략을 구분. 실제로 `buildPromotionPost`(홍보글 생성) 검증에 사용해 11/11 테스트 통과 확인
+- **`code-verifier` 에이전트** (직접 제작): 특정 기능이 요구사항 문서와 완료 기준을 충족하는지 점검하는 QA 에이전트. 절차는 ①범위 확정 → ②문서 대조로 구현 누락 체크 → ③코드의 모든 분기/에러코드와 테스트를 1:1 매칭해 부족하면 `test-codegen`을 호출해 보완 → ④발견한 문제 직접 수정 → ⑤회귀 테스트 실행. 판정에서 못 잡는 시나리오는 별도로 "제안" 섹션에 남겨 사람이 판단하게 분리
+- **에이전트 간 위임 구조**: code-verifier가 테스트 부족을 발견하면 직접 테스트를 짜지 않고 test-codegen 스킬에 위임 — test-codegen이 테스트 작성 중 버그를 스스로 고칠 수 있는데, 이는 code-verifier의 "과거 fix: 이력 확인" 기준을 모르고 한 수정이므로 code-verifier가 별도로 재검증하도록 절차에 명시
+
+## 실행
+
+```
+npm install
+npm run dev
+```
+
+`.env`에 `VITE_API_BASE_URL` 설정 (`.env.example` 참고). 백엔드 실행 방법은 [../server/README.md](../server/README.md) 참고.
