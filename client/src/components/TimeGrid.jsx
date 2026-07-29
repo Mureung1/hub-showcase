@@ -20,10 +20,9 @@ function TimeGrid({
   onToggleCell,
   onCellMouseDown,
   onCellMouseEnter,
-  onDragEnd,
 }) {
   return (
-    <div className="time-grid" onMouseUp={onDragEnd}>
+    <div className="time-grid">
       <div className="time-grid-header">
         <div />
         {dates.map((date) => (

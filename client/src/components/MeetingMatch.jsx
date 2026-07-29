@@ -115,6 +115,15 @@ function MeetingMatch({ members, currentMemberId, currentTeamId }) {
     setDragMode(null);
   }
 
+  // 격자 안에서만 mouseup을 들으면 격자 "바깥"에서 마우스를 뗐을 때 드래그가 안 풀리므로,
+  // 드래그 중일 때만 window 전체에서 mouseup을 듣는다
+  useEffect(() => {
+    if (!isDragging) return;
+
+    window.addEventListener('mouseup', handleDragEnd);
+    return () => window.removeEventListener('mouseup', handleDragEnd);
+  }, [isDragging]);
+
   function handleSelectRecommendation(date, hour) {
     setHighlightedKey(`${date}_${hour}`);
     if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
@@ -172,7 +181,6 @@ function MeetingMatch({ members, currentMemberId, currentTeamId }) {
           onToggleCell={handleToggleCell}
           onCellMouseDown={handleCellMouseDown}
           onCellMouseEnter={handleCellMouseEnter}
-          onDragEnd={handleDragEnd}
         />
       </div>
 
