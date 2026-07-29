@@ -1,4 +1,6 @@
 # hub
+#배포 완료
+https://hub-mu-puce.vercel.app/
 #데모발표 자료
 https://docs.google.com/presentation/d/17vEP-xWjFfviHcAl_nzCyjVUmIHb9qRV/edit?usp=sharing&ouid=100790024314221882298&rtpof=true&sd=true
 #위키링크
