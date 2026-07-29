@@ -76,12 +76,12 @@ export function createWorkspaceTestCases({
   runState: RunState
   hasCodeChange?: boolean
 }): TestCase[] {
-  if (isGeneratedMission) {
-    return createGeneratedMissionTestCases(runState, hasCodeChange)
-  }
-
   if (runState === 'running' || runState === 'compiling' || runState === 'rendering') {
     return createRunningTestCases(isGeneratedMission)
+  }
+
+  if (isGeneratedMission) {
+    return createGeneratedMissionTestCases(runState, hasCodeChange)
   }
 
   if (runState === 'passed') {
