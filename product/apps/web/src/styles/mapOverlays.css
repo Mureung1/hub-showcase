@@ -70,8 +70,8 @@
 }
 
 .category-option.is-selected {
-  border-color: #b9dcc3;
-  background: #eef8f0;
+  border-color: #a5ebca;
+  background: #e0f8ed;
 }
 
 .category-option.is-loading-selection {
@@ -149,7 +149,7 @@
 
 .category-support-badge.is-full {
   color: #1f7a3f;
-  background: #e5f4e8;
+  background: #ddf7e9;
 }
 
 .category-support-badge.is-partial {
@@ -229,15 +229,15 @@
   place-items: center;
   border-radius: 50%;
   color: #fff;
-  background: #278b56;
-  box-shadow: 0 0 0 5px rgba(39, 139, 86, 0.1);
+  background: #00a866;
+  box-shadow: 0 0 0 5px rgba(0, 168, 102, 0.1);
 }
 
 .map-loading-icon::after {
   position: absolute;
   inset: -7px;
-  border: 2px solid rgba(39, 139, 86, 0.22);
-  border-top-color: #278b56;
+  border: 2px solid rgba(0, 168, 102, 0.22);
+  border-top-color: #00a866;
   border-radius: 50%;
   content: "";
   animation: map-loading-spin 1.1s linear infinite;

@@ -12,7 +12,7 @@
 }
 
 .category-option.is-selected .category-market-count {
-  color: #247442;
+  color: #008c54;
 }
 
 .category-icon,
@@ -30,7 +30,7 @@
 
 .category-icon.green,
 .selected-store-icon.green {
-  color: #1d7a4b;
+  color: #008f5a;
   background: #fff8e8;
 }
 
@@ -198,8 +198,8 @@
 .selected-location.theme-green,
 .selected-store-focus-anchor.green {
   --marker-bg: rgba(255, 249, 232, 0.66);
-  --marker-fg: #1d7a4b;
-  --marker-border: rgba(39, 139, 86, 0.48);
+  --marker-fg: #008f5a;
+  --marker-border: rgba(0, 168, 102, 0.48);
   --marker-accent: #d49a2c;
 }
 
@@ -318,8 +318,8 @@
 }
 
 .selected-location {
-  --popup-fg: var(--marker-fg, #2b8247);
-  --popup-bg: var(--marker-bg, #e8f6eb);
+  --popup-fg: var(--marker-fg, #009e61);
+  --popup-bg: var(--marker-bg, #dff7eb);
   --popup-accent: var(--marker-accent, #d49a2c);
 }
 
@@ -341,7 +341,7 @@
   min-width: 62px;
   padding: 0;
   border-radius: 0;
-  color: #1e753c;
+  color: #008b54;
   background: transparent;
   text-align: right;
 }
