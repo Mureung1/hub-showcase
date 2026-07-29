@@ -1,5 +1,11 @@
-// 통계 집계 모듈 (rule) — 1차 슬라이스: 블록 1(KPI)·7(기술 빈도)·10(요구 항목 전체표)
-// 입력: 정형 공고 배열 / 출력: GET /api/stats 화면 계약
+// 폴백 전용 통계 집계 모듈 (rule).
+//
+// Phase 22 이후 화면 통계는 활성 분석 버전의 `statistics` payload 를 그대로 읽는다.
+// 이 모듈은 평면 표 `legacy_posting_samples` 만 있는 상황을 위한 폴백 경로에서만 쓴다.
+//
+// 라벨 표는 **인자로 받는다.** 태그·유형·조합·축 이름은 직무마다 다르므로(CONTRACT 5.A)
+// 백엔드 전용 상수를 서버 코드에 두면 다른 직무에 그대로 새어 나간다. 그래서
+// 이 함수는 backend 가 아닌 직무를 받으면 빈 배열과 0% 를 내지 않고 오류를 던진다.
 //
 // 계약 정의(검증에서 확정한 규칙):
 // - 모든 % 의 분모는 recent 스냅샷 공고 수 (freq_by_cluster만 해당 기업군 공고 수)
@@ -7,7 +13,12 @@
 // - entry_label_gap_pct 분모 = '신입가능' 라벨 공고
 // - 우대→필수 이동 판정 = prev 필수율 <40% 이고 (recent−prev) ≥ +20%p, 양쪽 표본 n≥3
 // - trend.direction = |delta| ≥ 8%p 일 때만 increase/decrease, prev 표본 없으면 'unknown'
-// - evidence.text 는 1차(rule)에서는 null — 3차(LLM 추출)에서 원문 문장이 채워짐
+// - evidence.text 는 rule 집계에서는 null
+
+// 평면 표 폴백이 다룰 수 있는 유일한 직무. 나머지 직무의 어휘는 이 규칙으로 셀 수 없다.
+const FALLBACK_JOB = 'backend'
+
+const REQUIRED_LABEL_KEYS = ['out_tags', 'advanced_types', 'combos', 'reality_labels', 'axis_labels']
 
 function pct(n, d) {
   return d === 0 ? null : Math.round((n / d) * 100)
@@ -35,7 +46,37 @@ function skillStats(list) {
   return map
 }
 
-function aggregate(postings) {
+// 라벨 표가 없거나 직무가 다르면 여기서 끝낸다. 조용한 빈 결과는 화면에서
+// "요구가 없다" 로 읽히므로 낼 수 없다.
+function assertFallbackInput(job, labels) {
+  if (job !== FALLBACK_JOB) {
+    const error = new Error(
+      `평면 표 폴백 집계는 ${FALLBACK_JOB} 직무만 지원합니다. ${job || '(직무 없음)'} 은 활성 분석 버전의 statistics payload 를 써야 합니다`
+    )
+    error.code = 'UNSUPPORTED_FALLBACK_JOB'
+    throw error
+  }
+  if (!labels || typeof labels !== 'object') {
+    const error = new Error('라벨 표(labels)가 필요합니다. 태그·유형·조합·축 이름은 직무마다 다릅니다')
+    error.code = 'MISSING_LABELS'
+    throw error
+  }
+  const missing = REQUIRED_LABEL_KEYS.filter((key) => !labels[key])
+  if (missing.length > 0) {
+    const error = new Error(`라벨 표에 ${missing.join(', ')} 가 없습니다`)
+    error.code = 'MISSING_LABELS'
+    throw error
+  }
+}
+
+/**
+ * @param {Array} postings 평면 공고 배열 (`legacy_posting_samples`)
+ * @param {{job: string, labels: object}} options 직무와 라벨 표
+ */
+function aggregate(postings, options = {}) {
+  const { job, labels } = options
+  assertFallbackInput(job, labels)
+
   const recent = postings.filter((p) => p.snapshot === 'recent')
   const prev = postings.filter((p) => p.snapshot === 'prev')
   if (recent.length === 0) {
@@ -107,8 +148,8 @@ function aggregate(postings) {
       return {
         item_id: e.slug,
         name: e.name,
-        aliases: [], // 3차: NCS·직무사전 기반 정규화
-        category: null, // 3차: 에이전트 분류
+        aliases: [],
+        category: null,
         scope: 'in_role',
         is_advanced: false,
         freq_overall: recentPct,
@@ -122,7 +163,7 @@ function aggregate(postings) {
           direction,
           requirement_shift: promoted.includes(e.slug) ? 'preferred_to_required' : null,
         },
-        impl_level: null, // 3차: LLM 추론
+        impl_level: null,
         evidence: e.postings.slice(0, 3).map((id) => ({ text: null, posting_id: id, source_url: null })),
         support: { n_overall: e.count, n_by_cluster: e.byCluster },
         confidence: e.count >= 10 ? 'high' : e.count >= 5 ? 'medium' : 'low',
@@ -131,15 +172,7 @@ function aggregate(postings) {
     .sort((a, b) => b.freq_overall - a.freq_overall)
 
   // --- scope_expansion (블록 2) — 직무 외 영역별 요구 비율 ---
-  // 영역 목록은 잠정 enum. 추출 에이전트(3차)가 데이터를 보고 재구성한다.
-  const OUT_TAGS = {
-    infra_deploy: { label: '인프라·배포', desc: 'Docker, AWS, CI/CD 운영' },
-    test: { label: '테스트', desc: '단위·통합 테스트 작성' },
-    data: { label: '데이터', desc: '배치, 파이프라인, 로그 분석' },
-    docs: { label: '문서화', desc: 'API 명세, 기술 문서, 위키' },
-    front: { label: '프론트', desc: '간단한 어드민·화면 수정' },
-  }
-  const scope_expansion = Object.entries(OUT_TAGS)
+  const scope_expansion = Object.entries(labels.out_tags)
     .map(([tag, m]) => {
       const count = recent.filter((p) => p.out_of_role_tags.includes(tag)).length
       return { tag, label: m.label, desc: m.desc, count, pct: pct(count, recent.length) }
@@ -182,7 +215,7 @@ function aggregate(postings) {
     decrease: trendEntries.filter((t) => t.delta !== null && t.delta <= -8).sort((a, b) => a.delta - b.delta).slice(0, 3),
   }
 
-  // --- labels (블록 8의 라벨 두 열 — 현실 열은 3차 LLM 몫) ---
+  // --- labels (블록 8의 라벨 두 열) ---
   const dist = (field) => {
     const m = {}
     for (const p of recent) m[p[field]] = (m[p[field]] || 0) + 1
@@ -191,14 +224,10 @@ function aggregate(postings) {
       .sort((a, b) => b.pct - a.pct)
       .slice(0, 3)
   }
-  const labels = { edu: dist('edu_label'), career: dist('career_label') }
-
-  // ===== 3a 슬라이스: 추출 완료 필드의 rule 집계 =====
-  // 통계 설명 문구(interpretation)는 샘플 큐레이션 — 에이전트 구현 시 LLM 출력으로 대체한다.
+  const labelBlocks = { edu: dist('edu_label'), career: dist('career_label') }
 
   // --- advanced (블록 4) — 시니어급 문장 유형별 비율 + 원문 인용 ---
-  const ADV_TYPES = { traffic: '대용량 트래픽', concurrency: '동시성·정합성', incident: '장애 대응·모니터링' }
-  const advanced = Object.entries(ADV_TYPES)
+  const advanced = Object.entries(labels.advanced_types)
     .map(([type, label]) => {
       const hits = recent.filter((p) => p.advanced_spans.some((s) => s.type === type))
       const first = hits.flatMap((p) => p.advanced_spans.filter((s) => s.type === type))[0]
@@ -214,35 +243,19 @@ function aggregate(postings) {
     .sort((a, b) => b.count - a.count)
 
   // --- combos (블록 6) — 후보 조합의 동시 출현 rule 집계 ---
-  const COMBOS = [
-    { id: 'base', name: 'Java + Spring Boot + JPA + MySQL', slugs: ['java', 'spring-boot', 'jpa', 'mysql'],
-      desc: '한 도메인의 CRUD REST API를 DB와 연결하고 트랜잭션·연관관계까지 다루는 기본 조합입니다.',
-      level: '한 도메인을 배포 가능한 API로 완성' },
-    { id: 'redis', name: '기본 스택 + Redis', slugs: ['java', 'spring-boot', 'redis'],
-      desc: '조회 성능·세션 관리를 캐시로 개선해 본 경험을 묻는 조합입니다.',
-      level: '캐시로 조회 개선 + 이유 설명' },
-    { id: 'deploy', name: 'Docker + AWS + CI/CD', slugs: ['docker', 'aws', 'cicd'],
-      desc: '빌드부터 배포까지 파이프라인을 직접 구성해 본 경험을 묻는 조합입니다.',
-      level: '배포 파이프라인 1회 이상 구성' },
-    { id: 'kafka', name: 'Kafka 이벤트 처리', slugs: ['kafka'],
-      desc: '이벤트 기반 아키텍처의 개념 이해를 묻는 우대 조합입니다.',
-      level: '개념 이해 + 토이 수준 경험(우대)' },
-  ]
-  const combos = COMBOS.map((c) => {
-    const count = recent.filter((p) => c.slugs.every((slug) => p.skills.some((s) => s.slug === slug))).length
-    return { id: c.id, name: c.name, desc: c.desc, level: c.level, count,
-      pct: pct(count, recent.length), interpretation_source: 'sample' }
-  })
+  const combos = labels.combos
+    .map((c) => {
+      const count = recent.filter((p) => c.slugs.every((slug) => p.skills.some((s) => s.slug === slug))).length
+      return {
+        id: c.id, name: c.name, desc: c.desc, level: c.level, count,
+        pct: pct(count, recent.length), interpretation_source: 'sample',
+      }
+    })
     .filter((c) => c.count > 0)
     .sort((a, b) => b.count - a.count)
 
   // --- reality (블록 8 현실 열) — 본문이 실제로 요구하는 것 ---
-  const REALITY_LABEL = {
-    project_experience: '완성된 프로젝트 경험',
-    deploy_ops: '배포·운영까지 해 본 경험',
-    intern_award: '인턴·수상·오픈소스 우대',
-  }
-  const reality = Object.entries(REALITY_LABEL)
+  const reality = Object.entries(labels.reality_labels)
     .map(([tag, label]) => {
       const count = recent.filter((p) => p.reality_tags.includes(tag)).length
       return { tag, label, pct: pct(count, recent.length) }
@@ -251,26 +264,22 @@ function aggregate(postings) {
     .sort((a, b) => b.pct - a.pct)
 
   // --- cluster_axes (블록 9) — 기업군 × 강조축 히트맵 ---
-  const AXIS_LABEL = {
-    performance: '성능·트래픽', tx_security: '트랜잭션·보안', api_domain: 'API·도메인',
-    ownership: '오너십·실행', process_docs: '프로세스·문서',
-  }
   const level = (v) => (v === null || v < 15 ? '—' : v >= 60 ? '강' : v >= 35 ? '중' : '약')
   const cluster_axes = {
-    axes: Object.values(AXIS_LABEL),
+    axes: Object.values(labels.axis_labels),
     rows: Object.keys(clusterN).map((cluster) => ({
       cluster,
       n: clusterN[cluster],
-      cells: Object.keys(AXIS_LABEL).map((axis) => {
+      cells: Object.keys(labels.axis_labels).map((axis) => {
         const count = recent.filter((p) => p.cluster_tag === cluster && p.axis_mentions.includes(axis)).length
         const v = pct(count, clusterN[cluster])
-        return { axis: AXIS_LABEL[axis], pct: v, level: level(v) }
+        return { axis: labels.axis_labels[axis], pct: v, level: level(v) }
       }),
     })),
   }
 
   return {
-    job: 'backend',
+    job,
     meta: {
       generated_at: new Date().toISOString(),
       snapshots: {
@@ -279,12 +288,14 @@ function aggregate(postings) {
       },
       sources: [...new Set(postings.map((p) => p.source.type))],
       disclaimer: '샘플 데이터 기반 결과입니다',
+      is_synthetic: false,
+      fallback: 'legacy_posting_samples',
     },
     kpi,
     scope_expansion,
     inflation,
     trend3,
-    labels,
+    labels: labelBlocks,
     advanced,
     combos,
     reality,
@@ -295,4 +306,4 @@ function aggregate(postings) {
   }
 }
 
-module.exports = { aggregate }
+module.exports = { aggregate, FALLBACK_JOB }

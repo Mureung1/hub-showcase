@@ -1,0 +1,10 @@
+knowledge_version,job_role_id,taxonomy_version_id,published_at
+kn_demo_backend,backend,tx_demo_backend,2026-07-27T09:00:00+09:00
+kn_demo_frontend,frontend,tx_demo_frontend,2026-07-27T09:00:00+09:00
+kn_demo_ai_engineer,ai_engineer,tx_demo_ai_engineer,2026-07-27T09:00:00+09:00
+kn_demo_data_engineer,data_engineer,tx_demo_data_engineer,2026-07-27T09:00:00+09:00
+kn_demo_fullstack,fullstack,tx_demo_fullstack,2026-07-01T09:00:00+09:00
+kn_demo_devops,devops,tx_demo_devops,2026-07-27T09:00:00+09:00
+kn_demo_mobile,mobile,tx_demo_mobile,2026-07-27T09:00:00+09:00
+kn_demo_security,security,tx_demo_security,2026-07-27T09:00:00+09:00
+kn_demo_game_client,game_client,tx_demo_game_client,2026-07-27T09:00:00+09:00

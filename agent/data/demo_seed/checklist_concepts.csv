@@ -1,0 +1,124 @@
+concept_id,job_role_id,canonical_title,kind
+cc_backend_crud-api,backend,CRUD REST API 프로젝트,project
+cc_backend_rdb-schema,backend,RDB 설계·쿼리 기본기,project
+cc_backend_error-handling,backend,예외·에러 응답 설계,project
+cc_backend_tx-integrity,backend,트랜잭션·동시성 심화,project
+cc_backend_performance,backend,부하 측정·성능 개선,project
+cc_backend_deploy-pipeline,backend,배포 파이프라인 구성,project
+cc_backend_event-pipeline,backend,이벤트 처리 경험,project
+cc_backend_incident-recovery,backend,장애·복구 대응 경험,story
+cc_backend_collab-story,backend,협업 문제 해결 서사,story
+cc_backend_test-habit,backend,테스트 작성 습관,project
+cc_backend_docs-habit,backend,기술 문서화 습관,project
+cc_backend_domain-study,backend,도메인 이해 정리,study
+cc_backend_cs-basics,backend,CS 기본기 — 네트워크·운영체제,study
+cc_backend_spring-internals,backend,Spring 동작 원리,study
+cc_frontend_spa-project,frontend,React 화면 프로젝트 완성,project
+cc_frontend_ts-typing,frontend,TypeScript 타입 설계 경험,project
+cc_frontend_state-design,frontend,상태·데이터 흐름 설계,project
+cc_frontend_css-system,frontend,공통 컴포넌트·스타일 체계,project
+cc_frontend_perf-budget,frontend,성능 측정·개선 기록,project
+cc_frontend_a11y-audit,frontend,접근성 점검·개선 기록,project
+cc_frontend_test-habit,frontend,컴포넌트 테스트 습관,project
+cc_frontend_build-tuning,frontend,빌드·번들 최적화 경험,project
+cc_frontend_collab-story,frontend,디자이너·기획 협업 서사,story
+cc_frontend_release-story,frontend,배포하고 고쳐 본 오너십 서사,story
+cc_frontend_render-theory,frontend,브라우저 렌더링 원리 학습,study
+cc_frontend_ts-type-theory,frontend,타입 시스템 심화 학습,study
+cc_frontend_a11y-standard-study,frontend,웹 접근성 지침 학습,study
+cc_ai_engineer_python-data,ai_engineer,데이터 처리 파이프라인,project
+cc_ai_engineer_dl-training,ai_engineer,모델 학습·평가 루프 구현,project
+cc_ai_engineer_eval-harness,ai_engineer,평가 세트와 정량 비교,project
+cc_ai_engineer_serving-api,ai_engineer,모델 서빙 API,project
+cc_ai_engineer_rag-quality,ai_engineer,검색 증강 응용 구현,project
+cc_ai_engineer_exp-repro,ai_engineer,실험 기록·재현성,project
+cc_ai_engineer_infra-cost,ai_engineer,지연·비용 측정,project
+cc_ai_engineer_git-collab,ai_engineer,협업·결과 공유 서사,story
+cc_ai_engineer_ml-basics,ai_engineer,머신러닝 기본 개념,study
+cc_ai_engineer_llm-theory,ai_engineer,LLM 동작 원리,study
+cc_ai_engineer_vector-search,ai_engineer,벡터 검색 이론,study
+cc_data_engineer_batch-pipeline,data_engineer,배치 파이프라인 프로젝트,project
+cc_data_engineer_sql-tuning,data_engineer,SQL 집계와 실행 계획,project
+cc_data_engineer_airflow-dag,data_engineer,DAG 스케줄 운영,project
+cc_data_engineer_warehouse-modeling,data_engineer,웨어하우스 테이블 모델링,project
+cc_data_engineer_data-quality,data_engineer,데이터 품질 검증 절차,project
+cc_data_engineer_failure-recovery,data_engineer,실패·재처리 운영 기록,story
+cc_data_engineer_distributed-basics,data_engineer,분산 처리 원리,study
+cc_data_engineer_modeling-theory,data_engineer,차원 모델링 이론,study
+cc_data_engineer_spark-optimize,data_engineer,분산 배치 병목 개선,project
+cc_data_engineer_streaming-pipeline,data_engineer,스트리밍 수집 구현,project
+cc_data_engineer_stream-semantics,data_engineer,스트리밍 시맨틱스,study
+cc_data_engineer_cost-optimize,data_engineer,처리 비용 줄이기,study
+cc_data_engineer_volume-story,data_engineer,데이터 규모를 숫자로 설명,story
+cc_data_engineer_reconciliation,data_engineer,집계 대사 파이프라인,project
+cc_data_engineer_governance-rule,data_engineer,비식별·보관 규칙,study
+cc_data_engineer_metric-doc,data_engineer,지표 정의 문서,story
+cc_data_engineer_infra-basics,data_engineer,실행 환경 구성 기초,study
+cc_data_engineer_standard-doc,data_engineer,표준 설계 산출물,story
+cc_data_engineer_requirement-doc,data_engineer,요구 정리와 합의 기록,story
+cc_data_engineer_handover-story,data_engineer,운영 이관 준비,story
+cc_data_engineer_ownership-story,data_engineer,전 과정 오너십 서사,story
+cc_data_engineer_ml-dataset,data_engineer,학습 데이터셋 관리,project
+cc_fullstack_e2e-feature,fullstack,화면~서버 기능 완성 프로젝트,project
+cc_fullstack_api-contract,fullstack,API 계약 설계,project
+cc_fullstack_rdb-schema,fullstack,관계형 스키마 설계,project
+cc_fullstack_deploy-pipeline,fullstack,클라우드 배포,project
+cc_fullstack_error-ux,fullstack,실패 처리와 사용자 피드백,project
+cc_fullstack_collab-story,fullstack,협업·오너십 서사,story
+cc_fullstack_ts-type-study,fullstack,타입으로 계약 지키기,study
+cc_fullstack_web-fundamentals,fullstack,웹 기본기 — HTTP·렌더링,study
+cc_fullstack_db-tx-study,fullstack,데이터베이스 이론 — 인덱스·트랜잭션,study
+cc_fullstack_perf-tuning,fullstack,응답 속도 측정과 개선,project
+cc_fullstack_ownership-ship,fullstack,혼자 끝까지 배포한 서사,story
+cc_fullstack_multi-tenant,fullstack,고객사별 설정 분리,project
+cc_fullstack_security-basic,fullstack,인증·인가 구현,project
+cc_fullstack_spec-docs,fullstack,산출물 문서 작성,project
+cc_fullstack_realtime-sync,fullstack,실시간 상태 반영,project
+cc_devops_k8s-deploy,devops,Kubernetes 배포 실습,project
+cc_devops_cicd-pipeline,devops,CI/CD 파이프라인 구축,project
+cc_devops_iac-terraform,devops,인프라 코드화,project
+cc_devops_observability-stack,devops,관측 스택 구성,project
+cc_devops_network-design,devops,네트워크 구성 설계 기록,project
+cc_devops_zero-downtime,devops,무중단 배포 실험,project
+cc_devops_slo-alerting,devops,SLO·알림 설계,project
+cc_devops_access-control,devops,접근 통제·감사 기록,project
+cc_devops_multi-cluster,devops,규모 확장 이해,project
+cc_devops_stateful-workload,devops,상태 저장 워크로드 다루기,project
+cc_devops_release-docs,devops,릴리스 절차 문서화,project
+cc_devops_incident-retro,devops,장애 대응·회고 서사,story
+cc_devops_collab-ops,devops,개발팀 협업 서사,story
+cc_devops_k8s-internals,devops,쿠버네티스 동작 원리,study
+cc_devops_iac-idempotency,devops,선언형 인프라와 멱등성,study
+cc_devops_sre-slo,devops,SRE·SLO와 장애 대응 이론,study
+cc_mobile_app-project,mobile,한 플랫폼 앱 완성,project
+cc_mobile_architecture,mobile,MVVM·상태 분리 구조,project
+cc_mobile_network-layer,mobile,네트워크 계층과 실패 처리,project
+cc_mobile_store-release,mobile,스토어 배포 경험,project
+cc_mobile_performance,mobile,성능 측정·개선 기록,project
+cc_mobile_crash-quality,mobile,크래시 추적·안정성,project
+cc_mobile_design-collab,mobile,디자인·기획 스펙 조율 서사,story
+cc_mobile_platform-internals,mobile,플랫폼 동작 원리,study
+cc_mobile_async-cs,mobile,비동기·네트워크 기본기,study
+cc_mobile_compose-swiftui,mobile,선언형 UI 원리,study
+cc_security_web-vuln-lab,security,웹 취약점 진단 실습,project
+cc_security_diagnosis-report,security,진단 보고서 작성,project
+cc_security_log-analysis,security,보안 로그 분석 실습,project
+cc_security_detection-rule,security,탐지 정책 설계 기록,project
+cc_security_network-lab,security,네트워크 보안 실습 환경,project
+cc_security_secure-code-review,security,시큐어 코딩 코드 검토,project
+cc_security_privacy-checklist,security,개인정보 점검표 작성,project
+cc_security_incident-drill,security,사고 대응 훈련 서사,story
+cc_security_security-ethics,security,보안 담당자의 책임 서사,story
+cc_security_isms-study,security,정보보호 관리체계 학습,study
+cc_security_cert-study,security,정보보안 기초 이론,study
+cc_game_client_unity-build,game_client,Unity 로 완성한 플레이 빌드,project
+cc_game_client_unreal-gameplay,game_client,Unreal C++ 게임플레이 기능,project
+cc_game_client_frame-budget,game_client,프레임 예산 계측·개선,project
+cc_game_client_shader-cost,game_client,셰이더·LOD 비용 조정,project
+cc_game_client_device-test,game_client,저사양 단말 테스트 기록,project
+cc_game_client_math-solve,game_client,게임 수학으로 푼 문제,project
+cc_game_client_netsync-demo,game_client,2인 동기화 데모,project
+cc_game_client_crash-story,game_client,크래시·버그 추적 서사,story
+cc_game_client_collab-story,game_client,협업 문제 해결 서사,story
+cc_game_client_engine-internals,game_client,엔진 내부 구조 학습,study
+cc_game_client_cs-graphics,game_client,그래픽스 파이프라인 기초,study

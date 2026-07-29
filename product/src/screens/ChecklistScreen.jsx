@@ -1,31 +1,32 @@
 import { useEffect, useState } from 'react'
 import TopBar from '../components/TopBar'
+import AnalysisNotice from '../components/AnalysisNotice'
 import useScrollSpy from '../hooks/useScrollSpy'
-import { SUPPORTED_JOB } from '../data/mock'
+import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
+import { CLUSTERS, DEFAULT_CLUSTER } from '../data/clusters'
 
 // 04 합격 전략 화면.
 // 범위(전체/기업군/개별 공고)에 따라 체크리스트·포폴·자소서·면접 전략이 바뀐다.
 // 데이터는 POST /api/conditions 실통신(통계→공고 해석→합격 전략 사슬 + fixture 전략)으로 받는다.
+// 직무는 App 이 내려주는 job prop({ job_role_id, display_name })을 쓴다.
 
-const CLUSTERS = ['핀테크·금융', '빅테크·플랫폼', '스타트업', 'B2B SaaS', 'SI·대기업', '게임사']
 const CH_LABEL = { essay: '자소서', portfolio: '포트폴리오', interview: '면접' }
 const NAV_IDS = ['summary', 'checklist', 'portfolio', 'essay', 'interview']
 
-async function fetchConditions(scope, signal) {
-  const res = await fetch('/api/conditions', {
+function fetchConditions(jobRoleId, scope, signal) {
+  return fetchJson('/api/conditions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ job: 'backend', scope }),
+    body: JSON.stringify({ job: jobRoleId, scope }),
     signal,
   })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.json()
 }
 
-function ChecklistScreen({ go, checks, setChecks, scope, setScope }) {
-  // 범위·체크 상태는 App이 소유한다 — 로드맵 화면과 공유
+function ChecklistScreen({ go, job, checks, setChecks, scope, setScope }) {
+  // 직무·범위·체크 상태는 App이 소유한다 — 로드맵 화면과 공유
+  const jobRoleId = job.job_role_id
   const level = scope.level
-  const cluster = scope.cluster_tag || '핀테크·금융'
+  const cluster = scope.cluster_tag || DEFAULT_CLUSTER
   const postingId = scope.posting_id
   const ck = checks || {}
   const [data, setData] = useState(null)
@@ -34,26 +35,44 @@ function ChecklistScreen({ go, checks, setChecks, scope, setScope }) {
 
   useEffect(() => {
     const controller = new AbortController()
-    fetchConditions({ level, cluster_tag: level === 'overall' ? null : cluster, posting_id: level === 'posting' ? postingId : null }, controller.signal)
+    fetchConditions(
+      jobRoleId,
+      { level, cluster_tag: level === 'overall' ? null : cluster, posting_id: level === 'posting' ? postingId : null },
+      controller.signal
+    )
       .then((json) => {
         setData(json)
         // 체크 상태가 아직 없을 때만 서버 초기값으로 채운다 (사용자 체크를 덮어쓰지 않음)
         setChecks((prev) => prev ?? Object.fromEntries(json.checklist.map((c) => [c.item_id, c.have])))
         setStatus('ready')
       })
-      .catch((error) => { if (error.name !== 'AbortError') setStatus('error') })
+      .catch((error) => {
+        if (error.name === 'AbortError') return
+        // 활성 분석 결과가 없는 직무는 오류가 아니라 "아직 준비 안 됨"으로 안내한다.
+        setStatus(isJobNotReady(error.code) ? 'notready' : 'error')
+      })
     return () => controller.abort()
-  }, [level, cluster, postingId, setChecks])
+  }, [jobRoleId, level, cluster, postingId, setChecks])
 
   const changeScope = (nextScope) => {
     setStatus('loading')
     setScope(nextScope)
   }
 
+  if (status === 'notready') {
+    return (
+      <>
+        <TopBar step={4} label="합격 전략" job={job.display_name} backTo="reverse" backLabel="공고 해석" go={go} />
+        <main className="app-shell reader-layout">
+          <AnalysisNotice jobName={job.display_name} onBack={() => go('select')} />
+        </main>
+      </>
+    )
+  }
   if (status === 'error') {
     return (
       <>
-        <TopBar step={4} label="합격 전략" job={SUPPORTED_JOB} backTo="reverse" backLabel="공고 해석" go={go} />
+        <TopBar step={4} label="합격 전략" job={job.display_name} backTo="reverse" backLabel="공고 해석" go={go} />
         <main className="app-shell reader-layout">
           <p className="status-panel status-panel--error">합격 전략 서버에 연결하지 못했습니다. server(4000)와 agent(8000)를 확인해 주세요.</p>
         </main>
@@ -69,7 +88,7 @@ function ChecklistScreen({ go, checks, setChecks, scope, setScope }) {
 
   return (
     <>
-      <TopBar step={4} label="합격 전략" job={SUPPORTED_JOB} backTo="reverse" backLabel="공고 해석" go={go} />
+      <TopBar step={4} label="합격 전략" job={job.display_name} backTo="reverse" backLabel="공고 해석" go={go} />
       <main className="app-shell reader-layout">
         <article className="page page--wide">
           <header className="report-header" id="top">
@@ -77,7 +96,7 @@ function ChecklistScreen({ go, checks, setChecks, scope, setScope }) {
             <h1>준비할 것을 아는 데서 멈추지 않고, 어디에 어떻게 보여줄지까지 정합니다.</h1>
             <p>공고 해석의 각 요구 항목을 증명하기 좋은 곳으로 배정했습니다. 보유 여부를 체크하면 미보유 항목이 준비 로드맵으로 넘어갑니다.</p>
             <div className="cluster-chips">
-              <button type="button" className={`scope-chip${level === 'overall' ? ' scope-chip--on' : ''}`} onClick={() => changeScope({ level: 'overall', cluster_tag: null, posting_id: null })}>{SUPPORTED_JOB} 전체 기준</button>
+              <button type="button" className={`scope-chip${level === 'overall' ? ' scope-chip--on' : ''}`} onClick={() => changeScope({ level: 'overall', cluster_tag: null, posting_id: null })}>{job.display_name} 전체 기준</button>
               {CLUSTERS.map((c) => (
                 <button key={c} type="button"
                   className={`scope-chip${level !== 'overall' && c === cluster ? ' scope-chip--on' : ''}`}

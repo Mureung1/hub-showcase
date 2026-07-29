@@ -1,0 +1,66 @@
+# Express 백엔드의 Render 배포 정의 (Phase 23-1).
+#
+# Render 대시보드에서 Blueprint 로 이 파일을 읽는다. 서비스는 둘이다.
+#   - careersignal-server : Express. React(Vercel)가 부르는 유일한 주소다.
+#   - careersignal-agent  : FastAPI. Express 만 부른다. 브라우저는 부르지 않는다.
+#
+# 비밀값은 이 파일에 두지 않는다. `sync: false` 는 "값을 저장소가 아니라 대시보드에서
+# 받는다"는 뜻이며, Blueprint 를 처음 적용할 때 Render 가 값을 묻는다.
+#
+# `PORT` 는 Render 가 주입한다. 두 서비스 모두 그 값을 그대로 쓴다. 값을 고정하면
+# 플랫폼이 넘긴 포트와 어긋나 헬스체크가 실패한다.
+#   Express  : server/src/index.js 의 `process.env.PORT || 4000`
+#   FastAPI  : agent/Procfile 의 `--port ${PORT:-8000}`
+#
+# 주소는 환경마다 다르다. `fromService` 로 Render 가 실제 주소를 채우므로 저장소에
+# 호스트 이름을 적어 두지 않는다.
+
+services:
+  # ---------------------------------------------------------- Express
+  - type: web
+    name: careersignal-server
+    runtime: node
+    rootDir: server
+    plan: free
+    region: singapore
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # 저장소 접속. 값은 대시보드에서 받는다.
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      # 에이전트 주소. 아래 careersignal-agent 서비스의 URL 을 scheme 까지 넣는다
+      # (예: https://careersignal-agent.onrender.com). `fromService` 는 scheme 없는
+      # host 만 주므로 Express 의 `fetch(`${AGENT_URL}/reverse`)` 가 실패한다.
+      - key: AGENT_URL
+        sync: false
+      # Express 는 생성 모델 키를 보유하지 않는다. AGENTS.md 의 키 분리 규칙이다.
+
+  # ---------------------------------------------------------- FastAPI
+  - type: web
+    name: careersignal-agent
+    runtime: python
+    rootDir: agent
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13"
+      - key: PYTHONPATH
+        value: src
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false

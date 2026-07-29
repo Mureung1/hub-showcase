@@ -1,0 +1,190 @@
+track_id,analysis_version,scope_level,scope_id,capability_id,phase_label,priority,depth_reference
+st_demo_backend_overall_transaction-consistency,an_demo_backend,overall,backend,cap_backend_transaction-consistency,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_backend_overall_api-implementation,an_demo_backend,overall,backend,cap_backend_api-implementation,STEP 01~03과 병행,high,application
+st_demo_backend_overall_operability,an_demo_backend,overall,backend,cap_backend_operability,상시 · 주 3~4시간,high,application
+st_demo_backend_bigtech_platform_transaction-consistency,an_demo_backend,cluster,bigtech_platform,cap_backend_transaction-consistency,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_backend_bigtech_platform_api-implementation,an_demo_backend,cluster,bigtech_platform,cap_backend_api-implementation,STEP 01~03과 병행,high,application
+st_demo_backend_bigtech_platform_operability,an_demo_backend,cluster,bigtech_platform,cap_backend_operability,상시 · 주 3~4시간,high,application
+st_demo_backend_startup_transaction-consistency,an_demo_backend,cluster,startup,cap_backend_transaction-consistency,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_backend_startup_api-implementation,an_demo_backend,cluster,startup,cap_backend_api-implementation,STEP 01~03과 병행,high,application
+st_demo_backend_startup_operability,an_demo_backend,cluster,startup,cap_backend_operability,상시 · 주 3~4시간,high,application
+st_demo_backend_b2b_saas_transaction-consistency,an_demo_backend,cluster,b2b_saas,cap_backend_transaction-consistency,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_backend_b2b_saas_api-implementation,an_demo_backend,cluster,b2b_saas,cap_backend_api-implementation,STEP 01~03과 병행,high,application
+st_demo_backend_b2b_saas_operability,an_demo_backend,cluster,b2b_saas,cap_backend_operability,상시 · 주 3~4시간,high,application
+st_demo_backend_fintech_finance_transaction-consistency,an_demo_backend,cluster,fintech_finance,cap_backend_transaction-consistency,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_backend_fintech_finance_api-implementation,an_demo_backend,cluster,fintech_finance,cap_backend_api-implementation,STEP 01~03과 병행,high,application
+st_demo_backend_fintech_finance_operability,an_demo_backend,cluster,fintech_finance,cap_backend_operability,상시 · 주 3~4시간,high,application
+st_demo_backend_si_enterprise_transaction-consistency,an_demo_backend,cluster,si_enterprise,cap_backend_transaction-consistency,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_backend_si_enterprise_api-implementation,an_demo_backend,cluster,si_enterprise,cap_backend_api-implementation,STEP 01~03과 병행,high,application
+st_demo_backend_si_enterprise_operability,an_demo_backend,cluster,si_enterprise,cap_backend_operability,상시 · 주 3~4시간,high,application
+st_demo_backend_game_transaction-consistency,an_demo_backend,cluster,game,cap_backend_transaction-consistency,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_backend_game_api-implementation,an_demo_backend,cluster,game,cap_backend_api-implementation,STEP 01~03과 병행,high,application
+st_demo_backend_game_operability,an_demo_backend,cluster,game,cap_backend_operability,상시 · 주 3~4시간,high,application
+st_demo_frontend_overall_experience-quality,an_demo_frontend,overall,frontend,cap_frontend_experience-quality,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_frontend_overall_state-data-flow,an_demo_frontend,overall,frontend,cap_frontend_state-data-flow,STEP 02와 병행,high,application
+st_demo_frontend_overall_frontend-engineering,an_demo_frontend,overall,frontend,cap_frontend_frontend-engineering,상시 · 주 3~4시간,high,application
+st_demo_frontend_bigtech_platform_experience-quality,an_demo_frontend,cluster,bigtech_platform,cap_frontend_experience-quality,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_frontend_bigtech_platform_state-data-flow,an_demo_frontend,cluster,bigtech_platform,cap_frontend_state-data-flow,STEP 02와 병행,high,application
+st_demo_frontend_bigtech_platform_frontend-engineering,an_demo_frontend,cluster,bigtech_platform,cap_frontend_frontend-engineering,상시 · 주 3~4시간,high,application
+st_demo_frontend_startup_experience-quality,an_demo_frontend,cluster,startup,cap_frontend_experience-quality,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_frontend_startup_state-data-flow,an_demo_frontend,cluster,startup,cap_frontend_state-data-flow,STEP 02와 병행,high,application
+st_demo_frontend_startup_frontend-engineering,an_demo_frontend,cluster,startup,cap_frontend_frontend-engineering,상시 · 주 3~4시간,high,application
+st_demo_frontend_b2b_saas_experience-quality,an_demo_frontend,cluster,b2b_saas,cap_frontend_experience-quality,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_frontend_b2b_saas_state-data-flow,an_demo_frontend,cluster,b2b_saas,cap_frontend_state-data-flow,STEP 02와 병행,high,application
+st_demo_frontend_b2b_saas_frontend-engineering,an_demo_frontend,cluster,b2b_saas,cap_frontend_frontend-engineering,상시 · 주 3~4시간,high,application
+st_demo_frontend_fintech_finance_experience-quality,an_demo_frontend,cluster,fintech_finance,cap_frontend_experience-quality,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_frontend_fintech_finance_state-data-flow,an_demo_frontend,cluster,fintech_finance,cap_frontend_state-data-flow,STEP 02와 병행,high,application
+st_demo_frontend_fintech_finance_frontend-engineering,an_demo_frontend,cluster,fintech_finance,cap_frontend_frontend-engineering,상시 · 주 3~4시간,high,application
+st_demo_frontend_si_enterprise_experience-quality,an_demo_frontend,cluster,si_enterprise,cap_frontend_experience-quality,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_frontend_si_enterprise_state-data-flow,an_demo_frontend,cluster,si_enterprise,cap_frontend_state-data-flow,STEP 02와 병행,high,application
+st_demo_frontend_si_enterprise_frontend-engineering,an_demo_frontend,cluster,si_enterprise,cap_frontend_frontend-engineering,상시 · 주 3~4시간,high,application
+st_demo_frontend_game_experience-quality,an_demo_frontend,cluster,game,cap_frontend_experience-quality,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_frontend_game_state-data-flow,an_demo_frontend,cluster,game,cap_frontend_state-data-flow,STEP 02와 병행,high,application
+st_demo_frontend_game_frontend-engineering,an_demo_frontend,cluster,game,cap_frontend_frontend-engineering,상시 · 주 3~4시간,high,application
+st_demo_ai_engineer_overall_model-training,an_demo_ai_engineer,overall,ai_engineer,cap_ai_engineer_model-training,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_ai_engineer_overall_llm-application,an_demo_ai_engineer,overall,ai_engineer,cap_ai_engineer_llm-application,STEP 02~04와 병행,high,application
+st_demo_ai_engineer_overall_serving-ops,an_demo_ai_engineer,overall,ai_engineer,cap_ai_engineer_serving-ops,상시 · 주 3~4시간,high,application
+st_demo_ai_engineer_bigtech_platform_model-training,an_demo_ai_engineer,cluster,bigtech_platform,cap_ai_engineer_model-training,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_ai_engineer_bigtech_platform_llm-application,an_demo_ai_engineer,cluster,bigtech_platform,cap_ai_engineer_llm-application,STEP 02~04와 병행,high,application
+st_demo_ai_engineer_bigtech_platform_serving-ops,an_demo_ai_engineer,cluster,bigtech_platform,cap_ai_engineer_serving-ops,상시 · 주 3~4시간,high,application
+st_demo_ai_engineer_startup_model-training,an_demo_ai_engineer,cluster,startup,cap_ai_engineer_model-training,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_ai_engineer_startup_llm-application,an_demo_ai_engineer,cluster,startup,cap_ai_engineer_llm-application,STEP 02~04와 병행,high,application
+st_demo_ai_engineer_startup_serving-ops,an_demo_ai_engineer,cluster,startup,cap_ai_engineer_serving-ops,상시 · 주 3~4시간,high,application
+st_demo_ai_engineer_b2b_saas_model-training,an_demo_ai_engineer,cluster,b2b_saas,cap_ai_engineer_model-training,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_ai_engineer_b2b_saas_llm-application,an_demo_ai_engineer,cluster,b2b_saas,cap_ai_engineer_llm-application,STEP 02~04와 병행,high,application
+st_demo_ai_engineer_b2b_saas_serving-ops,an_demo_ai_engineer,cluster,b2b_saas,cap_ai_engineer_serving-ops,상시 · 주 3~4시간,high,application
+st_demo_ai_engineer_fintech_finance_model-training,an_demo_ai_engineer,cluster,fintech_finance,cap_ai_engineer_model-training,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_ai_engineer_fintech_finance_llm-application,an_demo_ai_engineer,cluster,fintech_finance,cap_ai_engineer_llm-application,STEP 02~04와 병행,high,application
+st_demo_ai_engineer_fintech_finance_serving-ops,an_demo_ai_engineer,cluster,fintech_finance,cap_ai_engineer_serving-ops,상시 · 주 3~4시간,high,application
+st_demo_ai_engineer_si_enterprise_model-training,an_demo_ai_engineer,cluster,si_enterprise,cap_ai_engineer_model-training,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_ai_engineer_si_enterprise_llm-application,an_demo_ai_engineer,cluster,si_enterprise,cap_ai_engineer_llm-application,STEP 02~04와 병행,high,application
+st_demo_ai_engineer_si_enterprise_serving-ops,an_demo_ai_engineer,cluster,si_enterprise,cap_ai_engineer_serving-ops,상시 · 주 3~4시간,high,application
+st_demo_ai_engineer_game_model-training,an_demo_ai_engineer,cluster,game,cap_ai_engineer_model-training,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_ai_engineer_game_llm-application,an_demo_ai_engineer,cluster,game,cap_ai_engineer_llm-application,STEP 02~04와 병행,high,application
+st_demo_ai_engineer_game_serving-ops,an_demo_ai_engineer,cluster,game,cap_ai_engineer_serving-ops,상시 · 주 3~4시간,high,application
+st_demo_data_engineer_overall_data-modeling,an_demo_data_engineer,overall,data_engineer,cap_data_engineer_data-modeling,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_data_engineer_overall_pipeline-engineering,an_demo_data_engineer,overall,data_engineer,cap_data_engineer_pipeline-engineering,STEP 02~03과 병행,high,application
+st_demo_data_engineer_overall_stream-processing,an_demo_data_engineer,overall,data_engineer,cap_data_engineer_stream-processing,상시 · 주 3시간,high,application
+st_demo_data_engineer_bigtech_platform_data-modeling,an_demo_data_engineer,cluster,bigtech_platform,cap_data_engineer_data-modeling,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_data_engineer_bigtech_platform_pipeline-engineering,an_demo_data_engineer,cluster,bigtech_platform,cap_data_engineer_pipeline-engineering,STEP 02~03과 병행,high,application
+st_demo_data_engineer_bigtech_platform_stream-processing,an_demo_data_engineer,cluster,bigtech_platform,cap_data_engineer_stream-processing,상시 · 주 3시간,high,application
+st_demo_data_engineer_startup_data-modeling,an_demo_data_engineer,cluster,startup,cap_data_engineer_data-modeling,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_data_engineer_startup_pipeline-engineering,an_demo_data_engineer,cluster,startup,cap_data_engineer_pipeline-engineering,STEP 02~03과 병행,high,application
+st_demo_data_engineer_startup_stream-processing,an_demo_data_engineer,cluster,startup,cap_data_engineer_stream-processing,상시 · 주 3시간,high,application
+st_demo_data_engineer_b2b_saas_data-modeling,an_demo_data_engineer,cluster,b2b_saas,cap_data_engineer_data-modeling,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_data_engineer_b2b_saas_pipeline-engineering,an_demo_data_engineer,cluster,b2b_saas,cap_data_engineer_pipeline-engineering,STEP 02~03과 병행,high,application
+st_demo_data_engineer_b2b_saas_stream-processing,an_demo_data_engineer,cluster,b2b_saas,cap_data_engineer_stream-processing,상시 · 주 3시간,high,application
+st_demo_data_engineer_fintech_finance_data-modeling,an_demo_data_engineer,cluster,fintech_finance,cap_data_engineer_data-modeling,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_data_engineer_fintech_finance_pipeline-engineering,an_demo_data_engineer,cluster,fintech_finance,cap_data_engineer_pipeline-engineering,STEP 02~03과 병행,high,application
+st_demo_data_engineer_fintech_finance_stream-processing,an_demo_data_engineer,cluster,fintech_finance,cap_data_engineer_stream-processing,상시 · 주 3시간,high,application
+st_demo_data_engineer_si_enterprise_data-modeling,an_demo_data_engineer,cluster,si_enterprise,cap_data_engineer_data-modeling,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_data_engineer_si_enterprise_pipeline-engineering,an_demo_data_engineer,cluster,si_enterprise,cap_data_engineer_pipeline-engineering,STEP 02~03과 병행,high,application
+st_demo_data_engineer_si_enterprise_stream-processing,an_demo_data_engineer,cluster,si_enterprise,cap_data_engineer_stream-processing,상시 · 주 3시간,high,application
+st_demo_data_engineer_game_data-modeling,an_demo_data_engineer,cluster,game,cap_data_engineer_data-modeling,STEP 01~03과 병행,vhigh,tradeoff
+st_demo_data_engineer_game_pipeline-engineering,an_demo_data_engineer,cluster,game,cap_data_engineer_pipeline-engineering,STEP 02~03과 병행,high,application
+st_demo_data_engineer_game_stream-processing,an_demo_data_engineer,cluster,game,cap_data_engineer_stream-processing,상시 · 주 3시간,high,application
+st_demo_fullstack_overall_contract-design,an_demo_fullstack,overall,fullstack,cap_fullstack_contract-design,STEP 01~02와 병행,vhigh,application
+st_demo_fullstack_overall_feature-delivery,an_demo_fullstack,overall,fullstack,cap_fullstack_feature-delivery,STEP 01~03과 병행,high,foundation
+st_demo_fullstack_overall_ship-operate,an_demo_fullstack,overall,fullstack,cap_fullstack_ship-operate,상시 · 주 3시간,mid,foundation
+st_demo_fullstack_bigtech_platform_contract-design,an_demo_fullstack,cluster,bigtech_platform,cap_fullstack_contract-design,STEP 01~02와 병행,vhigh,application
+st_demo_fullstack_bigtech_platform_feature-delivery,an_demo_fullstack,cluster,bigtech_platform,cap_fullstack_feature-delivery,STEP 01~03과 병행,high,foundation
+st_demo_fullstack_bigtech_platform_ship-operate,an_demo_fullstack,cluster,bigtech_platform,cap_fullstack_ship-operate,상시 · 주 3시간,mid,foundation
+st_demo_fullstack_startup_contract-design,an_demo_fullstack,cluster,startup,cap_fullstack_contract-design,STEP 01~02와 병행,vhigh,application
+st_demo_fullstack_startup_feature-delivery,an_demo_fullstack,cluster,startup,cap_fullstack_feature-delivery,STEP 01~03과 병행,high,foundation
+st_demo_fullstack_startup_ship-operate,an_demo_fullstack,cluster,startup,cap_fullstack_ship-operate,상시 · 주 3시간,mid,foundation
+st_demo_fullstack_b2b_saas_contract-design,an_demo_fullstack,cluster,b2b_saas,cap_fullstack_contract-design,STEP 01~02와 병행,vhigh,application
+st_demo_fullstack_b2b_saas_feature-delivery,an_demo_fullstack,cluster,b2b_saas,cap_fullstack_feature-delivery,STEP 01~03과 병행,high,foundation
+st_demo_fullstack_b2b_saas_ship-operate,an_demo_fullstack,cluster,b2b_saas,cap_fullstack_ship-operate,상시 · 주 3시간,mid,foundation
+st_demo_fullstack_fintech_finance_contract-design,an_demo_fullstack,cluster,fintech_finance,cap_fullstack_contract-design,STEP 01~02와 병행,vhigh,application
+st_demo_fullstack_fintech_finance_feature-delivery,an_demo_fullstack,cluster,fintech_finance,cap_fullstack_feature-delivery,STEP 01~03과 병행,high,foundation
+st_demo_fullstack_fintech_finance_ship-operate,an_demo_fullstack,cluster,fintech_finance,cap_fullstack_ship-operate,상시 · 주 3시간,mid,foundation
+st_demo_fullstack_si_enterprise_contract-design,an_demo_fullstack,cluster,si_enterprise,cap_fullstack_contract-design,STEP 01~02와 병행,vhigh,application
+st_demo_fullstack_si_enterprise_feature-delivery,an_demo_fullstack,cluster,si_enterprise,cap_fullstack_feature-delivery,STEP 01~03과 병행,high,foundation
+st_demo_fullstack_si_enterprise_ship-operate,an_demo_fullstack,cluster,si_enterprise,cap_fullstack_ship-operate,상시 · 주 3시간,mid,foundation
+st_demo_fullstack_game_contract-design,an_demo_fullstack,cluster,game,cap_fullstack_contract-design,STEP 01~02와 병행,vhigh,application
+st_demo_fullstack_game_feature-delivery,an_demo_fullstack,cluster,game,cap_fullstack_feature-delivery,STEP 01~03과 병행,high,foundation
+st_demo_fullstack_game_ship-operate,an_demo_fullstack,cluster,game,cap_fullstack_ship-operate,상시 · 주 3시간,mid,foundation
+st_demo_devops_overall_container-orchestration,an_demo_devops,overall,devops,cap_devops_container-orchestration,STEP 01~02와 병행,vhigh,application
+st_demo_devops_overall_delivery-automation,an_demo_devops,overall,devops,cap_devops_delivery-automation,STEP 02~03과 병행,high,foundation
+st_demo_devops_overall_reliability-operations,an_demo_devops,overall,devops,cap_devops_reliability-operations,상시 · 주 3~4시간,high,foundation
+st_demo_devops_bigtech_platform_container-orchestration,an_demo_devops,cluster,bigtech_platform,cap_devops_container-orchestration,STEP 01~02와 병행,vhigh,application
+st_demo_devops_bigtech_platform_delivery-automation,an_demo_devops,cluster,bigtech_platform,cap_devops_delivery-automation,STEP 02~03과 병행,high,foundation
+st_demo_devops_bigtech_platform_reliability-operations,an_demo_devops,cluster,bigtech_platform,cap_devops_reliability-operations,상시 · 주 3~4시간,high,foundation
+st_demo_devops_startup_container-orchestration,an_demo_devops,cluster,startup,cap_devops_container-orchestration,STEP 01~02와 병행,vhigh,application
+st_demo_devops_startup_delivery-automation,an_demo_devops,cluster,startup,cap_devops_delivery-automation,STEP 02~03과 병행,high,foundation
+st_demo_devops_startup_reliability-operations,an_demo_devops,cluster,startup,cap_devops_reliability-operations,상시 · 주 3~4시간,high,foundation
+st_demo_devops_b2b_saas_container-orchestration,an_demo_devops,cluster,b2b_saas,cap_devops_container-orchestration,STEP 01~02와 병행,vhigh,application
+st_demo_devops_b2b_saas_delivery-automation,an_demo_devops,cluster,b2b_saas,cap_devops_delivery-automation,STEP 02~03과 병행,high,foundation
+st_demo_devops_b2b_saas_reliability-operations,an_demo_devops,cluster,b2b_saas,cap_devops_reliability-operations,상시 · 주 3~4시간,high,foundation
+st_demo_devops_fintech_finance_container-orchestration,an_demo_devops,cluster,fintech_finance,cap_devops_container-orchestration,STEP 01~02와 병행,vhigh,application
+st_demo_devops_fintech_finance_delivery-automation,an_demo_devops,cluster,fintech_finance,cap_devops_delivery-automation,STEP 02~03과 병행,high,foundation
+st_demo_devops_fintech_finance_reliability-operations,an_demo_devops,cluster,fintech_finance,cap_devops_reliability-operations,상시 · 주 3~4시간,high,foundation
+st_demo_devops_si_enterprise_container-orchestration,an_demo_devops,cluster,si_enterprise,cap_devops_container-orchestration,STEP 01~02와 병행,vhigh,application
+st_demo_devops_si_enterprise_delivery-automation,an_demo_devops,cluster,si_enterprise,cap_devops_delivery-automation,STEP 02~03과 병행,high,foundation
+st_demo_devops_si_enterprise_reliability-operations,an_demo_devops,cluster,si_enterprise,cap_devops_reliability-operations,상시 · 주 3~4시간,high,foundation
+st_demo_devops_game_container-orchestration,an_demo_devops,cluster,game,cap_devops_container-orchestration,STEP 01~02와 병행,vhigh,application
+st_demo_devops_game_delivery-automation,an_demo_devops,cluster,game,cap_devops_delivery-automation,STEP 02~03과 병행,high,foundation
+st_demo_devops_game_reliability-operations,an_demo_devops,cluster,game,cap_devops_reliability-operations,상시 · 주 3~4시간,high,foundation
+st_demo_mobile_overall_app-build,an_demo_mobile,overall,mobile,cap_mobile_app-build,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_mobile_overall_app-structure,an_demo_mobile,overall,mobile,cap_mobile_app-structure,STEP 02~03과 병행,high,application
+st_demo_mobile_overall_release-ops,an_demo_mobile,overall,mobile,cap_mobile_release-ops,상시 · 주 3~4시간,high,application
+st_demo_mobile_bigtech_platform_app-build,an_demo_mobile,cluster,bigtech_platform,cap_mobile_app-build,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_mobile_bigtech_platform_app-structure,an_demo_mobile,cluster,bigtech_platform,cap_mobile_app-structure,STEP 02~03과 병행,high,application
+st_demo_mobile_bigtech_platform_release-ops,an_demo_mobile,cluster,bigtech_platform,cap_mobile_release-ops,상시 · 주 3~4시간,high,application
+st_demo_mobile_startup_app-build,an_demo_mobile,cluster,startup,cap_mobile_app-build,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_mobile_startup_app-structure,an_demo_mobile,cluster,startup,cap_mobile_app-structure,STEP 02~03과 병행,high,application
+st_demo_mobile_startup_release-ops,an_demo_mobile,cluster,startup,cap_mobile_release-ops,상시 · 주 3~4시간,high,application
+st_demo_mobile_b2b_saas_app-build,an_demo_mobile,cluster,b2b_saas,cap_mobile_app-build,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_mobile_b2b_saas_app-structure,an_demo_mobile,cluster,b2b_saas,cap_mobile_app-structure,STEP 02~03과 병행,high,application
+st_demo_mobile_b2b_saas_release-ops,an_demo_mobile,cluster,b2b_saas,cap_mobile_release-ops,상시 · 주 3~4시간,high,application
+st_demo_mobile_fintech_finance_app-build,an_demo_mobile,cluster,fintech_finance,cap_mobile_app-build,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_mobile_fintech_finance_app-structure,an_demo_mobile,cluster,fintech_finance,cap_mobile_app-structure,STEP 02~03과 병행,high,application
+st_demo_mobile_fintech_finance_release-ops,an_demo_mobile,cluster,fintech_finance,cap_mobile_release-ops,상시 · 주 3~4시간,high,application
+st_demo_mobile_si_enterprise_app-build,an_demo_mobile,cluster,si_enterprise,cap_mobile_app-build,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_mobile_si_enterprise_app-structure,an_demo_mobile,cluster,si_enterprise,cap_mobile_app-structure,STEP 02~03과 병행,high,application
+st_demo_mobile_si_enterprise_release-ops,an_demo_mobile,cluster,si_enterprise,cap_mobile_release-ops,상시 · 주 3~4시간,high,application
+st_demo_mobile_game_app-build,an_demo_mobile,cluster,game,cap_mobile_app-build,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_mobile_game_app-structure,an_demo_mobile,cluster,game,cap_mobile_app-structure,STEP 02~03과 병행,high,application
+st_demo_mobile_game_release-ops,an_demo_mobile,cluster,game,cap_mobile_release-ops,상시 · 주 3~4시간,high,application
+st_demo_security_overall_compliance-design,an_demo_security,overall,security,cap_security_compliance-design,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_security_overall_vuln-diagnosis,an_demo_security,overall,security,cap_security_vuln-diagnosis,STEP 01~03과 병행,high,application
+st_demo_security_overall_incident-response,an_demo_security,overall,security,cap_security_incident-response,상시 · 주 3~4시간,high,application
+st_demo_security_bigtech_platform_compliance-design,an_demo_security,cluster,bigtech_platform,cap_security_compliance-design,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_security_bigtech_platform_vuln-diagnosis,an_demo_security,cluster,bigtech_platform,cap_security_vuln-diagnosis,STEP 01~03과 병행,high,application
+st_demo_security_bigtech_platform_incident-response,an_demo_security,cluster,bigtech_platform,cap_security_incident-response,상시 · 주 3~4시간,high,application
+st_demo_security_startup_compliance-design,an_demo_security,cluster,startup,cap_security_compliance-design,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_security_startup_vuln-diagnosis,an_demo_security,cluster,startup,cap_security_vuln-diagnosis,STEP 01~03과 병행,high,application
+st_demo_security_startup_incident-response,an_demo_security,cluster,startup,cap_security_incident-response,상시 · 주 3~4시간,high,application
+st_demo_security_b2b_saas_compliance-design,an_demo_security,cluster,b2b_saas,cap_security_compliance-design,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_security_b2b_saas_vuln-diagnosis,an_demo_security,cluster,b2b_saas,cap_security_vuln-diagnosis,STEP 01~03과 병행,high,application
+st_demo_security_b2b_saas_incident-response,an_demo_security,cluster,b2b_saas,cap_security_incident-response,상시 · 주 3~4시간,high,application
+st_demo_security_fintech_finance_compliance-design,an_demo_security,cluster,fintech_finance,cap_security_compliance-design,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_security_fintech_finance_vuln-diagnosis,an_demo_security,cluster,fintech_finance,cap_security_vuln-diagnosis,STEP 01~03과 병행,high,application
+st_demo_security_fintech_finance_incident-response,an_demo_security,cluster,fintech_finance,cap_security_incident-response,상시 · 주 3~4시간,high,application
+st_demo_security_si_enterprise_compliance-design,an_demo_security,cluster,si_enterprise,cap_security_compliance-design,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_security_si_enterprise_vuln-diagnosis,an_demo_security,cluster,si_enterprise,cap_security_vuln-diagnosis,STEP 01~03과 병행,high,application
+st_demo_security_si_enterprise_incident-response,an_demo_security,cluster,si_enterprise,cap_security_incident-response,상시 · 주 3~4시간,high,application
+st_demo_security_game_compliance-design,an_demo_security,cluster,game,cap_security_compliance-design,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_security_game_vuln-diagnosis,an_demo_security,cluster,game,cap_security_vuln-diagnosis,STEP 01~03과 병행,high,application
+st_demo_security_game_incident-response,an_demo_security,cluster,game,cap_security_incident-response,상시 · 주 3~4시간,high,application
+st_demo_game_client_overall_gameplay-impl,an_demo_game_client,overall,game_client,cap_game_client_gameplay-impl,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_game_client_overall_runtime-perf,an_demo_game_client,overall,game_client,cap_game_client_runtime-perf,STEP 02~03과 병행,high,application
+st_demo_game_client_overall_multiplay-sync,an_demo_game_client,overall,game_client,cap_game_client_multiplay-sync,상시 · 주 3~4시간,high,application
+st_demo_game_client_bigtech_platform_gameplay-impl,an_demo_game_client,cluster,bigtech_platform,cap_game_client_gameplay-impl,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_game_client_bigtech_platform_runtime-perf,an_demo_game_client,cluster,bigtech_platform,cap_game_client_runtime-perf,STEP 02~03과 병행,high,application
+st_demo_game_client_bigtech_platform_multiplay-sync,an_demo_game_client,cluster,bigtech_platform,cap_game_client_multiplay-sync,상시 · 주 3~4시간,high,application
+st_demo_game_client_startup_gameplay-impl,an_demo_game_client,cluster,startup,cap_game_client_gameplay-impl,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_game_client_startup_runtime-perf,an_demo_game_client,cluster,startup,cap_game_client_runtime-perf,STEP 02~03과 병행,high,application
+st_demo_game_client_startup_multiplay-sync,an_demo_game_client,cluster,startup,cap_game_client_multiplay-sync,상시 · 주 3~4시간,high,application
+st_demo_game_client_b2b_saas_gameplay-impl,an_demo_game_client,cluster,b2b_saas,cap_game_client_gameplay-impl,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_game_client_b2b_saas_runtime-perf,an_demo_game_client,cluster,b2b_saas,cap_game_client_runtime-perf,STEP 02~03과 병행,high,application
+st_demo_game_client_b2b_saas_multiplay-sync,an_demo_game_client,cluster,b2b_saas,cap_game_client_multiplay-sync,상시 · 주 3~4시간,high,application
+st_demo_game_client_fintech_finance_gameplay-impl,an_demo_game_client,cluster,fintech_finance,cap_game_client_gameplay-impl,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_game_client_fintech_finance_runtime-perf,an_demo_game_client,cluster,fintech_finance,cap_game_client_runtime-perf,STEP 02~03과 병행,high,application
+st_demo_game_client_fintech_finance_multiplay-sync,an_demo_game_client,cluster,fintech_finance,cap_game_client_multiplay-sync,상시 · 주 3~4시간,high,application
+st_demo_game_client_si_enterprise_gameplay-impl,an_demo_game_client,cluster,si_enterprise,cap_game_client_gameplay-impl,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_game_client_si_enterprise_runtime-perf,an_demo_game_client,cluster,si_enterprise,cap_game_client_runtime-perf,STEP 02~03과 병행,high,application
+st_demo_game_client_si_enterprise_multiplay-sync,an_demo_game_client,cluster,si_enterprise,cap_game_client_multiplay-sync,상시 · 주 3~4시간,high,application
+st_demo_game_client_game_gameplay-impl,an_demo_game_client,cluster,game,cap_game_client_gameplay-impl,STEP 01~02와 병행,vhigh,tradeoff
+st_demo_game_client_game_runtime-perf,an_demo_game_client,cluster,game,cap_game_client_runtime-perf,STEP 02~03과 병행,high,application
+st_demo_game_client_game_multiplay-sync,an_demo_game_client,cluster,game,cap_game_client_multiplay-sync,상시 · 주 3~4시간,high,application

@@ -71,6 +71,25 @@ def test_code_layer_blocks_out_of_scope_tables() -> None:
         require_write(Component.AGENT_INTERPRET, "statistics_facts")
 
 
+def test_user_posting_tables_follow_the_grants() -> None:
+    """0026 의 GRANT 배분과 같다. 입력 공고는 오케스트레이터, 분석 결과는 세 에이전트."""
+    assert can_write(Component.ORCHESTRATOR, "user_postings")
+    for component in Component:
+        if component is not Component.ORCHESTRATOR:
+            assert not can_write(component, "user_postings")
+
+    writers = {
+        Component.AGENT_INTERPRET,
+        Component.AGENT_STRATEGY,
+        Component.AGENT_ROADMAP,
+    }
+    for component in Component:
+        assert can_write(component, "user_posting_analyses") is (component in writers)
+
+    with pytest.raises(PermissionError):
+        require_write(Component.AGENT_STATS, "user_posting_analyses")
+
+
 def test_every_component_can_write_telemetry() -> None:
     for component in Component:
         if component is Component.SERVING:

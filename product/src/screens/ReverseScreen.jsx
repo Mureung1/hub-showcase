@@ -1,58 +1,59 @@
 import { useEffect, useState } from 'react'
 import TopBar from '../components/TopBar'
+import AnalysisNotice from '../components/AnalysisNotice'
+import PostingAnalyzePanel, { ConfBadge, PostingInterpretation } from '../components/PostingAnalyzePanel'
 import useScrollSpy from '../hooks/useScrollSpy'
-import { SUPPORTED_JOB } from '../data/mock'
+import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
+import { CLUSTERS, DEFAULT_CLUSTER } from '../data/clusters'
 
 // 03 채용공고 해석 화면.
-// 세 섹션(전체 baseline / 기업군 편차 / 개별 공고)을 항상 표시한다.
-// 데이터는 POST /api/reverse 실통신(에이전트 fixture + DB 공고 목록)으로 받는다.
+// 네 섹션(전체 baseline / 기업군 편차 / 개별 공고 / 내 공고 직접 분석)을 항상 표시한다.
+// 데이터는 POST /api/reverse 실통신(저장된 활성 결과 + DB 공고 목록)으로 받는다.
+// 직무는 App 이 내려주는 job prop({ job_role_id, display_name })을 쓴다.
 
-const CLUSTERS = ['핀테크·금융', '빅테크·플랫폼', '스타트업', 'B2B SaaS', 'SI·대기업', '게임사']
-const CONF_LABEL = { high: '신뢰도 높음', mid: '신뢰도 중간', low: '신뢰도 낮음' }
-const NAV_IDS = ['baseline', 'cluster', 'posting']
+const NAV_IDS = ['baseline', 'cluster', 'posting', 'my-posting']
 
-async function fetchReverse(scope, signal) {
-  const res = await fetch('/api/reverse', {
+function fetchReverse(jobRoleId, scope, signal) {
+  return fetchJson('/api/reverse', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ job: 'backend', scope }),
+    body: JSON.stringify({ job: jobRoleId, scope }),
     signal,
   })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.json()
 }
 
-function ConfBadge({ level }) {
-  return <span className={`conf conf--${level}`}>{CONF_LABEL[level] || level}</span>
-}
-
-function ReverseScreen({ go, scope, setScope }) {
-  const cluster = scope.cluster_tag || '핀테크·금융'
+function ReverseScreen({ go, scope, setScope, job }) {
+  const jobRoleId = job.job_role_id
+  const jobLabel = job.display_name
+  const cluster = scope.cluster_tag || DEFAULT_CLUSTER
   const postingId = scope.level === 'posting' ? scope.posting_id : null
   const [data, setData] = useState(null)          // cluster 범위 응답
   const [detail, setDetail] = useState(null)      // posting 범위 응답
   const [search, setSearch] = useState('')
-  const [annTab, setAnnTab] = useState('deviation') // deviation | baseline | signal
-  const [status, setStatus] = useState('loading') // loading | ready | error
+  const [status, setStatus] = useState('loading') // loading | ready | error | notready
   const [detailStatus, setDetailStatus] = useState(postingId ? 'loading' : 'idle')
   const activeSection = useScrollSpy(NAV_IDS)
 
   useEffect(() => {
     const controller = new AbortController()
-    fetchReverse({ level: 'cluster', cluster_tag: cluster }, controller.signal)
+    fetchReverse(jobRoleId, { level: 'cluster', cluster_tag: cluster }, controller.signal)
       .then((json) => { setData(json); setStatus('ready') })
-      .catch((error) => { if (error.name !== 'AbortError') setStatus('error') })
+      .catch((error) => {
+        if (error.name === 'AbortError') return
+        // 활성 분석 결과가 없는 직무는 오류가 아니라 "아직 준비 안 됨"으로 안내한다.
+        setStatus(isJobNotReady(error.code) ? 'notready' : 'error')
+      })
     return () => controller.abort()
-  }, [cluster])
+  }, [jobRoleId, cluster])
 
   useEffect(() => {
     if (!postingId) return undefined
     const controller = new AbortController()
-    fetchReverse({ level: 'posting', cluster_tag: cluster, posting_id: postingId }, controller.signal)
+    fetchReverse(jobRoleId, { level: 'posting', cluster_tag: cluster, posting_id: postingId }, controller.signal)
       .then((json) => { setDetail(json.posting); setDetailStatus('ready') })
       .catch((error) => { if (error.name !== 'AbortError') setDetailStatus('error') })
     return () => controller.abort()
-  }, [cluster, postingId])
+  }, [jobRoleId, cluster, postingId])
 
   const selectPosting = (nextPostingId) => {
     if (nextPostingId === postingId) {
@@ -74,10 +75,20 @@ function ReverseScreen({ go, scope, setScope }) {
     setScope({ level: 'cluster', cluster_tag: nextCluster, posting_id: null })
   }
 
+  if (status === 'notready') {
+    return (
+      <>
+        <TopBar step={3} label="채용공고 해석" job={jobLabel} backTo="stats" backLabel="통계" go={go} />
+        <main className="app-shell reader-layout">
+          <AnalysisNotice jobName={jobLabel} onBack={() => go('select')} />
+        </main>
+      </>
+    )
+  }
   if (status === 'error') {
     return (
       <>
-        <TopBar step={3} label="채용공고 해석" job={SUPPORTED_JOB} backTo="stats" backLabel="통계" go={go} />
+        <TopBar step={3} label="채용공고 해석" job={jobLabel} backTo="stats" backLabel="통계" go={go} />
         <main className="app-shell reader-layout">
           <p className="status-panel status-panel--error">
             공고 해석 서버에 연결하지 못했습니다. server(4000)와 agent(8000)가 켜져 있는지 확인해 주세요.
@@ -94,7 +105,7 @@ function ReverseScreen({ go, scope, setScope }) {
 
   return (
     <>
-      <TopBar step={3} label="채용공고 해석" job={SUPPORTED_JOB} backTo="stats" backLabel="통계" go={go} />
+      <TopBar step={3} label="채용공고 해석" job={jobLabel} backTo="stats" backLabel="통계" go={go} />
       <main className="app-shell reader-layout">
         <article className="page page--wide">
           <header className="report-header" id="top">
@@ -110,7 +121,7 @@ function ReverseScreen({ go, scope, setScope }) {
               {/* 섹션 1 · 전체 baseline */}
               <section className="section-block" id="baseline">
                 <div className="section-title">
-                  <h2>백엔드 신입 공통 기대치 (baseline)</h2>
+                  <h2>{jobLabel} 신입 공통 기대치 (baseline)</h2>
                   <span className="hint">회사와 무관한 기준선 · 통계 근거 병기</span>
                 </div>
                 <div className="baseline-grid">
@@ -211,66 +222,27 @@ function ReverseScreen({ go, scope, setScope }) {
                 {detailStatus === 'error' && <p className="status-panel status-panel--error">선택한 공고 해석을 불러오지 못했습니다.</p>}
 
                 {detail && (
-                  <div className="posting-layout">
-                    <div className="posting-raw">
-                      <h4>공고 원문 · {detail.company}</h4>
-                      {detail.raw_sections.map((sec) => (
-                        <div key={sec.section}>
-                          <h5>{sec.section}</h5>
-                          {sec.lines.map((line, i) => (
-                            <div className="raw-line" key={i}>
-                              <p>
-                                ·{' '}
-                                {line.mark_n && <mark className="mark--dev">{line.text}<sup>{line.mark_n}</sup></mark>}
-                                {line.note_n && <mark className="mark--signal">{line.text}<sup>{line.note_n}</sup></mark>}
-                                {line.base_n && <>{line.text}<sup className="sup-base">{line.base_n}</sup></>}
-                                {!line.mark_n && !line.note_n && !line.base_n && line.text}
-                                {line.base_ref && <span className="raw-base">baseline · {line.base_ref}</span>}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="interp-stack">
-                      <div className="interp-card interp-card--sum">
-                        <h4>{detail.summary.title}</h4>
-                        <p>{detail.summary.body}</p>
-                        <div className="interp-meta"><ConfBadge level={detail.summary.confidence} />{detail.summary.ratio && <span className="ratio-pill">{detail.summary.ratio}</span>}</div>
-                      </div>
-                      <div className="ann-tabs">
-                        <button type="button" className={`ann-tab ann-tab--base${annTab === 'baseline' ? ' is-on' : ''}`} onClick={() => setAnnTab('baseline')}><i className="ann-dot"></i>{SUPPORTED_JOB} 공통 {detail.baseline_notes.length}</button>
-                        <button type="button" className={`ann-tab ann-tab--sig${annTab === 'signal' ? ' is-on' : ''}`} onClick={() => setAnnTab('signal')}><i className="ann-dot"></i>숨은 의미 {detail.signal_notes.length}</button>
-                        <button type="button" className={`ann-tab ann-tab--dev${annTab === 'deviation' ? ' is-on' : ''}`} onClick={() => setAnnTab('deviation')}><i className="ann-dot"></i>{detail.company} 특징 {detail.interpretations.length}</button>
-                      </div>
-                      {annTab === 'deviation' && detail.interpretations.map((it) => (
-                        <div className="interp-card" key={it.n}>
-                          <h4><span className="interp-num interp-num--dev">{it.n}</span>{it.title}</h4>
-                          <p>{it.body}</p>
-                          <div className="interp-meta">
-                            <ConfBadge level={it.confidence} />
-                            {it.ratio && <span className="ratio-pill">{it.ratio}</span>}
-                            {it.sources.some((s) => s.type === 'company_blog') && <span className="stat-pill">근거: 공고 + 회사 블로그</span>}
-                          </div>
-                        </div>
-                      ))}
-                      {annTab === 'baseline' && detail.baseline_notes.map((b) => (
-                        <div className="interp-card interp-card--base" key={b.n}>
-                          <h4><span className="interp-num interp-num--base">{b.n}</span>{b.base_ref}</h4>
-                          <p>{b.body}</p>
-                        </div>
-                      ))}
-                      {annTab === 'signal' && detail.signal_notes.map((s) => (
-                        <div className="interp-card interp-card--sig" key={s.n}>
-                          <h4><span className="interp-num interp-num--sig">{s.n}</span>{s.title}</h4>
-                          <p>{s.body}</p>
-                        </div>
-                      ))}
-                      <div className="fold-note">{detail.unchanged_note}</div>
-                      <div className="posting-input-note"><b>공고 직접 입력</b> — 다른 공고 원문을 붙여넣으면 같은 방식으로 개별 해석합니다.</div>
-                    </div>
-                  </div>
+                  <PostingInterpretation
+                    key={detail.posting_id}
+                    posting={detail}
+                    jobLabel={jobLabel}
+                    footer={<div className="posting-input-note"><b>공고 직접 입력</b> — 아래 <a href="#my-posting">내 공고 직접 분석</a>에 원문을 붙여넣으면 같은 방식으로 해석합니다.</div>}
+                  />
                 )}
+              </section>
+
+              {/* 섹션 4 · 내 공고 직접 분석 (직무 선택 화면에는 두지 않는다) */}
+              <section className="section-block" id="my-posting">
+                <div className="section-title">
+                  <h2>내 공고 직접 분석</h2>
+                  <span className="hint">지원하려는 공고 원문을 붙여넣으면 같은 기준으로 해석합니다</span>
+                </div>
+                <PostingAnalyzePanel
+                  job={jobRoleId}
+                  jobLabel={jobLabel}
+                  fallback={{ baseline: data.baseline, deviations: data.deviations }}
+                  go={go}
+                />
               </section>
 
               <div className="nav-actions">
@@ -283,7 +255,7 @@ function ReverseScreen({ go, scope, setScope }) {
 
         <aside className="floating-nav" aria-label="채용공고 해석 목차">
           <p className="floating-nav__label">공고 해석</p>
-          {[['baseline', '전체 baseline'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해석']].map(([id, label]) => (
+          {[['baseline', '전체 baseline'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해석'], ['my-posting', '내 공고 직접 분석']].map(([id, label]) => (
             <a key={id} className={activeSection === id ? 'is-current' : ''} href={`#${id}`}><span className="dot"></span>{label}</a>
           ))}
         </aside>

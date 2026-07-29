@@ -1,0 +1,10 @@
+taxonomy_version_id,taxonomy_id,version_number,taxonomy_policy_version,published_at,superseded_at
+tx_demo_backend,taxonomy_backend,1,tp_v1,2026-07-27T09:00:00+09:00,\N
+tx_demo_frontend,taxonomy_frontend,1,tp_v1,2026-07-27T09:00:00+09:00,\N
+tx_demo_ai_engineer,taxonomy_ai_engineer,1,tp_v1,2026-07-27T09:00:00+09:00,\N
+tx_demo_data_engineer,taxonomy_data_engineer,1,tp_v1,2026-07-27T09:00:00+09:00,\N
+tx_demo_fullstack,taxonomy_fullstack,1,tp_v1,2026-07-01T09:00:00+09:00,\N
+tx_demo_devops,taxonomy_devops,1,tp_v1,2026-07-27T09:00:00+09:00,\N
+tx_demo_mobile,taxonomy_mobile,1,tp_v1,2026-07-27T09:00:00+09:00,\N
+tx_demo_security,taxonomy_security,1,tp_v1,2026-07-27T09:00:00+09:00,\N
+tx_demo_game_client,taxonomy_game_client,1,tp_v1,2026-07-27T09:00:00+09:00,\N
