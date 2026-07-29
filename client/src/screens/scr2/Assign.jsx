@@ -34,9 +34,9 @@ export function Assign() {
   const [suggestStatus, setSuggestStatus] = useState('idle') // idle | loading | fallback | error
   const [suggestNote, setSuggestNote] = useState('')
 
-  const [manualRoleName, setManualRoleName] = useState('')
-  const [manualRoleStatus, setManualRoleStatus] = useState('idle') // idle | saving | error
-  const [manualRoleErrorMsg, setManualRoleErrorMsg] = useState('')
+  const [roleDraft, setRoleDraft] = useState(null) // null: 입력 없음, string: 입력 중 (InviteCompose.jsx의 memberDraft와 동일 패턴)
+  const [roleAddStatus, setRoleAddStatus] = useState('idle') // idle | saving | error
+  const [roleAddErrorMsg, setRoleAddErrorMsg] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -72,6 +72,8 @@ export function Assign() {
     }
   }, [token])
 
+  // 역할 목록은 이미 사람이 만들어둔 상태 — AI는 새 역할을 만들지 않고 기존 역할에
+  // 누구를 배정하면 좋을지만 추천한다(server/src/controllers/suggestController.js 참고).
   async function runSuggest() {
     setSuggestStatus('loading')
     setSuggestNote('')
@@ -87,40 +89,34 @@ export function Assign() {
       setSuggestNote(data.reason || '추천을 만들 수 없어요')
       return
     }
-    const suggestions = data?.role_suggestions ?? []
+    // AI가 존재하지 않는 role_id를 말하는 경우를 방어적으로 걸러낸다.
+    const suggestions = (data?.role_suggestions ?? []).filter((s) => roles.some((r) => r.id === s.role_id))
     if (!suggestions.length) {
       setSuggestStatus('fallback')
-      setSuggestNote('추천할 역할이 없어요')
+      setSuggestNote('배정 추천을 만들 수 없어요')
       return
     }
-    const created = await Promise.all(
-      suggestions.map((s, i) =>
-        createRole(token, {
-          name: s.name,
-          reason: s.reason,
-          source: 'ai',
-          position: i,
-          assignee_id: s.assignee_participant_id ?? null,
-        })
-      )
+
+    const updated = await Promise.all(
+      suggestions.map((s) => updateRole(token, s.role_id, { assignee_id: s.assignee_participant_id ?? null, reason: s.reason }))
     )
-    const failed = created.find((r) => r.error)
+    const failed = updated.find((r) => r.error)
     if (failed) {
       setSuggestStatus('error')
       setSuggestNote(failed.error)
       return
     }
-    const createdRoles = created.map((r) => r.data)
 
-    // 역할별 AI 제안 업무(tasks)도 함께 생성 — 실패해도 역할 배정 자체는 이미 끝났으니 화면은 진행시킨다.
+    // 아직 업무가 없는 역할에만 AI 제안 업무(tasks)를 추가 — 실패해도 배정 자체는 이미 끝났으니 화면은 진행시킨다.
     await Promise.all(
-      createdRoles.map((role, i) => {
-        const tasks = suggestions[i]?.tasks
-        return tasks?.length ? createRoleTasks(token, role.id, tasks) : Promise.resolve(null)
+      suggestions.map((s) => {
+        const role = roles.find((r) => r.id === s.role_id)
+        const hasTasks = (role?.role_tasks?.length ?? 0) > 0
+        return !hasTasks && s.tasks?.length ? createRoleTasks(token, s.role_id, s.tasks) : Promise.resolve(null)
       })
     )
-    const withTasks = await getRoles(token)
-    setRoles(withTasks.error ? createdRoles : withTasks.data ?? createdRoles)
+    const refreshed = await getRoles(token)
+    if (!refreshed.error) setRoles(refreshed.data ?? [])
     setSuggestStatus('idle')
   }
 
@@ -136,22 +132,28 @@ export function Assign() {
     })
   }
 
-  // AI 역할 추천이 실패하거나(fallback/error) 참여자가 직접 역할을 추가하고 싶을 때의 수동 입력 경로.
-  // AI 생성 역할과 동일하게 roles 테이블에 저장되므로(source만 'manual') 이후 화면들이 구분 없이 읽는다.
-  async function addManualRole() {
-    const name = manualRoleName.trim()
-    if (!name || manualRoleStatus === 'saving') return
-    setManualRoleStatus('saving')
-    setManualRoleErrorMsg('')
+  // 역할 추가는 항상 사람이 먼저 하는 1단계 기본 기능 — InviteCompose.jsx의 "함께할 사람"
+  // 추가(addMember/commitMember)와 동일한 패턴이지만, 로컬 상태가 아니라 즉시 서버에 저장한다.
+  function startAddRole() {
+    setRoleDraft('')
+  }
+  async function commitRole() {
+    const name = roleDraft.trim()
+    if (!name) {
+      setRoleDraft(null)
+      return
+    }
+    setRoleAddStatus('saving')
+    setRoleAddErrorMsg('')
     const result = await createRole(token, { name, source: 'manual', position: roles.length })
     if (result.error) {
-      setManualRoleStatus('error')
-      setManualRoleErrorMsg(result.error)
+      setRoleAddStatus('error')
+      setRoleAddErrorMsg(result.error)
       return
     }
     setRoles((prev) => [...prev, result.data])
-    setManualRoleName('')
-    setManualRoleStatus('idle')
+    setRoleDraft(null)
+    setRoleAddStatus('idle')
   }
 
   return (
@@ -299,56 +301,78 @@ export function Assign() {
           <div style={{ width: '100%', maxWidth: '560px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {participants.length === 0 ? (
               <EmptyState message="아직 응답한 참여자가 없어요, 참여자 응답을 기다려볼까요?" />
-            ) : roles.length === 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '24px 0' }}>
-                <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-body-size)', color: 'var(--text-caption)', textAlign: 'center' }}>
-                  아직 배정된 역할이 없어요
-                </div>
-                <Button variant="primary" onClick={runSuggest} disabled={suggestStatus === 'loading'}>
-                  {suggestStatus === 'loading' ? '추천을 준비하고 있어요…' : 'AI 역할 추천 받기'}
-                </Button>
-                {suggestStatus === 'error' || suggestStatus === 'fallback' ? (
-                  <>
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)', textAlign: 'center' }}>{suggestNote} — 직접 추가해볼까요?</div>
-                    <ManualRoleForm
-                      value={manualRoleName}
-                      onChange={setManualRoleName}
-                      onSubmit={addManualRole}
-                      status={manualRoleStatus}
-                      errorMsg={manualRoleErrorMsg}
-                    />
-                  </>
-                ) : null}
-              </div>
             ) : (
               <>
-                {roles.map((role) => (
-                  <InfoCard key={role.id} title={role.name}>
-                    {role.reason ? (
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)', marginBottom: '10px' }}>{role.reason}</div>
-                    ) : null}
-                    <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-caption-size)', color: 'var(--text-caption)', marginBottom: '6px' }}>담당자</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {participants.map((p) => (
-                        <Chip key={p.id} tone="wedgwood" selected={role.assignee_id === p.id} onClick={() => reassign(role.id, p.id)}>
-                          {p.name}
-                        </Chip>
-                      ))}
-                    </div>
-                  </InfoCard>
-                ))}
+                {/* 역할은 항상 사람이 먼저 추가하는 1단계 기본 기능 — InviteCompose.jsx의
+                    "함께할 사람" + 추가(memberDraft)와 동일한 패턴, 다만 즉시 서버에 저장한다. */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-caption-size)', color: 'var(--text-caption)' }}>필요한 역할</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
+                    {roleDraft !== null ? (
+                      <Input
+                        variant="underline"
+                        placeholder="역할 이름을 입력하세요"
+                        value={roleDraft}
+                        autoFocus
+                        onChange={(e) => setRoleDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            commitRole()
+                          } else if (e.key === 'Escape') {
+                            setRoleDraft(null)
+                          }
+                        }}
+                        onBlur={() => {
+                          if (roleAddStatus !== 'error') setRoleDraft(null)
+                        }}
+                        style={{ width: '160px' }}
+                      />
+                    ) : (
+                      <Chip tone="lemon" sticker onClick={startAddRole}>+ 역할 추가</Chip>
+                    )}
+                  </div>
+                  {roleAddStatus === 'error' ? (
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>{roleAddErrorMsg}</div>
+                  ) : null}
+                </div>
 
-                <ManualRoleForm
-                  value={manualRoleName}
-                  onChange={setManualRoleName}
-                  onSubmit={addManualRole}
-                  status={manualRoleStatus}
-                  errorMsg={manualRoleErrorMsg}
-                />
+                {roles.length === 0 ? (
+                  <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-body-size)', color: 'var(--text-caption)', textAlign: 'center', padding: '8px 0' }}>
+                    아직 추가된 역할이 없어요 — 위에서 역할을 추가해보세요
+                  </div>
+                ) : (
+                  roles.map((role) => (
+                    <InfoCard key={role.id} title={role.name}>
+                      {role.reason ? (
+                        <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)', marginBottom: '10px' }}>{role.reason}</div>
+                      ) : null}
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: 'var(--text-caption-size)', color: 'var(--text-caption)', marginBottom: '6px' }}>담당자</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {participants.map((p) => (
+                          <Chip key={p.id} tone="wedgwood" selected={role.assignee_id === p.id} onClick={() => reassign(role.id, p.id)}>
+                            {p.name}
+                          </Chip>
+                        ))}
+                      </div>
+                    </InfoCard>
+                  ))
+                )}
 
-                <Button variant="primary" block soundType="finish" onClick={() => navigate(`/scr3/confirm${token ? `?token=${token}` : ''}`)}>
-                  확정하러 가기
-                </Button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <Button variant="primary" onClick={runSuggest} disabled={roles.length === 0 || suggestStatus === 'loading'}>
+                    {suggestStatus === 'loading' ? '배정을 준비하고 있어요…' : '배정 추천받기'}
+                  </Button>
+                  {suggestStatus === 'error' || suggestStatus === 'fallback' ? (
+                    <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)', textAlign: 'center' }}>{suggestNote}</div>
+                  ) : null}
+                </div>
+
+                {roles.length > 0 ? (
+                  <Button variant="primary" block soundType="finish" onClick={() => navigate(`/scr3/confirm${token ? `?token=${token}` : ''}`)}>
+                    확정하러 가기
+                  </Button>
+                ) : null}
               </>
             )}
           </div>
@@ -358,30 +382,6 @@ export function Assign() {
       <div style={{ position: 'fixed', right: '14px', bottom: '14px', fontFamily: "'Signatie', var(--font-script)", fontSize: '13px', color: 'var(--wedgwood-deep)', opacity: 0.5, pointerEvents: 'none', zIndex: 50 }}>
         l
       </div>
-    </div>
-  )
-}
-
-// 역할 이름 직접 추가 폼 — AI 추천이 실패했을 때의 폴백이자, 역할이 이미 있을 때도 상시 노출되는 추가 입력구.
-function ManualRoleForm({ value, onChange, onSubmit, status, errorMsg }) {
-  return (
-    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <div style={{ width: '100%', display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-        <div style={{ flex: 1 }}>
-          <Input
-            variant="underline"
-            placeholder="역할 이름을 직접 입력하세요"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-          />
-        </div>
-        <Button size="sm" variant="accent" disabled={!value.trim() || status === 'saving'} onClick={onSubmit}>
-          {status === 'saving' ? '추가하는 중…' : '역할 추가'}
-        </Button>
-      </div>
-      {status === 'error' ? (
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>{errorMsg}</div>
-      ) : null}
     </div>
   )
 }
