@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import EpisodeCard from './EpisodeCard';
-import { episodes } from './mockEpisodes';
+import { groupMessagesIntoEpisodes } from './groupMessagesIntoEpisodes';
 
-// 사이드바 컴포넌트 — activeTab은 이 화면 안에서만 쓰는 state.
-// onSelectEpisode / onUpdateTide는 App이 내려준 props(콜백) — 클릭 이벤트를 부모로 올려보낸다.
-function Episodes({ selectedId, onSelectEpisode, onUpdateTide }) {
+// 사이드바 컴포넌트 — messages(App이 내려준 실제 대화 기록)를 episode로 묶어서 보여준다.
+// activeTab은 이 화면 안에서만 쓰는 state.
+function Episodes({ messages, onSelectEpisode, onUpdateTide }) {
   const [activeTab, setActiveTab] = useState('recent');
+  const episodes = groupMessagesIntoEpisodes(messages);
   const visible = episodes.filter((ep) => ep.tab === activeTab);
 
   return (
@@ -33,13 +34,13 @@ function Episodes({ selectedId, onSelectEpisode, onUpdateTide }) {
       </div>
 
       <div className="ep-list">
+        {visible.length === 0 && (
+          <div className="ep-empty">
+            {activeTab === 'recent' ? '아직 나눈 대화가 없어요.' : '지난 대화가 없어요.'}
+          </div>
+        )}
         {visible.map((ep) => (
-          <EpisodeCard
-            key={ep.id}
-            episode={ep}
-            selected={ep.id === selectedId}
-            onSelect={onSelectEpisode}
-          />
+          <EpisodeCard key={ep.id} episode={ep} onSelect={onSelectEpisode} />
         ))}
       </div>
     </aside>
