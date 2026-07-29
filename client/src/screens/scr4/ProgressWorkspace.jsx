@@ -182,7 +182,15 @@ export function ProgressWorkspace() {
                   ? `/scr2/roles${token ? `?token=${token}` : ''}`
                   : item.key === 'progress'
                     ? `/scr4/workspace${token ? `?token=${token}` : ''}`
-                    : null
+                    : item.key === 'harvest'
+                      ? `/scr5/review${token ? `?token=${token}` : ''}`
+                      : item.key === 'settlement'
+                        ? `/scr5/settlement${token ? `?token=${token}` : ''}`
+                        : item.key === 'notifications'
+                          ? `/notifications${token ? `?token=${token}` : ''}`
+                          : item.key === 'profile'
+                            ? `/profile${token ? `?token=${token}` : ''}`
+                            : null
             return href ? (
               <Link key={item.key} to={href} style={itemStyle}>
                 {content}
