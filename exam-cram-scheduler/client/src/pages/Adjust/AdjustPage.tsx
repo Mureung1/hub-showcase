@@ -90,14 +90,6 @@ export function AdjustPage() {
   function handleRecalculate() {
     if (request === null) return;
 
-    const override: NightOverrideInput = {
-      nightIndex,
-      bedTime: shiftIso(night.bedTime, sleepAt - toSliderHour(night.bedTime, 22)),
-      wakeTime: shiftIso(night.wakeTime, wakeAt - toSliderHour(night.wakeTime, 0)),
-      caffeineAmountMg: caffeineMg,
-      ...(dose ? { caffeineTime: shiftIso(dose.time, caffeineAt - toSliderHour(dose.time, 0)) } : {}),
-    };
-
     // ① 밤별 최소 수면시간 — 기존 배열(없으면 전역값으로 채운 배열)을 복사해 이 밤만 슬라이더 값으로 바꾼다.
     // 배열로 들고 다니므로 다른 밤에 걸어둔 값은 그대로 유지된다.
     const minSleepHoursByNight = nights.map(
@@ -105,7 +97,29 @@ export function AdjustPage() {
     );
     minSleepHoursByNight[nightIndex] = minSleep;
 
-    setRequest({ ...request, minSleepHoursByNight, nightOverrides: [override] });
+    // 취침/기상/카페인 슬라이더를 추천값에서 실제로 움직였는지 확인한다. 이 밤을 특정 값으로
+    // "고정(override)"하면 그 밤은 재최적화에서 빠지는데, 최소수면만 바꿨는데도 고정해버리면
+    // 새 최소수면이 그 밤에 반영될 여지가 사라진다. 그래서 하나라도 움직였을 때만 고정하고,
+    // 최소수면만 바꿨으면 override 없이 보내 그 밤이 새 최소수면 아래서 다시 최적화되게 둔다.
+    const bedChanged = Math.abs(sleepAt - toSliderHour(night.bedTime, 22)) > 1e-6;
+    const wakeChanged = Math.abs(wakeAt - toSliderHour(night.wakeTime, 0)) > 1e-6;
+    const caffeineTimeChanged = dose ? Math.abs(caffeineAt - toSliderHour(dose.time, 0)) > 1e-6 : false;
+    const caffeineMgChanged = dose ? caffeineMg !== dose.amountMg : false;
+    const scheduleChanged = bedChanged || wakeChanged || caffeineTimeChanged || caffeineMgChanged;
+
+    const nightOverrides: NightOverrideInput[] = scheduleChanged
+      ? [
+          {
+            nightIndex,
+            bedTime: shiftIso(night.bedTime, sleepAt - toSliderHour(night.bedTime, 22)),
+            wakeTime: shiftIso(night.wakeTime, wakeAt - toSliderHour(night.wakeTime, 0)),
+            caffeineAmountMg: caffeineMg,
+            ...(dose ? { caffeineTime: shiftIso(dose.time, caffeineAt - toSliderHour(dose.time, 0)) } : {}),
+          },
+        ]
+      : [];
+
+    setRequest({ ...request, minSleepHoursByNight, nightOverrides });
     navigate('/processing');
   }
 
