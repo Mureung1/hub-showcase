@@ -111,8 +111,13 @@ export default function Generate() {
       setGenerationJobId(jobId);
       console.log('생성 시작:', jobId);
 
-      // 2. 폴링 시작 (1초마다)
+      // 2. 폴링 시작 (1초마다, 최대 180초)
+      let pollCount = 0;
+      const maxPollCount = 180; // 180초 타임아웃
+
       const pollInterval = setInterval(async () => {
+        pollCount++;
+
         try {
           const status = await pollGenerationStatus(jobId);
 
@@ -132,16 +137,39 @@ export default function Generate() {
               navigate('/review', { state: { jobId } });
             }, 1000);
           }
-
           // 실패하면 폴링 중단
-          if (status.status === 'failed') {
+          else if (status.status === 'failed') {
             clearInterval(pollInterval);
             setIsGenerating(false);
             setGenerationError(status.error || '영상 생성 중 오류가 발생했습니다');
             console.error('생성 실패:', status.error);
           }
+          // completed_fallback (Fallback 대사 사용한 완료)
+          else if (status.status === 'completed_fallback') {
+            clearInterval(pollInterval);
+            setIsGenerating(false);
+            console.log('생성 완료 (기본 대사 사용)!');
+
+            // Review 페이지로 이동
+            setTimeout(() => {
+              navigate('/review', { state: { jobId } });
+            }, 1000);
+          }
+          // 폴링 타임아웃 (180초 이상)
+          else if (pollCount >= maxPollCount) {
+            clearInterval(pollInterval);
+            setIsGenerating(false);
+            setGenerationError('영상 생성 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.');
+            console.error('폴링 타임아웃:', jobId);
+          }
         } catch (error) {
           console.error('폴링 오류:', error);
+          // 폴링 오류가 계속되면 중단
+          if (pollCount >= 5) {
+            clearInterval(pollInterval);
+            setIsGenerating(false);
+            setGenerationError('서버와의 연결이 끊겼습니다. 잠시 후 다시 시도해주세요.');
+          }
         }
       }, 1000);
 

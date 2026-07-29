@@ -231,7 +231,8 @@ router.get('/:job_id', async (req, res) => {
       output: step.metadata || null
     }));
 
-    res.status(200).json({
+    // 완료 시 비디오 URL 포함
+    const responseData = {
       job_id: job.job_id,
       status: job.status,
       current_step: job.current_step,
@@ -241,7 +242,20 @@ router.get('/:job_id', async (req, res) => {
       created_at: job.created_at,
       started_at: job.started_at,
       completed_at: job.completed_at
-    });
+    };
+
+    // Step 4 완료 시 비디오 및 썸네일 URL 추가
+    if (job.status === 'completed' && job.step4_video_url) {
+      responseData.video = {
+        video_id: job.job_id,  // job_id를 video_id로 사용
+        video_url: job.step4_video_url,
+        thumbnail_url: job.step4_thumbnail_url,
+        duration: 15,
+        resolution: '1080x1920'
+      };
+    }
+
+    res.status(200).json(responseData);
 
   } catch (error) {
     console.error('[GET /api/generate/:job_id] 예상치 못한 오류:', error);
@@ -328,7 +342,7 @@ router.get('/:job_id/result', async (req, res) => {
       job_id: job.job_id,
       status: job.status,
       video: {
-        video_id: job.step4_video_id,
+        video_id: job.job_id,  // job_id를 video_id로 사용
         video_url: job.step4_video_url,
         thumbnail: job.step4_thumbnail_url,
         duration: 15,

@@ -14,10 +14,24 @@ export default function TrendTags({ category = '카페' }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // AbortController로 이전 요청 취소
+    const abortController = new AbortController();
+    let isMounted = true;
+
     async function fetchTrends() {
       try {
+        console.log(`[TrendTags] 트렌드 조회 시작 - 카테고리: ${category}`);
+        setLoading(true);
         const response = await getTrends(category);
+
+        // 컴포넌트가 언마운트되었거나 요청이 취소되면 상태 업데이트 하지 않음
+        if (!isMounted || abortController.signal.aborted) {
+          console.log('[TrendTags] 요청이 취소되었거나 컴포넌트가 언마운트됨');
+          return;
+        }
+
         if (response.success && response.data && response.data.length > 0) {
+          console.log(`[TrendTags] 트렌드 조회 성공 - ${response.data.length}개 항목`);
           setTrends(response.data);
         } else {
           // 데이터가 없으면 mock 데이터 사용
@@ -25,15 +39,30 @@ export default function TrendTags({ category = '카페' }) {
           setTrends(fallbackTags);
         }
       } catch (err) {
+        // AbortError는 의도된 취소이므로 에러로 표시하지 않음
+        if (err.name === 'AbortError') {
+          console.log('[TrendTags] 요청이 의도적으로 취소됨');
+          return;
+        }
         console.error('트렌드 조회 실패:', err);
-        setError(err.message);
-        setTrends(fallbackTags);
+        if (isMounted) {
+          setError(err.message);
+          setTrends(fallbackTags);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted && !abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     }
 
     fetchTrends();
+
+    // cleanup: 컴포넌트 언마운트 또는 category 변경 시 이전 요청 취소
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [category]);
 
   const handleMakeTrendVideo = () => {

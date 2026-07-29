@@ -39,13 +39,20 @@ function checkEnvironmentVariables() {
 
 checkEnvironmentVariables();
 
-// CORS 설정 (모든 origin 허용 - 프로덕션에서는 제한 권장)
-app.use(cors({
+// CORS 설정 (가장 강력한 버전)
+const corsOptions = {
   origin: '*',
-  credentials: false,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  credentials: false
+};
+
+// 모든 요청에 CORS 적용
+app.use(cors(corsOptions));
+
+// Preflight 요청 명시적 처리
+app.options('*', cors());
+
 app.use(express.json());
 app.use(express.static('uploads')); // 업로드된 파일 정적 서빙
 app.use('/ai-output', express.static('ai-pipeline/output')); // AI 생성 파일 정적 서빙
@@ -152,6 +159,7 @@ app.post('/api/admin/seed', async (req, res) => {
   }
 });
 
+// 라우트 등록 (CORS는 전체 app.use()에서 처리됨)
 app.use('/api/store', storeRoutes);
 app.use('/api/trends', trendsRoutes);
 app.use('/api/upload', uploadRoutes);

@@ -53,7 +53,8 @@ def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=
         # 12초~15초: 크게 끝남 (scale=0.5*iw)해서 줌 아웃 효과
 
         caption_escaped = caption.replace("'", "\\'").replace('"', '\\"')
-        fontfile = "C\\:/Windows/Fonts/malgun.ttf"
+        # Linux/Render 호환 폰트 (시스템 기본 폰트 사용, 또는 명시 생략)
+        fontfile = ""  # 비워두면 시스템 기본 폰트 사용
 
         # 복합 필터: Ken Burns + 자막 애니메이션
         # 1. Ken Burns Effect (줌 인/아웃)
@@ -65,12 +66,11 @@ def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=
             "fps=30,"
             # Ken Burns 줌 인/아웃
             "format=yuv420p,"
-            # 자막: 페이드인 + 크기 변화
+            # 자막: 단순화 (FFmpeg 호환성 최우선)
             f"drawtext="
-            f"fontfile='{fontfile}':"
             f"text='{caption_escaped}':"
-            f"fontsize=if(lt(t\\,2)\\,24\\,if(lt(t\\,14)\\,28\\,24)):"  # 크기 애니메이션
-            f"fontcolor=white@if(lt(t\\,2)\\,0\\,if(lt(t\\,14)\\,1\\,if(lt(t\\,15)\\,0.5\\,0))):"  # 페이드 애니메이션
+            f"fontsize=28:"
+            f"fontcolor=white:"
             f"x=(w-text_w)/2:"
             f"y=h-120:"
             f"box=1:"
@@ -78,7 +78,7 @@ def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=
             f"boxborderw=5"
         )
 
-        # FFmpeg 명령어 (향상된 버전)
+        # FFmpeg 명령어 (메모리 최적화 버전)
         ffmpeg_cmd = [
             "ffmpeg",
             "-loop", "1",
@@ -86,11 +86,13 @@ def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=
             "-i", audio_path,
             "-vf", video_filter,
             "-c:v", "libx264",
-            "-preset", "medium",
-            "-crf", "18",
-            "-b:v", "3000k",
-            "-maxrate", "5000k",
-            "-bufsize", "1000k",
+            "-preset", "ultrafast",  # 메모리 최소화
+            "-crf", "28",  # 품질 낮춤 (파일 크기 감소)
+            "-b:v", "1500k",  # 비트레이트 제한
+            "-maxrate", "2000k",
+            "-bufsize", "500k",
+            "-r", "24",  # 24 FPS 제한
+            "-threads", "1",  # 단일 스레드
             "-pix_fmt", "yuv420p",
             "-c:a", "aac",
             "-b:a", "128k",
@@ -100,13 +102,30 @@ def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=
         ]
 
         print(f"[DEBUG] FFmpeg 명령어 실행 중...", file=sys.stderr)
+        print(f"[DEBUG] FFmpeg CMD: {' '.join(ffmpeg_cmd)}", file=sys.stderr)
+
         result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True)
 
-        if result.returncode != 0:
-            print(f"[DEBUG] FFmpeg stderr: {result.stderr}", file=sys.stderr)
-            raise Exception(f"FFmpeg error: {result.stderr}")
+        print(f"[DEBUG] FFmpeg returncode: {result.returncode}", file=sys.stderr)
+        if result.stderr:
+            print(f"[DEBUG] FFmpeg stderr: {result.stderr[:500]}", file=sys.stderr)
+        if result.stdout:
+            print(f"[DEBUG] FFmpeg stdout: {result.stdout[:500]}", file=sys.stderr)
 
+        if result.returncode != 0:
+            raise Exception(f"FFmpeg error (code {result.returncode}): {result.stderr}")
+
+        # 파일 생성 확인 (생성 전!)
+        print(f"[DEBUG] 영상 파일 존재 확인 중: {video_path}", file=sys.stderr)
+        if not os.path.exists(video_path):
+            raise Exception(f"FFmpeg failed to create video: {video_path} not found")
+
+        video_size = os.path.getsize(video_path)
         print(f"[DEBUG] 영상 파일 생성됨: {video_path}", file=sys.stderr)
+        print(f"[DEBUG] 영상 파일 크기: {video_size} bytes", file=sys.stderr)
+
+        if video_size == 0:
+            raise Exception(f"FFmpeg created empty file (0 bytes)")
 
         # 썸네일 생성 (첫 프레임)
         thumbnail_cmd = [
@@ -124,14 +143,12 @@ def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=
         if result.returncode != 0:
             raise Exception(f"Thumbnail generation failed: {result.stderr}")
 
-        # 파일 존재 확인
-        if not os.path.exists(video_path):
-            raise Exception(f"Video file was not created: {video_path}")
+        # 썸네일 파일 존재 확인
         if not os.path.exists(thumbnail_path):
             raise Exception(f"Thumbnail file was not created: {thumbnail_path}")
 
-        video_size = os.path.getsize(video_path)
-        print(f"[DEBUG] 영상 파일 크기: {video_size} bytes", file=sys.stderr)
+        thumbnail_size = os.path.getsize(thumbnail_path)
+        print(f"[DEBUG] 썸네일 파일 크기: {thumbnail_size} bytes", file=sys.stderr)
 
         result = {
             "status": "success",

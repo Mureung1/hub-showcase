@@ -93,18 +93,53 @@ router.post('/', upload.single('image'), async (req, res) => {
       });
     }
 
-    // 파일 정보
-    const fileUrl = `/uploads/${req.file.filename}`;
-    const filePath = req.file.path;
+    // 로컬 파일 정보
+    const localFilePath = req.file.path;
+    const filename = req.file.filename;
+
+    // 파일 저장 확인
+    console.log('[POST /api/upload] 파일 저장 경로:', localFilePath);
+    console.log('[POST /api/upload] 파일 존재 여부:', fs.existsSync(localFilePath));
+    console.log('[POST /api/upload] 파일 크기:', fs.statSync(localFilePath).size, 'bytes');
+
+    // Supabase Storage에 업로드 (이미 service role key 설정됨)
+    let fileUrl = `/uploads/${filename}`;
+    try {
+      const fileBuffer = fs.readFileSync(localFilePath);
+      const storagePath = `uploads/${filename}`;
+
+      console.log('[POST /api/upload] Supabase Storage 업로드 시도:', storagePath);
+
+      const { error: uploadError } = await supabase.storage
+        .from('uploads')
+        .upload(storagePath, fileBuffer, {
+          contentType: req.file.mimetype,
+          upsert: true
+        });
+
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage
+          .from('uploads')
+          .getPublicUrl(storagePath);
+        fileUrl = publicUrl;
+        console.log('[POST /api/upload] Supabase Storage 업로드 성공:', fileUrl);
+      } else {
+        console.warn('[POST /api/upload] Supabase Storage 업로드 실패:', uploadError.message);
+        console.log('[POST /api/upload] 로컬 경로 폴백:', fileUrl);
+      }
+    } catch (storageErr) {
+      console.warn('[POST /api/upload] Storage 업로드 중 에러:', storageErr.message);
+      console.log('[POST /api/upload] 로컬 경로 폴백:', fileUrl);
+    }
 
     // Supabase에 업로드 정보 저장
     const { data, error } = await supabase
       .from('uploaded_images')
       .insert([{
         store_id: parseInt(storeId),
-        filename: req.file.filename,
+        filename: filename,
         original_filename: req.file.originalname,
-        file_path: filePath,
+        file_path: localFilePath,
         file_url: fileUrl,
         file_size: req.file.size,
         mimetype: req.file.mimetype
@@ -123,7 +158,15 @@ router.post('/', upload.single('image'), async (req, res) => {
 
     const imageRecord = data[0];
 
-    console.log(`[POST /api/upload] 이미지 업로드 완료: store_id=${storeId}, image_id=${imageRecord.image_id}`);
+    console.log(`[POST /api/upload] 이미지 업로드 완료: store_id=${storeId}, image_id=${imageRecord.image_id}, url=${fileUrl}`);
+
+    // 로컬 파일 삭제
+    try {
+      fs.unlinkSync(localFilePath);
+      console.log('[POST /api/upload] 로컬 임시 파일 삭제 완료');
+    } catch (unlinkErr) {
+      console.warn('[POST /api/upload] 로컬 파일 삭제 실패:', unlinkErr.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -141,7 +184,11 @@ router.post('/', upload.single('image'), async (req, res) => {
     });
   } catch (error) {
     if (req.file) {
-      fs.unlinkSync(req.file.path);
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (e) {
+        // 무시
+      }
     }
     console.error('[POST /api/upload] 오류:', error);
     res.status(500).json({

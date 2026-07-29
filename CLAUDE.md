@@ -64,9 +64,9 @@ ShortsGen/
 | Icons     | Lucide React 1.23     | Icon library                        |
 | Backend   | Node.js + Express     | API & pipeline orchestration        |
 | Database  | Supabase (PostgreSQL) | Store info, generated reels, orders |
-| Vision AI | YOLOv8                | Object detection & smart cropping   |
-| NLP       | KoBERT                | Korean semantic matching for trends |
-| TTS       | External API          | Voice-over generation               |
+| Vision AI | Sharp (Node.js)       | Image cropping & smart resizing     |
+| NLP       | Google Gemini 1.5     | Caption generation & trend matching |
+| TTS       | gTTS (Google TTS)     | Korean voice-over generation        |
 | Video     | FFmpeg                | Audio/video rendering               |
 
 ---
@@ -88,10 +88,10 @@ Step 4: Image Upload (Generate)
 
 Step 5: AI Pipeline Execution (Generate)
   └─ Sequence:
-     1. YOLOv8 smart crop
-     2. KoBERT trend-to-caption matching
-     3. TTS voice generation
-     4. FFmpeg video rendering
+     1. Sharp 엔트로피 기반 이미지 크롭 (9:16 비율)
+     2. Google Gemini API 한국어 자막 생성
+     3. gTTS 한국어 음성 생성
+     4. FFmpeg 영상 렌더링
 
 Step 6: Review & Publish (Generate)
   └─ Preview: final 9:16 vertical video
@@ -297,6 +297,45 @@ export default defineConfig({
     },
   },
 });
+```
+
+---
+
+## Backend API Configuration
+
+### Google Gemini API 설정 (Step 2: 자막 생성)
+
+**모델 선택:**
+- **사용 모델:** `gemini-1.5-flash` (권장)
+- **변경 사유:** `gemini-2.0-flash`의 429 Quota Exceeded 에러 해결
+- **특징:** 100% 무료 쿼터 보장, 안정적인 성능
+
+**환경 변수 설정 (backend/.env):**
+```env
+GEMINI_API_KEY=your-google-generative-ai-api-key
+```
+
+**API 호출 흐름 (src/services/pipeline.js - runStep2):**
+1. Job 정보에서 트렌드 해시태그, 상품명 조회
+2. Store 정보에서 카테고리, 대표 메뉴 조회
+3. Google Generative AI 클라이언트 초기화
+4. 프롬프트 구성: 카테고리 + 트렌드 + 영상 목적 기반 자막 생성
+5. JSON 응답 파싱 (마크다운 코드 블록 제거)
+6. DB 업데이트 (step2_caption, step2_caption_options, step2_hashtags)
+
+**예외 처리 (Fallback 대사):**
+- Gemini API 호출 실패 시 `generateFallbackCaption()` 함수로 기본 대사 템플릿 제공
+- 카테고리별 기본 대사:
+  - 카페: ☕ 이 커피를 놓치지 마세요! 지금 방문해보세요 👉
+  - 음식점: 🍜 맛있는 맛집! 꼭 와서 먹어봐야 해요 👉
+  - 한식: 🥢 우리 한식의 참맛! 지금 주문하세요 👉
+- Fallback 사용 시에도 파이프라인 계속 진행 (서비스 가용성 향상)
+
+**Step 2 DB 업데이트 헬퍼 함수:**
+```javascript
+// updateStep2Results(jobId, result, duration, isFallback = false)
+// - 정상 응답: isFallback = false
+// - Fallback 응답: isFallback = true, generation_steps.status = 'completed_fallback'
 ```
 
 ---
