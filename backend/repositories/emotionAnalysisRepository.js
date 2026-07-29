@@ -26,6 +26,15 @@ export class SupabaseRepositoryError extends Error {
   }
 }
 
+export class GuestStorageLimitError extends Error {
+  constructor() {
+    super("The guest analysis storage limit has been reached.");
+    this.name = "GuestStorageLimitError";
+    this.code = "GUEST_STORAGE_LIMIT_EXCEEDED";
+    this.status = 429;
+  }
+}
+
 export async function createEmotionAnalysis(record) {
   if (!record || typeof record !== "object" || Array.isArray(record)) {
     throw new TypeError("Emotion analysis record must be an object.");
@@ -38,6 +47,10 @@ export async function createEmotionAnalysis(record) {
     .single();
 
   if (error) {
+    if (error.code === "P0001" && error.message === "GUEST_STORAGE_LIMIT_EXCEEDED") {
+      throw new GuestStorageLimitError();
+    }
+
     throw new SupabaseRepositoryError(
       "Failed to create the emotion analysis record.",
       error

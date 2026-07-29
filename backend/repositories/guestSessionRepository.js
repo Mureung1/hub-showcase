@@ -155,3 +155,34 @@ export async function deleteExpiredGuestSessions(
     repositoryFailure("Failed to delete expired guest sessions.", error);
   }
 }
+
+export async function consumeGuestAiQuota(
+  guestSessionId,
+  {
+    limit,
+    windowSeconds,
+    client = getSupabaseClient()
+  }
+) {
+  requireGuestSessionId(guestSessionId);
+
+  if (!Number.isInteger(limit) || limit < 1) {
+    throw new TypeError("limit must be a positive integer.");
+  }
+
+  if (!Number.isInteger(windowSeconds) || windowSeconds < 1) {
+    throw new TypeError("windowSeconds must be a positive integer.");
+  }
+
+  const { data, error } = await client.rpc("consume_guest_ai_quota", {
+    p_guest_session_id: guestSessionId,
+    p_limit: limit,
+    p_window_seconds: windowSeconds
+  });
+
+  if (error) {
+    repositoryFailure("Failed to consume the guest AI quota.", error);
+  }
+
+  return data === true;
+}

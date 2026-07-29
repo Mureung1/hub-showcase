@@ -12,7 +12,10 @@ import {
   createEmotionAnalysisRouter
 } from "./backend/features/emotion-analyses/emotionAnalysisRoutes.js";
 import { RequestValidationError } from "./backend/features/emotion-analyses/emotionAnalysisValidation.js";
-import { SupabaseRepositoryError } from "./backend/repositories/emotionAnalysisRepository.js";
+import {
+  GuestStorageLimitError,
+  SupabaseRepositoryError
+} from "./backend/repositories/emotionAnalysisRepository.js";
 import {
   createGuestSessionRouter,
   mapGuestSessionError
@@ -30,6 +33,7 @@ export function createApp({
   listAnalyses,
   authenticateGuest,
   generateAiResponse,
+  consumeAiQuota,
   guestAuthenticationOptions,
   guestSessionOptions,
   trustProxy = serverConfig.trustProxy,
@@ -136,6 +140,11 @@ export function createApp({
     createAiChatRouter({
       authenticateGuest,
       guestAuthenticationOptions,
+      consumeQuota: consumeAiQuota,
+      quotaOptions: {
+        limit: serverConfig.aiRateLimitMaximum,
+        windowSeconds: Math.ceil(serverConfig.rateLimitWindowMs / 1000)
+      },
       generateResponse: generateAiResponse
     })
   );
@@ -202,6 +211,17 @@ export function createApp({
       error: {
         code: error.code,
         message: "The database operation failed."
+      }
+    });
+    return;
+  }
+
+  if (error instanceof GuestStorageLimitError) {
+    response.status(error.status).json({
+      success: false,
+      error: {
+        code: error.code,
+        message: error.message
       }
     });
     return;
