@@ -1,0 +1,10 @@
+@import url("https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/variable/woff2/SUIT-Variable.css");
+
+html:not(.is-english) .app-shell {
+  font-family:
+    "SUIT Variable",
+    "SUIT",
+    "Apple SD Gothic Neo",
+    system-ui,
+    sans-serif;
+}
