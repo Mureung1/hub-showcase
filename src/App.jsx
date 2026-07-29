@@ -14,6 +14,10 @@ function App() {
   const [authMode, setAuthMode] = useState('')
   const [isGuestPlannerOpen, setIsGuestPlannerOpen] = useState(false)
   const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false)
+  const [isNicknameFormOpen, setIsNicknameFormOpen] = useState(false)
+  const [nicknameInput, setNicknameInput] = useState('')
+  const [nicknameErrorMessage, setNicknameErrorMessage] = useState('')
+  const [isNicknameSaving, setIsNicknameSaving] = useState(false)
   const userDisplayName = getUserDisplayName(session?.user)
   const accessToken = session?.access_token || ''
 
@@ -42,6 +46,8 @@ function App() {
       if (nextSession) {
         setIsGuestPlannerOpen(false)
         setAuthMode('')
+      } else {
+        resetNicknameForm()
       }
       setIsSessionLoading(false)
     })
@@ -122,6 +128,7 @@ function App() {
   async function handleSignOut() {
     setIsAuthLoading(true)
     setAuthErrorMessage('')
+    resetNicknameForm()
 
     const { error } = await supabase.auth.signOut()
 
@@ -134,6 +141,62 @@ function App() {
     }
 
     setIsAuthLoading(false)
+  }
+
+  function openNicknameForm() {
+    setNicknameInput(session?.user?.user_metadata?.nickname || '')
+    setNicknameErrorMessage('')
+    setIsNicknameFormOpen(true)
+  }
+
+  function resetNicknameForm() {
+    setIsNicknameFormOpen(false)
+    setNicknameInput('')
+    setNicknameErrorMessage('')
+    setIsNicknameSaving(false)
+  }
+
+  async function handleNicknameSave(event) {
+    event.preventDefault()
+    const trimmedNickname = nicknameInput.trim()
+
+    if (!trimmedNickname) {
+      setNicknameErrorMessage('닉네임을 입력해 주세요.')
+      return
+    }
+
+    setIsNicknameSaving(true)
+    setNicknameErrorMessage('')
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        nickname: trimmedNickname,
+      },
+    })
+
+    if (error) {
+      setNicknameErrorMessage(error.message || '닉네임 저장 중 문제가 발생했습니다.')
+      setIsNicknameSaving(false)
+      return
+    }
+
+    setSession((currentSession) => {
+      if (!currentSession) {
+        return currentSession
+      }
+
+      return {
+        ...currentSession,
+        user: data?.user || {
+          ...currentSession.user,
+          user_metadata: {
+            ...currentSession.user?.user_metadata,
+            nickname: trimmedNickname,
+          },
+        },
+      }
+    })
+    resetNicknameForm()
   }
 
   if (isSessionLoading) {
@@ -155,9 +218,14 @@ function App() {
           <header className="auth-status-bar">
             <span>{session ? userDisplayName : '비로그인 체험 중'}</span>
             {session ? (
-              <button className="secondary-action" type="button" disabled={isAuthLoading} onClick={handleSignOut}>
-                {isAuthLoading ? '처리 중...' : '로그아웃'}
-              </button>
+              <div className="auth-status-actions">
+                <button className="secondary-action" type="button" disabled={isAuthLoading} onClick={openNicknameForm}>
+                  닉네임 설정
+                </button>
+                <button className="secondary-action" type="button" disabled={isAuthLoading} onClick={handleSignOut}>
+                  {isAuthLoading ? '처리 중...' : '로그아웃'}
+                </button>
+              </div>
             ) : (
               <div className="auth-status-actions">
                 <button className="secondary-action" type="button" onClick={() => setAuthMode('signin')}>
@@ -169,6 +237,29 @@ function App() {
               </div>
             )}
           </header>
+          {session && isNicknameFormOpen && (
+            <form className="nickname-form" noValidate onSubmit={handleNicknameSave}>
+              <label className="input-field">
+                <span>닉네임</span>
+                <input
+                  autoComplete="nickname"
+                  type="text"
+                  value={nicknameInput}
+                  onChange={(event) => setNicknameInput(event.target.value)}
+                  required
+                />
+              </label>
+              {nicknameErrorMessage && <p className="form-message form-message-error">{nicknameErrorMessage}</p>}
+              <div className="form-actions">
+                <button className="primary-action" type="submit" disabled={isNicknameSaving}>
+                  {isNicknameSaving ? '저장 중...' : '저장'}
+                </button>
+                <button className="secondary-action" type="button" disabled={isNicknameSaving} onClick={resetNicknameForm}>
+                  취소
+                </button>
+              </div>
+            </form>
+          )}
           {authErrorMessage && <p className="form-message form-message-error">{authErrorMessage}</p>}
           {!session && authMode ? (
             <AuthScreen

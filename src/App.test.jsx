@@ -11,6 +11,7 @@ vi.mock('./lib/supabaseClient', () => ({
       onAuthStateChange: vi.fn(),
       signInWithPassword: vi.fn(),
       signUp: vi.fn(),
+      updateUser: vi.fn(),
       signOut: vi.fn(),
     },
   },
@@ -162,6 +163,96 @@ describe('App authentication flow', () => {
     expect(await screen.findByText('learner님')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '로그아웃' })).toBeInTheDocument()
     expect(screen.getByText('선택 시험: 선택 전')).toBeInTheDocument()
+  })
+
+  test('does not show the nickname settings button during guest use', async () => {
+    const user = userEvent.setup()
+    supabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null })
+
+    render(<App />)
+
+    await startGuestPlanner(user)
+
+    expect(screen.queryByRole('button', { name: '닉네임 설정' })).not.toBeInTheDocument()
+  })
+
+  test('opens the nickname form with the current nickname for signed-in users', async () => {
+    const user = userEvent.setup()
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-1', email: 'learner@example.com', user_metadata: { nickname: '계획러' } } } },
+      error: null,
+    })
+
+    render(<App />)
+
+    await user.click(await screen.findByRole('button', { name: '닉네임 설정' }))
+
+    expect(screen.getByLabelText('닉네임')).toHaveValue('계획러')
+  })
+
+  test('does not update the user when the nickname settings value is blank', async () => {
+    const user = userEvent.setup()
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-1', email: 'learner@example.com', user_metadata: { nickname: '계획러' } } } },
+      error: null,
+    })
+
+    render(<App />)
+
+    await user.click(await screen.findByRole('button', { name: '닉네임 설정' }))
+    await user.clear(screen.getByLabelText('닉네임'))
+    await user.type(screen.getByLabelText('닉네임'), '   ')
+    await user.click(screen.getByRole('button', { name: '저장' }))
+
+    expect(await screen.findByText('닉네임을 입력해 주세요.')).toBeInTheDocument()
+    expect(supabase.auth.updateUser).not.toHaveBeenCalled()
+  })
+
+  test('updates nickname metadata and refreshes the visible account name', async () => {
+    const user = userEvent.setup()
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-1', email: 'learner@example.com' } } },
+      error: null,
+    })
+    supabase.auth.updateUser.mockResolvedValue({
+      data: { user: { id: 'user-1', email: 'learner@example.com', user_metadata: { nickname: '집중러' } } },
+      error: null,
+    })
+
+    render(<App />)
+
+    await user.click(await screen.findByRole('button', { name: '닉네임 설정' }))
+    await user.type(screen.getByLabelText('닉네임'), '  집중러  ')
+    await user.click(screen.getByRole('button', { name: '저장' }))
+
+    expect(supabase.auth.updateUser).toHaveBeenCalledWith({
+      data: {
+        nickname: '집중러',
+      },
+    })
+    expect(await screen.findByText('집중러님')).toBeInTheDocument()
+    expect(screen.queryByLabelText('닉네임')).not.toBeInTheDocument()
+  })
+
+  test('shows the Supabase message when nickname update fails', async () => {
+    const user = userEvent.setup()
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-1', email: 'learner@example.com' } } },
+      error: null,
+    })
+    supabase.auth.updateUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'Unable to update nickname.' },
+    })
+
+    render(<App />)
+
+    await user.click(await screen.findByRole('button', { name: '닉네임 설정' }))
+    await user.type(screen.getByLabelText('닉네임'), '집중러')
+    await user.click(screen.getByRole('button', { name: '저장' }))
+
+    expect(await screen.findByText('Unable to update nickname.')).toBeInTheDocument()
+    expect(screen.getByLabelText('닉네임')).toBeInTheDocument()
   })
 
   test('calls Supabase sign in with email and password', async () => {
@@ -386,6 +477,8 @@ describe('App authentication flow', () => {
 
     render(<App />)
 
+    await user.click(await screen.findByRole('button', { name: '닉네임 설정' }))
+    await user.type(screen.getByLabelText('닉네임'), '임시')
     await user.click(await screen.findByRole('button', { name: '로그아웃' }))
 
     await waitFor(() => {
@@ -393,6 +486,7 @@ describe('App authentication flow', () => {
     })
     expect(supabase.auth.signOut).toHaveBeenCalled()
     expect(screen.getByText('비로그인 체험 중')).toBeInTheDocument()
+    expect(screen.queryByLabelText('닉네임')).not.toBeInTheDocument()
     expect(screen.getByText('선택 시험: 선택 전')).toBeInTheDocument()
   })
 })
