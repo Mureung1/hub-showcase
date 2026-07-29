@@ -3,7 +3,8 @@
   "title": "전공별 시각화 학습 플랫폼",
   "summary": "글이나 정적인 그림만으로는 이해하기 어려운 전공 개념을, 직접 지켜보거나 조작하는 시각화로 배우는 대학생용 학습 플랫폼입니다.",
   "githubUser": "hunteak1020-dev(임현택)",
-  "demoUrl": "",
+  "demoUrl": "https://hub-tau-seven.vercel.app",
+  "demoVideoUrl": "https://youtu.be/wPE4pnCpm3k",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/01-sorting.png",
