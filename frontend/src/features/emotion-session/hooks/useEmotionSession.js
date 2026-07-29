@@ -156,6 +156,7 @@ export default function useEmotionSession({
     faceSignalConfidence = null,
     faceSignalEvidence = [],
     faceSignalHeuristicVersion = null,
+    faceFeatures = [],
     voiceSignal
   }) => {
     if (
@@ -174,6 +175,7 @@ export default function useEmotionSession({
       faceSignalConfidence,
       faceSignalEvidence,
       faceSignalHeuristicVersion,
+      faceFeatures,
       voiceSignal,
       selectedScenario: selectedScenario.value
     };
@@ -203,7 +205,7 @@ export default function useEmotionSession({
       const { createdRecord } = await createEmotionAnalysisSubmission({
         sessionId,
         analysisInput,
-        analysisResult: nextResult,
+        previewAnalysisResult: nextResult,
         recentMessages: messages,
         signal: controller.signal,
         generateResponse: aiGuestKey

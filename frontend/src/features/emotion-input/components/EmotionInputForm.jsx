@@ -79,6 +79,7 @@ export default function EmotionInputForm({
       faceSignalHeuristicVersion: usesCameraResult
         ? FACE_SIGNAL_HEURISTIC_VERSION
         : null,
+      faceFeatures: usesCameraResult ? detectedFaceResult.features || [] : [],
       voiceSignal
     });
     if (accepted !== false) setSituationText("");

@@ -9,7 +9,7 @@ const AI_LIMIT_ERROR_CODES = new Set([
 export async function createEmotionAnalysisSubmission({
   sessionId,
   analysisInput,
-  analysisResult,
+  previewAnalysisResult,
   recentMessages = [],
   signal,
   generateResponse,
@@ -23,20 +23,39 @@ export async function createEmotionAnalysisSubmission({
     throw new TypeError("generateResponse must be configured.");
   }
 
-  let aiResponse;
+  let generated;
   try {
-    aiResponse = await generateResponse(
+    generated = await generateResponse(
       {
         message: analysisInput.situationText,
         recentMessages,
-        analysis: analysisResult
+        signals: {
+          faceSignalSource: analysisInput.faceSignalSource,
+          faceSignalConfidence: analysisInput.faceSignalConfidence,
+          faceFeatures: analysisInput.faceFeatures,
+          voiceSignal: analysisInput.voiceSignal
+        }
       },
       { signal }
     );
   } catch (error) {
     if (error?.name === "AbortError") throw error;
     if (!AI_LIMIT_ERROR_CODES.has(error?.code)) throw error;
-    aiResponse = NOA_SLEEP_RESPONSE;
+    generated = {
+      response: NOA_SLEEP_RESPONSE,
+      analysis: previewAnalysisResult,
+      source: "quota"
+    };
+  }
+  const aiResponse = generated?.response;
+  const analysisResult = generated?.analysis;
+  if (
+    typeof aiResponse !== "string" ||
+    !aiResponse.trim() ||
+    !analysisResult ||
+    !Array.isArray(analysisResult.scores)
+  ) {
+    throw new TypeError("generateResponse returned an invalid result.");
   }
   const faceSignal =
     analysisInput.faceSignalSource === "camera"

@@ -153,6 +153,69 @@ test("missing Gemini model is distinguished from provider outages", async () => 
   );
 });
 
+test("Gemini structured emotion scores are normalized and returned with chat", async () => {
+  let providerRequest;
+  const generate = createGeminiChatGenerator({
+    apiKey: "test-only-key",
+    fetchImpl: async (_url, options) => {
+      providerRequest = JSON.parse(options.body);
+      return Response.json({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    response: "조금 긴장된 하루였나 봐.",
+                    scores: {
+                      anxiety: 61,
+                      sadness: 18,
+                      anger: 7,
+                      joy: 4,
+                      neutral: 10
+                    },
+                    possibleStates: [
+                      { label: "긴장 가능성", confidence: 0.7 }
+                    ],
+                    evidence: ["사용자가 불안을 직접 표현함"],
+                    responseApproach: "ask_gently",
+                    needsConfirmation: true
+                  })
+                }
+              ]
+            }
+          }
+        ]
+      });
+    }
+  });
+
+  const result = await generate({
+    message: "오늘 조금 불안했어.",
+    signals: {
+      faceSignalSource: "camera",
+      faceSignalConfidence: 0.82,
+      faceFeatures: [{ name: "browDownLeft", score: 0.82 }],
+      voiceSignal: "normal"
+    }
+  });
+
+  assert.equal(result.source, "gemini");
+  assert.equal(result.response, "조금 긴장된 하루였나 봐.");
+  assert.equal(
+    result.analysis.scores.reduce((sum, item) => sum + item.score, 0),
+    100
+  );
+  assert.equal(
+    providerRequest.generationConfig.responseMimeType,
+    "application/json"
+  );
+  assert.match(
+    providerRequest.contents[0].parts[0].text,
+    /browDownLeft/
+  );
+});
+
 test("quota migration is atomic and not executable by browser roles", async () => {
   const migration = await readFile(
     new URL(

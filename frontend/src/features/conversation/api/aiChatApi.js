@@ -26,7 +26,7 @@ export function createAiChatApi({
   const endpoint = `${normalizedBaseUrl}/api/ai-chat/responses`;
 
   async function generateAiResponse(
-    { message, recentMessages = [], analysis = {} },
+    { message, recentMessages = [], signals = {} },
     { signal, guestKey } = {}
   ) {
     if (!guestKey) {
@@ -52,7 +52,7 @@ export function createAiChatApi({
           )
           .slice(-AI_CHAT_LIMITS.recentMessageCount)
           .map(({ role, content }) => ({ role, content })),
-        analysis
+        signals
       }),
       signal
     });
@@ -78,14 +78,24 @@ export function createAiChatApi({
     }
 
     const generatedText = payload.data?.response;
-    if (typeof generatedText !== "string" || !generatedText.trim()) {
+    const analysis = payload.data?.analysis;
+    if (
+      typeof generatedText !== "string" ||
+      !generatedText.trim() ||
+      !analysis ||
+      !Array.isArray(analysis.scores)
+    ) {
       throw new AiChatApiError("The AI API returned an empty response.", {
         status: 502,
         code: "INVALID_API_RESPONSE"
       });
     }
 
-    return generatedText.trim();
+    return {
+      response: generatedText.trim(),
+      analysis,
+      source: payload.data?.source || "gemini"
+    };
   }
 
   return { generateAiResponse };
@@ -95,4 +105,3 @@ const defaultApi = createAiChatApi();
 
 export const generateAiResponse = (...args) =>
   defaultApi.generateAiResponse(...args);
-

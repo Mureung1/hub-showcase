@@ -2,6 +2,11 @@ import {
   AI_CHAT_LIMITS,
   AI_CHAT_ROLES
 } from "../../../shared/contracts/aiChatContract.js";
+import {
+  CAMERA_FEATURE_NAMES,
+  FACE_SIGNAL_SOURCES,
+  VOICE_SIGNALS
+} from "../../../shared/contracts/emotionAnalysisContract.js";
 import { RequestValidationError } from "../emotion-analyses/emotionAnalysisValidation.js";
 
 function requireTrimmedText(value, field, maximumLength) {
@@ -54,6 +59,39 @@ function normalizeRecentMessages(value) {
   });
 }
 
+function normalizeSignals(value) {
+  const signals = value && typeof value === "object" ? value : {};
+  const source = FACE_SIGNAL_SOURCES.includes(signals.faceSignalSource)
+    ? signals.faceSignalSource
+    : "manual";
+  const confidence = Number(signals.faceSignalConfidence);
+  const features = Array.isArray(signals.faceFeatures)
+    ? signals.faceFeatures
+        .filter(
+          (feature) =>
+            CAMERA_FEATURE_NAMES.includes(feature?.name) &&
+            Number.isFinite(Number(feature?.score))
+        )
+        .slice(0, 6)
+        .map((feature) => ({
+          name: feature.name,
+          score: Math.min(1, Math.max(0, Number(feature.score)))
+        }))
+    : [];
+
+  return {
+    faceSignalSource: source,
+    faceSignalConfidence:
+      source === "camera" && Number.isFinite(confidence)
+        ? Math.min(1, Math.max(0, confidence))
+        : null,
+    faceFeatures: source === "camera" ? features : [],
+    voiceSignal: VOICE_SIGNALS.includes(signals.voiceSignal)
+      ? signals.voiceSignal
+      : "normal"
+  };
+}
+
 export function validateAiChatRequest(body) {
   const payload = body && typeof body === "object" ? body : {};
   return {
@@ -63,10 +101,6 @@ export function validateAiChatRequest(body) {
       AI_CHAT_LIMITS.messageLength
     ),
     recentMessages: normalizeRecentMessages(payload.recentMessages),
-    analysis:
-      payload.analysis && typeof payload.analysis === "object"
-        ? payload.analysis
-        : {}
+    signals: normalizeSignals(payload.signals)
   };
 }
-

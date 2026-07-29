@@ -9,6 +9,7 @@ const analysisInput = {
   faceSignalConfidence: 0.82,
   faceSignalEvidence: ["browDownLeft"],
   faceSignalHeuristicVersion: "v1",
+  faceFeatures: [{ name: "browDownLeft", score: 0.82 }],
   voiceSignal: "normal",
   selectedScenario: "normal"
 };
@@ -24,18 +25,22 @@ const analysisResult = {
   needsConfirmation: true
 };
 
-test("the same emotion result feeds Gemini and the saved conversation", async () => {
+test("Gemini emotion analysis feeds the saved conversation", async () => {
   let generatedInput;
   let savedRecord;
 
   const result = await createEmotionAnalysisSubmission({
     sessionId: "browser-session",
     analysisInput,
-    analysisResult,
+    previewAnalysisResult: analysisResult,
     recentMessages: [{ id: "1", role: "user", content: "이전 이야기" }],
     generateResponse: async (input) => {
       generatedInput = input;
-      return "긴장되는 순간이었나 봐. 지금 몸은 조금 괜찮아?";
+      return {
+        response: "긴장되는 순간이었나 봐. 지금 몸은 조금 괜찮아?",
+        analysis: analysisResult,
+        source: "gemini"
+      };
     },
     saveAnalysis: async (record) => {
       savedRecord = record;
@@ -43,7 +48,9 @@ test("the same emotion result feeds Gemini and the saved conversation", async ()
     }
   });
 
-  assert.strictEqual(generatedInput.analysis, analysisResult);
+  assert.deepEqual(generatedInput.signals.faceFeatures, [
+    { name: "browDownLeft", score: 0.82 }
+  ]);
   assert.strictEqual(savedRecord.analysisResult, analysisResult);
   assert.equal(savedRecord.faceSignal, null);
   assert.equal(savedRecord.faceSignalSource, "camera");
@@ -60,7 +67,7 @@ test("provider failures are not replaced with mock chat", async () => {
       createEmotionAnalysisSubmission({
         sessionId: "browser-session",
         analysisInput,
-        analysisResult,
+        previewAnalysisResult: analysisResult,
         generateResponse: async () => {
           throw providerError;
         },
@@ -74,7 +81,7 @@ test("AI quota exhaustion returns the sleep message and remains saveable", async
   const created = await createEmotionAnalysisSubmission({
     sessionId: "browser-session",
     analysisInput,
-    analysisResult,
+    previewAnalysisResult: analysisResult,
     generateResponse: async () => {
       throw Object.assign(new Error("quota exhausted"), {
         code: "AI_RATE_LIMIT_EXCEEDED"
