@@ -122,6 +122,12 @@ body {
   flex: 0 0 auto;
 }
 
+.head-mark {
+  font-size: 17mm;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
 .head-body {
   flex: 1 1 auto;
 }
@@ -240,6 +246,8 @@ body {
 
 .qr img {
   display: block;
+  /* 아래 글자가 QR보다 넓어서 .qr 폭을 늘린다 — auto 마진이 없으면 코드만 왼쪽으로 쏠린다 */
+  margin: 0 auto;
   width: 31mm;
   height: 31mm;
   border: 0.4mm solid var(--line);

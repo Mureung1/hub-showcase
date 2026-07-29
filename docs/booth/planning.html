@@ -3,6 +3,19 @@
   <head>
     <meta charset="utf-8" />
     <title>WeatherPilot — 기획 · 주제</title>
+    <!--
+      폰트를 미리 받는다. font-display:block이라 로딩 전에는 글자가 안 그려지는데,
+      Chrome이 그 사이에 PDF를 찍으면 글자가 통째로 빠진 PDF가 나온다(실제로 겪었다).
+      인쇄할 때 --virtual-time-budget 도 함께 준다 — README 참고.
+    -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-Regular.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-SemiBold.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-Bold.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-ExtraBold.woff2" />
     <link rel="stylesheet" href="./booth.css" />
     <style>
       /* ---------- 1. 문제 ---------- */
@@ -266,7 +279,8 @@
       .shot-cap {
         margin: 0;
         text-align: center;
-        font-size: 3.8mm;
+        font-size: 4.8mm;
+        font-weight: 600;
         line-height: 1.4;
         color: var(--sub);
       }
@@ -393,6 +407,7 @@
     <div class="page">
       <!-- ============ 헤더 ============ -->
       <header class="head">
+        <div class="head-mark">🌦️</div>
         <div class="head-body">
           <h1>WeatherPilot<span class="thin"> 웨더파일럿</span></h1>
           <p>
@@ -544,7 +559,7 @@
             <b>채널마다 맡는<br />역할을 분리했다</b>
             <p>
               단골 문자는 <b>1인 1코드</b>로 전환을 실측하고, 수신자 목록이 없는 공개 채널은
-              도달을 맡는다. 못 하는 걸 하는 척하지 않는다.
+              <b>새 손님에게 알리는 일</b>을 맡는다.
             </p>
             <span class="mono">coupons · issueCouponsFor()</span>
           </div>
@@ -571,7 +586,7 @@
             <span class="pill pill-real">실연동</span>
             <span>
               날씨(기상청+OpenWeatherMap) · LLM(Groq) · DB(Supabase) · 문자(Solapi) · Instagram
-              게시 &nbsp;<b>— 단, 본인 번호·본인 계정에만</b>
+              게시<br /><b>단, 본인 번호·본인 계정에만</b>
             </span>
           </div>
           <div class="scope-row">
@@ -580,7 +595,7 @@
           </div>
           <div class="scope-row">
             <span class="pill pill-mock">모의</span>
-            <span>080 수신거부 실회선 · 카카오 알림톡 · 타인 계정 SNS 게시</span>
+            <span>080 수신거부 실회선 · 타인 계정 SNS 게시</span>
           </div>
           <p class="stack">
             React + TypeScript(Vite) · Node + Express · Supabase · Vercel · Render / 서버 테스트

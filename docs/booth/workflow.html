@@ -3,6 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <title>WeatherPilot — AI 에이전트 워크플로우</title>
+    <!-- 폰트 선로딩 — 이유는 planning.html 주석 참고 -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-Regular.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-SemiBold.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-Bold.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-ExtraBold.woff2" />
     <link rel="stylesheet" href="./booth.css" />
     <style>
       /* 범례 */
@@ -31,11 +40,12 @@
         background: #fff;
         border: 0.5mm solid var(--brand);
       }
-      .lg-dec {
-        background: #fdf1d6;
-        border: 0.5mm solid #d9a441;
-        transform: rotate(45deg) scale(0.78);
-        border-radius: 0.8mm;
+      /* 정사각형을 45도 돌리면 도식의 가로로 긴 마름모와 안 맞는다 — 실제 비율대로 그린다 */
+      .lg-dia {
+        width: 9mm;
+        height: 5mm;
+        flex: 0 0 auto;
+        display: block;
       }
       .lg-ext {
         background: #f3e8ff;
@@ -76,6 +86,10 @@
       .chip b {
         color: var(--brand-dk);
       }
+      /* 칩·설명이 QR보다 낮아서 가운데 정렬하면 구분선 아래로 밀린다 — 위로 붙인다 */
+      .foot {
+        align-items: flex-start;
+      }
       .note {
         margin: 0;
         font-size: 3.5mm;
@@ -111,7 +125,13 @@
 
         <div class="legend">
           <span class="lg"><i class="lg-proc"></i>처리</span>
-          <span class="lg"><i class="lg-dec"></i>판단</span>
+          <span class="lg">
+            <svg class="lg-dia" viewBox="0 0 36 20" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="18,1.4 34.6,10 18,18.6 1.4,10" fill="#fdf1d6" stroke="#d9a441"
+                stroke-width="1.6" stroke-linejoin="round" />
+            </svg>
+            판단
+          </span>
           <span class="lg"><i class="lg-ext"></i>외부 API</span>
           <span class="lg"><i class="lg-db"></i>DB</span>
           <span class="lg"><i class="lg-human"></i>사람</span>
@@ -160,7 +180,7 @@
             .m  { font-size: 5.4px; font-weight: 700; }
             .s  { font-size: 3.5px; fill: #6b7787; }
             .d  { font-size: 4.6px; font-weight: 700; }
-            .n  { font-size: 4.6px; font-weight: 800; fill: #4a90e2; }
+            .n  { font-size: 7px; font-weight: 800; fill: #4a90e2; }
             .br { font-size: 3.6px; font-weight: 700; fill: #6b7787; }
             .ex-t { font-size: 3.9px; font-weight: 700; fill: #6b21a8; }
             .sk-t { font-size: 3.9px; font-weight: 700; fill: #6b7787; }
@@ -220,7 +240,7 @@
           <!-- ===== L3 임계 판단 ===== -->
           <polygon class="dc" points="132.5,68 187,80 132.5,92 78,80" />
           <text class="t d" x="132.5" y="82" text-anchor="middle">하락이 20% 이상인가?</text>
-          <text class="t br" x="137" y="97.5">예</text>
+          <text class="t br" x="136" y="95.6">예</text>
 
           <path class="ln-g" marker-end="url(#ag)" d="M187,80 L204,80" />
           <text class="t br" x="192" y="77">아니오</text>
@@ -242,7 +262,7 @@
           <!-- ===== L5 품질 판단 + 재생성 고리 ===== -->
           <polygon class="dc" points="132.5,120 187,132 132.5,144 78,132" />
           <text class="t d" x="132.5" y="134" text-anchor="middle">스스로 검사 — 통과인가?</text>
-          <text class="t br" x="137" y="149.5">예</text>
+          <text class="t br" x="136" y="147.6">예</text>
 
           <path class="ln-o" marker-end="url(#ao)" d="M187,132 L196,132 L196,106 L188,106" />
           <text class="t br" x="199" y="124" style="fill: #a9791c">위반이면</text>
@@ -271,7 +291,7 @@
           <!-- ===== L8 야간 판단 ===== -->
           <polygon class="dc" points="132.5,198 187,210 132.5,222 78,210" />
           <text class="t d" x="132.5" y="212" text-anchor="middle">지금 21시~08시인가?</text>
-          <text class="t br" x="137" y="227.5">아니오</text>
+          <text class="t br" x="136" y="225.6">아니오</text>
 
           <path class="ln-g" marker-end="url(#ag)" d="M187,210 L204,210" />
           <text class="t br" x="194" y="207">예</text>
@@ -280,9 +300,12 @@
           <text class="t s" x="235" y="213.6" text-anchor="middle">정보통신망법 야간 차단</text>
 
           <!-- ===== L9 발송 ===== -->
-          <rect class="ex" x="0" y="229" width="50" height="14" rx="2.5" />
-          <text class="t ex-t" x="25" y="235" text-anchor="middle">Solapi 문자</text>
-          <text class="t ex-t" x="25" y="240.2" text-anchor="middle">Instagram 게시</text>
+          <rect class="ex" x="0" y="226" width="50" height="20" rx="2.5" />
+          <text class="t ex-t" x="25" y="232.4" text-anchor="middle">Solapi 문자</text>
+          <text class="t ex-t" x="25" y="237.6" text-anchor="middle">Instagram 게시</text>
+          <!-- X는 서버가 게시하지 않는다 — 있는 그대로 적는다 -->
+          <text class="t" x="25" y="243" text-anchor="middle"
+            style="font-size: 3.4px; fill: #8b7aa0">X(트위터)는 문구 복사</text>
           <path class="ln-p" marker-start="url(#ap)" d="M51,236 L77,236" />
 
           <rect class="bx" x="78" y="228" width="109" height="16" rx="3" />
