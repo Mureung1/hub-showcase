@@ -95,7 +95,6 @@
 - 지도 뷰 (M2의 지도/리스트 전환 — MVP는 리스트만)
 - 앱 내 사전 결제 / PG 정산 / 환불
 - 리뷰·평점, 사장님 정산 리포트
-- PostGIS 전환 (MVP는 Haversine 쿼리)
 - 노쇼 정책 고도화 (횟수 제한·페널티 — 현재는 단순 만료)
 - 대시보드 실시간화 (폴링 → SSE/WebSocket)
 - ESLint 도입, 서버 통합 테스트(supertest) 상시화 (클라이언트는 Vitest + RTL 도입됨 — RequireRole 테스트 작성)
