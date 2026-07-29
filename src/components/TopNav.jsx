@@ -4,11 +4,10 @@ import mascotKkini from '../assets/마스코트-끼니.png'
 const NAV_LINKS = [
   { label: '냉장고', to: '/', activeOn: ['/'] },
   { label: '레시피', to: '/home', activeOn: ['/home'] },
-  // 개발 편의용 — 로딩 화면을 실제 재료 선택 없이 바로 확인할 때 사용 (checklist.md 범위 아님)
-  { label: '로딩', to: '/home?loading=1', activeOn: [] },
+  { label: '재료픽', to: '/shop', activeOn: ['/shop'] },
 ]
 
-// 상단 고정 네비게이션 — prototype-v2에서 검증한 레이아웃(마스코트 로고 + 링크 + 검색창)을 그대로 포팅
+// 상단 고정 네비게이션 — prototype-v2에서 검증한 레이아웃(마스코트 로고 + 링크)을 그대로 포팅
 function TopNav() {
   const location = useLocation()
 
@@ -32,10 +31,6 @@ function TopNav() {
             {link.label}
           </Link>
         ))}
-      </div>
-      <div className="ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-border bg-bg-page text-sm text-text-secondary sm:h-auto sm:w-auto sm:px-4 sm:py-2">
-        <span className="sm:hidden">🔍</span>
-        <span className="hidden sm:inline">🔍 레시피 검색</span>
       </div>
     </div>
   )

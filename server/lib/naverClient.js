@@ -86,13 +86,15 @@ export async function searchNaverShop(query) {
     .sort((a, b) => a.price - b.price)
 
   // 적당한 크기(6개 이하)의 단일상품이 하나라도 있으면 그것만 보여준다 — 레시피 하나 사려고
-  // 대용량/묶음까지 억지로 섞어 10개를 채우지 않는다. 소용량 옵션이 아예 없을 때만
+  // 대용량/묶음까지 억지로 섞어 채우지 않는다. 소용량 옵션이 아예 없을 때만
   // 대용량 단일상품 → 묶음상품 순으로 폴백한다(검색결과가 비지 않도록).
+  // 후보 개수는 5개로 제한 — 재료샵처럼 패널이 화면 안에 다 들어와야 하는 곳에서
+  // 목록이 너무 길어져 스크롤이 필요해지지 않도록 한다.
   const singleItems = items.filter((item) => !isBundleCandidate(item.title))
   const bundleItems = items.filter((item) => isBundleCandidate(item.title))
   const reasonableSizeItems = singleItems.filter((item) => !isBulkPack(item.title))
   const bulkItems = singleItems.filter((item) => isBulkPack(item.title))
-  const picked = (reasonableSizeItems.length > 0 ? reasonableSizeItems : [...bulkItems, ...bundleItems]).slice(0, 10)
+  const picked = (reasonableSizeItems.length > 0 ? reasonableSizeItems : [...bulkItems, ...bundleItems]).slice(0, 5)
 
   return picked.map((item) => ({
     ...item,
