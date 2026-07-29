@@ -1,13 +1,20 @@
 import React from "react";
 import ProgressBar from "../../../shared/components/ProgressBar";
 import { emotionDefinitions } from "../../../shared/constants/emotionDefinitions";
+import EmotionSignalOrb from "./EmotionSignalOrb";
 
 export default function EmotionResult({ result, onAnalyzeAgain, disabled = false }) {
   if (!result) return null;
 
   return (
     <section className="emotion-analysis" aria-labelledby="emotion-result-title">
-      <h4 id="emotion-result-title">AI의 상태 추정</h4>
+      <div className="emotion-analysis__heading">
+        <span>REFERENCE SIGNAL</span>
+        <h2 id="emotion-result-title">감정 신호 참고값</h2>
+        <p>확정된 감정이나 진단이 아니에요</p>
+      </div>
+
+      <EmotionSignalOrb result={result} loading={result.isLivePreview} />
 
       {result.isLivePreview ? (
         <div className="live-emotion-status" role="status" aria-live="polite">
