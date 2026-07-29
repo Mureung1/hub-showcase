@@ -1,19 +1,20 @@
 import { MOCK_RANKINGS } from '../mockData';
 
 interface LeaderboardProps {
-  activeTab: 'upcoming' | 'released' | 'ranking';
+  activeTab?: 'upcoming' | 'released' | 'ranking';
   rankingPeriod: 'current' | 'last';
   setRankingPeriod: (period: 'current' | 'last') => void;
   showToast: (msg: string) => void;
 }
 
 export default function Leaderboard({
-  activeTab,
+  activeTab = 'ranking',
   rankingPeriod,
   setRankingPeriod,
   showToast,
 }: LeaderboardProps) {
   if (activeTab !== 'ranking') return null;
+
 
   return (
     <section className="ranking-section" id="ranking-dashboard">

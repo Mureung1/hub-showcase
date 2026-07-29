@@ -1,22 +1,19 @@
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { UserSession } from './AuthModal';
 
 interface HeaderProps {
-  activeTab: 'upcoming' | 'released' | 'ranking';
-  setActiveTab: (tab: 'upcoming' | 'released' | 'ranking') => void;
-  setActiveCategory: (cat: string) => void;
   userSession: UserSession | null;
   onOpenAuthModal: () => void;
   onLogout: () => void;
 }
 
 export default function Header({
-  activeTab,
-  setActiveTab,
-  setActiveCategory,
   userSession,
   onOpenAuthModal,
   onLogout,
 }: HeaderProps) {
+  const location = useLocation();
+
   return (
     <>
       {/* Top Bar */}
@@ -26,38 +23,26 @@ export default function Header({
 
       {/* GNB Header */}
       <header>
-        <a
-          href="#"
-          className="logo"
-          onClick={(e) => {
-            e.preventDefault();
-            setActiveTab('upcoming');
-            setActiveCategory('all');
-          }}
-        >
+        <Link to="/upcoming" className="logo">
           dropcast*
-        </a>
+        </Link>
 
         <nav className="nav-filters">
-          {(['upcoming', 'released', 'ranking'] as const).map((tab) => {
-            const labelMap: Record<string, string> = {
-              upcoming: 'upcoming 🗳️',
-              released: 'hot & released 📈',
-              ranking: 'ranking 🏆',
-            };
+          {[
+            { path: '/upcoming', label: 'upcoming 🗳️', alias: '/' },
+            { path: '/released', label: 'hot & released 📈' },
+            { path: '/ranking', label: 'ranking 🏆' },
+          ].map(({ path, label, alias }) => {
+            const isActive =
+              location.pathname === path || (alias && location.pathname === alias);
             return (
-              <a
-                key={tab}
-                href="#"
-                className={`filter-tab ${activeTab === tab ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveTab(tab);
-                  setActiveCategory('all');
-                }}
+              <NavLink
+                key={path}
+                to={path}
+                className={`filter-tab ${isActive ? 'active' : ''}`}
               >
-                {labelMap[tab]}
-              </a>
+                {label}
+              </NavLink>
             );
           })}
         </nav>
@@ -108,3 +93,4 @@ export default function Header({
     </>
   );
 }
+

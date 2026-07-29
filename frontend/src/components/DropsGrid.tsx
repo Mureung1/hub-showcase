@@ -1,10 +1,9 @@
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Drop } from '../App';
 
 interface DropsGridProps {
-  activeTab: 'upcoming' | 'released' | 'ranking';
-  activeCategory: string;
-  setActiveCategory: (cat: string) => void;
-  filteredDrops: Drop[];
+  statusFilter: 'upcoming' | 'released';
+  drops: Drop[];
   setSelectedDropId: (id: string | null) => void;
   castVote: (id: string, isUp: boolean, stakedPoints?: number) => void;
 }
@@ -23,23 +22,38 @@ const getDDay = (dateStr?: string) => {
 };
 
 export default function DropsGrid({
-  activeTab,
-  activeCategory,
-  setActiveCategory,
-  filteredDrops,
+  statusFilter,
+  drops,
   setSelectedDropId,
   castVote,
 }: DropsGridProps) {
-  if (activeTab === 'ranking') return null;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const activeCategory = searchParams.get('category') || 'all';
+
+  const handleCategoryClick = (cat: string) => {
+    if (cat === 'all') {
+      searchParams.delete('category');
+      setSearchParams(searchParams);
+    } else {
+      setSearchParams({ category: cat });
+    }
+  };
+
+  const filteredDrops = drops.filter((d) => {
+    if (d.status !== statusFilter) return false;
+    if (activeCategory !== 'all' && d.category !== activeCategory) return false;
+    return true;
+  });
 
   return (
     <section className="drops-section" id="active-drops">
       <div className="drops-header">
         <h2 className="section-title">
-          {activeTab === 'upcoming' ? 'upcoming prediction markets' : 'hot & released markets'}
+          {statusFilter === 'upcoming' ? 'upcoming prediction markets' : 'hot & released markets'}
         </h2>
         <p className="section-subtitle">
-          {activeTab === 'upcoming'
+          {statusFilter === 'upcoming'
             ? '발매 당일 23:59 KREAM 종가 기준 지분 매수 및 예측 마켓'
             : '주간 일요일 23:59 KREAM 종가 기준 Polymarket 스타일 지분 트레이딩 마켓'}
         </p>
@@ -60,7 +74,7 @@ export default function DropsGrid({
             <button
               key={cat}
               className={`filter-tab-mini ${isSelected ? 'active' : ''}`}
-              onClick={() => setActiveCategory(cat)}
+              onClick={() => handleCategoryClick(cat)}
               style={{
                 background: isSelected ? '#d4ff00' : 'transparent',
                 color: isSelected ? '#000000' : '#ffffff',
@@ -98,6 +112,7 @@ export default function DropsGrid({
                 const target = e.target as HTMLElement;
                 if (target.tagName !== 'BUTTON') {
                   setSelectedDropId(drop.id);
+                  navigate(`/drop/${drop.id}`);
                 }
               }}
             >
@@ -197,3 +212,4 @@ export default function DropsGrid({
     </section>
   );
 }
+
