@@ -7,29 +7,14 @@ import CreditAnalytics from './components/CreditAnalytics';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Load session from localStorage on initialization
-  useEffect(() => {
-    const savedUser = localStorage.getItem('gnu_advisor_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error('Failed to parse saved user credentials', e);
-      }
-    }
-    setLoading(false);
-  }, []);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = (userData) => {
     setUser(userData);
-    localStorage.setItem('gnu_advisor_user', JSON.stringify(userData));
   };
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('gnu_advisor_user');
   };
 
   if (loading) {
