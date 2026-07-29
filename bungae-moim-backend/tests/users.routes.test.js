@@ -32,5 +32,6 @@ describe('GET /api/users/me', () => {
     expect(res.body.data.nickname).toBe('내정보');
     expect(res.body.data.birthDate).toBeNull();
     expect(res.body.data.trustScore).toBe(50);
+    expect(res.body.data.evaluationCount).toBe(0);
   });
 });
