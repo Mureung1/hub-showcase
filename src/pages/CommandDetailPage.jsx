@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CATEGORY_LABELS } from '../data/commands';
 import { fetchCommandById } from '../services/commandsService';
 import { fetchScenarios } from '../services/scenariosService';
 import CopyButton from '../components/CopyButton';
@@ -64,7 +63,7 @@ function CommandDetailPage() {
     return (
         <div className="app-shell">
             <Link to={`/${command.category}`} className="back-link">
-                ← {CATEGORY_LABELS[command.category]} 목록으로
+                ← {command.category_label} 목록으로
             </Link>
 
             <div className="detail-container">

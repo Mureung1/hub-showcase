@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CATEGORY_LABELS } from '../data/commands';
-// import CommandCard from '../components/CommandCard';
-// import { compareByRelevance } from '../utils/commandSort';
 import { isMeaningfulQuery } from '../utils/isMeaningfulQuery';
 import { searchCommands } from '../services/searchService';
 import { fetchCommands } from '../services/commandsService';
@@ -28,10 +25,10 @@ function CommandListPage() {
     const [isLoadingAll, setIsLoadingAll] = useState(true);
     const [errorAll, setErrorAll] = useState(null);
 
-    /*const categoryCommands = useMemo(
-        () => commands.filter((command) => command.category === category),
-        [category]
-    );*/
+    // URL의 category가 실제 DB(categories 테이블)에 있는 값인지, 있다면 한글 라벨이 뭔지.
+    // allCommands와 같은 fetch 결과에서 같이 채워진다 — fetch가 끝나기 전엔 존재 여부조차
+    // 판단할 수 없으므로 null로 시작한다(그동안은 아래 렌더링에서 로딩 화면만 보여줌).
+    const [categoryLabel, setCategoryLabel] = useState(null);
 
     // query를 매 렌더링마다 trim+소문자 변환한 파생값. state로 따로 안 두는 이유:
     // query가 바뀔 때마다 자동으로 다시 계산되면 되는 값이라, 별도 state로 관리하면
@@ -109,30 +106,49 @@ function CommandListPage() {
         setErrorAll(null);
 
         fetchCommands()
-            .then((data) => setAllCommands(data.filter((command) => command.category === category)))
+            .then((data) => {
+                setAllCommands(data.filter((command) => command.category === category));
+                // 필터링 전 전체 데이터에서 찾는다 — allCommands는 이 category로 걸러진 결과라
+                // 존재하지 않는 카테고리든 "존재는 하지만 명령어가 0개"든 똑같이 빈 배열이 되어
+                // 구분이 안 되지만, 이건 전체 목록 기준으로 실제 존재 여부를 판단하므로 정확하다.
+                setCategoryLabel(data.find((command) => command.category === category)?.category_label ?? null);
+            })
             .catch((err) => setErrorAll(err.message))
             .finally(() => setIsLoadingAll(false));
     }, [category]);
 
-    /*const result = useMemo(() => {
-        if (!normalizedQuery) return [];
-        if (!/[a-z가-힣]/i.test(normalizedQuery)) return [];
+    // categoryLabel은 allCommands와 같은 fetch(위 useEffect)에서 채워지므로, 그 fetch가
+    // 끝나기 전까지는 이 category가 실제로 존재하는지조차 판단할 수 없다. 그래서 판단을
+    // 뒤로 미루고 로딩 → 조회 실패 → 존재하지 않음 순서로 하나씩 걸러낸 뒤에만 실제 화면을 그린다.
+    if (isLoadingAll) {
+        return (
+            <div className="app-shell">
+                <Link to="/" className="back-link">
+                    ← 카테고리 선택으로
+                </Link>
+                <p className="terminal-hint">불러오는 중입니다...</p>
+            </div>
+        );
+    }
 
-        return categoryCommands
-            .filter(
-                (command) =>
-                    command.name.toLowerCase().includes(normalizedQuery) ||
-                    command.summary.toLowerCase().includes(normalizedQuery)
-            )
-            .sort((a, b) => compareByRelevance(a, b, normalizedQuery));
-    }, [categoryCommands, normalizedQuery]);*/
+    // 카테고리 존재 여부 자체를 확인하지 못한 경우(네트워크/서버 오류) — "존재하지 않는
+    // 카테고리"(아래)와는 원인이 다르므로 메시지를 구분한다. 이건 확인이 실패한 것이지
+    // 확인 결과 없다고 판명된 게 아니다.
+    if (errorAll) {
+        return (
+            <div className="app-shell">
+                <Link to="/" className="back-link">
+                    ← 카테고리 선택으로
+                </Link>
+                <div className="detail-container not-found">
+                    <p className="terminal-error">-bash: cd: {category}: 에러: {errorAll}</p>
+                </div>
+            </div>
+        );
+    }
 
-    // URL의 category가 CATEGORY_LABELS에 있는 값('unix'/'git')인 경우 그 한글 라벨이 들어오고,
-    // 없는 값(오타난 URL 등)인 경우 undefined가 되어 아래 조건문으로 빠진다.
-    const categoryLabel = CATEGORY_LABELS[category];
-
-    // categoryLabel이 없는 경우(=존재하지 않는 카테고리) 여기서 에러 화면만 보여주고 끝내고,
-    // 있는 경우에만 아래로 내려가 실제 검색 화면(SearchBar/SearchResultList)을 그린다.
+    // URL의 category가 실제 DB(categories 테이블)에 있는 값('unix'/'git')이면 categoryLabel이
+    // 채워져 있고, 없는 값(오타난 URL 등)이면 null로 남아 여기 걸린다.
     if (!categoryLabel) {
         return (
             <div className="app-shell">
