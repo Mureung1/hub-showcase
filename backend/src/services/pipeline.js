@@ -345,12 +345,18 @@ async function updateStep2Results(jobId, result, duration, isFallback = false) {
     result.primary_caption = String(result.primary_caption || "멋진 영상");
   }
 
+  // hashtags를 배열로 변환
+  let hashtags = result.hashtags;
+  if (typeof hashtags === "string") {
+    hashtags = hashtags.split(/\s+/).filter(tag => tag.length > 0);
+  }
+
   // generation_jobs 테이블 업데이트
   const { error: jobUpdateError } = await supabase
     .from("generation_jobs")
     .update({
       step2_caption: result.primary_caption,
-      step2_hashtags: result.hashtags,
+      step2_hashtags: hashtags,
       step2_similarity_score: result.similarity_score || 0.7,
       progress: 50,
       current_step: 2,
