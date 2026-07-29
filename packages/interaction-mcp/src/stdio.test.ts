@@ -166,14 +166,14 @@ test('initialize waits until the Broker accepts one held lifecycle channel', asy
   }
 })
 
-test('held lifecycle stays available past an HTTP response body timeout', async () => {
+test('held lifecycle stays available when global fetch would expire its response body', async () => {
   const broker = await startBroker(async (request) => {
     if (request.kind === 'handshake') {
       return { protocolVersion: 1, kind: 'handshake_accepted' }
     }
     return new Promise<InteractionBrokerResponse>(() => undefined)
   })
-  const client = startAdapter(broker.url, { fetchBodyTimeoutMs: 40 })
+  const client = startAdapter(broker.url, { legacyFetchBodyTimeoutMs: 40 })
   try {
     await initialize(client)
     await new Promise((resolve) => setTimeout(resolve, 120))
@@ -485,15 +485,15 @@ type AdapterClient = {
 
 function startAdapter(
   brokerUrl: string,
-  options: { readonly fetchBodyTimeoutMs?: number } = {},
+  options: { readonly legacyFetchBodyTimeoutMs?: number } = {},
 ): AdapterClient {
   const preload = fileURLToPath(
-    new URL('./testing/fetch-body-timeout.mjs', import.meta.url),
+    new URL('./testing/inject-fetch-body-timeout.ts', import.meta.url),
   )
   const child = spawn(
     process.execPath,
     [
-      ...(options.fetchBodyTimeoutMs === undefined
+      ...(options.legacyFetchBodyTimeoutMs === undefined
         ? []
         : ['--import', preload]),
       'dist/stdio.js',
@@ -507,11 +507,11 @@ function startAdapter(
           'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq',
         AY_PLE_INTERACTION_RUNTIME_BINDING:
           `runtime_${'a'.repeat(32)}`,
-        ...(options.fetchBodyTimeoutMs === undefined
+        ...(options.legacyFetchBodyTimeoutMs === undefined
           ? {}
           : {
               AY_PLE_TEST_FETCH_BODY_TIMEOUT_MS: String(
-                options.fetchBodyTimeoutMs,
+                options.legacyFetchBodyTimeoutMs,
               ),
             }),
       },

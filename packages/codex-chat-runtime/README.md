@@ -60,14 +60,14 @@ Tracked unpatched snapshot, 세 manifest와 patch series는 review 대상이다.
 Canonical manifest는 다음을 서로 연결한다.
 
 - exact source commit, immutable unpatched manifest와 일곱 단계 complete ordered patch stack `e9bee416c02ff419dc961f092de85df54b40e7456a304d62470ac19ff64f7a8b`
-- source-only `manifests/patched-source.json` SHA-256 `c8b31958e041efc26cfd60cfaf648cd0b1a0db93ae37904d1d6d58871e993bce`와 production `manifests/production-runtime-darwin-arm64.json` SHA-256 `84f79a9b0e7d25f6b4a1d00dd930761ea988e270d8d67410f941ffe34d932c95`
+- source-only `manifests/patched-source.json` SHA-256 `c8b31958e041efc26cfd60cfaf648cd0b1a0db93ae37904d1d6d58871e993bce`와 production `manifests/production-runtime-darwin-arm64.json` SHA-256 `4a1f38db58e6d7119b7b6c2d6ff0910a71bedb18eb9fe72448861826d78f9e6b`
 - reviewed macOS arm64 `uv_build==0.11.19` build-backend wheel과 offline wheel build
 - patched SDK wheel `0cca6e81ed5086b9b11b79c66d9eaf6ddfec5c7cf768643b9b6c07f07fb34cb9`
 - standalone CPython `3.10.18` build `20250818`와 exact archive digest
 - `openai-codex-cli-bin==0.144.4` 및 Pydantic dependency closure의 complete wheel roster
 - installed `_message_router.py`와 final patched-source digest
 - tracked `python/bridge` 5-file roster와 installed `bundle/bridge` roster·entrypoint
-- bundle-local import path, native executable, `codex-cli 0.144.4`와 complete tree-roster digest `f387600fe960173a36b29bde6b96dfa5500faebdced243afee64d27599cf2799`
+- bundle-local import path, native executable, `codex-cli 0.144.4`와 complete tree-roster digest `f3a86d2f03c05073301554f436d58e24de4948e3fc887f4aa99ee80ce76ac6db`
 
 이 package의 current production manifest v1과 ignored materialization은 repository-local SDK·bridge non-regression authority다. 중단한 public release lane의 recipient manifest assembler, download·archive·cache resolver와 production host는 2026-07-24 tracked graph에서 제거했다. 당시 public recipient contract와 구현 증거는 historical ADR·Spec·ticket에만 보존한다.
 

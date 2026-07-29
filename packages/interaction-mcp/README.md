@@ -32,4 +32,4 @@ npm run typecheck -w @ay-ple/interaction-mcp
 npm run verify:package-root -w @ay-ple/interaction-mcp
 ```
 
-Build는 Node shebang을 가진 `dist/stdio.js`를 만들고 executable mode를 설정한다. Test는 real built process와 mock loopback Broker로 handshake → held lifecycle → initialize → tools/list → held call → structured result, synthetic response-body timeout을 넘긴 lifecycle 유지, handshake·lifecycle 거절, startup 중 STDIN EOF의 즉시 abort, Broker failure, transport loss와 cancellation을 검증한다. Package-root verification은 default-condition export, shebang과 mode를 반복 build 뒤 확인한다.
+Build는 Node shebang을 가진 `dist/stdio.js`를 만들고 executable mode를 설정한다. Test는 real built process와 mock loopback Broker로 handshake → held lifecycle → initialize → tools/list → held call → structured result, legacy global fetch라면 발생할 synthetic response-body timeout과 독립적인 lifecycle 유지, handshake·lifecycle 거절, startup 중 STDIN EOF의 즉시 abort, Broker failure, transport loss와 cancellation을 검증한다. Package-root verification은 default-condition export, shebang과 mode를 반복 build 뒤 확인한다.
