@@ -11,7 +11,7 @@ export function LandingHero({ onStart }: LandingHeroProps) {
   return (
     <>
       <section
-        className="relative grid min-h-[90svh] overflow-hidden bg-[#e9f3ee] text-white [isolation:isolate]"
+        className="relative grid min-h-[88svh] overflow-hidden bg-[#e9f3ee] text-white [isolation:isolate]"
         id="service"
       >
         <div
@@ -19,7 +19,7 @@ export function LandingHero({ onStart }: LandingHeroProps) {
           aria-hidden="true"
         >
           <img
-            className="h-full w-full scale-[1.08] object-cover object-center"
+            className="h-full w-full object-cover object-center"
             src={workspaceHeroUrl}
             alt=""
           />
@@ -35,7 +35,7 @@ export function LandingHero({ onStart }: LandingHeroProps) {
               <br />
             </h1>
             <button
-              className="inline-flex min-h-14 items-center justify-center gap-2.5 rounded-full bg-[#333a36] px-7 text-base font-extrabold text-[#6FE3A8] shadow-[0_12px_28px_rgba(20,35,28,0.16)] transition duration-300 hover:-translate-y-1 hover:bg-[#0f7a4e] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#16A46A] sm:px-8 sm:text-lg"
+              className="inline-flex min-h-14 items-center justify-center gap-2.5 rounded-full bg-[#232e28] px-7 text-base font-extrabold text-white shadow-[100px_100px_rgba(0, 255, 136, 0.16)] transition duration-300 hover:-translate-y-1 hover:bg-[#0f7a4e] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#16A46A] sm:px-8 sm:text-lg"
               type="button"
               onClick={onStart}
             >
