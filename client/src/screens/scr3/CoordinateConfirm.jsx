@@ -5,7 +5,8 @@ import { Icon } from '../../components/decor/Icon.jsx'
 import { InfoCard } from '../../components/cards/InfoCard.jsx'
 import { Button } from '../../components/forms/Button.jsx'
 import { NAV_ITEMS } from '../../mocks/mockData.js'
-import { getLetterByToken, getRoles, getSuggestions, confirmLetter } from '../../lib/api.js'
+import { getLetterByToken, getRoles, getResponses, getSuggestions, confirmLetter } from '../../lib/api.js'
+import { countResponded, getSelectedLocationIds, getSelectedSlotIds, tallyVotes } from '../../lib/participantStatus.js'
 import bgVineWash from '../../assets/bg-vine-wash.jpg'
 import laceDoily from '../../assets/vintage-lace-doily.png'
 import laceTrimStrip from '../../assets/vintage-lace-trim-strip.png'
@@ -26,10 +27,15 @@ export function CoordinateConfirm() {
   const [errorMsg, setErrorMsg] = useState('')
   const [letter, setLetter] = useState(null)
   const [roles, setRoles] = useState([])
+  const [participants, setParticipants] = useState([])
   const [confirmed, setConfirmed] = useState(false)
 
   const [selectedSlotId, setSelectedSlotId] = useState(null)
   const [selectedLocationId, setSelectedLocationId] = useState(null)
+  const [slotVoteCounts, setSlotVoteCounts] = useState({})
+  const [locationVoteCounts, setLocationVoteCounts] = useState({})
+  const [slotTieBroken, setSlotTieBroken] = useState(false)
+  const [locationTieBroken, setLocationTieBroken] = useState(false)
 
   const [suggestStatus, setSuggestStatus] = useState('idle') // idle | loading | done | fallback | error
   const [suggestion, setSuggestion] = useState(null)
@@ -45,20 +51,94 @@ export function CoordinateConfirm() {
       setErrorMsg('모임 링크가 올바르지 않아요')
       return
     }
-    Promise.all([getLetterByToken(token), getRoles(token)]).then(([letterResult, rolesResult]) => {
+
+    async function load() {
+      const [letterResult, rolesResult, responsesResult] = await Promise.all([
+        getLetterByToken(token),
+        getRoles(token),
+        getResponses(token),
+      ])
       if (cancelled) return
       if (letterResult.error) {
         setLoadStatus('error')
         setErrorMsg(letterResult.error)
         return
       }
-      setLetter(letterResult.data)
+      if (rolesResult.error) {
+        setLoadStatus('error')
+        setErrorMsg(rolesResult.error)
+        return
+      }
+      if (responsesResult.error) {
+        setLoadStatus('error')
+        setErrorMsg(responsesResult.error)
+        return
+      }
+
+      const letterData = letterResult.data
+      const participantsData = responsesResult.data ?? []
+      setLetter(letterData)
       setRoles(rolesResult.data ?? [])
-      setConfirmed(Boolean(letterResult.data.confirmed_at))
-      setSelectedSlotId(letterResult.data.confirmed_slot_id ?? null)
-      setSelectedLocationId(letterResult.data.confirmed_location_id ?? null)
+      setParticipants(participantsData)
+      setConfirmed(Boolean(letterData.confirmed_at))
+
+      // 이미 확정된 모임이면 확정된 값을 그대로 보여준다 — 투표 재집계로 덮어쓰지 않는다.
+      if (letterData.confirmed_slot_id || letterData.confirmed_location_id) {
+        setSelectedSlotId(letterData.confirmed_slot_id ?? null)
+        setSelectedLocationId(letterData.confirmed_location_id ?? null)
+        setLoadStatus('ready')
+        return
+      }
+
+      const slotIds = (letterData.candidate_slots ?? []).map((s) => s.id)
+      const locationIds = (letterData.candidate_locations ?? []).map((l) => l.id)
+      const slotCounts = tallyVotes(participantsData, slotIds, getSelectedSlotIds)
+      const locationCounts = tallyVotes(participantsData, locationIds, getSelectedLocationIds)
+      setSlotVoteCounts(slotCounts)
+      setLocationVoteCounts(locationCounts)
+
+      const slotWinners = topCandidates(slotCounts)
+      const locationWinners = topCandidates(locationCounts)
+      const needsTieBreak = slotWinners.ids.length > 1 || locationWinners.ids.length > 1
+
+      let tieSuggestion = null
+      if (needsTieBreak) {
+        setSuggestStatus('loading')
+        const suggestResult = await getSuggestions(token)
+        if (cancelled) return
+        if (!suggestResult.error && !suggestResult.data?.fallback) {
+          tieSuggestion = suggestResult.data
+          setSuggestion(tieSuggestion)
+          setSuggestStatus('done')
+        } else {
+          // 동점 해소용 자동 호출이라 실패해도 에러로 보여주지 않고 조용히 첫 후보로 폴백한다.
+          setSuggestStatus('idle')
+        }
+      }
+
+      if (slotWinners.max > 0) {
+        if (slotWinners.ids.length === 1) {
+          setSelectedSlotId(slotWinners.ids[0])
+        } else {
+          const aiPick = tieSuggestion?.suggested_slot_id
+          setSelectedSlotId(slotWinners.ids.includes(aiPick) ? aiPick : slotWinners.ids[0])
+          setSlotTieBroken(true)
+        }
+      }
+      if (locationWinners.max > 0) {
+        if (locationWinners.ids.length === 1) {
+          setSelectedLocationId(locationWinners.ids[0])
+        } else {
+          const aiPick = tieSuggestion?.suggested_location_id
+          setSelectedLocationId(locationWinners.ids.includes(aiPick) ? aiPick : locationWinners.ids[0])
+          setLocationTieBroken(true)
+        }
+      }
+
       setLoadStatus('ready')
-    })
+    }
+
+    load()
     return () => {
       cancelled = true
     }
@@ -90,7 +170,7 @@ export function CoordinateConfirm() {
   }
 
   async function confirm() {
-    if (!selectedSlotId || !selectedLocationId || saveStatus === 'saving') return
+    if (!selectedSlotId || !selectedLocationId || !letter?.responses_closed || saveStatus === 'saving') return
     setSaveStatus('saving')
     setSaveErrorMsg('')
     const result = await confirmLetter(token, {
@@ -112,7 +192,10 @@ export function CoordinateConfirm() {
   const selectedSlot = slots.find((s) => s.id === selectedSlotId)
   const selectedLocation = locations.find((l) => l.id === selectedLocationId)
   const roleSummary = roles.length ? `${roles.length}명 배정 완료` : '역할 미정'
-  const canConfirm = Boolean(selectedSlotId && selectedLocationId)
+  const totalParticipants = participants.length
+  const respondedCount = countResponded(participants)
+  const responsesClosed = Boolean(letter?.responses_closed)
+  const canConfirm = Boolean(selectedSlotId && selectedLocationId) && responsesClosed
 
   return (
     <div
@@ -298,6 +381,8 @@ export function CoordinateConfirm() {
                   items={slots.map((s) => ({ id: s.id, label: s.label }))}
                   selectedId={selectedSlotId}
                   onSelect={setSelectedSlotId}
+                  voteCounts={slotVoteCounts}
+                  note={slotTieBroken ? '동점이라 자동으로 골랐어요 — 아래에서 바로 바꿀 수 있어요' : ''}
                   reason={suggestStatus === 'done' ? suggestion?.suggested_slot_reason : ''}
                   emptyMessage="후보 시간이 없어요"
                 />
@@ -307,6 +392,8 @@ export function CoordinateConfirm() {
                   items={locations.map((l) => ({ id: l.id, label: l.name }))}
                   selectedId={selectedLocationId}
                   onSelect={setSelectedLocationId}
+                  voteCounts={locationVoteCounts}
+                  note={locationTieBroken ? '동점이라 자동으로 골랐어요 — 아래에서 바로 바꿀 수 있어요' : ''}
                   reason={suggestStatus === 'done' ? suggestion?.suggested_location_reason : ''}
                   emptyMessage="후보 장소가 없어요"
                 />
@@ -327,6 +414,19 @@ export function CoordinateConfirm() {
                 <Button variant="primary" block disabled={!canConfirm || saveStatus === 'saving'} soundType="finish" onClick={confirm}>
                   {saveStatus === 'saving' ? '확정하는 중…' : '확정하기'}
                 </Button>
+
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)', textAlign: 'center' }}>
+                  {responsesClosed
+                    ? `${respondedCount}/${totalParticipants}명 투표 완료`
+                    : (
+                      <>
+                        {`${respondedCount}/${totalParticipants}명 투표 완료 · 아직 마감되지 않았어요 — `}
+                        <Link to={`/scr0/status${token ? `?token=${token}` : ''}`} style={{ color: 'var(--wedgwood-deep)' }}>
+                          참가자 현황에서 마감할 수 있어요
+                        </Link>
+                      </>
+                    )}
+                </div>
 
                 {saveStatus === 'error' ? (
                   <div style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--ink-soft)' }}>{saveErrorMsg}</div>
@@ -377,7 +477,16 @@ function LetterRow({ label, value }) {
   )
 }
 
-function CandidatePicker({ label, items, selectedId, onSelect, reason, emptyMessage }) {
+// 후보 id별 득표 수(counts)에서 최다 득표 후보 id들과 득표 수를 반환한다.
+// 아무도 투표하지 않았으면(max === 0) ids는 빈 배열 — 이 경우 자동 선택하지 않는다.
+function topCandidates(counts) {
+  const values = Object.values(counts)
+  const max = values.length ? Math.max(0, ...values) : 0
+  if (max === 0) return { max: 0, ids: [] }
+  return { max, ids: Object.keys(counts).filter((id) => counts[id] === max) }
+}
+
+function CandidatePicker({ label, items, selectedId, onSelect, voteCounts, note, reason, emptyMessage }) {
   if (!items.length) {
     return (
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -389,11 +498,22 @@ function CandidatePicker({ label, items, selectedId, onSelect, reason, emptyMess
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
       <div style={{ fontFamily: 'var(--font-caption-alt)', fontSize: '11px', letterSpacing: '0.15em', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>{label}</div>
-      {items.map((item) => (
-        <InfoCard key={item.id} selected={item.id === selectedId} onClick={() => onSelect(item.id)}>
-          <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--ink)' }}>{item.label}</div>
-        </InfoCard>
-      ))}
+      {items.map((item) => {
+        const count = voteCounts?.[item.id] ?? 0
+        return (
+          <InfoCard key={item.id} selected={item.id === selectedId} onClick={() => onSelect(item.id)}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+              <div style={{ fontFamily: 'var(--font-body)', fontSize: '14px', color: 'var(--ink)' }}>{item.label}</div>
+              {count > 0 ? (
+                <div style={{ fontFamily: 'var(--font-caption-alt)', fontSize: '11px', color: 'var(--ink-soft)', whiteSpace: 'nowrap' }}>{`${count}표`}</div>
+              ) : null}
+            </div>
+          </InfoCard>
+        )
+      })}
+      {note ? (
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ink-soft)' }}>{note}</div>
+      ) : null}
       {reason && selectedId ? (
         <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--ink-soft)' }}>{reason}</div>
       ) : null}

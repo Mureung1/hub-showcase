@@ -14,3 +14,20 @@ export function countResponded(participants) {
 export function getSelectedSlotIds(participant) {
   return participant.responses?.selected_slot_ids ?? []
 }
+
+export function getSelectedLocationIds(participant) {
+  return participant.responses?.selected_location_ids ?? []
+}
+
+// 후보 id별 득표 수 집계. getIds는 참여자 1명이 선택한 후보 id 배열을 반환하는 함수
+// (getSelectedSlotIds 또는 getSelectedLocationIds).
+export function tallyVotes(participants, candidateIds, getIds) {
+  const counts = {}
+  for (const id of candidateIds) counts[id] = 0
+  for (const participant of participants) {
+    for (const id of getIds(participant)) {
+      if (id in counts) counts[id] += 1
+    }
+  }
+  return counts
+}
