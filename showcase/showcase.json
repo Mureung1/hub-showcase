@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "title": "Decision log - 여러 AI의 답변을, 나의 한 가지 결정으로",
+  "summary": "비전공자가 여러 AI에게 동시에 묻고 답변을 쟁점 단위로 비교해, 스스로 내린 결정을 기록으로 남기는 도구입니다.",
+  "githubUser": "lymsla(이용민)",
+  "demoUrl": "https://sparkly-muffin-334d16.netlify.app/",
+  "demoVideoUrl": "",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/home.webp",
+    "screenshots/agenda-list.webp",
+    "screenshots/conflict-resolve.webp",
+    "screenshots/recheck.webp",
+    "screenshots/final-answer.webp"
+  ],
+  "problem": "비전공자가 개발할 때 많은 부분을 AI에게 질문합니다. 기술적 베이스가 없기 때문에 AI의 답변이 사실상의 판단 근거가 됩니다. 하지만 AI 답변은 틀릴 때도 있습니다. 그래서 똑같은 질문을 여러 AI에 반복하지만, 전개 방식이 제각각이고 상충하는 내용까지 섞여 있어 다 읽는 데 시간을 다 씁니다. 결국 양에 압도되어 핵심을 놓치고 맙니다. 실행은 했는데, 왜 그렇게 했는지는 아무 데도 남지 않습니다.",
+  "targetUsers": [
+    "비전공자 출신 PM·기획자",
+    "기술 결정을 직접 내려야 하는 창업가",
+    "AI로 개발을 배우는 학생과 주니어 개발자",
+    "전문 분야가 아닌 새 도메인에서 성과를 내야 하는 사람"
+  ],
+  "features": [
+    "하나의 질문을 Claude·ChatGPT·Gemini에 동시에 보내고, 세 답변을 같은 구조로 받습니다.",
+    "Manager AI가 세 답변을 쟁점 단위로 나누고, 세 AI가 같은 결론을 낸 쟁점은 자동으로 통과시킵니다.",
+    "의견이 갈린 쟁점만 따로 모아 보여주고, 채택·직접 입력·재검토·제외 중 하나로 직접 판단합니다.",
+    "각 쟁점이 어느 AI의 어느 대목에서 나왔는지 근거를 함께 보여줍니다.",
+    "판단이 끝나면 최종 답변과 Decision Note를 정리해 저장합니다.",
+    "저장한 결정을 다음 질문의 맥락으로 이어서 씁니다."
+  ],
+  "featureTags": [
+    "3사 동시 질문",
+    "쟁점 단위 비교",
+    "합의 자동 통과",
+    "충돌 직접 판단",
+    "근거 추적",
+    "결정 기록",
+    "맥락 승계"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Vite",
+    "Express",
+    "Zod",
+    "Supabase",
+    "PostgreSQL",
+    "Server-Sent Events",
+    "Claude API",
+    "OpenAI API",
+    "Gemini API"
+  ],
+  "techHighlights": [
+    "세 AI Provider를 서버에서 병렬 호출하고, 진행 상태를 Server-Sent Events로 화면에 실시간 전달합니다. 45초 타임아웃과 1회 재시도, 실패한 AI 제외를 서버가 처리해 일부가 실패해도 남은 답변으로 계속 진행합니다.",
+    "Zod 스키마를 공유 패키지에 한 번만 정의해 화면·서버·AI 응답·DB 응답이 같은 데이터 계약을 사용합니다. 외부에서 온 데이터는 검증 전까지 신뢰하지 않습니다.",
+    "Manager AI는 쟁점을 묶는 단계와 합의·충돌을 판정하는 단계를 분리해 설계했습니다. 판정 규칙은 AI가 아니라 서버 코드가 갖고, AI에게는 근거가 된 원문 문장을 함께 요구해 원문에서 확인되지 않는 비교 결과는 저장하지 않습니다."
+  ],
+  "developmentWithAI": "저는 문제 정의와 제품 범위, 화면과 정책을 직접 결정했습니다. AI는 결정에 필요한 선택지와 근거를 정리하고, 확정한 Spec을 코드로 옮겼습니다. 저는 구현 결과를 완료 조건과 하나씩 대조해 통과와 수정을 판정하고, 브라우저와 실제 API 호출로 직접 확인했습니다. 결정의 근거는 ADR로, 진행 상황은 문서로 남겨 다음 작업이 같은 기준에서 이어지게 했습니다.",
+  "agent": {
+    "summary": "역할이 다른 AI 작업 세션을 나눠서 썼습니다. 한쪽은 정책 결정과 Spec 작성을 돕고, 다른 쪽은 확정된 Spec의 범위만 구현합니다. 완료 전에는 코드를 고치지 않는 QA 에이전트가 완료 조건을 하나씩 판정합니다. 지켜야 할 규칙과 금지 사항은 CLAUDE.md에 고정해 AI가 임의로 판단하는 범위를 좁혔습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Spec 설계 Agent",
+        "purpose": "정책 선택지와 추천 이유를 제시해 결정을 받아 적고, Spec과 완료 조건을 작성하며 문서 사이의 모순을 관리합니다."
+      },
+      {
+        "type": "agent",
+        "name": "구현 Agent",
+        "purpose": "확정된 Spec의 범위만 구현하고 typecheck·lint·build와 브라우저 시나리오로 검증합니다."
+      },
+      {
+        "type": "agent",
+        "name": "QA Reviewer 서브에이전트",
+        "purpose": "코드를 수정하지 않고 완료 조건별로 통과·실패·미확인을 근거와 함께 판정합니다."
+      },
+      {
+        "type": "skill",
+        "name": "디자인 점검 Skill",
+        "purpose": "판단이 쉬운 화면인지, 상태 구분과 정보 위계가 분명한지를 체크리스트로 점검합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "Spec 확정 Workflow",
+        "steps": [
+          "기준 문서에서 이미 확정된 사항 정리",
+          "결정할 항목을 선택지와 추천으로 제시",
+          "사용자 결정을 Spec에 기록",
+          "완료 조건 확정",
+          "Spec 파일과 Spec 목록 문서 갱신"
+        ]
+      },
+      {
+        "name": "기능 구현 Workflow",
+        "steps": [
+          "관련 Spec과 현재 진행 상황 확인",
+          "수정 범위와 완료 조건 정리",
+          "Task 단위로 구현",
+          "typecheck·lint·build 실행",
+          "브라우저와 실제 API로 시나리오 확인",
+          "진행 상황 문서 갱신",
+          "Task 단위로 커밋"
+        ]
+      },
+      {
+        "name": "QA·완료 Workflow",
+        "steps": [
+          "QA 에이전트에 읽기 전용 검증 요청",
+          "완료 조건별 판정과 근거 수집",
+          "확인하지 못한 항목을 수동 확인 목록으로 정리",
+          "수정 사항 반영",
+          "Spec 상태를 완료로 갱신"
+        ]
+      }
+    ]
+  }
+}
