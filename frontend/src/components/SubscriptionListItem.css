@@ -21,10 +21,21 @@
 }
 
 .subscription-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-inline-gap);
+  min-width: 0;
   font-size: var(--font-size-body);
   font-weight: 600;
   color: var(--color-text);
-  margin: 0 0 2px;
+  margin: 0 0 var(--space-xs);
+}
+
+.subscription-name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .subscription-meta {
@@ -33,15 +44,8 @@
   margin: 0;
 }
 
-.subscription-summary {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  gap: var(--space-inline-gap);
-  flex-shrink: 0;
-}
-
 .subscription-amount {
+  flex-shrink: 0;
   font-size: var(--font-size-body);
   font-weight: 700;
   color: var(--color-text);

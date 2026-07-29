@@ -1,14 +1,14 @@
 import { Router } from 'express'
 import { buildGoogleAuthUrl, fetchGoogleProfile } from '../lib/googleOAuth.js'
 import { prisma } from '../lib/prisma.js'
-import { signAccessToken, signInviteState, verifyInviteState } from '../lib/jwt.js'
+import { signAccessToken, signRedirectState, verifyRedirectState } from '../lib/jwt.js'
 import { googleAuthRateLimiter, googleCallbackRateLimiter } from '../middleware/rateLimit.js'
 
 const router = Router()
 
 router.get('/google', googleAuthRateLimiter, (req, res) => {
   const { state } = req.query
-  res.redirect(buildGoogleAuthUrl(state ? signInviteState(state) : undefined))
+  res.redirect(buildGoogleAuthUrl(state ? signRedirectState(state) : undefined))
 })
 
 router.get('/google/callback', googleCallbackRateLimiter, async (req, res, next) => {
@@ -40,8 +40,7 @@ router.get('/google/callback', googleCallbackRateLimiter, async (req, res, next)
     let redirect = '/'
     if (state) {
       try {
-        const subscriptionId = verifyInviteState(state)
-        redirect = `/join/${encodeURIComponent(subscriptionId)}`
+        redirect = verifyRedirectState(state)
       } catch {
         redirect = '/'
       }

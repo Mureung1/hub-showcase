@@ -76,8 +76,6 @@ const SubscriptionDetail = () => {
   const handleKakaoShare = (joinUrl, serviceName) => {
     if (!window.Kakao?.isInitialized()) return
 
-    // 템플릿 링크가 `http://localhost:5173/${path}` 형태(도메인 뒤 슬래시가 이미 고정)라
-    // path 변수에는 선행 슬래시 없이 넘겨야 함 (join/12)
     const path = new URL(joinUrl).pathname.replace(/^\//, '')
 
     window.Kakao.Share.sendCustom({
@@ -167,7 +165,7 @@ const SubscriptionDetail = () => {
   if (status === 'loading') {
     content = <p className="subscription-detail-message">불러오는 중...</p>
   } else if (status === 'unauthorized') {
-    content = <LoginRequired message="로그인 후 파티 상세 정보를 확인할 수 있어요." />
+    content = <LoginRequired message="로그인하고 파티 상세 정보를 확인해보세요!" />
   } else if (status === 'notfound') {
     content = <p className="subscription-detail-message">존재하지 않는 파티예요.</p>
   } else if (status === 'forbidden') {
@@ -195,8 +193,8 @@ const SubscriptionDetail = () => {
             <span className="detail-value">매달 {billingDay}일</span>
           </div>
           <div className="detail-row">
-            <span className="detail-label">정산 인원</span>
-            <span className="detail-value">{memberCount === 1 ? '개인' : `${memberCount}인 공유`}</span>
+            <span className="detail-label">파티 인원</span>
+            <span className="detail-value">{memberCount}명</span>
           </div>
           <div className="detail-row detail-row-highlight">
             <span className="detail-label">내 몫</span>
@@ -283,16 +281,19 @@ const SubscriptionDetail = () => {
                 type="button"
                 className="settlement-start-btn"
                 onClick={handleCreateSettlement}
-                disabled={createStatus === 'submitting'}
+                disabled={createStatus === 'submitting' || members.length === 0}
               >
                 {createStatus === 'submitting' ? '생성 중...' : '이번 달 정산 시작'}
               </button>
             )}
           </div>
+          {role === 'owner' && membersStatus === 'success' && members.length === 0 && (
+            <p className="member-list-message">아직 가입한 파티원이 없어 정산을 시작할 수 없어요.</p>
+          )}
           {createStatus === 'error' && <p className="form-error">{createErrorMessage}</p>}
           {settlementsStatus === 'idle' && <p className="member-list-message">불러오는 중...</p>}
           {settlementsStatus === 'error' && <p className="member-list-message">정산 이력을 불러오지 못했어요.</p>}
-          {settlementsStatus === 'success' && settlements.length === 0 && (
+          {settlementsStatus === 'success' && settlements.length === 0 && !(role === 'owner' && members.length === 0) && (
             <p className="member-list-message">아직 정산 이력이 없어요.</p>
           )}
           {settlementsStatus === 'success' && settlements.length > 0 && (
@@ -325,7 +326,7 @@ const SubscriptionDetail = () => {
 
         {role === 'owner' && (
           <div className="subscription-detail-card">
-            <p className="detail-section-title">정산금 받을 계좌</p>
+            <p className="detail-section-title">계좌 정보</p>
             <div className="detail-row">
               <span className="detail-label">은행</span>
               <span className="detail-value">{bankAccount.bankName}</span>

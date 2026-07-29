@@ -29,8 +29,9 @@ const Layout = () => {
             소개
           </Link>
           {!isSubscriptionFormPage && (
-            <Link to="/subscriptions/new" className="gnb-cta">
-              + 구독 서비스 등록
+            <Link to="/subscriptions/new" className="gnb-cta" aria-label="구독 서비스 등록">
+              <span aria-hidden="true">+</span>
+              <span className="gnb-cta-label"> 구독 서비스 등록</span>
             </Link>
           )}
           {user ? (
