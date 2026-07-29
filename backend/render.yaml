@@ -2,7 +2,7 @@ services:
   - type: web
     name: naver-challenge-backend
     runtime: node
-    buildCommand: npm install --legacy-peer-deps && npm run build && ./node_modules/.bin/prisma generate
+    buildCommand: rm -rf node_modules && npm install --legacy-peer-deps && npm run db:generate && npx prisma migrate deploy && npm run build
     startCommand: npm run dev
     envVars:
       - key: NODE_ENV
