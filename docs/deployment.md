@@ -30,7 +30,7 @@ VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
-다음 값은 Development, Preview, Production 각각의 Sensitive 환경 변수로 둔다. 실제 값은 저장소·문서·빌드 출력에 기록하지 않는다.
+다음 값은 Preview와 Production의 Sensitive 환경 변수로 둔다. Vercel은 Development 환경의 Sensitive 변수를 지원하지 않으므로 로컬 개발에서는 `.env.local`만 사용한다. 실제 값은 저장소·문서·빌드 출력에 기록하지 않는다.
 
 ```text
 IMPORT_APP_ORIGIN
@@ -146,6 +146,8 @@ gh run view <run-id> --log-failed
 8. 기존 데이터 변환 대상이 0건인지 확인하고, 표현이 다른 대표 상황으로 꺼내보기를 확인한다.
 
 Batch 제출과 결과 반영은 자동 배포에 넣지 않는다. 두 명령의 `--confirm`은 서로 다른 승인 단계이며, 실제 API 키와 제목·메모는 출력하거나 작업 기록에 남기지 않는다. 제출 결과를 연결하는 로컬 상태 파일은 `scripts/retrieve_backfill/state/`에 있으므로 결과 반영도 같은 환경에서 실행한다.
+
+Gemini Embedding 2의 Batch API는 Free Tier에서 제공되지 않는다. `GEMINI_API_KEY`가 연결된 프로젝트를 Paid Tier로 전환하고, Prepay 계정이라면 사용 가능한 잔액이 있는지 확인한 뒤에만 Batch를 제출한다.
 
 문제가 생기면 보관함 조회·저장과 보관함 검색을 유지하고 꺼내보기 API만 비활성화한다. 의미 검색 실패를 보관함 단어 검색으로 자동 전환하지 않는다. 벡터와 변환 작업 테이블은 원본 인사이트와 분리되어 있으므로 복구 과정에서 인사이트를 삭제하지 않는다.
 

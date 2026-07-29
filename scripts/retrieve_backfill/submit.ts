@@ -136,22 +136,40 @@ export async function runSubmitCommand(
 
     process.stdout.write(`Gemini 배치: ${batch.name}\n`);
     process.stdout.write(`제출한 인사이트: ${documents.length}건\n`);
-  } catch {
-    await reconcileBatchUsage(adminClient, {
-      reservationId,
-      settlement: 'reserved-maximum',
-    });
+  } catch (error: unknown) {
+    await reconcileBatchUsage(
+      adminClient,
+      createdBatchName === null && isRejectedApiRequest(error)
+        ? {
+            promptTokens: 0,
+            reservationId,
+            settlement: 'actual',
+          }
+        : {
+            reservationId,
+            settlement: 'reserved-maximum',
+          }
+    );
 
     if (createdBatchName) {
       throw new Error(
         cancellationConfirmed
           ? '제출 기록을 저장하지 못해 생성된 Gemini 배치를 취소했습니다.'
-          : '제출 기록을 저장하지 못했고 생성된 Gemini 배치의 취소 여부를 확인하지 못했습니다.'
+          : '제출 기록을 저장하지 못했고 생성된 Gemini 배치의 취소 여부를 확인하지 못했습니다.',
+        { cause: error }
+      );
+    }
+
+    if (isPaidTierPreconditionFailure(error)) {
+      throw new Error(
+        'Gemini Batch는 Paid Tier 프로젝트에서만 사용할 수 있습니다. API 키의 결제 상태를 확인해 주세요.',
+        { cause: error }
       );
     }
 
     throw new Error(
-      'Gemini 배치를 제출하거나 제출 기록을 저장하지 못했습니다.'
+      'Gemini 배치를 제출하거나 제출 기록을 저장하지 못했습니다.',
+      { cause: error }
     );
   }
 }
@@ -172,4 +190,25 @@ if (entrypoint && import.meta.url === pathToFileURL(resolve(entrypoint)).href) {
     process.stderr.write(`${message}\n`);
     process.exitCode = 1;
   });
+}
+
+function isRejectedApiRequest(error: unknown) {
+  if (!isRecord(error) || typeof error.status !== 'number') {
+    return false;
+  }
+
+  return error.status >= 400 && error.status < 600;
+}
+
+function isPaidTierPreconditionFailure(error: unknown) {
+  return (
+    isRecord(error) &&
+    error.status === 400 &&
+    typeof error.message === 'string' &&
+    error.message.includes('FAILED_PRECONDITION')
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
