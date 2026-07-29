@@ -289,6 +289,12 @@ export function ProgressWorkspace() {
               </div>
             </div>
 
+            {pct === 100 ? (
+              <Link to={`/scr5/review${token ? `?token=${token}` : ''}`} style={{ textDecoration: 'none', width: '100%' }}>
+                <Button variant="accent" block soundType="finish">결산하러 가기</Button>
+              </Link>
+            ) : null}
+
             <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <Button variant="primary" size="sm" disabled={atStart} onClick={() => setIndex((i) => Math.max(0, i - 1))}>
                 ‹
