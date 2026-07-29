@@ -175,6 +175,49 @@ function CreditAnalytics({ user, initialStudentType }) {
     }
   }, [analysisResult]);
 
+  const handleDownloadReport = () => {
+    if (!analysisResult) return;
+    
+    const { studentName, overallGpa, extractedGrades, advisory } = analysisResult;
+    
+    let reportText = `==================================================\n`;
+    reportText += `       GNU AI Course Navigator - 자가진단 리포트\n`;
+    reportText += `==================================================\n`;
+    reportText += `발행 일시: ${new Date().toLocaleDateString('ko-KR')} ${new Date().toLocaleTimeString('ko-KR')}\n`;
+    reportText += `학생 이름: ${studentName}님\n`;
+    reportText += `분석 모델: GPT-4o 기반 AI 어드바이저\n\n`;
+    
+    reportText += `[1. 성적표 등급 분석 결과]\n`;
+    reportText += `--------------------------------------------------\n`;
+    extractedGrades.forEach((item, index) => {
+      reportText += ` ${index + 1}. 과목명: ${item.course}\n`;
+      reportText += `    이수 유형: ${item.type} | 학점: ${item.credit}학점 | 취득 등급: ${item.grade}\n`;
+    });
+    reportText += `--------------------------------------------------\n`;
+    reportText += `▶ 분석 총평점 (GPA): ${overallGpa} / 4.50\n\n`;
+    
+    reportText += `[2. AI 학업 처방 및 가이드라인]\n`;
+    reportText += `--------------------------------------------------\n`;
+    reportText += `▶ 처방명: ${advisory.title}\n`;
+    reportText += `▶ 권장 여부: ${advisory.recommendRetake ? '재수강 강력 권장' : '양호 (일반 설계)'}\n`;
+    reportText += `▶ 집중 관리 과목: ${advisory.targetCourse}\n\n`;
+    reportText += `▶ 상세 피드백:\n`;
+    reportText += `${advisory.message}\n`;
+    reportText += `==================================================\n`;
+    reportText += `         경상국립대학교 통합 수강신청 AI 네비게이터\n`;
+    reportText += `==================================================\n`;
+    
+    const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `GNU_AI_자가진단_리포트_${studentName}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const runClientSideSimulation = () => {
     let mockData = {};
     if (studentType === 'transfer') {
@@ -738,9 +781,38 @@ function CreditAnalytics({ user, initialStudentType }) {
                   <div className="result-grid">
                     {/* Left Column: Grades Extracted */}
                     <div className="result-left-col">
-                      <div className="section-title-sm">
-                        <FileText size={14} />
-                        <span>성적표 OCR 추출 등급 내역 ({analysisResult.studentName}님)</span>
+                      <div className="section-title-sm" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <FileText size={14} />
+                          <span>성적표 OCR 추출 등급 내역 ({analysisResult.studentName}님)</span>
+                        </div>
+                        <button 
+                          onClick={handleDownloadReport}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '4px 8px',
+                            background: 'rgba(147, 51, 234, 0.15)',
+                            border: '1px solid rgba(147, 51, 234, 0.3)',
+                            borderRadius: '4px',
+                            color: '#e9d5ff',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(147, 51, 234, 0.3)';
+                            e.currentTarget.style.borderColor = 'rgba(147, 51, 234, 0.6)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(147, 51, 234, 0.15)';
+                            e.currentTarget.style.borderColor = 'rgba(147, 51, 234, 0.3)';
+                          }}
+                        >
+                          <Sparkles size={11} />
+                          진단 리포트 다운로드
+                        </button>
                       </div>
                       <div className="grades-extracted-list">
                         {analysisResult.extractedGrades.map((gradeItem, index) => {
