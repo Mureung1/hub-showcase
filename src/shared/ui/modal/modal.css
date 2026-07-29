@@ -1,6 +1,6 @@
 div.ui-modal[role='dialog'] {
   border-radius: var(--radius-card);
-  background: var(--color-canvas);
+  background: var(--color-surface);
   color: var(--color-ink);
 }
 
