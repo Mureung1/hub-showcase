@@ -466,7 +466,27 @@ router.get('/group/:groupId', async (req, res) => {
 
   // 대기(pending) 인원이 여러 명일 때, 도착 소요시간이 짧은 사람부터 보이도록 우선순위 정렬
   const sorted = sortByArrivalPriority(data)
-  res.json(sorted.map((row) => ({ ...row, activity: describeActivity(row.last_seen_at) })))
+
+  // 각 멤버의 프로필(닉네임/평점)을 users 테이블에서 한 번에 조회
+  const memberUserIds = [...new Set(data.map((r) => r.user_id).filter(Boolean))]
+  const { data: userRows } = await supabase
+    .from('users')
+    .select('id, name, nickname, avatar_url, rating, rating_count, noshow_count')
+    .in('id', memberUserIds.length ? memberUserIds : [''])
+  const profileById = Object.fromEntries(
+    (userRows ?? []).map((u) => [
+      u.id,
+      { name: u.nickname || u.name, avatar_url: u.avatar_url, rating: u.rating, ratingCount: u.rating_count, noshow_count: u.noshow_count },
+    ])
+  )
+
+  res.json(
+    sorted.map((row) => ({
+      ...row,
+      activity: describeActivity(row.last_seen_at),
+      profile: profileById[row.user_id] ?? null,
+    }))
+  )
 })
 
 router.get('/group/:groupId/messages', async (req, res) => {

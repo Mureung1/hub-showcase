@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { API_BASE } from "./apiBase";
 
 function Stars({ value, onChange }) {
@@ -22,6 +22,22 @@ function RatingScreen({ candidate, onBack, onFinish }) {
   const [noshow, setNoshow] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [companions, setCompanions] = useState([]);
+  const [loadingCompanions, setLoadingCompanions] = useState(true);
+
+  useEffect(() => {
+    if (!candidate?.groupId) {
+      setLoadingCompanions(false);
+      return;
+    }
+    fetch(`${API_BASE}/api/requests/group/${candidate.groupId}`)
+      .then((res) => res.json())
+      .then((members) => {
+        setCompanions(members.filter((m) => m.id !== candidate.myRequestId));
+      })
+      .catch(() => {})
+      .finally(() => setLoadingCompanions(false));
+  }, [candidate?.groupId, candidate?.myRequestId]);
 
   async function handleSubmit() {
     if (rating < 1) {
@@ -71,7 +87,25 @@ function RatingScreen({ candidate, onBack, onFinish }) {
           marginBottom: 20,
         }}
       >
-        <p style={{ fontSize: 14, fontWeight: 700, margin: "0 0 12px" }}>{candidate?.name ?? "동행자"}</p>
+        {loadingCompanions ? (
+          <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 12px" }}>동행자 정보를 불러오는 중...</p>
+        ) : companions.length === 0 ? (
+          <p style={{ fontSize: 14, fontWeight: 700, margin: "0 0 12px" }}>동행자</p>
+        ) : (
+          <div style={{ marginBottom: 12 }}>
+            {companions.map((c) => (
+              <div
+                key={c.id}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}
+              >
+                <span style={{ fontSize: 14, fontWeight: 700 }}>{c.profile?.name ?? "동행 학생"}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: c.profile?.ratingCount ? "#C98A1F" : "#2F8F5B" }}>
+                  {c.profile?.ratingCount ? `★ ${c.profile.rating.toFixed(1)}` : "NEW"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Stars value={rating} onChange={setRating} />
           <label style={{ fontSize: 12, color: "#8A7A76", display: "flex", alignItems: "center", gap: 6 }}>
