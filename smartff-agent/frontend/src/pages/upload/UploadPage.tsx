@@ -758,7 +758,8 @@ export default function UploadPage() {
           ).map((row) => {
             const stat = row.kind ? parseStats[row.kind] : null;
             const isUnsupported = UNSUPPORTED_VALIDATION_NAMES.includes(row.name);
-            const hasSkipped = stat ? stat.skipped_rows > 0 : false;
+            // 인식된 상품이 하나도 없으면(양식이 다르거나 손상된 파일) 성공이 아니라 경고로 표시
+            const hasSkipped = stat ? stat.skipped_rows > 0 || stat.valid_rows === 0 : false;
 
             return (
               <div
@@ -785,7 +786,9 @@ export default function UploadPage() {
                   {isUnsupported
                     ? '자동 검증 미지원 (파서 없음)'
                     : stat
-                      ? `${stat.filename}: ${stat.valid_rows}개 상품 정상 인식${stat.skipped_rows > 0 ? `, ${stat.skipped_rows}개 실패` : ''}`
+                      ? stat.valid_rows === 0
+                        ? `${stat.filename}: 인식된 상품이 없습니다. 파일 양식을 확인하세요.`
+                        : `${stat.filename}: ${stat.valid_rows}개 상품 정상 인식${stat.skipped_rows > 0 ? `, ${stat.skipped_rows}개 실패` : ''}`
                       : '이번 세션에 업로드된 데이터가 없습니다.'}
                 </p>
               </div>

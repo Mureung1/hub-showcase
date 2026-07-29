@@ -28,6 +28,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/financial" element={<FinancialPage />} />
           <Route path="/" element={<Navigate to="/upload" replace />} />
+          <Route path="*" element={<Navigate to="/upload" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>
