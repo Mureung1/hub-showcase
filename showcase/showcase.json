@@ -3,7 +3,8 @@
   "title": "Pick My Clothes",
   "summary": "날씨, 장소, 상황, 사용자의 옷장을 기반으로 AI가 코디를 추천해주는 서비스입니다.",
   "githubUser": "kyungminnn999(김경민)",
-  "demoUrl": "",
+  "demoUrl": "https://pickmyclothes-l6fbk90vm-kyungminnn1000.vercel.app/",
+  "demoVideoUrl": "https://drive.google.com/file/d/1szquikRYTGde6QHbJAAJobcZWkeEGfaW/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
