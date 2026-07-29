@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
+import { apiUrl } from '../data/api'
 import './posting-analyze.css'
 
 // 내 공고 직접 분석 패널.
 // 사용자가 붙여넣은 공고 원문을 POST /api/postings/analyze 로 보내고,
 // 해석은 이 화면의 기존 공고 해석 UI(PostingInterpretation)를 그대로 재사용한다.
-// 전략·로드맵은 요약 카드로만 보여 주고 상세는 합격 전략 화면으로 넘긴다.
+// 전략·로드맵은 요약 카드로만 보여 주고 상세는 합격 전략·준비 로드맵 화면으로 넘긴다.
+//
+// 응답의 세 payload(interpretation·strategy·roadmap)는 세 화면이 쓰는 형태와 같으므로,
+// 분석에 성공하면 App 의 myPosting 으로 올려 두고 화면을 옮길 때 다시 요청하지 않는다.
 
 export const MIN_CHARS = 200
 export const MAX_CHARS = 12000
@@ -125,7 +129,9 @@ function GeneralFallback({ fallback, jobLabel }) {
 }
 
 async function analyzePosting(rawText, job, signal) {
-  const res = await fetch('/api/postings/analyze', {
+  // 이 패널은 상태 코드별로 화면을 나누므로 fetchJson 대신 fetch 를 직접 쓴다.
+  // 주소는 다른 호출과 같이 apiUrl 을 거친다.
+  const res = await fetch(apiUrl('/api/postings/analyze'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ raw_text: rawText, job }),
@@ -136,10 +142,27 @@ async function analyzePosting(rawText, job, signal) {
   return { ok: res.ok, httpStatus: res.status, json }
 }
 
-function PostingAnalyzePanel({ job, jobLabel, fallback, go }) {
+// 입력 날짜. 범위 전환 줄이 "2026-07-29 입력" 처럼 보여 준다. 사용자의 시각을 쓴다.
+function today() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
+function PostingAnalyzePanel({ job, jobLabel, fallback, myPosting, setMyPosting, onOpenMine }) {
   const [text, setText] = useState('')
-  const [status, setStatus] = useState('idle')   // idle | loading | ready | degraded | error
-  const [result, setResult] = useState(null)
+  // App 에 올려 둔 분석 결과가 있으면 그것으로 시작한다. 다른 화면에 다녀와도 결과가
+  // 사라지지 않는다. 원문(text)은 되살리지 않는다 — 저장하는 것은 결과뿐이다.
+  const [result, setResult] = useState(() => (myPosting
+    ? {
+      job: myPosting.job_role_id,
+      matched: true,
+      source: 'cache',
+      interpretation: myPosting.interpretation,
+      strategy: myPosting.strategy,
+      roadmap: myPosting.roadmap,
+    }
+    : null))
+  const [status, setStatus] = useState(() => (myPosting ? 'ready' : 'idle')) // idle | loading | ready | degraded | error
   const [message, setMessage] = useState('')
   const controllerRef = useRef(null)
 
@@ -173,6 +196,16 @@ function PostingAnalyzePanel({ job, jobLabel, fallback, go }) {
       if (!ok) throw new Error(json?.error?.message || `HTTP ${httpStatus}`)
       setResult(json)
       setStatus('ready')
+      // 세 payload 를 App 으로 올린다. 합격 전략·준비 로드맵 화면이 이것을 그대로 그린다.
+      const analyzed = json?.interpretation?.posting || null
+      setMyPosting({
+        job_role_id: json?.job || job,
+        title: analyzed?.title || analyzed?.company || '붙여넣은 공고',
+        submittedAt: today(),
+        interpretation: json?.interpretation || null,
+        strategy: json?.strategy || null,
+        roadmap: json?.roadmap || null,
+      })
     } catch (error) {
       if (error.name === 'AbortError' || controller.signal.aborted) return
       setMessage(error.message || '')
@@ -186,6 +219,8 @@ function PostingAnalyzePanel({ job, jobLabel, fallback, go }) {
     setResult(null)
     setMessage('')
     setStatus('idle')
+    // 지운 결과를 다른 화면이 계속 보여 주지 않도록 App 의 myPosting 도 함께 비운다.
+    setMyPosting(null)
   }
 
   const posting = result?.interpretation?.posting || null
@@ -276,7 +311,8 @@ function PostingAnalyzePanel({ job, jobLabel, fallback, go }) {
                     ))}
                   </ul>
                   <div className="pa-card-foot">
-                    <button type="button" className="btn btn-primary" onClick={() => go('checklist')}>합격 전략 화면에서 이어 보기 →</button>
+                    {/* 이 버튼은 직무·기업군 기준이 아니라 붙여넣은 공고 범위로 화면을 연다. */}
+                    <button type="button" className="btn btn-primary" onClick={() => onOpenMine('checklist')}>내가 입력한 공고로 합격 전략 보기 →</button>
                   </div>
                 </div>
               )}
@@ -294,7 +330,7 @@ function PostingAnalyzePanel({ job, jobLabel, fallback, go }) {
                     ))}
                   </ul>
                   <div className="pa-card-foot">
-                    <button type="button" className="btn btn-secondary" onClick={() => go('roadmap')}>준비 로드맵 화면으로 →</button>
+                    <button type="button" className="btn btn-secondary" onClick={() => onOpenMine('roadmap')}>내가 입력한 공고로 로드맵 보기 →</button>
                   </div>
                 </div>
               )}

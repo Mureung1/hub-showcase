@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import TopBar from '../components/TopBar'
 import AnalysisNotice from '../components/AnalysisNotice'
+import SectionNav from '../components/SectionNav'
 import useScrollSpy from '../hooks/useScrollSpy'
 import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
 
 const NAV_IDS = ['summary', 'kpi', 'scope', 'inflation', 'difficulty', 'tech', 'combo', 'trend', 'conditions', 'companies', 'items']
+const NAV_ITEMS = [['summary', '요약'], ['kpi', '리얼리티 KPI'], ['scope', '요구 범위 확장'], ['inflation', '필수 인플레이션'], ['difficulty', '숨은 난이도'], ['tech', '기술 빈도'], ['combo', '조합·구현 수준'], ['trend', '증감 추이'], ['conditions', '라벨 vs 현실'], ['companies', '기업군 성향'], ['items', '요구 항목 전체표']]
 
 // 02 통계 분석 — 1차 슬라이스.
 // 블록 번호와 순서는 docs/plan.md 9.2의 ①~⑩을 따른다. 데이터 출처는 각 블록 주석에 표기한다.
@@ -140,14 +142,6 @@ function StatsScreen({ go, job }) {
       <TopBar step={2} label="통계 분석" job={job.display_name} backTo="select" backLabel="다른 직무" go={go} />
       <main className="app-shell reader-layout">
         <article className="page page--wide">
-          {/* 생성 데이터 표시 — payload 의 meta.is_synthetic 이 참일 때만 나온다. 근거를 숨기지 않는다. */}
-          {meta.is_synthetic && (
-            <p className="synthetic-note">
-              <span className="synthetic-badge">생성 데이터</span>
-              {meta.disclaimer || '생성 데이터 기반 결과입니다'}
-              {meta.dataset_version && <span className="synthetic-ver">{meta.dataset_version}</span>}
-            </p>
-          )}
           <header className="report-header" id="summary">
             <span className="eyebrow">{job.display_name} 공고 {recentN}건 기반 리서치 · 이전 스냅샷 {meta.snapshots.prev.n}건 비교</span>
             <h1>공고의 절반 이상이 "신입"이라 쓰고 경력급 준비를 요구합니다. 기술 이름이 아니라 요구의 구조를 읽습니다.</h1>
@@ -155,7 +149,6 @@ function StatsScreen({ go, job }) {
             <div className="data-note">
               <span>{meta.snapshots.recent.label}: {recentN}건</span>
               <span>{meta.snapshots.prev.label}: {meta.snapshots.prev.n}건</span>
-              <span>{meta.disclaimer}</span>
             </div>
           </header>
 
@@ -405,12 +398,7 @@ function StatsScreen({ go, job }) {
           </div>
         </article>
 
-        <aside className="floating-nav" aria-label="리포트 목차">
-          <p className="floating-nav__label">통계</p>
-          {[['summary', '요약'], ['kpi', '리얼리티 KPI'], ['scope', '요구 범위 확장'], ['inflation', '필수 인플레이션'], ['difficulty', '숨은 난이도'], ['tech', '기술 빈도'], ['combo', '조합·구현 수준'], ['trend', '증감 추이'], ['conditions', '라벨 vs 현실'], ['companies', '기업군 성향'], ['items', '요구 항목 전체표']].map(([id, label]) => (
-            <a key={id} className={activeSection === id ? 'is-current' : ''} href={`#${id}`}><span className="dot"></span>{label}</a>
-          ))}
-        </aside>
+        <SectionNav label="통계" ariaLabel="리포트 목차" items={NAV_ITEMS} active={activeSection} />
       </main>
     </>
   )
