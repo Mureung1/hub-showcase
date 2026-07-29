@@ -152,13 +152,143 @@
   color: var(--color-text-secondary);
 }
 
+/* 좁은 화면에서는 옆 순위판이 감춰진다. 담자마자 뭐가 1순위인지는 알려준다. */
+.top-hint {
+  margin: 0 0 var(--space-md);
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
+.top-hint strong {
+  color: var(--color-text-primary);
+}
+
+/* 넓은 화면에는 옆에 순위판이 통째로 붙으므로 이 한 줄은 군더더기다. */
+@media (min-width: 1024px) {
+  .top-hint {
+    display: none;
+  }
+}
+
+/* 방금 한 일을 알리고 되돌릴 기회를 주는 알림.
+   목록이 길어도 보이도록 화면 아래에 고정한다. */
+.notice {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-md);
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: calc(100% - var(--space-card));
+  max-width: 520px;
+  padding: var(--space-md);
+  border-radius: var(--radius-card);
+  background-color: var(--color-text-primary);
+  color: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.notice-message {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--font-label);
+}
+
+.notice-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+/* 어두운 배경 위라 Primary 인디고는 대비가 모자란다. 흰 글씨에 밑줄로 누를 것임을 알린다. */
+.notice-undo {
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+  border: none;
+  background: none;
+  font-size: var(--font-label);
+  font-weight: 600;
+  color: var(--color-surface);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.notice-close {
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: none;
+  font-size: var(--font-label);
+  color: var(--color-surface);
+  cursor: pointer;
+}
+
+/* 빈 상태에서 예시로 둘러보기까지 한 덩어리로 묶는다. */
+.empty-state-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-sm);
+}
+
+/* 완료한 과목 목록 */
+.done-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.done-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-input);
+}
+
+.done-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.done-name {
+  font-size: var(--font-body);
+  font-weight: 500;
+}
+
+.done-meta {
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
+/* 서버 없이 도는 중이라는 알림. 고장은 아니라서 danger 로 겁주지 않고,
+   그렇다고 흘려보내면 안 되니 배경을 깔아 눈에는 걸리게 둔다. */
+.server-note {
+  margin: 0 0 var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-card);
+  background-color: var(--color-primary-light);
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
 /* 카드 */
 .card {
   padding: var(--space-card);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  box-shadow: 0 8px 30px rgba(17, 24, 39, 0.06);
+  box-shadow: var(--shadow-card);
 }
 
 .card + .card {
@@ -312,40 +442,45 @@
   color: #ffffff;
 }
 
-/* "모르겠다"는 1~10 선택지가 아니라 "선택 안 함"이라, 점선 테두리로 구분하고
-   줄 전체를 차지해 숫자 그룹과 시각적으로 떨어뜨린다. */
-.score-option-unknown {
-  flex: 1 1 100%;
-  margin-top: 2px;
-  padding: 0 var(--space-md);
+/* 척도 아래 한 줄: 왼쪽에 지금 고른 값의 뜻, 오른쪽에 "모르겠다". */
+.score-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  min-height: 32px;
+}
+
+.score-meaning {
   font-size: var(--font-caption);
-  border-style: dashed;
   color: var(--color-text-secondary);
-  background-color: transparent;
 }
 
 /* "모르겠다"는 1~7 중 하나를 고른 것이 아니라 "고르지 않았다"는 뜻이다.
-   숫자 선택과 똑같이 꽉 채우면 기본 상태인데도 사용자가 고른 것처럼 보이고,
-   화면에서 가장 강한 요소가 되어 버린다. 연한 강조로만 표시한다. */
-.score-option-unknown.is-selected {
+   숫자 버튼과 같은 크기로 두면 기본 상태인데도 고른 것처럼 보이고,
+   화면에서 가장 강한 요소가 되어 버린다. 글자 버튼으로 낮춰 둔다. */
+.score-unknown {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1px dashed var(--color-border);
+  border-radius: 999px;
+  background-color: transparent;
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.score-unknown:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.score-unknown.is-selected {
   border-style: solid;
   border-color: var(--color-primary);
   background-color: var(--color-primary-light);
   color: var(--color-primary);
-}
-
-.score-scale {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--font-caption);
-  color: var(--color-text-secondary);
-}
-
-.score-hint {
-  margin: 0;
-  text-align: center;
-  font-size: var(--font-caption);
-  color: var(--color-text-secondary);
+  font-weight: 600;
 }
 
 /* 추가된 과목 목록 */
@@ -521,16 +656,54 @@
   color: var(--color-primary);
 }
 
+/* 이름·등급은 왼쪽, 점수는 오른쪽 끝. 좁아지면 점수가 아래로 내려간다. */
+.recommend-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.recommend-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
 .recommend-name {
-  margin: 0 0 var(--space-sm);
+  margin: 0;
   font-size: var(--font-heading);
   font-weight: 700;
 }
 
+.recommend-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
 .recommend-score {
-  margin: 0 0 var(--space-md);
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  margin: 0;
+  color: var(--color-primary);
+}
+
+.recommend-score-value {
+  font-size: var(--font-score-hero);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.recommend-score-unit {
   font-size: var(--font-body);
-  color: var(--color-text-secondary);
+  font-weight: 600;
 }
 
 .recommend-reason {
@@ -598,8 +771,44 @@
 }
 
 .subject-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   font-size: var(--font-caption);
   color: var(--color-text-secondary);
+}
+
+/* D-day 칩. 급한 정도를 색으로 구분해 과목이 여러 개일 때 한눈에 비교되게 한다.
+   색과 뜻의 짝은 우선순위 배지와 같은 토큰을 쓴다(빨강=급함). */
+.dday-chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dday-chip.is-urgent {
+  background-color: var(--color-high-bg);
+  color: var(--color-high-text);
+}
+
+.dday-chip.is-soon {
+  background-color: var(--color-medium-bg);
+  color: var(--color-medium-text);
+}
+
+.dday-chip.is-normal {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* 지난 시험은 "급하다"가 아니라 "끝났다"이므로 색을 빼고 가라앉힌다. */
+.dday-chip.is-past {
+  background-color: var(--color-background);
+  color: var(--color-text-secondary);
+  font-weight: 400;
 }
 
 .subject-score {
@@ -618,20 +827,20 @@
   font-weight: 600;
 }
 
-/* "높음"이 가장 급한 신호인데, #ef4444 는 이 배경 위에서 3.08:1 이라 가장 안 읽혔다. */
+/* 색은 index.css 의 우선순위 토큰을 쓴다. D-day 칩과 같은 뜻에 같은 색이 되도록 묶어뒀다. */
 .badge-high {
-  background-color: #fee2e2;
-  color: var(--color-danger-dark);
+  background-color: var(--color-high-bg);
+  color: var(--color-high-text);
 }
 
 .badge-medium {
-  background-color: #fef3c7;
-  color: #b45309;
+  background-color: var(--color-medium-bg);
+  color: var(--color-medium-text);
 }
 
 .badge-low {
-  background-color: #d1fae5;
-  color: #047857;
+  background-color: var(--color-low-bg);
+  color: var(--color-low-text);
 }
 
 /* 카드 안에서 펼치기/접기를 여는 글자 버튼. 눌리는 영역이 44px 이 되도록 높이를 준다. */
@@ -1010,16 +1219,15 @@
   font-weight: 600;
 }
 
+/* 한 과목 안에 공부 분량과 이해도 두 항목이 들어간다. 붙어 있으면 어디까지가 한 항목인지
+   흐려져서 사이를 띄우되, 과목 사이 간격(space-card)보다는 좁게 둔다. */
+.understanding-item > .form-group + .form-group {
+  margin-top: var(--space-md);
+}
+
 /* 과목별 "더 자세히". 이해도 선택기와 붙어 보이지 않도록 한 칸 띄운다. */
 .understanding-item > .link-button {
   margin-top: var(--space-sm);
-}
-
-.step-progress-note {
-  margin: var(--space-card) 0 0;
-  text-align: center;
-  font-size: var(--font-caption);
-  color: var(--color-text-secondary);
 }
 
 /* 결과 카드 안의 도구 줄 */

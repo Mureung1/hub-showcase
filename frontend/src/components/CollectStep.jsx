@@ -3,7 +3,7 @@ import { getDaysUntil, formatDday } from "../utils/daysUntil";
 
 // 1단계. 사용자가 확실히 아는 두 가지(과목명, 시험 날짜)만 받는다.
 // 나머지를 여기서 같이 물으면 결과를 한 번 보기까지 과목당 10번을 답해야 한다.
-function CollectStep({ subjects, onAddSubject, onRemoveSubject, onNext }) {
+function CollectStep({ subjects, onAddSubject, onRemoveSubject, onFillExample, onNext }) {
   const [name, setName] = useState("");
   const [examDate, setExamDate] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -158,9 +158,15 @@ function CollectStep({ subjects, onAddSubject, onRemoveSubject, onNext }) {
           )}
         </>
       ) : (
-        <p className="empty-hint">
-          아직 담은 과목이 없어요. 위에서 과목을 담아 주세요.
-        </p>
+        // 처음 온 사람은 "무엇을 넣어야 하지"에서 멈춘다. 직접 넣기 전에
+        // 어떤 화면이 나오는지 먼저 보여줘, 넣을 값을 스스로 정할 수 있게 한다.
+        <div className="empty-state-block">
+          <p className="empty-hint">아직 담은 과목이 없어요. 위에서 과목을 담아 주세요.</p>
+          <p className="empty-hint">처음이라면 예시로 먼저 둘러봐도 돼요.</p>
+          <button type="button" className="button button-ghost" onClick={onFillExample}>
+            예시 과목으로 둘러보기
+          </button>
+        </div>
       )}
 
       <button
@@ -170,7 +176,7 @@ function CollectStep({ subjects, onAddSubject, onRemoveSubject, onNext }) {
         aria-describedby={subjects.length === 0 ? "next-disabled-hint" : undefined}
         onClick={onNext}
       >
-        다음: 이해도 알려주기
+        다음: 분량·이해도 알려주기
       </button>
       {subjects.length === 0 && (
         <p id="next-disabled-hint" className="button-hint">

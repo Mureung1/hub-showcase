@@ -53,6 +53,19 @@ export async function updateSubject(id, subjectInput) {
   }
 }
 
+export async function uncompleteSubject(id) {
+  try {
+    const response = await fetch(`${BASE}/${id}/uncomplete`, { method: "PATCH" });
+    if (!response.ok) {
+      throw new Error(`서버 응답 오류: ${response.status}`);
+    }
+    const data = await response.json();
+    return { ok: true, subject: data.subject };
+  } catch {
+    return { ok: false };
+  }
+}
+
 export async function completeSubject(id) {
   try {
     const response = await fetch(`${BASE}/${id}/complete`, { method: "PATCH" });

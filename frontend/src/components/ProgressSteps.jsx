@@ -2,7 +2,7 @@
 // 입력이 세 걸음으로 나뉘어 있어서, 표시가 없으면 "아직 얼마나 더 물어보나" 를 알 수 없다.
 const STEPS = [
   { key: "collect", label: "과목 담기" },
-  { key: "understanding", label: "이해도" },
+  { key: "understanding", label: "분량·이해도" },
   { key: "result", label: "결과" },
 ];
 

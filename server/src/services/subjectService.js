@@ -32,6 +32,9 @@ const getStatement = db.prepare("SELECT * FROM subjects WHERE id = ?");
 const completeStatement = db.prepare(
   "UPDATE subjects SET completed_at = ? WHERE id = ?"
 );
+const uncompleteStatement = db.prepare(
+  "UPDATE subjects SET completed_at = NULL WHERE id = ?"
+);
 const insertStatement = db.prepare(
   `INSERT INTO subjects (name, exam_date, understanding, difficulty, grade_weight, grading, study_amount, available_time, credits, previous_score)
    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -59,6 +62,18 @@ export function completeSubject(id) {
   if (result.changes === 0) {
     return null;
   }
+  return toSubject(getStatement.get(id));
+}
+
+// 완료를 되돌린다. 실수로 "공부 끝"을 눌렀을 때 쓴다.
+// 이미 활성인 과목에 걸어도 그대로 활성이라 문제가 없다.
+export function uncompleteSubject(id) {
+  const row = getStatement.get(id);
+  if (!row) {
+    return null;
+  }
+
+  uncompleteStatement.run(id);
   return toSubject(getStatement.get(id));
 }
 

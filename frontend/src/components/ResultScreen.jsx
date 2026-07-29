@@ -1,11 +1,12 @@
 import { useState } from "react";
 import PriorityBadge from "./PriorityBadge";
+import DdayChip from "./DdayChip";
 import WeightSelector from "./WeightSelector";
 import ScoreBreakdown from "./ScoreBreakdown";
 import SubjectDetailFields from "./SubjectDetailFields";
 import StudyPlan from "./StudyPlan";
 import Chevron from "./Chevron";
-import { getDaysUntil, formatDday } from "../utils/daysUntil";
+import { getDaysUntil } from "../utils/daysUntil";
 import { buildPriorityReason } from "../utils/priorityReason";
 import { formatScale } from "../utils/scaleLabels";
 import { toggleInSet } from "../utils/toggleSet";
@@ -20,6 +21,8 @@ function ResultScreen({
   onChangePlanHours,
   onUpdateSubject,
   onCompleteSubject,
+  doneCount,
+  onOpenDone,
   onBack,
 }) {
   const [sortKey, setSortKey] = useState("score");
@@ -67,11 +70,26 @@ function ResultScreen({
       {recommendedSubject ? (
         <div className="recommend-card">
           <p className="recommend-eyebrow">오늘의 추천 과목</p>
-          <h2 className="recommend-name">{recommendedSubject.name}</h2>
-          <p className="recommend-score">
-            우선순위 점수 {recommendedSubject.priorityScore}점 ·{" "}
-            {formatDday(getDaysUntil(recommendedSubject.examDate))}
-          </p>
+
+          <div className="recommend-head">
+            <div className="recommend-identity">
+              <h2 className="recommend-name">{recommendedSubject.name}</h2>
+              <div className="recommend-tags">
+                <PriorityBadge priorityScore={recommendedSubject.priorityScore} />
+                <DdayChip examDate={recommendedSubject.examDate} />
+              </div>
+            </div>
+
+            {/* 점수는 이 서비스의 결론이다. 전에는 D-day 와 같은 크기의 회색 한 줄에
+                묻혀 있어서 부제처럼 읽혔다. */}
+            <p className="recommend-score">
+              <span className="recommend-score-value">
+                {recommendedSubject.priorityScore}
+              </span>
+              <span className="recommend-score-unit">점</span>
+            </p>
+          </div>
+
           <p className="recommend-reason">
             {buildPriorityReason(recommendedSubject, weightKey)}
           </p>
@@ -145,14 +163,8 @@ function ResultScreen({
                   <div className="subject-main">
                     <span className="subject-name">{subject.name}</span>
                     <span className="subject-meta">
-                      {isPast ? (
-                        <>시험이 지났어요 ({formatDday(daysUntil)})</>
-                      ) : (
-                        <>
-                          {formatDday(daysUntil)} · 이해도{" "}
-                          {formatScale(subject.understanding)}
-                        </>
-                      )}
+                      <DdayChip examDate={subject.examDate} />
+                      {isPast ? "시험이 지났어요" : `이해도 ${formatScale(subject.understanding)}`}
                     </span>
                   </div>
                   <PriorityBadge priorityScore={subject.priorityScore} />
@@ -198,9 +210,17 @@ function ResultScreen({
         <p className="empty-hint">이번 주에 시험이 있는 과목이 없어요.</p>
       )}
 
-      <button type="button" className="button button-secondary" onClick={onBack}>
-        ← 과목 다시 담기
-      </button>
+      <div className="form-actions">
+        <button type="button" className="button button-secondary" onClick={onBack}>
+          ← 과목 다시 담기
+        </button>
+        {/* 끝낸 과목이 어디로 갔는지 볼 수 있어야 실수로 누른 것도 되돌릴 수 있다. */}
+        {doneCount > 0 && (
+          <button type="button" className="button button-ghost" onClick={onOpenDone}>
+            공부 끝낸 과목 {doneCount}개
+          </button>
+        )}
+      </div>
     </section>
   );
 }

@@ -3,7 +3,8 @@
   "title": "오늘 뭐부터 공부하지?",
   "summary": "시험 기간에 과목별 우선순위를 계산해 오늘 먼저 공부할 과목을 추천하는 서비스입니다.",
   "githubUser": "pkyungho(박경호)",
-  "demoUrl": "https://pkyungho.github.io/hub/",
+  "demoUrl": "https://exam-priority-calculator.vercel.app",
+  "demoVideoUrl": "https://youtu.be/rFA_218SjNY",
   "thumbnail": "thumbnail.webp",
   "screenshots": ["screenshots/input.webp", "screenshots/result.webp"],
   "problem": "여러 과목을 동시에 준비해야 하는 대학생이 시험기간에 과목별 우선순위를 판단하기 어려워 제한된 공부 시간을 비효율적으로 쓰게 됩니다.",
@@ -29,7 +30,8 @@
   "techHighlights": [
     "React 상태와 로컬 계산 로직을 함께 둬서, 서버가 없어도 우선순위를 그대로 계산합니다.",
     "Express API와 Node 내장 SQLite(node:sqlite)를 연결해 과목 데이터를 저장하고, 서버를 재시작해도 데이터가 유지됩니다.",
-    "성향별 가중치와 실제 기여도를 계산해, 추천 과목마다 우선순위가 높은 구체적인 이유 문장을 생성합니다."
+    "성향별 가중치와 실제 기여도를 계산해, 추천 과목마다 우선순위가 높은 구체적인 이유 문장을 생성합니다.",
+    "프론트엔드(Vercel)와 API 서버(Render)를 나눠 배포하고, API 주소와 CORS 허용 목록을 환경변수로 분리했습니다. 서버가 응답하지 않으면 브라우저 저장소로 전환되며, 그 상태를 화면에 알립니다."
   ],
   "developmentWithAI": "저는 오늘 만들 기능과 우선순위 기준을 정하고, 화면과 계산 결과를 직접 확인하며 방향을 조정했습니다. AI는 코드 구현과 테스트, 검증을 맡았고, 척도나 항목을 바꿀 때마다 실제 값으로 계산한 결과를 보여주며 확인을 받았습니다.",
   "agent": {

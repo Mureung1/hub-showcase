@@ -4,6 +4,7 @@ import {
   updateSubject,
   deleteSubject,
   completeSubject,
+  uncompleteSubject,
 } from "../services/subjectService.js";
 
 // 1~7 척도 필드 목록. 값이 없으면 "모르겠다"(0)로 둔다.
@@ -136,6 +137,20 @@ export function patchCompleteSubject(req, res) {
   }
 
   const subject = completeSubject(id);
+  if (!subject) {
+    return res.status(404).json({ error: "해당 과목을 찾을 수 없습니다." });
+  }
+  return res.json({ subject });
+}
+
+// 완료를 되돌린다. 실수로 "공부 끝"을 눌렀을 때 화면에서 부른다.
+export function patchUncompleteSubject(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "올바른 과목 id가 필요합니다." });
+  }
+
+  const subject = uncompleteSubject(id);
   if (!subject) {
     return res.status(404).json({ error: "해당 과목을 찾을 수 없습니다." });
   }
