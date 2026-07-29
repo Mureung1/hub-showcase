@@ -3,7 +3,8 @@
 `frontend-web`을 **WebView**로 띄우는 Expo 껍데기입니다.  
 별도 네이티브 화면 없이 웹 UI를 그대로 사용합니다. (Expo SDK 54)
 
-> 웹 기능 진행도: [../frontend-web/README.md](../frontend-web/README.md)
+> 웹 기능 진행도: [../frontend-web/README.md](../frontend-web/README.md)  
+> Monorepo · 배포: [../docs/README.md](../docs/README.md)
 
 ## 현재 진행도 (2026-07)
 
@@ -13,11 +14,23 @@
 | frontend-web URL 로드 | ✅ | `EXPO_PUBLIC_WEB_APP_URL` |
 | 뒤로가기 제스처 | ✅ | `allowsBackForwardNavigationGestures` |
 | Geolocation (WebView) | ✅ | `/user/map` GPS 테스트 가능 |
+| Vercel 배포본 연동 | ✅ | Auth·식단·상담 등 frontend-web 기능 그대로 사용 |
 | 네이티브 전용 UI / Push | ❌ | 미구현 |
 | 앱스토어 빌드 (EAS) | ❌ | 미진행 |
 
-**요약:** 모바일 앱은 **웹 배포본을 감싸는 래퍼** 단계입니다.  
-신규 기능(상담 신청 API, 지도 등)은 **frontend-web**에서 개발하면 WebView에 자동 반영됩니다.
+**요약:** 모바일 앱은 **웹 배포본(Vercel) 또는 로컬 dev를 감싸는 래퍼** 단계입니다.  
+신규 기능은 **frontend-web**에서 개발하면 WebView에 자동 반영됩니다.
+
+---
+
+## 배포 연동
+
+| 구성 | 플랫폼 | URL / 설정 |
+|------|--------|------------|
+| **웹 UI** | Vercel | `EXPO_PUBLIC_WEB_APP_URL=https://hub-tan-pi.vercel.app` |
+| **API** | Render | https://fitcheck-server-wvj4.onrender.com (`VITE_API_BASE_URL`) |
+
+Vercel 배포본 사용 시 `frontend-web/vercel.json`(SPA rewrite)이 반영된 뒤 연결하세요.
 
 ---
 
@@ -40,7 +53,7 @@ Expo Go 또는 시뮬레이터에서 QR 스캔 후 실행합니다.
 | 실기기 (같은 Wi-Fi) | `http://192.168.x.x:5173` |
 | 배포 (Vercel) | `https://hub-tan-pi.vercel.app` |
 
-앱은 URL 뒤에 자동으로 `/user`를 붙여 회원 홈으로 진입합니다.
+앱은 URL 뒤에 자동으로 `/user`를 붙여 회원 홈으로 진입합니다. (로그인 필요 시 웹 Auth UI 사용)
 
 ### Expo Go에서 `404: NOT_FOUND` (Vercel) 가 뜰 때
 
@@ -76,7 +89,7 @@ NCP Maps **Web Service URL**에 사용 origin을 등록하세요 (`localhost:517
 
 ## GPS / 위치 권한 테스트
 
-1. frontend-web + backend 실행
+1. frontend-web + backend 실행 (또는 Vercel + Render 배포본)
 2. mobile-app → Expo Go 실행
 3. `/user/map` → **내 위치** 탭 → OS 권한 허용
 4. 파란 마커가 GPS 위치로 이동하는지 확인  
@@ -84,6 +97,6 @@ NCP Maps **Web Service URL**에 사용 origin을 등록하세요 (`localhost:517
 
 ## 다음 단계 (예상)
 
-1. 실기기·배포 URL 안정화 (`--host`, HTTPS 배포)  
+1. Vercel 배포 URL 안정화 (SPA rewrite 확인)  
 2. 스플래시 · 앱 아이콘  
 3. (선택) EAS Build, 딥링크, 푸시 알림  
