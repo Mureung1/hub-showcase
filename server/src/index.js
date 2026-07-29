@@ -43,6 +43,20 @@ function fail(res, status, job, code, message) {
   return res.status(status).json({ job: job || null, error: { code, message } })
 }
 
+// 알려진 코드가 없는 실패. 원래 예외 문구를 `detail` 로 함께 낸다.
+//
+// 뭉뚱그린 `*_FAILED` 만 내면 배포 환경에서 원인을 로그 없이는 알 수 없다. `detail`
+// 은 이 서버가 만든 문구이거나 조회 라이브러리의 문구이며 키·접속 문자열을 담지
+// 않는다. 노출을 막아야 하면 `HIDE_ERROR_DETAIL=1` 로 끈다.
+function serverError(res, job, code, message, error) {
+  console.error('[api]', code, error && error.message)
+  const body = { job: job || null, error: { code, message } }
+  if (process.env.HIDE_ERROR_DETAIL !== '1' && error && error.message) {
+    body.error.detail = error.message
+  }
+  return res.status(500).json(body)
+}
+
 // 저장소·산출물 오류를 화면이 구분할 수 있는 상태 코드로 옮긴다.
 // 결과가 없는 상황을 빈 배열로 덮지 않는다(CONTRACT 7장).
 function sendKnownError(res, job, error) {
@@ -250,7 +264,7 @@ function createApp(options = {}) {
       res.json(await db.getJobRoles())
     } catch (e) {
       if (sendKnownError(res, null, e)) return
-      res.status(500).json({ error: { code: 'JOBS_FAILED', message: '직무 목록 조회에 실패했습니다' } })
+      serverError(res, null, 'JOBS_FAILED', '직무 목록 조회에 실패했습니다', e)
     }
   })
 
@@ -275,7 +289,7 @@ function createApp(options = {}) {
       return fail(res, 503, job, 'NO_ACTIVE_ANALYSIS', '활성 분석 버전의 통계 결과가 없습니다')
     } catch (e) {
       if (sendKnownError(res, job, e)) return
-      res.status(500).json({ job: job || null, error: { code: 'STATS_FAILED', message: '통계 조회에 실패했습니다' } })
+      serverError(res, job, 'STATS_FAILED', '통계 조회에 실패했습니다', e)
     }
   })
 
@@ -296,10 +310,7 @@ function createApp(options = {}) {
       return res.json(await db.getPostingsForJob(job))
     } catch (e) {
       if (sendKnownError(res, job, e)) return
-      return res.status(500).json({
-        job: job || null,
-        error: { code: 'POSTINGS_FAILED', message: '공고 목록 조회에 실패했습니다' },
-      })
+      return serverError(res, job, 'POSTINGS_FAILED', '공고 목록 조회에 실패했습니다', e)
     }
   })
 
@@ -334,7 +345,7 @@ function createApp(options = {}) {
       res.json(withPostingsInCluster(payload, context.resolved))
     } catch (e) {
       if (sendKnownError(res, job, e)) return
-      res.status(500).json({ job: job || null, error: { code: 'INTERPRETATION_FAILED', message: '해석 결과 조회에 실패했습니다' } })
+      serverError(res, job, 'INTERPRETATION_FAILED', '해석 결과 조회에 실패했습니다', e)
     }
   })
 
@@ -348,7 +359,7 @@ function createApp(options = {}) {
       res.json(withPostingsInCluster(payload, context.resolved))
     } catch (e) {
       if (sendKnownError(res, job, e)) return
-      res.status(500).json({ job: job || null, error: { code: 'STRATEGY_FAILED', message: '전략 결과 조회에 실패했습니다' } })
+      serverError(res, job, 'STRATEGY_FAILED', '전략 결과 조회에 실패했습니다', e)
     }
   })
 
@@ -369,10 +380,7 @@ function createApp(options = {}) {
       res.json(withPostingsInCluster(payload, context.resolved))
     } catch (e) {
       if (sendKnownError(res, job, e)) return
-      res.status(500).json({
-        job: job || null,
-        error: { code: 'ROADMAP_FAILED', message: '로드맵 결과 조회에 실패했습니다' },
-      })
+      serverError(res, job, 'ROADMAP_FAILED', '로드맵 결과 조회에 실패했습니다', e)
     }
   })
 
