@@ -388,14 +388,13 @@ async function updateStep2Results(jobId, result, duration, isFallback = false) {
     );
   }
 
-  // generation_steps 테이블 업데이트 (status는 무조건 'completed'로 저장하여 DB 제약조건 충돌 방지)
+  // generation_steps 테이블 업데이트
   const { error: stepUpdateError } = await supabase
     .from("generation_steps")
     .update({
       status: "completed",
       completed_at: new Date().toISOString(),
       duration_ms: duration,
-      notes: isFallback ? "Gemini API 실패 - 기본 대사 사용" : null,
     })
     .eq("job_id", jobId)
     .eq("step_number", 2);
@@ -610,12 +609,28 @@ async function runStep4(jobId) {
         audioUrl || "",
         caption || "",
         JSON.stringify(hashtags || []),
-      ]);
+      ], {
+        timeout: 60000,  // 60초 타임아웃
+        maxBuffer: 10 * 1024 * 1024  // 10MB 버퍼
+      });
 
       if (stderr) console.log("[Step 4] Python stderr:", stderr);
 
       result = JSON.parse(stdout);
     } catch (pythonError) {
+      console.error("[❌ FFmpeg 실행 오류]", {
+        message: pythonError.message,
+        code: pythonError.code || 'UNKNOWN',
+        signal: pythonError.signal || 'N/A'
+      });
+
+      // OOM(Out of Memory) 에러 감지
+      if (pythonError.message.includes('out of memory') ||
+          pythonError.code === 137 ||  // OOM kill exit code
+          pythonError.signal === 'SIGKILL') {
+        throw new Error(`메모리 부족으로 FFmpeg 렌더링 실패: Render 환경의 메모리 제한으로 인해 프로세스가 중단되었습니다`);
+      }
+
       throw new Error(`FFmpeg 실행 실패: ${pythonError.message}`);
     }
 
@@ -713,7 +728,13 @@ async function runStep4(jobId) {
 
     console.log(`[✅ Step 4 완료] FFmpeg 영상 렌더링 (${duration}ms)\n`);
   } catch (error) {
-    console.error("[❌ Step 4 실패]", error);
+    console.error("[❌ Step 4 실패]", {
+      jobId,
+      message: error.message,
+      stack: error.stack
+    });
+
+    // Step 4 실패 시에도 DB 상태 업데이트 (runPipeline catch에서 처리됨)
     throw error;
   }
 }

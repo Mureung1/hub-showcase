@@ -78,7 +78,7 @@ def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=
             f"boxborderw=5"
         )
 
-        # FFmpeg 명령어 (향상된 버전)
+        # FFmpeg 명령어 (메모리 최적화 버전)
         ffmpeg_cmd = [
             "ffmpeg",
             "-loop", "1",
@@ -86,11 +86,13 @@ def render_video_enhanced(image_path, audio_path, caption, hashtags, output_dir=
             "-i", audio_path,
             "-vf", video_filter,
             "-c:v", "libx264",
-            "-preset", "medium",
-            "-crf", "18",
-            "-b:v", "3000k",
-            "-maxrate", "5000k",
-            "-bufsize", "1000k",
+            "-preset", "ultrafast",  # 메모리 최소화
+            "-crf", "28",  # 품질 낮춤 (파일 크기 감소)
+            "-b:v", "1500k",  # 비트레이트 제한
+            "-maxrate", "2000k",
+            "-bufsize", "500k",
+            "-r", "24",  # 24 FPS 제한
+            "-threads", "1",  # 단일 스레드
             "-pix_fmt", "yuv420p",
             "-c:a", "aac",
             "-b:a", "128k",
