@@ -11,6 +11,7 @@ import ReasonChips from "./components/ReasonChips";
 import ProposalCard from "./components/ProposalCard";
 import TimerConfirm from "./components/TimerConfirm";
 import PauseScreen from "./components/PauseScreen";
+import OnboardingGuide from "./components/OnboardingGuide";
 
 // "input" -> "preview" -> "focus" -> "timer" -> "timer-confirm" -> (완료: "complete") / (연장: "timer")
 // "focus" 중 "나 지금 힘들어" -> "reason" -> "proposal" -> (수락 시 tool별로 분기) / (거절 시 "proposal" 재판단)
@@ -106,6 +107,41 @@ export default function Home() {
   // T19: 연장 버튼으로 자정 마감을 뒤로 미룬 분. 재판단 시간 게이트(T07)의 remainingTimeMinutes
   // 계산에도 그대로 반영된다.
   const [deadlineExtraMinutes, setDeadlineExtraMinutes] = useState(0);
+
+  // T18: Zero-Input 온보딩. null=아직 확인 전, true=연동 정상, false=미설정(온보딩 화면 표시).
+  // 마운트 후 한 번만 /api/notion-health로 확인하고, "확인했어요" 버튼으로 재확인할 수 있다.
+  const [notionReady, setNotionReady] = useState(null);
+  const [checkingNotion, setCheckingNotion] = useState(false);
+  const [notionCheckMessage, setNotionCheckMessage] = useState(null);
+
+  // setState를 effect 안에서 동기 호출하지 않도록(react-hooks/set-state-in-effect),
+  // 이 함수는 await 이후에만 state를 바꾼다. "확인하는 중" 표시는 호출하는 쪽(버튼 클릭
+  // 핸들러)에서 별도로 켠다 - 마운트 시 자동 확인은 로딩 표시 없이 조용히 진행된다.
+  async function fetchNotionHealth() {
+    try {
+      const response = await fetch("/api/notion-health");
+      const data = await response.json();
+      setNotionReady(data.ok);
+      setNotionCheckMessage(data.ok ? null : data.message);
+    } catch {
+      setNotionReady(false);
+      setNotionCheckMessage("연결 확인 중 문제가 발생했어요, 다시 시도해줘");
+    }
+  }
+
+  useEffect(() => {
+    // fetchNotionHealth의 setState는 전부 fetch await 이후에만 실행되어 동기 호출이
+    // 아니지만, 이 lint 규칙은 async 함수 안의 setState를 await 위치와 무관하게 잡아낸다
+    // (마운트 시 1회 헬스체크라는 목적 자체는 React 문서가 인정하는 정당한 effect 용례).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchNotionHealth();
+  }, []);
+
+  async function handleRecheckNotion() {
+    setCheckingNotion(true);
+    await fetchNotionHealth();
+    setCheckingNotion(false);
+  }
 
   // 서버는 항상 "input"만 렌더링하므로(localStorage 접근 불가), 클라이언트도 마운트가
   // 끝나기 전까지는 위에서 복원한 값과 무관하게 "input"을 그린다 - 그렇지 않으면 서버가 그린
@@ -500,6 +536,18 @@ export default function Home() {
       }
       return;
     }
+  }
+
+  // T18: 노션 미설정이면(마운트 후 확인 완료 시에만 - 서버 렌더와 불일치 방지) 다른 화면보다
+  // 먼저 온보딩 안내를 보여준다.
+  if (hasMounted && notionReady === false) {
+    return (
+      <OnboardingGuide
+        onRecheck={handleRecheckNotion}
+        isChecking={checkingNotion}
+        checkMessage={notionCheckMessage}
+      />
+    );
   }
 
   if (effectiveStep === "input") {
