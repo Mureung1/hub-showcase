@@ -3,7 +3,8 @@
   "title": "ShortsGen - AI 쇼츠 생성 대시보드",
   "summary": "소상공인이 실시간 SNS 트렌드를 분석하고 AI로 자동 생성된 15초 쇼츠를 한 클릭으로 발행하는 서비스",
   "githubUser": "minzzi65(채민지)",
-  "demoUrl": "http://localhost:5173",
+  "demoUrl": "https://hub-opal-five.vercel.app",
+  "demoVideoUrl": "https://youtu.be/i8YvmElgd3w?si=BhV3mlTzMnfM9N7h",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/reels make page.webp",
@@ -14,10 +15,10 @@
   "targetUsers": ["시간이 없는 소상공인", "디자인/영상 편집 경험 없는 사업가"],
   "features": [
     "실시간 SNS 트렌드 분석 (Naver DataLab API)",
-    "상품 사진에서 YOLOv8으로 자동 감지 & 스마트 크롭",
-    "KoBERT 기반 트렌드-맞춤 한국어 자막 생성",
-    "자동 음성 생성 및 15초 9:16 세로 영상 렌더링",
-    "생성된 영상 관리 및 Instagram/TikTok 발행"
+    "상품 사진 엔트로피 기반 스마트 크롭 (Sharp)",
+    "Gemini API 기반 트렌드-맞춤 한국어 자막 생성",
+    "gTTS 자동 음성 생성 및 15초 9:16 세로 영상 렌더링 (FFmpeg)",
+    "생성된 영상 Supabase Storage 업로드 후 Instagram/TikTok 발행"
   ],
   "featureTags": ["AI 콘텐츠 생성", "자동 편집", "SNS 발행"],
   "techStack": [
@@ -25,18 +26,19 @@
     "Vite",
     "Node.js",
     "Express",
-    "Supabase",
-    "YOLOv8",
-    "KoBERT",
-    "FFmpeg",
-    "gTTS"
+    "Supabase (DB + Storage)",
+    "Sharp (이미지 크롭)",
+    "Google Gemini API (자막)",
+    "gTTS (음성 생성)",
+    "FFmpeg (영상 렌더링)"
   ],
   "techHighlights": [
-    "Python AI 모델 4개(YOLOv8, KoBERT, gTTS, FFmpeg)를 Node.js에서 execFile로 오케스트레이션",
-    "Job 기반 비동기 파이프라인으로 4단계 AI 프로세스 순차 실행",
-    "Supabase Storage를 중앙 파일 저장소로 이미지/음성/영상 통합 관리"
+    "Step 1-4 완전 자동화 파이프라인: Sharp 크롭 → Gemini 자막 → gTTS 음성 → FFmpeg 렌더링",
+    "Python 스크립트(Sharp, gTTS, FFmpeg)를 Node.js execFile로 오케스트레이션 + 메모리 최적화(-preset ultrafast, -threads 1)",
+    "Supabase Storage에 원본/중간/최종 파일 통합 관리 (https:// URL 반환으로 브라우저 재생 가능)",
+    "Render 512MB 제약 극복: 경로 최적화 + 비트레이트 제한(1500k) + FPS 24 + Fallback 처리"
   ],
-  "developmentWithAI": "Setup 페이지 리디자인, 가게정보 관리 페이지, AI 파이프라인 4단계 Python 스크립트 작성, 백엔드 통합까지 AI의 도움으로 진행. 프론트엔드는 사용자 흐름(로그인→가게정보→대시보드→릴스생성) 중심으로 설계.",
+  "developmentWithAI": "AI 파이프라인 4단계 설계부터 구현까지 (Sharp 크롭, Gemini 자막, gTTS 음성, FFmpeg 렌더링), 메모리 최적화, CORS 이슈 해결, 경로 버그 수정, Render 배포 설정, Supabase Storage 업로드까지 전 과정에서 AI 코파일럿 지원. 프론트엔드는 사용자 흐름(로그인→가게정보→대시보드→릴스생성→보관함) 중심으로 설계.",
   "agent": {
     "summary": "파이프라인 아키텍처 설계부터 Step 1-4 Python 스크립트 작성, 백엔드 통합, 프론트엔드 UI/UX까지 AI 지원으로 진행",
     "agentTools": [
