@@ -108,6 +108,18 @@ describe('gitEngine', () => {
     expect(parseGitCommand('git fetch')).toEqual({ type: 'fetch', remote: 'origin' })
     expect(parseGitCommand('git fetch origin')).toEqual({ type: 'fetch', remote: 'origin' })
     expect(parseGitCommand('git branch -r')).toEqual({ type: 'branchRemoteList' })
+    expect(parseGitCommand('git tag v1.0')).toEqual({
+      type: 'tag',
+      name: 'v1.0',
+      annotated: false,
+    })
+    expect(parseGitCommand('git tag -a v1.0 -m "Release 1.0"')).toEqual({
+      type: 'tag',
+      name: 'v1.0',
+      annotated: true,
+      message: 'Release 1.0',
+    })
+    expect(parseGitCommand('git log --tags')).toEqual({ type: 'logTags' })
   })
 
   it('handles boundary cases and normalizes input', () => {

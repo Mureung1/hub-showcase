@@ -5,6 +5,7 @@ import {
   remoteAdd,
   remoteList,
 } from './remoteCommands'
+import { logTags, tag } from './tagCommands'
 
 export type GitCommit = {
   id: string
@@ -104,6 +105,8 @@ export type GitCommand =
   | { type: 'push'; remote: string; branch: string; setUpstream: boolean }
   | { type: 'fetch'; remote: string }
   | { type: 'branchRemoteList' }
+  | { type: 'tag'; name: string; annotated: boolean; message?: string }
+  | { type: 'logTags' }
 
 export type GitCommandResult = {
   state: GitEngineState
@@ -291,6 +294,18 @@ export function parseGitCommand(input: string): GitCommand {
     return { type: 'log', oneline: true }
   }
 
+  if (tokens[1] === 'log' && tokens[2] === '--tags' && tokens.length === 3) {
+    return { type: 'logTags' }
+  }
+
+  if (tokens[1] === 'tag' && tokens[2] === '-a' && tokens[4] === '-m' && tokens.length === 6) {
+    return { type: 'tag', name: tokens[3], annotated: true, message: tokens[5] }
+  }
+
+  if (tokens[1] === 'tag' && tokens.length === 3) {
+    return { type: 'tag', name: tokens[2], annotated: false }
+  }
+
   throw new Error(`Unsupported git command: ${input}`)
 }
 
@@ -353,6 +368,10 @@ export function executeGitCommand(state: GitEngineState, command: GitCommand): G
       return fetch(state, command.remote)
     case 'branchRemoteList':
       return branchRemoteList(state)
+    case 'tag':
+      return tag(state, command.name, command.annotated, command.message)
+    case 'logTags':
+      return logTags(state)
   }
 }
 

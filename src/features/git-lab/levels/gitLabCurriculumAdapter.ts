@@ -356,6 +356,19 @@ function createGoalCheck(level: CurriculumLevel): GitLabGoalCheck | undefined {
     }
   }
 
+  if (level.goal?.type === 'tagState') {
+    const condition = level.goal.condition ?? ''
+    const nameMatch = /t\.name === '([^']+)'/.exec(condition)
+    const commitMatch = /t\.commitId === '([^']+)'/.exec(condition)
+
+    return {
+      type: 'tagState',
+      tagName: nameMatch?.[1] ?? '',
+      commitId: commitMatch?.[1] ?? '',
+      description,
+    }
+  }
+
   return undefined
 }
 
