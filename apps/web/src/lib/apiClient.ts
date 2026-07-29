@@ -5,7 +5,7 @@ import {
   ErrorEnvelopeSchema,
   QuestionListResponseSchema,
   QuestionResponseSchema,
-  SourceAnswerEventSchema,
+  QuestionStreamEventSchema,
   SourceAnswerSchema,
   type AuthMeResponse,
   type ChatListResponse,
@@ -14,7 +14,7 @@ import {
   type QuestionListResponse,
   type QuestionResponse,
   type SourceAnswer,
-  type SourceAnswerEvent,
+  type QuestionStreamEvent,
 } from "@decision-log/shared";
 import { z } from "zod";
 
@@ -197,7 +197,7 @@ export async function streamSourceAnswers(
   chatId: string,
   questionId: string,
   body: { context: string | null },
-  onEvent: (event: SourceAnswerEvent) => void,
+  onEvent: (event: QuestionStreamEvent) => void,
 ): Promise<SourceAnswerStreamResult> {
   const token = await getAccessToken();
 
@@ -259,12 +259,12 @@ export async function streamSourceAnswers(
         console.error("[sourceAnswers] SSE 프레임 파싱 실패");
         continue;
       }
-      const parsed = SourceAnswerEventSchema.safeParse(raw);
+      const parsed = QuestionStreamEventSchema.safeParse(raw);
       if (!parsed.success) {
         console.error("[sourceAnswers] SSE 이벤트가 계약을 만족하지 않습니다.");
         continue;
       }
-      if (parsed.data.type === "done") sawDone = true;
+      if (parsed.data.type === "source_answer.done") sawDone = true;
       onEvent(parsed.data);
     }
   };

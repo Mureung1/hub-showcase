@@ -74,11 +74,18 @@ export function AnswerCard({
   onOpenAnswers,
   onResolveClick,
 }: AnswerCardProps) {
-  const consensusAgendas = question.agendas.filter(
-    (agenda) => agenda.resolutionReason === "auto_consensus",
+  // 자동 통과 = 다중 AI 합의(auto_consensus) + 단일 소스(auto_single_source, §3.4).
+  // 단일 소스도 자동 통과이므로 "자동 통과 N건" 접힘 요약에 함께 넣는다. 단, "합의"로
+  // 표현하지 않는다(domain-policy 5.3·SPEC-AI-001 §6.1) — 항목에 "단일 답변" 라벨을 붙인다.
+  const autoPassedAgendas = question.agendas.filter(
+    (agenda) =>
+      agenda.resolutionReason === "auto_consensus" ||
+      agenda.resolutionReason === "auto_single_source",
   );
   const conflictAgendas = question.agendas.filter(
-    (agenda) => agenda.resolutionReason !== "auto_consensus",
+    (agenda) =>
+      agenda.resolutionReason !== "auto_consensus" &&
+      agenda.resolutionReason !== "auto_single_source",
   );
   const unresolved = conflictAgendas.filter(isAgendaUnresolved);
   const isAllResolved = unresolved.length === 0;
@@ -140,16 +147,27 @@ export function AnswerCard({
       )}
 
       {/* R1: FinalAnswer 표시 후에는 접힘 요약을 없앤다 — 해소 진행 중에만 유지 (Step 7 R1-1) */}
-      {!question.finalAnswer && consensusAgendas.length > 0 && (
+      {!question.finalAnswer && autoPassedAgendas.length > 0 && (
         <div className="consensus-summary">
           {/* 기본 접힘 (Step 5-1) */}
           <Collapsible
-            trigger={`자동 통과 ${consensusAgendas.length}건`}
+            trigger={`자동 통과 ${autoPassedAgendas.length}건`}
             defaultIsOpen={false}
           >
             <div className="consensus-list">
-              {consensusAgendas.map((agenda) => (
+              {autoPassedAgendas.map((agenda) => (
                 <div className="consensus-item" key={agenda.id}>
+                  {/* 단일 소스 근거는 다중 AI 합의가 아니므로 중립 라벨로 구분한다 */}
+                  {agenda.kind === "single_source" && (
+                    <Text
+                      type="label"
+                      color="secondary"
+                      as="span"
+                      display="block"
+                    >
+                      단일 답변
+                    </Text>
+                  )}
                   <Text type="label" as="p" display="block">
                     {agenda.title}
                   </Text>

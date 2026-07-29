@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { NO_VALUE } from "@decision-log/shared";
 import type {
   Agenda,
   AgendaResolutionReason,
@@ -97,7 +98,7 @@ function buildMockAgendas(
       .map((answer) => [answer.provider, answer]),
   );
 
-  return templates.map((template) => {
+  return templates.map((template, index) => {
     const stances = template.stances
       .filter((stance) => succeededByProvider.has(stance.provider))
       .map((stance) => {
@@ -105,6 +106,8 @@ function buildMockAgendas(
         return {
           provider: stance.provider,
           text: stance.text,
+          // 원문에서 잘라낸 부분 문자열(§11). 템플릿이 실제 섹션 content 기준으로 채운다.
+          quotes: stance.quotes,
           sourceRefs: stance.sectionIds
             .map((sectionId) => resolveSectionId(answer, sectionId))
             .filter((sectionId): sectionId is string => sectionId !== null)
@@ -115,18 +118,27 @@ function buildMockAgendas(
         };
       });
 
+    // 자동 통과·사용자 채택 시 selectedSourceRef로 쓸 실제 참조(§9.2). 첫 stance의 첫 참조.
+    const firstSourceRef = stances[0]?.sourceRefs[0] ?? null;
+
     const now = nowIso();
     const draft: Agenda = {
       id: crypto.randomUUID(),
       questionId,
       status: "draft",
       resolutionReason: null,
+      kind: template.kind,
       title: template.title,
       summary: template.summary,
       selectedContent: null,
+      selectedSourceRef: null,
       userNote: null,
-      // 계약상 자유형(unknown[]). Mock은 stance가 참조한 Section 참조를 담는다.
+      // SourceRef[]. Mock은 stance가 참조한 Section 참조를 담는다.
       sourceRefs: stances.flatMap((stance) => stance.sourceRefs),
+      disagreementType: null,
+      revisedType: null,
+      confidence: null,
+      displayOrder: index,
       recheckRequest: null,
       recheckResult: null,
       recheckRequestedAt: null,
@@ -144,6 +156,19 @@ function buildMockAgendas(
         status: "passed" as const,
         resolutionReason: "auto_consensus" as const,
         selectedContent: template.selectedContent,
+        selectedSourceRef: firstSourceRef,
+        resolvedAt: now,
+      };
+    }
+    if (template.kind === "single_source") {
+      // draft → passed(auto_single_source): 단일 소스 Agenda 자동 통과(§3.4·§9.2).
+      // "합의"가 아니라 단일 답변 근거임을 라벨·selectedSourceRef로 드러낸다.
+      return {
+        ...draft,
+        status: "passed" as const,
+        resolutionReason: "auto_single_source" as const,
+        selectedContent: stances[0]?.text ?? template.selectedContent,
+        selectedSourceRef: firstSourceRef,
         resolvedAt: now,
       };
     }
@@ -299,6 +324,8 @@ function buildContextNextQuestionState(): ChatWorkspaceState {
             status: "passed" as const,
             resolutionReason: "user_accepted" as const,
             selectedContent: agenda.stances[0]?.text ?? null,
+            // 사용자 채택 → 채택한 stance의 실제 참조(§9.2)
+            selectedSourceRef: agenda.stances[0]?.sourceRefs[0] ?? null,
             resolvedAt: nowIso(),
             updatedAt: nowIso(),
           }
@@ -608,7 +635,10 @@ export function useChatWorkspace() {
     chatId: string,
     questionId: string,
     agendaId: string,
-    resolutionReason: Exclude<AgendaResolutionReason, null | "auto_consensus">,
+    resolutionReason: Exclude<
+      AgendaResolutionReason,
+      null | "auto_consensus" | "auto_single_source"
+    >,
     selectedContent: string | null,
   ) {
     const isRejected =
@@ -655,20 +685,35 @@ export function useChatWorkspace() {
               return question;
             }
             const resolvedAt = nowIso();
-            const agendas = question.agendas.map((agenda) =>
-              agenda.id === agendaId
-                ? {
-                    ...agenda,
-                    status: isRejected
-                      ? ("rejected" as const)
-                      : ("passed" as const),
-                    resolutionReason,
-                    selectedContent: isRejected ? null : selectedContent,
-                    resolvedAt,
-                    updatedAt: resolvedAt,
-                  }
-                : agenda,
-            );
+            const isAccepted =
+              resolutionReason === "user_accepted" ||
+              resolutionReason === "user_accepted_after_recheck";
+            const agendas = question.agendas.map((agenda) => {
+              if (agenda.id !== agendaId) {
+                return agenda;
+              }
+              // §9.2: 채택이면 채택 stance의 실제 참조, 직접 입력·제외면 NO_VALUE.
+              // 재검토 결과 채택(user_accepted_after_recheck)은 stance와 매칭되지 않으므로
+              // 해당 Agenda의 첫 stance 참조로 근거를 유지한다(최소 전환, 인용 UI는 T-019.4).
+              const selectedSourceRef = isAccepted
+                ? (agenda.stances.find(
+                    (stance) => stance.text === selectedContent,
+                  )?.sourceRefs[0] ??
+                  agenda.stances[0]?.sourceRefs[0] ??
+                  null)
+                : NO_VALUE;
+              return {
+                ...agenda,
+                status: isRejected
+                  ? ("rejected" as const)
+                  : ("passed" as const),
+                resolutionReason,
+                selectedContent: isRejected ? null : selectedContent,
+                selectedSourceRef,
+                resolvedAt,
+                updatedAt: resolvedAt,
+              };
+            });
 
             // 모든 Agenda가 passed/rejected면 FinalAnswer 자동 생성 (Step 7, 1회만)
             const allFinal =
@@ -880,8 +925,12 @@ export function useChatWorkspace() {
             }));
             return;
           }
-          applyServerSnapshot(chatId, questionId, event.sourceAnswers);
-          applied = true;
+          if (event.type === "source_answer.done") {
+            applyServerSnapshot(chatId, questionId, event.sourceAnswers);
+            applied = true;
+            return;
+          }
+          // agenda.* 이벤트는 아직 서버가 보내지 않으며 소비도 T-019.4 범위다. 지금은 무시.
         },
       );
 
@@ -1093,7 +1142,7 @@ export function useChatWorkspace() {
           if (agenda.id !== agendaId || agenda.status !== "recheck_requested") {
             return agenda;
           }
-          const recheckResult =
+          const recheckResponse =
             getActiveScenario().agendaTemplates.find(
               (template) => template.title === agenda.title,
             )?.recheckResult ??
@@ -1102,7 +1151,13 @@ export function useChatWorkspace() {
           return {
             ...agenda,
             status: "reanswered" as const,
-            recheckResult,
+            // SPEC-AI-002: recheckResult는 { response, citations, revisedType } 객체.
+            // 최소 전환 — citations는 빈 배열, 재분류(revisedType)는 없음(T-019.4에서 채운다).
+            recheckResult: {
+              response: recheckResponse,
+              citations: [],
+              revisedType: null,
+            },
             reansweredAt,
             updatedAt: reansweredAt,
           };

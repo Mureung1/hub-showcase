@@ -2,7 +2,7 @@ import type {
   Chat,
   Question,
   SourceAnswer,
-  SourceAnswerEvent,
+  QuestionStreamEvent,
 } from "@decision-log/shared";
 
 import {
@@ -102,7 +102,7 @@ export async function startSourceAnswers(
   chatId: string,
   questionId: string,
   context: string | null,
-  onEvent: (event: SourceAnswerEvent) => void,
+  onEvent: (event: QuestionStreamEvent) => void,
 ): Promise<{ done: boolean }> {
   const result = await streamSourceAnswers(
     chatId,

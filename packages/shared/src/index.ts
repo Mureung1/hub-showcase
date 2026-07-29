@@ -11,5 +11,6 @@ export * from "./schemas/question.js";
 export * from "./schemas/chatApi.js";
 export * from "./schemas/sourceAnswer.js";
 export * from "./schemas/agenda.js";
+export * from "./schemas/questionStream.js";
 export * from "./schemas/finalAnswer.js";
 export * from "./schemas/decisionNote.js";

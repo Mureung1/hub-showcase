@@ -31,9 +31,10 @@ const CONFLICT_REMOVE_ANIMATION_MS = 280;
 /** 토스트 자동 소멸까지의 시간 (Step 6 R5 — 표시 후 약 2초 뒤 자동 소멸) */
 const TOAST_AUTO_HIDE_MS = 2000;
 
+// 사용자 판단 사유 — 자동 통과(auto_consensus·auto_single_source)와 null은 제외한다.
 type UserResolutionReason = Exclude<
   AgendaResolutionReason,
-  null | "auto_consensus"
+  null | "auto_consensus" | "auto_single_source"
 >;
 
 interface ChatCenterProps {

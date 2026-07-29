@@ -39,9 +39,38 @@ export const AgendaResolutionReasonSchema = z.enum([
   "user_composed_after_recheck",
   "user_rejected",
   "user_rejected_after_recheck",
+  // SPEC-AI-002: 단일 소스 Agenda 자동 통과 (§3.4·§9.2). 다중 AI 합의(auto_consensus)와 구분한다.
+  "auto_single_source",
 ]);
 export type AgendaResolutionReason = z.infer<
   typeof AgendaResolutionReasonSchema
+>;
+
+/**
+ * SPEC-AI-002 — Agenda 분류.
+ * consensus: 다중 AI 합의 / conflict: 충돌 / single_source: 단일 소스 자동 통과.
+ * 단일 소스를 다중 AI 합의로 표현하지 않는다(domain-policy 5.3·SPEC-AI-001 §6.1).
+ */
+export const AgendaKindSchema = z.enum([
+  "consensus",
+  "conflict",
+  "single_source",
+]);
+export type AgendaKind = z.infer<typeof AgendaKindSchema>;
+
+/**
+ * SPEC-AI-002 §8.4 — 충돌 5유형 분류.
+ * Manager 판정 결과(disagreementType)와 재검토 후 재분류(revisedType)에 함께 쓴다.
+ */
+export const AgendaDisagreementTypeSchema = z.enum([
+  "paraphrasing",
+  "detail_expansion",
+  "detail_volume",
+  "detail_content",
+  "main_answer",
+]);
+export type AgendaDisagreementType = z.infer<
+  typeof AgendaDisagreementTypeSchema
 >;
 
 export const FinalAnswerGenerationModeSchema = z.enum([

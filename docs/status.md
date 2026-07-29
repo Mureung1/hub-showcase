@@ -18,7 +18,7 @@
 
 - 모든 Provider(Claude·OpenAI·Gemini)가 최초 요청과 1회 재시도에 모두 실패한 경우의 FinalAnswer 고정 문구와 DecisionNote 처리 — AI Provider Spec 작성 전에 확정 → **SPEC-AI-001 §6.2에서 확정(2026-07-22): 3사 전멸 시 고정 안내 문구로 마무리+완료. 서버 generation_mode 확장은 AI-003 재검토**
 - 좌초 상태 복구 정책 — Manager AI 비교·재검토·FinalAnswer 생성 호출 실패 시 재시도 규칙, 버려진 `draft` Question 취소, 중단된 `processing` Question timeout 회수 → **SPEC-AI-001에서 이번 범위 밖으로 확정, 마지막 주 안정화로 이관(2026-07-22, 알려진 한계: 갇힌 질문이 새 질문 차단 가능)**
-- 단일 SourceAnswer 기반 Agenda 처리 방식과 `resolution_reason` — Manager AI Spec에서 구체화
+- 단일 SourceAnswer 기반 Agenda 처리 방식과 `resolution_reason` — Manager AI Spec에서 구체화 → **SPEC-AI-002 §3.4·§9.2에서 확정(2026-07-30): `kind="single_source"` + `auto_single_source` 자동 통과, 실제 참조 유지. 다중 AI 합의로 표현하지 않음(domain-policy 5.3). 계약·마이그레이션·Mock 반영은 T-019.1**
 - 사용자 계정 삭제 시 데이터 처리 정책
 
 ## 완료된 작업
@@ -318,5 +318,11 @@
   - **검증**: 루트 typecheck·lint·build 통과. 박스 표시·필드 자동입력·제출 확인. 자리표시자 상태에서 박스 숨김 확인
   - **후속 수정 (2026-07-22)**: 상수를 실제 값으로 바꾸면 `TS2367`(리터럴 타입끼리 교집합 없는 비교)로 **빌드가 깨지는 결함**이 있었다 — 자리표시자 상태에서만 검증한 탓에 놓쳤다. 두 상수에 `: string` 주석을 붙여 자리표시자·실제값 **양쪽에서 타입이 통과**하도록 수정하고, 실제 계정으로 로그인까지 실측(커밋 `77a353d`)
   - **남은 문제**: 커밋한 비밀번호는 **비공개 저장소 히스토리에 영구히 남는다**. 저장소를 공개로 전환하거나 협업자를 추가하면 그 시점부터 함께 노출된다. 데모 종료 후 계정 비밀번호 교체를 권한다
-- 이후: SPEC-AI-002~003(Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **T-019.1 완료 (2026-07-30)** — SPEC-AI-002(Manager) **계약·마이그레이션·Mock 정합만**. Manager 실호출·프롬프트·OpenRouter는 T-019.2, Agenda 저장·SSE 발신은 T-019.3, web의 `buildMockAgendas` 제거는 T-019.4로 분리(이번엔 브라우저 Mock Agenda 흐름을 새 계약 위에서 유지)
+  - **shared 계약**: `enums.ts`에 `auto_single_source` 추가·`AgendaKind`·`AgendaDisagreementType` 신설. `agenda.ts`에 `SourceRef`·`AgendaStance`(quotes·sourceRefs `.min(1)`)·`AgendaRecheckResult` 신설, `AgendaSchema` 확장(kind·selectedSourceRef·stances·disagreementType·revisedType·confidence·displayOrder + `sourceRefs`·`recheckResult` 정식화) 및 superRefine 4규칙 추가(§3.4·§9.2). SSE 계약을 `questionStream.ts`로 이동·`SourceAnswerEventSchema`→`QuestionStreamEventSchema` 개명, `done`→`source_answer.done`, Manager 이벤트 3종(`agenda.created`·`agenda.judged`·`agenda.done`) 추가
+  - **마이그레이션 2개**(트랜잭션 분리): `20260730120000_agenda_manager_enums.sql`(enum 추가·신설) + `20260730120100_agenda_manager_columns.sql`(agendas 5컬럼·`questions.manager_meta`·`agendas_selected_source_ref_ck` §9.3 개정 — 합의·단일 소스는 실제 참조, NO_VALUE는 사용자 행동에서만)
+  - **web**: 로컬 `AgendaSourceRef`·`AgendaStance` 제거→shared 사용, `Agenda` 교차타입 제거, `agendaRecheckText`를 객체(`.response`)로. Mock에 신규 필드·실제 섹션 부분 문자열 quotes(§11) 채움, 단일 소스 시나리오를 `single_source` 자동 통과로 전환(AnswerCard 자동 통과 요약에 "단일 답변" 중립 라벨 — 합의로 표현 금지, domain-policy 5.3·SPEC-AI-001 §6.1). SSE 이름 교체(api controller·apiClient·apiStorageAdapter), agenda.* 이벤트는 무시(소비는 T-019.4)
+  - **검증**: 루트 typecheck·lint·build 통과. `supabase db push` 원격 적용 후 psql로 신규 컬럼·enum·CHECK 정의(§9.3)·RLS 3정책·GRANT 불변 확인. **questions 조회 회귀 없음** — Repository가 명시적 `QUESTION_COLUMNS`(manager_meta 미포함)로 select하므로 새 컬럼이 조회에 실리지 않음(실제 프로젝션으로 기존 9행 조회 확인). Agenda 계약 만족은 실제 `AgendaSchema`로 8개 정상 상태 통과·5개 위반 거부를 스크립트로 검증(MockValidationBanner 미발생 근거)
+  - **미완/미확인**: 브라우저 클릭 회귀는 WorkspacePage가 실제 Supabase 인증 뒤라 테스트 계정 로그인 필요 — 계약 레벨 검증(스키마 파싱)으로 대체하고 대화형 클릭 통과는 미수행. Manager 실제 판정·저장·web 소비는 T-019.2~4
+- 이후: SPEC-AI-002 나머지(T-019.2~4)~003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import {
-  SourceAnswerEventSchema,
-  type SourceAnswerEvent,
+  QuestionStreamEventSchema,
+  type QuestionStreamEvent,
 } from "@decision-log/shared";
 import { z } from "zod";
 
@@ -52,9 +52,9 @@ function handle(response: Response, error: unknown): void {
 }
 
 /** SSE 프레임 하나를 내보낸다. 나가는 이벤트도 공유 계약으로 검증한다. */
-function writeEvent(response: Response, event: SourceAnswerEvent): void {
+function writeEvent(response: Response, event: QuestionStreamEvent): void {
   if (response.writableEnded) return;
-  const parsed = SourceAnswerEventSchema.parse(event);
+  const parsed = QuestionStreamEventSchema.parse(event);
   response.write(`data: ${JSON.stringify(parsed)}\n\n`);
 }
 
@@ -138,9 +138,9 @@ export async function postSourceAnswers(
       },
     });
 
-    writeEvent(response, { type: "done", sourceAnswers });
+    writeEvent(response, { type: "source_answer.done", sourceAnswers });
   } catch (error) {
-    // 에러 전용 이벤트는 두지 않는다(이벤트 계약 2종 유지). 대신 **항상 터미널 신호(done)** 를
+    // 에러 전용 이벤트는 두지 않는다. 대신 **항상 터미널 신호(source_answer.done)** 를
     // 보내 클라이언트가 매달리지 않게 한다. 남은 미종결 행은 실패로 마감해 상태를 정합하게 만든다.
     console.error(
       "[sourceAnswers] 스트림 처리 실패:",
@@ -156,7 +156,7 @@ export async function postSourceAnswers(
         userClient,
         params.data.questionId,
       );
-      writeEvent(response, { type: "done", sourceAnswers });
+      writeEvent(response, { type: "source_answer.done", sourceAnswers });
     } catch (recoveryError) {
       // 마감·재조회까지 실패하면 done 없이 닫는다(무한 루프 방지).
       // 클라이언트는 done 없는 종료를 GET 스냅샷 재조회로 화해한다.
