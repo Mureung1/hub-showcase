@@ -12,6 +12,7 @@
 - 상태 확인 진입점: `api/health.ts`
 - 캡처 진입점: `api/insights/capture.ts`
 - 메모 진입점: `api/insights/[insightId]/memo.ts`
+- 꺼내보기 진입점: `api/insights/retrieve.ts`
 - Notion OAuth callback: `api/imports/notion/callback.ts`
 - Notion 연결·분석: `api/imports/notion/`
 - 가져오기 만료 정리: `api/cron/import-cleanup.ts`
@@ -29,7 +30,7 @@ VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
 ```
 
-다음 값은 Development, Preview, Production 각각의 Sensitive 환경 변수로 둔다. 실제 값은 저장소·문서·빌드 출력에 기록하지 않는다.
+다음 값은 Preview와 Production의 Sensitive 환경 변수로 둔다. Vercel은 Development 환경의 Sensitive 변수를 지원하지 않으므로 로컬 개발에서는 `.env.local`만 사용한다. 실제 값은 저장소·문서·빌드 출력에 기록하지 않는다.
 
 ```text
 IMPORT_APP_ORIGIN
@@ -37,6 +38,7 @@ IMPORT_TOKEN_ENCRYPTION_KEY
 NOTION_CLIENT_ID
 NOTION_CLIENT_SECRET
 NOTION_REDIRECT_URI
+GEMINI_API_KEY
 SUPABASE_SERVICE_ROLE_KEY
 CRON_SECRET
 ```
@@ -130,6 +132,25 @@ npx --yes supabase@2.109.1 stop --no-backup
 gh run view <run-id> --log-failed
 ```
 
+## 꺼내보기 의미 검색 배포
+
+의미 검색은 데이터베이스 구조, 서버 환경 변수, 앱 배포와 기존 데이터 변환이 모두 준비되어야 사용할 수 있다. 다음 순서를 지킨다.
+
+1. `supabase/migrations/20260729010000_add_semantic_retrieve.sql`을 적용한다.
+2. Vercel 서버 환경에 `GEMINI_API_KEY`와 `SUPABASE_SERVICE_ROLE_KEY`가 있는지 확인한다.
+3. 앱을 배포하고 인증되지 않은 `/api/insights/retrieve` 요청이 HTTP 401을 반환하는지 확인한다.
+4. `npm run retrieve:backfill:submit -- --dry-run`으로 기존 인사이트 변환 대상 건수만 확인한다.
+5. 담당자가 건수와 비용을 승인한 뒤 `--confirm`으로 Gemini Batch 작업을 제출한다.
+6. 제출 때 출력된 배치 이름으로 `npm run retrieve:backfill:apply -- --batch batches/배치-ID --dry-run`을 실행해 상태와 성공·실패 건수를 확인한다.
+7. 완료 결과 반영을 다시 승인한 뒤 같은 명령에 `--confirm`을 붙인다.
+8. 기존 데이터 변환 대상이 0건인지 확인하고, 표현이 다른 대표 상황으로 꺼내보기를 확인한다.
+
+Batch 제출과 결과 반영은 자동 배포에 넣지 않는다. 두 명령의 `--confirm`은 서로 다른 승인 단계이며, 실제 API 키와 제목·메모는 출력하거나 작업 기록에 남기지 않는다. 제출 결과를 연결하는 로컬 상태 파일은 `scripts/retrieve_backfill/state/`에 있으므로 결과 반영도 같은 환경에서 실행한다.
+
+Gemini Embedding 2의 Batch API는 Free Tier에서 제공되지 않는다. `GEMINI_API_KEY`가 연결된 프로젝트를 Paid Tier로 전환하고, Prepay 계정이라면 사용 가능한 잔액이 있는지 확인한 뒤에만 Batch를 제출한다.
+
+문제가 생기면 보관함 조회·저장과 보관함 검색을 유지하고 꺼내보기 API만 비활성화한다. 의미 검색 실패를 보관함 단어 검색으로 자동 전환하지 않는다. 벡터와 변환 작업 테이블은 원본 인사이트와 분리되어 있으므로 복구 과정에서 인사이트를 삭제하지 않는다.
+
 ## 인증 URL
 
 - Site URL: `https://hub-ppre1udes-projects.vercel.app`
@@ -208,6 +229,8 @@ npm run package:extension
 - [Supabase GitHub 연동](https://supabase.com/docs/guides/deployment/branching/github-integration)
 - [Supabase GitHub Actions 자동 테스트](https://supabase.com/docs/guides/deployment/ci/testing)
 - [Supabase 데이터베이스 테스트](https://supabase.com/docs/guides/database/testing)
+- [Gemini Batch API](https://ai.google.dev/gemini-api/docs/batch-api)
+- [Gemini Embeddings](https://ai.google.dev/gemini-api/docs/embeddings)
 - [Supabase Redirect URL](https://supabase.com/docs/guides/auth/redirect-urls)
 - [Supabase Google 로그인](https://supabase.com/docs/guides/auth/social-login/auth-google)
 - [Notion Public connections](https://developers.notion.com/guides/get-started/public-connections)

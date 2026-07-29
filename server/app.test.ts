@@ -9,6 +9,7 @@ import {
   NotionImportServiceError,
   type NotionImportService,
 } from './insight_import/notion_import_service';
+import type { ServerInsightRetrieveService } from './retrieve/insight_retrieve_service';
 
 const INSIGHT_ID = '10000000-0000-4000-8000-000000000001';
 
@@ -288,6 +289,31 @@ describe('POST /api/insights/capture', () => {
   });
 });
 
+describe('POST /api/insights/retrieve', () => {
+  it('인증된 꺼내보기 요청을 의미 검색 서비스에 전달한다', async () => {
+    const retrieveService = createRetrieveService({
+      insightIds: ['insight-2', 'insight-1'],
+      ok: true,
+      pendingCount: 0,
+    });
+
+    const response = await request(createApp({ retrieveService }))
+      .post('/api/insights/retrieve')
+      .set('Authorization', 'Bearer access-token')
+      .send({ query: '로그인 오류 안내' });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      insightIds: ['insight-2', 'insight-1'],
+      ok: true,
+      pendingCount: 0,
+    });
+    expect(retrieveService.retrieve).toHaveBeenCalledWith('access-token', {
+      query: '로그인 오류 안내',
+    });
+  });
+});
+
 describe('PATCH /api/insights/:insightId/memo', () => {
   it('passes the bearer token, insight id, and memo to the service', async () => {
     const memoService = createMemoService({ ok: true });
@@ -456,4 +482,12 @@ function createNotionImportService() {
     start: vi.fn<NotionImportService['start']>(),
     status: vi.fn<NotionImportService['status']>(),
   };
+}
+
+function createRetrieveService(
+  result: Awaited<ReturnType<ServerInsightRetrieveService['retrieve']>>
+) {
+  return {
+    retrieve: vi.fn(async () => result),
+  } satisfies ServerInsightRetrieveService;
 }

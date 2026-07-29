@@ -185,7 +185,7 @@ Express 서버는 FSD 대상이 아니므로 `server/`에 둔다. `/api/health` 
 - 웹과 외부 저장 채널은 같은 캡처 계약을 사용한다. 링크 저장이 성공한 뒤 메모·제목·카테고리를 선택적으로 갱신한다.
 - Web Storage 어댑터는 역사적 로컬 MVP 및 호환 작업을 위한 보조 구현이며, 현재 런타임 저장소 선택은 Supabase다.
 - 데이터 계약 버전은 Web Storage의 `schemaVersion`과 Supabase의 `schema_version`에 기록한다. Supabase 저장소와 캡처 서비스도 읽은 데이터가 현재 버전인지 검증한다.
-- 검색과 `꺼내보기`는 원격 목록을 불러온 뒤 도메인 순수 함수로 실행해 저장 인프라와 결정적 랭킹 계약을 분리한다.
+- 보관함 검색은 브라우저가 불러온 목록에서 제목, 메모, 카테고리, 도메인과 URL의 단어를 비교한다. `꺼내보기`는 로그인 토큰을 받은 서버가 제목·메모와 현재 상황의 Gemini 벡터를 만들고, Supabase가 같은 사용자의 벡터만 비교한다. 브라우저는 서버가 반환한 인사이트 ID를 이미 불러온 보관함 데이터와 연결한다.
 - 범용 파일 가져오기는 브라우저에서 파싱·정규화한 후보만 Supabase RPC로 보내고 원본 파일 body는 서버로 보내지 않는다.
 - Notion 연결은 서버가 OAuth state를 단일 사용으로 검증하고 AES-256-GCM으로 토큰을 암호화한다. 사용자 bearer client는 작업·후보 RPC와 RLS에만 사용하고 service role은 callback 토큰 저장과 만료 정리에만 사용한다.
 - Notion 분석은 Provider cursor를 DB에 저장해 요청 slice 단위로 재개하며 완료·취소 시 토큰 철회를 시도한다. 연결 생성 24시간 뒤에는 암호화 OAuth 토큰과 연결 row, 미완료 작업의 Provider cursor·후보·오류·컬렉션이 만료 대상이 되고 다음 일일 Cron이 Provider 응답과 무관하게 삭제한다. 이미 반영된 인사이트와 완료·Undo 작업 기록은 자동 삭제하지 않는다.
