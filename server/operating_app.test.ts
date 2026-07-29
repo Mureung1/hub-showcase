@@ -7,6 +7,8 @@ const serviceMocks = vi.hoisted(() => ({
   cleanupConfig: vi.fn(),
   notionConfig: vi.fn(),
   notionStart: vi.fn(),
+  retrieve: vi.fn(),
+  retrieveConfig: vi.fn(),
   revokeExpiredConnections: vi.fn(),
   updateMemo: vi.fn(),
 }));
@@ -21,6 +23,16 @@ vi.mock('./supabase_insight_memo.js', () => ({
   createSupabaseInsightMemoService: () => ({
     update: serviceMocks.updateMemo,
   }),
+}));
+
+vi.mock('./retrieve/supabase_insight_retrieve_service.js', () => ({
+  createSupabaseInsightRetrieveService: (config: unknown) => {
+    serviceMocks.retrieveConfig(config);
+
+    return {
+      retrieve: serviceMocks.retrieve,
+    };
+  },
 }));
 
 vi.mock('./insight_import/import_cleanup_service.js', () => ({
@@ -67,6 +79,8 @@ describe('운영 API 서비스 조립', () => {
     serviceMocks.cleanupConfig.mockReset();
     serviceMocks.notionConfig.mockReset();
     serviceMocks.notionStart.mockReset();
+    serviceMocks.retrieve.mockReset();
+    serviceMocks.retrieveConfig.mockReset();
     serviceMocks.revokeExpiredConnections.mockReset();
     serviceMocks.updateMemo.mockReset();
   });
@@ -108,6 +122,35 @@ describe('운영 API 서비스 조립', () => {
       '123e4567-e89b-42d3-a456-426614174000',
       { memo: '다시 보기' }
     );
+  });
+
+  it('서버 전용 설정으로 꺼내보기 의미 검색을 조립한다', async () => {
+    serviceMocks.retrieve.mockResolvedValue({
+      insightIds: ['insight-2', 'insight-1'],
+      ok: true,
+      pendingCount: 0,
+    });
+    const app = createOperatingApp({
+      ...environment,
+      GEMINI_API_KEY: 'gemini-key',
+      SUPABASE_SERVICE_ROLE_KEY: 'service-role-key',
+    });
+
+    const response = await request(app)
+      .post('/api/insights/retrieve')
+      .set('Authorization', 'Bearer access-token')
+      .send({ query: '로그인 오류 안내' });
+
+    expect(response.status).toBe(200);
+    expect(serviceMocks.retrieveConfig).toHaveBeenCalledWith({
+      geminiApiKey: 'gemini-key',
+      publishableKey: 'sb_publishable_test',
+      serviceRoleKey: 'service-role-key',
+      url: 'https://project.supabase.co',
+    });
+    expect(serviceMocks.retrieve).toHaveBeenCalledWith('access-token', {
+      query: '로그인 오류 안내',
+    });
   });
 
   it('비밀 설정이 없으면 기존 API는 유지하고 만료 정리만 비활성화한다', async () => {

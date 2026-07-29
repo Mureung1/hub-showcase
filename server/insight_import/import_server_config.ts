@@ -37,7 +37,7 @@ export function readImportServerConfig(
     Boolean(readValue(environment, key))
   );
 
-  if (!cronSecret && !serviceRoleKey && !hasNotionSetting) {
+  if (!cronSecret && !hasNotionSetting) {
     return null;
   }
 
