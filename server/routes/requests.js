@@ -207,6 +207,8 @@ router.get('/', async (req, res) => {
     roomsByKey.get(key).memberIds.push(row.id)
   }
 
+  const boardedAtByRequestId = Object.fromEntries(data.map((r) => [r.id, r.boarded_at]))
+
   const rooms = [...roomsByKey.values()]
     .map(({ representative, memberIds }) => ({
       ...representative,
@@ -216,6 +218,8 @@ router.get('/', async (req, res) => {
     .filter((room) => room.groupCount < 4)
     // 마지막 활동(하트비트)이 오래된 방은 후보 목록에서 제외 (방장이 떠나고 안 돌아온 방 정리)
     .filter((room) => !isRoomStale(room.last_seen_at))
+    // 이미 탑승(출발)한 방은 더 이상 참여할 수 없으므로 후보 목록에서 제외
+    .filter((room) => !room.memberIds.some((id) => boardedAtByRequestId[id]))
 
   const { myRequestId } = req.query
   const me = myRequestId ? data.find((r) => r.id === myRequestId) : null
