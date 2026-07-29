@@ -270,6 +270,7 @@ export function useInsightWorkspace({
             deletedIdSet.size !== uniqueInsightIds.length ||
             uniqueInsightIds.some((id) => !deletedIdSet.has(id))
           ) {
+            await reloadInsights();
             return { ok: false, reason: 'write-failed' };
           }
 
@@ -283,7 +284,7 @@ export function useInsightWorkspace({
         },
         { ok: false, reason: 'write-failed' }
       ),
-    [repository, runMutation]
+    [reloadInsights, repository, runMutation]
   );
 
   const detachCategory = useCallback(
