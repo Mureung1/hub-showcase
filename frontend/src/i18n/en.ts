@@ -109,4 +109,5 @@ export const en = {
   'points.category.종이팩': 'Paper Cartons',
   'points.category.폐의약품': 'Expired Medicine',
   'points.category.의류': 'Clothing',
+  'points.category.재활용센터': 'Recycling Centers',
 } satisfies Record<keyof typeof ko, string>

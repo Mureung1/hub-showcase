@@ -108,4 +108,5 @@ export const ko = {
   'points.category.종이팩': '종이팩',
   'points.category.폐의약품': '폐의약품',
   'points.category.의류': '의류',
+  'points.category.재활용센터': '재활용센터',
 } as const

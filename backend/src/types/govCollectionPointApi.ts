@@ -44,3 +44,24 @@ export interface GovClothingRow {
   mngInstNm: string
   dataCrtrYmd: string
 }
+
+// 전국재활용센터표준데이터(tn_pubr_public_ruse_cnter_api) 원본 응답 타입.
+// 다른 3개 데이터셋과 달리 CTPV_NM/SGG_NM 필드가 없고 주소 문자열(rdnmadr/lnmadr)만 제공 — 시/도·시군구는
+// 주소를 파싱해서 뽑아야 한다(scripts/syncCollectionPoints.ts의 parseAddressRegion 참고).
+// trtmntPrdlst(주요취급품목정보)는 "가구+냉장고+TV 등"/"종이+고철+철캔+페트 등"처럼 일반 재활용센터가
+// 취급하는 품목을 자유 텍스트로 나열한 것이라 소형가전/종이팩 전용 수거함과는 다른 시설이다 — 그래서
+// 기존 카테고리에 억지로 끼워 맞추지 않고 "재활용센터"라는 별도 카테고리로 둔다.
+export interface GovRecyclingCenterRow {
+  cnterNm: string
+  rdnmadr: string
+  lnmadr: string
+  latitude: string
+  longitude: string
+  trtmntPrdlst: string
+  weekdayOperOpenHhmm: string
+  weekdayOperColseHhmm: string
+  holidayOperOpenHhmm: string
+  holidayCloseOpenHhmm: string
+  rstdeInfo: string
+  referenceDate: string
+}
