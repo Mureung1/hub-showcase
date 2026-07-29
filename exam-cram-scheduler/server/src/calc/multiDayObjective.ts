@@ -18,6 +18,7 @@ import { alertness } from "./alertness.js";
 import { buildMultiNightSegments, segmentAt } from "./candidateSleepSegments.js";
 import type { CaffeineDose } from "./caffeineConcentration.js";
 import type { NightCandidate } from "./multiDayCandidates.js";
+import { computeStudyShortfall, type ExamStudyNeed, type ExamStudyResult } from "./studyReservation.js";
 
 export interface MultiDayScheduleCandidate {
   /**
@@ -47,6 +48,24 @@ export interface MultiDayObjectiveInput {
   /** 이 값보다 짧게 자는 밤이 있으면 패널티를 부과한다. 안 넘기면 패널티 없음(기존 동작 그대로). */
   minSleepHours?: number;
   /**
+   * ① 밤별 최소 수면시간(2026-07-30). 넘기면 밤 인덱스별로 minSleepHours 대신 이 값을 쓴다
+   * (해당 인덱스가 없거나 undefined면 minSleepHours로, 그것도 없으면 0으로 떨어진다).
+   * 조정 화면에서 "이 밤은 최소 N시간"처럼 밤마다 다르게 걸 수 있게 하려고 배열로 받는다.
+   */
+  minSleepHoursByNight?: number[];
+  /**
+   * ② 시험별 남은 공부량(2026-07-30). examTimes와 같은 연속 좌표계를 쓴다(순서는 무관 —
+   * studyReservation이 시각순으로 정렬한다). 주면 시험별 공부 부족 시간을 함께 계산한다.
+   */
+  studyNeeds?: ExamStudyNeed[];
+  /** ② 공부를 시작할 수 있는 가장 이른 시각(연속 좌표, 보통 "지금"). studyNeeds가 있을 때만 쓰인다. */
+  studyWindowStart?: number;
+  /**
+   * ② true면 공부 부족분을 점수에서 깎는다("공부 시간 확보" 선택). false/미지정이면 부족분을
+   * 계산해서 결과에 담기만 하고 점수에는 반영하지 않는다(경고만 띄우는 기본 동작).
+   */
+  enforceStudyTime?: boolean;
+  /**
    * #15 — 검색 대상이 아니지만 항상 혈중농도 계산에 포함되어야 하는 카페인(예: 오늘
    * 이미 마신 커피). schedule.doses(검색 중인 후보)와 합쳐서 alertness()에 넘기되,
    * 반환하는 examScores/score에만 반영되고 schedule 자체(추천 목록)에는 안 섞인다.
@@ -67,7 +86,11 @@ export interface MultiDayObjectiveResult {
   asleepDoseHours: number;
   /** 하루 안전 한도를 넘은 양의 합(mg). 날짜별로 계산해서 더한다. 0이면 문제 없음. */
   dailyExcessMg: number;
-  /** 시험별 점수의 최솟값에서 수면 부족·수면 중 섭취·한도 초과 패널티를 뺀 최종 점수 */
+  /** ② 시험별 공부 부족 시간의 합(시간). studyNeeds를 안 주면 0. */
+  studyShortfallHours: number;
+  /** ② 시험별 공부 필요/확보/부족 내역. studyNeeds를 안 주면 빈 배열. */
+  studyShortfallByExam: ExamStudyResult[];
+  /** 시험별 점수의 최솟값에서 수면 부족·수면 중 섭취·한도 초과·(선택 시)공부 부족 패널티를 뺀 최종 점수 */
   score: number;
 }
 
@@ -89,6 +112,13 @@ const ASLEEP_DOSE_PENALTY_PER_HOUR = 1.0;
 // 한도를 지키는 쪽이 항상 이긴다. 안전 관련 제약이므로 의도적으로 세게 잡았다.
 const DAILY_EXCESS_PENALTY_PER_MG = 0.005;
 
+// ② 공부 시간 확보 패널티(2026-07-30) — 사용자가 "공부 시간 확보"를 택했을 때만(enforceStudyTime)
+// 켜진다. 최소수면 패널티(0.5/h)가 "더 자라"고 잡아당기는 것과 반대로, "덜 자고 더 깨어있어라"
+// 방향으로 잡아당긴다. 사용자가 경고를 보고도 명시적으로 공부를 택한 상황이므로 최소수면을
+// 이길 수 있게 더 세게(1.0/h) 잡았다 — 근거 있는 상수가 아니라 근사치이고,
+// verifyStudyReservation.ts로 실제로 잠이 줄어드는지 확인하며 조정한다.
+const STUDY_SHORTFALL_PENALTY_PER_HOUR = 1.0;
+
 export function scoreMultiDaySchedule(input: MultiDayObjectiveInput): MultiDayObjectiveResult {
   const {
     habitualBedTime,
@@ -99,6 +129,10 @@ export function scoreMultiDaySchedule(input: MultiDayObjectiveInput): MultiDayOb
     halfLifeHours,
     warmupDays,
     minSleepHours,
+    minSleepHoursByNight,
+    studyNeeds,
+    studyWindowStart,
+    enforceStudyTime,
     fixedDoses,
     dailyLimitMg,
   } = input;
@@ -112,9 +146,12 @@ export function scoreMultiDaySchedule(input: MultiDayObjectiveInput): MultiDayOb
     return { examTime, score };
   });
 
-  const sleepShortfallHours = schedule.nights.reduce((sum, night) => {
+  // ① 밤별 최소 수면시간 우선 — 밤 인덱스에 값이 있으면 그걸, 없으면 전역 minSleepHours,
+  // 그것도 없으면 0(패널티 없음)을 쓴다.
+  const sleepShortfallHours = schedule.nights.reduce((sum, night, nightIndex) => {
+    const floor = minSleepHoursByNight?.[nightIndex] ?? minSleepHours ?? 0;
     const sleptHours = night.wakeTime - night.bedTime;
-    return sum + Math.max(0, (minSleepHours ?? 0) - sleptHours);
+    return sum + Math.max(0, floor - sleptHours);
   }, 0);
 
   // 추천 카페인만 검사한다 — fixedDoses는 사용자가 이미 마신 것이라 바꿀 수 없다.
@@ -141,11 +178,27 @@ export function scoreMultiDaySchedule(input: MultiDayObjectiveInput): MultiDayOb
     return 초과;
   })();
 
+  // ② 시험별 공부 부족 시간. studyNeeds를 안 주면 계산하지 않는다(기존 동작 그대로).
+  const study =
+    studyNeeds && studyNeeds.length > 0
+      ? computeStudyShortfall(segments, studyNeeds, studyWindowStart ?? 0)
+      : { total: 0, byExam: [] };
+
   const score =
     Math.min(...examScores.map((exam) => exam.score)) -
     SLEEP_SHORTFALL_PENALTY_PER_HOUR * sleepShortfallHours -
     ASLEEP_DOSE_PENALTY_PER_HOUR * asleepDoseHours -
-    DAILY_EXCESS_PENALTY_PER_MG * dailyExcessMg;
+    DAILY_EXCESS_PENALTY_PER_MG * dailyExcessMg -
+    // 공부 부족 패널티는 사용자가 "확보"를 택했을 때만 점수에 반영한다.
+    (enforceStudyTime ? STUDY_SHORTFALL_PENALTY_PER_HOUR * study.total : 0);
 
-  return { examScores, sleepShortfallHours, asleepDoseHours, dailyExcessMg, score };
+  return {
+    examScores,
+    sleepShortfallHours,
+    asleepDoseHours,
+    dailyExcessMg,
+    studyShortfallHours: study.total,
+    studyShortfallByExam: study.byExam,
+    score,
+  };
 }
