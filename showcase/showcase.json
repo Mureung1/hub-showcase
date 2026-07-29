@@ -3,7 +3,7 @@
   "title": "Letter&Co",
   "summary": "소모임 초대부터 시간대·장소 조율까지 한 곳에서 끝내는 모임 조율 서비스입니다.",
   "githubUser": "angelnumb8r(김민솔)",
-  "demoUrl": "",
+  "demoUrl": "https://letterandco.vercel.app",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
@@ -80,5 +80,6 @@
         ]
       }
     ]
-  }
+  },
+  "demoVideoUrl": "https://youtu.be/jH6yQF9Xbpw"
 }
