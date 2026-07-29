@@ -140,6 +140,22 @@ productsRouter.post("/check-overlap", requireAuth, async (req, res) => {
   const { gender, age } = await getUserNutritionProfile(req.user!.userId);
   const expandedProductNames = expandWithSynonyms(productNames);
 
+  // 입력어가 성분명과 일치하면 그 성분만 정확히 집계하고, 일치하는 성분이 없는
+  // 입력어에 한해서만 제품명 검색으로 넘어간다. (제품명에 우연히 성분명 키워드가
+  // 들어간 다른 제품까지 걸려서 무관한 성분이 섞이는 것을 방지)
+  const matchedIngredientNamesResult = await pool.query<{ name: string }>(
+    `SELECT DISTINCT i.name FROM ingredients i
+     WHERE EXISTS (
+       SELECT 1 FROM unnest($1::text[]) AS term
+       WHERE i.name ILIKE '%' || term || '%'
+     )`,
+    [expandedProductNames]
+  );
+  const ingredientTerms = matchedIngredientNamesResult.rows.map((row) => row.name);
+  const productTerms = expandedProductNames.filter(
+    (term) => !ingredientTerms.some((name) => name.includes(term) || term.includes(name))
+  );
+
   const result = await pool.query<OverlapRow>(
     `SELECT i.id AS ingredient_id, i.name AS ingredient_name,
             COALESCE(u.upper_limit_mg, i.upper_limit_mg) AS upper_limit_mg,
@@ -153,12 +169,13 @@ productsRouter.post("/check-overlap", requireAuth, async (req, res) => {
        AND u.gender = $2
        AND $3 >= u.min_age
        AND (u.max_age IS NULL OR $3 <= u.max_age)
-     WHERE EXISTS (
-       SELECT 1 FROM unnest($1::text[]) AS term
-       WHERE p.name ILIKE '%' || term || '%' OR i.name ILIKE '%' || term || '%'
-     )
+     WHERE i.name = ANY($4::text[])
+        OR EXISTS (
+          SELECT 1 FROM unnest($1::text[]) AS term
+          WHERE p.name ILIKE '%' || term || '%'
+        )
      GROUP BY i.id, i.name, i.upper_limit_mg, u.upper_limit_mg, u.rda_mg`,
-    [expandedProductNames, gender, age]
+    [productTerms, gender, age, ingredientTerms]
   );
 
   const overlapResults = result.rows.map(buildOverlapResult);
