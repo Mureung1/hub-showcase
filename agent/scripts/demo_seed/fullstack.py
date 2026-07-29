@@ -60,9 +60,6 @@ ALLOWED_USES = (
     "interpretation_context",
     "strategy",
     "roadmap",
-    "wiki_why_required",
-    "wiki_depth_criteria",
-    "wiki_interview_verification",
 )
 
 # ---------------------------------------------------------------- 요구 차원 5종
@@ -150,7 +147,7 @@ SECTION_REQUIREDNESS = {
     "우대사항": "preferred",
 }
 
-# ---------------------------------------------------------------- 공고 9건
+# ---------------------------------------------------------------- 공고 15건
 # 한 줄이 곧 요구 표현이다. (본문, 차원 키, 깊이) 로 적고 근거 위치는 실제로 계산한다.
 # 절 이름이 진술된 요구도(stated_requiredness)를 정한다.
 
@@ -336,10 +333,10 @@ POSTINGS: list[dict[str, Any]] = [
         "nn": "06",
         "company": "co_smilegate",
         "cluster": "game",
-        "period": PREV_PERIOD,
+        "period": RECENT_PERIOD,
         "title": "게임 운영 도구 풀스택 개발자",
-        "posted_at": "2024-10-02",
-        "closed_at": "2024-12-20",
+        "posted_at": "2026-06-02",
+        "closed_at": "2026-06-30",
         "entry_label": "experienced",
         "career_raw": "경력 2년 이상",
         "edu_raw": "학력 무관",
@@ -370,10 +367,10 @@ POSTINGS: list[dict[str, Any]] = [
         "nn": "07",
         "company": "co_daangn",
         "cluster": "startup",
-        "period": PREV_PERIOD,
+        "period": RECENT_PERIOD,
         "title": "광고 도구 풀스택 개발자 (주니어)",
-        "posted_at": "2025-01-15",
-        "closed_at": "2025-03-01",
+        "posted_at": "2026-01-15",
+        "closed_at": "2026-03-01",
         "entry_label": "entry_junior",
         "career_raw": "신입·주니어",
         "edu_raw": "학력 무관",
@@ -402,10 +399,10 @@ POSTINGS: list[dict[str, Any]] = [
         "nn": "08",
         "company": "co_navercloud",
         "cluster": "b2b_saas",
-        "period": PREV_PERIOD,
+        "period": RECENT_PERIOD,
         "title": "클라우드 콘솔 풀스택 개발자",
-        "posted_at": "2025-03-04",
-        "closed_at": "2025-04-30",
+        "posted_at": "2026-03-04",
+        "closed_at": "2026-04-30",
         "entry_label": "entry_junior",
         "career_raw": "신입·주니어",
         "edu_raw": "대졸 이상",
@@ -434,10 +431,10 @@ POSTINGS: list[dict[str, Any]] = [
         "nn": "09",
         "company": "co_kakaomobility",
         "cluster": "bigtech_platform",
-        "period": PREV_PERIOD,
+        "period": RECENT_PERIOD,
         "title": "모빌리티 내부 도구 풀스택 개발자",
-        "posted_at": "2025-05-20",
-        "closed_at": "2025-07-10",
+        "posted_at": "2026-05-20",
+        "closed_at": "2026-06-30",
         "entry_label": "experienced",
         "career_raw": "경력 3년 이상",
         "edu_raw": "대졸 이상",
@@ -461,6 +458,208 @@ POSTINGS: list[dict[str, Any]] = [
             "우대사항": [
                 ("REST API 스펙을 문서로 관리해 보신 분", "rest_api", "application"),
                 ("배포 파이프라인을 손봐 보신 분", "cloud", "application"),
+            ],
+        },
+    },
+    {
+        "nn": "10",
+        "company": "co_wantedlab",
+        "cluster": "startup",
+        "period": PREV_PERIOD,
+        "title": "채용 제품 풀스택 개발자",
+        "posted_at": "2024-03-18",
+        "closed_at": "2024-05-10",
+        "entry_label": "entry_junior",
+        "career_raw": "신입·주니어",
+        "edu_raw": "학력 무관",
+        "entry_raw": "신입 지원 가능",
+        "edu_label": "학력 무관",
+        "career_label": "신입·주니어",
+        "out_of_role_tags": ["plan_support"],
+        "reality_tags": ["solo_e2e"],
+        "axis_mentions": ["product_speed", "e2e_delivery"],
+        "advanced": [],
+        "sections": {
+            "주요업무": [
+                ("채용 담당자용 화면과 서버 기능을 한 흐름으로 개발합니다.", None, None),
+                ("사용자 의견을 정리해 작은 기능 단위로 빠르게 배포합니다.", None, None),
+            ],
+            "자격요건": [
+                ("Node.js와 TypeScript로 웹 서버를 구현해 보신 분", "node_ts", "application"),
+                ("React로 사용자 화면을 만들어 보신 분", "react_ui", "application"),
+                ("REST API를 화면과 연결해 보신 분", "rest_api", "foundation"),
+            ],
+            "우대사항": [
+                ("관계형 데이터베이스에 서비스 데이터를 설계해 보신 분", "rdb", "foundation"),
+            ],
+        },
+    },
+    {
+        "nn": "11",
+        "company": "co_musinsa",
+        "cluster": "bigtech_platform",
+        "period": PREV_PERIOD,
+        "title": "커머스 운영 플랫폼 풀스택 개발자",
+        "posted_at": "2024-07-08",
+        "closed_at": "2024-09-06",
+        "entry_label": "experienced",
+        "career_raw": "경력 3년 이상",
+        "edu_raw": "대졸 이상",
+        "entry_raw": "경력직 채용",
+        "edu_label": "대졸 이상",
+        "career_label": "경력 3년 이상",
+        "out_of_role_tags": ["data_ops", "qa_test"],
+        "reality_tags": ["deployed_service", "collab_api"],
+        "axis_mentions": ["e2e_delivery", "api_contract", "deploy_ops"],
+        "advanced": [("scale_traffic", "대규모 상품 조회 트래픽의 병목을 찾아 화면과 서버를 함께 개선합니다.")],
+        "sections": {
+            "주요업무": [
+                ("대규모 상품 조회 트래픽의 병목을 찾아 화면과 서버를 함께 개선합니다.", None, None),
+                ("운영 지표를 확인하고 장애가 반복되는 구간을 보완합니다.", None, None),
+            ],
+            "자격요건": [
+                ("TypeScript 기반 Node.js 서비스 운영 경험이 있으신 분", "node_ts", "application"),
+                ("React 화면의 성능을 측정하고 개선해 보신 분", "react_ui", "tradeoff"),
+                ("REST API 계약을 여러 팀과 관리해 보신 분", "rest_api", "tradeoff"),
+                ("Docker와 CI/CD로 배포 절차를 운영해 보신 분", "cloud", "application"),
+            ],
+            "우대사항": [
+                ("관계형 데이터베이스 쿼리를 최적화해 보신 분", "rdb", "application"),
+            ],
+        },
+    },
+    {
+        "nn": "12",
+        "company": "co_channelcorp",
+        "cluster": "b2b_saas",
+        "period": PREV_PERIOD,
+        "title": "고객 지원 SaaS 풀스택 개발자",
+        "posted_at": "2024-11-12",
+        "closed_at": "2025-01-10",
+        "entry_label": "entry_junior",
+        "career_raw": "신입·주니어",
+        "edu_raw": "학력 무관",
+        "entry_raw": "신입 지원 가능",
+        "edu_label": "학력 무관",
+        "career_label": "신입·주니어",
+        "out_of_role_tags": ["qa_test"],
+        "reality_tags": ["collab_api"],
+        "axis_mentions": ["api_contract", "data_modeling", "e2e_delivery"],
+        "advanced": [],
+        "sections": {
+            "주요업무": [
+                ("고객 지원 기능의 React 화면과 Node.js 서버를 함께 개발합니다.", None, None),
+                ("고객사별 설정 차이를 데이터 구조와 테스트로 관리합니다.", None, None),
+            ],
+            "자격요건": [
+                ("Node.js와 TypeScript로 서비스 기능을 작성해 보신 분", "node_ts", "application"),
+                ("React 컴포넌트를 재사용 가능한 구조로 만들어 보신 분", "react_ui", "application"),
+                ("관계형 데이터베이스의 테이블 관계를 설계해 보신 분", "rdb", "application"),
+            ],
+            "우대사항": [
+                ("REST API 문서를 기준으로 외부 시스템과 연동해 보신 분", "rest_api", "application"),
+                ("컨테이너로 개발 환경과 배포 환경을 맞춰 보신 분", "cloud", "foundation"),
+            ],
+        },
+    },
+    {
+        "nn": "13",
+        "company": "co_kakaobank",
+        "cluster": "fintech_finance",
+        "period": PREV_PERIOD,
+        "title": "금융 관리 서비스 풀스택 개발자",
+        "posted_at": "2025-03-17",
+        "closed_at": "2025-05-09",
+        "entry_label": "experienced",
+        "career_raw": "경력 3년 이상",
+        "edu_raw": "대졸 이상",
+        "entry_raw": "경력직 채용",
+        "edu_label": "대졸 이상",
+        "career_label": "경력 3년 이상",
+        "out_of_role_tags": [],
+        "reality_tags": ["deployed_service", "collab_api"],
+        "axis_mentions": ["api_contract", "data_modeling", "e2e_delivery"],
+        "advanced": [("realtime", "거래 상태가 바뀔 때 화면과 원장의 데이터 정합성을 검증합니다.")],
+        "sections": {
+            "주요업무": [
+                ("거래 상태가 바뀔 때 화면과 원장의 데이터 정합성을 검증합니다.", None, None),
+                ("감사 기록이 남는 금융 관리 화면과 API를 개발합니다.", None, None),
+            ],
+            "자격요건": [
+                ("TypeScript와 Node.js로 트랜잭션 서비스를 개발해 보신 분", "node_ts", "application"),
+                ("React로 복잡한 조회와 입력 화면을 운영해 보신 분", "react_ui", "application"),
+                ("REST API의 인증과 오류 처리 규칙을 설계해 보신 분", "rest_api", "tradeoff"),
+                ("관계형 데이터베이스 트랜잭션을 설계해 보신 분", "rdb", "tradeoff"),
+            ],
+            "우대사항": [
+                ("클라우드 환경에 금융 서비스를 배포해 보신 분", "cloud", "application"),
+            ],
+        },
+    },
+    {
+        "nn": "14",
+        "company": "co_samsungsds",
+        "cluster": "si_enterprise",
+        "period": PREV_PERIOD,
+        "title": "기업 업무 시스템 풀스택 개발자",
+        "posted_at": "2025-07-07",
+        "closed_at": "2025-08-29",
+        "entry_label": "entry_junior",
+        "career_raw": "신입·주니어",
+        "edu_raw": "대졸 이상",
+        "entry_raw": "신입 지원 가능",
+        "edu_label": "대졸 이상",
+        "career_label": "신입·주니어",
+        "out_of_role_tags": ["plan_support", "design_system"],
+        "reality_tags": ["collab_api"],
+        "axis_mentions": ["e2e_delivery", "data_modeling", "deploy_ops"],
+        "advanced": [],
+        "sections": {
+            "주요업무": [
+                ("기업 고객의 업무 절차를 React 화면과 서버 기능으로 구현합니다.", None, None),
+                ("요구사항과 데이터 변경 내역을 문서로 정리합니다.", None, None),
+            ],
+            "자격요건": [
+                ("Node.js 기반 웹 서버를 구현해 보신 분", "node_ts", "foundation"),
+                ("React로 업무용 화면을 구성해 보신 분", "react_ui", "foundation"),
+                ("관계형 데이터베이스 스키마를 작성해 보신 분", "rdb", "foundation"),
+            ],
+            "우대사항": [
+                ("클라우드 환경에 웹 애플리케이션을 배포해 보신 분", "cloud", "application"),
+            ],
+        },
+    },
+    {
+        "nn": "15",
+        "company": "co_smilegate",
+        "cluster": "game",
+        "period": PREV_PERIOD,
+        "title": "게임 라이브 운영 풀스택 개발자",
+        "posted_at": "2025-11-03",
+        "closed_at": "2025-11-30",
+        "entry_label": "experienced",
+        "career_raw": "경력 2년 이상",
+        "edu_raw": "학력 무관",
+        "entry_raw": "경력직 채용",
+        "edu_label": "학력 무관",
+        "career_label": "경력 2년 이상",
+        "out_of_role_tags": ["data_ops"],
+        "reality_tags": ["deployed_service", "collab_api"],
+        "axis_mentions": ["e2e_delivery", "data_modeling", "deploy_ops"],
+        "advanced": [],
+        "sections": {
+            "주요업무": [
+                ("게임 운영자가 쓰는 이벤트 화면과 관리 API를 함께 개발합니다.", None, None),
+                ("라이브 서비스 지표와 배포 상태를 확인해 장애에 대응합니다.", None, None),
+            ],
+            "자격요건": [
+                ("Node.js와 TypeScript로 운영 서버를 개발해 보신 분", "node_ts", "application"),
+                ("React로 실시간 운영 화면을 만들어 보신 분", "react_ui", "application"),
+                ("REST API로 게임 서버와 운영 도구를 연동해 보신 분", "rest_api", "application"),
+                ("관계형 데이터베이스로 이벤트 데이터를 관리해 보신 분", "rdb", "application"),
+            ],
+            "우대사항": [
+                ("CI/CD로 라이브 운영 도구를 배포해 보신 분", "cloud", "application"),
             ],
         },
     },
@@ -1237,6 +1436,18 @@ POSTING_SUMMARY: dict[str, tuple[str, str, str]] = {
     "05": ("정해진 방식대로 어긋나지 않게",
            "새로 만드는 일보다 이미 돌아가는 시스템을 고치는 일입니다. 문서와 표준 준수가 코드만큼 평가됩니다.",
            "편차 3건 · 기준선 일치 4건"),
+    "06": ("라이브 운영 흐름을 한 화면에 연결하는 사람",
+           "화면과 서버의 공통 기준선에 더해 실시간 운영 상태와 게임 서버 연동 경험을 확인하는 공고입니다.",
+           "편차 3건 · 기준선 일치 5건"),
+    "07": ("작게 만들고 자주 배포하는 제품 개발자",
+           "기본 구현 능력보다 작은 팀에서 개선 과제를 고르고 빠르게 배포한 경험이 변별점입니다.",
+           "편차 3건 · 기준선 일치 3건"),
+    "08": ("여러 상품을 안정적으로 연결하는 콘솔 개발자",
+           "관리 화면 구현을 전제로 데이터 구조와 클라우드 배포 환경을 함께 다룬 경험을 봅니다.",
+           "편차 3건 · 기준선 일치 4건"),
+    "09": ("여러 팀의 운영 흐름을 잇는 개발자",
+           "내부 화면과 API를 만드는 기준선 위에 데이터 흐름 정리와 배포 파이프라인 경험을 요구합니다.",
+           "편차 3건 · 기준선 일치 5건"),
 }
 
 
@@ -1971,7 +2182,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     } for c, nn in zip(CAPABILITIES, ["01", "04", "02"])
         for field in ("why_required", "depth_criteria", "interview_verification")]
 
-    # -------- 산출물 4종 (27행)
+    # -------- 산출물 4종 (31행)
     outputs: list[dict[str, Any]] = []
 
     def add_output(kind: str, output_type: str, agent: str, scope_level: str,
@@ -2159,7 +2370,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     return t
 
 
-# ---------------------------------------------------------------- 자기검사 5가지
+# ---------------------------------------------------------------- 자기검사 8가지
 
 
 def check_spans(t: dict[str, list[dict[str, Any]]]) -> list[str]:
@@ -2286,7 +2497,7 @@ def check_payload_keys(t: dict[str, list[dict[str, Any]]]) -> list[str]:
                 problems.append(f"{output['output_id']}: baseline 개수 {len(payload['baseline'])}")
             if payload["scope"]["level"] != "overall" and not 2 <= len(payload["deviations"]) <= 4:
                 problems.append(f"{output['output_id']}: deviations 개수 {len(payload['deviations'])}")
-    expected_counts = {"statistics": 1, "interpretation": 12, "strategy": 7, "roadmap": 7}
+    expected_counts = {"statistics": 1, "interpretation": 16, "strategy": 7, "roadmap": 7}
     if counts != expected_counts:
         problems.append(f"산출물 개수 {counts} != {expected_counts}")
     return problems
@@ -2327,6 +2538,118 @@ def check_concepts(t: dict[str, list[dict[str, Any]]]) -> list[str]:
     stored_fill_ids = {f["concept_id"] for f in t["roadmap_item_fills"]}
     if stored_fill_ids - concept_ids:
         problems.append(f"roadmap_item_fills 개념 누락 {sorted(stored_fill_ids - concept_ids)}")
+    return problems
+
+
+def check_posting_population(t: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """6. 공고 수·기간·기업군·진입 구분과 차원 승격 표본이 계약에 맞는가."""
+    problems: list[str] = []
+    expected_clusters = set(CLUSTER_DISPLAY)
+    period_spec = {
+        RECENT_PERIOD: (9, "2026-01-01", "2026-06-30", {"entry_junior": 5, "experienced": 4}),
+        PREV_PERIOD: (6, "2024-03-01", "2025-11-30", {"entry_junior": 3, "experienced": 3}),
+    }
+    if len(POSTINGS) != 15 or len(t["postings"]) != 15:
+        problems.append(f"공고 수 {len(POSTINGS)}/{len(t['postings'])} != 15/15")
+    expected_ids = {posting_id(f"{n:02d}") for n in range(1, 16)}
+    actual_ids = {row["posting_id"] for row in t["postings"]}
+    if actual_ids != expected_ids:
+        problems.append(f"공고 식별자 차이 {sorted(actual_ids ^ expected_ids)}")
+
+    for period, (expected_n, starts_on, ends_on, labels) in period_spec.items():
+        group = [p for p in POSTINGS if p["period"] == period]
+        if len(group) != expected_n:
+            problems.append(f"{period}: 공고 {len(group)}건 != {expected_n}건")
+        clusters = {p["cluster"] for p in group}
+        if clusters != expected_clusters:
+            problems.append(f"{period}: 기업군 차이 {sorted(clusters ^ expected_clusters)}")
+        actual_labels = {
+            label: sum(1 for p in group if p["entry_label"] == label)
+            for label in labels
+        }
+        if actual_labels != labels:
+            problems.append(f"{period}: entry_label {actual_labels} != {labels}")
+        for p in group:
+            if not starts_on <= p["posted_at"] <= ends_on:
+                problems.append(f"{p['nn']}: 게시일 {p['posted_at']} 범위 밖")
+
+    recent_cluster_counts = {
+        cluster: sum(1 for p in RECENT if p["cluster"] == cluster)
+        for cluster in CLUSTER_DISPLAY
+    }
+    if sorted(recent_cluster_counts.values()) != [1, 1, 1, 2, 2, 2]:
+        problems.append(f"recent 기업군 분포 {recent_cluster_counts} != 2·2·2·1·1·1")
+    prev_cluster_counts = {
+        cluster: sum(1 for p in PREV if p["cluster"] == cluster)
+        for cluster in CLUSTER_DISPLAY
+    }
+    if set(prev_cluster_counts.values()) != {1}:
+        problems.append(f"prev 기업군 분포 {prev_cluster_counts} != 기업군별 1건")
+
+    for dim in DIMENSIONS:
+        companies = {
+            p["company"] for p in POSTINGS if dim["key"] in POSTING_DIMS[p["nn"]]
+        }
+        if len(companies) < 2:
+            problems.append(f"{dim['key']}: 독립 회사 {len(companies)}곳")
+    return problems
+
+
+def check_output_population(t: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """7. 모듈 산출물 31행과 recent 공고 해석 9행이 정확히 짝을 이루는가."""
+    outputs = t["analysis_outputs"]
+    problems: list[str] = []
+    counts = {
+        kind: sum(1 for row in outputs if row["output_type"] == kind)
+        for kind in ("statistics", "interpretation", "strategy", "roadmap")
+    }
+    expected = {"statistics": 1, "interpretation": 16, "strategy": 7, "roadmap": 7}
+    if len(outputs) != 31 or counts != expected:
+        problems.append(f"산출물 {len(outputs)}행, 종류별 {counts} != 31행, {expected}")
+    posting_interpretations = {
+        row["scope_id"] for row in outputs
+        if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+    }
+    recent_ids = {posting_id(p["nn"]) for p in RECENT}
+    if posting_interpretations != recent_ids:
+        problems.append(
+            f"공고 해석 범위 차이 {sorted(posting_interpretations ^ recent_ids)}"
+        )
+    return problems
+
+
+def check_direct_contract_values(t: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """8. 모듈이 직접 담는 출처·기간·대상군·데이터셋·회사 값을 행마다 확인한다."""
+    problems: list[str] = []
+    allowed_use_values = {
+        "statistics", "interpretation_context", "strategy", "roadmap",
+        "wiki_definition", "wiki_why_required", "wiki_depth_criteria", "wiki_prerequisites",
+        "wiki_common_misconceptions", "wiki_interview_verification", "wiki_learning_sequence",
+    }
+    default_uses = {"statistics", "interpretation_context", "strategy", "roadmap"}
+    for row in t["source_assessments"]:
+        uses = set(row["allowed_uses"])
+        if not uses <= allowed_use_values:
+            problems.append(f"{row['assessment_id']}: 허용되지 않은 allowed_uses {sorted(uses - allowed_use_values)}")
+        if uses != default_uses:
+            problems.append(f"{row['assessment_id']}: 데모 공고 기본 allowed_uses 아님")
+        if (row["source_tier"], str(row["reliability_score"]), row["assessment_version"]) != (
+            "A", "0.95000", "sa_v1"
+        ):
+            problems.append(f"{row['assessment_id']}: 출처 평가 기본값 불일치")
+
+    for row in t["statistics_facts"]:
+        if row["period_id"] not in {RECENT_PERIOD, PREV_PERIOD}:
+            problems.append(f"{row['fact_id']}: 허용되지 않은 기간 {row['period_id']}")
+        if row["metric_family"] == "entry_label_advanced_signal_rate":
+            if row["entry_segment"] != "entry_junior":
+                problems.append(f"{row['fact_id']}: entry_segment {row['entry_segment']}")
+
+    if t.get("dataset_versions"):
+        problems.append("fullstack 모듈이 dataset_versions 행을 만들었다")
+    for row in t["postings"]:
+        if row["company_id"] not in COMPANY_DISPLAY:
+            problems.append(f"{row['posting_id']}: 기준 데이터에 없는 회사 {row['company_id']}")
     return problems
 
 
@@ -2430,6 +2753,9 @@ CHECKS = (
     ("3 외래키", check_foreign_keys),
     ("4 payload 키", check_payload_keys),
     ("5 체크 개념", check_concepts),
+    ("6 공고 모집단", check_posting_population),
+    ("7 산출물 범위", check_output_population),
+    ("8 직접 입력 계약", check_direct_contract_values),
 )
 
 

@@ -221,9 +221,9 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 )
 
 
-# ============================================================ 3. 채용공고 9건
+# ============================================================ 3. 채용공고 15건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
-# 주석은 recent 5건에만 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
+# 주석은 상세 해석이 필요한 공고에 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
 #   ("base", 기준선 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
@@ -498,12 +498,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_kakao",
         "company": "카카오",
         "cluster": "bigtech_platform",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입 지원 가능",
         "career_label_raw": "신입~3년",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2025-02-18T10:00:00+09:00",
+        "posted_at": "2026-02-18T10:00:00+09:00",
         "title": "AI 엔지니어 (추천) 신입·주니어",
         "sections": (
             ("주요업무", (
@@ -527,12 +527,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_wantedlab",
         "company": "원티드랩",
         "cluster": "startup",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입",
         "career_label_raw": "신입",
         "edu_label_raw": "학력 무관",
-        "posted_at": "2025-04-08T10:00:00+09:00",
+        "posted_at": "2026-04-08T10:00:00+09:00",
         "title": "AI 엔지니어 (신입)",
         "sections": (
             ("주요업무", (
@@ -556,12 +556,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_samsungsds",
         "company": "삼성에스디에스",
         "cluster": "si_enterprise",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력",
         "career_label_raw": "경력 3년 이상",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2024-11-12T10:00:00+09:00",
+        "posted_at": "2026-05-26T10:00:00+09:00",
         "title": "AI 엔지니어 (고객사 프로젝트)",
         "sections": (
             ("주요업무", (
@@ -585,12 +585,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_sendbird",
         "company": "센드버드",
         "cluster": "b2b_saas",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력",
         "career_label_raw": "경력 3년 이상",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2025-01-20T10:00:00+09:00",
+        "posted_at": "2026-06-23T10:00:00+09:00",
         "title": "AI 엔지니어 (메시징 제품)",
         "sections": (
             ("주요업무", (
@@ -604,6 +604,180 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             ("우대사항", (
                 ("모델을 API 형태로 서빙해 본 경험이 있는 분", "model-serving", "application", None),
                 ("LLM을 활용한 제품 기능을 만들어 본 경험이 있는 분", "llm-app", "application", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "10",
+        "company_id": "co_coupang",
+        "company": "쿠팡",
+        "cluster": "bigtech_platform",
+        "period": PRIOR,
+        "entry_label": "entry_junior",
+        "entry_label_raw": "신입 지원 가능",
+        "career_label_raw": "신입~2년",
+        "edu_label_raw": "학사 이상",
+        "posted_at": "2025-08-19T10:00:00+09:00",
+        "title": "AI 엔지니어 (수요 예측) 신입·주니어",
+        "sections": (
+            ("주요업무", (
+                ("상품 수요 예측 모델의 학습 데이터를 구축하고 품질을 점검합니다.", "data-prep", "application", None),
+                ("예측 결과를 평가 지표로 비교하고 개선 실험을 수행합니다.", None, "application", None),
+            )),
+            ("자격요건", (
+                ("Python으로 데이터 처리와 모델 학습 코드를 작성할 수 있는 분", "python", "application", None),
+                ("PyTorch로 예측 모델을 학습해 본 경험이 있는 분", "dl-framework", "application", None),
+            )),
+            ("우대사항", (
+                ("대규모 거래 데이터를 전처리해 본 경험이 있는 분", "data-prep", "tradeoff", None),
+                ("실험 결과를 재현 가능한 형태로 기록해 본 분", None, "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "11",
+        "company_id": "co_daangn",
+        "company": "당근마켓",
+        "cluster": "startup",
+        "period": PRIOR,
+        "entry_label": "entry_junior",
+        "entry_label_raw": "신입 지원 가능",
+        "career_label_raw": "경력 무관",
+        "edu_label_raw": "학력 무관",
+        "posted_at": "2025-06-10T10:00:00+09:00",
+        "title": "AI 엔지니어 (지역 추천) 신입·주니어",
+        "sections": (
+            ("주요업무", (
+                ("지역 서비스에 적용할 추천 모델과 LLM 기능을 개발합니다.", "llm-app", "application", None),
+                ("사용자 행동 로그를 학습 데이터로 정제합니다.", "data-prep", "application", None),
+            )),
+            ("자격요건", (
+                ("Python으로 데이터 분석과 모델 실험을 수행할 수 있는 분", "python", "application", None),
+                ("서비스 문제를 실험 가능한 가설로 바꿀 수 있는 분", None, "foundation", None),
+            )),
+            ("우대사항", (
+                ("RAG 또는 프롬프트 기반 기능을 만들어 본 경험이 있는 분", "llm-app", "application", None),
+                ("데이터 라벨링 기준을 설계해 본 경험이 있는 분", "data-prep", "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "12",
+        "company_id": "co_channelcorp",
+        "company": "채널코퍼레이션",
+        "cluster": "b2b_saas",
+        "period": PRIOR,
+        "entry_label": "entry_junior",
+        "entry_label_raw": "신입 지원 가능",
+        "career_label_raw": "신입~3년",
+        "edu_label_raw": "학사 이상",
+        "posted_at": "2025-10-14T10:00:00+09:00",
+        "title": "AI 엔지니어 (상담 자동화) 신입·주니어",
+        "sections": (
+            ("주요업무", (
+                ("고객 상담 문서를 검색하는 RAG 기능을 개발합니다.", "llm-app", "application", None),
+                ("모델 응답 API의 지연과 오류를 관찰합니다.", "model-serving", "application", None),
+            )),
+            ("자격요건", (
+                ("Python으로 웹 API와 데이터 처리 코드를 작성할 수 있는 분", "python", "application", None),
+                ("LLM 응답 품질을 평가해 본 경험이 있는 분", "llm-app", "foundation", None),
+            )),
+            ("우대사항", (
+                ("모델을 컨테이너 환경에 배포해 본 경험이 있는 분", "model-serving", "foundation", None),
+                ("고객 피드백을 제품 개선에 반영해 본 분", None, "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "13",
+        "company_id": "co_viva",
+        "company": "비바리퍼블리카",
+        "cluster": "fintech_finance",
+        "period": PRIOR,
+        "entry_label": "experienced",
+        "entry_label_raw": "경력",
+        "career_label_raw": "경력 3년 이상",
+        "edu_label_raw": "학사 이상",
+        "posted_at": "2024-09-03T10:00:00+09:00",
+        "title": "AI 엔지니어 (금융 위험 모델)",
+        "sections": (
+            ("주요업무", (
+                ("금융 위험 모델에 사용할 데이터를 정제하고 피처를 설계합니다.", "data-prep", "tradeoff", None),
+                ("운영 모델의 성능과 데이터 변화를 모니터링합니다.", "model-serving", "application", None),
+            )),
+            ("자격요건", (
+                ("Python으로 대용량 데이터를 분석하고 모델링할 수 있는 분", "python", "application", None),
+                ("데이터 품질 검증 절차를 설계해 본 경험이 있는 분", "data-prep", "application", None),
+            )),
+            ("우대사항", (
+                ("모델 서빙 파이프라인을 운영해 본 경험이 있는 분", "model-serving", "application", None),
+                ("금융 데이터 보호 정책을 이해하는 분", None, "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "14",
+        "company_id": "co_lgcns",
+        "company": "엘지씨엔에스",
+        "cluster": "si_enterprise",
+        "period": PRIOR,
+        "entry_label": "experienced",
+        "entry_label_raw": "경력",
+        "career_label_raw": "경력 3년 이상",
+        "edu_label_raw": "학사 이상",
+        "posted_at": "2024-05-21T10:00:00+09:00",
+        "title": "AI 엔지니어 (제조 품질 분석)",
+        "sections": (
+            ("주요업무", (
+                ("제조 현장 데이터를 수집하고 학습용 데이터로 전처리합니다.", "data-prep", "application", None),
+                ("품질 예측 모델을 개발하고 고객사 환경에서 검증합니다.", "dl-framework", "application", None),
+            )),
+            ("자격요건", (
+                ("Python 기반 데이터 분석과 모델 개발 경험이 있는 분", "python", "application", None),
+                ("딥러닝 프레임워크로 모델을 학습해 본 경험이 있는 분", "dl-framework", "application", None),
+            )),
+            ("우대사항", (
+                ("센서 데이터의 결측과 이상치를 처리해 본 경험이 있는 분", "data-prep", "foundation", None),
+                ("고객사 프로젝트 문서를 작성해 본 경험이 있는 분", None, "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "15",
+        "company_id": "co_krafton",
+        "company": "크래프톤",
+        "cluster": "game",
+        "period": PRIOR,
+        "entry_label": "experienced",
+        "entry_label_raw": "경력",
+        "career_label_raw": "경력 3년 이상",
+        "edu_label_raw": "학사 이상",
+        "posted_at": "2025-03-25T10:00:00+09:00",
+        "title": "게임 AI 엔지니어 (대화형 캐릭터)",
+        "sections": (
+            ("주요업무", (
+                ("대화형 캐릭터를 위한 LLM 응용 모델을 개발합니다.", "llm-app", "application", None),
+                ("게임 서버에서 사용할 추론 API를 개발하고 운영합니다.", "model-serving", "tradeoff", None),
+            )),
+            ("자격요건", (
+                ("Python으로 모델 학습과 평가 코드를 구현할 수 있는 분", "python", "application", None),
+                ("PyTorch 학습 구조를 수정하고 실험해 본 경험이 있는 분", "dl-framework", "tradeoff", None),
+            )),
+            ("우대사항", (
+                ("LLM 프롬프트와 RAG 구조를 설계해 본 경험이 있는 분", "llm-app", "application", None),
+                ("실시간 모델 서빙의 지연을 측정해 본 경험이 있는 분", "model-serving", "application", None),
             )),
         ),
         "summary": "",
@@ -3021,8 +3195,8 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
     for key, expected in expected_counts.items():
         if counts.get(key, 0) != expected:
             problems.append(f"analysis_outputs {key}: {counts.get(key, 0)}행 (기대 {expected})")
-    if len(tables["analysis_outputs"]) != 27:
-        problems.append(f"analysis_outputs 합계 {len(tables['analysis_outputs'])}행 (기대 27)")
+    if len(tables["analysis_outputs"]) != 31:
+        problems.append(f"analysis_outputs 합계 {len(tables['analysis_outputs'])}행 (기대 31)")
 
     for row in tables["analysis_outputs"]:
         payload = row["payload"]
@@ -3097,12 +3271,114 @@ def check_concepts(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
     return problems
 
 
+def check_posting_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """검사 6 — 공고 수·기간·기업군·진입 구분과 차원 표본이 계약에 맞는가."""
+    problems: list[str] = []
+    expected_clusters = set(CLUSTERS)
+    period_spec = {
+        RECENT: (9, "2026-01-01", "2026-06-30", {"entry_junior": 5, "experienced": 4}),
+        PRIOR: (6, "2024-03-01", "2025-11-30", {"entry_junior": 3, "experienced": 3}),
+    }
+    if len(POSTINGS) != 15 or len(tables["postings"]) != 15:
+        problems.append(f"공고 수 {len(POSTINGS)}/{len(tables['postings'])} != 15/15")
+    expected_ids = {posting_id(f"{n:02d}") for n in range(1, 16)}
+    actual_ids = {row["posting_id"] for row in tables["postings"]}
+    if actual_ids != expected_ids:
+        problems.append(f"공고 식별자 차이 {sorted(actual_ids ^ expected_ids)}")
+
+    for period, (expected_n, starts_on, ends_on, labels) in period_spec.items():
+        group = [p for p in POSTINGS if p["period"] == period]
+        if len(group) != expected_n:
+            problems.append(f"{period}: 공고 {len(group)}건 != {expected_n}건")
+        clusters = {p["cluster"] for p in group}
+        if clusters != expected_clusters:
+            problems.append(f"{period}: 기업군 차이 {sorted(clusters ^ expected_clusters)}")
+        actual_labels = {
+            label: sum(1 for p in group if p["entry_label"] == label)
+            for label in labels
+        }
+        if actual_labels != labels:
+            problems.append(f"{period}: entry_label {actual_labels} != {labels}")
+        for p in group:
+            posted_on = p["posted_at"][:10]
+            if not starts_on <= posted_on <= ends_on:
+                problems.append(f"{p['nn']}: 게시일 {p['posted_at']} 범위 밖")
+
+    recent_cluster_counts = Counter(p["cluster"] for p in RECENT_POSTINGS)
+    if sorted(recent_cluster_counts.values()) != [1, 1, 1, 2, 2, 2]:
+        problems.append(f"recent 기업군 분포 {dict(recent_cluster_counts)} != 2·2·2·1·1·1")
+    prior_cluster_counts = Counter(p["cluster"] for p in PRIOR_POSTINGS)
+    if set(prior_cluster_counts.values()) != {1} or set(prior_cluster_counts) != expected_clusters:
+        problems.append(f"prev 기업군 분포 {dict(prior_cluster_counts)} != 기업군별 1건")
+
+    for slug in DIM_SLUGS:
+        companies = {
+            p["company_id"] for p in POSTINGS if slug in DIMS_BY_POSTING[p["nn"]]
+        }
+        if len(companies) < 2:
+            problems.append(f"{slug}: 독립 회사 {len(companies)}곳")
+    return problems
+
+
+def check_output_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """검사 7 — 모듈 산출물 31행과 recent 공고 해석 9행이 짝을 이루는가."""
+    outputs = tables["analysis_outputs"]
+    problems: list[str] = []
+    counts = Counter(row["output_type"] for row in outputs)
+    expected = {"statistics": 1, "interpretation": 16, "strategy": 7, "roadmap": 7}
+    if len(outputs) != 31 or dict(counts) != expected:
+        problems.append(f"산출물 {len(outputs)}행, 종류별 {dict(counts)} != 31행, {expected}")
+    posting_interpretations = {
+        row["scope_id"] for row in outputs
+        if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+    }
+    recent_ids = {posting_id(p["nn"]) for p in RECENT_POSTINGS}
+    if posting_interpretations != recent_ids:
+        problems.append(f"공고 해석 범위 차이 {sorted(posting_interpretations ^ recent_ids)}")
+    return problems
+
+
+def check_direct_contract_values(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """검사 8 — 출처·기간·진입 대상군·데이터셋 값을 행마다 확인한다."""
+    problems: list[str] = []
+    allowed_use_values = {
+        "statistics", "interpretation_context", "strategy", "roadmap",
+        "wiki_definition", "wiki_why_required", "wiki_depth_criteria", "wiki_prerequisites",
+        "wiki_common_misconceptions", "wiki_interview_verification", "wiki_learning_sequence",
+    }
+    for row in tables["source_assessments"]:
+        uses = set(row["allowed_uses"])
+        if not uses <= allowed_use_values:
+            problems.append(
+                f"{row['assessment_id']}: 허용되지 않은 allowed_uses {sorted(uses - allowed_use_values)}"
+            )
+        if uses != set(ALLOWED_USES):
+            problems.append(f"{row['assessment_id']}: 데모 공고 기본 allowed_uses 아님")
+        if (row["source_tier"], str(row["reliability_score"]), row["assessment_version"]) != (
+            "A", "0.95000", "sa_v1"
+        ):
+            problems.append(f"{row['assessment_id']}: 출처 평가 기본값 불일치")
+
+    for row in tables["statistics_facts"]:
+        if row["period_id"] not in {RECENT, PRIOR}:
+            problems.append(f"{row['fact_id']}: 허용되지 않은 기간 {row['period_id']}")
+        if row["metric_family"] == "entry_label_advanced_signal_rate":
+            if row["entry_segment"] != SEGMENT_ENTRY:
+                problems.append(f"{row['fact_id']}: entry_segment {row['entry_segment']}")
+    if tables.get("dataset_versions"):
+        problems.append("ai_engineer 모듈이 dataset_versions 행을 만들었다")
+    return problems
+
+
 CHECKS = (
     ("1 근거 위치", check_spans),
     ("2 지표 재계산", check_numbers),
     ("3 외래키", check_foreign_keys),
     ("4 payload 키", check_payload_keys),
     ("5 체크 개념", check_concepts),
+    ("6 공고 모집단", check_posting_population),
+    ("7 산출물 모집단", check_output_population),
+    ("8 직접 계약값", check_direct_contract_values),
 )
 
 

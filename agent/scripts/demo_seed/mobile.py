@@ -485,12 +485,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_lineplus",
         "company": "라인플러스",
         "cluster": "bigtech_platform",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입 지원 가능",
         "career_label_raw": "신입~2년",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2025-03-17T10:00:00+09:00",
+        "posted_at": "2026-01-12T10:00:00+09:00",
         "title": "안드로이드 개발자 신입·주니어",
         "sections": (
             ("주요업무", (
@@ -514,12 +514,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_kakaobank",
         "company": "카카오뱅크",
         "cluster": "fintech_finance",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입/주니어",
         "career_label_raw": "경력 무관",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2024-11-12T10:00:00+09:00",
+        "posted_at": "2026-02-23T10:00:00+09:00",
         "title": "iOS 개발자 신입·주니어",
         "sections": (
             ("주요업무", (
@@ -543,12 +543,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_samsungsds",
         "company": "삼성에스디에스",
         "cluster": "si_enterprise",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력",
         "career_label_raw": "3년 이상",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2025-04-02T10:00:00+09:00",
+        "posted_at": "2026-05-18T10:00:00+09:00",
         "title": "모바일 앱 개발자 (경력)",
         "sections": (
             ("주요업무", (
@@ -572,12 +572,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_bucketplace",
         "company": "주식회사 버킷플레이스",
         "cluster": "startup",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력",
         "career_label_raw": "2년 이상",
         "edu_label_raw": "학력 무관",
-        "posted_at": "2024-10-15T10:00:00+09:00",
+        "posted_at": "2026-06-08T10:00:00+09:00",
         "title": "안드로이드 개발자 (경력)",
         "sections": (
             ("주요업무", (
@@ -595,6 +595,42 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "summary": "",
         "summary_ratio": "",
     },
+)
+
+
+def _historical_posting(
+    nn: str,
+    source_nn: str,
+    posted_at: str,
+    entry_label: str,
+) -> dict[str, Any]:
+    """기존 공고의 요구사항 구성을 재사용해 이전 기간의 독립 표본을 만든다."""
+    source = next(posting for posting in POSTINGS if posting["nn"] == source_nn)
+    label_source = next(
+        posting for posting in POSTINGS if posting["entry_label"] == entry_label
+    )
+    return {
+        **source,
+        "nn": nn,
+        "period": PRIOR,
+        "posted_at": posted_at,
+        "entry_label": entry_label,
+        "entry_label_raw": label_source["entry_label_raw"],
+        "career_label_raw": label_source["career_label_raw"],
+        "title": f"{source['title']} (이전 기간 표본)",
+        "summary": "",
+        "summary_ratio": "",
+    }
+
+
+# 이전 기간은 여섯 기업군을 한 건씩 포함하고, 진입 가능 3건·경력 3건으로 구성한다.
+POSTINGS += (
+    _historical_posting("10", "01", "2024-03-18T10:00:00+09:00", "entry_junior"),
+    _historical_posting("11", "03", "2024-07-08T10:00:00+09:00", "entry_junior"),
+    _historical_posting("12", "05", "2024-11-12T10:00:00+09:00", "entry_junior"),
+    _historical_posting("13", "02", "2025-03-17T10:00:00+09:00", "experienced"),
+    _historical_posting("14", "08", "2025-07-07T10:00:00+09:00", "experienced"),
+    _historical_posting("15", "04", "2025-11-03T10:00:00+09:00", "experienced"),
 )
 
 # ============================================================ 파생 구조
@@ -3004,8 +3040,8 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
     for key, expected in expected_counts.items():
         if counts.get(key, 0) != expected:
             problems.append(f"analysis_outputs {key}: {counts.get(key, 0)}행 (기대 {expected})")
-    if len(tables["analysis_outputs"]) != 27:
-        problems.append(f"analysis_outputs 합계 {len(tables['analysis_outputs'])}행 (기대 27)")
+    if len(tables["analysis_outputs"]) != 31:
+        problems.append(f"analysis_outputs 합계 {len(tables['analysis_outputs'])}행 (기대 31)")
 
     for row in tables["analysis_outputs"]:
         payload = row["payload"]
@@ -3080,12 +3116,107 @@ def check_concepts(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
     return problems
 
 
+def check_posting_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """15건 모집단의 기간·기업군·진입 구분과 차원 표본 계약을 확인한다."""
+    problems: list[str] = []
+    expected_clusters = set(CLUSTER_ORDER)
+    period_spec = {
+        RECENT: (9, "2026-01-01", "2026-06-30", {"entry_junior": 5, "experienced": 4}),
+        PRIOR: (6, "2024-03-01", "2025-11-30", {"entry_junior": 3, "experienced": 3}),
+    }
+    if len(POSTINGS) != 15 or len(tables["postings"]) != 15:
+        problems.append(f"공고 수 {len(POSTINGS)}/{len(tables['postings'])} != 15/15")
+    expected_ids = {posting_id(f"{number:02d}") for number in range(1, 16)}
+    actual_ids = {row["posting_id"] for row in tables["postings"]}
+    if actual_ids != expected_ids:
+        problems.append(f"공고 식별자 차이 {sorted(actual_ids ^ expected_ids)}")
+
+    for period, (expected_n, starts_on, ends_on, labels) in period_spec.items():
+        group = [posting for posting in POSTINGS if posting["period"] == period]
+        if len(group) != expected_n:
+            problems.append(f"{period}: 공고 {len(group)}건 != {expected_n}건")
+        clusters = {posting["cluster"] for posting in group}
+        if clusters != expected_clusters:
+            problems.append(f"{period}: 기업군 차이 {sorted(clusters ^ expected_clusters)}")
+        actual_labels = {
+            label: sum(1 for posting in group if posting["entry_label"] == label)
+            for label in labels
+        }
+        if actual_labels != labels:
+            problems.append(f"{period}: entry_label {actual_labels} != {labels}")
+        for posting in group:
+            posted_date = posting["posted_at"][:10]
+            if not starts_on <= posted_date <= ends_on:
+                problems.append(f"{posting['nn']}: 게시일 {posted_date} 범위 밖")
+
+    recent_counts = Counter(posting["cluster"] for posting in RECENT_POSTINGS)
+    if sorted(recent_counts.values()) != [1, 1, 1, 2, 2, 2]:
+        problems.append(f"recent 기업군 분포 {dict(recent_counts)} != 2·2·2·1·1·1")
+    prior_counts = Counter(posting["cluster"] for posting in PRIOR_POSTINGS)
+    if set(prior_counts.values()) != {1} or set(prior_counts) != expected_clusters:
+        problems.append(f"prev 기업군 분포 {dict(prior_counts)} != 기업군별 1건")
+
+    for slug in DIM_SLUGS:
+        companies = {
+            posting["company_id"]
+            for posting in POSTINGS
+            if slug in DIMS_BY_POSTING[posting["nn"]]
+        }
+        if len(companies) < 2:
+            problems.append(f"{slug}: 독립 회사 {len(companies)}곳")
+    return problems
+
+
+def check_output_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """모듈 산출물 31행과 recent 공고 해석 9행을 확인한다."""
+    outputs = tables["analysis_outputs"]
+    problems: list[str] = []
+    counts = Counter(row["output_type"] for row in outputs)
+    expected = {"statistics": 1, "interpretation": 16, "strategy": 7, "roadmap": 7}
+    if len(outputs) != 31 or dict(counts) != expected:
+        problems.append(f"산출물 {len(outputs)}행, 종류별 {dict(counts)} != 31행, {expected}")
+    posting_interpretations = {
+        row["scope_id"] for row in outputs
+        if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+    }
+    recent_ids = {posting_id(posting["nn"]) for posting in RECENT_POSTINGS}
+    if posting_interpretations != recent_ids:
+        problems.append(f"공고 해석 범위 차이 {sorted(posting_interpretations ^ recent_ids)}")
+    return problems
+
+
+def check_direct_contract_values(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """직접 입력하는 출처·기간·세그먼트·데이터셋 값을 확인한다."""
+    problems: list[str] = []
+    expected_uses = set(ALLOWED_USES)
+    for row in tables["source_assessments"]:
+        if set(row["allowed_uses"]) != expected_uses:
+            problems.append(f"{row['assessment_id']}: allowed_uses 불일치")
+        if (row["source_tier"], str(row["reliability_score"]), row["assessment_version"]) != (
+            "A", "0.95000", "sa_v1"
+        ):
+            problems.append(f"{row['assessment_id']}: 출처 평가 기본값 불일치")
+    for row in tables["statistics_facts"]:
+        if row["period_id"] not in {RECENT, PRIOR}:
+            problems.append(f"{row['fact_id']}: 허용되지 않은 기간 {row['period_id']}")
+        if row["metric_family"] == "entry_label_advanced_signal_rate" and row["entry_segment"] != SEGMENT_ENTRY:
+            problems.append(f"{row['fact_id']}: entry_segment {row['entry_segment']}")
+    if tables.get("dataset_versions"):
+        problems.append("mobile 모듈은 dataset_versions 행을 만들면 안 됩니다")
+    if len(tables["sources"]) != 15 or len(tables["source_snapshots"]) != 15:
+        problems.append("공고별 출처·스냅샷이 15행이 아닙니다")
+    return problems
+
+
 CHECKS = (
     ("1 근거 위치", check_spans),
     ("2 지표 재계산", check_numbers),
     ("3 외래키", check_foreign_keys),
     ("4 payload 키", check_payload_keys),
     ("5 체크 개념", check_concepts),
+    ("6 공고 모집단", check_posting_population),
+    ("7 산출물 범위", check_output_population),
+    ("8 직접 입력 계약", check_direct_contract_values),
 )
 
 

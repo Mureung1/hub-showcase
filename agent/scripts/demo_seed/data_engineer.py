@@ -221,9 +221,9 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 )
 
 
-# ============================================================ 3. 채용공고 9건
+# ============================================================ 3. 채용공고 15건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
-# 주석은 recent 5건에만 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
+# 주석은 기존 recent 공고에 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
 #   ("base", 기준선 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
@@ -608,6 +608,162 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "summary_ratio": "",
     },
 )
+
+
+def expand_postings(
+    postings: tuple[dict[str, Any], ...],
+) -> tuple[dict[str, Any], ...]:
+    """기존 아홉 공고를 보존하면서 기간별 9건·6건 모집단으로 확장한다."""
+    recent_dates = {
+        "06": "2026-03-12T10:00:00+09:00",
+        "07": "2026-05-20T10:00:00+09:00",
+        "08": "2026-06-08T10:00:00+09:00",
+        "09": "2026-02-25T10:00:00+09:00",
+    }
+    recent = tuple(
+        {
+            **posting,
+            "period": RECENT if posting["nn"] in recent_dates else posting["period"],
+            "posted_at": recent_dates.get(posting["nn"], posting["posted_at"]),
+        }
+        for posting in postings
+    )
+
+    # 기업군마다 한 건씩 두고, 신입·주니어와 경력 공고를 각각 세 건으로 맞춘다.
+    prev_specs = (
+        (
+            "10", "04", "entry_junior", "2024-03-18T10:00:00+09:00",
+            "주니어 데이터 엔지니어 (AI 학습 데이터)",
+            (
+                ("주요업무", (
+                    ("모델 학습용 원천 데이터를 수집하고 정제하는 배치를 개발합니다.", None, "application", None),
+                    ("실험별 데이터셋 생성 이력과 품질 지표를 관리합니다.", None, "application", None),
+                )),
+                ("자격요건", (
+                    ("SQL로 학습 데이터의 분포와 결측치를 점검할 수 있는 분", "sql-analytics", "application", None),
+                    ("Airflow로 정기 데이터 작업을 구성해 본 분", "workflow-orchestration", "foundation", None),
+                )),
+                ("우대사항", (
+                    ("Kafka 기반 이벤트 수집 구조를 이해하는 분", "streaming-ingest", "foundation", None),
+                )),
+            ),
+            "학습 데이터의 생성 이력과 품질을 함께 관리하는 주니어 역할입니다.",
+        ),
+        (
+            "11", "01", "experienced", "2024-07-22T10:00:00+09:00",
+            "데이터 엔지니어 (대규모 물류 분석)",
+            (
+                ("주요업무", (
+                    ("물류 이벤트를 분석 가능한 형태로 적재하는 배치 파이프라인을 운영합니다.", None, "application", None),
+                    ("처리 지연과 저장 비용을 측정하고 병목을 개선합니다.", None, "tradeoff", None),
+                )),
+                ("자격요건", (
+                    ("Spark 작업의 파티션과 셔플 병목을 개선해 본 분", "spark-batch", "tradeoff", None),
+                    ("SQL 실행 계획을 근거로 대용량 집계를 최적화할 수 있는 분", "sql-analytics", "tradeoff", None),
+                    ("분석용 데이터 웨어하우스 모델을 운영해 본 분", "data-warehouse", "application", None),
+                )),
+                ("우대사항", (
+                    ("데이터 보관 주기와 비용 정책을 설계한 경험", None, "application", None),
+                )),
+            ),
+            "대규모 배치의 성능과 비용을 함께 최적화하는 경력 역할입니다.",
+        ),
+        (
+            "12", "03", "entry_junior", "2024-11-11T10:00:00+09:00",
+            "데이터 플랫폼 엔지니어 (SaaS 지표)",
+            (
+                ("주요업무", (
+                    ("고객사별 사용 지표를 집계하는 데이터 파이프라인을 개발합니다.", None, "application", None),
+                    ("지표 정의와 테이블 변경 이력을 문서화합니다.", None, "foundation", None),
+                )),
+                ("자격요건", (
+                    ("SQL 조인과 윈도 함수로 서비스 지표를 계산할 수 있는 분", "sql-analytics", "application", None),
+                    ("Airflow DAG의 의존성과 재시도 정책을 이해하는 분", "workflow-orchestration", "foundation", None),
+                )),
+                ("우대사항", (
+                    ("데이터 웨어하우스의 차원 모델을 설계해 본 경험", "data-warehouse", "foundation", None),
+                )),
+            ),
+            "고객사 지표의 정의와 배치 운영을 담당하는 주니어 역할입니다.",
+        ),
+        (
+            "13", "02", "experienced", "2025-03-24T10:00:00+09:00",
+            "데이터 엔지니어 (금융 이벤트 플랫폼)",
+            (
+                ("주요업무", (
+                    ("결제 이벤트를 실시간으로 수집하고 정합성 검증 절차를 운영합니다.", None, "tradeoff", None),
+                    ("규제 보고용 데이터 마트와 접근 정책을 관리합니다.", None, "application", None),
+                )),
+                ("자격요건", (
+                    ("Kafka 스트림의 중복과 순서 문제를 해결해 본 분", "streaming-ingest", "tradeoff", None),
+                    ("데이터 웨어하우스에서 이력 테이블을 설계해 본 분", "data-warehouse", "application", None),
+                    ("SQL 검증 쿼리로 원천과 집계 결과를 대조할 수 있는 분", "sql-analytics", "application", None),
+                )),
+                ("우대사항", (
+                    ("개인정보 마스킹과 보관 정책을 운영한 경험", None, "application", None),
+                )),
+            ),
+            "금융 이벤트의 실시간성과 규제 정합성을 책임지는 경력 역할입니다.",
+        ),
+        (
+            "14", "05", "entry_junior", "2025-07-14T10:00:00+09:00",
+            "데이터 엔지니어 (기업 데이터 구축)",
+            (
+                ("주요업무", (
+                    ("고객사 원천 데이터를 표준 스키마로 변환하는 배치를 구현합니다.", None, "application", None),
+                    ("정기 적재 작업의 성공 여부와 품질 규칙을 점검합니다.", None, "foundation", None),
+                )),
+                ("자격요건", (
+                    ("SQL로 데이터 변환과 검증 쿼리를 작성할 수 있는 분", "sql-analytics", "application", None),
+                    ("Spark 기반 분산 처리의 기본 구조를 이해하는 분", "spark-batch", "foundation", None),
+                )),
+                ("우대사항", (
+                    ("Airflow로 배치 일정을 관리해 본 경험", "workflow-orchestration", "foundation", None),
+                )),
+            ),
+            "고객사 데이터를 표준화하고 적재 품질을 확인하는 주니어 역할입니다.",
+        ),
+        (
+            "15", "08", "experienced", "2025-11-17T10:00:00+09:00",
+            "게임 데이터 엔지니어 (라이브 이벤트)",
+            (
+                ("주요업무", (
+                    ("게임 플레이 이벤트를 수집해 운영 지표와 밸런스 분석에 제공합니다.", None, "application", None),
+                    ("대규모 로그 배치의 처리 시간과 장애 복구 절차를 개선합니다.", None, "tradeoff", None),
+                )),
+                ("자격요건", (
+                    ("Kafka 소비 지연과 재처리 전략을 운영해 본 분", "streaming-ingest", "tradeoff", None),
+                    ("Spark로 대규모 게임 로그를 집계해 본 분", "spark-batch", "application", None),
+                    ("SQL로 운영 지표를 정의하고 검증할 수 있는 분", "sql-analytics", "application", None),
+                )),
+                ("우대사항", (
+                    ("라이브 서비스 장애 대응 경험", None, "application", None),
+                )),
+            ),
+            "라이브 게임 이벤트의 수집 지연과 대규모 배치를 함께 다루는 경력 역할입니다.",
+        ),
+    )
+    by_nn = {posting["nn"]: posting for posting in recent}
+    prior = tuple(
+        {
+            **by_nn[template_nn],
+            "nn": nn,
+            "period": PRIOR,
+            "entry_label": entry_label,
+            "entry_label_raw": "신입·주니어" if entry_label == "entry_junior" else "경력직",
+            "career_label_raw": "신입~3년" if entry_label == "entry_junior" else "경력 2년 이상",
+            "posted_at": posted_at,
+            "title": title,
+            "sections": sections,
+            "summary": summary,
+            "summary_ratio": "",
+        }
+        for nn, template_nn, entry_label, posted_at, title, sections, summary in prev_specs
+    )
+    return recent + prior
+
+
+POSTINGS = expand_postings(POSTINGS)
 
 
 # ============================================================ 4. 식별자 helper
@@ -3170,7 +3326,7 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
         if missing:
             problems.append(f"{row['claim_id']}: confidence_components {missing} 없음")
     counts = Counter(row["output_type"] for row in tables["analysis_outputs"])
-    expected = {"statistics": 1, "interpretation": 12, "strategy": 7, "roadmap": 7}
+    expected = {"statistics": 1, "interpretation": 16, "strategy": 7, "roadmap": 7}
     for output_type, n in expected.items():
         if counts.get(output_type, 0) != n:
             problems.append(f"analysis_outputs: {output_type} {counts.get(output_type, 0)}행 (기대 {n})")
@@ -3205,12 +3361,109 @@ def check_concepts(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
     return problems
 
 
+def check_posting_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """검사 6 — 공고 식별자·기간·기업군·진입 구분과 차원 표본을 확인한다."""
+    problems: list[str] = []
+    expected_clusters = set(CLUSTER_ORDER)
+    period_spec = {
+        RECENT: (9, "2026-01-01", "2026-06-30", {"entry_junior": 5, "experienced": 4}),
+        PRIOR: (6, "2024-03-01", "2025-11-30", {"entry_junior": 3, "experienced": 3}),
+    }
+    if len(POSTINGS) != 15 or len(tables["postings"]) != 15:
+        problems.append(f"공고 수 {len(POSTINGS)}/{len(tables['postings'])} != 15/15")
+
+    expected_ids = {posting_id(f"{n:02d}") for n in range(1, 16)}
+    actual_ids = {row["posting_id"] for row in tables["postings"]}
+    if actual_ids != expected_ids:
+        problems.append(f"공고 식별자 차이 {sorted(actual_ids ^ expected_ids)}")
+
+    for period, (expected_n, starts_on, ends_on, expected_labels) in period_spec.items():
+        group = [p for p in POSTINGS if p["period"] == period]
+        if len(group) != expected_n:
+            problems.append(f"{period}: 공고 {len(group)}건 != {expected_n}건")
+        clusters = {p["cluster"] for p in group}
+        if clusters != expected_clusters:
+            problems.append(f"{period}: 기업군 차이 {sorted(clusters ^ expected_clusters)}")
+        labels = {
+            label: sum(1 for p in group if p["entry_label"] == label)
+            for label in expected_labels
+        }
+        if labels != expected_labels:
+            problems.append(f"{period}: entry_label {labels} != {expected_labels}")
+        for posting in group:
+            if not starts_on <= posting["posted_at"] <= ends_on:
+                problems.append(f"{posting['nn']}: 게시일 {posting['posted_at']} 범위 밖")
+
+    recent_clusters = Counter(p["cluster"] for p in RECENT_POSTINGS)
+    if sorted(recent_clusters.values()) != [1, 1, 1, 2, 2, 2]:
+        problems.append(f"recent 기업군 분포 {dict(recent_clusters)} != 2·2·2·1·1·1")
+    prior_clusters = Counter(p["cluster"] for p in PRIOR_POSTINGS)
+    if set(prior_clusters.values()) != {1}:
+        problems.append(f"prev 기업군 분포 {dict(prior_clusters)} != 기업군별 1건")
+
+    for slug in DIM_SLUGS:
+        companies = {
+            p["company_id"] for p in POSTINGS if slug in DIMS_BY_POSTING[p["nn"]]
+        }
+        if len(companies) < 2:
+            problems.append(f"{slug}: 독립 회사 {len(companies)}곳")
+    return problems
+
+
+def check_output_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """검사 7 — 모듈 산출물 31행과 recent 공고 해석 9행을 확인한다."""
+    outputs = tables["analysis_outputs"]
+    problems: list[str] = []
+    counts = Counter(row["output_type"] for row in outputs)
+    expected = {"statistics": 1, "interpretation": 16, "strategy": 7, "roadmap": 7}
+    if len(outputs) != 31 or counts != expected:
+        problems.append(f"산출물 {len(outputs)}행, 종류별 {dict(counts)} != 31행, {expected}")
+    posting_interpretations = {
+        row["scope_id"] for row in outputs
+        if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+    }
+    recent_ids = {posting_id(p["nn"]) for p in RECENT_POSTINGS}
+    if posting_interpretations != recent_ids:
+        problems.append(f"공고 해석 범위 차이 {sorted(posting_interpretations ^ recent_ids)}")
+    return problems
+
+
+def check_direct_contract_values(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """검사 8 — 출처·기간·세그먼트·데이터셋 직접 입력값을 확인한다."""
+    problems: list[str] = []
+    required_uses = {"statistics", "interpretation_context", "strategy", "roadmap"}
+    allowed_uses = required_uses | {
+        "wiki_definition", "wiki_why_required", "wiki_depth_criteria",
+        "wiki_prerequisites", "wiki_common_misconceptions",
+        "wiki_interview_verification", "wiki_learning_sequence",
+    }
+    for row in tables["source_assessments"]:
+        uses = set(row["allowed_uses"])
+        if not required_uses <= uses or not uses <= allowed_uses:
+            problems.append(f"{row['assessment_id']}: allowed_uses 계약 불일치")
+        if (row["source_tier"], str(row["reliability_score"]), row["assessment_version"]) != (
+            "A", "0.95000", "sa_v1"
+        ):
+            problems.append(f"{row['assessment_id']}: 출처 평가 기본값 불일치")
+    for row in tables["statistics_facts"]:
+        if row["period_id"] not in {RECENT, PRIOR}:
+            problems.append(f"{row['fact_id']}: 허용하지 않은 기간 {row['period_id']}")
+        if row["metric_family"] == "entry_label_advanced_signal_rate" and row["entry_segment"] != SEGMENT_ENTRY:
+            problems.append(f"{row['fact_id']}: entry_segment {row['entry_segment']}")
+    if tables.get("dataset_versions"):
+        problems.append("data_engineer 모듈은 dataset_versions 행을 만들지 않는다")
+    return problems
+
+
 CHECKS = (
     ("1 근거 위치", check_spans),
     ("2 지표 재계산", check_numbers),
     ("3 외래키", check_foreign_keys),
     ("4 payload 키", check_payload_keys),
     ("5 체크 개념", check_concepts),
+    ("6 공고 모집단", check_posting_population),
+    ("7 산출물 범위", check_output_population),
+    ("8 직접 입력 계약", check_direct_contract_values),
 )
 
 

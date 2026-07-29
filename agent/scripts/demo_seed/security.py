@@ -473,12 +473,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_wantedlab",
         "company": "원티드랩",
         "cluster": "startup",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입·주니어",
         "career_label_raw": "신입~2년",
         "edu_label_raw": "학력무관",
-        "posted_at": "2024-10-08T10:00:00+09:00",
+        "posted_at": "2026-06-02T10:00:00+09:00",
         "title": "정보보안 담당자(신입·주니어)",
         "sections": (
             ("주요업무", (
@@ -503,12 +503,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_coupang",
         "company": "쿠팡",
         "cluster": "bigtech_platform",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력",
         "career_label_raw": "경력 4년 이상",
         "edu_label_raw": "대졸 이상(2,3년제 포함)",
-        "posted_at": "2024-11-26T10:00:00+09:00",
+        "posted_at": "2026-05-07T10:00:00+09:00",
         "title": "보안 엔지니어(Security Operations)",
         "sections": (
             ("주요업무", (
@@ -533,12 +533,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_viva",
         "company": "비바리퍼블리카",
         "cluster": "fintech_finance",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입",
         "career_label_raw": "신입",
         "edu_label_raw": "대졸 이상(2,3년제 포함)",
-        "posted_at": "2025-02-18T10:00:00+09:00",
+        "posted_at": "2026-04-02T10:00:00+09:00",
         "title": "정보보안 신입·주니어",
         "sections": (
             ("주요업무", (
@@ -563,12 +563,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_skcnc",
         "company": "에스케이씨앤씨",
         "cluster": "si_enterprise",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력",
         "career_label_raw": "경력 3년 이상",
         "edu_label_raw": "학력무관",
-        "posted_at": "2025-04-22T10:00:00+09:00",
+        "posted_at": "2026-03-24T10:00:00+09:00",
         "title": "보안 인프라 운영 담당",
         "sections": (
             ("주요업무", (
@@ -589,6 +589,155 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "summary": "여러 고객사의 보안 인프라를 같은 기준으로 운영할 사람을 찾습니다.",
         "summary_ratio": "편차 3건 · 기준선 일치 2건",
     },
+)
+
+
+def prior_posting(
+    nn: str,
+    company_id: str,
+    company: str,
+    cluster: str,
+    entry_label: str,
+    posted_at: str,
+    title: str,
+    responsibilities: tuple[tuple[str, str | None, str, None], ...],
+    requirements: tuple[tuple[str, str | None, str, None], ...],
+    preferences: tuple[tuple[str, str | None, str, None], ...],
+    summary: str,
+) -> dict[str, Any]:
+    """이전 기간 공고의 공통 메타데이터를 한곳에서 고정한다."""
+    is_entry = entry_label == "entry_junior"
+    return {
+        "nn": nn,
+        "company_id": company_id,
+        "company": company,
+        "cluster": cluster,
+        "period": PRIOR,
+        "entry_label": entry_label,
+        "entry_label_raw": "신입·주니어" if is_entry else "경력",
+        "career_label_raw": "신입~3년" if is_entry else "경력 3년 이상",
+        "edu_label_raw": "대졸 이상(2,3년제 포함)" if is_entry else "학력무관",
+        "posted_at": posted_at,
+        "title": title,
+        "sections": (
+            ("주요업무", responsibilities),
+            ("자격요건", requirements),
+            ("우대사항", preferences),
+        ),
+        "summary": summary,
+        "summary_ratio": "편차 2건 · 기준선 일치 3건",
+    }
+
+
+POSTINGS += (
+    prior_posting(
+        "10", "co_kakao", "카카오", "bigtech_platform", "experienced",
+        "2024-03-12T10:00:00+09:00", "서비스 보안 엔지니어",
+        (
+            ("서비스 출시 전 웹 취약점 진단과 조치 검증을 수행합니다.", "web-vuln-assessment", "application", None),
+            ("개발 조직에 시큐어 코딩 기준을 안내하고 코드 검토를 지원합니다.", "secure-coding", "application", None),
+            ("보안 이벤트와 서비스 로그를 연계해 이상 징후를 분석합니다.", "soc-siem", "foundation", None),
+        ),
+        (
+            ("웹 애플리케이션 취약점 진단과 결과 보고 경험이 있으신 분", "web-vuln-assessment", "application", None),
+            ("시큐어 코딩 원칙을 코드 리뷰에 적용할 수 있는 분", "secure-coding", "application", None),
+        ),
+        (
+            ("SIEM 기반 로그 분석 경험이 있으신 분", "soc-siem", "foundation", None),
+            ("네트워크 프로토콜과 접근 제어를 이해하신 분", "network-security", "foundation", None),
+        ),
+        "개발 주기 안에서 진단과 코드 개선을 연결할 보안 엔지니어를 찾습니다.",
+    ),
+    prior_posting(
+        "11", "co_upstage", "업스테이지", "startup", "entry_junior",
+        "2024-06-18T10:00:00+09:00", "정보보안 담당자 신입·주니어",
+        (
+            ("웹 서비스 취약점 점검과 개선 과제를 관리합니다.", "web-vuln-assessment", "foundation", None),
+            ("개인정보 처리 흐름을 정리하고 내부 보호 지침을 관리합니다.", "privacy-compliance", "foundation", None),
+            ("클라우드 네트워크와 서버의 보안 설정을 점검합니다.", "network-security", "foundation", None),
+        ),
+        (
+            ("웹 취약점의 원인과 대응 방법을 설명할 수 있는 분", "web-vuln-assessment", "foundation", None),
+            ("개인정보 보호법의 기본 의무를 이해하신 분", "privacy-compliance", "foundation", None),
+        ),
+        (
+            ("보안 로그를 수집하고 분석해 본 경험이 있으신 분", "soc-siem", "foundation", None),
+            ("시큐어 코딩 학습 또는 코드 검토 경험이 있으신 분", "secure-coding", "foundation", None),
+        ),
+        "작은 조직에서 점검과 개인정보 보호 업무를 함께 맡을 주니어를 찾습니다.",
+    ),
+    prior_posting(
+        "12", "co_navercloud", "네이버클라우드", "b2b_saas", "experienced",
+        "2024-10-29T10:00:00+09:00", "클라우드 보안관제 엔지니어",
+        (
+            ("클라우드 보안 로그를 수집하고 SIEM 탐지 정책을 운영합니다.", "soc-siem", "application", None),
+            ("고객 환경의 네트워크 보안 정책과 접근 제어를 점검합니다.", "network-security", "application", None),
+            ("탐지 결과를 분석해 사고 대응 절차를 개선합니다.", None, "foundation", None),
+        ),
+        (
+            ("SIEM 기반 탐지 정책 운영 경험이 있으신 분", "soc-siem", "tradeoff", None),
+            ("방화벽과 네트워크 접근 제어 정책을 운영해 본 분", "network-security", "application", None),
+        ),
+        (
+            ("웹 취약점 진단 결과를 해석할 수 있는 분", "web-vuln-assessment", "foundation", None),
+            ("개발 보안 가이드 작성 경험이 있으신 분", "secure-coding", "foundation", None),
+        ),
+        "클라우드 고객 환경의 로그와 네트워크 정책을 함께 다룰 관제 엔지니어를 찾습니다.",
+    ),
+    prior_posting(
+        "13", "co_kbank", "케이뱅크", "fintech_finance", "entry_junior",
+        "2025-02-11T10:00:00+09:00", "금융 정보보안 신입",
+        (
+            ("전자금융 보안 규제와 개인정보 보호 요구사항의 준수 여부를 점검합니다.", "privacy-compliance", "application", None),
+            ("보안 로그를 확인하고 이상 징후를 보고합니다.", "soc-siem", "foundation", None),
+            ("서비스 취약점 조치 현황을 확인합니다.", "web-vuln-assessment", "foundation", None),
+        ),
+        (
+            ("개인정보 보호와 전자금융 규제의 기본 내용을 이해하신 분", "privacy-compliance", "application", None),
+            ("웹 애플리케이션 보안 취약점을 학습해 본 분", "web-vuln-assessment", "foundation", None),
+        ),
+        (
+            ("SIEM 또는 로그 분석 실습 경험이 있으신 분", "soc-siem", "foundation", None),
+            ("네트워크 보안 장비의 기본 동작을 이해하신 분", "network-security", "foundation", None),
+        ),
+        "금융 규제를 이해하면서 점검과 로그 분석을 수행할 신입을 찾습니다.",
+    ),
+    prior_posting(
+        "14", "co_lgcns", "엘지씨엔에스", "si_enterprise", "experienced",
+        "2025-07-15T10:00:00+09:00", "정보보호 컨설턴트",
+        (
+            ("고객사의 정보보호 관리체계 수립과 인증 심사 대응을 수행합니다.", "privacy-compliance", "tradeoff", None),
+            ("서버와 네트워크 보안 설정을 점검해 개선안을 작성합니다.", "network-security", "application", None),
+            ("정기 취약점 진단 결과와 조치 이행을 관리합니다.", "web-vuln-assessment", "application", None),
+        ),
+        (
+            ("ISMS-P 등 정보보호 관리체계 대응 경험이 있으신 분", "privacy-compliance", "tradeoff", None),
+            ("네트워크 보안 구성과 점검 기준을 이해하신 분", "network-security", "application", None),
+        ),
+        (
+            ("시큐어 코딩 가이드 검토 경험이 있으신 분", "secure-coding", "foundation", None),
+            ("보안관제 운영 절차를 이해하신 분", "soc-siem", "foundation", None),
+        ),
+        "고객사마다 다른 환경을 공통 관리체계와 점검 기준으로 정리할 컨설턴트를 찾습니다.",
+    ),
+    prior_posting(
+        "15", "co_krafton", "크래프톤", "game", "entry_junior",
+        "2025-11-18T10:00:00+09:00", "게임 서비스 보안 주니어",
+        (
+            ("게임 서비스 보안 로그와 트래픽을 분석해 이상 행위를 탐지합니다.", "soc-siem", "application", None),
+            ("네트워크 보안 정책과 접근 제어 설정을 점검합니다.", "network-security", "foundation", None),
+            ("개발 조직과 웹·클라이언트 취약점 조치를 진행합니다.", "web-vuln-assessment", "foundation", None),
+        ),
+        (
+            ("로그 분석을 통해 정상과 이상 행위를 구분해 본 분", "soc-siem", "application", None),
+            ("네트워크와 서버 보안의 기본 동작을 설명할 수 있는 분", "network-security", "foundation", None),
+        ),
+        (
+            ("시큐어 코딩 관점의 코드 검토 경험이 있으신 분", "secure-coding", "foundation", None),
+            ("웹 취약점 진단 도구를 실습해 본 분", "web-vuln-assessment", "foundation", None),
+        ),
+        "실시간 게임 서비스의 로그와 트래픽을 살필 주니어 보안 담당자를 찾습니다.",
+    ),
 )
 # ============================================================ 파생 구조
 def posting_id(nn: str) -> str:
@@ -3018,12 +3167,127 @@ def check_concepts(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
     return problems
 
 
+def check_posting_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """6. 공고 수·기간·기업군·진입 구분과 차원 표본을 확인한다."""
+    problems: list[str] = []
+    period_spec = {
+        RECENT: (9, "2026-01-01", "2026-06-30", {"entry_junior": 5, "experienced": 4}),
+        PRIOR: (6, "2024-03-01", "2025-11-30", {"entry_junior": 3, "experienced": 3}),
+    }
+    if len(POSTINGS) != 15 or len(tables["postings"]) != 15:
+        problems.append(f"공고 수 {len(POSTINGS)}/{len(tables['postings'])} != 15/15")
+    expected_ids = {posting_id(f"{n:02d}") for n in range(1, 16)}
+    actual_ids = {row["posting_id"] for row in tables["postings"]}
+    if actual_ids != expected_ids:
+        problems.append(f"공고 식별자 차이 {sorted(actual_ids ^ expected_ids)}")
+
+    for period, (expected_n, starts_on, ends_on, labels) in period_spec.items():
+        group = [p for p in POSTINGS if p["period"] == period]
+        if len(group) != expected_n:
+            problems.append(f"{period}: 공고 {len(group)}건 != {expected_n}건")
+        clusters = {p["cluster"] for p in group}
+        if clusters != set(CLUSTERS):
+            problems.append(f"{period}: 기업군 차이 {sorted(clusters ^ set(CLUSTERS))}")
+        actual_labels = {
+            label: sum(1 for p in group if p["entry_label"] == label)
+            for label in labels
+        }
+        if actual_labels != labels:
+            problems.append(f"{period}: entry_label {actual_labels} != {labels}")
+        for posting in group:
+            if not starts_on <= posting["posted_at"] <= ends_on:
+                problems.append(f"{posting['nn']}: 게시일 {posting['posted_at']} 범위 밖")
+
+    recent_cluster_counts = Counter(p["cluster"] for p in RECENT_POSTINGS)
+    if sorted(recent_cluster_counts.values()) != [1, 1, 1, 2, 2, 2]:
+        problems.append(f"recent 기업군 분포 {dict(recent_cluster_counts)} != 2·2·2·1·1·1")
+    prior_cluster_counts = Counter(p["cluster"] for p in PRIOR_POSTINGS)
+    if set(prior_cluster_counts.values()) != {1} or set(prior_cluster_counts) != set(CLUSTERS):
+        problems.append(f"prev 기업군 분포 {dict(prior_cluster_counts)} != 기업군별 1건")
+
+    for slug in DIM_SLUGS:
+        companies = {
+            p["company_id"] for p in POSTINGS if slug in DIMS_BY_POSTING[p["nn"]]
+        }
+        if len(companies) < 2:
+            problems.append(f"{slug}: 독립 회사 {len(companies)}곳")
+    return problems
+
+
+def check_output_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """7. 모듈 산출물 31행과 recent 공고 해석 9행의 범위를 확인한다."""
+    outputs = tables["analysis_outputs"]
+    problems: list[str] = []
+    counts = Counter(row["output_type"] for row in outputs)
+    expected = {"statistics": 1, "interpretation": 16, "strategy": 7, "roadmap": 7}
+    if len(outputs) != 31 or dict(counts) != expected:
+        problems.append(f"산출물 {len(outputs)}행, 종류별 {dict(counts)} != 31행, {expected}")
+    posting_interpretations = {
+        row["scope_id"] for row in outputs
+        if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+    }
+    recent_ids = {posting_id(p["nn"]) for p in RECENT_POSTINGS}
+    if posting_interpretations != recent_ids:
+        problems.append(f"공고 해석 범위 차이 {sorted(posting_interpretations ^ recent_ids)}")
+    return problems
+
+
+def check_direct_contract_values(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """8. 출처·기간·대상군·데이터셋·회사 직접 입력값을 확인한다."""
+    problems: list[str] = []
+    allowed_use_values = {
+        "statistics", "interpretation_context", "strategy", "roadmap",
+        "wiki_definition", "wiki_why_required", "wiki_depth_criteria", "wiki_prerequisites",
+        "wiki_common_misconceptions", "wiki_interview_verification", "wiki_learning_sequence",
+    }
+    expected_company_clusters = {
+        "co_estsecurity": "b2b_saas", "co_kakaobank": "fintech_finance",
+        "co_naver": "bigtech_platform", "co_samsungsds": "si_enterprise",
+        "co_ncsoft": "game", "co_wantedlab": "startup", "co_coupang": "bigtech_platform",
+        "co_viva": "fintech_finance", "co_skcnc": "si_enterprise",
+        "co_kakao": "bigtech_platform", "co_upstage": "startup",
+        "co_navercloud": "b2b_saas", "co_kbank": "fintech_finance",
+        "co_lgcns": "si_enterprise", "co_krafton": "game",
+    }
+    for row in tables["source_assessments"]:
+        uses = set(row["allowed_uses"])
+        if not uses <= allowed_use_values:
+            problems.append(f"{row['assessment_id']}: 허용되지 않은 allowed_uses {sorted(uses - allowed_use_values)}")
+        if uses != set(ALLOWED_USES):
+            problems.append(f"{row['assessment_id']}: 데모 공고 기본 allowed_uses 아님")
+        if (row["source_tier"], str(row["reliability_score"]), row["assessment_version"]) != (
+            "A", "0.95000", "sa_v1"
+        ):
+            problems.append(f"{row['assessment_id']}: 출처 평가 기본값 불일치")
+
+    for row in tables["statistics_facts"]:
+        if row["period_id"] not in {RECENT, PRIOR}:
+            problems.append(f"{row['fact_id']}: 허용되지 않은 기간 {row['period_id']}")
+        if row["metric_family"] == "entry_label_advanced_signal_rate" and row["entry_segment"] != SEGMENT_ENTRY:
+            problems.append(f"{row['fact_id']}: entry_segment {row['entry_segment']}")
+
+    if tables.get("dataset_versions"):
+        problems.append("security 모듈이 dataset_versions 행을 만들었다")
+    for posting in POSTINGS:
+        expected_cluster = expected_company_clusters.get(posting["company_id"])
+        if expected_cluster is None:
+            problems.append(f"{posting['nn']}: 기준 데이터에 없는 회사 {posting['company_id']}")
+        elif posting["cluster"] != expected_cluster:
+            problems.append(
+                f"{posting['nn']}: 회사 기업군 {posting['cluster']} != {expected_cluster}"
+            )
+    return problems
+
+
 CHECKS = (
     ("1 근거 위치", check_spans),
     ("2 지표 재계산", check_numbers),
     ("3 외래키", check_foreign_keys),
     ("4 payload 키", check_payload_keys),
     ("5 체크 개념", check_concepts),
+    ("6 공고 모집단", check_posting_population),
+    ("7 산출물 범위", check_output_population),
+    ("8 직접 입력 계약", check_direct_contract_values),
 )
 
 

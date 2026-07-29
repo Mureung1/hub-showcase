@@ -24,6 +24,13 @@ node_e6c1b3f44e706aa2689c1286,semantic,Company,companies,co_woowahan,주식회�
 node_716b73b41a440cacb5e1a546,semantic,Posting,postings,dp_backend_08,배달 서비스 백엔드 개발자,v1,ds_demo_v1,tx_demo_backend,an_demo_backend
 node_49e06be852e61b4a1f5fde3b,semantic,Company,companies,co_bucketplace,주식회사 버킷플레이스,v1,ds_demo_v1,tx_demo_backend,an_demo_backend
 node_f76f14c183006f10946e2176,semantic,Posting,postings,dp_backend_09,백엔드 개발자 (커머스),v1,ds_demo_v1,tx_demo_backend,an_demo_backend
+node_7a76c76621f29f08b6ccabb0,semantic,Company,companies,co_naver,네이버,v1,ds_demo_v1,tx_demo_backend,an_demo_backend
+node_3930bcb25aeb9ffd18671046,semantic,Posting,postings,dp_backend_10,플랫폼 백엔드 개발자 (신입·주니어),v1,ds_demo_v1,tx_demo_backend,an_demo_backend
+node_01b3e2ba3838475408bbe62f,semantic,Posting,postings,dp_backend_11,커뮤니티 서비스 백엔드 개발자 (주니어),v1,ds_demo_v1,tx_demo_backend,an_demo_backend
+node_d23ad38ef6cc572d3bb0e455,semantic,Posting,postings,dp_backend_12,B2B SaaS 백엔드 엔지니어 (신입·주니어),v1,ds_demo_v1,tx_demo_backend,an_demo_backend
+node_fcc3ac0ecb049436e03a9fd4,semantic,Posting,postings,dp_backend_13,결제·정산 플랫폼 백엔드 개발자,v1,ds_demo_v1,tx_demo_backend,an_demo_backend
+node_48d946531e0c1d41c5c09013,semantic,Posting,postings,dp_backend_14,엔터프라이즈 클라우드 백엔드 개발자,v1,ds_demo_v1,tx_demo_backend,an_demo_backend
+node_647b7843811a61298f64f935,semantic,Posting,postings,dp_backend_15,게임 플랫폼 서버 개발자,v1,ds_demo_v1,tx_demo_backend,an_demo_backend
 node_2ea13f8b7178a80bafde1c3e,semantic,Technology,requirement_dimensions,dim_backend_java-spring,Java·Spring 기반 서버 개발,v1,ds_demo_v1,tx_demo_backend,an_demo_backend
 node_a8fad2b0420438b0f044672b,semantic,Technology,requirement_dimensions,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,v1,ds_demo_v1,tx_demo_backend,an_demo_backend
 node_c72da70f27934c1a81d462f2,semantic,Technology,requirement_dimensions,dim_backend_caching-performance,캐시·조회 성능 개선,v1,ds_demo_v1,tx_demo_backend,an_demo_backend
@@ -54,6 +61,12 @@ node_fa5b52c39381658bf1d36bf4,provenance,SourceSnapshot,source_snapshots,snap_de
 node_2a3067c30704c81107b72968,provenance,SourceSnapshot,source_snapshots,snap_demo_backend_07,카카오페이 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_backend
 node_ead19764056ca459e6620147,provenance,SourceSnapshot,source_snapshots,snap_demo_backend_08,주식회사 우아한형제들 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_backend
 node_5017b1723f98abe3f5c782da,provenance,SourceSnapshot,source_snapshots,snap_demo_backend_09,주식회사 버킷플레이스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_backend
+node_2dbaef9548425172866c0f77,provenance,SourceSnapshot,source_snapshots,snap_demo_backend_10,네이버 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_backend
+node_405c27a42ccc95242bafead9,provenance,SourceSnapshot,source_snapshots,snap_demo_backend_11,주식회사 당근마켓 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_backend
+node_16122244bcacb7577e2cde3a,provenance,SourceSnapshot,source_snapshots,snap_demo_backend_12,주식회사 채널코퍼레이션 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_backend
+node_036e4894cccf444ac0aac7f1,provenance,SourceSnapshot,source_snapshots,snap_demo_backend_13,카카오페이 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_backend
+node_fe0855a30300de23156d8c80,provenance,SourceSnapshot,source_snapshots,snap_demo_backend_14,삼성에스디에스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_backend
+node_2789f58ae24fdae899eb7502,provenance,SourceSnapshot,source_snapshots,snap_demo_backend_15,크래프톤 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_backend
 node_80825df5afc71ad07fb19d66,provenance,Chunk,source_chunks,chunk_demo_backend_01_1,비바리퍼블리카 · 주요업무,v1,ds_demo_v1,\N,an_demo_backend
 node_965f9a60dbeb10a15d55a0d5,provenance,Chunk,source_chunks,chunk_demo_backend_01_2,비바리퍼블리카 · 자격요건,v1,ds_demo_v1,\N,an_demo_backend
 node_727be024bdec518094fb4b51,provenance,Chunk,source_chunks,chunk_demo_backend_01_3,비바리퍼블리카 · 우대사항,v1,ds_demo_v1,\N,an_demo_backend
@@ -81,6 +94,24 @@ node_f6459c62db1449eb41c4d5fa,provenance,Chunk,source_chunks,chunk_demo_backend_
 node_c8a9cf5c362fe7b6430ef4b4,provenance,Chunk,source_chunks,chunk_demo_backend_09_1,주식회사 버킷플레이스 · 주요업무,v1,ds_demo_v1,\N,an_demo_backend
 node_236a5c6c137500e11b14488b,provenance,Chunk,source_chunks,chunk_demo_backend_09_2,주식회사 버킷플레이스 · 자격요건,v1,ds_demo_v1,\N,an_demo_backend
 node_9ef49648d211b2048057c6e8,provenance,Chunk,source_chunks,chunk_demo_backend_09_3,주식회사 버킷플레이스 · 우대사항,v1,ds_demo_v1,\N,an_demo_backend
+node_80851542500f4bc406be0a4a,provenance,Chunk,source_chunks,chunk_demo_backend_10_1,네이버 · 주요업무,v1,ds_demo_v1,\N,an_demo_backend
+node_1e0c4819ba5d0a38394e5df7,provenance,Chunk,source_chunks,chunk_demo_backend_10_2,네이버 · 자격요건,v1,ds_demo_v1,\N,an_demo_backend
+node_e8d253a5f43b80a1d0e25cb5,provenance,Chunk,source_chunks,chunk_demo_backend_10_3,네이버 · 우대사항,v1,ds_demo_v1,\N,an_demo_backend
+node_2815c6c284f39c7109aad53a,provenance,Chunk,source_chunks,chunk_demo_backend_11_1,주식회사 당근마켓 · 주요업무,v1,ds_demo_v1,\N,an_demo_backend
+node_48f83a89dbd5722db1989fe3,provenance,Chunk,source_chunks,chunk_demo_backend_11_2,주식회사 당근마켓 · 자격요건,v1,ds_demo_v1,\N,an_demo_backend
+node_5bd0895e91fc0c44b568e48b,provenance,Chunk,source_chunks,chunk_demo_backend_11_3,주식회사 당근마켓 · 우대사항,v1,ds_demo_v1,\N,an_demo_backend
+node_7b15ed87e7142ff15c212210,provenance,Chunk,source_chunks,chunk_demo_backend_12_1,주식회사 채널코퍼레이션 · 주요업무,v1,ds_demo_v1,\N,an_demo_backend
+node_90a465a2971eb99a32608c35,provenance,Chunk,source_chunks,chunk_demo_backend_12_2,주식회사 채널코퍼레이션 · 자격요건,v1,ds_demo_v1,\N,an_demo_backend
+node_171f13e026380232cf89a1fc,provenance,Chunk,source_chunks,chunk_demo_backend_12_3,주식회사 채널코퍼레이션 · 우대사항,v1,ds_demo_v1,\N,an_demo_backend
+node_6c3ae3fa3d61b18574752226,provenance,Chunk,source_chunks,chunk_demo_backend_13_1,카카오페이 · 주요업무,v1,ds_demo_v1,\N,an_demo_backend
+node_6dbb05a4fa566d26d973ee14,provenance,Chunk,source_chunks,chunk_demo_backend_13_2,카카오페이 · 자격요건,v1,ds_demo_v1,\N,an_demo_backend
+node_3c3d86a33bc08553e2fd514a,provenance,Chunk,source_chunks,chunk_demo_backend_13_3,카카오페이 · 우대사항,v1,ds_demo_v1,\N,an_demo_backend
+node_14abc2052faa42809be18898,provenance,Chunk,source_chunks,chunk_demo_backend_14_1,삼성에스디에스 · 주요업무,v1,ds_demo_v1,\N,an_demo_backend
+node_2db55d4cd5e58fdbeb658bd6,provenance,Chunk,source_chunks,chunk_demo_backend_14_2,삼성에스디에스 · 자격요건,v1,ds_demo_v1,\N,an_demo_backend
+node_5cdff81ca2af0a8b292786a1,provenance,Chunk,source_chunks,chunk_demo_backend_14_3,삼성에스디에스 · 우대사항,v1,ds_demo_v1,\N,an_demo_backend
+node_9ae0e4de401b6a3f76dcac7e,provenance,Chunk,source_chunks,chunk_demo_backend_15_1,크래프톤 · 주요업무,v1,ds_demo_v1,\N,an_demo_backend
+node_4a76b09ab0c521266e4c581c,provenance,Chunk,source_chunks,chunk_demo_backend_15_2,크래프톤 · 자격요건,v1,ds_demo_v1,\N,an_demo_backend
+node_65aaa3848be6e48a5837e129,provenance,Chunk,source_chunks,chunk_demo_backend_15_3,크래프톤 · 우대사항,v1,ds_demo_v1,\N,an_demo_backend
 node_5a29ee2fe017305ab05eda28,provenance,RequirementMention,requirement_mentions,mention_backend_01_1,결제·정산 서비스의 서버 API를 설계하고 개발합니다.,v1,ds_demo_v1,\N,an_demo_backend
 node_d55abe6576c5b3ecef23f9e5,provenance,RequirementMention,requirement_mentions,mention_backend_01_2,거래 데이터를 처리하는 정산 배치와 재처리 로직을 개발합니다.,v1,ds_demo_v1,\N,an_demo_backend
 node_5b34c98ded43e7c42097a027,provenance,RequirementMention,requirement_mentions,mention_backend_01_3,서비스 지표와 장애 알림을 확인하고 대응합니다.,v1,ds_demo_v1,\N,an_demo_backend
@@ -191,8 +222,61 @@ node_809720f17996ac7dd9fb5818,provenance,RequirementMention,requirement_mentions
 node_17867fced3d506ef0988e41a,provenance,RequirementMention,requirement_mentions,mention_backend_09_9,캐시를 활용해 성능을 개선해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
 node_c04cbd7fe97fbcd3008bbb6b,provenance,RequirementMention,requirement_mentions,mention_backend_09_10,테스트 자동화 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
 node_adc68d8179df543920257067,provenance,RequirementMention,requirement_mentions,mention_backend_09_11,코드리뷰로 품질을 관리해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_932489a0cce710a894f6a2b6,provenance,RequirementMention,requirement_mentions,mention_backend_10_1,대규모 사용자가 이용하는 플랫폼 API를 개발하고 운영합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_b667a00cc3700942ad069e4c,provenance,RequirementMention,requirement_mentions,mention_backend_10_2,캐시와 비동기 처리를 활용해 응답 지연을 개선합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_70c3d4bd71e8fb8d5d0fd05d,provenance,RequirementMention,requirement_mentions,mention_backend_10_3,서비스 지표를 관찰하고 장애 원인을 분석합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_789ce4bcae79ad034edae4f4,provenance,RequirementMention,requirement_mentions,mention_backend_10_4,Java와 Spring Boot 기반 서버 개발 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_c4bd9a324860fef1db8336dc,provenance,RequirementMention,requirement_mentions,mention_backend_10_5,관계형 데이터베이스 모델링과 SQL에 익숙하신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_2a3d7f77d2cb4ef722f38e3a,provenance,RequirementMention,requirement_mentions,mention_backend_10_6,테스트 코드로 변경의 안정성을 확인해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_d991da6519ac37f787c22aee,provenance,RequirementMention,requirement_mentions,mention_backend_10_7,Kafka 기반 이벤트 처리 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_f2c350f89b7bcf8dce69b14a,provenance,RequirementMention,requirement_mentions,mention_backend_10_8,Docker 기반 배포 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_0b0ef19dcf04e33517493090,provenance,RequirementMention,requirement_mentions,mention_backend_10_9,API 변경 이력을 기술 문서로 남겨 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_fb23121e7643b25ddaedfe9a,provenance,RequirementMention,requirement_mentions,mention_backend_11_1,지역 커뮤니티의 도메인 로직과 API를 개발합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_5f46e3f51f73cd2c11d32710,provenance,RequirementMention,requirement_mentions,mention_backend_11_2,사용량 증가에 맞춰 데이터 모델과 조회 성능을 개선합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_9326f7dcf076003f97a4ad77,provenance,RequirementMention,requirement_mentions,mention_backend_11_3,배포 이후 서비스 지표와 오류를 직접 확인합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_4d761e6ebd8527542f3e3059,provenance,RequirementMention,requirement_mentions,mention_backend_11_4,Java·Kotlin과 Spring 기반 개발 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_dd8470ad6402e83092c0e822,provenance,RequirementMention,requirement_mentions,mention_backend_11_5,REST API를 설계하고 구현해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_a5378042e2c1ab02943442b5,provenance,RequirementMention,requirement_mentions,mention_backend_11_6,트랜잭션과 동시성의 기본 개념을 이해하시는 분,v1,ds_demo_v1,\N,an_demo_backend
+node_3fe90aaf88fdafa930835c99,provenance,RequirementMention,requirement_mentions,mention_backend_11_7,클라우드 환경에 서비스를 배포해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_366a1eaa81d1c36ec2a8f272,provenance,RequirementMention,requirement_mentions,mention_backend_11_8,CI/CD 파이프라인을 구성해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_bc3b7d01416869e8064b091a,provenance,RequirementMention,requirement_mentions,mention_backend_11_9,동료와 코드리뷰로 협업해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_08ed65548cce28ab0cdb391e,provenance,RequirementMention,requirement_mentions,mention_backend_12_1,고객사가 사용하는 제품 API를 설계하고 개발합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_7abd5913966b431fb727240d,provenance,RequirementMention,requirement_mentions,mention_backend_12_2,고객별 데이터 구조와 마이그레이션을 관리합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_21b9ed7a0b553f8198568cac,provenance,RequirementMention,requirement_mentions,mention_backend_12_3,API 명세와 변경 이력을 문서로 남깁니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_da6c90f167ed4fa0505f9639,provenance,RequirementMention,requirement_mentions,mention_backend_12_4,Java·Spring 기반 서버 개발 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_3f778719dea9e3a27bcac4fc,provenance,RequirementMention,requirement_mentions,mention_backend_12_5,회귀를 막는 단위 테스트를 작성해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_0a4073849f11479361b1e6e2,provenance,RequirementMention,requirement_mentions,mention_backend_12_6,Git 기반 코드리뷰에 익숙하신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_3645617bae7ab4d224da6450,provenance,RequirementMention,requirement_mentions,mention_backend_12_7,Redis로 조회 성능을 개선해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_2312cdfcce790aff845df114,provenance,RequirementMention,requirement_mentions,mention_backend_12_8,Docker 기반 개발 환경을 구성해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_7e8eb195bd6bafc4983390c7,provenance,RequirementMention,requirement_mentions,mention_backend_12_9,CI/CD로 배포를 자동화해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_84142cc8efc3102baacab023,provenance,RequirementMention,requirement_mentions,mention_backend_13_1,결제와 정산 서비스의 서버 API를 개발합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_06e8b23e99a69566df255eb0,provenance,RequirementMention,requirement_mentions,mention_backend_13_2,거래 데이터의 정합성과 재처리 흐름을 설계합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_e8ac7827177f4952686b4bda,provenance,RequirementMention,requirement_mentions,mention_backend_13_3,장애 알림을 확인하고 복구 절차를 개선합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_448d15f4ae3d767e3336d721,provenance,RequirementMention,requirement_mentions,mention_backend_13_4,Java와 Spring 기반 서버 개발 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_aca79fd5c74762df615fda7e,provenance,RequirementMention,requirement_mentions,mention_backend_13_5,관계형 데이터베이스 설계와 튜닝 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_84aa8468a5a346fd9ff7e481,provenance,RequirementMention,requirement_mentions,mention_backend_13_6,REST API의 오류와 멱등성을 설계해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_daecba676ffb333a688a1430,provenance,RequirementMention,requirement_mentions,mention_backend_13_7,Kafka 기반 비동기 처리 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_dcaa298163f64255e747e61a,provenance,RequirementMention,requirement_mentions,mention_backend_13_8,테스트 자동화 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_25607c882e528cd9b428903f,provenance,RequirementMention,requirement_mentions,mention_backend_13_9,금융 서비스 도메인을 모델링해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_fe35853bb6470980c0375b50,provenance,RequirementMention,requirement_mentions,mention_backend_14_1,기업 고객용 업무 시스템의 백엔드 기능을 개발합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_9a643aed5acb7d7c820815ed,provenance,RequirementMention,requirement_mentions,mention_backend_14_2,배포 절차와 운영 산출물을 표준화합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_d5743bb2ed0c3876e9330de2,provenance,RequirementMention,requirement_mentions,mention_backend_14_3,설계와 API 명세를 기술 문서로 관리합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_b44bec2db192b9627e9049ae,provenance,RequirementMention,requirement_mentions,mention_backend_14_4,Java·Spring 기반 서버 개발 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_ca1ca44a52ed708754f13ae4,provenance,RequirementMention,requirement_mentions,mention_backend_14_5,관계형 데이터베이스와 SQL에 익숙하신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_244fb5c1af849150d36ff5f1,provenance,RequirementMention,requirement_mentions,mention_backend_14_6,REST API 설계와 연동 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_f68248148217286acb2956f7,provenance,RequirementMention,requirement_mentions,mention_backend_14_7,Docker와 Kubernetes 운영 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_49caf116c6b065028261f7a8,provenance,RequirementMention,requirement_mentions,mention_backend_14_8,AWS 등 클라우드 인프라 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_ec5319acfb56711f980689f7,provenance,RequirementMention,requirement_mentions,mention_backend_14_9,테스트 자동화 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_76f25e6fb529cb92b3c36415,provenance,RequirementMention,requirement_mentions,mention_backend_15_1,게임 플랫폼의 실시간 요청을 처리하는 서버를 개발합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_47c58f4d3f9ce6a491f7fda5,provenance,RequirementMention,requirement_mentions,mention_backend_15_2,이벤트 메시지를 처리하는 파이프라인을 운영합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_4fd2c88d8945a9aa9746f5d4,provenance,RequirementMention,requirement_mentions,mention_backend_15_3,동시 접속 급증에 맞춰 성능을 개선합니다.,v1,ds_demo_v1,\N,an_demo_backend
+node_3e5e0c350f870fa9561b0c05,provenance,RequirementMention,requirement_mentions,mention_backend_15_4,Java와 Spring 기반 서버 개발 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_e2007f2e0f288fca9bf1f984,provenance,RequirementMention,requirement_mentions,mention_backend_15_5,관계형 데이터베이스 튜닝 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_43c9540393acb2d890eda372,provenance,RequirementMention,requirement_mentions,mention_backend_15_6,동시성 상황에서 데이터 정합성을 지켜 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_40b50e02d6a9f86f6b0d00fd,provenance,RequirementMention,requirement_mentions,mention_backend_15_7,클라우드에서 서비스를 운영해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_888a89eac075b4a7f25b262d,provenance,RequirementMention,requirement_mentions,mention_backend_15_8,장애 대응 과정을 문서로 정리해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
+node_ad2eddfd91f87e8aec52df22,provenance,RequirementMention,requirement_mentions,mention_backend_15_9,코드리뷰로 팀의 품질을 관리해 보신 분,v1,ds_demo_v1,\N,an_demo_backend
 node_ae38207898a67e49ba18c96f,semantic,JobRole,job_roles,frontend,프론트엔드 개발자,v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
-node_7a76c76621f29f08b6ccabb0,semantic,Company,companies,co_naver,네이버,v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
 node_2cea7438fda0a74df5f5af75,semantic,Posting,postings,dp_frontend_01,프론트엔드 개발자 (신입·주니어),v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
 node_4b86ed114cd51a5c8303a07e,semantic,Posting,postings,dp_frontend_02,프론트엔드 개발자 (금융 서비스 웹),v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
 node_49431a6ad8e93e8d3e8bed37,semantic,Posting,postings,dp_frontend_03,프론트엔드 개발자 (웹 서비스),v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
@@ -205,6 +289,12 @@ node_4cc66f056dbdccb2ad89c081,semantic,Company,companies,co_ncsoft,엔씨소프�
 node_7b57ce01836579b2c8cf7bd9,semantic,Posting,postings,dp_frontend_08,웹 프론트엔드 개발자 (게임 서비스 플랫폼),v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
 node_5f9674f2d8ea1992ecca3936,semantic,Company,companies,co_sendbird,센드버드,v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
 node_9c8d2af706c9694519b6087f,semantic,Posting,postings,dp_frontend_09,프론트엔드 엔지니어 (SDK 대시보드),v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
+node_530a133b21e4fa94c89b77e4,semantic,Posting,postings,dp_frontend_10,프론트엔드 개발자 (신입·주니어) (이전 기간 표본),v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
+node_621aa222e80b2472d624c2e4,semantic,Posting,postings,dp_frontend_11,프론트엔드 개발자 (웹 서비스) (이전 기간 표본),v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
+node_5b1cdf1cc39ad8042a3a9f74,semantic,Posting,postings,dp_frontend_12,프론트엔드 엔지니어 (상담 데스크 웹) (이전 기간 표본),v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
+node_49be7b81521b9f9a6d7b2634,semantic,Posting,postings,dp_frontend_13,프론트엔드 개발자 (금융 서비스 웹) (이전 기간 표본),v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
+node_8f18d05b0ba784a9129bcc18,semantic,Posting,postings,dp_frontend_14,웹 프론트엔드 개발자 (공공·금융 SI) (이전 기간 표본),v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
+node_b13a01700a7574475bf02a70,semantic,Posting,postings,dp_frontend_15,웹 프론트엔드 개발자 (게임 서비스 플랫폼) (이전 기간 표본),v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
 node_fc50cfa56075f0af44d5a938,semantic,Technology,requirement_dimensions,dim_frontend_react-component,React 컴포넌트 개발,v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
 node_b4bf52dc0d9056ca4c2f8b2c,semantic,Technology,requirement_dimensions,dim_frontend_typescript-typing,TypeScript 타입 설계,v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
 node_b621ff97ab29e0a72735574b,semantic,RequirementDimension,requirement_dimensions,dim_frontend_state-management,상태 관리 설계,v1,ds_demo_v1,tx_demo_frontend,an_demo_frontend
@@ -226,6 +316,12 @@ node_52bb7b1506d934e2b3e3b164,provenance,SourceSnapshot,source_snapshots,snap_de
 node_e42dfc8f6db15e5920b4d389,provenance,SourceSnapshot,source_snapshots,snap_demo_frontend_07,카카오페이 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_frontend
 node_f9df954793edf1285a7e149e,provenance,SourceSnapshot,source_snapshots,snap_demo_frontend_08,엔씨소프트 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_frontend
 node_a72e5ec8a761bc34308332c1,provenance,SourceSnapshot,source_snapshots,snap_demo_frontend_09,센드버드 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_frontend
+node_206b654c01e64826c78522cc,provenance,SourceSnapshot,source_snapshots,snap_demo_frontend_10,네이버 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_frontend
+node_9668c2861b08d9a624524c56,provenance,SourceSnapshot,source_snapshots,snap_demo_frontend_11,주식회사 당근마켓 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_frontend
+node_abb0dc372c829ce37e5a4008,provenance,SourceSnapshot,source_snapshots,snap_demo_frontend_12,주식회사 채널코퍼레이션 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_frontend
+node_99036421fb43a6662ad5d832,provenance,SourceSnapshot,source_snapshots,snap_demo_frontend_13,비바리퍼블리카 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_frontend
+node_9065e0dc48db2d6e208544e8,provenance,SourceSnapshot,source_snapshots,snap_demo_frontend_14,엘지씨엔에스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_frontend
+node_2c7bd28278f064c84eccc53b,provenance,SourceSnapshot,source_snapshots,snap_demo_frontend_15,엔씨소프트 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_frontend
 node_4a47dc4b45001339484cfe5a,provenance,Chunk,source_chunks,chunk_demo_frontend_01_1,네이버 · 주요업무,v1,ds_demo_v1,\N,an_demo_frontend
 node_41fdf42b10d8bb68a48930b5,provenance,Chunk,source_chunks,chunk_demo_frontend_01_2,네이버 · 자격요건,v1,ds_demo_v1,\N,an_demo_frontend
 node_4083fa9cb6883dc04540dafb,provenance,Chunk,source_chunks,chunk_demo_frontend_01_3,네이버 · 우대사항,v1,ds_demo_v1,\N,an_demo_frontend
@@ -262,6 +358,30 @@ node_4ab79dd8138bc7d9361beae4,provenance,Chunk,source_chunks,chunk_demo_frontend
 node_bb6492334e50284dd112b4d7,provenance,Chunk,source_chunks,chunk_demo_frontend_09_2,센드버드 · 자격요건,v1,ds_demo_v1,\N,an_demo_frontend
 node_6c3ae8317141721f6f88f856,provenance,Chunk,source_chunks,chunk_demo_frontend_09_3,센드버드 · 우대사항,v1,ds_demo_v1,\N,an_demo_frontend
 node_7daa9c3ca37adc25fa7a8a5a,provenance,Chunk,source_chunks,chunk_demo_frontend_09_4,센드버드 · 전형절차,v1,ds_demo_v1,\N,an_demo_frontend
+node_7a64472f485f8ba6538f07e4,provenance,Chunk,source_chunks,chunk_demo_frontend_10_1,네이버 · 주요업무,v1,ds_demo_v1,\N,an_demo_frontend
+node_46963a4a74546218c2bda1b3,provenance,Chunk,source_chunks,chunk_demo_frontend_10_2,네이버 · 자격요건,v1,ds_demo_v1,\N,an_demo_frontend
+node_b4f7f76ac34f2ed6cfed3128,provenance,Chunk,source_chunks,chunk_demo_frontend_10_3,네이버 · 우대사항,v1,ds_demo_v1,\N,an_demo_frontend
+node_3320ed10893e39dd604ac993,provenance,Chunk,source_chunks,chunk_demo_frontend_10_4,네이버 · 전형절차,v1,ds_demo_v1,\N,an_demo_frontend
+node_e924a78934eb5df005f1b415,provenance,Chunk,source_chunks,chunk_demo_frontend_11_1,주식회사 당근마켓 · 주요업무,v1,ds_demo_v1,\N,an_demo_frontend
+node_386d502124f13c5eda922654,provenance,Chunk,source_chunks,chunk_demo_frontend_11_2,주식회사 당근마켓 · 자격요건,v1,ds_demo_v1,\N,an_demo_frontend
+node_4f819af93bdb055382469333,provenance,Chunk,source_chunks,chunk_demo_frontend_11_3,주식회사 당근마켓 · 우대사항,v1,ds_demo_v1,\N,an_demo_frontend
+node_62cb5083477255e57caa2598,provenance,Chunk,source_chunks,chunk_demo_frontend_11_4,주식회사 당근마켓 · 전형절차,v1,ds_demo_v1,\N,an_demo_frontend
+node_bf2d39099010b13fbfa0d38b,provenance,Chunk,source_chunks,chunk_demo_frontend_12_1,주식회사 채널코퍼레이션 · 주요업무,v1,ds_demo_v1,\N,an_demo_frontend
+node_5d7dfb932592908d81c10e76,provenance,Chunk,source_chunks,chunk_demo_frontend_12_2,주식회사 채널코퍼레이션 · 자격요건,v1,ds_demo_v1,\N,an_demo_frontend
+node_a347e76891ab4fbecc665224,provenance,Chunk,source_chunks,chunk_demo_frontend_12_3,주식회사 채널코퍼레이션 · 우대사항,v1,ds_demo_v1,\N,an_demo_frontend
+node_b89f81e622cbcd65272f2d2b,provenance,Chunk,source_chunks,chunk_demo_frontend_12_4,주식회사 채널코퍼레이션 · 전형절차,v1,ds_demo_v1,\N,an_demo_frontend
+node_c8899ee2bbb3a8f9885e444b,provenance,Chunk,source_chunks,chunk_demo_frontend_13_1,비바리퍼블리카 · 주요업무,v1,ds_demo_v1,\N,an_demo_frontend
+node_81439f0332f15c592ef3ce6e,provenance,Chunk,source_chunks,chunk_demo_frontend_13_2,비바리퍼블리카 · 자격요건,v1,ds_demo_v1,\N,an_demo_frontend
+node_dfa8cc7990846b4135fa4aff,provenance,Chunk,source_chunks,chunk_demo_frontend_13_3,비바리퍼블리카 · 우대사항,v1,ds_demo_v1,\N,an_demo_frontend
+node_6de66b68938f56d25a39d868,provenance,Chunk,source_chunks,chunk_demo_frontend_13_4,비바리퍼블리카 · 전형절차,v1,ds_demo_v1,\N,an_demo_frontend
+node_0406cbd38ef67244825a6c8f,provenance,Chunk,source_chunks,chunk_demo_frontend_14_1,엘지씨엔에스 · 주요업무,v1,ds_demo_v1,\N,an_demo_frontend
+node_4adfb99b9fe23c0b9e8b2b33,provenance,Chunk,source_chunks,chunk_demo_frontend_14_2,엘지씨엔에스 · 자격요건,v1,ds_demo_v1,\N,an_demo_frontend
+node_81a57f44d21d1560d446f00d,provenance,Chunk,source_chunks,chunk_demo_frontend_14_3,엘지씨엔에스 · 우대사항,v1,ds_demo_v1,\N,an_demo_frontend
+node_19705ab368d81d7864d17341,provenance,Chunk,source_chunks,chunk_demo_frontend_14_4,엘지씨엔에스 · 전형절차,v1,ds_demo_v1,\N,an_demo_frontend
+node_75a47522d3fed48791b6fda6,provenance,Chunk,source_chunks,chunk_demo_frontend_15_1,엔씨소프트 · 주요업무,v1,ds_demo_v1,\N,an_demo_frontend
+node_f9d487bf220a8053fdcf6333,provenance,Chunk,source_chunks,chunk_demo_frontend_15_2,엔씨소프트 · 자격요건,v1,ds_demo_v1,\N,an_demo_frontend
+node_507a98908f38134c17c76681,provenance,Chunk,source_chunks,chunk_demo_frontend_15_3,엔씨소프트 · 우대사항,v1,ds_demo_v1,\N,an_demo_frontend
+node_95fd4d37586ce44a8abac224,provenance,Chunk,source_chunks,chunk_demo_frontend_15_4,엔씨소프트 · 전형절차,v1,ds_demo_v1,\N,an_demo_frontend
 node_6ae8e7e7247525c06a3a971d,provenance,RequirementMention,requirement_mentions,mention_frontend_01_1,많은 사용자가 동시에 보는 화면의 렌더링 성능을 개선합니다.,v1,ds_demo_v1,\N,an_demo_frontend
 node_cbdd47ba9f1ae3bc82c6efff,provenance,RequirementMention,requirement_mentions,mention_frontend_01_2,공통 컴포넌트 라이브러리를 유지보수하고 사용법을 문서로 남깁니다.,v1,ds_demo_v1,\N,an_demo_frontend
 node_b0323a8294cb5c3d2ed61576,provenance,RequirementMention,requirement_mentions,mention_frontend_01_3,React로 컴포넌트를 나누어 화면을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_frontend
@@ -322,6 +442,48 @@ node_71fee6647a09b6972b999357,provenance,RequirementMention,requirement_mentions
 node_22c33400d341cdacf3ec6c36,provenance,RequirementMention,requirement_mentions,mention_frontend_09_4,컴포넌트 테스트를 작성하고 유지해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
 node_ec9d6aa8da0df0465b3497f8,provenance,RequirementMention,requirement_mentions,mention_frontend_09_5,웹 접근성 기준을 고려해 개발해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
 node_1ffed5a72c5ff5e1528f2150,provenance,RequirementMention,requirement_mentions,mention_frontend_09_6,빌드 설정을 관리해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_b5cca0d20ded57bee38be53b,provenance,RequirementMention,requirement_mentions,mention_frontend_10_1,많은 사용자가 동시에 보는 화면의 렌더링 성능을 개선합니다.,v1,ds_demo_v1,\N,an_demo_frontend
+node_b87b896899be9d436fa1c66b,provenance,RequirementMention,requirement_mentions,mention_frontend_10_2,공통 컴포넌트 라이브러리를 유지보수하고 사용법을 문서로 남깁니다.,v1,ds_demo_v1,\N,an_demo_frontend
+node_c15ce59570757455ffeb30fd,provenance,RequirementMention,requirement_mentions,mention_frontend_10_3,React로 컴포넌트를 나누어 화면을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_e514146e02f825563d8cdee5,provenance,RequirementMention,requirement_mentions,mention_frontend_10_4,TypeScript로 타입을 정의하며 개발해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_75796329e673888aab92c5ae,provenance,RequirementMention,requirement_mentions,mention_frontend_10_5,Core Web Vitals 등 성능 지표를 측정하고 개선해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_a470969dacb3ba08fcea1d79,provenance,RequirementMention,requirement_mentions,mention_frontend_10_6,상태 관리 라이브러리로 데이터 흐름을 설계해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_82510e44d4b5c1b950073a3d,provenance,RequirementMention,requirement_mentions,mention_frontend_10_7,Jest·Testing Library로 컴포넌트 테스트를 작성해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_abc8ca8683dfc1044651b11b,provenance,RequirementMention,requirement_mentions,mention_frontend_10_8,웹 접근성 지침(WCAG)을 고려해 마크업해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_b7586bbd5e36d49308b4b996,provenance,RequirementMention,requirement_mentions,mention_frontend_10_9,Webpack·Vite 등 번들러 설정을 다뤄 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_18a7ed06d5d8bc61b558637b,provenance,RequirementMention,requirement_mentions,mention_frontend_11_1,여러 화면에 흩어진 스타일을 공통 규칙으로 정리합니다.,v1,ds_demo_v1,\N,an_demo_frontend
+node_28b111a83e699e7c4a27a94b,provenance,RequirementMention,requirement_mentions,mention_frontend_11_2,React로 화면을 완성해 배포해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_967ebbee211fb3c3571c8f8a,provenance,RequirementMention,requirement_mentions,mention_frontend_11_3,TypeScript를 사용해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_253a15b542014365ccc3048b,provenance,RequirementMention,requirement_mentions,mention_frontend_11_4,상태 관리 도구를 한 가지 이상 써 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_f10ba4e71779d89fdd0556f0,provenance,RequirementMention,requirement_mentions,mention_frontend_11_5,Vite 등 빌드 도구를 직접 설정해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_d4e012fcd6e1752cb19ac575,provenance,RequirementMention,requirement_mentions,mention_frontend_11_6,공통 컴포넌트와 디자인 토큰 체계를 만들어 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_207daffcd3bee9710f050d8a,provenance,RequirementMention,requirement_mentions,mention_frontend_12_1,실시간 상담 데이터의 상태 동기화 구조를 설계합니다.,v1,ds_demo_v1,\N,an_demo_frontend
+node_3a4e415df45e347da220cfd5,provenance,RequirementMention,requirement_mentions,mention_frontend_12_2,디자인 시스템과 공통 컴포넌트를 설계하고 배포합니다.,v1,ds_demo_v1,\N,an_demo_frontend
+node_fb5d154c778733f484923342,provenance,RequirementMention,requirement_mentions,mention_frontend_12_3,React 기반 웹 애플리케이션을 설계·개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_a8461dedf27a6d3a909ff9e9,provenance,RequirementMention,requirement_mentions,mention_frontend_12_4,TypeScript로 규모 있는 코드베이스를 다뤄 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_f3cbd08d3cdc65efa5269745,provenance,RequirementMention,requirement_mentions,mention_frontend_12_5,컴포넌트 테스트와 회귀 테스트를 운영해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_38ca46e0d1f55b242c2c62c6,provenance,RequirementMention,requirement_mentions,mention_frontend_12_6,번들 구성을 분석해 빌드·로딩 시간을 줄여 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_5571add4a2d5f6418f602f17,provenance,RequirementMention,requirement_mentions,mention_frontend_12_7,웹 접근성 기준을 제품에 적용해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_a5a7075491511565e22708a3,provenance,RequirementMention,requirement_mentions,mention_frontend_12_8,렌더링 성능을 프로파일링해 개선해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_490a5fb07d79b97684ca428e,provenance,RequirementMention,requirement_mentions,mention_frontend_13_1,결제·송금 플로우의 로딩·에러·재시도 화면 상태를 설계합니다.,v1,ds_demo_v1,\N,an_demo_frontend
+node_563acfc34245b013cdc7b6d4,provenance,RequirementMention,requirement_mentions,mention_frontend_13_2,디자인 시스템 컴포넌트를 개선하고 사용처를 정리합니다.,v1,ds_demo_v1,\N,an_demo_frontend
+node_562bc247edc3123fe72f50a7,provenance,RequirementMention,requirement_mentions,mention_frontend_13_3,React로 서비스 화면을 개발해 배포해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_49ddd377c521f9550615a045,provenance,RequirementMention,requirement_mentions,mention_frontend_13_4,TypeScript 타입으로 도메인 규칙을 표현할 수 있는 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_a626a9264ce732a2f70a5345,provenance,RequirementMention,requirement_mentions,mention_frontend_13_5,테스트 코드로 결제 플로우를 검증해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_dea9b483328770c2a6e11e64,provenance,RequirementMention,requirement_mentions,mention_frontend_13_6,웹 접근성 표준을 지켜 금융 화면을 만들어 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_77998a8cf46db52f03fcb290,provenance,RequirementMention,requirement_mentions,mention_frontend_13_7,번들 크기와 초기 로딩 시간을 개선해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_1843aceaac89bb9513ca76c3,provenance,RequirementMention,requirement_mentions,mention_frontend_14_1,웹 접근성 인증 기준에 맞춰 화면을 구현하고 점검합니다.,v1,ds_demo_v1,\N,an_demo_frontend
+node_89460f160b72a62d666ae64e,provenance,RequirementMention,requirement_mentions,mention_frontend_14_2,React 또는 Vue로 업무 화면을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_1021212abd66301a6e164168,provenance,RequirementMention,requirement_mentions,mention_frontend_14_3,TypeScript 기반 개발 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_5fe900a8cf9ce302373fc642,provenance,RequirementMention,requirement_mentions,mention_frontend_14_4,웹 접근성 지침(KWCAG)을 준수해 마크업해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_c6266549d577ec8003e41161,provenance,RequirementMention,requirement_mentions,mention_frontend_14_5,CSS 방법론에 따라 스타일 규칙을 문서로 정리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_af3749605693578a16fbe2d5,provenance,RequirementMention,requirement_mentions,mention_frontend_14_6,빌드·배포 파이프라인을 구성해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_2c43750b38b8637d8e1ae0b8,provenance,RequirementMention,requirement_mentions,mention_frontend_15_1,공통 UI 컴포넌트와 스타일 체계를 관리합니다.,v1,ds_demo_v1,\N,an_demo_frontend
+node_653fa9455de9d009f1a2a1b9,provenance,RequirementMention,requirement_mentions,mention_frontend_15_2,React로 웹 애플리케이션을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_8a40ae92973cd6882ac692a6,provenance,RequirementMention,requirement_mentions,mention_frontend_15_3,TypeScript로 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_4b55c0dc77ed98289a51061b,provenance,RequirementMention,requirement_mentions,mention_frontend_15_4,많은 사용자가 몰리는 화면의 성능을 개선해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_e39567050bcd0afc52939c6a,provenance,RequirementMention,requirement_mentions,mention_frontend_15_5,번들 크기를 관리해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
+node_4fefa056858afb5d15afdccc,provenance,RequirementMention,requirement_mentions,mention_frontend_15_6,실시간 데이터를 화면 상태와 동기화해 보신 분,v1,ds_demo_v1,\N,an_demo_frontend
 node_c0d2d623f2952a9907614862,semantic,JobRole,job_roles,ai_engineer,AI 엔지니어,v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
 node_1d29e8934a1e203d4f3dbb8b,semantic,Posting,postings,dp_ai_engineer_01,AI 엔지니어 (검색 품질) 신입·주니어,v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
 node_81c003321bb8a968e97f6517,semantic,Company,companies,co_upstage,업스테이지,v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
@@ -336,6 +498,13 @@ node_21fed7d7abe1de83fdf5bc72,semantic,Company,companies,co_wantedlab,원티드�
 node_449753070d926fa857002558,semantic,Posting,postings,dp_ai_engineer_07,AI 엔지니어 (신입),v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
 node_87a562d2580f834a3abeea53,semantic,Posting,postings,dp_ai_engineer_08,AI 엔지니어 (고객사 프로젝트),v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
 node_06624a4442d9893d098d28bc,semantic,Posting,postings,dp_ai_engineer_09,AI 엔지니어 (메시징 제품),v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
+node_44f2c78612d0cc2a93c78a21,semantic,Company,companies,co_coupang,쿠팡,v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
+node_bce36b1a20d29219a61bb9cf,semantic,Posting,postings,dp_ai_engineer_10,AI 엔지니어 (수요 예측) 신입·주니어,v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
+node_b8e0e92d7ec3d5ad2a2933ad,semantic,Posting,postings,dp_ai_engineer_11,AI 엔지니어 (지역 추천) 신입·주니어,v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
+node_cc8436e5d39f10c4d7dac604,semantic,Posting,postings,dp_ai_engineer_12,AI 엔지니어 (상담 자동화) 신입·주니어,v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
+node_839134da2dc807dbfb01e166,semantic,Posting,postings,dp_ai_engineer_13,AI 엔지니어 (금융 위험 모델),v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
+node_0812486fb7c2b383c7fa2131,semantic,Posting,postings,dp_ai_engineer_14,AI 엔지니어 (제조 품질 분석),v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
+node_74a9ef8e288cf4bad860594e,semantic,Posting,postings,dp_ai_engineer_15,게임 AI 엔지니어 (대화형 캐릭터),v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
 node_f2f1939905ee0af8f2dc570e,semantic,Technology,requirement_dimensions,dim_ai_engineer_python,Python 구현력,v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
 node_cbc3a2f0414805c24c82ef7d,semantic,Technology,requirement_dimensions,dim_ai_engineer_dl-framework,딥러닝 프레임워크,v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
 node_1b38c7be3251e6a086716640,semantic,Technology,requirement_dimensions,dim_ai_engineer_llm-app,LLM 응용·RAG,v1,ds_demo_v1,tx_demo_ai_engineer,an_demo_ai_engineer
@@ -353,6 +522,12 @@ node_8f2c29f45606358d1df8558d,provenance,SourceSnapshot,source_snapshots,snap_de
 node_11e30809c79a951f621a919d,provenance,SourceSnapshot,source_snapshots,snap_demo_ai_engineer_07,원티드랩 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_b0e680bcf150e10591f73bb3,provenance,SourceSnapshot,source_snapshots,snap_demo_ai_engineer_08,삼성에스디에스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_b06e9990316d4bdfe3892535,provenance,SourceSnapshot,source_snapshots,snap_demo_ai_engineer_09,센드버드 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_29e0ef566af4183ae1384a6b,provenance,SourceSnapshot,source_snapshots,snap_demo_ai_engineer_10,쿠팡 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_1c11beebcef0eb04afdbc2bb,provenance,SourceSnapshot,source_snapshots,snap_demo_ai_engineer_11,당근마켓 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_8af8afb9cc092a6ca7ce7270,provenance,SourceSnapshot,source_snapshots,snap_demo_ai_engineer_12,채널코퍼레이션 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_b64a93b63a2d965c012a1817,provenance,SourceSnapshot,source_snapshots,snap_demo_ai_engineer_13,비바리퍼블리카 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_6c5cdc970a5a9daf857d144e,provenance,SourceSnapshot,source_snapshots,snap_demo_ai_engineer_14,엘지씨엔에스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_193426fe1a5d43826307228a,provenance,SourceSnapshot,source_snapshots,snap_demo_ai_engineer_15,크래프톤 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_ea0cad16c149059e236a91ae,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_01_1,네이버 · 주요업무,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_c4805b5ff6d99be35e76454b,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_01_2,네이버 · 자격요건,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_2fea24ccb94b1bc802b7ed5f,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_01_3,네이버 · 우대사항,v1,ds_demo_v1,\N,an_demo_ai_engineer
@@ -380,6 +555,24 @@ node_5033142d53e7a3a8f19ffd1c,provenance,Chunk,source_chunks,chunk_demo_ai_engin
 node_c980a6bb7b28cb6d2d467519,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_09_1,센드버드 · 주요업무,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_9a4dcd2c0a34306bb7cd464e,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_09_2,센드버드 · 자격요건,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_4d5705a02fc386b775b27668,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_09_3,센드버드 · 우대사항,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_3ac8e94ec6ade557a112bd19,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_10_1,쿠팡 · 주요업무,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_a80bc596563effc0a5ff449e,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_10_2,쿠팡 · 자격요건,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_c5248b8e902431f80aff8585,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_10_3,쿠팡 · 우대사항,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_d8f22b29694d8acdd5d9b5b0,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_11_1,당근마켓 · 주요업무,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_4f4ce80053b3434fc77efc09,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_11_2,당근마켓 · 자격요건,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_5b61c20c286ba64a75ee9c70,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_11_3,당근마켓 · 우대사항,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_ba51967181b83978e84d073a,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_12_1,채널코퍼레이션 · 주요업무,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_2dd7a670a74d9fcf27c031ff,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_12_2,채널코퍼레이션 · 자격요건,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_d9dd890d12518f89a03770f5,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_12_3,채널코퍼레이션 · 우대사항,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_17514aa8632158b96b493a4f,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_13_1,비바리퍼블리카 · 주요업무,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_d7212232e2627741030b16d0,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_13_2,비바리퍼블리카 · 자격요건,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_c446003ae89ce7ea48962a7c,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_13_3,비바리퍼블리카 · 우대사항,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_4fb902cff54a126612565f6c,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_14_1,엘지씨엔에스 · 주요업무,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_7bfc1362068ee033ca32c9c1,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_14_2,엘지씨엔에스 · 자격요건,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_0298c459b919cb52e779dee9,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_14_3,엘지씨엔에스 · 우대사항,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_9998db33f59a614710b8bf02,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_15_1,크래프톤 · 주요업무,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_adc3ebe6301152aa709e87c6,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_15_2,크래프톤 · 자격요건,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_0eb94149176092961da40897,provenance,Chunk,source_chunks,chunk_demo_ai_engineer_15_3,크래프톤 · 우대사항,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_d8cbdef5f447de856d9e34f2,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_01_1,학습 데이터 수집과 전처리 파이프라인을 설계하고 운영합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_27847ce7c81981ebb3fa8b00,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_01_2,학습한 모델을 사내 추론 플랫폼에 올리고 지표를 관찰합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_5481b3dadff5f305cf0a2803,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_01_3,Python으로 데이터 처리와 모델 학습 코드를 직접 작성할 수 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
@@ -416,8 +609,37 @@ node_f6362f8297570c468f3de5bb,provenance,RequirementMention,requirement_mentions
 node_8a21b73cc10276889fd37c12,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_09_1,Python으로 서비스 코드를 작성할 수 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_3e451ccdc670ace99e4ca56d,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_09_2,모델을 API 형태로 서빙해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_753ce4aa51d5cd0b6279f540,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_09_3,LLM을 활용한 제품 기능을 만들어 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_10cab436187e44afd1ab9a61,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_10_1,상품 수요 예측 모델의 학습 데이터를 구축하고 품질을 점검합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_ae0fbeb6847a1a26263a83d4,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_10_2,Python으로 데이터 처리와 모델 학습 코드를 작성할 수 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_31ea2a992935cdec063cad20,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_10_3,PyTorch로 예측 모델을 학습해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_fe61299de29ff1d3f65a2b30,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_10_4,대규모 거래 데이터를 전처리해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_537501b3d67f59efe7dfb7cd,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_11_1,지역 서비스에 적용할 추천 모델과 LLM 기능을 개발합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_d99886354fbd254cd52d94d4,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_11_2,사용자 행동 로그를 학습 데이터로 정제합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_3a641dff5b2b66c6ca31a356,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_11_3,Python으로 데이터 분석과 모델 실험을 수행할 수 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_1490dc784a5d3f933665c922,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_11_4,RAG 또는 프롬프트 기반 기능을 만들어 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_ca1d4a798d78158b40d376b1,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_11_5,데이터 라벨링 기준을 설계해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_229f9f35dfb10d0222658f5b,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_12_1,고객 상담 문서를 검색하는 RAG 기능을 개발합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_0745b56028be6f85fa748a8a,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_12_2,모델 응답 API의 지연과 오류를 관찰합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_e0c30236bf2cd359baa61848,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_12_3,Python으로 웹 API와 데이터 처리 코드를 작성할 수 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_2b5f55a23be25a2aece981d5,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_12_4,LLM 응답 품질을 평가해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_41520141323a4f71b9868346,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_12_5,모델을 컨테이너 환경에 배포해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_5ba9e37e940b8675184d7bfc,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_13_1,금융 위험 모델에 사용할 데이터를 정제하고 피처를 설계합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_bda02eb2a1f38a9bf48c135d,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_13_2,운영 모델의 성능과 데이터 변화를 모니터링합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_bdd859b1a2f6fba4fa955058,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_13_3,Python으로 대용량 데이터를 분석하고 모델링할 수 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_1b0f5a908d2bee06b56f2da3,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_13_4,데이터 품질 검증 절차를 설계해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_59246932d3e6140126b66b03,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_13_5,모델 서빙 파이프라인을 운영해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_7699243d4c399e6cae4fe4fb,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_14_1,제조 현장 데이터를 수집하고 학습용 데이터로 전처리합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_c989c5b0818b1d4e97b37dbe,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_14_2,품질 예측 모델을 개발하고 고객사 환경에서 검증합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_121936354e775de501b4685d,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_14_3,Python 기반 데이터 분석과 모델 개발 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_0cb0fc045b811c927cb6bc32,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_14_4,딥러닝 프레임워크로 모델을 학습해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_3e6fc14e40a7c9c76e2c1fa9,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_14_5,센서 데이터의 결측과 이상치를 처리해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_1c187551ca135e696bd32112,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_15_1,대화형 캐릭터를 위한 LLM 응용 모델을 개발합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_c3de747099fafeac53b705b3,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_15_2,게임 서버에서 사용할 추론 API를 개발하고 운영합니다.,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_f8d24c49d5d7a99626a9b9e6,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_15_3,Python으로 모델 학습과 평가 코드를 구현할 수 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_5a732c6560dd910b3509c119,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_15_4,PyTorch 학습 구조를 수정하고 실험해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_57ce0f4be6bb325023a34981,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_15_5,LLM 프롬프트와 RAG 구조를 설계해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
+node_f3f38949ca3dd4e6d6942b00,provenance,RequirementMention,requirement_mentions,mention_ai_engineer_15_6,실시간 모델 서빙의 지연을 측정해 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_ai_engineer
 node_1b8fa7ce71f79a79a935a5bd,semantic,JobRole,job_roles,data_engineer,데이터 엔지니어,v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
-node_44f2c78612d0cc2a93c78a21,semantic,Company,companies,co_coupang,쿠팡,v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
 node_6a14e2b6a832cfa39d9bd7a3,semantic,Posting,postings,dp_data_engineer_01,데이터 엔지니어 (Data Platform) 신입·주니어,v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
 node_5b2ec3b88ab6809cca34ea15,semantic,Posting,postings,dp_data_engineer_02,데이터 엔지니어 (결제 데이터 플랫폼),v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
 node_436110bf83714f771cfaa0e0,semantic,Posting,postings,dp_data_engineer_03,데이터 플랫폼 엔지니어 (신입),v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
@@ -429,6 +651,12 @@ node_0dae470477b735de8250514c,semantic,Posting,postings,dp_data_engineer_07,데�
 node_3e8d14ff0fa094b8da468180,semantic,Company,companies,co_neople,네오플,v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
 node_009c702915c07276d3a6e7d5,semantic,Posting,postings,dp_data_engineer_08,데이터 엔지니어 (게임 로그 플랫폼),v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
 node_be14571f01b3739ba022f6bc,semantic,Posting,postings,dp_data_engineer_09,데이터 엔지니어 (Analytics Platform),v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
+node_1f839f3f19128aba286f635b,semantic,Posting,postings,dp_data_engineer_10,주니어 데이터 엔지니어 (AI 학습 데이터),v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
+node_3c024d761bdabdd82c5e3059,semantic,Posting,postings,dp_data_engineer_11,데이터 엔지니어 (대규모 물류 분석),v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
+node_619df16deb59e31678f47a09,semantic,Posting,postings,dp_data_engineer_12,데이터 플랫폼 엔지니어 (SaaS 지표),v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
+node_64b11399d64e0eda989791fe,semantic,Posting,postings,dp_data_engineer_13,데이터 엔지니어 (금융 이벤트 플랫폼),v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
+node_8dcba3ca6066147e0903965c,semantic,Posting,postings,dp_data_engineer_14,데이터 엔지니어 (기업 데이터 구축),v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
+node_65356eb87f7d915ffd316b65,semantic,Posting,postings,dp_data_engineer_15,게임 데이터 엔지니어 (라이브 이벤트),v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
 node_88c579cfa1fd1db37b6f7870,semantic,Technology,requirement_dimensions,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
 node_859c8c6cfd2e6e00d117c44f,semantic,Technology,requirement_dimensions,dim_data_engineer_spark-batch,분산 배치 처리,v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
 node_b4721918387b467b4bbabdeb,semantic,RequirementDimension,requirement_dimensions,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,v1,ds_demo_v1,tx_demo_data_engineer,an_demo_data_engineer
@@ -446,6 +674,12 @@ node_fcc5277ed696c11952a63144,provenance,SourceSnapshot,source_snapshots,snap_de
 node_6279f4c75f6179c7d9ce9ca6,provenance,SourceSnapshot,source_snapshots,snap_demo_data_engineer_07,카카오페이 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_a6289dfb17211079e290fc99,provenance,SourceSnapshot,source_snapshots,snap_demo_data_engineer_08,네오플 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_5049ea78d32b28af6aeecc54,provenance,SourceSnapshot,source_snapshots,snap_demo_data_engineer_09,주식회사 채널코퍼레이션 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_a2d2a3917aa5cb35b6c91f7b,provenance,SourceSnapshot,source_snapshots,snap_demo_data_engineer_10,업스테이지 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_fe2e8e76836fb6f8aaa0498c,provenance,SourceSnapshot,source_snapshots,snap_demo_data_engineer_11,쿠팡 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_aaede9707863b45307039c3a,provenance,SourceSnapshot,source_snapshots,snap_demo_data_engineer_12,네이버클라우드 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_d88631956492c72688d2da4a,provenance,SourceSnapshot,source_snapshots,snap_demo_data_engineer_13,비바리퍼블리카 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_d44e21edc4beafe670813ff3,provenance,SourceSnapshot,source_snapshots,snap_demo_data_engineer_14,삼성에스디에스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_60bdc5aaeb15f27f3b56cb8e,provenance,SourceSnapshot,source_snapshots,snap_demo_data_engineer_15,네오플 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_b792ca08052018d9188a0e8c,provenance,Chunk,source_chunks,chunk_demo_data_engineer_01_1,쿠팡 · 주요업무,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_3fd11fe0cd0c14cd2d348828,provenance,Chunk,source_chunks,chunk_demo_data_engineer_01_2,쿠팡 · 자격요건,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_f91d55328ef98f8e804775d1,provenance,Chunk,source_chunks,chunk_demo_data_engineer_01_3,쿠팡 · 우대사항,v1,ds_demo_v1,\N,an_demo_data_engineer
@@ -473,6 +707,24 @@ node_77dabd94b70fb8e0b6ddc869,provenance,Chunk,source_chunks,chunk_demo_data_eng
 node_6b342c7d24f3ed03b0169e09,provenance,Chunk,source_chunks,chunk_demo_data_engineer_09_1,주식회사 채널코퍼레이션 · 주요업무,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_f91c33f08e9e949417ab644e,provenance,Chunk,source_chunks,chunk_demo_data_engineer_09_2,주식회사 채널코퍼레이션 · 자격요건,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_71942503f4ae500f23a40b98,provenance,Chunk,source_chunks,chunk_demo_data_engineer_09_3,주식회사 채널코퍼레이션 · 우대사항,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_06eab7efa7a120854aaf5828,provenance,Chunk,source_chunks,chunk_demo_data_engineer_10_1,업스테이지 · 주요업무,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_07726d06e6d866c85470eafc,provenance,Chunk,source_chunks,chunk_demo_data_engineer_10_2,업스테이지 · 자격요건,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_a48e15f09a11c1f34a324235,provenance,Chunk,source_chunks,chunk_demo_data_engineer_10_3,업스테이지 · 우대사항,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_47cc444d0e46552b526c0359,provenance,Chunk,source_chunks,chunk_demo_data_engineer_11_1,쿠팡 · 주요업무,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_b0139a018fd8b0dabd93c827,provenance,Chunk,source_chunks,chunk_demo_data_engineer_11_2,쿠팡 · 자격요건,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_b86cdb43ebc2c7467178f0bb,provenance,Chunk,source_chunks,chunk_demo_data_engineer_11_3,쿠팡 · 우대사항,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_dca3799311aa91798362cc69,provenance,Chunk,source_chunks,chunk_demo_data_engineer_12_1,네이버클라우드 · 주요업무,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_411a6d7c3999e2e254cbc0af,provenance,Chunk,source_chunks,chunk_demo_data_engineer_12_2,네이버클라우드 · 자격요건,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_cfcde830ae00aadeb9743345,provenance,Chunk,source_chunks,chunk_demo_data_engineer_12_3,네이버클라우드 · 우대사항,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_43a77a17dc901e9d68ce0260,provenance,Chunk,source_chunks,chunk_demo_data_engineer_13_1,비바리퍼블리카 · 주요업무,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_57821e52e0eecb38e75f5f1e,provenance,Chunk,source_chunks,chunk_demo_data_engineer_13_2,비바리퍼블리카 · 자격요건,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_5530ce459156c6603b3b20fa,provenance,Chunk,source_chunks,chunk_demo_data_engineer_13_3,비바리퍼블리카 · 우대사항,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_6d93bec87d4538018c82bbd3,provenance,Chunk,source_chunks,chunk_demo_data_engineer_14_1,삼성에스디에스 · 주요업무,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_72d72e54c2ca4861617c8a6c,provenance,Chunk,source_chunks,chunk_demo_data_engineer_14_2,삼성에스디에스 · 자격요건,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_61bb393db5f7516b633aff2f,provenance,Chunk,source_chunks,chunk_demo_data_engineer_14_3,삼성에스디에스 · 우대사항,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_db1969d9f64296f80e101205,provenance,Chunk,source_chunks,chunk_demo_data_engineer_15_1,네오플 · 주요업무,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_4657829c758692852c7d2721,provenance,Chunk,source_chunks,chunk_demo_data_engineer_15_2,네오플 · 자격요건,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_0f17c6fed68f26b19287046b,provenance,Chunk,source_chunks,chunk_demo_data_engineer_15_3,네오플 · 우대사항,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_441dcaea4e8134053bbb9999,provenance,RequirementMention,requirement_mentions,mention_data_engineer_01_1,SQL로 대용량 데이터를 집계하고 실행 계획을 읽을 수 있는 분,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_bdc63fbd22c05a00cc44868e,provenance,RequirementMention,requirement_mentions,mention_data_engineer_01_2,Spark 등 분산 처리 도구로 하루 수십억 건 규모의 배치를 다뤄 본 분,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_a47472f67aee89107e4827d7,provenance,RequirementMention,requirement_mentions,mention_data_engineer_01_3,Airflow로 DAG를 작성하고 스케줄을 운영해 본 분,v1,ds_demo_v1,\N,an_demo_data_engineer
@@ -508,6 +760,24 @@ node_0dd232411f3e4a92f9cf34a4,provenance,RequirementMention,requirement_mentions
 node_a201129976e43f454fdab78c,provenance,RequirementMention,requirement_mentions,mention_data_engineer_09_2,데이터 웨어하우스 테이블을 설계해 본 분,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_18ae41647a50ee0abe888745,provenance,RequirementMention,requirement_mentions,mention_data_engineer_09_3,Airflow로 배치 파이프라인을 운영해 본 분,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_dc188feed3e391142a80d901,provenance,RequirementMention,requirement_mentions,mention_data_engineer_09_4,Spark 등 분산 처리 경험,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_a7ab0aa0f3295c7b7c143759,provenance,RequirementMention,requirement_mentions,mention_data_engineer_10_1,SQL로 학습 데이터의 분포와 결측치를 점검할 수 있는 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_94f6a09f52aa17001e5a4151,provenance,RequirementMention,requirement_mentions,mention_data_engineer_10_2,Airflow로 정기 데이터 작업을 구성해 본 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_0d8a7e28b94e17003781738b,provenance,RequirementMention,requirement_mentions,mention_data_engineer_10_3,Kafka 기반 이벤트 수집 구조를 이해하는 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_12982655ca2071190139879a,provenance,RequirementMention,requirement_mentions,mention_data_engineer_11_1,Spark 작업의 파티션과 셔플 병목을 개선해 본 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_9c2fa64ccaa0cff9aadb0b23,provenance,RequirementMention,requirement_mentions,mention_data_engineer_11_2,SQL 실행 계획을 근거로 대용량 집계를 최적화할 수 있는 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_eb5568af6d9c31a165995622,provenance,RequirementMention,requirement_mentions,mention_data_engineer_11_3,분석용 데이터 웨어하우스 모델을 운영해 본 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_6fb7fffee1e11e6a12faabe8,provenance,RequirementMention,requirement_mentions,mention_data_engineer_12_1,SQL 조인과 윈도 함수로 서비스 지표를 계산할 수 있는 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_f2c378a9fbe2122b9ba21def,provenance,RequirementMention,requirement_mentions,mention_data_engineer_12_2,Airflow DAG의 의존성과 재시도 정책을 이해하는 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_77eaae7d413c5778f1d0341b,provenance,RequirementMention,requirement_mentions,mention_data_engineer_12_3,데이터 웨어하우스의 차원 모델을 설계해 본 경험,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_fe7d1c32432c7f70863bf28f,provenance,RequirementMention,requirement_mentions,mention_data_engineer_13_1,Kafka 스트림의 중복과 순서 문제를 해결해 본 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_21ef9fa3a6cd945601719ce5,provenance,RequirementMention,requirement_mentions,mention_data_engineer_13_2,데이터 웨어하우스에서 이력 테이블을 설계해 본 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_98bf83f3d9201212c088e283,provenance,RequirementMention,requirement_mentions,mention_data_engineer_13_3,SQL 검증 쿼리로 원천과 집계 결과를 대조할 수 있는 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_baf31f8eb781466b9663d9c6,provenance,RequirementMention,requirement_mentions,mention_data_engineer_14_1,SQL로 데이터 변환과 검증 쿼리를 작성할 수 있는 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_2ca52d6ec94ddb4afe93447d,provenance,RequirementMention,requirement_mentions,mention_data_engineer_14_2,Spark 기반 분산 처리의 기본 구조를 이해하는 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_660cb8ce3284ba0df7210793,provenance,RequirementMention,requirement_mentions,mention_data_engineer_14_3,Airflow로 배치 일정을 관리해 본 경험,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_099e4f5f718a85072e971e27,provenance,RequirementMention,requirement_mentions,mention_data_engineer_15_1,Kafka 소비 지연과 재처리 전략을 운영해 본 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_eeddf641f87460710d4998d7,provenance,RequirementMention,requirement_mentions,mention_data_engineer_15_2,Spark로 대규모 게임 로그를 집계해 본 분,v1,ds_demo_v1,\N,an_demo_data_engineer
+node_a9de235c74b4064ccd2e543f,provenance,RequirementMention,requirement_mentions,mention_data_engineer_15_3,SQL로 운영 지표를 정의하고 검증할 수 있는 분,v1,ds_demo_v1,\N,an_demo_data_engineer
 node_fabb8a3a778f1c7c687ce8a0,semantic,Posting,postings,dp_fullstack_01,풀스택 개발자 (신입·주니어),v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
 node_d4933bf77835e2753e38fece,semantic,Posting,postings,dp_fullstack_02,커머스 플랫폼 풀스택 개발자,v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
 node_7dc0f9ba65245bf127c6095b,semantic,Posting,postings,dp_fullstack_03,프로덕트 풀스택 개발자 (주니어),v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
@@ -517,6 +787,12 @@ node_12ff9b3dbc8cb2a898339f13,semantic,Posting,postings,dp_fullstack_06,게임 �
 node_1e50cf1f49955000ccf89154,semantic,Posting,postings,dp_fullstack_07,광고 도구 풀스택 개발자 (주니어),v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
 node_2e87fcdcd781d083344f43e6,semantic,Posting,postings,dp_fullstack_08,클라우드 콘솔 풀스택 개발자,v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
 node_2957fb258efee41968bb07b1,semantic,Posting,postings,dp_fullstack_09,모빌리티 내부 도구 풀스택 개발자,v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
+node_ef087389dba469f918325fc7,semantic,Posting,postings,dp_fullstack_10,채용 제품 풀스택 개발자,v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
+node_9859a662f4856696e9efb215,semantic,Posting,postings,dp_fullstack_11,커머스 운영 플랫폼 풀스택 개발자,v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
+node_5f07c7ceb866634e9df5b402,semantic,Posting,postings,dp_fullstack_12,고객 지원 SaaS 풀스택 개발자,v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
+node_13ea5ba6c445707992987b83,semantic,Posting,postings,dp_fullstack_13,금융 관리 서비스 풀스택 개발자,v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
+node_243856a2f8ea3ce20e5c23c1,semantic,Posting,postings,dp_fullstack_14,기업 업무 시스템 풀스택 개발자,v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
+node_afe8c04549995e3f60b7bfa0,semantic,Posting,postings,dp_fullstack_15,게임 라이브 운영 풀스택 개발자,v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
 node_5961208e9e0ca81a371c7540,semantic,RequirementDimension,requirement_dimensions,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
 node_b4610d363159b999dd1b4a7b,semantic,RequirementDimension,requirement_dimensions,dim_fullstack_react-ui,React 화면 구현,v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
 node_c27b4d0454e6ff527183b1c3,semantic,RequirementDimension,requirement_dimensions,dim_fullstack_rest-api,REST API 설계·연동,v1,ds_demo_v1,tx_demo_fullstack,an_demo_fullstack
@@ -536,6 +812,14 @@ node_4a9c7ed9a23266959246ca2f,semantic,Posting,postings,dp_devops_07,플랫폼 �
 node_7b8a533a98852e296671be11,semantic,Posting,postings,dp_devops_08,인프라 엔지니어 (신입·주니어),v1,ds_demo_v1,tx_demo_devops,an_demo_devops
 node_08e7c59cd9bed7f2e60b0bbc,semantic,Company,companies,co_qmit,큐엠아이티,v1,ds_demo_v1,tx_demo_devops,an_demo_devops
 node_efbaf393d996bc9b1477608e,semantic,Posting,postings,dp_devops_09,DevOps 엔지니어,v1,ds_demo_v1,tx_demo_devops,an_demo_devops
+node_68bec718169dc41af0e230c7,semantic,Company,companies,co_musinsa,무신사,v1,ds_demo_v1,tx_demo_devops,an_demo_devops
+node_dabaa925ed88f89ee215b267,semantic,Posting,postings,dp_devops_10,커머스 플랫폼 DevOps 엔지니어,v1,ds_demo_v1,tx_demo_devops,an_demo_devops
+node_fb00f9a163c12f7d82c5f4e1,semantic,Posting,postings,dp_devops_11,채용 플랫폼 DevOps 엔지니어,v1,ds_demo_v1,tx_demo_devops,an_demo_devops
+node_66d138f04a04755cf35bcbba,semantic,Posting,postings,dp_devops_12,고객 지원 SaaS DevOps 엔지니어,v1,ds_demo_v1,tx_demo_devops,an_demo_devops
+node_be9e23be71e4c06d31da4bef,semantic,Posting,postings,dp_devops_13,금융 플랫폼 인프라 엔지니어,v1,ds_demo_v1,tx_demo_devops,an_demo_devops
+node_a1a4f17a04ce4205d6011d9f,semantic,Posting,postings,dp_devops_14,기업 클라우드 운영 엔지니어,v1,ds_demo_v1,tx_demo_devops,an_demo_devops
+node_06290f191b09b689fb14de5d,semantic,Company,companies,co_smilegate,스마일게이트,v1,ds_demo_v1,tx_demo_devops,an_demo_devops
+node_745b1e2de347c57f38b929f8,semantic,Posting,postings,dp_devops_15,게임 라이브 인프라 엔지니어,v1,ds_demo_v1,tx_demo_devops,an_demo_devops
 node_40f3c33638ebe6a9965d4956,semantic,Technology,requirement_dimensions,dim_devops_kubernetes,Kubernetes 클러스터 운영,v1,ds_demo_v1,tx_demo_devops,an_demo_devops
 node_173788cc0b88c5c07c629033,semantic,RequirementDimension,requirement_dimensions,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),v1,ds_demo_v1,tx_demo_devops,an_demo_devops
 node_9ea652f2a23e47f9511665db,semantic,RequirementDimension,requirement_dimensions,dim_devops_cicd-pipeline,CI/CD 파이프라인,v1,ds_demo_v1,tx_demo_devops,an_demo_devops
@@ -553,6 +837,12 @@ node_c32f73a5dde27dbfceeb3407,provenance,SourceSnapshot,source_snapshots,snap_de
 node_e6796e1359cf3c79bf676008,provenance,SourceSnapshot,source_snapshots,snap_demo_devops_07,컬리 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_devops
 node_3a9092c99f86a73b4d73fa0d,provenance,SourceSnapshot,source_snapshots,snap_demo_devops_08,카카오페이 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_devops
 node_05d0c4531dbb62796f971406,provenance,SourceSnapshot,source_snapshots,snap_demo_devops_09,큐엠아이티 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_devops
+node_e276ba7de2607113315d27ff,provenance,SourceSnapshot,source_snapshots,snap_demo_devops_10,무신사 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_devops
+node_e357f99b1efb8d7ec08ad8ec,provenance,SourceSnapshot,source_snapshots,snap_demo_devops_11,원티드랩 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_devops
+node_aa501cfe96e85c41e5a43bf9,provenance,SourceSnapshot,source_snapshots,snap_demo_devops_12,주식회사 채널코퍼레이션 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_devops
+node_1d1235fb963858254baea286,provenance,SourceSnapshot,source_snapshots,snap_demo_devops_13,카카오뱅크 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_devops
+node_241179e83f2da71dd27ddbb7,provenance,SourceSnapshot,source_snapshots,snap_demo_devops_14,삼성에스디에스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_devops
+node_230af03be5eca499a9f65554,provenance,SourceSnapshot,source_snapshots,snap_demo_devops_15,스마일게이트 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_devops
 node_0101a47cd1d593ec3fcdaf97,provenance,Chunk,source_chunks,chunk_demo_devops_01_1,네이버클라우드 · 주요업무,v1,ds_demo_v1,\N,an_demo_devops
 node_221cd9badb4081d951eec936,provenance,Chunk,source_chunks,chunk_demo_devops_01_2,네이버클라우드 · 자격요건,v1,ds_demo_v1,\N,an_demo_devops
 node_e55fd477cd423895beb19240,provenance,Chunk,source_chunks,chunk_demo_devops_01_3,네이버클라우드 · 우대사항,v1,ds_demo_v1,\N,an_demo_devops
@@ -580,6 +870,24 @@ node_22f087c79619afdb8bd7a943,provenance,Chunk,source_chunks,chunk_demo_devops_0
 node_b947111ef89b7badef0d8e3f,provenance,Chunk,source_chunks,chunk_demo_devops_09_1,큐엠아이티 · 주요업무,v1,ds_demo_v1,\N,an_demo_devops
 node_4d2cd9a4df3c93c4a1f59c9f,provenance,Chunk,source_chunks,chunk_demo_devops_09_2,큐엠아이티 · 자격요건,v1,ds_demo_v1,\N,an_demo_devops
 node_949a79f8960dcf3dc1f064af,provenance,Chunk,source_chunks,chunk_demo_devops_09_3,큐엠아이티 · 우대사항,v1,ds_demo_v1,\N,an_demo_devops
+node_5cb6fbf19600004300b4eed4,provenance,Chunk,source_chunks,chunk_demo_devops_10_1,무신사 · 주요업무,v1,ds_demo_v1,\N,an_demo_devops
+node_86223b7704a82592221aa6d0,provenance,Chunk,source_chunks,chunk_demo_devops_10_2,무신사 · 자격요건,v1,ds_demo_v1,\N,an_demo_devops
+node_1052cb734d2c4c6d74341d17,provenance,Chunk,source_chunks,chunk_demo_devops_10_3,무신사 · 우대사항,v1,ds_demo_v1,\N,an_demo_devops
+node_2548c255e39f9236cd4d7908,provenance,Chunk,source_chunks,chunk_demo_devops_11_1,원티드랩 · 주요업무,v1,ds_demo_v1,\N,an_demo_devops
+node_cacfb8d5185fc74266d2ed60,provenance,Chunk,source_chunks,chunk_demo_devops_11_2,원티드랩 · 자격요건,v1,ds_demo_v1,\N,an_demo_devops
+node_0dbb90b09264f5d67c739a33,provenance,Chunk,source_chunks,chunk_demo_devops_11_3,원티드랩 · 우대사항,v1,ds_demo_v1,\N,an_demo_devops
+node_b8e10109ca09c6d0162cb9c2,provenance,Chunk,source_chunks,chunk_demo_devops_12_1,주식회사 채널코퍼레이션 · 주요업무,v1,ds_demo_v1,\N,an_demo_devops
+node_30335af2479f5da81fa5da5a,provenance,Chunk,source_chunks,chunk_demo_devops_12_2,주식회사 채널코퍼레이션 · 자격요건,v1,ds_demo_v1,\N,an_demo_devops
+node_02230f540dfb0ba422e239b9,provenance,Chunk,source_chunks,chunk_demo_devops_12_3,주식회사 채널코퍼레이션 · 우대사항,v1,ds_demo_v1,\N,an_demo_devops
+node_86ad52087d5c411cf18495ef,provenance,Chunk,source_chunks,chunk_demo_devops_13_1,카카오뱅크 · 주요업무,v1,ds_demo_v1,\N,an_demo_devops
+node_ba8c48293f741cc447bfe611,provenance,Chunk,source_chunks,chunk_demo_devops_13_2,카카오뱅크 · 자격요건,v1,ds_demo_v1,\N,an_demo_devops
+node_005930156cc700553f9fe908,provenance,Chunk,source_chunks,chunk_demo_devops_13_3,카카오뱅크 · 우대사항,v1,ds_demo_v1,\N,an_demo_devops
+node_dd0eaedf20fd8d31a0147ffd,provenance,Chunk,source_chunks,chunk_demo_devops_14_1,삼성에스디에스 · 주요업무,v1,ds_demo_v1,\N,an_demo_devops
+node_8729cce3770eecdc59d31106,provenance,Chunk,source_chunks,chunk_demo_devops_14_2,삼성에스디에스 · 자격요건,v1,ds_demo_v1,\N,an_demo_devops
+node_ab970ee110301ad2987e608b,provenance,Chunk,source_chunks,chunk_demo_devops_14_3,삼성에스디에스 · 우대사항,v1,ds_demo_v1,\N,an_demo_devops
+node_2aea48aa9d9477db0fe9698b,provenance,Chunk,source_chunks,chunk_demo_devops_15_1,스마일게이트 · 주요업무,v1,ds_demo_v1,\N,an_demo_devops
+node_5f7451de39941757f64b32f4,provenance,Chunk,source_chunks,chunk_demo_devops_15_2,스마일게이트 · 자격요건,v1,ds_demo_v1,\N,an_demo_devops
+node_2a82f2d9dc9f11a4d2567cc0,provenance,Chunk,source_chunks,chunk_demo_devops_15_3,스마일게이트 · 우대사항,v1,ds_demo_v1,\N,an_demo_devops
 node_3eeec177856852e3ba7a558c,provenance,RequirementMention,requirement_mentions,mention_devops_01_1,고객사 서비스가 올라가는 Kubernetes 클러스터를 구축하고 운영합니다.,v1,ds_demo_v1,\N,an_demo_devops
 node_9583dfc7431a6f0fc4545a8e,provenance,RequirementMention,requirement_mentions,mention_devops_01_2,Terraform으로 클라우드 자원을 코드로 관리하고 변경 이력을 리뷰합니다.,v1,ds_demo_v1,\N,an_demo_devops
 node_3750578941b0b53924dc6900,provenance,RequirementMention,requirement_mentions,mention_devops_01_3,GitHub Actions 기반 배포 파이프라인을 만들고 개선합니다.,v1,ds_demo_v1,\N,an_demo_devops
@@ -640,6 +948,36 @@ node_c6b5d705af23b060919f967c,provenance,RequirementMention,requirement_mentions
 node_e3c8ba613c106c213fc95612,provenance,RequirementMention,requirement_mentions,mention_devops_09_2,Kubernetes로 서비스를 배포하고 운영해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
 node_1f5df0adca28640a6be140ff,provenance,RequirementMention,requirement_mentions,mention_devops_09_3,CI/CD 파이프라인을 구성해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
 node_4e53054e35bf65640cf7c133,provenance,RequirementMention,requirement_mentions,mention_devops_09_4,Terraform으로 인프라를 코드화해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_452478ffa4aad1eaadd73943,provenance,RequirementMention,requirement_mentions,mention_devops_10_1,상품 서비스의 Kubernetes 배포 환경을 운영합니다.,v1,ds_demo_v1,\N,an_demo_devops
+node_d3d57d115f79c69b90f915cc,provenance,RequirementMention,requirement_mentions,mention_devops_10_2,서비스 지표와 로그를 대시보드로 관리합니다.,v1,ds_demo_v1,\N,an_demo_devops
+node_96ba3bb69698a0843e483457,provenance,RequirementMention,requirement_mentions,mention_devops_10_3,CI/CD 파이프라인을 구성하고 개선해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_01d8d62cccc79fcf2b59b53d,provenance,RequirementMention,requirement_mentions,mention_devops_10_4,VPC와 로드밸런서의 기본 구조를 이해하시는 분,v1,ds_demo_v1,\N,an_demo_devops
+node_a6515a02633658761f782f02,provenance,RequirementMention,requirement_mentions,mention_devops_10_5,Terraform으로 개발 환경을 구성해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_ea2580907e2a716003cbef0b,provenance,RequirementMention,requirement_mentions,mention_devops_11_1,Kubernetes 기반 서비스 환경을 소규모 팀과 운영합니다.,v1,ds_demo_v1,\N,an_demo_devops
+node_882edf49e706de093e3e2eb3,provenance,RequirementMention,requirement_mentions,mention_devops_11_2,배포 실패와 장애 원인을 지표와 로그로 분석합니다.,v1,ds_demo_v1,\N,an_demo_devops
+node_be240fb74d4a7b7bb75712d6,provenance,RequirementMention,requirement_mentions,mention_devops_11_3,Terraform 모듈로 클라우드 자원을 관리해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_e5e1d7411803542248395ee3,provenance,RequirementMention,requirement_mentions,mention_devops_11_4,CI/CD 파이프라인의 배포 단계를 설계해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_c4ce62859d73e9283ca19429,provenance,RequirementMention,requirement_mentions,mention_devops_11_5,VPC와 DNS 장애를 분석해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_8309d08c46c01212b3b90d6f,provenance,RequirementMention,requirement_mentions,mention_devops_12_1,고객사별 Kubernetes 워크로드의 배포 상태를 관리합니다.,v1,ds_demo_v1,\N,an_demo_devops
+node_14be629a7fb7e1fae39e7532,provenance,RequirementMention,requirement_mentions,mention_devops_12_2,서비스 상태를 확인하는 모니터링 화면을 운영합니다.,v1,ds_demo_v1,\N,an_demo_devops
+node_a9516f395c66a3a6b3e78484,provenance,RequirementMention,requirement_mentions,mention_devops_12_3,CI/CD 도구로 애플리케이션을 배포해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_46b7fc28079601454320eaad,provenance,RequirementMention,requirement_mentions,mention_devops_12_4,클라우드 네트워크의 서브넷과 보안 그룹을 이해하시는 분,v1,ds_demo_v1,\N,an_demo_devops
+node_5134c022f3acd998455ab60a,provenance,RequirementMention,requirement_mentions,mention_devops_12_5,Terraform 코드의 변경 내역을 리뷰해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_397735ba84aa58d7e4de5a98,provenance,RequirementMention,requirement_mentions,mention_devops_13_1,금융 서비스 Kubernetes 클러스터의 가용성을 관리합니다.,v1,ds_demo_v1,\N,an_demo_devops
+node_a0db68a6322c1aa33738c52d,provenance,RequirementMention,requirement_mentions,mention_devops_13_2,SLO와 경보 기준을 정하고 장애 대응 절차를 개선합니다.,v1,ds_demo_v1,\N,an_demo_devops
+node_dc5fe429cae49c7bc64935c8,provenance,RequirementMention,requirement_mentions,mention_devops_13_3,무중단 배포와 롤백을 포함한 CI/CD 운영 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_54087b7dcae7e1e507aca7e9,provenance,RequirementMention,requirement_mentions,mention_devops_13_4,Terraform으로 망 분리 환경을 관리해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_0c3317415038667efeeccb17,provenance,RequirementMention,requirement_mentions,mention_devops_13_5,VPC 접근 통제와 감사 로그 정책을 설계해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_f5eb628a9e6f9b6d5e195c33,provenance,RequirementMention,requirement_mentions,mention_devops_14_1,고객사 Kubernetes 환경의 표준 구성을 적용합니다.,v1,ds_demo_v1,\N,an_demo_devops
+node_3161930ce485e0ce6d0284bf,provenance,RequirementMention,requirement_mentions,mention_devops_14_2,운영 절차와 장애 처리 결과를 문서화합니다.,v1,ds_demo_v1,\N,an_demo_devops
+node_e21845c7e75b1545dd36b2e4,provenance,RequirementMention,requirement_mentions,mention_devops_14_3,CI/CD 파이프라인의 기본 단계를 이해하시는 분,v1,ds_demo_v1,\N,an_demo_devops
+node_327180e4686d0956d94d41db,provenance,RequirementMention,requirement_mentions,mention_devops_14_4,클라우드 네트워크 구성도를 읽을 수 있는 분,v1,ds_demo_v1,\N,an_demo_devops
+node_9446a723e1c207c120fa6c00,provenance,RequirementMention,requirement_mentions,mention_devops_14_5,Terraform 템플릿을 작성해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_020062fde11592e29cb46207,provenance,RequirementMention,requirement_mentions,mention_devops_15_1,라이브 게임의 Kubernetes 클러스터를 운영합니다.,v1,ds_demo_v1,\N,an_demo_devops
+node_fe32bd0ee26bf77d52bc0a1a,provenance,RequirementMention,requirement_mentions,mention_devops_15_2,트래픽 급증 시 지표를 분석하고 용량을 조정합니다.,v1,ds_demo_v1,\N,an_demo_devops
+node_8e437e482e8aae8d84b6eb7d,provenance,RequirementMention,requirement_mentions,mention_devops_15_3,게임 서버의 CI/CD와 롤백 절차를 운영해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_722c2b12a21e9b7b3ec0300e,provenance,RequirementMention,requirement_mentions,mention_devops_15_4,Terraform으로 다중 리전 자원을 구성해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
+node_9d47af7fe02beb0a96a9bdb4,provenance,RequirementMention,requirement_mentions,mention_devops_15_5,로드밸런서와 DNS 장애를 대응해 본 경험,v1,ds_demo_v1,\N,an_demo_devops
 node_8fff657f681b7a113c96b3b5,semantic,JobRole,job_roles,mobile,모바일 개발자,v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
 node_d27a167b33ff142ba0468898,semantic,Posting,postings,dp_mobile_01,안드로이드 앱 개발자 신입·주니어,v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
 node_e8e00c3abba4aeb064f72624,semantic,Posting,postings,dp_mobile_02,iOS 개발자 (금융 서비스) 신입·주니어,v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
@@ -651,6 +989,12 @@ node_7aa1c3f3695f57743381428c,semantic,Posting,postings,dp_mobile_06,안드로�
 node_ae7b3f1ffa53e6cb2cc728a3,semantic,Posting,postings,dp_mobile_07,iOS 개발자 신입·주니어,v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
 node_5335a4b3ee493d2615f2bfba,semantic,Posting,postings,dp_mobile_08,모바일 앱 개발자 (경력),v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
 node_dbbfd91fdd025de5be4f2fa8,semantic,Posting,postings,dp_mobile_09,안드로이드 개발자 (경력),v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
+node_f2393023370fadb5280dbf07,semantic,Posting,postings,dp_mobile_10,안드로이드 앱 개발자 신입·주니어 (이전 기간 표본),v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
+node_eb3bc9f7c12afbb8f4259e8c,semantic,Posting,postings,dp_mobile_11,안드로이드 개발자 신입·주니어 (이전 기간 표본),v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
+node_6f2ec7e9a95df9d4c8c94d75,semantic,Posting,postings,dp_mobile_12,모바일 SDK 개발자 (iOS) (이전 기간 표본),v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
+node_fb3cb4a2569f5a03bc457c6d,semantic,Posting,postings,dp_mobile_13,iOS 개발자 (금융 서비스) 신입·주니어 (이전 기간 표본),v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
+node_e0195b62f930988b5f6aee01,semantic,Posting,postings,dp_mobile_14,모바일 앱 개발자 (경력) (이전 기간 표본),v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
+node_85f1b9c35015db68c9c6f56d,semantic,Posting,postings,dp_mobile_15,모바일 클라이언트 개발자 (경력) (이전 기간 표본),v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
 node_498971365c4b48863371684f,semantic,Technology,requirement_dimensions,dim_mobile_kotlin-android,Kotlin·안드로이드,v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
 node_d61e9e024c71969b050a06ed,semantic,Technology,requirement_dimensions,dim_mobile_swift-ios,Swift·iOS,v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
 node_eac7d4f2aa50c3ffe1c496fc,semantic,RequirementDimension,requirement_dimensions,dim_mobile_app-architecture,앱 아키텍처·상태 관리,v1,ds_demo_v1,tx_demo_mobile,an_demo_mobile
@@ -668,6 +1012,12 @@ node_5fc333b331d61fabb07e6c77,provenance,SourceSnapshot,source_snapshots,snap_de
 node_6c7581e9562f666b2913ff31,provenance,SourceSnapshot,source_snapshots,snap_demo_mobile_07,카카오뱅크 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_mobile
 node_53c46959ec95b592b53db22c,provenance,SourceSnapshot,source_snapshots,snap_demo_mobile_08,삼성에스디에스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_mobile
 node_835bb5d6dba2b23d09ab3fe6,provenance,SourceSnapshot,source_snapshots,snap_demo_mobile_09,주식회사 버킷플레이스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_mobile
+node_589b87b5f9d9d7b4efddab35,provenance,SourceSnapshot,source_snapshots,snap_demo_mobile_10,카카오 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_mobile
+node_5b385708e80ef86cf74a41d3,provenance,SourceSnapshot,source_snapshots,snap_demo_mobile_11,주식회사 당근마켓 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_mobile
+node_a586c88154c8197df72dd3d7,provenance,SourceSnapshot,source_snapshots,snap_demo_mobile_12,센드버드 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_mobile
+node_74b18da05496ae79f6811057,provenance,SourceSnapshot,source_snapshots,snap_demo_mobile_13,비바리퍼블리카 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_mobile
+node_71a16bbf6eaf31f33aa833f4,provenance,SourceSnapshot,source_snapshots,snap_demo_mobile_14,삼성에스디에스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_mobile
+node_4acb002734ffa0e0c1ac3fa4,provenance,SourceSnapshot,source_snapshots,snap_demo_mobile_15,엔씨소프트 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_mobile
 node_69406bcc70941621fa86f36f,provenance,Chunk,source_chunks,chunk_demo_mobile_01_1,카카오 · 주요업무,v1,ds_demo_v1,\N,an_demo_mobile
 node_3440ff377070532728ee0386,provenance,Chunk,source_chunks,chunk_demo_mobile_01_2,카카오 · 자격요건,v1,ds_demo_v1,\N,an_demo_mobile
 node_a6fc2c8701492284091ded77,provenance,Chunk,source_chunks,chunk_demo_mobile_01_3,카카오 · 우대사항,v1,ds_demo_v1,\N,an_demo_mobile
@@ -695,6 +1045,24 @@ node_1ea2e5ceba9e2c1a02a86061,provenance,Chunk,source_chunks,chunk_demo_mobile_0
 node_ca2cc306527f995754addf57,provenance,Chunk,source_chunks,chunk_demo_mobile_09_1,주식회사 버킷플레이스 · 주요업무,v1,ds_demo_v1,\N,an_demo_mobile
 node_7dd60388ff183244e0f901fd,provenance,Chunk,source_chunks,chunk_demo_mobile_09_2,주식회사 버킷플레이스 · 자격요건,v1,ds_demo_v1,\N,an_demo_mobile
 node_737cc6c6300592abafaa5b20,provenance,Chunk,source_chunks,chunk_demo_mobile_09_3,주식회사 버킷플레이스 · 우대사항,v1,ds_demo_v1,\N,an_demo_mobile
+node_53b8bb0776df43619c5764fe,provenance,Chunk,source_chunks,chunk_demo_mobile_10_1,카카오 · 주요업무,v1,ds_demo_v1,\N,an_demo_mobile
+node_417667d6a1bcef9e6dba1d6e,provenance,Chunk,source_chunks,chunk_demo_mobile_10_2,카카오 · 자격요건,v1,ds_demo_v1,\N,an_demo_mobile
+node_54430ca40b240efa6146c37b,provenance,Chunk,source_chunks,chunk_demo_mobile_10_3,카카오 · 우대사항,v1,ds_demo_v1,\N,an_demo_mobile
+node_06eb3c0c7bbb54c86810b2de,provenance,Chunk,source_chunks,chunk_demo_mobile_11_1,주식회사 당근마켓 · 주요업무,v1,ds_demo_v1,\N,an_demo_mobile
+node_9724188f858a8170dece0cc0,provenance,Chunk,source_chunks,chunk_demo_mobile_11_2,주식회사 당근마켓 · 자격요건,v1,ds_demo_v1,\N,an_demo_mobile
+node_257e5dfe5ecbe992dac7ece9,provenance,Chunk,source_chunks,chunk_demo_mobile_11_3,주식회사 당근마켓 · 우대사항,v1,ds_demo_v1,\N,an_demo_mobile
+node_7349b5306d13b0e71915b117,provenance,Chunk,source_chunks,chunk_demo_mobile_12_1,센드버드 · 주요업무,v1,ds_demo_v1,\N,an_demo_mobile
+node_d63f91b6d12fd5f2a2542f8d,provenance,Chunk,source_chunks,chunk_demo_mobile_12_2,센드버드 · 자격요건,v1,ds_demo_v1,\N,an_demo_mobile
+node_025c2d80f25f6a5de036ddf7,provenance,Chunk,source_chunks,chunk_demo_mobile_12_3,센드버드 · 우대사항,v1,ds_demo_v1,\N,an_demo_mobile
+node_20669792d39219cdc209c99a,provenance,Chunk,source_chunks,chunk_demo_mobile_13_1,비바리퍼블리카 · 주요업무,v1,ds_demo_v1,\N,an_demo_mobile
+node_af831f717a381d24917d4983,provenance,Chunk,source_chunks,chunk_demo_mobile_13_2,비바리퍼블리카 · 자격요건,v1,ds_demo_v1,\N,an_demo_mobile
+node_b2464e5c8648540f094836bf,provenance,Chunk,source_chunks,chunk_demo_mobile_13_3,비바리퍼블리카 · 우대사항,v1,ds_demo_v1,\N,an_demo_mobile
+node_41b13ec015e46f21407f04c1,provenance,Chunk,source_chunks,chunk_demo_mobile_14_1,삼성에스디에스 · 주요업무,v1,ds_demo_v1,\N,an_demo_mobile
+node_0e8ae30cb3f6862962b0f849,provenance,Chunk,source_chunks,chunk_demo_mobile_14_2,삼성에스디에스 · 자격요건,v1,ds_demo_v1,\N,an_demo_mobile
+node_5dd264fe7811d0e102d1af39,provenance,Chunk,source_chunks,chunk_demo_mobile_14_3,삼성에스디에스 · 우대사항,v1,ds_demo_v1,\N,an_demo_mobile
+node_5eda03e51419a123bde3f1b3,provenance,Chunk,source_chunks,chunk_demo_mobile_15_1,엔씨소프트 · 주요업무,v1,ds_demo_v1,\N,an_demo_mobile
+node_5b9b1b03ec32f480264bd361,provenance,Chunk,source_chunks,chunk_demo_mobile_15_2,엔씨소프트 · 자격요건,v1,ds_demo_v1,\N,an_demo_mobile
+node_e5fa90dee580b76634d9c165,provenance,Chunk,source_chunks,chunk_demo_mobile_15_3,엔씨소프트 · 우대사항,v1,ds_demo_v1,\N,an_demo_mobile
 node_43a5561d9fa60ddfbb3ec268,provenance,RequirementMention,requirement_mentions,mention_mobile_01_1,기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.,v1,ds_demo_v1,\N,an_demo_mobile
 node_effd96b718ca346e087a716a,provenance,RequirementMention,requirement_mentions,mention_mobile_01_2,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,v1,ds_demo_v1,\N,an_demo_mobile
 node_60d61098a8681053a312843a,provenance,RequirementMention,requirement_mentions,mention_mobile_01_3,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
@@ -739,6 +1107,40 @@ node_2e86904dce082ffe5cafb03f,provenance,RequirementMention,requirement_mentions
 node_d0542ee07616570401fd11ab,provenance,RequirementMention,requirement_mentions,mention_mobile_09_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_024f049537d5fe3414aa0f5e,provenance,RequirementMention,requirement_mentions,mention_mobile_09_3,서버 API 연동과 비동기 처리에 익숙하신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_59e147844615a83e6c7d829a,provenance,RequirementMention,requirement_mentions,mention_mobile_09_4,Swift 로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_1d4532fd5b87038f44a5cf05,provenance,RequirementMention,requirement_mentions,mention_mobile_10_1,기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_67960bda637eea099d2ffa36,provenance,RequirementMention,requirement_mentions,mention_mobile_10_2,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_2eab9949d3f6be8e5f7417c4,provenance,RequirementMention,requirement_mentions,mention_mobile_10_3,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_215763733b87f93a74490149,provenance,RequirementMention,requirement_mentions,mention_mobile_10_4,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_d7a741ceebef91e82d10fa17,provenance,RequirementMention,requirement_mentions,mention_mobile_10_5,Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_3e4ef14c512e7cbec6444249,provenance,RequirementMention,requirement_mentions,mention_mobile_10_6,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_b5bd6264814ed8bff40a8d70,provenance,RequirementMention,requirement_mentions,mention_mobile_10_7,월간 사용자 수백만 규모의 앱을 운영해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_8aa7816e9f25e4a0d0119691,provenance,RequirementMention,requirement_mentions,mention_mobile_10_8,CI 로 앱 빌드와 배포를 자동화해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_e15ca3ee2d7b4c8ccf9eb33a,provenance,RequirementMention,requirement_mentions,mention_mobile_11_1,서버 API 를 연동해 목록·상세 화면을 구현합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_43e75bce6fc2db654cefd6c0,provenance,RequirementMention,requirement_mentions,mention_mobile_11_2,Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_0ab17145e2b8e9460b97b977,provenance,RequirementMention,requirement_mentions,mention_mobile_11_3,REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_2ced52ad12e52ad970982800,provenance,RequirementMention,requirement_mentions,mention_mobile_11_4,화면과 로직을 분리하는 구조를 고민해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_01a8c24ffba3ec365a58c11c,provenance,RequirementMention,requirement_mentions,mention_mobile_12_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_a3981b9b5373a44070161852,provenance,RequirementMention,requirement_mentions,mention_mobile_12_2,Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_1715818c58022943af45bdc7,provenance,RequirementMention,requirement_mentions,mention_mobile_12_3,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_d09786f2b1236ae50fdabc76,provenance,RequirementMention,requirement_mentions,mention_mobile_12_4,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_3cc5c589f5fe2a4573424e5e,provenance,RequirementMention,requirement_mentions,mention_mobile_12_5,공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_2b46d2d51126b7eac9710a39,provenance,RequirementMention,requirement_mentions,mention_mobile_12_6,여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_e43de7d18950d7339d6c02d2,provenance,RequirementMention,requirement_mentions,mention_mobile_13_1,SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_48300b776bd5e6c6a5f7f912,provenance,RequirementMention,requirement_mentions,mention_mobile_13_2,결제 승인 API 를 연동하고 실패 흐름을 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_cfa630d6fab1a97b427a4749,provenance,RequirementMention,requirement_mentions,mention_mobile_13_3,Swift 로 iOS 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_89891e99e3ec1f2b0e7dc911,provenance,RequirementMention,requirement_mentions,mention_mobile_13_4,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_e3e2cc56f9767d66c9dc8d00,provenance,RequirementMention,requirement_mentions,mention_mobile_13_5,URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_8be78e7f8ef5542b1124307b,provenance,RequirementMention,requirement_mentions,mention_mobile_13_6,결제 승인 지연과 재시도를 직접 설계해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_894663708ac0156a58ca5d81,provenance,RequirementMention,requirement_mentions,mention_mobile_13_7,앱을 스토어에 배포하고 심사 반려에 대응해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_6831405143538831f74e80a4,provenance,RequirementMention,requirement_mentions,mention_mobile_14_1,설계와 개발 절차를 문서로 남깁니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_257de2e89563ecaaab417092,provenance,RequirementMention,requirement_mentions,mention_mobile_14_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_5cda09ac85e3d345a0c30578,provenance,RequirementMention,requirement_mentions,mention_mobile_14_3,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_70af2aaea0bd4fa0a44df4ee,provenance,RequirementMention,requirement_mentions,mention_mobile_14_4,사내 서버 API 를 연동해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_0bef50ecea777a9d2565bc42,provenance,RequirementMention,requirement_mentions,mention_mobile_14_5,앱 배포와 사내 스토어 운영을 경험해 보신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_82f43c25dfce1bf5c62d10fd,provenance,RequirementMention,requirement_mentions,mention_mobile_15_1,안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_9432ee66738fe6504216756e,provenance,RequirementMention,requirement_mentions,mention_mobile_15_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_914263103cacd2c435e3f2e0,provenance,RequirementMention,requirement_mentions,mention_mobile_15_3,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_2042f2cfddce832149a04d3a,provenance,RequirementMention,requirement_mentions,mention_mobile_15_4,Swift 로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_b25a16d74a1cc2e9836b9828,semantic,JobRole,job_roles,security,정보보안,v1,ds_demo_v1,tx_demo_security,an_demo_security
 node_4812035e102fc99b3f4ab7cd,semantic,Company,companies,co_estsecurity,이스트시큐리티,v1,ds_demo_v1,tx_demo_security,an_demo_security
 node_db9049debaf8f8d62f0e0593,semantic,Posting,postings,dp_security_01,정보보안 엔지니어(취약점 진단) 신입·주니어,v1,ds_demo_v1,tx_demo_security,an_demo_security
@@ -751,6 +1153,13 @@ node_80bf43cfcc27c47edf93380a,semantic,Posting,postings,dp_security_07,보안 �
 node_b40d03f98608894887f1a49f,semantic,Posting,postings,dp_security_08,정보보안 신입·주니어,v1,ds_demo_v1,tx_demo_security,an_demo_security
 node_2f05373c6ad0da50689b4d49,semantic,Company,companies,co_skcnc,에스케이씨앤씨,v1,ds_demo_v1,tx_demo_security,an_demo_security
 node_c9bcf285d676a9353480fc23,semantic,Posting,postings,dp_security_09,보안 인프라 운영 담당,v1,ds_demo_v1,tx_demo_security,an_demo_security
+node_2b8d79daff951441e17021f3,semantic,Posting,postings,dp_security_10,서비스 보안 엔지니어,v1,ds_demo_v1,tx_demo_security,an_demo_security
+node_f6888a0f070111338b71f933,semantic,Posting,postings,dp_security_11,정보보안 담당자 신입·주니어,v1,ds_demo_v1,tx_demo_security,an_demo_security
+node_156d2be8eec6bde66b3f0c94,semantic,Posting,postings,dp_security_12,클라우드 보안관제 엔지니어,v1,ds_demo_v1,tx_demo_security,an_demo_security
+node_185f205be2b75af8f39565ac,semantic,Company,companies,co_kbank,케이뱅크,v1,ds_demo_v1,tx_demo_security,an_demo_security
+node_670912fbbb3ebb0f79392e1b,semantic,Posting,postings,dp_security_13,금융 정보보안 신입,v1,ds_demo_v1,tx_demo_security,an_demo_security
+node_5a1180400696630957352e6d,semantic,Posting,postings,dp_security_14,정보보호 컨설턴트,v1,ds_demo_v1,tx_demo_security,an_demo_security
+node_7ba3bca62551783759f4798c,semantic,Posting,postings,dp_security_15,게임 서비스 보안 주니어,v1,ds_demo_v1,tx_demo_security,an_demo_security
 node_0176ce86b34fc24d20344474,semantic,RequirementDimension,requirement_dimensions,dim_security_web-vuln-assessment,웹 취약점 진단,v1,ds_demo_v1,tx_demo_security,an_demo_security
 node_30fb8e3a0f5fd691d993915a,semantic,RequirementDimension,requirement_dimensions,dim_security_soc-siem,보안관제·SIEM,v1,ds_demo_v1,tx_demo_security,an_demo_security
 node_0b9fbd69eed1e039e3536722,semantic,Technology,requirement_dimensions,dim_security_network-security,네트워크 보안,v1,ds_demo_v1,tx_demo_security,an_demo_security
@@ -768,6 +1177,12 @@ node_f43825266e8f6c456fb38b09,provenance,SourceSnapshot,source_snapshots,snap_de
 node_36820259d013ec26d7c6f703,provenance,SourceSnapshot,source_snapshots,snap_demo_security_07,쿠팡 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_security
 node_ca3bc1442bd6ca96d3a4d625,provenance,SourceSnapshot,source_snapshots,snap_demo_security_08,비바리퍼블리카 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_security
 node_96d23b30773563d8cd585dfb,provenance,SourceSnapshot,source_snapshots,snap_demo_security_09,에스케이씨앤씨 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_security
+node_637d12afeeb1f5d1d7d73574,provenance,SourceSnapshot,source_snapshots,snap_demo_security_10,카카오 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_security
+node_51c599724b555caf3681e19c,provenance,SourceSnapshot,source_snapshots,snap_demo_security_11,업스테이지 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_security
+node_ccd292f3394d48c11f1b3fc0,provenance,SourceSnapshot,source_snapshots,snap_demo_security_12,네이버클라우드 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_security
+node_08af588cc1c3fc08e54c604f,provenance,SourceSnapshot,source_snapshots,snap_demo_security_13,케이뱅크 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_security
+node_a616ef34b95ac4df6078bcf3,provenance,SourceSnapshot,source_snapshots,snap_demo_security_14,엘지씨엔에스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_security
+node_4e3fc7b2e010bec4c0ec7b15,provenance,SourceSnapshot,source_snapshots,snap_demo_security_15,크래프톤 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_security
 node_a9900b473dc64d052f08e900,provenance,Chunk,source_chunks,chunk_demo_security_01_1,이스트시큐리티 · 주요업무,v1,ds_demo_v1,\N,an_demo_security
 node_cd8a673bfc05ad88cd6dab87,provenance,Chunk,source_chunks,chunk_demo_security_01_2,이스트시큐리티 · 자격요건,v1,ds_demo_v1,\N,an_demo_security
 node_0346da7300abf95f0209dfc3,provenance,Chunk,source_chunks,chunk_demo_security_01_3,이스트시큐리티 · 우대사항,v1,ds_demo_v1,\N,an_demo_security
@@ -795,6 +1210,24 @@ node_a72e7dd0936043cd02bd67e1,provenance,Chunk,source_chunks,chunk_demo_security
 node_f1eaab4530a27a6eebf9eb10,provenance,Chunk,source_chunks,chunk_demo_security_09_1,에스케이씨앤씨 · 주요업무,v1,ds_demo_v1,\N,an_demo_security
 node_70a07d2edc0ea9ede00270f4,provenance,Chunk,source_chunks,chunk_demo_security_09_2,에스케이씨앤씨 · 자격요건,v1,ds_demo_v1,\N,an_demo_security
 node_9efbe0b58fd50183ef1335b6,provenance,Chunk,source_chunks,chunk_demo_security_09_3,에스케이씨앤씨 · 우대사항,v1,ds_demo_v1,\N,an_demo_security
+node_3f330d64e48a6ef8e9f1ac55,provenance,Chunk,source_chunks,chunk_demo_security_10_1,카카오 · 주요업무,v1,ds_demo_v1,\N,an_demo_security
+node_824310ae02fc9b38305ac085,provenance,Chunk,source_chunks,chunk_demo_security_10_2,카카오 · 자격요건,v1,ds_demo_v1,\N,an_demo_security
+node_090eaa101357ccb1615a4a4d,provenance,Chunk,source_chunks,chunk_demo_security_10_3,카카오 · 우대사항,v1,ds_demo_v1,\N,an_demo_security
+node_92b8cd6049cc2a1a7f5acfa3,provenance,Chunk,source_chunks,chunk_demo_security_11_1,업스테이지 · 주요업무,v1,ds_demo_v1,\N,an_demo_security
+node_96e93a18b9c7174a32b7e830,provenance,Chunk,source_chunks,chunk_demo_security_11_2,업스테이지 · 자격요건,v1,ds_demo_v1,\N,an_demo_security
+node_11018daa06f9dd32528c73f8,provenance,Chunk,source_chunks,chunk_demo_security_11_3,업스테이지 · 우대사항,v1,ds_demo_v1,\N,an_demo_security
+node_94de3bdbed9169e3ad424cac,provenance,Chunk,source_chunks,chunk_demo_security_12_1,네이버클라우드 · 주요업무,v1,ds_demo_v1,\N,an_demo_security
+node_d8985afa15e2bbab85966fe0,provenance,Chunk,source_chunks,chunk_demo_security_12_2,네이버클라우드 · 자격요건,v1,ds_demo_v1,\N,an_demo_security
+node_f5b792fa60456f428fcf597d,provenance,Chunk,source_chunks,chunk_demo_security_12_3,네이버클라우드 · 우대사항,v1,ds_demo_v1,\N,an_demo_security
+node_ca0b04973785c9df75f1defa,provenance,Chunk,source_chunks,chunk_demo_security_13_1,케이뱅크 · 주요업무,v1,ds_demo_v1,\N,an_demo_security
+node_1a5fc81450762fee0f8e9dc2,provenance,Chunk,source_chunks,chunk_demo_security_13_2,케이뱅크 · 자격요건,v1,ds_demo_v1,\N,an_demo_security
+node_56eb78bd9cf1b34d90b66419,provenance,Chunk,source_chunks,chunk_demo_security_13_3,케이뱅크 · 우대사항,v1,ds_demo_v1,\N,an_demo_security
+node_b7a7417d126d622efe4ca1c5,provenance,Chunk,source_chunks,chunk_demo_security_14_1,엘지씨엔에스 · 주요업무,v1,ds_demo_v1,\N,an_demo_security
+node_a0614848ad61c7c106725b15,provenance,Chunk,source_chunks,chunk_demo_security_14_2,엘지씨엔에스 · 자격요건,v1,ds_demo_v1,\N,an_demo_security
+node_a322b2eaca509478282c58e8,provenance,Chunk,source_chunks,chunk_demo_security_14_3,엘지씨엔에스 · 우대사항,v1,ds_demo_v1,\N,an_demo_security
+node_4bb23232b016c52f0463bdf2,provenance,Chunk,source_chunks,chunk_demo_security_15_1,크래프톤 · 주요업무,v1,ds_demo_v1,\N,an_demo_security
+node_ad6fbd7cc592535abe2698ca,provenance,Chunk,source_chunks,chunk_demo_security_15_2,크래프톤 · 자격요건,v1,ds_demo_v1,\N,an_demo_security
+node_e5d91015492df5e4f6da5d8b,provenance,Chunk,source_chunks,chunk_demo_security_15_3,크래프톤 · 우대사항,v1,ds_demo_v1,\N,an_demo_security
 node_fca3ccf5df5acbcb605f7c2c,provenance,RequirementMention,requirement_mentions,mention_security_01_1,자사 제품과 고객사 웹 서비스의 보안 취약점 진단을 수행합니다.,v1,ds_demo_v1,\N,an_demo_security
 node_143412b4c8655aabe11cfd55,provenance,RequirementMention,requirement_mentions,mention_security_01_2,웹 애플리케이션 취약점 점검 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
 node_1975052e9f4d6f6d3838a9a7,provenance,RequirementMention,requirement_mentions,mention_security_01_3,리눅스와 네트워크 기본 지식을 갖추신 분,v1,ds_demo_v1,\N,an_demo_security
@@ -851,6 +1284,47 @@ node_efb6e44e89d79d5682a91b85,provenance,RequirementMention,requirement_mentions
 node_745c1bcedb87a19a813a76d5,provenance,RequirementMention,requirement_mentions,mention_security_09_6,보안관제 업무를 경험해 보신 분,v1,ds_demo_v1,\N,an_demo_security
 node_12ee7cd33b79bce93dcb47cb,provenance,RequirementMention,requirement_mentions,mention_security_09_7,취약점 진단 도구를 운용해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
 node_f82a770345352398473be0e9,provenance,RequirementMention,requirement_mentions,mention_security_09_8,시큐어 코딩 가이드를 적용해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
+node_0da8d7d034dacc240583054d,provenance,RequirementMention,requirement_mentions,mention_security_10_1,서비스 출시 전 웹 취약점 진단과 조치 검증을 수행합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_ac35e151b2922ba36c2bd179,provenance,RequirementMention,requirement_mentions,mention_security_10_2,개발 조직에 시큐어 코딩 기준을 안내하고 코드 검토를 지원합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_d99e7ecd45de388cc4d769fc,provenance,RequirementMention,requirement_mentions,mention_security_10_3,보안 이벤트와 서비스 로그를 연계해 이상 징후를 분석합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_545fbd53df1416461b66e2ad,provenance,RequirementMention,requirement_mentions,mention_security_10_4,웹 애플리케이션 취약점 진단과 결과 보고 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
+node_e024286edff69a406e266fe1,provenance,RequirementMention,requirement_mentions,mention_security_10_5,시큐어 코딩 원칙을 코드 리뷰에 적용할 수 있는 분,v1,ds_demo_v1,\N,an_demo_security
+node_87ba01935f5ea6415c613bcd,provenance,RequirementMention,requirement_mentions,mention_security_10_6,SIEM 기반 로그 분석 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
+node_53769bbf30f524769887666a,provenance,RequirementMention,requirement_mentions,mention_security_10_7,네트워크 프로토콜과 접근 제어를 이해하신 분,v1,ds_demo_v1,\N,an_demo_security
+node_46057d7b33827a82b62c140a,provenance,RequirementMention,requirement_mentions,mention_security_11_1,웹 서비스 취약점 점검과 개선 과제를 관리합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_a0a8bce5dde5ef312862caf9,provenance,RequirementMention,requirement_mentions,mention_security_11_2,개인정보 처리 흐름을 정리하고 내부 보호 지침을 관리합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_ebcf10e42be1a07df325b74b,provenance,RequirementMention,requirement_mentions,mention_security_11_3,클라우드 네트워크와 서버의 보안 설정을 점검합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_f583de1a3e1012e1680c947e,provenance,RequirementMention,requirement_mentions,mention_security_11_4,웹 취약점의 원인과 대응 방법을 설명할 수 있는 분,v1,ds_demo_v1,\N,an_demo_security
+node_084e53bb7fa86b7b59b3e72f,provenance,RequirementMention,requirement_mentions,mention_security_11_5,개인정보 보호법의 기본 의무를 이해하신 분,v1,ds_demo_v1,\N,an_demo_security
+node_14e1d7d66e72312e12a8b208,provenance,RequirementMention,requirement_mentions,mention_security_11_6,보안 로그를 수집하고 분석해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
+node_e8a66b087c33d18fd0248507,provenance,RequirementMention,requirement_mentions,mention_security_11_7,시큐어 코딩 학습 또는 코드 검토 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
+node_74b6ed7072396586bc1e7142,provenance,RequirementMention,requirement_mentions,mention_security_12_1,클라우드 보안 로그를 수집하고 SIEM 탐지 정책을 운영합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_23a211e0d495660e51b144f5,provenance,RequirementMention,requirement_mentions,mention_security_12_2,고객 환경의 네트워크 보안 정책과 접근 제어를 점검합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_ec5d5d1b282ef0bc1c841a3d,provenance,RequirementMention,requirement_mentions,mention_security_12_3,SIEM 기반 탐지 정책 운영 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
+node_fa977b5096f0e4281fff66f3,provenance,RequirementMention,requirement_mentions,mention_security_12_4,방화벽과 네트워크 접근 제어 정책을 운영해 본 분,v1,ds_demo_v1,\N,an_demo_security
+node_23f21c1ae1336db9cd35e950,provenance,RequirementMention,requirement_mentions,mention_security_12_5,웹 취약점 진단 결과를 해석할 수 있는 분,v1,ds_demo_v1,\N,an_demo_security
+node_2157279f40837edc2e7aed2d,provenance,RequirementMention,requirement_mentions,mention_security_12_6,개발 보안 가이드 작성 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
+node_fc6f0588e98ed73f321000aa,provenance,RequirementMention,requirement_mentions,mention_security_13_1,전자금융 보안 규제와 개인정보 보호 요구사항의 준수 여부를 점검합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_e6b63274329c4c88d4cfcd7e,provenance,RequirementMention,requirement_mentions,mention_security_13_2,보안 로그를 확인하고 이상 징후를 보고합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_1819c4e648199e433afbc2e7,provenance,RequirementMention,requirement_mentions,mention_security_13_3,서비스 취약점 조치 현황을 확인합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_1de3c1622ebe03649e1c4f66,provenance,RequirementMention,requirement_mentions,mention_security_13_4,개인정보 보호와 전자금융 규제의 기본 내용을 이해하신 분,v1,ds_demo_v1,\N,an_demo_security
+node_b2a7f4f1c0de63e814fffdd3,provenance,RequirementMention,requirement_mentions,mention_security_13_5,웹 애플리케이션 보안 취약점을 학습해 본 분,v1,ds_demo_v1,\N,an_demo_security
+node_b9f4be3248d5a694204c6f3c,provenance,RequirementMention,requirement_mentions,mention_security_13_6,SIEM 또는 로그 분석 실습 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
+node_f2fd62cf2ef49aea7ac19dfb,provenance,RequirementMention,requirement_mentions,mention_security_13_7,네트워크 보안 장비의 기본 동작을 이해하신 분,v1,ds_demo_v1,\N,an_demo_security
+node_8cab988a5e92299a10bac0e8,provenance,RequirementMention,requirement_mentions,mention_security_14_1,고객사의 정보보호 관리체계 수립과 인증 심사 대응을 수행합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_23faa3c9464836a32de9d138,provenance,RequirementMention,requirement_mentions,mention_security_14_2,서버와 네트워크 보안 설정을 점검해 개선안을 작성합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_d9ce19936c27f6118153c185,provenance,RequirementMention,requirement_mentions,mention_security_14_3,정기 취약점 진단 결과와 조치 이행을 관리합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_1bbf2d69a689ab0d63760a63,provenance,RequirementMention,requirement_mentions,mention_security_14_4,ISMS-P 등 정보보호 관리체계 대응 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
+node_5e305ed960526abc9ee98a20,provenance,RequirementMention,requirement_mentions,mention_security_14_5,네트워크 보안 구성과 점검 기준을 이해하신 분,v1,ds_demo_v1,\N,an_demo_security
+node_27e6db534a9eaf04708a2f8c,provenance,RequirementMention,requirement_mentions,mention_security_14_6,시큐어 코딩 가이드 검토 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
+node_7b80643d0a1ffdb6f8ca0cc1,provenance,RequirementMention,requirement_mentions,mention_security_14_7,보안관제 운영 절차를 이해하신 분,v1,ds_demo_v1,\N,an_demo_security
+node_2bf9c6c2bc919f13b07d9703,provenance,RequirementMention,requirement_mentions,mention_security_15_1,게임 서비스 보안 로그와 트래픽을 분석해 이상 행위를 탐지합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_024ace3cb3ccf6eff5000701,provenance,RequirementMention,requirement_mentions,mention_security_15_2,네트워크 보안 정책과 접근 제어 설정을 점검합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_ef7df019ea5269b102233c9f,provenance,RequirementMention,requirement_mentions,mention_security_15_3,개발 조직과 웹·클라이언트 취약점 조치를 진행합니다.,v1,ds_demo_v1,\N,an_demo_security
+node_c379487aee51c4004e75287a,provenance,RequirementMention,requirement_mentions,mention_security_15_4,로그 분석을 통해 정상과 이상 행위를 구분해 본 분,v1,ds_demo_v1,\N,an_demo_security
+node_cd767a490f622a2c586ad8fa,provenance,RequirementMention,requirement_mentions,mention_security_15_5,네트워크와 서버 보안의 기본 동작을 설명할 수 있는 분,v1,ds_demo_v1,\N,an_demo_security
+node_c99ebe2b2bce8a5b8a78c55e,provenance,RequirementMention,requirement_mentions,mention_security_15_6,시큐어 코딩 관점의 코드 검토 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_security
+node_510bce3f7b899f695b6e6ae7,provenance,RequirementMention,requirement_mentions,mention_security_15_7,웹 취약점 진단 도구를 실습해 본 분,v1,ds_demo_v1,\N,an_demo_security
 node_2cfb840400e1a5cc4598fb4f,semantic,JobRole,job_roles,game_client,게임 개발자,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
 node_919af83c8838958d887aa49d,semantic,Posting,postings,dp_game_client_01,MMORPG 클라이언트 개발 (신입·주니어),v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
 node_ea9515d369eddd56bcaf48ee,semantic,Posting,postings,dp_game_client_02,슈팅 게임 클라이언트 개발 신입 채용,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
@@ -858,12 +1332,16 @@ node_cbae2c7b1922d7be823f3ca3,semantic,Posting,postings,dp_game_client_03,캐주
 node_3f3c4e95b3fba904119aa5d3,semantic,Posting,postings,dp_game_client_04,XR 시뮬레이션 클라이언트 개발 (경력),v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
 node_c136428e8a939e8f9d7891b2,semantic,Company,companies,co_nudgehealthcare,넛지헬스케어,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
 node_416888993d68e84baa8e7df4,semantic,Posting,postings,dp_game_client_05,리워드 앱 미니게임 클라이언트 개발 (경력),v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
-node_06290f191b09b689fb14de5d,semantic,Company,companies,co_smilegate,스마일게이트,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
 node_c9c2238e7c76f7d12fe7d8d3,semantic,Posting,postings,dp_game_client_06,온라인 게임 클라이언트 개발 신입 채용,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
-node_2f82acf7fe74062ad62eb7a9,semantic,Company,companies,co_nexonkorea,넥슨코리아,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
 node_1e721f4112d700dec1b47de1,semantic,Posting,postings,dp_game_client_07,모바일 게임 클라이언트 개발 신입,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
 node_f76f078f81c2b0ee2884ca8b,semantic,Posting,postings,dp_game_client_08,클라우드 게임 스트리밍 클라이언트 개발 (경력),v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
 node_4fa41f83f19d6b6420ce89a7,semantic,Posting,postings,dp_game_client_09,게이미피케이션 콘텐츠 클라이언트 개발 (경력),v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
+node_a238c15ef822465b74d32560,semantic,Posting,postings,dp_game_client_10,인터랙티브 콘텐츠 클라이언트 개발,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
+node_2fbc981d17ce28e41e272b07,semantic,Posting,postings,dp_game_client_11,웹 미니게임 클라이언트 주니어,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
+node_26d065459cc07ca38a9c2422,semantic,Posting,postings,dp_game_client_12,메타버스 협업 클라이언트 개발,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
+node_44713409d28866e2a1ad9585,semantic,Posting,postings,dp_game_client_13,금융 앱 게이미피케이션 클라이언트 신입,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
+node_727301bc2a75e26270e5615e,semantic,Posting,postings,dp_game_client_14,산업용 시뮬레이션 클라이언트 개발,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
+node_5c5e8bff52459a2f193c9f05,semantic,Posting,postings,dp_game_client_15,온라인 게임 클라이언트 개발 신입,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
 node_c81ecb5347f73682299cfd57,semantic,Technology,requirement_dimensions,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
 node_2867d0c5398421e20e14fbab,semantic,Technology,requirement_dimensions,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
 node_d365370777361a7196b24c48,semantic,RequirementDimension,requirement_dimensions,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,v1,ds_demo_v1,tx_demo_game_client,an_demo_game_client
@@ -877,10 +1355,16 @@ node_5688bc2100d5391eba69f96a,provenance,SourceSnapshot,source_snapshots,snap_de
 node_87a3059c1952e149b1f91d4e,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_03,카카오 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
 node_de7c47f6679b0cd80aa6e91e,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_04,삼성에스디에스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
 node_3262c3b3cd4626ec81c045ea,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_05,넛지헬스케어 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
-node_37f59e54de92f3769782b7d9,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_06,스마일게이트 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
-node_3db3631b82126031ecc59daf,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_07,넥슨코리아 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
+node_37f59e54de92f3769782b7d9,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_06,채널코퍼레이션 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
+node_3db3631b82126031ecc59daf,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_07,카카오페이 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
 node_d58094fdbd453d46e94ea058,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_08,네이버클라우드 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
 node_4b06a000e7dc2900ce6183ed,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_09,카카오뱅크 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
+node_446c56d84459272c313b83e1,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_10,카카오 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
+node_350ee1b0b27f0a7fef7feb33,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_11,원티드랩 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
+node_6a031fb563bc954894afe180,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_12,센드버드 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
+node_590fe1eb4fb8c9a65026d9e0,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_13,케이뱅크 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
+node_bbacdb3c8a3cdb07fedc4680,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_14,엘지씨엔에스 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
+node_27ccf9255fe0eed5dfe3e27d,provenance,SourceSnapshot,source_snapshots,snap_demo_game_client_15,스마일게이트 공고 스냅샷,v1,ds_demo_v1,\N,an_demo_game_client
 node_af2c3a2710ba65220b98d28c,provenance,Chunk,source_chunks,chunk_demo_game_client_01_1,엔씨소프트 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
 node_2b2602cd2889889549cce289,provenance,Chunk,source_chunks,chunk_demo_game_client_01_2,엔씨소프트 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
 node_c53f8865eaf1d875cf306426,provenance,Chunk,source_chunks,chunk_demo_game_client_01_3,엔씨소프트 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
@@ -896,18 +1380,36 @@ node_0bdf1b7d59519ddc267481f6,provenance,Chunk,source_chunks,chunk_demo_game_cli
 node_1f3e82ec1a36ffa7363835da,provenance,Chunk,source_chunks,chunk_demo_game_client_05_1,넛지헬스케어 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
 node_fda9848b12ebfc97466ea925,provenance,Chunk,source_chunks,chunk_demo_game_client_05_2,넛지헬스케어 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
 node_66b3f92c712f1ac3634a3dd5,provenance,Chunk,source_chunks,chunk_demo_game_client_05_3,넛지헬스케어 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
-node_7d52cf7a16017f100923c283,provenance,Chunk,source_chunks,chunk_demo_game_client_06_1,스마일게이트 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
-node_244bab4419ab94c5e1064e83,provenance,Chunk,source_chunks,chunk_demo_game_client_06_2,스마일게이트 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
-node_26263f2af311fe708e8a07c5,provenance,Chunk,source_chunks,chunk_demo_game_client_06_3,스마일게이트 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
-node_500f1f5b22c6a3d88b0e5048,provenance,Chunk,source_chunks,chunk_demo_game_client_07_1,넥슨코리아 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
-node_3b762fac2139d8f00b5d68c4,provenance,Chunk,source_chunks,chunk_demo_game_client_07_2,넥슨코리아 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
-node_20d9bbb863f245124417bd57,provenance,Chunk,source_chunks,chunk_demo_game_client_07_3,넥슨코리아 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
+node_7d52cf7a16017f100923c283,provenance,Chunk,source_chunks,chunk_demo_game_client_06_1,채널코퍼레이션 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
+node_244bab4419ab94c5e1064e83,provenance,Chunk,source_chunks,chunk_demo_game_client_06_2,채널코퍼레이션 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
+node_26263f2af311fe708e8a07c5,provenance,Chunk,source_chunks,chunk_demo_game_client_06_3,채널코퍼레이션 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
+node_500f1f5b22c6a3d88b0e5048,provenance,Chunk,source_chunks,chunk_demo_game_client_07_1,카카오페이 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
+node_3b762fac2139d8f00b5d68c4,provenance,Chunk,source_chunks,chunk_demo_game_client_07_2,카카오페이 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
+node_20d9bbb863f245124417bd57,provenance,Chunk,source_chunks,chunk_demo_game_client_07_3,카카오페이 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
 node_81feadaf1487ba829df027fa,provenance,Chunk,source_chunks,chunk_demo_game_client_08_1,네이버클라우드 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
 node_bfdb708f3c725ed637befe4c,provenance,Chunk,source_chunks,chunk_demo_game_client_08_2,네이버클라우드 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
 node_43d52a71d671c9f81f191b32,provenance,Chunk,source_chunks,chunk_demo_game_client_08_3,네이버클라우드 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
 node_8c9635fc5db1b6541b2ee04d,provenance,Chunk,source_chunks,chunk_demo_game_client_09_1,카카오뱅크 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
 node_64572f2b0710110d2c9b92ab,provenance,Chunk,source_chunks,chunk_demo_game_client_09_2,카카오뱅크 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
 node_a497bad4bd4bb24b81c236d1,provenance,Chunk,source_chunks,chunk_demo_game_client_09_3,카카오뱅크 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
+node_08f85bc68c9a95b0518b4b27,provenance,Chunk,source_chunks,chunk_demo_game_client_10_1,카카오 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
+node_312ee291b339e5596e1659b1,provenance,Chunk,source_chunks,chunk_demo_game_client_10_2,카카오 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
+node_3cea26acb4ceda4a17a9fb26,provenance,Chunk,source_chunks,chunk_demo_game_client_10_3,카카오 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
+node_169e21a2410430ade1f8e527,provenance,Chunk,source_chunks,chunk_demo_game_client_11_1,원티드랩 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
+node_fc9fb7573e2320ff2b159235,provenance,Chunk,source_chunks,chunk_demo_game_client_11_2,원티드랩 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
+node_2994d6a49fb24797acc16974,provenance,Chunk,source_chunks,chunk_demo_game_client_11_3,원티드랩 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
+node_2cf12dc39c52907aaaba61dc,provenance,Chunk,source_chunks,chunk_demo_game_client_12_1,센드버드 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
+node_07c5e8dc6fcba9efa49ede69,provenance,Chunk,source_chunks,chunk_demo_game_client_12_2,센드버드 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
+node_5daf7965acdd8a8d4ed690d3,provenance,Chunk,source_chunks,chunk_demo_game_client_12_3,센드버드 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
+node_be911a9331da4ba24bcd9485,provenance,Chunk,source_chunks,chunk_demo_game_client_13_1,케이뱅크 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
+node_0b6cf811afc08c38b3538e2c,provenance,Chunk,source_chunks,chunk_demo_game_client_13_2,케이뱅크 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
+node_5daf66d4b6919b1d6374b60f,provenance,Chunk,source_chunks,chunk_demo_game_client_13_3,케이뱅크 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
+node_e65c2ed86e2c6b9b4301ae34,provenance,Chunk,source_chunks,chunk_demo_game_client_14_1,엘지씨엔에스 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
+node_b0bb3884f92cbe71e0913e87,provenance,Chunk,source_chunks,chunk_demo_game_client_14_2,엘지씨엔에스 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
+node_ed14bd775f170bb465c02cd3,provenance,Chunk,source_chunks,chunk_demo_game_client_14_3,엘지씨엔에스 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
+node_92763002ec526946062ca20d,provenance,Chunk,source_chunks,chunk_demo_game_client_15_1,스마일게이트 · 주요업무,v1,ds_demo_v1,\N,an_demo_game_client
+node_74be803ee74f0dc53f5c2c2d,provenance,Chunk,source_chunks,chunk_demo_game_client_15_2,스마일게이트 · 자격요건,v1,ds_demo_v1,\N,an_demo_game_client
+node_fceed174b32c65fb4e5c4406,provenance,Chunk,source_chunks,chunk_demo_game_client_15_3,스마일게이트 · 우대사항,v1,ds_demo_v1,\N,an_demo_game_client
 node_1de11599623e711a8c67a575,provenance,RequirementMention,requirement_mentions,mention_game_client_01_1,언리얼 엔진 5 기반 MMORPG 클라이언트의 전투·이동 게임플레이 로직을 구현합니다.,v1,ds_demo_v1,\N,an_demo_game_client
 node_f1eacbde33c9c0c13184547f,provenance,RequirementMention,requirement_mentions,mention_game_client_01_2,서버가 내려주는 캐릭터 상태 패킷을 클라이언트에서 보간해 자연스러운 움직임을 만듭니다.,v1,ds_demo_v1,\N,an_demo_game_client
 node_a1304c8c41d27b14382f99a7,provenance,RequirementMention,requirement_mentions,mention_game_client_01_3,대규모 전투 구간의 프레임 저하를 프로파일링하고 개선안을 제안합니다.,v1,ds_demo_v1,\N,an_demo_game_client
@@ -964,3 +1466,45 @@ node_fd6e8321edd02b015d17f61f,provenance,RequirementMention,requirement_mentions
 node_af565952edd46e9dd12775d0,provenance,RequirementMention,requirement_mentions,mention_game_client_09_3,Unity 와 C# 로 콘텐츠를 개발한 3년 이상의 경력을 갖춘 분,v1,ds_demo_v1,\N,an_demo_game_client
 node_4a3810cb17372252decf313a,provenance,RequirementMention,requirement_mentions,mention_game_client_09_4,애니메이션과 좌표 보간 등 기본 게임 수학을 다뤄 본 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_game_client
 node_915cf7f4c914643e897dc8fc,provenance,RequirementMention,requirement_mentions,mention_game_client_09_5,저사양 단말에서 렌더링 성능을 개선해 본 경험,v1,ds_demo_v1,\N,an_demo_game_client
+node_d1b3cdecd347376357216c70,provenance,RequirementMention,requirement_mentions,mention_game_client_10_1,실시간 인터랙티브 콘텐츠의 입력과 화면 연출을 Unity 로 구현합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_35021ffa6b16ed0919f6459e,provenance,RequirementMention,requirement_mentions,mention_game_client_10_2,다수 사용자의 상태를 서버 이벤트와 맞춰 화면에 반영합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_16e8d2717e517e6b8ec8487c,provenance,RequirementMention,requirement_mentions,mention_game_client_10_3,복잡한 장면의 렌더링 비용을 프로파일링하고 개선합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_c6d32f70eac47bc4379a8f72,provenance,RequirementMention,requirement_mentions,mention_game_client_10_4,Unity 와 C# 로 상용 콘텐츠를 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_5b5bd6f94d3cdbcf16cb155c,provenance,RequirementMention,requirement_mentions,mention_game_client_10_5,벡터와 좌표 변환 등 게임 수학을 이해하시는 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_55faf1691687b9809f7e60ea,provenance,RequirementMention,requirement_mentions,mention_game_client_10_6,실시간 상태 동기화와 지연 보상을 다뤄 본 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_98ae656dce2cc68df92985b9,provenance,RequirementMention,requirement_mentions,mention_game_client_10_7,C++ 기반 클라이언트 개발 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_ac3ef218c976de254cc76a95,provenance,RequirementMention,requirement_mentions,mention_game_client_11_1,Unity 와 C# 로 채용 캠페인용 미니게임을 구현합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_99664f6c157b9684bdd390f3,provenance,RequirementMention,requirement_mentions,mention_game_client_11_2,다양한 단말에서 안정적인 프레임을 유지하도록 리소스를 조정합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_1e5a64a2c14c927afb83ec56,provenance,RequirementMention,requirement_mentions,mention_game_client_11_3,게임 진행 상태를 서비스 API 와 동기화합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_b5eaad6e7bbfa670872608f3,provenance,RequirementMention,requirement_mentions,mention_game_client_11_4,Unity 로 플레이 가능한 프로젝트를 완성해 본 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_a6090db8c00f605d3c863aee,provenance,RequirementMention,requirement_mentions,mention_game_client_11_5,충돌과 보간에 필요한 게임 수학의 기초를 이해하는 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_71ba4a3fd0c3035eced5d6ce,provenance,RequirementMention,requirement_mentions,mention_game_client_11_6,프로파일러를 사용해 렌더링 병목을 확인해 본 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_9d1b375fe810a7b0105cbf7c,provenance,RequirementMention,requirement_mentions,mention_game_client_11_7,C++ 학습 또는 언리얼 엔진 프로젝트 경험이 있는 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_cabe4cef66bdcd4007befaf3,provenance,RequirementMention,requirement_mentions,mention_game_client_12_1,언리얼 엔진으로 3D 협업 공간과 사용자 인터랙션을 구현합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_ed37365dfd9d9e82018fee13,provenance,RequirementMention,requirement_mentions,mention_game_client_12_2,참여자 위치와 동작을 실시간으로 동기화합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_f760371f87c58fab6d234dc8,provenance,RequirementMention,requirement_mentions,mention_game_client_12_3,다수 아바타 장면의 렌더링 부하를 프로파일링합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_0408c16e4506157acbe8da99,provenance,RequirementMention,requirement_mentions,mention_game_client_12_4,C++ 와 언리얼 엔진으로 실시간 3D 클라이언트를 개발한 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_c990467d600e45f2a6b2a40c,provenance,RequirementMention,requirement_mentions,mention_game_client_12_5,보간과 좌표 변환을 포함한 게임 수학을 이해하는 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_f96e258d67e44f6ac3506e34,provenance,RequirementMention,requirement_mentions,mention_game_client_12_6,Unity 기반 크로스 플랫폼 개발 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_441cbee3787737f0ba5e7f18,provenance,RequirementMention,requirement_mentions,mention_game_client_12_7,클라이언트 예측과 서버 보정을 설계해 본 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_f91744e6e63f33f2722cab4e,provenance,RequirementMention,requirement_mentions,mention_game_client_13_1,Unity 와 C# 로 금융 학습용 게임 콘텐츠를 구현합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_186428123c14a6fcf6ed418f,provenance,RequirementMention,requirement_mentions,mention_game_client_13_2,퀘스트와 보상 상태를 서버 데이터와 일치시킵니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_501fecdb7b7269aeeb76e27c,provenance,RequirementMention,requirement_mentions,mention_game_client_13_3,저사양 단말의 렌더링 성능과 메모리 사용량을 확인합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_03fbf89b11f4699a9c16d8e6,provenance,RequirementMention,requirement_mentions,mention_game_client_13_4,Unity 와 C# 로 모바일 게임을 만들어 본 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_721b6697c519361cbc34678a,provenance,RequirementMention,requirement_mentions,mention_game_client_13_5,벡터와 충돌 처리의 기본 원리를 설명할 수 있는 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_009d2240b7486db551b1574c,provenance,RequirementMention,requirement_mentions,mention_game_client_13_6,네트워크 상태 동기화를 학습하거나 구현해 본 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_5de6335fe50a8ef730eae863,provenance,RequirementMention,requirement_mentions,mention_game_client_13_7,C++ 또는 언리얼 엔진을 학습해 본 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_b9e1f757463d254fc61b5c0e,provenance,RequirementMention,requirement_mentions,mention_game_client_14_1,언리얼 엔진으로 산업 설비의 3D 시뮬레이션 화면을 구현합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_ee2913e4c31e3d2782121c92,provenance,RequirementMention,requirement_mentions,mention_game_client_14_2,설비 좌표와 충돌 결과를 시각화하고 물리 동작을 검증합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_53fad98c9f3f99e965a2fd3e,provenance,RequirementMention,requirement_mentions,mention_game_client_14_3,대규모 모델의 렌더링 경로와 메모리 사용량을 최적화합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_caf68554f8158cd5b98875ca,provenance,RequirementMention,requirement_mentions,mention_game_client_14_4,C++ 와 언리얼 엔진으로 3D 클라이언트를 개발한 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_1fdac35736211fd5b6b144c8,provenance,RequirementMention,requirement_mentions,mention_game_client_14_5,렌더링 병목을 계측하고 품질과 성능을 조정해 본 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_32a26b4e928e0dac234765d4,provenance,RequirementMention,requirement_mentions,mention_game_client_14_6,Unity 와 C# 기반 시뮬레이션 개발 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_2e96f53f8ac2cedf6c2ad2ab,provenance,RequirementMention,requirement_mentions,mention_game_client_14_7,원격 설비 상태를 실시간 동기화해 본 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_dd3e1480f43aa6bfcd80ee57,provenance,RequirementMention,requirement_mentions,mention_game_client_15_1,언리얼 엔진으로 인게임 전투와 UI 기능을 구현합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_ac3457f35b919381bdb6c366,provenance,RequirementMention,requirement_mentions,mention_game_client_15_2,서버에서 받은 캐릭터 상태를 보간해 화면에 반영합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_03e823a0289bb3118f4db647,provenance,RequirementMention,requirement_mentions,mention_game_client_15_3,전투 장면의 프레임 저하를 프로파일링합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_cdeba0a0d36d61dd335ed404,provenance,RequirementMention,requirement_mentions,mention_game_client_15_4,C++ 와 언리얼 엔진의 액터 구조를 이해하는 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_f60375eaf2b71e393090c7ad,provenance,RequirementMention,requirement_mentions,mention_game_client_15_5,벡터와 충돌 판정 등 3D 게임 수학의 기본기를 갖춘 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_0d4bd1dd5e15e251f44f13cf,provenance,RequirementMention,requirement_mentions,mention_game_client_15_6,Unity 와 C# 로 완성한 개인 프로젝트가 있는 분,v1,ds_demo_v1,\N,an_demo_game_client
+node_18f12d42a39feb3ee1d37213,provenance,RequirementMention,requirement_mentions,mention_game_client_15_7,클라이언트 예측과 서버 보정의 차이를 설명할 수 있는 분,v1,ds_demo_v1,\N,an_demo_game_client
