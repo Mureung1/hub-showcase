@@ -5,9 +5,13 @@ notices 테이블에 같은 모양(extraction)으로 저장해서 기존 판정�
 사건 좌표(x, y)를 extraction에 실어 4층(반경) 매칭의 재료로 쓴다.
 """
 import os
+import pathlib
 import re
 
 import requests
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=pathlib.Path(__file__).resolve().parents[1] / ".env")   # 단독 실행에도 키 로드
 
 API_URL = "https://openapi.its.go.kr:9443/eventInfo"
 # 정체·서행류는 돌발이라기보다 혼잡 정보 — 미리캣은 구조적 사건(공사·사고·통제·행사)만 받는다
