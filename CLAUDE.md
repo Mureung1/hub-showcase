@@ -89,19 +89,22 @@ tab on web; used by ad/map links since WebView blocks `target="_blank"`). `src/l
 `navigator.geolocation` need **no native code**: Capacitor's default `BridgeWebChromeClient` handles
 `onShowFileChooser`/`onGeolocationPermissionsShowPrompt`/`onPermissionRequest`, so `MainActivity` stays a plain
 `BridgeActivity`. Header/tab-bar use `env(safe-area-inset-*)`. Full build steps, the server-URL-vs-local-bundle
-tradeoff, and the known CSV-download WebView limitation are in `docs/03-개발스펙/apk-build-guide.md`. **Capacitor is additive
+tradeoff, and the known CSV-download WebView limitation are in `docs/03-개발스펙.md` §3. **Capacitor is additive
 — none of it affects the web build** (`@capacitor/*` is inert on web; `Capacitor.isNativePlatform()` is false there).
 
 ## Architecture
 
-`docs/03-개발스펙/architecture.md` renders all of the below as Mermaid diagrams (system layout, photo→nutrition
-flow, auth, deployment, CSV, ads); a condensed version is embedded in README.md. Update the diagram
-in the same change that moves the code.
+A Mermaid diagram of the overall system (layout, photo→nutrition flow, auth, deployment, CSV, ads) is
+embedded in README.md — update it in the same change that moves the code. `docs/03-개발스펙.md` §1
+additionally records per-feature decisions and unresolved issues discovered while building this
+architecture that aren't repeated in this file.
 
-All project docs live under `docs/`, grouped into four categories: `01-알고리즘/` (nutrition-matching
-and ad/leaderboard scoring logic), `02-디자인/` (Toss-style design system — the `/toss` skill's
-source of truth), `03-개발스펙/` (architecture, build/test/interaction guides, PRD), `04-프로젝트설명/`
-(project narrative, cost analysis, release checklists). `docs/README.md` indexes all of it.
+All project docs live under `docs/` as four files: `01-알고리즘.md` (nutrition-matching and
+ad/leaderboard scoring logic), `02-디자인.md` (Toss-style design system — the `/toss` skill's source
+of truth), `03-개발스펙.md` (architecture addenda, build/test/interaction guides, condensed PRD
+history), `04-프로젝트설명.md` (project narrative, cost analysis, release checklist). Each is a single
+self-contained file (no subfolders) — keep it that way; fold new documentation into the matching file
+rather than creating new ones.
 
 ### One Express app, two deployment entry points
 
@@ -192,17 +195,31 @@ schema.sql을 다시 실행해야 실제 Supabase 프로젝트에 반영된다**
 
 1. Photo + optional menu/brand hints go to Gemini (`src/lib/gemini.js` -> `/api/gemini`), which
    returns *only* food identification + estimated portion grams — not final nutrition numbers.
-2. For each identified item, `findFoodMatch` in `Analyze.jsx` queries the 식약처 DB
-   (`src/lib/fooddb.js` -> `/api/fooddb`) through a prioritized, de-duplicated cascade: `dbSearchName`
-   in the food DB → **normalized canonical name** (`src/lib/foodNameMap.js`'s `normalizeFoodSearchName`,
-   a client-side variant→표준명 map like 돌솥비빔밥→비빔밥·신라면→라면, as a safety net when the AI's
-   `fallbackSearchName` isn't general enough) in food DB → `dbSearchName` in the processed-food DB →
-   `dbSearchName` with a leading 2-char modifier stripped → `fallbackSearchName` in food DB →
-   normalized name in processed-food DB → `fallbackSearchName` in processed-food DB. Same (term,
-   dbSource) pairs are searched only once. If the server reports `FOODDB_CONNECTION_FAILED` (upstream
-   unreachable, e.g. certain deploy regions), the cascade aborts immediately rather than retrying
-   every remaining attempt against a dead host. In dev builds (`import.meta.env.DEV`), each resolved
-   item logs a `[분석 진단]` line (matched term / grams / final nutrients) to help spot accuracy gaps.
+2. All identified items go to the **unified resolution engine** in ONE request
+   (`src/lib/resolveFood.js` -> `POST /api/resolve-food` -> `server/nutrition/resolveFood.js`).
+   This replaced three divergent resolvers that used to exist (a 7-step *sequential* client cascade
+   in `Analyze.jsx`, a local-only one in `precisionEngine.js`, and a remote-only one in
+   `menuNutrition.js`) — that split is why fixes never propagated across analysis paths.
+   The engine resolves in three stages:
+   **① local first, zero network** — `server/nutrition/foodLookup.js` (식약처 음식DB snapshot,
+   11,347 items) and `server/nutrition/recipeLookup.js` (식품안전나라 조리식품 레시피DB, 1,141 items,
+   fully bundled at build time by `scripts/buildRecipeDB.js`). Both share one matching strategy
+   (`server/nutrition/nameMatcher.js`: 정규화→완전일치→별칭→부분포함→편집거리). Only `exact`/`alias`
+   are trusted outright; `partial`/`fuzzy` are held back as *pending* candidates.
+   **② remote for misses only, in ONE parallel round** — 식약처 음식/가공식품 DB via
+   `lookupFoodSafety` in `server/proxy.js` (in-flight dedup + 24h cache + 60s negative cache).
+   **③ verification** — every non-exact candidate must clear the same similarity bar
+   (`foodNameSimilarity` ≥ 0.7, `src/lib/foodMatch.js`) the client uses; otherwise it is rejected
+   and the item falls through to the AI estimate. **This gate matters**: the edit-distance stage
+   really does return unrelated foods (measured: 치킨→제육(돼지고기 수육), 파스타→토스트(식빵)), and
+   the old code accepted them unverified.
+   A **server-side deadline budget** bounds the whole stage; exceeding it returns whatever resolved
+   so far rather than erroring. In dev builds (`import.meta.env.DEV`), each resolved item logs a
+   `[분석 진단]` line (source / matchType / grams / final nutrients) to help spot accuracy gaps.
+   ⚠️ The recipe DB is stored **per-serving, not per-100g** — COOKRCP01 gives 1인분 nutrition but its
+   `INFO_WGT` is populated for only 282 of 1,141 records, so converting everything to per-100g would
+   invent precision that doesn't exist. `recipeToPer100` isolates that conversion and flags
+   `assumedServing` when it had to guess the weight, which lowers the item's `confidence`.
 3. A DB match's per-100g nutrients are scaled to the resolved consumed grams
    (`resolveConsumedGrams`/`scaleNutrients` in `src/lib/nutrition.js`), then passed through
    `clampToPlausibleNutrients`, which corrects DB records whose *per-serving* values are
@@ -293,7 +310,7 @@ nothing) then `applyBackup` — so the duplicate-date "overwrite / skip" dialog 
 row-level parse failures are skipped and counted rather than aborting the file, while a wrong *file*
 (missing section markers / mismatched header) aborts before writing anything. Every outcome surfaces
 as a toast (`src/context/ToastContext.jsx`), because PRD §2 forbids silent failure. Test procedure and
-the 1,000-row sample generator: `docs/03-개발스펙/csv-crossplatform-test.md`, `scripts/generate-sample-csv.mjs`.
+the 1,000-row sample generator: `docs/03-개발스펙.md` §4, `scripts/generate-sample-csv.mjs`.
 
 - `src/lib/mealStore.js`: guest mode's live meal storage (via `dataStore.js`, keyed by
   `dataStore.GUEST_ID`) *and* the CSV export/import subsystem's self-contained legacy storage for
@@ -335,9 +352,9 @@ the 1,000-row sample generator: `docs/03-개발스펙/csv-crossplatform-test.md`
   (`.tds-tabbar`) each carry their own `view-transition-name` so they are pulled out of the animated
   `root` snapshot — without that, the `translateX` on `::view-transition-old/new(root)` drags both bars
   (the tab bar is `position: fixed`) off-screen and back on every tab change, which is what "the tab bar
-  flickers" was. Details: `docs/03-개발스펙/interaction-guide.md`.
+  flickers" was. Details: `docs/03-개발스펙.md` §2.
 - **`.claude/commands/toss.md`** (invoked via `/toss`) is a project-specific skill applying Toss
-  design-system conventions, with detailed docs under `docs/02-디자인/`. Note one intentional
+  design-system conventions, with detailed docs in `docs/02-디자인.md`. Note one intentional
   deviation documented in `theme.js`'s header comment: this app uses a single green accent
   (`#059669`) as its one primary/accent color everywhere the Toss docs describe blue — follow
   `theme.js` as the actual token source, and `/toss` for everything else (one primary button per

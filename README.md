@@ -7,9 +7,10 @@
 ## 아키텍처 한눈에 보기
 
 > 그림은 [Mermaid](https://mermaid.js.org)로 그렸다 — GitHub에서 빌드 없이 그대로 렌더되고, 텍스트라
-> 코드와 함께 버전 관리된다. **전체 다이어그램(핵심 흐름·인증·배포·CSV·광고 + 구조 점검 결과)은
-> [`docs/03-개발스펙/architecture.md`](docs/03-개발스펙/architecture.md)에 있다. 그 외 문서는
-> [`docs/README.md`](docs/README.md) 색인 참고.**
+> 코드와 함께 버전 관리된다. 전체 다이어그램(핵심 흐름·인증·배포·CSV·광고)은 아래 그대로다. **그 외
+> 문서(알고리즘·디자인·개발스펙·프로젝트설명)는 `docs/` 아래 4개 파일 — 각각
+> [`01-알고리즘.md`](docs/01-알고리즘.md) · [`02-디자인.md`](docs/02-디자인.md) ·
+> [`03-개발스펙.md`](docs/03-개발스펙.md) · [`04-프로젝트설명.md`](docs/04-프로젝트설명.md).**
 
 한 문장 요약: **브라우저가 화면을 다 그리고, 비밀 키가 필요한 외부 호출만 Express 프록시가 대신하며,
 데이터는 로그인 여부에 따라 localStorage나 Supabase로 갈린다.**
@@ -113,6 +114,7 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 | `VITE_NAVER_MAP_CLIENT_ID` | 필수 (빌드 시점) | [네이버 클라우드 플랫폼](https://www.ncloud.com) 콘솔 → **AI·Application Service → Maps** → 등록한 애플리케이션의 **Client ID**. 브라우저가 네이버 지도 JS SDK를 직접 로드할 때 쓰는 공개용 키로(`ncpKeyId` 파라미터), `npm run build` 시점에 프론트 번들에 그대로 박힌다(런타임에 서버에서 주입하는 값이 아님). 이 키를 등록한 도메인만 지도가 뜨므로, 배포 도메인을 NCP 콘솔의 해당 애플리케이션 **Web 서비스 URL**에 등록해야 한다. (카카오맵 키 `VITE_KAKAO_JS_KEY`와 관련 코드는 롤백용으로 저장소에 남아있지만 현재 화면은 쓰지 않는다.) |
 | `FOODSAFETY_API_KEY` | 필수 (서버) | [공공데이터포털](https://www.data.go.kr)에서 "식품의약품안전처_전국통합식품영양성분정보(음식)" API를 활용신청하면 발급되는 일반 인증키(Decoding). `/api/fooddb`의 기본 조회(`source=food`, 조리식)에 사용. |
 | `FOODSAFETY_PROC_API_KEY` | 필수 (서버) | 공공데이터포털에서 "식품의약품안전처_전국통합식품영양성분정보(가공식품)" API를 **별도로** 활용신청해 발급받는 인증키. `/api/fooddb`의 가공식품 폴백 조회(`source=process`, 편의점/포장 제품)에 사용. |
+| `FOODSAFETY_RECIPE_API_KEY` | 선택 (**빌드 타임 전용**) | [식품안전나라(openapi.foodsafetykorea.go.kr)](https://openapi.foodsafetykorea.go.kr)에서 **별도로** 회원가입 후 즉시 발급받는 인증키(위 `FOODSAFETY_API_KEY`류와는 완전히 다른 계정 체계, data.go.kr 아님). 무료·트래픽 제한 없음. **`node scripts/buildRecipeDB.js`를 돌려 레시피 스냅샷을 다시 만들 때만** 쓴다 — "조리식품의 레시피 DB"(COOKRCP01)는 전체가 1,141종뿐이라 통째로 `server/data/recipeDB.json`에 번들해 두고 런타임엔 메모리에서 조회한다. 따라서 **배포 서버에는 이 키를 넣을 필요가 없다**(넣어도 쓰이지 않는다). |
 | `VITE_SUPABASE_URL` | 필수 (빌드 시점) | Supabase 프로젝트 대시보드 → **Project Settings → API → Project URL**. 로그인(아이디/비밀번호)에 쓰는 Supabase 클라이언트(`src/lib/supabase.js`) 초기화 값으로, `VITE_KAKAO_JS_KEY`와 마찬가지로 프론트 번들에 그대로 박힌다. |
 | `VITE_SUPABASE_ANON_KEY` | 필수 (빌드 시점) | 같은 화면의 **anon public** 키. 브라우저에 노출돼도 되는 공개 키다(실제 접근 제어는 Supabase의 Row Level Security가 담당 — `supabase/schema.sql` 참고). |
 
@@ -168,6 +170,7 @@ JS 키라, 키 자체가 유효해도 **요청 도메인이 콘솔에 등록되�
    `FOODSAFETY_API_KEY`, `FOODSAFETY_PROC_API_KEY`, `VITE_SUPABASE_URL`,
    `VITE_SUPABASE_ANON_KEY`, `APP_URL`)는 Render가 자동으로 채우지 않으므로, Blueprint 적용
    화면 또는 서비스 생성 후 **Environment** 탭에서 직접 입력한다.
+   (`FOODSAFETY_RECIPE_API_KEY`는 빌드 타임 전용이라 배포 서버에 넣지 않아도 된다.)
 3. **Apply**
 
 ### 방법 B — 대시보드에서 수동으로 Web Service 생성
@@ -296,9 +299,9 @@ URL**에 Vercel이 준 배포 도메인(예: `https://mealyze.vercel.app`, 커�
 
 - [ ] **키 노출 여부**: 브라우저 개발자도구(Network/Sources)에서 프론트 번들·API 응답에
       `OPENROUTER_API_KEY` / `KAKAO_REST_API_KEY` / `NAVER_SEARCH_CLIENT_ID` /
-      `NAVER_SEARCH_CLIENT_SECRET` / `FOODSAFETY_API_KEY` / `FOODSAFETY_PROC_API_KEY` 값이
-      노출되지 않는지 확인. 번들에 보여도 되는 건 `VITE_NAVER_MAP_CLIENT_ID`(및 남겨둔 롤백용
-      `VITE_KAKAO_JS_KEY`) 뿐이다(원래 공개용 키).
+      `NAVER_SEARCH_CLIENT_SECRET` / `FOODSAFETY_API_KEY` / `FOODSAFETY_PROC_API_KEY` /
+      `FOODSAFETY_RECIPE_API_KEY` 값이 노출되지 않는지 확인. 번들에 보여도 되는 건
+      `VITE_NAVER_MAP_CLIENT_ID`(및 남겨둔 롤백용 `VITE_KAKAO_JS_KEY`) 뿐이다(원래 공개용 키).
 - [ ] **`/api` 동작 확인**: 실제 기능으로 확인 — 사진 분석(`/api/gemini`), 지도에서 주변
       식당 찾기(`/api/naver-places`), 음식 DB 매칭(`/api/fooddb`). 각각 실패 시 500/502/504가
       아니라 화면에 사용자 친화 에러 메시지가 뜨는지도 함께 확인. `/api/naver-places`는 200인데
