@@ -351,7 +351,7 @@ app.get('/api/its-incidents', async (req, res) => {
     const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
     res.json(await r.json());   // 원본 그대로 중계 — 가공은 워커(its.py)가 담당
   } catch (e) {
-    res.status(502).json({ error: `ITS 접속 실패: ${e.name}` });
+    res.status(502).json({ error: `ITS 접속 실패: ${e.name}`, cause: e.cause?.code ?? String(e.cause ?? '') });
   }
 });
 
