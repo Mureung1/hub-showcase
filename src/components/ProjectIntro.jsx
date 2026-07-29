@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import nagbotLanding from "../assets/characters/nagbot_landing.png";
+import nagbotFaceLv0 from "../assets/characters/nagbot_face_lv0.png";
 import nagbotLv1 from "../assets/characters/nagbot_lv1.png";
 import nagbotLv2 from "../assets/characters/nagbot_lv2.png";
 import nagbotLv3 from "../assets/characters/nagbot_lv3.png";
@@ -95,7 +96,7 @@ function ProjectIntro() {
       <div className="intro-wrap">
         <header className="landing-topbar">
           <Link className="landing-brand" to="/landing">
-            <img className="landing-brand-character" src={nagbotLanding} alt="" aria-hidden="true" />
+            <img className="landing-brand-character" src={nagbotFaceLv0} alt="" aria-hidden="true" />
             <span className="landing-brand-name">잔소리봇</span>
           </Link>
 

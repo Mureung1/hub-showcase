@@ -99,7 +99,7 @@
   outline-offset: 3px;
 }
 
-@media (max-width: 390px) {
+@media (max-width: 480px) {
   .navbar-inner {
     display: grid;
     grid-template-areas:

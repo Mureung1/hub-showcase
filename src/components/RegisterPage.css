@@ -68,6 +68,7 @@
 
 .register-form .field {
   margin-top: 0;
+  min-width: 0;
 }
 
 .field-row {
@@ -91,6 +92,7 @@
 .field-input {
   box-sizing: border-box;
   width: 100%;
+  min-width: 0;
   min-height: 46px;
   padding: 12px 14px;
   border: 1px solid var(--line);

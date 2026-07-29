@@ -37,20 +37,21 @@
   align-items: center;
   gap: 12px;
   color: var(--ink);
+  font-family: var(--sans);
   font-size: 20px;
   font-weight: 800;
   text-decoration: none;
 }
 
 .landing-brand-character {
-  width: 44px;
+  width: 46px;
   height: auto;
   flex-shrink: 0;
   object-fit: contain;
 }
 
 .landing-brand-name {
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .landing-nav {
@@ -104,7 +105,7 @@
 
 .landing-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.03fr) minmax(420px, 0.97fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(420px, 0.9fr);
   align-items: center;
   gap: 72px;
   min-height: 640px;
@@ -194,8 +195,8 @@
   top: 20px;
   left: 20px;
   z-index: 2;
-  width: min(360px, calc(100% - 40px));
-  padding: 14px 16px;
+  width: min(400px, calc(100% - 40px));
+  padding: 18px 20px;
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.82);
@@ -205,13 +206,14 @@
 
 .landing-panel-label {
   color: var(--ink-soft);
+  font-size: 14px;
 }
 
 .landing-hero-panel strong {
   display: block;
   margin-top: 6px;
   color: var(--ink);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1.5;
   white-space: nowrap;
 }

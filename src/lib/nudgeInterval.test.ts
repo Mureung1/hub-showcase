@@ -43,16 +43,30 @@ describe("getLevelDelayMinutes", () => {
   });
 
   it("구간별로 레벨 2/3/4의 지연 값이 다르게 정의돼 있다 (happy path)", () => {
-    expect(getLevelDelayMinutes(2, "far")).toBe(30);
+    expect(getLevelDelayMinutes(2, "far")).toBe(120);
     expect(getLevelDelayMinutes(3, "far")).toBe(60);
-    expect(getLevelDelayMinutes(4, "far")).toBe(120);
-    expect(getLevelDelayMinutes(4, "overdue")).toBe(15);
+    expect(getLevelDelayMinutes(4, "far")).toBe(30);
+    expect(getLevelDelayMinutes(4, "overdue")).toBe(5);
   });
 
   it("정의되지 않은 레벨은 안전하게 0을 반환한다 (경계)", () => {
     expect(getLevelDelayMinutes(0, "far")).toBe(0);
     expect(getLevelDelayMinutes(5, "far")).toBe(0);
   });
+
+  // 재발 방지: 레벨이 높을수록(더 급박한 상황일수록) 더 자주 개입해야 하므로
+  // 값은 반드시 감소해야 한다 — 예전에 반대로(레벨이 높을수록 값이 커지도록)
+  // 구현돼 있던 버그가 다시 생기지 않도록 모든 구간에서 방향성 자체를 검증한다.
+  it.each(["far", "soon", "close", "overdue"] as const)(
+    "%s 구간에서는 레벨이 높을수록 지연이 짧아진다 (회귀 방지)",
+    (bucket) => {
+      const lv2 = getLevelDelayMinutes(2, bucket);
+      const lv3 = getLevelDelayMinutes(3, bucket);
+      const lv4 = getLevelDelayMinutes(4, bucket);
+      expect(lv2).toBeGreaterThan(lv3);
+      expect(lv3).toBeGreaterThan(lv4);
+    },
+  );
 });
 
 describe("getNextCheckDelayMinutes", () => {
@@ -61,11 +75,11 @@ describe("getNextCheckDelayMinutes", () => {
   });
 
   it("currentLevel이 1이면 Lv2 지연을 긴급도 구간에 맞춰 반환한다 (happy path)", () => {
-    expect(getNextCheckDelayMinutes(1, "2026-07-29T12:00:00", NOW)).toBe(30); // far
-    expect(getNextCheckDelayMinutes(1, "2026-07-20T12:00:00", NOW)).toBe(5); // overdue
+    expect(getNextCheckDelayMinutes(1, "2026-07-29T12:00:00", NOW)).toBe(120); // far
+    expect(getNextCheckDelayMinutes(1, "2026-07-20T12:00:00", NOW)).toBe(15); // overdue
   });
 
   it("currentLevel이 이미 4면 계속 Lv4 지연을 재사용한다 (경계, 휴지기 없음)", () => {
-    expect(getNextCheckDelayMinutes(4, "2026-07-29T12:00:00", NOW)).toBe(120);
+    expect(getNextCheckDelayMinutes(4, "2026-07-29T12:00:00", NOW)).toBe(30);
   });
 });
