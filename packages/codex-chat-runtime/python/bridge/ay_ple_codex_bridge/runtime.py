@@ -701,7 +701,7 @@ class BridgeWorker:
                 ),
                 service_tier=command.service_tier,
                 collaboration_mode=CollaborationMode(
-                    mode=ModeKind.plan,
+                    mode=ModeKind.default,
                     settings=CollaborationModeSettings(
                         developer_instructions=None,
                         model=effective_model,

@@ -159,13 +159,13 @@ test('queries exact native context, omits system Skills, and fully reaps before 
       },
       skills: [
         {
-          name: 'ay-ple-first-assignment',
+          name: 'ay-ple-semester-modeling',
           enabled: true,
           sourceRoot: path.join(
             fixture.workspace,
             '.agents',
             'skills',
-            'ay-ple-first-assignment',
+            'ay-ple-semester-modeling',
           ),
         },
       ],

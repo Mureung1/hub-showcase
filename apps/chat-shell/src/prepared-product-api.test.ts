@@ -78,7 +78,7 @@ test('prepared Browser sends the selected Codex settings as one complete triple'
   }
 })
 
-test('prepared Browser sends one exact organize_sources action through the shared stream', async () => {
+test('prepared Browser sends one exact model_semester action through the shared stream', async () => {
   const originalFetch = globalThis.fetch
   let requestUrl: string | undefined
   let requestBody: string | undefined
@@ -114,7 +114,7 @@ test('prepared Browser sends one exact organize_sources action through the share
     )
     assert.equal(requestUrl, '/api/product/actions')
     assert.deepEqual(JSON.parse(requestBody ?? ''), {
-      action: 'organize_sources',
+      action: 'model_semester',
       files: [
         { relativePath: 'materials/notice.md' },
         { relativePath: 'materials/syllabus.txt' },

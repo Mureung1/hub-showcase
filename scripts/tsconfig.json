@@ -9,6 +9,7 @@
   },
   "include": [
     "*.mts",
+    "../.agents/skills/ay-ple-e2e-smoke/scripts/*.mts",
     "../.agents/skills/semester-workspace-init/scripts/*.mts"
   ]
 }

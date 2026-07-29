@@ -292,7 +292,7 @@ class FakeAppServer:
         ):
             raise RuntimeError(f"product input mismatch: {turn_input!r}")
         expected_collaboration = {
-            "mode": "plan",
+            "mode": "default",
             "settings": {
                 "developer_instructions": None,
                 "model": "fake-model",

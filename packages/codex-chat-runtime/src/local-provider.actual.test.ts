@@ -61,14 +61,14 @@ test('runs the production bridge against exact Codex and the official local prov
       canonicalWorkspace,
       '.agents',
       'skills',
-      'ay-ple-first-assignment',
+      'ay-ple-semester-modeling',
       'SKILL.md',
     )
     const skillBody = 'EXACT_SKILL_BODY_SENTINEL'
     const actionText = [
-      'ActionInvocation: organize_sources',
+      'ActionInvocation: model_semester',
       'Selected SemesterWorkspace file references:',
-      '- "materials/assignment-notice.md"',
+      '- [assignment-notice.md](materials/assignment-notice.md)',
     ].join('\n')
     await Promise.all([
       mkdir(dirname(skillPath), { recursive: true }),
@@ -79,7 +79,7 @@ test('runs the production bridge against exact Codex and the official local prov
         skillPath,
         [
           '---',
-          'name: ay-ple-first-assignment',
+          'name: ay-ple-semester-modeling',
           'description: Exact local-provider test Skill.',
           '---',
           '',
@@ -179,7 +179,7 @@ test('runs the production bridge against exact Codex and the official local prov
         threadId: thread.threadId,
         permissionProfile: 'workspace_write',
         skill: {
-          name: 'ay-ple-first-assignment',
+          name: 'ay-ple-semester-modeling',
           path: skillPath,
         },
         text: actionText,
@@ -231,7 +231,7 @@ test('runs the production bridge against exact Codex and the official local prov
     const skillBlock = actionRequest.userTexts[skillIndex] as string
     assert.match(
       skillBlock,
-      /<name>ay-ple-first-assignment<\/name>/u,
+      /<name>ay-ple-semester-modeling<\/name>/u,
     )
     assert.equal(skillBlock.includes(`<path>${skillPath}</path>`), true)
     assert.equal(skillBlock.includes(skillBody), true)
@@ -269,7 +269,7 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
       if (parsedBody.kind === 'lifecycle_open') {
         response.write(
           `${JSON.stringify({
-            protocolVersion: 1,
+            protocolVersion: 2,
             kind: 'lifecycle_accepted',
           })}\n`,
         )
@@ -277,7 +277,7 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
       }
       response.end(
         JSON.stringify({
-          protocolVersion: 1,
+          protocolVersion: 2,
           kind: 'handshake_accepted',
         }),
       )
@@ -423,7 +423,7 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
       {
         authorization: `Bearer ${token}`,
         body: {
-          protocolVersion: 1,
+          protocolVersion: 2,
           kind: 'handshake',
           serverName: 'ay_ple_interaction',
           capabilities: ['propose_state_patch'],
@@ -433,7 +433,7 @@ test('discovers the built Interaction Adapter from a tracked trusted Git project
       {
         authorization: `Bearer ${token}`,
         body: {
-          protocolVersion: 1,
+          protocolVersion: 2,
           kind: 'lifecycle_open',
         },
         runtimeBinding,

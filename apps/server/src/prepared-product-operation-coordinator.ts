@@ -23,9 +23,9 @@ import {
 } from './codex-chat-service.js'
 import type { ActiveInteractionProductTurn } from './interaction-broker.js'
 import {
-  OrganizeSourcesActionError,
-  type OrganizeSourcesAction,
-} from './organize-sources-action.js'
+  ModelSemesterActionError,
+  type ModelSemesterAction,
+} from './model-semester-action.js'
 import {
   createProductTurnCoordinator,
   type ProductTurnLease,
@@ -133,7 +133,7 @@ export class PreparedProductOperationError extends Error {
 
 export function createPreparedProductOperationCoordinator(options: {
   readonly service: CodexChatService
-  readonly organizeSourcesAction: OrganizeSourcesAction
+  readonly modelSemesterAction: ModelSemesterAction
   readonly assertWorkspaceActive: () => void
   readonly interactionTurnTerminal?: () => Promise<void>
   readonly interactionRuntimeTerminal?: () => Promise<void>
@@ -445,7 +445,7 @@ export function createPreparedProductOperationCoordinator(options: {
     } catch (error) {
       if (!streamOpened) throw toPreparedOperationError(error)
       const operationError =
-        error instanceof OrganizeSourcesActionError
+        error instanceof ModelSemesterActionError
           ? toPreparedOperationError(error)
           : error
       const outcomeUnknown =
@@ -535,7 +535,7 @@ export function createPreparedProductOperationCoordinator(options: {
             ? {}
             : { codexSettings: input.codexSettings }),
           prepare: (operation, signal) =>
-            options.organizeSourcesAction.prepare(input, {
+            options.modelSemesterAction.prepare(input, {
               signal,
               listEffectiveSkills: (observationSignal) =>
                 options.service.listProductEffectiveSkills(
@@ -544,7 +544,7 @@ export function createPreparedProductOperationCoordinator(options: {
                 ),
             }),
           revalidateForDispatch: (operation, prepared, signal) =>
-            options.organizeSourcesAction.revalidateForDispatch(
+            options.modelSemesterAction.revalidateForDispatch(
               input,
               prepared,
               {
@@ -767,7 +767,7 @@ function toPreparedOperationError(
   error: unknown,
 ): PreparedProductOperationError {
   if (error instanceof PreparedProductOperationError) return error
-  if (!(error instanceof OrganizeSourcesActionError)) return unavailable()
+  if (!(error instanceof ModelSemesterActionError)) return unavailable()
   switch (error.code) {
     case 'action_context_stale':
       return new PreparedProductOperationError(

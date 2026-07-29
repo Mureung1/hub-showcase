@@ -240,13 +240,13 @@ test('projects one atomic native-context generation through the workspace Runtim
         },
         skills: [
           {
-            name: 'ay-ple-first-assignment',
+            name: 'ay-ple-semester-modeling',
             enabled: true,
             sourceRoot: join(
               harness.workspace,
               '.agents',
               'skills',
-              'ay-ple-first-assignment',
+              'ay-ple-semester-modeling',
             ),
           },
         ],
@@ -271,13 +271,13 @@ test('projects one atomic native-context generation through the workspace Runtim
       }),
       [
         {
-          name: 'ay-ple-first-assignment',
+          name: 'ay-ple-semester-modeling',
           enabled: true,
           sourceRoot: join(
             harness.workspace,
             '.agents',
             'skills',
-            'ay-ple-first-assignment',
+            'ay-ple-semester-modeling',
           ),
         },
       ],
@@ -774,7 +774,7 @@ test('forwards the fixed project cwd without thread-start overrides and supports
       false,
     )
     assert.deepEqual(turnStarts[1]?.params?.collaborationMode, {
-      mode: 'plan',
+      mode: 'default',
       settings: {
         developer_instructions: null,
         model: 'fake-model',
@@ -797,7 +797,7 @@ test('snapshots one workspace Skill before asynchronous validation and native tu
       workspace,
       '.agents',
       'skills',
-      'ay-ple-first-assignment',
+      'ay-ple-semester-modeling',
       'SKILL.md',
     )
     await mkdir(dirname(skillPath), { recursive: true })
@@ -805,7 +805,7 @@ test('snapshots one workspace Skill before asynchronous validation and native tu
       skillPath,
       [
         '---',
-        'name: ay-ple-first-assignment',
+        'name: ay-ple-semester-modeling',
         'description: Test Skill.',
         '---',
         '',
@@ -824,7 +824,7 @@ test('snapshots one workspace Skill before asynchronous validation and native tu
         serviceTier: 'fast' as const,
       },
       skill: {
-        name: 'ay-ple-first-assignment',
+        name: 'ay-ple-semester-modeling',
         path: skillPath,
       },
       text: 'Continue the product conversation.',
@@ -851,7 +851,7 @@ test('snapshots one workspace Skill before asynchronous validation and native tu
     assert.deepEqual(turnStart?.params?.input, [
       {
         type: 'skill',
-        name: 'ay-ple-first-assignment',
+        name: 'ay-ple-semester-modeling',
         path: skillPath,
       },
       {
@@ -1318,7 +1318,7 @@ test('uses native thread settings when the advertised model catalog is ambiguous
         ({ method }) => method === 'turn/start',
       )
       assert.deepEqual(turnStart?.params?.collaborationMode, {
-        mode: 'plan',
+        mode: 'default',
         settings: {
           developer_instructions: null,
           model: 'fake-model',

@@ -13,9 +13,9 @@ import {
   createCodexChatComposition,
 } from './codex-chat.js'
 import {
-  OrganizeSourcesActionError,
-  type OrganizeSourcesAction,
-} from './organize-sources-action.js'
+  ModelSemesterActionError,
+  type ModelSemesterAction,
+} from './model-semester-action.js'
 import {
   createPreparedProductOperationCoordinator,
 } from './prepared-product-operation-coordinator.js'
@@ -57,8 +57,8 @@ test('the Product executor starts a Turn with the exact Codex settings snapshot 
           permissionProfile: 'workspace_write',
           settings: validatedSettings,
           skill: {
-            name: 'ay-ple-first-assignment',
-            path: '/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+            name: 'ay-ple-semester-modeling',
+            path: '/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md',
           },
           text: 'prepared action input',
         },
@@ -92,8 +92,8 @@ test('the Product executor starts a Turn with the exact Codex settings snapshot 
           serviceTier: 'fast',
         },
         skill: {
-          name: 'ay-ple-first-assignment',
-          path: '/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+          name: 'ay-ple-semester-modeling',
+          path: '/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md',
         },
         text: 'prepared action input',
       }
@@ -101,20 +101,20 @@ test('the Product executor starts a Turn with the exact Codex settings snapshot 
     async revalidateForDispatch() {},
     // Deliberately model a stale/rogue callback shape: executor-owned settings
     // must never be recovered from an action result after validation.
-  } as unknown as OrganizeSourcesAction
+  } as unknown as ModelSemesterAction
   const frames: Array<
     TargetProductOperationFrame | ProductReviewFrame
   > = []
   const operations = createPreparedProductOperationCoordinator({
     service: composition.service,
-    organizeSourcesAction: action,
+    modelSemesterAction: action,
     assertWorkspaceActive: () => undefined,
   })
 
   try {
     await operations.invokeAction(
       {
-        action: 'organize_sources',
+        action: 'model_semester',
         files: [{ relativePath: 'materials/notice.md' }],
         codexSettings: validatedSettings,
       },
@@ -141,8 +141,8 @@ test('the Product executor starts a Turn with the exact Codex settings snapshot 
           permissionProfile: 'workspace_write',
           settings: validatedSettings,
           skill: {
-            name: 'ay-ple-first-assignment',
-            path: '/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+            name: 'ay-ple-semester-modeling',
+            path: '/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md',
           },
           text: 'prepared action input',
         },
@@ -181,7 +181,7 @@ test('the Product executor revalidates a prepared action after preparing and bef
     TargetProductOperationFrame | ProductReviewFrame
   > = []
   let runtimeTerminalCalls = 0
-  let revalidationSignal: AbortSignal | undefined
+  let revalidationCalls = 0
   let releasePreparing!: () => void
   let observePreparing!: () => void
   const preparingReleased = new Promise<void>((resolve) => {
@@ -195,23 +195,20 @@ test('the Product executor revalidates a prepared action after preparing and bef
       return {
         permissionProfile: 'workspace_write',
         skill: {
-          name: 'ay-ple-first-assignment',
-          path: '/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+          name: 'ay-ple-semester-modeling',
+          path: '/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md',
         },
         text: 'prepared action input',
       }
     },
-    async revalidateForDispatch(_input, _prepared, context) {
-      revalidationSignal = context.signal
-      assert.equal(context.signal.aborted, false)
-      assert.equal(frames.at(-1)?.type, 'operation.preparing')
-      await context.listEffectiveSkills(context.signal)
-      throw new OrganizeSourcesActionError('action_context_stale')
+    async revalidateForDispatch() {
+      revalidationCalls += 1
+      throw new ModelSemesterActionError('action_context_stale')
     },
-  } satisfies OrganizeSourcesAction
+  } satisfies ModelSemesterAction
   const operations = createPreparedProductOperationCoordinator({
     service: composition.service,
-    organizeSourcesAction: action,
+    modelSemesterAction: action,
     assertWorkspaceActive: () => undefined,
     interactionRuntimeTerminal: async () => {
       runtimeTerminalCalls += 1
@@ -221,7 +218,7 @@ test('the Product executor revalidates a prepared action after preparing and bef
   try {
     const invocation = operations.invokeAction(
       {
-        action: 'organize_sources',
+        action: 'model_semester',
         files: [{ relativePath: 'materials/notice.md' }],
       },
       {
@@ -241,7 +238,7 @@ test('the Product executor revalidates a prepared action after preparing and bef
     )
     await preparingObserved
 
-    assert.equal(revalidationSignal, undefined)
+    assert.equal(revalidationCalls, 0)
     assert.equal(
       runtime.calls.some(
         (call) => call.operation === 'startProductTurn',
@@ -252,6 +249,7 @@ test('the Product executor revalidates a prepared action after preparing and bef
     releasePreparing()
     await invocation
 
+    assert.equal(revalidationCalls, 1)
     assert.deepEqual(
       frames.map((frame) => frame.type),
       ['operation.preparing', 'operation.terminal'],
@@ -262,7 +260,6 @@ test('the Product executor revalidates a prepared action after preparing and bef
       status: 'failed',
       failureCode: 'action_context_stale',
     })
-    assert.equal(revalidationSignal?.aborted, true)
     assert.equal(
       runtime.calls.some(
         (call) => call.operation === 'startProductTurn',

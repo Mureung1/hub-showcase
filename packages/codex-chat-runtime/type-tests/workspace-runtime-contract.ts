@@ -21,11 +21,11 @@ void runtime.then((workspaceRuntime) => {
     threadId: 'native-thread',
     permissionProfile: 'workspace_write',
     skill: {
-      name: 'ay-ple-first-assignment',
+      name: 'ay-ple-semester-modeling',
       path:
-        '/workspace/.agents/skills/ay-ple-first-assignment/SKILL.md',
+        '/workspace/.agents/skills/ay-ple-semester-modeling/SKILL.md',
     },
-    text: 'ActionInvocation: organize_sources',
+    text: 'ActionInvocation: model_semester',
   })
   void workspaceRuntime.readEffectiveConfig({
     signal: new AbortController().signal,

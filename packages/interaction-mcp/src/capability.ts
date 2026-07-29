@@ -14,21 +14,17 @@ const labelMaximumBytes = 256
 const descriptionMaximumBytes = 2 * 1024
 const beforeAfterMaximumBytes = 8 * 1024
 const relativePathMaximumBytes = 4 * 1024
-const quoteMaximumBytes = 16 * 1024
+const excerptMaximumBytes = 16 * 1024
+const locationHintMaximumBytes = 2 * 1024
 const feedbackMaximumBytes = 8 * 1024
 const maximumChanges = 32
-const maximumEvidencePerChange = 8
-const maximumEvidencePerRequest = 16
-const maximumOccurrence = 1024
+const maximumCitationsPerChange = 8
+const maximumCitationsPerRequest = 16
 
-export type TextQuoteEvidenceRef = {
+export type SourceCitation = {
   readonly relativePath: string
-  readonly contentDigest: string
-  readonly locator: {
-    readonly type: 'text_quote'
-    readonly quote: string
-    readonly occurrence: number
-  }
+  readonly excerpt: string
+  readonly locationHint?: string
 }
 
 export type ProposeStatePatchRequest = {
@@ -39,7 +35,7 @@ export type ProposeStatePatchRequest = {
     readonly description: string
     readonly before?: string
     readonly after?: string
-    readonly evidence?: readonly TextQuoteEvidenceRef[]
+    readonly citations?: readonly SourceCitation[]
   }[]
 }
 
@@ -63,10 +59,10 @@ export function decodeProposeStatePatchRequest(
     throw invalidContract()
   }
 
-  let evidenceCount = 0
+  let citationCount = 0
   for (const change of value.changes) {
-    evidenceCount += decodeChange(change)
-    if (evidenceCount > maximumEvidencePerRequest) throw invalidContract()
+    citationCount += decodeChange(change)
+    if (citationCount > maximumCitationsPerRequest) throw invalidContract()
   }
   return value as unknown as ProposeStatePatchRequest
 }
@@ -114,7 +110,7 @@ function decodeChange(value: unknown): number {
     'label',
     ...(Object.hasOwn(value, 'after') ? ['after'] : []),
     ...(Object.hasOwn(value, 'before') ? ['before'] : []),
-    ...(Object.hasOwn(value, 'evidence') ? ['evidence'] : []),
+    ...(Object.hasOwn(value, 'citations') ? ['citations'] : []),
   ]
   if (
     !isExactObject(value, keys) ||
@@ -138,35 +134,34 @@ function decodeChange(value: unknown): number {
     throw invalidContract()
   }
 
-  if (!Object.hasOwn(value, 'evidence')) return 0
+  if (!Object.hasOwn(value, 'citations')) return 0
   if (
-    !Array.isArray(value.evidence) ||
-    value.evidence.length < 1 ||
-    value.evidence.length > maximumEvidencePerChange
+    !Array.isArray(value.citations) ||
+    value.citations.length < 1 ||
+    value.citations.length > maximumCitationsPerChange
   ) {
     throw invalidContract()
   }
-  for (const evidence of value.evidence) decodeEvidence(evidence)
-  return value.evidence.length
+  for (const citation of value.citations) decodeCitation(citation)
+  return value.citations.length
 }
 
-function decodeEvidence(value: unknown): void {
+function decodeCitation(value: unknown): void {
+  if (!isRecord(value)) throw invalidContract()
+  const keys = [
+    'excerpt',
+    ...(Object.hasOwn(value, 'locationHint') ? ['locationHint'] : []),
+    'relativePath',
+  ]
   if (
-    !isExactObject(value, [
-      'contentDigest',
-      'locator',
-      'relativePath',
-    ]) ||
+    !isExactObject(value, keys) ||
     !isWorkspaceRelativePath(value.relativePath) ||
-    typeof value.contentDigest !== 'string' ||
-    !/^[0-9a-f]{64}$/.test(value.contentDigest) ||
-    !isExactObject(value.locator, ['occurrence', 'quote', 'type']) ||
-    value.locator.type !== 'text_quote' ||
-    !isBoundedString(value.locator.quote, quoteMaximumBytes) ||
-    value.locator.quote.length === 0 ||
-    !Number.isSafeInteger(value.locator.occurrence) ||
-    Number(value.locator.occurrence) < 1 ||
-    Number(value.locator.occurrence) > maximumOccurrence
+    !isTrimmedNonEmptyBoundedString(value.excerpt, excerptMaximumBytes) ||
+    (Object.hasOwn(value, 'locationHint') &&
+      !isTrimmedNonEmptyBoundedString(
+        value.locationHint,
+        locationHintMaximumBytes,
+      ))
   ) {
     throw invalidContract()
   }

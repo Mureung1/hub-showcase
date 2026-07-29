@@ -16,9 +16,9 @@ import {
 } from '@ay-ple/product-contract'
 
 import {
-  WorkspaceFilesystemAuthorityError,
-  type WorkspaceFilesystemAuthority,
-} from './workspace-filesystem-authority.js'
+  WorkspaceFileAccessError,
+  type WorkspaceFileAccess,
+} from './workspace-file-access.js'
 
 const defaultListMaxDepth = 32
 const defaultTextSourceMaxBytes = 16 * 1024 * 1024
@@ -116,22 +116,22 @@ export type WorkspaceSourcePdf = {
 
 export type WorkspaceSourceProjection = {
   list(): Promise<ProductWorkspaceSourceList>
-  preflightTextFiles(
+  preflightFiles(
     files: readonly ProductWorkspaceFileRef[],
   ): Promise<readonly ProductWorkspaceFileRef[]>
   readText(relativePath: string): Promise<ProductWorkspaceTextPreview>
   readPdf(relativePath: string): Promise<WorkspaceSourcePdf>
 }
 
-// Action definitions can recover only the authority captured by this factory;
+// Action definitions can recover only the file access captured by this factory;
 // they cannot pair a source projection with another raw workspace root.
-const projectionAuthorities = new WeakMap<
+const projectionFileAccesses = new WeakMap<
   WorkspaceSourceProjection,
-  WorkspaceFilesystemAuthority
+  WorkspaceFileAccess
 >()
 
 export async function createWorkspaceSourceProjection(options: {
-  readonly authority: WorkspaceFilesystemAuthority
+  readonly fileAccess: WorkspaceFileAccess
   readonly limits?: Partial<WorkspaceSourceProjectionLimits>
   /** Test-only fault injection at the filesystem boundary. */
   readonly sourcePreflightTestHook?: (
@@ -139,7 +139,7 @@ export async function createWorkspaceSourceProjection(options: {
     relativePath: string,
   ) => void | Promise<void>
 }): Promise<WorkspaceSourceProjection> {
-  const workspaceRoot = options.authority.workspaceRoot
+  const workspaceRoot = options.fileAccess.workspaceRoot
   const limits: WorkspaceSourceProjectionLimits = {
     listMaxEntries:
       options.limits?.listMaxEntries ??
@@ -156,7 +156,7 @@ export async function createWorkspaceSourceProjection(options: {
 
   const projection: WorkspaceSourceProjection = {
     async list() {
-      await assertWorkspaceAuthorityCurrent(options.authority)
+      await assertWorkspaceFileAccessCurrent(options.fileAccess)
       const sources: Array<{
         relativePath: string
         size: number
@@ -207,7 +207,7 @@ export async function createWorkspaceSourceProjection(options: {
               )
             }
             if (
-              !(await options.authority.isCanonicalContainedPath(
+              !(await options.fileAccess.isCanonicalContainedPath(
                 candidate,
               ))
             ) {
@@ -219,7 +219,7 @@ export async function createWorkspaceSourceProjection(options: {
           if (
             !stats.isFile() ||
             isExcludedFilePath(childSegments) ||
-            !(await options.authority.isCanonicalContainedPath(candidate))
+            !(await options.fileAccess.isCanonicalContainedPath(candidate))
           ) {
             continue
           }
@@ -232,7 +232,7 @@ export async function createWorkspaceSourceProjection(options: {
       }
 
       await walk(workspaceRoot, [], 0)
-      await assertWorkspaceAuthorityCurrent(options.authority)
+      await assertWorkspaceFileAccessCurrent(options.fileAccess)
       sources.sort((left, right) =>
         compareCodeUnits(left.relativePath, right.relativePath),
       )
@@ -243,18 +243,17 @@ export async function createWorkspaceSourceProjection(options: {
       }
     },
 
-    async preflightTextFiles(files) {
+    async preflightFiles(files) {
       const resolved: ProductWorkspaceFileRef[] = []
       for (const file of files) {
-        await preflightTextFile(
-          options.authority,
+        await preflightFile(
+          options.fileAccess,
           file.relativePath,
-          limits.textSourceMaxBytes,
           options.sourcePreflightTestHook,
         )
         resolved.push({ relativePath: file.relativePath })
       }
-      await assertWorkspaceAuthorityCurrent(options.authority)
+      await assertWorkspaceFileAccessCurrent(options.fileAccess)
       return resolved
     },
 
@@ -264,7 +263,7 @@ export async function createWorkspaceSourceProjection(options: {
         throw new WorkspaceSourceProjectionError('unsupported_type')
       }
       const bytes = await readBoundedRegularFile(
-        options.authority,
+        options.fileAccess,
         normalized,
         limits.textSourceMaxBytes,
       )
@@ -288,7 +287,7 @@ export async function createWorkspaceSourceProjection(options: {
         throw new WorkspaceSourceProjectionError('unsupported_type')
       }
       const bytes = await readBoundedRegularFile(
-        options.authority,
+        options.fileAccess,
         normalized,
         limits.pdfMaxBytes,
       )
@@ -305,24 +304,23 @@ export async function createWorkspaceSourceProjection(options: {
       }
     },
   }
-  projectionAuthorities.set(projection, options.authority)
+  projectionFileAccesses.set(projection, options.fileAccess)
   return projection
 }
 
-export function workspaceFilesystemAuthorityForSourceProjection(
+export function workspaceFileAccessForSourceProjection(
   projection: WorkspaceSourceProjection,
-): WorkspaceFilesystemAuthority {
-  const authority = projectionAuthorities.get(projection)
-  if (!authority) {
+): WorkspaceFileAccess {
+  const fileAccess = projectionFileAccesses.get(projection)
+  if (!fileAccess) {
     throw new WorkspaceSourceProjectionError('source_unavailable')
   }
-  return authority
+  return fileAccess
 }
 
-async function preflightTextFile(
-  authority: WorkspaceFilesystemAuthority,
+async function preflightFile(
+  fileAccess: WorkspaceFileAccess,
   relativePath: string,
-  maximumBytes: number,
   testHook:
     | ((
         phase: 'before_open',
@@ -331,28 +329,24 @@ async function preflightTextFile(
     | undefined,
 ): Promise<void> {
   const normalized = validateReadablePath(relativePath)
-  if (!isTextPath(normalized)) {
-    throw new WorkspaceSourceProjectionError('unsupported_type')
-  }
   try {
-    await authority.useRegularFile({
+    await fileAccess.useRegularFile({
       segments: normalized.split('/'),
-      maximumBytes,
       beforeOpen: () => testHook?.('before_open', normalized),
       use: async () => undefined,
     })
   } catch (error) {
-    throw mapFilesystemAuthorityError(error)
+    throw mapFileAccessError(error)
   }
 }
 
 async function readBoundedRegularFile(
-  authority: WorkspaceFilesystemAuthority,
+  fileAccess: WorkspaceFileAccess,
   relativePath: string,
   maximumBytes: number,
 ): Promise<Buffer> {
   try {
-    return await authority.useRegularFile({
+    return await fileAccess.useRegularFile({
       segments: relativePath.split('/'),
       maximumBytes,
       use: async (handle) => {
@@ -380,7 +374,7 @@ async function readBoundedRegularFile(
     })
   } catch (error) {
     if (error instanceof WorkspaceSourceProjectionError) throw error
-    throw mapFilesystemAuthorityError(error)
+    throw mapFileAccessError(error)
   }
 }
 
@@ -520,20 +514,20 @@ async function safeLstat(candidate: string) {
   }
 }
 
-async function assertWorkspaceAuthorityCurrent(
-  authority: WorkspaceFilesystemAuthority,
+async function assertWorkspaceFileAccessCurrent(
+  fileAccess: WorkspaceFileAccess,
 ): Promise<void> {
   try {
-    await authority.assertCurrentWorkspace()
+    await fileAccess.assertPinnedWorkspaceCurrent()
   } catch (error) {
-    throw mapFilesystemAuthorityError(error)
+    throw mapFileAccessError(error)
   }
 }
 
-function mapFilesystemAuthorityError(
+function mapFileAccessError(
   error: unknown,
 ): WorkspaceSourceProjectionError {
-  if (!(error instanceof WorkspaceFilesystemAuthorityError)) {
+  if (!(error instanceof WorkspaceFileAccessError)) {
     return new WorkspaceSourceProjectionError('source_unavailable')
   }
   switch (error.code) {

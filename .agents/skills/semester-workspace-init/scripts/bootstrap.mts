@@ -6,6 +6,7 @@ import {
   cp,
   lstat,
   mkdir,
+  readdir,
   readFile,
   realpath,
   stat,
@@ -16,6 +17,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { isDeepStrictEqual, promisify } from 'node:util'
 
 import { parse as parseToml } from 'smol-toml'
+import { parse as parseYaml } from 'yaml'
 
 import {
   classifySemesterWorkspaceRootStateBytes,
@@ -25,8 +27,7 @@ import {
 
 const execFileAsync = promisify(execFile)
 const hubRoot = fileURLToPath(new URL('../../../../', import.meta.url))
-const builtInSkillName = 'ay-ple-first-assignment'
-const builtInSkillSource = path.join(hubRoot, 'skills', builtInSkillName)
+const defaultBuiltInSkillCatalogRoot = path.join(hubRoot, 'skills')
 const adapterPath = path.join(
   hubRoot,
   'packages/interaction-mcp/dist/stdio.js',
@@ -62,28 +63,45 @@ type PlannedFile = {
   readonly bytes: Uint8Array
 }
 
+type BuiltInSkillSource = {
+  readonly name: string
+  readonly sourceRoot: string
+  readonly destinationRelativePath: string
+}
+
+type PlannedBuiltInSkill = BuiltInSkillSource & {
+  readonly destinationRoot: string
+  readonly install: boolean
+}
+
 export async function bootstrapSemesterWorkspace(
   input: Arguments,
+  options: {
+    readonly builtInSkillCatalogRoot?: string
+  } = {},
 ): Promise<{
   readonly canonicalRoot: string
   readonly scaffoldCheckpoint: 'created' | 'updated' | 'no-op'
   readonly baselineCheckpoint: 'created' | 'no-op' | 'not-requested'
 }> {
   const target = await inspectTarget(input.target)
-  await assertBuiltSources()
+  const builtInSkills = await discoverBuiltInSkillCatalog(
+    options.builtInSkillCatalogRoot ?? defaultBuiltInSkillCatalogRoot,
+  )
+  await assertBuiltAdapter()
   const gitMode = await inspectGit(target)
   await assertManagedDirectories(target)
   const plannedFiles = await planManagedFiles(target, input)
   const gitignore = await planGitignore(target, gitMode)
-  const skillDestination = path.join(
-    target.canonicalRoot,
-    '.agents/skills',
-    builtInSkillName,
+  const plannedBuiltInSkills = await planBuiltInSkillInstalls(
+    target,
+    builtInSkills,
   )
-  const installSkill = !(await pathExists(skillDestination))
   const managedWrites = [
     ...plannedFiles.map((file) => file.relativePath),
-    ...(installSkill ? [`.agents/skills/${builtInSkillName}`] : []),
+    ...plannedBuiltInSkills
+      .filter(({ install }) => install)
+      .map(({ destinationRelativePath }) => destinationRelativePath),
     ...(gitignore === undefined ? [] : ['.gitignore']),
   ]
   await assertManagedWritePathsClean(
@@ -102,9 +120,10 @@ export async function bootstrapSemesterWorkspace(
     await mkdir(path.dirname(destination), { recursive: true })
     await writeFile(destination, file.bytes)
   }
-  if (installSkill) {
-    await mkdir(path.dirname(skillDestination), { recursive: true })
-    await cp(builtInSkillSource, skillDestination, {
+  for (const skill of plannedBuiltInSkills) {
+    if (!skill.install) continue
+    await mkdir(path.dirname(skill.destinationRoot), { recursive: true })
+    await cp(skill.sourceRoot, skill.destinationRoot, {
       recursive: true,
       errorOnExist: true,
       force: false,
@@ -287,36 +306,6 @@ async function planManagedFiles(
     await assertRegularFile(agentsPath, 'AGENTS.md')
   }
 
-  const skillDestination = path.join(
-    target.canonicalRoot,
-    '.agents/skills',
-    builtInSkillName,
-  )
-  if (await pathExists(skillDestination)) {
-    const skillDestinationStat = await lstat(skillDestination)
-    if (
-      !skillDestinationStat.isDirectory() ||
-      skillDestinationStat.isSymbolicLink()
-    ) {
-      throw new Error(
-        'Built-in Skill root must be a non-symlink directory.',
-      )
-    }
-    const difference = await firstTreeDifference(
-      builtInSkillSource,
-      skillDestination,
-    )
-    if (difference !== undefined) {
-      const differenceOutput = await treeDifference(
-        skillDestination,
-        builtInSkillSource,
-      )
-      throw new Error(
-        `Built-in Skill conflict at ${difference}; workspace bytes were preserved.\n${differenceOutput}`,
-      )
-    }
-  }
-
   const configPath = path.join(target.canonicalRoot, '.codex/config.toml')
   const desiredBlock = managedConfigBlock(target.canonicalRoot)
   if (!(await pathExists(configPath))) {
@@ -340,6 +329,48 @@ async function planManagedFiles(
   }
 
   return files
+}
+
+async function planBuiltInSkillInstalls(
+  target: Target,
+  skills: readonly BuiltInSkillSource[],
+): Promise<readonly PlannedBuiltInSkill[]> {
+  const planned: PlannedBuiltInSkill[] = []
+  for (const skill of skills) {
+    const destinationRoot = path.join(
+      target.canonicalRoot,
+      skill.destinationRelativePath,
+    )
+    if (!(await pathExists(destinationRoot))) {
+      planned.push({ ...skill, destinationRoot, install: true })
+      continue
+    }
+
+    const destinationStat = await lstat(destinationRoot)
+    if (
+      !destinationStat.isDirectory() ||
+      destinationStat.isSymbolicLink()
+    ) {
+      throw new Error(
+        `Built-in Skill ${skill.name} root must be a non-symlink directory.`,
+      )
+    }
+    const difference = await firstTreeDifference(
+      skill.sourceRoot,
+      destinationRoot,
+    )
+    if (difference !== undefined) {
+      const differenceOutput = await treeDifference(
+        destinationRoot,
+        skill.sourceRoot,
+      )
+      throw new Error(
+        `Built-in Skill ${skill.name} conflict at ${difference}; workspace bytes were preserved.\n${differenceOutput}`,
+      )
+    }
+    planned.push({ ...skill, destinationRoot, install: false })
+  }
+  return planned
 }
 
 function describeStateConflict(
@@ -580,8 +611,7 @@ function assertSafeTomlSurface(source: string): void {
   }
 }
 
-async function assertBuiltSources(): Promise<void> {
-  await assertSafeTree(builtInSkillSource)
+async function assertBuiltAdapter(): Promise<void> {
   const adapter = await stat(adapterPath).catch(() => undefined)
   if (adapter === undefined || !adapter.isFile()) {
     throw new Error(
@@ -590,22 +620,143 @@ async function assertBuiltSources(): Promise<void> {
   }
 }
 
-async function assertSafeTree(root: string): Promise<void> {
-  const entries = await import('node:fs/promises').then(({ readdir }) =>
-    readdir(root, { withFileTypes: true }),
-  )
+async function discoverBuiltInSkillCatalog(
+  catalogRoot: string,
+): Promise<readonly BuiltInSkillSource[]> {
+  const catalogStat = await lstat(catalogRoot).catch(() => undefined)
+  if (
+    catalogStat === undefined ||
+    !catalogStat.isDirectory() ||
+    catalogStat.isSymbolicLink()
+  ) {
+    throw new Error(
+      'Built-in Skill catalog must be a non-symlink directory.',
+    )
+  }
+
+  const entries = (await readdir(catalogRoot, { withFileTypes: true }))
+    .sort((left, right) => comparePathNames(left.name, right.name))
+  const skills: BuiltInSkillSource[] = []
   for (const entry of entries) {
-    const entryPath = path.join(root, entry.name)
+    const sourceRoot = path.join(catalogRoot, entry.name)
+    const sourceStat = await lstat(sourceRoot)
+    if (!sourceStat.isDirectory() || sourceStat.isSymbolicLink()) {
+      throw new Error(
+        `Built-in Skill catalog entry ${entry.name} must be a non-symlink directory.`,
+      )
+    }
+    if (
+      !entry.name.startsWith('ay-ple-') ||
+      entry.name.length === 'ay-ple-'.length
+    ) {
+      throw new Error(
+        `Built-in Skill directory ${entry.name} must use the reserved ay-ple-* namespace.`,
+      )
+    }
+
+    const descriptorPath = path.join(sourceRoot, 'SKILL.md')
+    const descriptorStat = await lstat(descriptorPath).catch(() => undefined)
+    if (
+      descriptorStat === undefined ||
+      !descriptorStat.isFile() ||
+      descriptorStat.isSymbolicLink()
+    ) {
+      throw new Error(
+        `Built-in Skill ${entry.name} root SKILL.md must be a non-symlink regular file.`,
+      )
+    }
+    const descriptor = decodeUtf8(
+      await readFile(descriptorPath),
+      `Built-in Skill ${entry.name} root SKILL.md must be valid UTF-8.`,
+    )
+    const metadata = parseSkillFrontmatter(entry.name, descriptor)
+    if (metadata.name !== entry.name) {
+      throw new Error(
+        `Built-in Skill ${entry.name} frontmatter name must match its directory name.`,
+      )
+    }
+    await assertSafeSkillTree(sourceRoot, entry.name)
+    skills.push({
+      name: entry.name,
+      sourceRoot,
+      destinationRelativePath: `.agents/skills/${entry.name}`,
+    })
+  }
+  return skills
+}
+
+function parseSkillFrontmatter(
+  skillName: string,
+  source: string,
+): { readonly name: string; readonly description: string } {
+  const match = source.match(
+    /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/u,
+  )
+  if (!match) {
+    throw new Error(
+      `Built-in Skill ${skillName} root SKILL.md must contain YAML frontmatter.`,
+    )
+  }
+  let metadata: unknown
+  try {
+    metadata = parseYaml(match[1])
+  } catch {
+    throw new Error(
+      `Built-in Skill ${skillName} frontmatter must be valid YAML.`,
+    )
+  }
+  if (
+    typeof metadata !== 'object' ||
+    metadata === null ||
+    Array.isArray(metadata) ||
+    typeof (metadata as Record<string, unknown>).name !== 'string' ||
+    (metadata as Record<string, string>).name.trim().length === 0 ||
+    typeof (metadata as Record<string, unknown>).description !== 'string' ||
+    (metadata as Record<string, string>).description.trim().length === 0
+  ) {
+    throw new Error(
+      `Built-in Skill ${skillName} frontmatter requires non-empty name and description strings.`,
+    )
+  }
+  return {
+    name: (metadata as Record<string, string>).name,
+    description: (metadata as Record<string, string>).description,
+  }
+}
+
+async function assertSafeSkillTree(
+  root: string,
+  skillName: string,
+  relative = '',
+): Promise<void> {
+  const entries = (
+    await readdir(path.join(root, relative), { withFileTypes: true })
+  ).sort((left, right) => comparePathNames(left.name, right.name))
+  for (const entry of entries) {
+    const child = path.join(relative, entry.name)
+    const entryPath = path.join(root, child)
     const entryStat = await lstat(entryPath)
     if (entryStat.isSymbolicLink()) {
-      throw new Error(`Built-in Skill source contains symlink: ${entry.name}`)
+      throw new Error(
+        `Built-in Skill ${skillName} contains symlink: ${toPosixPath(child)}`,
+      )
     }
     if (entryStat.isDirectory()) {
-      await assertSafeTree(entryPath)
+      await assertSafeSkillTree(root, skillName, child)
     } else if (!entryStat.isFile()) {
-      throw new Error(`Built-in Skill source contains unsafe entry: ${entry.name}`)
+      throw new Error(
+        `Built-in Skill ${skillName} contains unsafe entry: ${toPosixPath(child)}`,
+      )
     }
   }
+}
+
+function comparePathNames(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0
+}
+
+function toPosixPath(value: string): string {
+  return value.split(path.sep).join('/')
 }
 
 async function firstTreeDifference(
@@ -613,7 +764,6 @@ async function firstTreeDifference(
   destination: string,
   relative = '',
 ): Promise<string | undefined> {
-  const { readdir } = await import('node:fs/promises')
   const sourceEntries = await readdir(path.join(source, relative), {
     withFileTypes: true,
   })

@@ -1,11 +1,8 @@
 import assert from 'node:assert/strict'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
-import { createHash } from 'node:crypto'
 import {
-  appendFile,
   mkdtemp,
   mkdir,
-  open as openFile,
   realpath,
   rename,
   symlink,
@@ -44,7 +41,7 @@ test('Interaction Broker admits one authenticated live Adapter lifecycle and clo
     assert.equal(
       (
         await postBroker(server, broker, {
-          protocolVersion: 1,
+          protocolVersion: 2,
           kind: 'lifecycle_open',
         })
       ).code,
@@ -56,7 +53,7 @@ test('Interaction Broker admits one authenticated live Adapter lifecycle and clo
         await postBroker(
           server,
           broker,
-          { protocolVersion: 1, kind: 'lifecycle_open' },
+          { protocolVersion: 2, kind: 'lifecycle_open' },
           { token: 'wrong' },
         )
       ).code,
@@ -65,7 +62,7 @@ test('Interaction Broker admits one authenticated live Adapter lifecycle and clo
     assert.equal(
       (
         await postBroker(server, broker, {
-          protocolVersion: 1,
+          protocolVersion: 2,
           kind: 'lifecycle_open',
           generation: 'fake',
         })
@@ -79,7 +76,7 @@ test('Interaction Broker admits one authenticated live Adapter lifecycle and clo
     assert.equal(
       (
         await postBroker(server, broker, {
-          protocolVersion: 1,
+          protocolVersion: 2,
           kind: 'lifecycle_open',
         })
       ).code,
@@ -140,10 +137,15 @@ test('actual built Adapter termination synchronously latches Broker loss', async
   }
 })
 
-test('Interaction Broker returns one held result after atomic evidence projection', async () => {
+test('Interaction Broker projects an AY-authored citation for a binary PDF and returns one held result', async () => {
   const fixture = await createFixture()
-  const content = '\ufeffprefix 한글 needle suffix'
-  await writeFile(path.join(fixture.workspaceRoot, 'notes.txt'), content)
+  await writeFile(
+    path.join(fixture.workspaceRoot, 'syllabus.pdf'),
+    Buffer.concat([
+      Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0xc3, 0x28]),
+      Buffer.alloc(2 * 1024 * 1024),
+    ]),
+  )
   const frames: unknown[] = []
   const broker = await createInteractionBroker({
     workspaceRoot: fixture.workspaceRoot,
@@ -159,13 +161,13 @@ test('Interaction Broker returns one held result after atomic evidence projectio
   try {
     await acceptHandshake(server, broker)
     const call = postBroker(server, broker, {
-      protocolVersion: 1,
+      protocolVersion: 2,
       kind: 'capability_call',
       capability: 'propose_state_patch',
-      request: requestWithEvidence({
-        relativePath: 'notes.txt',
-        contentDigest: sha256(Buffer.from(content)),
-        quote: 'needle',
+      request: requestWithCitation({
+        relativePath: 'syllabus.pdf',
+        excerpt: '기말고사는 6월 16일 10:30에 시작합니다.',
+        locationHint: '1쪽 시험 일정 표',
       }),
     })
     await waitFor(() => frames.length === 1)
@@ -174,10 +176,11 @@ test('Interaction Broker returns one held result after atomic evidence projectio
       review: {
         changes: readonly [
           {
-            evidence: readonly [
+            citations: readonly [
               {
-                contextBefore: string
-                contextAfter: string
+                relativePath: string
+                excerpt: string
+                locationHint?: string
               },
             ]
           },
@@ -185,20 +188,17 @@ test('Interaction Broker returns one held result after atomic evidence projectio
       }
     }
     assert.match(requested.interactionId, /^interaction_[0-9a-f]{32}$/u)
-    assert.equal(
-      requested.review.changes[0].evidence[0].contextBefore,
-      'prefix 한글 ',
-    )
-    assert.equal(
-      requested.review.changes[0].evidence[0].contextAfter,
-      ' suffix',
-    )
+    assert.deepEqual(requested.review.changes[0].citations[0], {
+      relativePath: 'syllabus.pdf',
+      excerpt: '기말고사는 6월 16일 10:30에 시작합니다.',
+      locationHint: '1쪽 시험 일정 표',
+    })
 
     const settlement = broker.settle(requested.interactionId, {
       outcome: 'accept',
     })
     assert.deepEqual(await call, {
-      protocolVersion: 1,
+      protocolVersion: 2,
       kind: 'capability_result',
       capability: 'propose_state_patch',
       result: { outcome: 'accept' },
@@ -219,20 +219,14 @@ test('Interaction Broker returns one held result after atomic evidence projectio
   }
 })
 
-test('evidence failures are all-or-nothing and do not publish a card', async () => {
+test('invalid citation paths are all-or-nothing and do not publish a card', async () => {
   const fixture = await createFixture()
-  const content = 'one needle two'
-  await writeFile(path.join(fixture.workspaceRoot, 'notes.txt'), content)
+  await writeFile(
+    path.join(fixture.workspaceRoot, 'notes.txt'),
+    'workspace source',
+  )
   await mkdir(path.join(fixture.workspaceRoot, 'directory.txt'))
-  await writeFile(
-    path.join(fixture.workspaceRoot, 'oversized.txt'),
-    Buffer.alloc(1024 * 1024 + 1, 97),
-  )
-  await writeFile(
-    path.join(fixture.workspaceRoot, 'invalid-utf8.txt'),
-    Buffer.from([0xc3, 0x28]),
-  )
-  await writeFile(path.join(fixture.outsideRoot, 'secret.txt'), 'needle')
+  await writeFile(path.join(fixture.outsideRoot, 'secret.txt'), 'secret')
   await symlink(
     path.join(fixture.outsideRoot, 'secret.txt'),
     path.join(fixture.workspaceRoot, 'escaped.txt'),
@@ -247,51 +241,47 @@ test('evidence failures are all-or-nothing and do not publish a card', async () 
 
   try {
     await acceptHandshake(server, broker)
+    const mixedRequest = requestWithCitation({
+      relativePath: 'notes.txt',
+      excerpt: 'workspace source',
+    })
     for (const request of [
-      requestWithEvidence({
-        relativePath: 'notes.txt',
-        contentDigest: '0'.repeat(64),
-        quote: 'needle',
-      }),
-      requestWithEvidence({
+      {
+        ...mixedRequest,
+        changes: [
+          {
+            ...mixedRequest.changes[0],
+            citations: [
+              ...mixedRequest.changes[0].citations,
+              {
+                relativePath: 'missing.txt',
+                excerpt: '없는 파일',
+              },
+            ],
+          },
+        ],
+      },
+      requestWithCitation({
         relativePath: 'escaped.txt',
-        contentDigest: sha256(Buffer.from('needle')),
-        quote: 'needle',
+        excerpt: '외부 파일',
       }),
-      requestWithEvidence({
-        relativePath: 'notes.txt',
-        contentDigest: sha256(Buffer.from(content)),
-        quote: 'missing',
-      }),
-      requestWithEvidence({
+      requestWithCitation({
         relativePath: 'missing.txt',
-        contentDigest: '0'.repeat(64),
-        quote: 'needle',
+        excerpt: '없는 파일',
       }),
-      requestWithEvidence({
+      requestWithCitation({
         relativePath: 'directory.txt',
-        contentDigest: '0'.repeat(64),
-        quote: 'needle',
-      }),
-      requestWithEvidence({
-        relativePath: 'oversized.txt',
-        contentDigest: '0'.repeat(64),
-        quote: 'needle',
-      }),
-      requestWithEvidence({
-        relativePath: 'invalid-utf8.txt',
-        contentDigest: sha256(Buffer.from([0xc3, 0x28])),
-        quote: '(',
+        excerpt: '디렉터리',
       }),
     ]) {
       const response = await postBroker(server, broker, {
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'capability_call',
         capability: 'propose_state_patch',
         request,
       })
       assert.equal(response.kind, 'error')
-      assert.equal(response.code, 'evidence_invalid')
+      assert.equal(response.code, 'citation_invalid')
     }
     assert.deepEqual(frames, [])
   } finally {
@@ -300,7 +290,7 @@ test('evidence failures are all-or-nothing and do not publish a card', async () 
   }
 })
 
-test('evidence rejects a replacement at the pinned workspace root', async () => {
+test('citation rejects a replacement at the pinned workspace root', async () => {
   const fixture = await createFixture()
   const content = 'replacement needle'
   await writeFile(path.join(fixture.workspaceRoot, 'notes.txt'), content)
@@ -323,10 +313,9 @@ test('evidence rejects a replacement at the pinned workspace root', async () => 
       server,
       broker,
       capabilityCall(
-        requestWithEvidence({
+        requestWithCitation({
           relativePath: 'notes.txt',
-          contentDigest: sha256(Buffer.from(content)),
-          quote: 'needle',
+          excerpt: 'replacement needle',
         }),
       ),
     )
@@ -338,7 +327,7 @@ test('evidence rejects a replacement at the pinned workspace root', async () => 
     const response = await call
 
     assert.equal(response.kind, 'error')
-    assert.equal(response.code, 'evidence_invalid')
+    assert.equal(response.code, 'citation_invalid')
     assert.deepEqual(frames, [])
   } finally {
     await broker.appShutdown()
@@ -346,7 +335,7 @@ test('evidence rejects a replacement at the pinned workspace root', async () => 
   }
 })
 
-test('evidence rejects final and ancestor symlink aliases inside the workspace', async () => {
+test('citation rejects final and ancestor symlink aliases inside the workspace', async () => {
   const fixture = await createFixture()
   const content = 'inside needle'
   const realDirectory = path.join(fixture.workspaceRoot, 'real')
@@ -380,10 +369,9 @@ test('evidence rejects final and ancestor symlink aliases inside the workspace',
         server,
         broker,
         capabilityCall(
-          requestWithEvidence({
+          requestWithCitation({
             relativePath,
-            contentDigest: sha256(Buffer.from(content)),
-            quote: 'needle',
+            excerpt: 'inside needle',
           }),
         ),
       )
@@ -402,125 +390,10 @@ test('evidence rejects final and ancestor symlink aliases inside the workspace',
       }
       const response = await call
       assert.equal(response.kind, 'error', relativePath)
-      assert.equal(response.code, 'evidence_invalid', relativePath)
+      assert.equal(response.code, 'citation_invalid', relativePath)
     }
     assert.deepEqual(frames, [])
   } finally {
-    await broker.appShutdown()
-    await close(server)
-  }
-})
-
-test('evidence rejects an inode swap between path validation and open', async () => {
-  const fixture = await createFixture()
-  const content = 'swapped needle'
-  const evidencePath = path.join(fixture.workspaceRoot, 'notes.txt')
-  await writeFile(evidencePath, content)
-  let swapped = false
-  const frames: unknown[] = []
-  const broker = await createInteractionBroker({
-    workspaceRoot: fixture.workspaceRoot,
-    activeProductTurn: () => activeTurn(),
-    uiAdapter: { publish: (frame) => frames.push(frame) },
-    async evidenceReadTestHook(phase) {
-      if (phase !== 'before_open' || swapped) return
-      swapped = true
-      await rename(
-        evidencePath,
-        path.join(fixture.workspaceRoot, 'notes-original.txt'),
-      )
-      await writeFile(evidencePath, content)
-    },
-  })
-  const server = await listen(broker.router)
-
-  try {
-    await acceptHandshake(server, broker)
-    const call = postBroker(
-      server,
-      broker,
-      capabilityCall(
-        requestWithEvidence({
-          relativePath: 'notes.txt',
-          contentDigest: sha256(Buffer.from(content)),
-          quote: 'needle',
-        }),
-      ),
-    )
-    await Promise.race([
-      call.then(() => undefined),
-      waitFor(() => frames.length > 0),
-    ])
-    if (frames.length > 0) {
-      const interactionId = (
-        frames[0] as { interactionId: string }
-      ).interactionId
-      await Promise.all([
-        broker.settle(interactionId, { outcome: 'reject' }),
-        call,
-      ])
-    }
-    const response = await call
-
-    assert.equal(response.kind, 'error')
-    assert.equal(response.code, 'evidence_invalid')
-    assert.deepEqual(frames, [])
-  } finally {
-    await broker.appShutdown()
-    await close(server)
-  }
-})
-
-test('evidence growth is rejected without an unbounded FileHandle read', async () => {
-  const fixture = await createFixture()
-  const content = 'growing needle'
-  const evidencePath = path.join(fixture.workspaceRoot, 'notes.txt')
-  await writeFile(evidencePath, content)
-  let grown = false
-  const frames: unknown[] = []
-  const broker = await createInteractionBroker({
-    workspaceRoot: fixture.workspaceRoot,
-    activeProductTurn: () => activeTurn(),
-    uiAdapter: { publish: (frame) => frames.push(frame) },
-    async evidenceReadTestHook(phase) {
-      if (phase !== 'after_open_stat' || grown) return
-      grown = true
-      await appendFile(evidencePath, Buffer.alloc(1024 * 1024 + 1, 97))
-    },
-  })
-  const server = await listen(broker.router)
-  const inspectionHandle = await openFile(evidencePath, 'r')
-  const fileHandlePrototype = Object.getPrototypeOf(inspectionHandle) as {
-    readFile: typeof inspectionHandle.readFile
-  }
-  await inspectionHandle.close()
-  const originalReadFile = fileHandlePrototype.readFile
-  let unboundedReadCalled = false
-  fileHandlePrototype.readFile = function (...args) {
-    unboundedReadCalled = true
-    return Reflect.apply(originalReadFile, this, args)
-  }
-
-  try {
-    await acceptHandshake(server, broker)
-    const response = await postBroker(
-      server,
-      broker,
-      capabilityCall(
-        requestWithEvidence({
-          relativePath: 'notes.txt',
-          contentDigest: sha256(Buffer.from(content)),
-          quote: 'needle',
-        }),
-      ),
-    )
-
-    assert.equal(response.kind, 'error')
-    assert.equal(response.code, 'evidence_invalid')
-    assert.equal(unboundedReadCalled, false)
-    assert.deepEqual(frames, [])
-  } finally {
-    fileHandlePrototype.readFile = originalReadFile
     await broker.appShutdown()
     await close(server)
   }
@@ -538,7 +411,7 @@ test('authentication, active lease, malformed input and busy admission fail clos
   const server = await listen(broker.router)
 
   try {
-    const request = requestWithoutEvidence()
+    const request = requestWithoutCitations()
     assert.equal(
       (
         await postBroker(
@@ -602,7 +475,7 @@ test('authentication, active lease, malformed input and busy admission fail clos
     const staleCall = postBroker(
       server,
       broker,
-      capabilityCall(requestWithoutEvidence()),
+      capabilityCall(requestWithoutCitations()),
     )
     await waitFor(() => frames.length === 3)
     const staleInteractionId = (
@@ -647,7 +520,7 @@ test('HTTP abort and terminal lifecycle never synthesize a user result', async (
     const call = postBroker(
       server,
       broker,
-      capabilityCall(requestWithoutEvidence()),
+      capabilityCall(requestWithoutCitations()),
       { signal: controller.signal },
     )
     await waitFor(() => frames.length === 1)
@@ -660,14 +533,14 @@ test('HTTP abort and terminal lifecycle never synthesize a user result', async (
     const next = postBroker(
       server,
       broker,
-      capabilityCall(requestWithoutEvidence()),
+      capabilityCall(requestWithoutCitations()),
     )
     await waitFor(() => frames.length === 3)
     await broker.adapterLost()
     assert.equal((await next).kind, 'error')
     assert.equal(teardowns, 1)
     assert.equal(
-      (await postBroker(server, broker, capabilityCall(requestWithoutEvidence())))
+      (await postBroker(server, broker, capabilityCall(requestWithoutCitations())))
         .code,
       'forbidden',
     )
@@ -707,7 +580,7 @@ test('every continuity source closes the held call without a normal result', asy
       const call = postBroker(
         server,
         broker,
-        capabilityCall(requestWithoutEvidence()),
+        capabilityCall(requestWithoutCitations()),
       )
       await waitFor(() => frames.length === 1)
       await broker[event]()
@@ -734,7 +607,7 @@ test('every continuity source closes the held call without a normal result', asy
             await postBroker(
               server,
               broker,
-              capabilityCall(requestWithoutEvidence()),
+              capabilityCall(requestWithoutCitations()),
             )
           ).code,
           'forbidden',
@@ -779,7 +652,7 @@ test('stalled UI cleanup cannot delay interrupt, credential revoke, or teardown'
     const firstCall = postBroker(
       server,
       broker,
-      capabilityCall(requestWithoutEvidence()),
+      capabilityCall(requestWithoutCitations()),
     )
     await waitFor(() => frames.length === 1)
     await broker.browserDisconnected()
@@ -789,7 +662,7 @@ test('stalled UI cleanup cannot delay interrupt, credential revoke, or teardown'
     const secondCall = postBroker(
       server,
       broker,
-      capabilityCall(requestWithoutEvidence()),
+      capabilityCall(requestWithoutCitations()),
     )
     await waitFor(() => frames.length === 3)
     const closing = broker.runtimeReplaced()
@@ -798,7 +671,7 @@ test('stalled UI cleanup cannot delay interrupt, credential revoke, or teardown'
         await postBroker(
           server,
           broker,
-          capabilityCall(requestWithoutEvidence()),
+          capabilityCall(requestWithoutCitations()),
         )
       ).code,
       'forbidden',
@@ -833,13 +706,13 @@ test('a requested-card publish timeout fails without creating an invisible pendi
     const first = await postBroker(
       server,
       broker,
-      capabilityCall(requestWithoutEvidence()),
+      capabilityCall(requestWithoutCitations()),
     )
     assert.equal(first.code, 'broker_unavailable')
     const second = await postBroker(
       server,
       broker,
-      capabilityCall(requestWithoutEvidence()),
+      capabilityCall(requestWithoutCitations()),
     )
     assert.equal(second.code, 'broker_unavailable')
     assert.equal(frames.length, 2)
@@ -873,7 +746,7 @@ test('settlement racing generation close converges without replay or a pending s
     const call = postBroker(
       server,
       broker,
-      capabilityCall(requestWithoutEvidence()),
+      capabilityCall(requestWithoutCitations()),
     )
     await waitFor(() => frames.length === 1)
     const interactionId = (frames[0] as { interactionId: string })
@@ -912,7 +785,7 @@ test('settlement racing generation close converges without replay or a pending s
         await postBroker(
           server,
           broker,
-          capabilityCall(requestWithoutEvidence()),
+          capabilityCall(requestWithoutCitations()),
         )
       ).code,
       'forbidden',
@@ -927,7 +800,7 @@ function activeTurn(): ActiveInteractionProductTurn {
   return { operationId, nativeThreadId, nativeTurnId }
 }
 
-function requestWithoutEvidence() {
+function requestWithoutCitations() {
   return {
     summary: '요약',
     question: '적용할까요?',
@@ -942,25 +815,23 @@ function requestWithoutEvidence() {
   } as const
 }
 
-function requestWithEvidence(input: {
+function requestWithCitation(input: {
   relativePath: string
-  contentDigest: string
-  quote: string
+  excerpt: string
+  locationHint?: string
 }) {
   return {
-    ...requestWithoutEvidence(),
+    ...requestWithoutCitations(),
     changes: [
       {
-        ...requestWithoutEvidence().changes[0],
-        evidence: [
+        ...requestWithoutCitations().changes[0],
+        citations: [
           {
             relativePath: input.relativePath,
-            contentDigest: input.contentDigest,
-            locator: {
-              type: 'text_quote',
-              quote: input.quote,
-              occurrence: 1,
-            },
+            excerpt: input.excerpt,
+            ...(input.locationHint
+              ? { locationHint: input.locationHint }
+              : {}),
           },
         ],
       },
@@ -968,9 +839,9 @@ function requestWithEvidence(input: {
   } as const
 }
 
-function capabilityCall(request: ReturnType<typeof requestWithoutEvidence>) {
+function capabilityCall(request: ReturnType<typeof requestWithoutCitations>) {
   return {
-    protocolVersion: 1,
+    protocolVersion: 2,
     kind: 'capability_call',
     capability: 'propose_state_patch',
     request,
@@ -1030,7 +901,7 @@ async function acceptHandshake(
   await acceptHandshakeOnly(server, broker)
   const lifecycle = await openLifecycle(server, broker)
   assert.deepEqual(lifecycle.accepted, {
-    protocolVersion: 1,
+    protocolVersion: 2,
     kind: 'lifecycle_accepted',
   })
   await broker.adapterStatus.ready
@@ -1042,13 +913,13 @@ async function acceptHandshakeOnly(
 ): Promise<void> {
   assert.deepEqual(
     await postBroker(server, broker, {
-      protocolVersion: 1,
+      protocolVersion: 2,
       kind: 'handshake',
       serverName: 'ay_ple_interaction',
       capabilities: ['propose_state_patch'],
     }),
     {
-      protocolVersion: 1,
+      protocolVersion: 2,
       kind: 'handshake_accepted',
     },
   )
@@ -1072,7 +943,7 @@ async function openLifecycle(
         'x-ay-ple-runtime-binding': credentials.binding,
       },
       body: JSON.stringify({
-        protocolVersion: 1,
+        protocolVersion: 2,
         kind: 'lifecycle_open',
       }),
     },
@@ -1119,10 +990,6 @@ async function postRaw(
     },
   )
   return response.json() as Promise<Record<string, any>>
-}
-
-function sha256(bytes: Buffer): string {
-  return createHash('sha256').update(bytes).digest('hex')
 }
 
 function startBuiltAdapter(

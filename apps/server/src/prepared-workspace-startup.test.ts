@@ -585,6 +585,71 @@ test('explicit first open and registry reopen pass the same readiness gate with 
   }
 })
 
+test('explicit relaunch replaces a stale same-root binding after readiness', async () => {
+  const fixture = await createFixture()
+  try {
+    await writeWorkspaceIdentity(fixture.targetRoot, previousWorkspace)
+    const observed = await fixture.store.read()
+    assert.equal(observed.status, 'current')
+    if (observed.status !== 'current') {
+      assert.fail('previous registry authority must exist')
+    }
+    const previous = await fixture.store.commitActiveWorkspace({
+      expectedAuthority: observed.authority,
+      canonicalRoot: fixture.targetRoot,
+      expectedWorkspaceId: previousWorkspaceId,
+    })
+    assert.equal(previous.status, 'written')
+    if (previous.status !== 'written') {
+      assert.fail('same-root previous binding must be written')
+    }
+
+    await rm(fixture.targetRoot, { recursive: true })
+    await prepareWorkspace(fixture.targetRoot, targetWorkspace)
+    const staleBytes = await registryBytes(fixture.appDataRoot)
+    assert.deepEqual(await fixture.store.resolveActiveWorkspace(), {
+      status: 'unavailable',
+      workspaceId: previousWorkspaceId,
+      reason: 'identity_mismatch',
+    })
+    assert.deepEqual(
+      await registryBytes(fixture.appDataRoot),
+      staleBytes,
+    )
+
+    const selectedHarness = createHarness()
+    const selected = await startPreparedWorkspace({
+      appDataRoot: fixture.appDataRoot,
+      explicitWorkspaceRoot: fixture.targetRoot,
+      ports: selectedHarness.ports,
+    })
+    assert.equal(selected.lifecycle.state, 'active')
+    assert.equal(
+      selected.lifecycle.workspace.workspaceId,
+      targetWorkspaceId,
+    )
+    await selected.close()
+
+    const reopenedHarness = createHarness()
+    const reopened = await startPreparedWorkspace({
+      appDataRoot: fixture.appDataRoot,
+      ports: reopenedHarness.ports,
+    })
+    assert.equal(reopened.lifecycle.state, 'active')
+    assert.equal(
+      reopened.lifecycle.workspace.workspaceId,
+      targetWorkspaceId,
+    )
+    assert.equal(
+      reopenedHarness.runtimeInput?.canonicalRoot,
+      fixture.targetRoot,
+    )
+    await reopened.close()
+  } finally {
+    await fixture.cleanup()
+  }
+})
+
 test('a failed explicit relaunch preserves the previous pointer for a fresh no-argument reopen', async () => {
   const fixture = await createFixture()
   try {
