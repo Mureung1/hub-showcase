@@ -43,4 +43,15 @@ curl -sf -o /dev/null "$BASE/planning.html" || {
 
 render planning "N111_양서형_WeatherPilot_기획.pdf"
 render workflow "N111_양서형_WeatherPilot_워크플로우.pdf"
+
+# 부스 대본 — 마크다운에서 A4 인쇄용 HTML을 만든 뒤 같이 뽑는다 (여러 장이라 페이지 수는 검사 안 함)
+echo "── 부스 대본 (A4)"
+node "$OUT/md2html.mjs" "$OUT/../부스_대본_0731.md" "$OUT/script.html" "부스 응대 대본" >/dev/null
+"$CHROME" --headless=new --disable-gpu --virtual-time-budget=15000 --no-pdf-header-footer \
+  --print-to-pdf="$OUT/N111_양서형_WeatherPilot_부스대본.pdf" "$BASE/script.html" >/dev/null 2>&1
+sz=$(stat -c%s "$OUT/N111_양서형_WeatherPilot_부스대본.pdf")
+echo "   크기 ${sz}B · 페이지 $(grep -a -o '/Count [0-9]*' "$OUT/N111_양서형_WeatherPilot_부스대본.pdf" | head -1 | tr -dc 0-9)"
+[ "$sz" -gt 50000 ] || { echo "   ✗ 너무 작다 — 폰트 로딩 전에 찍혔을 가능성."; exit 1; }
+echo "   ✓"
+
 echo "완료 — 인쇄 전 PDF를 열어 눈으로 한 번 더 확인할 것."

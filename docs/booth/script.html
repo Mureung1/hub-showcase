@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>부스 응대 대본</title>
+<link rel="preload" as="font" type="font/woff2" crossorigin href="./fonts/Pretendard-Regular.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="./fonts/Pretendard-SemiBold.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="./fonts/Pretendard-Bold.woff2" />
+<style>
+@font-face{font-family:"PretendardBooth";src:url("./fonts/Pretendard-Regular.woff2") format("woff2");font-weight:400;font-display:block}
+@font-face{font-family:"PretendardBooth";src:url("./fonts/Pretendard-SemiBold.woff2") format("woff2");font-weight:600;font-display:block}
+@font-face{font-family:"PretendardBooth";src:url("./fonts/Pretendard-Bold.woff2") format("woff2");font-weight:700;font-display:block}
+@font-face{font-family:"PretendardBooth";src:url("./fonts/Pretendard-ExtraBold.woff2") format("woff2");font-weight:800;font-display:block}
+
+@page{size:A4 portrait;margin:15mm 16mm 14mm}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+html,body{margin:0;padding:0;word-break:keep-all;overflow-wrap:break-word;
+  font-family:"PretendardBooth","맑은 고딕","Malgun Gothic",sans-serif;
+  color:#253449;font-size:10.5pt;line-height:1.62}
+@media screen{body{max-width:180mm;margin:0 auto;padding:14mm 0;background:#fff}}
+
+.cover{border-left:4mm solid #4a90e2;padding:1mm 0 1mm 6mm;margin:0 0 9mm}
+.cover h1{margin:0 0 2mm;font-size:22pt;font-weight:800;letter-spacing:-0.03em;line-height:1.15}
+.cover p{margin:0;font-size:10pt;color:#6b7787}
+
+h2{font-size:15pt;font-weight:800;letter-spacing:-0.02em;margin:11mm 0 3.5mm;
+  padding-bottom:2mm;border-bottom:0.6mm solid #4a90e2;break-after:avoid;break-inside:avoid}
+h2:first-of-type{margin-top:0}
+h3{font-size:12pt;font-weight:700;margin:7mm 0 2.5mm;color:#3b7dd8;break-after:avoid}
+h4{font-size:10.5pt;font-weight:700;margin:5mm 0 2mm;break-after:avoid}
+p{margin:0 0 3mm}
+ul,ol{margin:0 0 3mm;padding-left:6mm}
+li{margin-bottom:1.5mm}
+li>p{margin:0 0 1.5mm}
+strong{font-weight:700;color:#1b2736}
+hr{border:0;border-top:0.4mm solid #e4eaf1;margin:8mm 0}
+a{color:#3b7dd8;text-decoration:none}
+
+/* 실제로 읽을 대사 — 눈에 바로 띄어야 한다 */
+blockquote{margin:0 0 4mm;padding:3.5mm 5mm;background:#f2f7fe;
+  border-left:1.6mm solid #4a90e2;border-radius:0 2mm 2mm 0;break-inside:avoid}
+blockquote p{margin:0 0 2mm}
+blockquote p:last-child{margin:0}
+
+code{font-family:"Consolas","D2Coding",monospace;font-size:9pt;
+  background:#f4f7fa;padding:0.6mm 1.4mm;border-radius:1mm}
+pre{background:#f4f7fa;border:0.35mm solid #e4eaf1;border-radius:2mm;
+  padding:3mm 4mm;overflow-x:auto;margin:0 0 4mm;break-inside:avoid}
+pre code{background:none;padding:0;font-size:9pt;line-height:1.5}
+
+table{width:100%;border-collapse:collapse;margin:0 0 4mm;font-size:9.5pt;break-inside:avoid}
+th,td{border:0.3mm solid #e4eaf1;padding:2mm 2.6mm;text-align:left;vertical-align:top}
+th{background:#eef3f8;font-weight:700;white-space:nowrap}
+tr{break-inside:avoid}
+</style>
+</head>
+<body>
+<div class="cover">
+  <h1>부스 응대 대본</h1>
+  <p>WeatherPilot · N111 양서형 — 부스에서 손에 들고 보는 대본</p>
+</div>
+<blockquote>
+<p>A3 2장을 가리키며 말하는 대본. 대사는 그대로 읽어도 되게 썼다.
+<strong>1장 = 기획 · 주제</strong> / <strong>2장 = AI 에이전트 워크플로우</strong>
+관람객은 하루에 30번 넘게 바뀐다. 매번 다 설명하지 말고 <strong>상대가 멈추는 지점까지만</strong> 간다.</p>
+</blockquote>
+<hr>
+<h2>0. 부스 배치와 역할 분담</h2>
+<table>
+<thead>
+<tr>
+<th>물건</th>
+<th>맡는 것</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>A3 1장 (기획)</strong></td>
+<td>&quot;왜 만들었나 · 뭐가 다른가&quot; — 처음 30~40초</td>
+</tr>
+<tr>
+<td><strong>A3 2장 (워크플로우)</strong></td>
+<td>&quot;어떻게 도나&quot; — 관심 보이는 사람에게</td>
+</tr>
+<tr>
+<td><strong>노트북</strong></td>
+<td>라이브 시연 (실제로 도는 걸 보여줌)</td>
+</tr>
+<tr>
+<td><strong>모니터</strong></td>
+<td>시연 영상 5분 무한 반복 — 내가 다른 사람 응대 중일 때 대신 설명해 준다</td>
+</tr>
+</tbody></table>
+<p><strong>모니터 영상은 항상 재생 상태로 둔다.</strong> 응대가 겹치면 &quot;잠시만요, 저쪽 영상 먼저 보고 계시면 이어서 설명드릴게요&quot;로 넘긴다.</p>
+<hr>
+<h2>1. 훅 — 지나가는 사람 (10~15초)</h2>
+<blockquote>
+<p>눈이 마주치면 바로. <strong>질문으로 시작한다.</strong> 설명으로 시작하면 그냥 지나간다.</p>
+</blockquote>
+<p><strong>A</strong></p>
+<blockquote>
+<p>&quot;비 오는 날 매출 빠지는 거, 사장님들이 손 놓고 계신 거 아세요?&quot;</p>
+</blockquote>
+<p><strong>B</strong> (1장의 <code>−6%</code>를 가리키며)</p>
+<blockquote>
+<p>&quot;한국은행 자료인데요, 비 오면 대면소비가 6% 빠집니다. 근데 사장님들은 그때 아무것도 못 해요. 시간이 없어서요.&quot;</p>
+</blockquote>
+<p><strong>C</strong> — 개발자로 보이면</p>
+<blockquote>
+<p>&quot;날씨 보고 마케팅 문구까지 알아서 써두는 에이전트예요. 사람은 승인만 누릅니다.&quot;</p>
+</blockquote>
+<p>멈춰 서면 → <strong>2번(기본)</strong> 으로.
+&quot;아 네...&quot; 하고 가면 → 붙잡지 않는다. <strong>&quot;영상 5분짜리 있으니 편하게 보세요&quot;</strong> 하고 모니터를 가리킨다.</p>
+<hr>
+<h2>2. 기본 — 관심 보이는 사람 (60~90초, A3 1장만)</h2>
+<blockquote>
+<p>1장 위에서 아래로 훑는다. <strong>손가락으로 가리키는 게 중요하다.</strong> 말만 하면 안 들어온다.</p>
+</blockquote>
+<h3>① 문제 (25초) — 1장 왼쪽 위 <code>−6%</code> 와 가운데 <code>10분</code></h3>
+<blockquote>
+<p>&quot;날씨가 매출을 흔든다는 건 데이터로 나와 있어요. 한국은행이 카드 사용액으로 분석한 건데, 비 오는 날 대면소비가 6% 빠집니다. 금요일·토요일에 비 오면 더 크고요.</p>
+<p>그런데 동네 카페 사장님한테 마케팅에 쓸 수 있는 시간이 하루 <strong>10분</strong>이에요. 오픈 준비하고 손님 받고 마감하면 끝입니다.</p>
+<p>이분들이 원하는 건 더 좋은 마케팅 툴이 아니에요. <strong>&#39;마케팅을 안 해도 되는 상태&#39;</strong> 를 원하는 거죠.&quot;</p>
+</blockquote>
+<h3>② 전환 (15초) — 1장 오른쪽 위 파란 박스</h3>
+<blockquote>
+<p>&quot;그리고 여기가 핵심인데 — 전국 평균은 6%지만, <strong>우리 가게는 몇 %인지는 아무도 모릅니다.</strong> 업종마다 입지마다 다르거든요. 평균값 갖고는 오늘 뭘 할지 못 정해요.</p>
+<p>그래서 저희는 업계 평균이 아니라 <strong>그 가게 매출 이력으로 직접 계산</strong>합니다.&quot;</p>
+</blockquote>
+<h3>③ 해법 (30초) — 1장 가운데 AS-IS / TO-BE</h3>
+<blockquote>
+<p>&quot;지금은 이 다섯 칸을 사장님이 다 합니다. 날씨 보고, 전략 정하고, 문구 쓰고, 보내고, 효과 확인하고.</p>
+<p>저희는 (TO-BE 줄을 왼쪽부터 훑으며) 여기, 여기, 여기 — 에이전트가 다 해둡니다. 사장님이 손대는 건 <strong>파란 칸 하나</strong>예요. 문구 보고 승인 누르면 끝. <strong>10초</strong> 걸립니다.&quot;</p>
+</blockquote>
+<p>여기서 상대가 &quot;오 그래서 어떻게 돌아가는데요?&quot; 하면 → <strong>3번(심화)</strong> 으로.
+고개만 끄덕이면 → <strong>차별점 한 개만</strong> 던지고 마무리:</p>
+<blockquote>
+<p>&quot;저희가 좀 다르게 한 게, 광고 문자 법 규제를 화면이 아니라 <strong>서버에서 막습니다.</strong> 화면 우회해서 API 직접 불러도 안 나가요. 이건 대충 하면 진짜 과태료 나오는 부분이라서요.&quot;</p>
+</blockquote>
+<hr>
+<h2>3. 심화 — 더 듣고 싶어 하는 사람 (2~3분, A3 2장)</h2>
+<blockquote>
+<p><strong>2장으로 몸을 돌린다.</strong> 위에서 아래로 손가락을 따라간다.
+전부 설명하려 하지 말고 <strong>번호 붙은 상자 7개 + 마름모 3개</strong>만 짚는다.</p>
+</blockquote>
+<h3>흐름 (60초)</h3>
+<blockquote>
+<p>&quot;위에서부터 내려옵니다.</p>
+<p>① 날씨를 <strong>두 군데</strong>서 받아요. 기상청이랑 OpenWeatherMap. 한쪽이 죽어도 남은 걸로 진행합니다.
+② 그 가게 매출 이력을 읽어서 &#39;이 가게는 비 오는 날 몇 % 빠지나&#39;를 계산하고,</p>
+<p>(첫 번째 마름모를 가리키며) 여기가 첫 판단인데 — <strong>하락이 20% 이상일 때만</strong> 움직입니다. 어중간한 날 문자 보내면 그냥 스팸이 되거든요. 안 보내는 것도 판단입니다.</p>
+<p>③ 그다음 LLM이 문구랑 쿠폰을 씁니다.
+(두 번째 마름모) ④ 그리고 <strong>자기가 쓴 걸 자기가 검사해요.</strong> 할인율 넘었나, 금지어 있나, 한국어로만 썼나. 걸리면 (주황 화살표를 따라 위로) 다시 씁니다. 두 번 실패하면 미리 만들어둔 템플릿으로 내려가고요.</p>
+<p>(파란 칸) ⑤ <strong>여기가 사람이 개입하는 유일한 지점입니다.</strong> 여기만요.</p>
+<p>⑥ 승인하면 법적 필터를 탑니다. 단골 142명 중에 <strong>수신동의한 98명만</strong> 걸러내고, (광고) 표기랑 무료수신거부 번호를 자동으로 붙여요.
+(세 번째 마름모) 밤 9시부터 아침 8시 사이면 <strong>안 보내고 예약</strong>으로 돌립니다. 야간 광고 발송이 불법이라서요.</p>
+<p>⑦ 보내고 나면 쿠폰 사용을 집계합니다.&quot;</p>
+</blockquote>
+<h3>학습 고리 (30초) — 2장 오른쪽 파란 굵은 선</h3>
+<blockquote>
+<p>&quot;그리고 이 파란 선이 제일 중요한데요. 쿠폰 집계가 끝나면 <strong>다시 ②번 진단으로 올라갑니다.</strong></p>
+<p>왜냐면 — 캠페인 보낸 날은 더 이상 &#39;평상시&#39;가 아니거든요. 그날을 기준선에 넣어두면 &#39;비 오는 날 22% 빠진다&#39;가 19%로 흐려져요. 그럼 다음번 판정이 뒤집힙니다.</p>
+<p>그래서 <strong>보낸 날은 다음 진단에서 뺍니다.</strong> 자기가 개입한 날을 스스로 기억해서 제외하는 거죠.&quot;</p>
+</blockquote>
+<h3>마무리 한 문장</h3>
+<blockquote>
+<p>&quot;정리하면, 8단계 중에 사람이 들어오는 건 한 칸이고, 나머지는 에이전트가 판단까지 합니다.&quot;</p>
+</blockquote>
+<hr>
+<h2>4. 라이브 시연 (노트북, 30~60초)</h2>
+<blockquote>
+<p>&quot;직접 보실래요?&quot; 하고 노트북을 돌린다. <strong>한 번에 하나만 보여준다.</strong></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>보여줄 것</th>
+<th>대사</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>대시보드</strong></td>
+<td>&quot;오늘 실제 날씨고요, 이 문구는 저장해둔 게 아니라 방금 이 날씨 보고 생성된 겁니다.&quot;</td>
+</tr>
+<tr>
+<td><strong>할인율 21% 입력</strong></td>
+<td>&quot;상한이 20%인데 21% 넣어보면 — (막힘) 서버가 막습니다. 화면 경고가 아니라 API가 거부하는 거예요.&quot;</td>
+</tr>
+<tr>
+<td><strong>발송 화면</strong></td>
+<td>&quot;142명 중 98명. 동의 안 한 44명은 빠집니다. (광고) 표기도 자동으로 붙고요.&quot;</td>
+</tr>
+<tr>
+<td><strong>폰 문자함</strong></td>
+<td>&quot;실제로 온 문자입니다.&quot; ← <strong>이게 제일 반응 좋다. 폰을 미리 켜둘 것.</strong></td>
+</tr>
+</tbody></table>
+<p><strong>시간이 없으면 폰 문자 하나만 보여준다.</strong> 나머지는 영상에 다 있다.</p>
+<hr>
+<h2>5. 자주 나올 질문</h2>
+<h3>날카로운 것부터 — 여기서 정직하면 신뢰를 번다</h3>
+<p><strong>Q. 이 −23%니 뭐니 하는 매출 데이터, 진짜 가게 데이터예요?</strong></p>
+<blockquote>
+<p>&quot;아니요. <strong>데모용으로 만든 시드 데이터입니다.</strong> 실제 가게 매출을 받아온 게 아니에요.
+다만 진단 알고리즘 자체는 진짜입니다 — 무강수 날 평균을 기준선으로 잡고, 캠페인 보낸 날은 빼고, 날씨별 편차를 계산하는 로직이요. 실제 매출을 넣으면 그대로 돕니다.
+그래서 A3에는 시드 숫자 대신 <strong>한국은행 공개 통계</strong>를 근거로 올렸어요.&quot;</p>
+</blockquote>
+<p><strong>Q. 문자가 진짜 나가요?</strong></p>
+<blockquote>
+<p>&quot;네, 근데 <strong>제 번호로만</strong> 나갑니다. 문자 발송은 실연동인데 수신자를 제 번호로 고정해뒀어요. 남의 번호로 광고 문자를 보내려면 실제 수신동의를 받아야 해서요. 인스타그램도 제 계정에만 실제로 올라갑니다.&quot;</p>
+</blockquote>
+<p><strong>Q. 쿠폰 추적이 실시간인가요?</strong></p>
+<blockquote>
+<p>&quot;실시간은 아니고 <strong>쿠폰 코드 기반 누적 집계</strong>입니다. 매장에서 코드를 입력하면 그때 기록되는 방식이에요. 데모에선 빨라 보이지만 실시간이라고 하면 거짓말이라서요.&quot;</p>
+</blockquote>
+<p><strong>Q. 이거 그냥 ChatGPT한테 시키면 되는 거 아닌가요?</strong></p>
+<blockquote>
+<p>&quot;문구 쓰는 것만 보면 그렇죠. 근데 (2장을 가리키며) 문구 생성은 여덟 칸 중 <strong>한 칸</strong>이에요.
+날씨를 두 군데서 받아 병합하고, 그 가게 매출로 임계를 판정하고, 결과물을 스스로 검사해서 다시 쓰고, 법 요건을 서버에서 강제하고, 보낸 날을 다음 진단에서 빼는 거 — 이게 나머지 일곱 칸입니다. 그리고 그건 프롬프트로 부탁하는 게 아니라 <strong>코드가 막는</strong> 부분이고요.&quot;</p>
+</blockquote>
+<p><strong>Q. LLM이 이상한 소리 하면 어떡해요?</strong></p>
+<blockquote>
+<p>&quot;그래서 (두 번째 마름모) 자기검사가 있습니다. 실제로 한자 섞인 문구가 나온 적이 있어서 넣은 거예요.
+검사가 <strong>두 겹</strong>인데, 재밌는 게 — 기계가 쓴 글에는 &#39;한국어만&#39; 규칙을 걸고, 사장님이 직접 고친 글에는 안 겁니다. 안 그러면 사장님이 쓴 &#39;ICE 아메리카노&#39;가 영어라고 막히거든요. 생성물에 요구하는 기준이랑 사람이 쓴 글에 요구하는 기준은 다르니까요.&quot;</p>
+</blockquote>
+<p><strong>Q. 왜 Claude나 GPT 안 쓰고 Groq예요?</strong></p>
+<blockquote>
+<p>&quot;무료이면서 OpenAI 호환이라서요. 원래 기획은 Claude API였는데 챌린지 기간 비용 때문에 바꿨습니다. 프로바이더 호출부만 분리해놔서 함수 하나 갈아끼우면 Claude로 돌아갑니다.&quot;</p>
+</blockquote>
+<p><strong>Q. 진짜 매일 아침 6시 반에 돌아요?</strong></p>
+<blockquote>
+<p>&quot;크론은 걸려 있는데 <strong>무료 플랜이라 그 시간에 서버가 자고 있습니다.</strong> 그래서 실제로는 서버가 깰 때마다 도는 잡이 실경로예요. 상시 서버로 옮기면 크론이 그대로 동작합니다. A3에도 그렇게 적어놨어요.&quot;</p>
+</blockquote>
+<h3>가벼운 것</h3>
+<p><strong>Q. 혼자 만드셨어요? / 전공이 뭐예요?</strong></p>
+<blockquote>
+<p>&quot;기계공학 전공이고 비전공자입니다. 4주 동안 기획부터 배포까지 혼자 했어요.&quot;</p>
+</blockquote>
+<p><strong>Q. 뭐가 제일 어려웠어요?</strong></p>
+<blockquote>
+<p>&quot;법 요건이요. 정보통신망법에서 수신동의·(광고) 표기·야간 차단이 필수인데, 이걸 화면에만 두면 의미가 없어요. API 직접 부르면 뚫리니까요. 그래서 발송 핸들러에서 강제하도록 옮겼습니다.&quot;</p>
+</blockquote>
+<p><strong>Q. 실제로 써볼 수 있어요?</strong></p>
+<blockquote>
+<p>(1장 아래 QR을 가리키며) &quot;네, 이 QR로 바로 들어가집니다. 배포돼 있어요.&quot;
+※ Render 무료 플랜이라 첫 접속이 느릴 수 있다 — &quot;처음 한 번은 서버 깨우느라 좀 걸려요&quot; 라고 미리 말해둘 것.</p>
+</blockquote>
+<hr>
+<h2>6. 하지 말아야 할 말</h2>
+<table>
+<thead>
+<tr>
+<th>✗ 하면 안 되는 말</th>
+<th>✓ 대신</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>&quot;실제 가게 데이터로 −23% 나왔어요&quot;</td>
+<td>&quot;데모 시드 데이터입니다. 알고리즘은 진짜고요.&quot;</td>
+</tr>
+<tr>
+<td>&quot;쿠폰 사용이 실시간으로 추적됩니다&quot;</td>
+<td>&quot;쿠폰 코드 기반 누적 집계입니다.&quot;</td>
+</tr>
+<tr>
+<td>&quot;단골들한테 문자가 나갑니다&quot;</td>
+<td>&quot;제 번호로만 실제 발송됩니다.&quot;</td>
+</tr>
+<tr>
+<td>&quot;매일 아침 6시 반에 자동으로 돕니다&quot;</td>
+<td>&quot;크론은 있지만 무료 플랜이라, 실제로는 기동 잡이 경로입니다.&quot;</td>
+</tr>
+<tr>
+<td>&quot;080 수신거부 됩니다&quot;</td>
+<td>&quot;번호는 표기하지만 실회선은 계약 전이라 모의입니다.&quot;</td>
+</tr>
+<tr>
+<td>(모르는 걸 지어내기)</td>
+<td><strong>&quot;그건 확인 안 해봤습니다.&quot;</strong> ← 이게 훨씬 낫다</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>정직이 이 프로젝트의 세일즈 포인트다. A3 맨 아래에 구현 범위를 실연동·대체·모의로 나눠 적어둔 것도 같은 이유다. <strong>먼저 말하면 강점이 되고, 걸리면 약점이 된다.</strong></p>
+</blockquote>
+<hr>
+<h2>7. 부스 열기 전 체크 (5분)</h2>
+<ol>
+<li><strong>Render 깨우기</strong> — 자고 있으면 첫 접속이 60초 걸린다. 15분 유휴마다 다시 잠드니 <strong>틈날 때마다 한 번씩</strong> 눌러둘 것.<pre><code class="language-bash">curl https://weatherpilot-server.onrender.com/health
+</code></pre>
+</li>
+<li><strong>노트북</strong> — 대시보드 탭, 검토 화면 탭 미리 열어두기. 화면 밝기 최대.</li>
+<li><strong>폰</strong> — 문자함에 발송된 문자 띄워놓고 화면 꺼짐 시간 늘리기. (제일 반응 좋은 자산이다)</li>
+<li><strong>모니터</strong> — 시연 영상 5분 반복 재생 시작.</li>
+<li><strong>A3 2장</strong> — 1장(기획)을 <strong>왼쪽</strong>, 2장(워크플로우)을 오른쪽. 사람은 왼쪽부터 읽는다.</li>
+<li>QR 2개 스캔 한 번씩 해보기 — 인쇄물이라 잘못돼도 못 고친다.</li>
+</ol>
+<p>관련 문서: <a href="./%EB%8D%B0%EB%AA%A8_%EB%9F%B0%EB%B6%81_0731.md">데모 런북</a> · <a href="./%EC%A0%9C%EC%B6%9C%EB%AC%BC_0731.md">제출물 패키지</a></p>
+
+</body>
+</html>

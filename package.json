@@ -1,7 +1,10 @@
 {
   "name": "hub",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "concurrently -n web,server -c blue,green \"npm:dev:web\" \"npm:dev:server\"",
     "dev:web": "npm run dev --workspace=apps/web",
@@ -11,6 +14,7 @@
     "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.1.0",
+    "marked": "^18.0.7"
   }
 }
