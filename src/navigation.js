@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const supportedPaths = new Set(["/", "/group-buys", "/activity", "/pickup", "/login"]);
+const supportedPaths = new Set(["/", "/group-buys", "/group-buys/new", "/activity", "/login"]);
 
 export function useNavigation() {
   const [pathname, setPathname] = useState(() => normalizePath(window.location.pathname));

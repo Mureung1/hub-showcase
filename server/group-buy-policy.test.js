@@ -23,3 +23,14 @@ test("an open group buy without additional participants can change its target pe
     true,
   );
 });
+
+test("a group buy can keep the same target while other fields are edited", () => {
+  assert.equal(
+    canChangeTargetPeople({ status: "closed", currentPeople: 5, targetPeople: 5 }, 5),
+    true,
+  );
+  assert.equal(
+    canChangeTargetPeople({ status: "open", currentPeople: 2, targetPeople: 5 }, 5),
+    true,
+  );
+});

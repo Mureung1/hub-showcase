@@ -2,6 +2,8 @@ export function groupBuyRowToDto(row) {
   const participants = (row.group_buy_participants ?? []).map((participant, index) => ({
     createdAt: participant.created_at,
     id: participant.id,
+    latitude: participant.latitude == null ? null : Number(participant.latitude),
+    longitude: participant.longitude == null ? null : Number(participant.longitude),
     nickname: participant.nickname || `참여자 ${index + 2}`,
     quantity: participant.quantity,
     startLocation: participant.start_location,
@@ -18,6 +20,10 @@ export function groupBuyRowToDto(row) {
     id: row.id,
     name: row.name,
     category: row.category,
+    productUrl: row.product_url ?? null,
+    imageUrl: row.image_url ?? null,
+    freeShippingThreshold: row.free_shipping_threshold ?? null,
+    perPersonQuantity: row.per_person_quantity ?? 1,
     targetPeople: row.target_people,
     currentPeople: row.current_people,
     deadline: row.deadline,
@@ -42,9 +48,13 @@ export function newGroupBuyToRow(input, ownerId) {
     current_people: 1,
     deadline: input.deadline,
     host_name: "나",
+    image_url: input.imageUrl ?? null,
     name: input.name,
     owner_id: ownerId,
+    per_person_quantity: input.perPersonQuantity ?? 1,
     pickup_location: input.pickupLocation,
+    product_url: input.productUrl ?? null,
+    free_shipping_threshold: input.freeShippingThreshold ?? null,
     shipping_fee: input.shippingFee,
     stage: "모집 중",
     status: "open",
@@ -53,12 +63,16 @@ export function newGroupBuyToRow(input, ownerId) {
   };
 }
 
-function groupBuyPatchToRow(input) {
+export function groupBuyPatchToRow(input) {
   const columns = {
     category: "category",
     deadline: "deadline",
+    freeShippingThreshold: "free_shipping_threshold",
+    imageUrl: "image_url",
     name: "name",
+    perPersonQuantity: "per_person_quantity",
     pickupLocation: "pickup_location",
+    productUrl: "product_url",
     shippingFee: "shipping_fee",
     targetPeople: "target_people",
     unitPrice: "unit_price",
@@ -108,6 +122,8 @@ export function createGroupBuyRepository(supabase) {
     async join(id, userId, nickname, input) {
       const { error } = await supabase.rpc("join_group_buy", {
         participant_nickname: nickname,
+        participant_latitude: input.latitude ?? null,
+        participant_longitude: input.longitude ?? null,
         participant_quantity: input.quantity,
         participant_start_location: input.startLocation,
         participant_user_id: userId,

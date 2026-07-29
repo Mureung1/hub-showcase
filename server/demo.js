@@ -5,6 +5,8 @@ import { z } from "zod";
 import { canChangeTargetPeople } from "./group-buy-policy.js";
 import { presentGroupBuy } from "./group-buy-presenter.js";
 import { createGroupBuyRepository } from "./group-buy-repository.js";
+import { findPickupCandidates, hasCompleteCoordinatePair } from "./location-candidates.js";
+import { fetchProductPreview, isTrustedProductUrl } from "./product-preview.js";
 import { createSupabaseAdmin } from "./supabase.js";
 
 const app = express();
@@ -17,23 +19,29 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 const stages = ["모집 중", "결제 대기", "주문 완료", "배송 중", "수령 가능", "정산 완료"];
-const origins = { "생활관 1동": [12, 72], "생활관 3동": [22, 82], "공학관": [72, 34], "인문관": [36, 28], "경영관": [57, 20], "중앙도서관": [48, 48], "학생회관": [38, 60], "정문": [78, 74] };
-const meetingSpots = [{ name: "중앙도서관 앞", x: 48, y: 50 }, { name: "학생회관 1층", x: 39, y: 59 }, { name: "중앙광장 편의점 앞", x: 55, y: 57 }, { name: "공학관 1층 로비", x: 70, y: 36 }, { name: "생활관 커뮤니티 라운지", x: 20, y: 76 }, { name: "인문관 카페 앞", x: 37, y: 31 }];
-
-function candidatesFor(participants) {
-  const points = participants.map((person) => origins[person.startLocation]).filter(Boolean);
-  if (!points.length) return ["중앙도서관 앞", "학생회관 1층", "중앙광장 편의점 앞"];
-  return meetingSpots.map((spot) => ({ ...spot, score: points.reduce((sum, [x, y]) => sum + Math.hypot(x - spot.x, y - spot.y), 0) / points.length })).sort((a, b) => a.score - b.score).slice(0, 3).map((spot) => spot.name);
-}
-
-const createSchema = z.object({ name: z.string().trim().min(1).max(80), category: z.enum(["생활", "식품", "간식", "문구", "기타"]), targetPeople: z.coerce.number().int().min(2).max(50), deadline: z.string().trim().min(1).max(60), pickupLocation: z.string().trim().min(1).max(80), unitPrice: z.coerce.number().int().min(100).max(1000000), shippingFee: z.coerce.number().int().min(0).max(100000) });
+const optionalHttpUrl = z.union([z.literal(""), z.string().trim().url().max(2048).refine(isTrustedProductUrl)]).nullable().optional();
+const createSchema = z.object({ name: z.string().trim().min(1).max(80), category: z.enum(["생활", "식품", "간식", "문구", "기타"]), targetPeople: z.coerce.number().int().min(2).max(50), deadline: z.string().trim().min(1).max(60), pickupLocation: z.string().trim().min(1).max(80), unitPrice: z.coerce.number().int().min(100).max(1000000), shippingFee: z.coerce.number().int().min(0).max(100000), productUrl: optionalHttpUrl, imageUrl: optionalHttpUrl, freeShippingThreshold: z.coerce.number().int().min(0).max(100000000).nullable().optional(), perPersonQuantity: z.coerce.number().int().min(1).max(100).default(1) });
 const updateSchema = createSchema.partial().refine((value) => Object.keys(value).length > 0);
-const joinSchema = z.object({ quantity: z.coerce.number().int().min(1).max(10), startLocation: z.enum(Object.keys(origins)) });
+const joinSchema = z.object({
+  latitude: z.number().min(-90).max(90).nullable().default(null),
+  longitude: z.number().min(-180).max(180).nullable().default(null),
+  quantity: z.coerce.number().int().min(1).max(10),
+  startLocation: z.string().trim().min(2).max(80),
+}).refine(hasCompleteCoordinatePair);
 const authSchema = z.object({ email: z.string().email(), password: z.string().min(6) });
 const registerSchema = authSchema.extend({ nickname: z.string().trim().min(2).max(12) });
+const previewSchema = z.object({ url: z.string().trim().min(1).max(2048) });
+const previewRequests = new Map();
 const userId = (request) => request.user?.id || "";
 const present = (item, request) => presentGroupBuy(item, userId(request));
-const withRuntimeFields = (item) => ({ ...item, participants: item.participants ?? [], votes: item.votes ?? {}, voterChoices: item.voterChoices ?? {}, pickupCandidates: candidatesFor(item.participants ?? []) });
+const pickupLocationsFor = (item) => [
+  { startLocation: item.pickupLocation, latitude: null, longitude: null },
+  ...(item.participants ?? []),
+];
+const withRuntimeFields = (item) => {
+  const participants = item.participants ?? [];
+  return { ...item, participants, votes: item.votes ?? {}, voterChoices: item.voterChoices ?? {}, pickupCandidates: findPickupCandidates(pickupLocationsFor(item)) };
+};
 const databaseFailure = (response, error) => { console.error("Supabase request failed:", error.message); return response.status(500).json({ error: "데이터베이스 요청을 처리하지 못했습니다." }); };
 
 app.use(cors({ origin: allowedOrigins, allowedHeaders: ["Authorization", "Content-Type"] }));
@@ -73,6 +81,22 @@ app.post("/api/auth/login", async (request, response) => {
   return response.json({ accessToken: data.session.access_token, user: { id: data.user.id, email: data.user.email, nickname: profile.nickname } });
 });
 app.get("/api/auth/me", requireUser, (request, response) => response.json({ user: request.user }));
+app.post("/api/products/preview", requireUser, async (request, response) => {
+  const parsed = previewSchema.safeParse(request.body);
+  if (!parsed.success) return response.status(400).json({ error: "상품 링크를 확인해 주세요." });
+  const now = Date.now();
+  const recent = (previewRequests.get(userId(request)) ?? []).filter((time) => now - time < 60000);
+  if (recent.length >= 10) return response.status(429).json({ error: "상품 정보 요청이 너무 많아요. 잠시 후 다시 시도해 주세요." });
+  previewRequests.set(userId(request), [...recent, now]);
+  try {
+    const preview = await fetchProductPreview(parsed.data.url);
+    const numericPrice = Number(String(preview.price ?? "").replace(/[^\d]/g, ""));
+    return response.json({ product: { sourceUrl: preview.url, title: preview.title, imageUrl: preview.image, unitPrice: Number.isSafeInteger(numericPrice) && numericPrice > 0 ? numericPrice : null }, warnings: preview.warnings });
+  } catch (error) {
+    const unsafe = /private|reserved|unsafe|localhost|credentials|protocol|port|malformed|2048/i.test(error.message);
+    return response.status(unsafe ? 400 : 422).json({ error: unsafe ? "안전하게 확인할 수 없는 상품 링크예요." : "상품 정보를 자동으로 불러오지 못했어요." });
+  }
+});
 app.get("/api/group-buys", async (request, response) => { try { const items = await groupBuyRepository.list(); return response.json({ groupBuys: items.map((item) => present(withRuntimeFields(item), request)) }); } catch (error) { return databaseFailure(response, error); } });
 app.get("/api/group-buys/:id", async (request, response) => { try { const item = await groupBuyRepository.findById(request.params.id); return item ? response.json({ groupBuy: present(withRuntimeFields(item), request) }) : response.status(404).json({ error: "공동구매를 찾을 수 없습니다." }); } catch (error) { return databaseFailure(response, error); } });
 app.post("/api/group-buys", requireUser, async (request, response) => { const parsed = createSchema.safeParse(request.body); if (!parsed.success) return response.status(400).json({ error: "입력값을 확인해 주세요." }); try { const item = await groupBuyRepository.create(parsed.data, userId(request), request.user.nickname); return response.status(201).json({ groupBuy: present(withRuntimeFields(item), request) }); } catch (error) { return databaseFailure(response, error); } });
@@ -104,7 +128,7 @@ app.post("/api/group-buys/:id/vote", requireUser, async (request, response) => {
     if (item.status !== "closed") return response.status(409).json({ error: "모집 완료 후 투표할 수 있습니다." });
     if (item.finalPickup) return response.status(409).json({ error: "수령 장소가 확정되어 투표가 마감되었습니다." });
     const candidate = String(request.body?.candidate || "");
-    const candidates = candidatesFor(item.participants);
+    const candidates = findPickupCandidates(pickupLocationsFor(item));
     if (!candidates.includes(candidate)) return response.status(400).json({ error: "올바른 후보를 선택해 주세요." });
     const updated = await groupBuyRepository.vote(item.id, uid, candidate);
     return response.json({ groupBuy: present(withRuntimeFields(updated), request) });
