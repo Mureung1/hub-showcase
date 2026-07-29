@@ -19,7 +19,7 @@ router.get("/", async (req, res) => {
 
 router.post("/", async (req, res) => {
   const answers = req.body ?? {};
-  const { summary, keywords } = buildBrandProfileSummary(answers);
+  const { summary, keywords } = await buildBrandProfileSummary(answers);
   const profile = await createProfile({ ...answers, summary, keywords });
   res.status(201).json(profile);
 });

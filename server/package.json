@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
     "@supabase/supabase-js": "^2.110.7",
     "cors": "^2.8.6",
     "express": "^5.2.1"

@@ -1,13 +1,22 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi, beforeEach } from "vitest";
 import request from "supertest";
+import { generateJson } from "../services/llmClient.js";
 import { createApp } from "../app.js";
 import { supabase } from "../db/index.js";
 
 // 실제 Supabase 프로젝트에 그대로 연결해서 검증한다(mock 없음). 각 테스트가
 // 만든 행은 afterEach에서 직접 지워서 테스트 간 독립성을 지킨다 — posts API에
 // DELETE가 없어서 supabase 클라이언트로 직접 지운다.
+// LLM 호출(generateJson)은 이 테스트의 관심사(저장/조회 흐름)가 아니고
+// 비결정적이라 mock 처리한다.
+vi.mock("../services/llmClient.js", () => ({ generateJson: vi.fn() }));
+
 const app = createApp();
 const createdIds = [];
+
+beforeEach(() => {
+  generateJson.mockReset();
+});
 
 afterEach(async () => {
   while (createdIds.length > 0) {
@@ -20,6 +29,7 @@ describe("POST /api/posts/notice", () => {
   it("정상 답변을 보내면 201과 생성된 Post를 반환한다", async () => {
     // Arrange
     const payload = { type: "sold-out", content: "인기 메뉴가 품절되었습니다." };
+    generateJson.mockResolvedValue({ title: "품절 안내", content: payload.content });
 
     // Act
     const res = await request(app).post("/api/posts/notice").send(payload);
@@ -34,6 +44,7 @@ describe("POST /api/posts/notice", () => {
   it("생성한 Post는 실제로 Supabase에 저장되어 다시 조회된다", async () => {
     // Arrange
     const payload = { type: "hours-change", content: "영업시간이 변경됩니다." };
+    generateJson.mockResolvedValue({ title: "영업시간 변경 안내", content: payload.content });
 
     // Act
     const created = await request(app).post("/api/posts/notice").send(payload);

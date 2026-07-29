@@ -17,7 +17,7 @@ router.post("/promotion/interview", (req, res) => {
 
 router.post("/promotion", async (req, res) => {
   const answers = req.body ?? {};
-  const generated = buildPromotionPost(answers);
+  const generated = await buildPromotionPost(answers);
   const post = await createPost({ type: "promotion", purpose: answers.purpose, ...generated });
   res.status(201).json(post);
 });
@@ -29,7 +29,7 @@ router.post("/notice/interview", (req, res) => {
 
 router.post("/notice", async (req, res) => {
   const answers = req.body ?? {};
-  const generated = buildNoticePost(answers);
+  const generated = await buildNoticePost(answers);
   const post = await createPost({ type: "notice", ...generated });
   res.status(201).json(post);
 });

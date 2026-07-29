@@ -1,13 +1,26 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import request from "supertest";
+import { generateJson } from "../services/llmClient.js";
 import { createApp } from "../app.js";
 import { supabase } from "../db/index.js";
 
 // 실제 Supabase 프로젝트에 그대로 연결해서 검증한다(mock 없음). 각 테스트가
 // 만든 행은 afterEach에서 직접 지워서 테스트 간 독립성을 지킨다 — brand-profile
 // API에 DELETE가 없어서 supabase 클라이언트로 직접 지운다.
+// LLM 호출(generateJson)은 이 테스트의 관심사(저장/조회 흐름)가 아니고
+// 비결정적이라 mock 처리한다.
+vi.mock("../services/llmClient.js", () => ({ generateJson: vi.fn() }));
+
 const app = createApp();
 const createdIds = [];
+
+beforeEach(() => {
+  generateJson.mockReset();
+  generateJson.mockResolvedValue({
+    summary: "동네 주민이 자주 찾는 가성비 좋은 디저트 디저트 카페",
+    keywords: ["아늑하고 친근한", "가성비 좋은 디저트", "디저트 카페"],
+  });
+});
 
 afterEach(async () => {
   while (createdIds.length > 0) {

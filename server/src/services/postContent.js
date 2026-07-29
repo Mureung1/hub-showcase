@@ -1,13 +1,29 @@
 import { ApiError } from "../utils/ApiError.js";
+import { generateJson } from "./llmClient.js";
 
-// LLM 연동 전(Day10~11) 임시 규칙 기반 생성. 문장 틀에 답변을 끼워 넣는
-// 최소 뼈대 수준으로만 구현한다 — 완성도는 LLM이 붙을 때 다듬는다.
 const GENERAL_TOPIC_LABELS = {
   atmosphere: "매장 분위기 · 인테리어",
   service: "서비스 · 직원 소개",
   location: "위치 · 오시는 길",
   "brand-story": "브랜드 스토리",
   etc: "기타",
+};
+
+const PROMOTION_SYSTEM_PROMPT = `당신은 소상공인 블로그에 올릴 홍보글을 쓰는 한국어 카피라이터 겸 SEO 담당자입니다.
+- 친근하고 신뢰가 가는 톤으로, 과장이나 낚시성 문구 없이 자연스럽게 씁니다.
+- 제공된 사실 정보(날짜, 이름, 기간 등)는 정확히 반영하고 임의로 바꾸지 않습니다.
+- seoKeywords는 이 글이 검색에 노출되면 좋을 키워드 3~5개(# 없이), hashtags는 블로그에 함께 달 해시태그 3~6개(# 없이)입니다. 둘 다 본문 내용에 실제로 관련 있는 단어/구로만 만듭니다.`;
+
+const PROMOTION_SCHEMA = {
+  type: "object",
+  properties: {
+    title: { type: "string" },
+    content: { type: "string" },
+    seoKeywords: { type: "array", items: { type: "string" } },
+    hashtags: { type: "array", items: { type: "string" } },
+  },
+  required: ["title", "content", "seoKeywords", "hashtags"],
+  additionalProperties: false,
 };
 
 function requireFields(answers, fields) {
@@ -17,20 +33,21 @@ function requireFields(answers, fields) {
   }
 }
 
-function buildNewMenuPost(answers) {
+async function buildNewMenuPost(answers) {
   requireFields(answers, ["menu-name", "launch-date"]);
   const menuName = answers["menu-name"];
   const launchDate = answers["launch-date"];
 
-  return {
-    title: `${menuName} 출시 안내`,
-    content: `신메뉴 "${menuName}"을 ${launchDate}부터 만나보실 수 있습니다.`,
-    menuName,
-    launchDate,
-  };
+  const { title, content, seoKeywords, hashtags } = await generateJson({
+    system: PROMOTION_SYSTEM_PROMPT,
+    schema: PROMOTION_SCHEMA,
+    user: `신메뉴 출시 홍보글을 써주세요.\n- 메뉴 이름: ${menuName}\n- 출시일: ${launchDate}`,
+  });
+
+  return { title, content, seoKeywords, hashtags, menuName, launchDate };
 }
 
-function buildEventPost(answers) {
+async function buildEventPost(answers) {
   requireFields(answers, ["event-name", "event-type", "event-detail", "event-period"]);
   const eventName = answers["event-name"];
   const eventType = answers["event-type"];
@@ -41,9 +58,17 @@ function buildEventPost(answers) {
     throw new ApiError(400, "MISSING_FIELDS", "event-period에는 start/end가 모두 필요합니다.");
   }
 
+  const { title, content, seoKeywords, hashtags } = await generateJson({
+    system: PROMOTION_SYSTEM_PROMPT,
+    schema: PROMOTION_SCHEMA,
+    user: `이벤트 홍보글을 써주세요.\n- 이벤트명: ${eventName}\n- 유형: ${eventType}\n- 상세 내용: ${eventDetail}\n- 기간: ${period.start} ~ ${period.end}`,
+  });
+
   return {
-    title: eventName,
-    content: `${eventDetail}\n기간: ${period.start} ~ ${period.end}`,
+    title,
+    content,
+    seoKeywords,
+    hashtags,
     eventName,
     eventType,
     eventDetail,
@@ -52,20 +77,22 @@ function buildEventPost(answers) {
   };
 }
 
-function buildGeneralPost(answers) {
+async function buildGeneralPost(answers) {
   requireFields(answers, ["general-topic", "general-detail"]);
   const generalTopic = answers["general-topic"];
   const generalDetail = answers["general-detail"];
+  const topicLabel = GENERAL_TOPIC_LABELS[generalTopic] ?? "매장";
 
-  return {
-    title: `${GENERAL_TOPIC_LABELS[generalTopic] ?? "매장"} 소식`,
-    content: generalDetail,
-    generalTopic,
-    generalDetail,
-  };
+  const { title, content, seoKeywords, hashtags } = await generateJson({
+    system: PROMOTION_SYSTEM_PROMPT,
+    schema: PROMOTION_SCHEMA,
+    user: `"${topicLabel}" 주제로 홍보글을 써주세요.\n- 전달할 내용: ${generalDetail}`,
+  });
+
+  return { title, content, seoKeywords, hashtags, generalTopic, generalDetail };
 }
 
-export function buildPromotionPost(answers) {
+export async function buildPromotionPost(answers) {
   switch (answers.purpose) {
     case "new-menu":
       return buildNewMenuPost(answers);
@@ -85,7 +112,23 @@ const NOTICE_TYPE_LABELS = {
   etc: "공지",
 };
 
-export function buildNoticePost(answers) {
+const NOTICE_SYSTEM_PROMPT = `당신은 소상공인 블로그의 공지사항을 정리하는 한국어 카피라이터입니다.
+- 정중하고 명확한 톤으로, 고객이 헷갈리지 않게 핵심 정보를 앞에 배치합니다.
+- 원문에 있는 날짜, 시간, 숫자 등 사실 정보는 절대 바꾸지 말고 그대로 반영합니다.
+- seoKeywords는 이 공지와 관련해 검색에 노출되면 좋을 키워드 3~5개입니다(# 없이).`;
+
+const NOTICE_SCHEMA = {
+  type: "object",
+  properties: {
+    title: { type: "string" },
+    content: { type: "string" },
+    seoKeywords: { type: "array", items: { type: "string" } },
+  },
+  required: ["title", "content", "seoKeywords"],
+  additionalProperties: false,
+};
+
+export async function buildNoticePost(answers) {
   requireFields(answers, ["type", "content"]);
   const noticeType = answers.type;
   if (!NOTICE_TYPE_LABELS[noticeType]) {
@@ -96,9 +139,11 @@ export function buildNoticePost(answers) {
     );
   }
 
-  return {
-    title: NOTICE_TYPE_LABELS[noticeType],
-    content: answers.content,
-    noticeType,
-  };
+  const { title, content, seoKeywords } = await generateJson({
+    system: NOTICE_SYSTEM_PROMPT,
+    schema: NOTICE_SCHEMA,
+    user: `"${NOTICE_TYPE_LABELS[noticeType]}" 공지 원문을 다듬어 써주세요.\n- 원문: ${answers.content}`,
+  });
+
+  return { title, content, seoKeywords, noticeType };
 }
