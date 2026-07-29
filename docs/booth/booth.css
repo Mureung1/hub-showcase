@@ -6,7 +6,11 @@
  * 같은 브랜드로 보여야 부스에서 "같은 제품"으로 읽힌다.
  *
  * 단위는 전부 mm — 인쇄 좌표를 손으로 잡아야 A3에서 여백이 안 뜬다.
- * 폰트는 Windows 기본 맑은 고딕이 반드시 잡히게 스택을 짜서 인쇄소 폰트 깨짐을 막는다.
+ *
+ * ⚠️ 폰트에서 Pretendard를 뺐다. 이 PC에 설치된 Pretendard가 가변 폰트라
+ *    Chrome이 PDF로 뽑을 때 서브셋 임베드를 못 하고 Type3(글리프를 그림으로 그리는 방식)로
+ *    떨어졌고, 그게 뷰어에서 깨져 보이는 원인이었다. 맑은 고딕은 정적 TrueType이라
+ *    정상적으로 FontFile2 서브셋으로 임베드된다.
  */
 
 @page {
@@ -24,28 +28,17 @@
   --surface-alt: #f4f7fa;
   --line: #e4eaf1;
   --ink: #253449;
-  --sub: #8b95a5;
-  --muted: #b0b8c4;
+  --sub: #6b7787;
+  --muted: #99a3b1;
   --down: #ff7a45;
-  --down-text: #e0704f;
+  --down-text: #d9603c;
   --down-bg: #fcede6;
   --up: #2fb37a;
-  --up-text: #3fa772;
+  --up-text: #2f9464;
   --up-bg: #e8f7f0;
 
-  /* 레인 색 — docs/아키텍처.md mermaid 관례 유지 */
-  --fe: #2563eb;
-  --fe-bg: #dbeafe;
-  --be: #d97706;
-  --be-bg: #fef3c7;
-  --db: #16a34a;
-  --db-bg: #dcfce7;
-  --ext: #9333ea;
-  --ext-bg: #f3e8ff;
-
-  --font: "Pretendard", "맑은 고딕", "Malgun Gothic", "Apple SD Gothic Neo",
-    "Segoe UI", sans-serif;
-  --mono: "D2Coding", "Consolas", "Courier New", monospace;
+  --font: "맑은 고딕", "Malgun Gothic", "Apple SD Gothic Neo", "Segoe UI", sans-serif;
+  --mono: "Consolas", "D2Coding", "Courier New", monospace;
 }
 
 * {
@@ -71,13 +64,12 @@ body {
   position: relative;
   width: 297mm;
   height: 420mm;
-  padding: 11mm 12mm 7mm;
+  padding: 12mm 13mm 9mm;
   margin: 0 auto;
   background: var(--surface);
   overflow: hidden; /* 넘치면 2페이지가 되므로 잘라내고 육안 검수로 잡는다 */
   display: flex;
   flex-direction: column;
-  gap: 4mm;
 }
 
 @media screen {
@@ -96,16 +88,10 @@ body {
   background: linear-gradient(135deg, var(--brand-lt) 0%, var(--brand-dk) 100%);
   color: #fff;
   border-radius: 4mm;
-  padding: 6mm 8mm;
+  padding: 5.5mm 9mm;
   display: flex;
   align-items: center;
-  gap: 7mm;
-  flex: 0 0 auto;
-}
-
-.head-mark {
-  font-size: 15mm;
-  line-height: 1;
+  gap: 8mm;
   flex: 0 0 auto;
 }
 
@@ -114,99 +100,97 @@ body {
 }
 
 .head h1 {
-  margin: 0 0 1.6mm;
-  font-size: 11mm;
+  margin: 0 0 2.4mm;
+  font-size: 14mm;
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
   font-weight: 800;
 }
 
 .head h1 .thin {
-  font-weight: 300;
-  opacity: 0.82;
+  font-weight: 400;
+  opacity: 0.85;
 }
 
 .head p {
   margin: 0;
-  font-size: 4.1mm;
-  line-height: 1.42;
-  opacity: 0.96;
+  font-size: 5mm;
+  line-height: 1.4;
+  opacity: 0.97;
 }
 
 .head-tag {
   flex: 0 0 auto;
   text-align: right;
-  font-size: 3.3mm;
+  font-size: 4mm;
   line-height: 1.5;
-  opacity: 0.9;
+  opacity: 0.92;
 }
 
 .head-tag b {
   display: block;
-  font-size: 4.4mm;
-  letter-spacing: 0.02em;
+  font-size: 5.4mm;
+  letter-spacing: 0.01em;
 }
 
 /* ============================ 공통 조각 ============================ */
 
+/* 챕터는 넉넉히 띄운다 — 부스에서 멀리서 볼 때 덩어리가 구분돼야 한다 */
 .sec {
   flex: 0 0 auto;
+  margin-top: 7mm;
 }
 
 .sec-title {
   display: flex;
   align-items: baseline;
-  gap: 2.5mm;
-  margin: 0 0 2.5mm;
+  gap: 3mm;
+  margin: 0 0 4mm;
 }
 
 .sec-title b {
-  font-size: 5mm;
-  letter-spacing: -0.02em;
+  font-size: 6.6mm;
+  letter-spacing: -0.025em;
 }
 
 .sec-title span {
-  font-size: 3.2mm;
+  font-size: 4mm;
   color: var(--sub);
 }
 
 .sec-title::before {
   content: "";
-  width: 1.4mm;
-  height: 5mm;
+  width: 1.8mm;
+  height: 6.6mm;
   background: var(--brand);
   border-radius: 1mm;
-  transform: translateY(0.5mm);
+  transform: translateY(0.8mm);
 }
 
 .card {
   background: var(--surface);
-  border: 0.35mm solid var(--line);
+  border: 0.4mm solid var(--line);
   border-radius: 3mm;
-  padding: 4mm 4.5mm;
-}
-
-.card-alt {
-  background: var(--surface-alt);
+  padding: 4.2mm 4.6mm;
 }
 
 .big {
-  font-size: 15mm;
+  font-size: 22mm;
   line-height: 1;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.045em;
 }
 
 .mono {
   font-family: var(--mono);
-  font-size: 2.6mm;
+  font-size: 3.2mm;
   letter-spacing: -0.02em;
   color: var(--sub);
 }
 
 .cap {
-  font-size: 2.8mm;
-  line-height: 1.4;
+  font-size: 3.5mm;
+  line-height: 1.45;
   color: var(--sub);
 }
 
@@ -215,17 +199,11 @@ body {
 .foot {
   margin-top: auto;
   flex: 0 0 auto;
-  border-top: 0.5mm solid var(--line);
-  padding-top: 3.5mm;
+  border-top: 0.6mm solid var(--line);
+  padding-top: 5mm;
   display: flex;
   align-items: center;
-  gap: 6mm;
-}
-
-.foot-note {
-  font-size: 2.9mm;
-  line-height: 1.5;
-  color: var(--sub);
+  gap: 8mm;
 }
 
 .qr {
@@ -235,23 +213,24 @@ body {
 
 .qr img {
   display: block;
-  width: 22mm;
-  height: 22mm;
-  border: 0.35mm solid var(--line);
-  border-radius: 1.5mm;
-  padding: 0.8mm;
+  width: 31mm;
+  height: 31mm;
+  border: 0.4mm solid var(--line);
+  border-radius: 2mm;
+  padding: 1.2mm;
   background: #fff;
 }
 
 .qr b {
   display: block;
-  margin-top: 1.2mm;
-  font-size: 2.7mm;
+  margin-top: 2mm;
+  font-size: 4.2mm;
   color: var(--ink);
 }
 
 .qr span {
   display: block;
-  font-size: 2.4mm;
+  margin-top: 0.6mm;
+  font-size: 3.1mm;
   color: var(--muted);
 }

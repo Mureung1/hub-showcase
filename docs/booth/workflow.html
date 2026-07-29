@@ -5,462 +5,85 @@
     <title>WeatherPilot — AI 에이전트 워크플로우</title>
     <link rel="stylesheet" href="./booth.css" />
     <style>
-      /* ---------- 트리거 ---------- */
-      .trigs {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 4mm;
-      }
-      .trig {
-        border: 0.4mm solid var(--line);
-        border-left: 1.6mm solid var(--be);
-        border-radius: 2.5mm;
-        padding: 3.4mm 4.5mm;
-        background: var(--surface-alt);
-      }
-      .trig-live {
-        border-left-color: var(--brand);
-        background: #f2f7fe;
-      }
-      .trig-h {
+      /* 범례 */
+      .legend {
         display: flex;
-        align-items: baseline;
-        gap: 2.5mm;
-      }
-      .trig-h b {
-        font-size: 4.3mm;
-        letter-spacing: -0.02em;
-      }
-      .trig-h em {
-        font-style: normal;
-        font-size: 2.6mm;
-        font-weight: 800;
-        padding: 0.7mm 2mm;
-        border-radius: 1.2mm;
-        background: var(--be-bg);
-        color: #96570a;
-      }
-      .trig-live .trig-h em {
-        background: var(--brand);
-        color: #fff;
-      }
-      .trig p {
-        margin: 1.5mm 0 0;
-        font-size: 3mm;
-        line-height: 1.45;
+        align-items: center;
+        gap: 7mm;
+        margin: 0 0 5mm;
+        font-size: 3.7mm;
+        font-weight: 600;
         color: var(--sub);
       }
-      .trig .mono {
+      .lg {
+        display: flex;
+        align-items: center;
+        gap: 2.2mm;
+      }
+      .lg i {
         display: block;
-        margin-top: 1.4mm;
+        width: 7mm;
+        height: 5mm;
+        border-radius: 1.2mm;
+        flex: 0 0 auto;
       }
-
-      /* ---------- 스윔레인 ---------- */
-      /*
-       * 행을 명시(grid-template-rows)하고 각 아이템에 grid-row를 박는다.
-       * 자동 배치에만 맡기면 span을 쓰는 띠·레일이 열을 밀어내 격자가 통째로 어긋난다.
-       * 행이 정해지고 열만 auto면 "그 행 안에서 왼쪽부터" 채워져 순서가 보장된다.
-       */
-      .lanes {
-        position: relative;
-        display: grid;
-        grid-template-columns: 16mm repeat(8, 1fr);
-        grid-template-rows: auto auto 27mm 35mm 11mm 27mm 25mm 14mm;
-        column-gap: 1.6mm;
-        row-gap: 1.4mm;
-      }
-      .lanes > * {
-        position: relative;
-        z-index: 1;
-      }
-      .r1 { grid-row: 1; }
-      .r2 { grid-row: 2; }
-      .r3 { grid-row: 3; }
-      .r4 { grid-row: 4; }
-      .r5 { grid-row: 5; }
-      .r6 { grid-row: 6; }
-      .r7 { grid-row: 7; }
-      .r8 { grid-row: 8; }
-
-      /*
-       * ⑤ 사람 칸 세로 강조 띠.
-       * position:absolute라 격자 배치에는 참여하지 않고(=다른 칸을 안 밀어냄),
-       * 위치만 6번 열 × 전체 행의 영역을 기준으로 잡는다.
-       */
-      .humanband {
-        position: absolute;
-        grid-column: 6 / 7;
-        grid-row: 1 / 9;
-        inset: -1.6mm -1.1mm;
-        z-index: 0;
-        background: #eaf2fd;
+      .lg-proc {
+        background: #fff;
         border: 0.5mm solid var(--brand);
-        border-radius: 2.5mm;
       }
-
-      /* 자율성 구간 띠 */
-      .zone {
-        border-radius: 2mm;
-        padding: 1.8mm 2mm;
-        text-align: center;
-        font-size: 2.8mm;
-        font-weight: 700;
-        color: var(--sub);
-        background: var(--surface-alt);
-        border: 0.35mm solid var(--line);
+      .lg-dec {
+        background: #fdf1d6;
+        border: 0.5mm solid #d9a441;
+        transform: rotate(45deg) scale(0.78);
+        border-radius: 0.8mm;
       }
-      .zone-human {
-        background: var(--brand);
-        border-color: var(--brand-dk);
-        color: #fff;
+      .lg-ext {
+        background: #f3e8ff;
+        border: 0.5mm solid #9333ea;
       }
-
-      /* 단계 헤더 */
-      .stage {
-        border-radius: 2mm;
-        padding: 2mm 1.5mm;
-        text-align: center;
-        font-size: 3.1mm;
-        font-weight: 700;
-        line-height: 1.25;
-        letter-spacing: -0.02em;
-        background: var(--ink);
-        color: #fff;
+      .lg-db {
+        background: #dcfce7;
+        border: 0.5mm solid #16a34a;
       }
-      .stage-human {
+      .lg-human {
         background: var(--brand-dk);
       }
-      .stage u {
-        display: block;
-        text-decoration: none;
-        font-size: 2.4mm;
-        font-weight: 600;
-        opacity: 0.7;
-      }
-
-      /* 레인 라벨 */
-      .lh {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        border-radius: 2mm;
-        padding: 1.5mm;
-        text-align: center;
-        font-size: 3mm;
-        font-weight: 800;
-      }
-      .lh span {
-        font-size: 2.3mm;
-        font-weight: 600;
-        opacity: 0.72;
-        margin-top: 0.5mm;
-      }
-      .lh-fe {
-        background: var(--fe-bg);
-        color: var(--fe);
-      }
-      .lh-be {
-        background: var(--be-bg);
-        color: #96570a;
-      }
-      .lh-ext {
-        background: var(--ext-bg);
-        color: var(--ext);
-      }
-      .lh-db {
-        background: var(--db-bg);
-        color: var(--db);
-      }
-
-      /* 셀 */
-      .cell {
-        border-radius: 2mm;
-        padding: 2mm 1.6mm;
-        font-size: 2.75mm;
-        line-height: 1.32;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 0.8mm;
-        text-align: center;
-      }
-      .cell.empty {
-        background: repeating-linear-gradient(
-          -45deg,
-          #fafcfe,
-          #fafcfe 1.4mm,
-          #f2f5f9 1.4mm,
-          #f2f5f9 2.8mm
-        );
-        border-radius: 2mm;
-      }
-      .cell code {
-        font-family: var(--mono);
-        font-size: 2.5mm;
-        letter-spacing: -0.03em;
-        font-weight: 700;
-        display: block;
-      }
-      .cell small {
-        font-size: 2.55mm;
-        line-height: 1.3;
-        opacity: 0.85;
-      }
-      .c-fe {
-        background: var(--fe-bg);
-        color: #17348c;
-      }
-      .c-be {
-        background: var(--be-bg);
-        color: #7c4708;
-      }
-      .c-ext {
-        background: var(--ext-bg);
-        color: #5b1a9c;
-      }
-      .c-db {
-        background: var(--db-bg);
-        color: #14532d;
-      }
-      .flag {
-        display: inline-block;
-        margin-top: 0.6mm;
-        font-size: 2.3mm;
-        font-weight: 800;
-        background: rgba(255, 255, 255, 0.75);
-        border-radius: 1mm;
-        padding: 0.4mm 1.4mm;
-      }
-
-      /* 되돌아가는 레일 */
-      .rail {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .rail::before {
-        content: "";
-        position: absolute;
-        left: 3.4mm;
-        right: 1mm;
-        top: 50%;
-        border-top: 0.5mm dashed var(--be);
-      }
-      .rail::after {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        border-top: 1.7mm solid transparent;
-        border-bottom: 1.7mm solid transparent;
-        border-right: 3.2mm solid var(--be);
-      }
-      .rail b {
-        position: relative;
-        z-index: 2;
-        background: #fff;
-        padding: 0 2.5mm;
-        font-size: 2.7mm;
-        font-weight: 700;
-        color: #96570a;
-      }
-      /* 피드백 루프 — 에이전트의 학습 고리라 가장 굵게 */
-      .rail-fb::before {
-        border-top: 0.9mm solid var(--brand);
-        border-top-style: solid;
-      }
-      .rail-fb::after {
-        border-top-width: 2.2mm;
-        border-bottom-width: 2.2mm;
-        border-right: 4mm solid var(--brand);
-      }
-      .rail-fb b {
-        color: var(--brand-dk);
-        font-size: 3mm;
-        padding: 0 3.5mm;
-      }
-
-      /* ---------- ② 진단 계산 ---------- */
-      .calc {
-        display: grid;
-        grid-template-columns: 1.25fr 1fr;
-        gap: 4mm;
-      }
-      .chain {
-        display: flex;
-        align-items: center;
-        gap: 2mm;
-        border: 0.4mm solid var(--line);
-        border-radius: 2.5mm;
-        padding: 3.5mm 4mm;
-      }
-      .cbox {
-        flex: 1 1 0;
-        text-align: center;
-        border-radius: 2mm;
-        padding: 2.6mm 1.5mm;
+      .lg-skip {
         background: var(--surface-alt);
-      }
-      .cbox span {
-        display: block;
-        font-size: 2.7mm;
-        color: var(--sub);
-        font-weight: 600;
-      }
-      .cbox b {
-        display: block;
-        margin-top: 1mm;
-        font-size: 4.6mm;
-        letter-spacing: -0.03em;
-      }
-      .cbox-down {
-        background: var(--down-bg);
-      }
-      .cbox-down b {
-        color: var(--down-text);
-      }
-      .cbox-up {
-        background: var(--up-bg);
-      }
-      .cbox-up b {
-        color: var(--up-text);
-      }
-      .carrow {
-        flex: 0 0 auto;
-        text-align: center;
-        font-size: 2.6mm;
-        font-weight: 700;
-        color: var(--sub);
-        line-height: 1.3;
-      }
-      .carrow::after {
-        content: "→";
-        display: block;
-        font-size: 4.6mm;
-        color: var(--brand);
-      }
-      .calc-note {
-        border: 0.4mm solid var(--brand);
-        background: #f2f7fe;
-        border-radius: 2.5mm;
-        padding: 3.5mm 4mm;
-      }
-      .calc-note > b {
-        font-size: 3.5mm;
-        color: var(--brand-dk);
-      }
-      .calc-note p {
-        margin: 1.5mm 0 0;
-        font-size: 2.9mm;
-        line-height: 1.5;
-        color: var(--sub);
-      }
-      .calc-note p b {
-        color: var(--ink);
+        border: 0.5mm dashed var(--muted);
       }
 
-      /* ---------- 하단 설명 패널 ---------- */
-      .panels {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 4mm;
-      }
-      .panel {
-        border: 0.4mm solid var(--line);
-        border-radius: 2.5mm;
-        padding: 3.6mm 4mm;
-        display: flex;
-        flex-direction: column;
-        gap: 1.8mm;
-      }
-      .panel > b {
-        font-size: 3.9mm;
-        letter-spacing: -0.02em;
-        line-height: 1.3;
-      }
-      .panel-h {
-        display: flex;
-        align-items: center;
-        gap: 2mm;
-        font-size: 2.7mm;
-        font-weight: 800;
-        color: var(--brand);
-        letter-spacing: 0.04em;
-      }
-      .panel p {
-        margin: 0;
-        font-size: 2.9mm;
-        line-height: 1.5;
-        color: var(--sub);
-      }
-      .panel p b {
-        color: var(--ink);
-      }
-      .rules {
-        display: flex;
-        flex-direction: column;
-        gap: 1.2mm;
-        margin-top: auto;
-        padding-top: 1.6mm;
-        border-top: 0.35mm dashed var(--line);
-      }
-      .rule {
-        display: flex;
-        gap: 2mm;
-        align-items: baseline;
-        font-size: 2.8mm;
-        line-height: 1.35;
-      }
-      .rule i {
-        font-style: normal;
-        flex: 0 0 auto;
-        font-weight: 800;
-        color: var(--brand);
-      }
-      .vs {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 2mm;
-        font-size: 2.7mm;
-        line-height: 1.35;
-      }
-      .vs > div {
-        border-radius: 2mm;
-        padding: 2.2mm 2.4mm;
-      }
-      .vs-strict {
-        background: var(--be-bg);
-        color: #7c4708;
-      }
-      .vs-loose {
-        background: var(--surface-alt);
-        color: var(--sub);
-      }
-      .vs b {
+      .chart {
         display: block;
-        margin-bottom: 0.8mm;
-        font-size: 2.9mm;
+        width: 100%;
       }
 
-      /* ---------- 하단 바 ---------- */
+      /* 하단 바 */
       .chips {
         display: flex;
         flex-wrap: wrap;
-        gap: 2mm;
-        margin-bottom: 2mm;
+        gap: 2.5mm;
+        margin-bottom: 3mm;
       }
       .chip {
-        border: 0.35mm solid var(--line);
+        border: 0.4mm solid var(--line);
         border-radius: 999mm;
-        padding: 1.2mm 3mm;
-        font-size: 2.8mm;
+        padding: 1.6mm 4mm;
+        font-size: 3.6mm;
         font-weight: 600;
         background: var(--surface-alt);
       }
       .chip b {
         color: var(--brand-dk);
+      }
+      .note {
+        margin: 0;
+        font-size: 3.5mm;
+        line-height: 1.5;
+        color: var(--sub);
+      }
+      .note b {
+        color: var(--ink);
       }
     </style>
   </head>
@@ -468,12 +91,11 @@
     <div class="page">
       <!-- ============ 헤더 ============ -->
       <header class="head">
-        <div class="head-mark">🤖</div>
         <div class="head-body">
           <h1>AI 에이전트 워크플로우</h1>
           <p>
-            수집 → 진단 → 생성 → 검사 → <b>사람</b> → 법규 → 발송 → 실측.
-            8단계 중 사람이 개입하는 곳은 <b>⑤ 한 곳</b>뿐이다.
+            날씨를 읽고 · 매출을 진단하고 · 문구를 쓰고 · 스스로 검사하고 · 법을 지켜 보낸다.<br />
+            <b>사람이 개입하는 곳은 딱 한 칸이다.</b>
           </p>
         </div>
         <div class="head-tag">
@@ -482,246 +104,231 @@
         </div>
       </header>
 
-      <!-- ============ 트리거 ============ -->
       <section class="sec">
         <p class="sec-title">
-          <b>무엇이 에이전트를 깨우나</b><span>트리거는 두 개다 — 있는 그대로 적는다</span>
+          <b>에이전트가 도는 길</b><span>판단 지점 3곳 · 되돌아오는 고리 2개</span>
         </p>
-        <div class="trigs">
-          <div class="trig">
-            <div class="trig-h">
-              <b>① 크론 06:30 KST</b><em>원설계 · 상시 서버</em>
-            </div>
-            <p>
-              예상 하락이 <b>−20% 이상인 날만</b> 발동하고 사장님에게 알림 문자를 보낸다.
-              평범한 날은 조용히 넘어간다 — 마케팅 남발(카니발라이제이션) 방지.
-            </p>
-            <span class="mono">jobs/daily.ts · IMPACT_THRESHOLD = −0.2</span>
-          </div>
-          <div class="trig trig-live">
-            <div class="trig-h"><b>② 서버 기동 잡</b><em>지금 실제로 도는 경로</em></div>
-            <p>
-              무료 플랜은 06:30에 서버가 절전이라 크론이 못 돈다. 그래서 기동할 때마다 생성한다 —
-              임계 없음·문자 없음. 사장님이 손댄 캠페인은 <b>덮지 않는다</b>(3중 가드).
-            </p>
-            <span class="mono">jobs/daily.ts · runBootProposalJob()</span>
-          </div>
+
+        <div class="legend">
+          <span class="lg"><i class="lg-proc"></i>처리</span>
+          <span class="lg"><i class="lg-dec"></i>판단</span>
+          <span class="lg"><i class="lg-ext"></i>외부 API</span>
+          <span class="lg"><i class="lg-db"></i>DB</span>
+          <span class="lg"><i class="lg-human"></i>사람</span>
+          <span class="lg"><i class="lg-skip"></i>가지 않는 길</span>
         </div>
-      </section>
 
-      <!-- ============ 스윔레인 ============ -->
-      <section class="sec">
-        <p class="sec-title">
-          <b>파이프라인 × 시스템 구조</b>
-          <span>가로 = 8단계 진행 · 세로 = 어느 계층이 그 일을 하는가</span>
-        </p>
-        <div class="lanes">
-          <div class="humanband"></div>
+        <!--
+          도식 좌표계: viewBox 1단위 = 1mm (폭 273mm = 지면 내용 폭).
+          왼쪽 = 외부 API 입력 / 가운데 = 에이전트 본선 / 오른쪽 = 분기 결과
+          x=196 = 재생성 고리 레인, x=268 = 학습 고리 레인 (다른 상자와 안 겹치게 비워둠)
+        -->
+        <svg class="chart" viewBox="0 0 273 278" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
+              markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#253449" />
+            </marker>
+            <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
+              markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#3b7dd8" />
+            </marker>
+            <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
+              markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d9a441" />
+            </marker>
+            <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
+              markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#99a3b1" />
+            </marker>
+            <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
+              markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#9333ea" />
+            </marker>
+            <linearGradient id="human" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#62a8f5" />
+              <stop offset="1" stop-color="#3b7dd8" />
+            </linearGradient>
+          </defs>
 
-          <!-- 1행 · 자율 구간 띠 -->
-          <div class="zone r1" style="grid-column: 2 / span 4">
-            에이전트 자율 — 수집 · 분석 · 생성 · 자기검사
-          </div>
-          <div class="zone zone-human r1" style="grid-column: 6">사람 — 유일한 개입 지점</div>
-          <div class="zone r1" style="grid-column: 7 / span 3">
-            에이전트 자율 — 법규 강제 · 발송 · 실측
-          </div>
+          <style>
+            .bx { fill: #fff; stroke: #4a90e2; stroke-width: 0.6; }
+            .dc { fill: #fdf1d6; stroke: #d9a441; stroke-width: 0.6; }
+            .ex { fill: #f3e8ff; stroke: #9333ea; stroke-width: 0.5; }
+            .sk { fill: #f4f7fa; stroke: #99a3b1; stroke-width: 0.5; stroke-dasharray: 1.6 1.2; }
+            .t  { font-family: "맑은 고딕","Malgun Gothic",sans-serif; fill: #253449; }
+            .m  { font-size: 5.4px; font-weight: 700; }
+            .s  { font-size: 3.5px; fill: #6b7787; }
+            .d  { font-size: 4.6px; font-weight: 700; }
+            .n  { font-size: 4.6px; font-weight: 800; fill: #4a90e2; }
+            .br { font-size: 3.6px; font-weight: 700; fill: #6b7787; }
+            .ex-t { font-size: 3.9px; font-weight: 700; fill: #6b21a8; }
+            .sk-t { font-size: 3.9px; font-weight: 700; fill: #6b7787; }
+            .ln { stroke: #253449; stroke-width: 0.6; fill: none; }
+            .ln-g { stroke: #99a3b1; stroke-width: 0.5; fill: none; stroke-dasharray: 1.8 1.4; }
+            .ln-p { stroke: #9333ea; stroke-width: 0.5; fill: none; }
+            .ln-o { stroke: #d9a441; stroke-width: 0.7; fill: none; }
+            .ln-b { stroke: #3b7dd8; stroke-width: 1.1; fill: none; }
+          </style>
 
-          <!-- 2행 · 단계 헤더 -->
-          <div class="r2"></div>
-          <div class="stage r2">① 날씨 앙상블</div>
-          <div class="stage r2">② 매출 진단</div>
-          <div class="stage r2">③ 제안 생성</div>
-          <div class="stage r2">④ 품질 검사</div>
-          <div class="stage stage-human r2">⑤ 검토 · 승인<u>사장님</u></div>
-          <div class="stage r2">⑥ 법적 필터</div>
-          <div class="stage r2">⑦ 발송</div>
-          <div class="stage r2">⑧ 효과 추적</div>
+          <!-- ===== 본선 화살표 ===== -->
+          <path class="ln" marker-end="url(#a)" d="M132.5,16 L132.5,22" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,39 L132.5,45" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,62 L132.5,68" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,91 L132.5,97" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,114 L132.5,120" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,143 L132.5,149" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,168 L132.5,175" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,192 L132.5,198" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,221 L132.5,227" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,244 L132.5,250" />
 
-          <!-- 3행 · 화면 레인 -->
-          <div class="lh lh-fe r3">화면<span>apps/web</span></div>
-          <div class="cell empty r3"></div>
-          <div class="cell empty r3"></div>
-          <div class="cell empty r3"></div>
-          <div class="cell empty r3"></div>
-          <div class="cell c-fe r3">
-            <code>EditView</code><small>문구 · 할인율 · 채널 편집<br />상한 초과 즉시 경고</small>
-          </div>
-          <div class="cell c-fe r3">
-            <code>LegalPanel</code><small>실제 발송될 문구 미리보기</small>
-          </div>
-          <div class="cell empty r3"></div>
-          <div class="cell c-fe r3">
-            <code>SentView</code><small>쿠폰 사용 · 귀속 매출</small>
-          </div>
+          <!-- ===== L0 트리거 ===== -->
+          <rect class="bx" x="78" y="0" width="109" height="16" rx="3" />
+          <text class="t m" x="132.5" y="7.2" text-anchor="middle">매일 아침 · 서버 기동 때</text>
+          <text class="t s" x="132.5" y="12.6" text-anchor="middle">
+            크론 06:30 KST — 무료 플랜에선 기동 잡이 실경로
+          </text>
 
-          <!-- 4행 · 서버 레인 -->
-          <div class="lh lh-be r4">서버<span>apps/server</span></div>
-          <div class="cell c-be r4">
-            <code>agent/ensemble.ts</code><small>2개 소스 병합 · 5분 캐시</small>
-          </div>
-          <div class="cell c-be r4">
-            <code>agent/diagnose.ts</code><small>날씨별 매출 편차 계산</small>
-          </div>
-          <div class="cell c-be r4">
-            <code>agent/generate.ts</code><small>프롬프트 조립 · zod 검증</small>
-          </div>
-          <div class="cell c-be r4">
-            <code>agent/quality.ts</code><small>채택할지 스스로 판정</small>
-          </div>
-          <div class="cell c-be r4">
-            <code>PATCH /campaigns/:id</code><small>draft → approved</small>
-          </div>
-          <div class="cell c-be r4">
-            <code>legal/filter.ts</code><small>planAdSend()</small>
-            <span class="flag">단골 문자일 때만</span>
-          </div>
-          <div class="cell c-be r4">
-            <code>POST …/send</code><small>발송 직전 가드레일 재검사</small>
-          </div>
-          <div class="cell c-be r4">
-            <code>coupons/tracking.ts</code><small>aggregateTracking()</small>
-          </div>
+          <!-- ===== L1 날씨 ===== -->
+          <rect class="ex" x="0" y="24" width="50" height="14" rx="2.5" />
+          <text class="t ex-t" x="25" y="30" text-anchor="middle">기상청 단기예보</text>
+          <text class="t ex-t" x="25" y="35.2" text-anchor="middle">OpenWeatherMap</text>
+          <path class="ln-p" marker-end="url(#ap)" d="M50,31 L77,31" />
 
-          <!-- 5행 · 재생성 레일 (④ → ③) -->
-          <div class="rail r5" style="grid-column: 4 / span 2">
-            <b>↩ 어기면 1회 재생성 → 폴백</b>
-          </div>
+          <rect class="bx" x="78" y="23" width="109" height="16" rx="3" />
+          <text class="t n" x="85" y="33">①</text>
+          <text class="t m" x="94" y="30.4">날씨 앙상블</text>
+          <text class="t s" x="94" y="35.8">두 소스를 병합 · 한쪽이 죽어도 진행</text>
 
-          <!-- 6행 · 외부 레인 -->
-          <div class="lh lh-ext r6">외부 API<span>실연동</span></div>
-          <div class="cell c-ext r6">
-            <code>기상청 단기예보</code><small>+ OpenWeatherMap</small>
-          </div>
-          <div class="cell empty r6"></div>
-          <div class="cell c-ext r6"><code>Groq</code><small>llama-3.3-70b</small></div>
-          <div class="cell empty r6"></div>
-          <div class="cell empty r6"></div>
-          <div class="cell empty r6"></div>
-          <div class="cell c-ext r6">
-            <code>Solapi · Instagram</code><small>본인 번호 / 본인 계정</small>
-          </div>
-          <div class="cell empty r6"></div>
+          <!-- ===== L2 진단 ===== -->
+          <rect class="ex" x="0" y="47" width="50" height="14" rx="2.5"
+            style="fill: #dcfce7; stroke: #16a34a" />
+          <text class="t ex-t" x="25" y="53" text-anchor="middle" style="fill: #14532d">
+            daily_sales
+          </text>
+          <text class="t ex-t" x="25" y="58.2" text-anchor="middle" style="fill: #14532d">
+            그 가게 매출 이력
+          </text>
+          <path class="ln-p" marker-end="url(#ap)" d="M50,54 L77,54" style="stroke: #16a34a" />
 
-          <!-- 7행 · DB 레인 -->
-          <div class="lh lh-db r7">DB<span>Supabase</span></div>
-          <div class="cell empty r7"></div>
-          <div class="cell c-db r7">
-            <code>stores · daily_sales</code><small>매출 이력 읽기</small>
-          </div>
-          <div class="cell c-db r7"><code>campaigns</code><small>draft 저장</small></div>
-          <div class="cell empty r7"></div>
-          <div class="cell c-db r7"><code>campaigns</code><small>status · 편집 문구</small></div>
-          <div class="cell c-db r7"><code>customers</code><small>동의 98 / 142명</small></div>
-          <div class="cell c-db r7"><code>coupons</code><small>1인 1코드 발급</small></div>
-          <div class="cell c-db r7"><code>coupons</code><small>사용 · 주문액 집계</small></div>
+          <rect class="bx" x="78" y="46" width="109" height="16" rx="3" />
+          <text class="t n" x="85" y="56">②</text>
+          <text class="t m" x="94" y="53.4">매출 진단</text>
+          <text class="t s" x="94" y="58.8">비 오는 날 우리 가게는 몇 % 빠지나</text>
 
-          <!-- 8행 · 피드백 레일 (⑧ → ②) -->
-          <div class="rail rail-fb r8" style="grid-column: 3 / span 7">
-            <b>학습 고리 — 발송한 날은 다음 진단의 기준선에서 제외한다 (캠페인 효과가 '평상시'를 오염시키지 않도록)</b>
-          </div>
-        </div>
-      </section>
+          <!-- ===== L3 임계 판단 ===== -->
+          <polygon class="dc" points="132.5,68 187,80 132.5,92 78,80" />
+          <text class="t d" x="132.5" y="82" text-anchor="middle">하락이 20% 이상인가?</text>
+          <text class="t br" x="137" y="97.5">예</text>
 
-      <!-- ============ ② 진단 계산 ============ -->
-      <section class="sec">
-        <p class="sec-title">
-          <b>숫자로 보는 ② 매출 진단</b>
-          <span>데모 매장 37일 실측 — 에이전트가 "오늘 지켜야 할 금액"을 정하는 계산</span>
-        </p>
-        <div class="calc">
-          <div class="chain">
-            <div class="cbox">
-              <span>평상시 · 무강수 평균</span><b>892,655원</b>
-            </div>
-            <div class="carrow">비 예보<br />−23%</div>
-            <div class="cbox cbox-down"><span>오늘 예측</span><b>687,344원</b></div>
-            <div class="carrow">방어<br />마케팅</div>
-            <div class="cbox cbox-up"><span>방어 목표</span><b>830,169원</b></div>
-          </div>
-          <div class="calc-note">
-            <b>왜 발송한 날을 빼고 계산하나</b>
-            <p>
-              캠페인을 보낸 날은 더 이상 '평상시'가 아니다. 실제로 발송이 <b>5건</b> 쌓이자 비의
-              영향이 <b>−22% → −19%</b>로 흐려져 판정이 뒤집혔다. 그래서 진단은 발송일을 빼고
-              계산한다 — 도식 맨 아래 <b>학습 고리</b>가 하는 일이 이것이다.
-            </p>
-          </div>
-        </div>
-      </section>
+          <path class="ln-g" marker-end="url(#ag)" d="M187,80 L204,80" />
+          <text class="t br" x="192" y="77">아니오</text>
+          <rect class="sk" x="205" y="72" width="60" height="16" rx="2.5" />
+          <text class="t sk-t" x="235" y="78.4" text-anchor="middle">오늘은 보내지 않는다</text>
+          <text class="t s" x="235" y="83.6" text-anchor="middle">마케팅 남발 방지</text>
 
-      <!-- ============ 설명 패널 ============ -->
-      <section class="sec">
-        <p class="sec-title">
-          <b>설계 판단 세 가지</b><span>도식만으로는 안 보이는, 왜 이렇게 짰는지</span>
-        </p>
-        <div class="panels">
-          <div class="panel">
-            <span class="panel-h">A — 날씨를 두 곳에서 받는 이유</span>
-            <b>한쪽이 죽어도<br />파이프라인은 안 멈춘다</b>
-            <p>
-              기상청과 OpenWeatherMap을 동시에 부르고 병합한다. 한쪽이 실패하면 남은 소스로 진행하고,
-              둘 다 실패할 때만 멈춘다.
-            </p>
-            <div class="rules">
-              <div class="rule"><i>가중</i><span>기온·습도 = 기상청 <b>0.7</b> / OWM <b>0.3</b></span></div>
-              <div class="rule">
-                <i>보수</i><span>강수량·확률은 <b>max</b> 채택 — 한 소스라도 비면 비로 본다</span>
-              </div>
-              <div class="rule"><i>절약</i><span>5분 캐시 — 같은 날씨를 반복해 사지 않는다</span></div>
-            </div>
-          </div>
+          <!-- ===== L4 생성 ===== -->
+          <rect class="ex" x="0" y="99" width="50" height="14" rx="2.5" />
+          <text class="t ex-t" x="25" y="105" text-anchor="middle">Groq LLM</text>
+          <text class="t ex-t" x="25" y="110.2" text-anchor="middle">llama-3.3-70b</text>
+          <path class="ln-p" marker-end="url(#ap)" d="M50,106 L77,106" />
 
-          <div class="panel">
-            <span class="panel-h">B — 검사를 두 겹으로 나눈 이유</span>
-            <b>기계가 쓴 글과 사람이 쓴 글의<br />기준은 같을 수 없다</b>
-            <p>
-              같은 검사를 발송에도 걸었더니, 사장님이 직접 쓴 <b>“ICE 아메리카노”</b>가 영어라는
-              이유로 막혔다. 그래서 기준을 갈랐다.
-            </p>
-            <div class="vs">
-              <div class="vs-strict">
-                <b>③④ 생성물</b>가드레일 + 한국어 전용 + 내부정보 노출 금지 → 어기면 재생성
-              </div>
-              <div class="vs-loose">
-                <b>⑦ 사람 편집물</b>가드레일만 — 안전·법규는 지키되 표현은 존중
-              </div>
-            </div>
-          </div>
+          <rect class="bx" x="78" y="98" width="109" height="16" rx="3" />
+          <text class="t n" x="85" y="108">③</text>
+          <text class="t m" x="94" y="105.4">문구 · 쿠폰 생성</text>
+          <text class="t s" x="94" y="110.8">날씨와 진단을 넣어 초안을 쓴다</text>
 
-          <div class="panel">
-            <span class="panel-h">C — 법을 서버에 둔 이유</span>
-            <b>UI 체크는 안내일 뿐<br />법은 발송 API가 막는다</b>
-            <p>
-              정보통신망법 요건을 화면이 아니라 발송 핸들러에서 강제한다. 프론트를 우회해 API를
-              직접 호출해도 결과는 같다.
-            </p>
-            <div class="rules">
-              <div class="rule"><i>동의</i><span>단골 142명 → 수신동의 <b>98명</b>만 대상</span></div>
-              <div class="rule"><i>표기</i><span><b>(광고)</b> · 전송자명 · 무료수신거부 자동 삽입</span></div>
-              <div class="rule">
-                <i>야간</i><span><b>21:00~08:00</b>은 발송 대신 예약으로 전환</span>
-              </div>
-            </div>
-          </div>
-        </div>
+          <!-- ===== L5 품질 판단 + 재생성 고리 ===== -->
+          <polygon class="dc" points="132.5,120 187,132 132.5,144 78,132" />
+          <text class="t d" x="132.5" y="134" text-anchor="middle">스스로 검사 — 통과인가?</text>
+          <text class="t br" x="137" y="149.5">예</text>
+
+          <path class="ln-o" marker-end="url(#ao)" d="M187,132 L196,132 L196,106 L188,106" />
+          <text class="t br" x="199" y="124" style="fill: #a9791c">위반이면</text>
+          <text class="t br" x="199" y="128.6" style="fill: #a9791c">1회 재생성</text>
+          <text class="t s" x="199" y="134.5">2회 실패하면</text>
+          <text class="t s" x="199" y="139">템플릿으로 폴백</text>
+
+          <!-- ===== L6 사람 ===== -->
+          <rect x="78" y="150" width="109" height="18" rx="3" fill="url(#human)"
+            stroke="#3b7dd8" stroke-width="0.8" />
+          <text class="t n" x="85" y="161" style="fill: #fff">④</text>
+          <text class="t m" x="94" y="158.2" style="fill: #fff; font-size: 6px">
+            사장님 검토 · 승인
+          </text>
+          <text class="t s" x="94" y="164" style="fill: #eaf2fd">
+            문구를 고치거나, 그대로 발송 — 10초
+          </text>
+          <text class="t br" x="192" y="161" style="fill: #3b7dd8">사람은 여기만</text>
+
+          <!-- ===== L7 법적 필터 ===== -->
+          <rect class="bx" x="78" y="176" width="109" height="16" rx="3" />
+          <text class="t n" x="85" y="186">⑤</text>
+          <text class="t m" x="94" y="183.4">법적 필터 — 서버가 강제</text>
+          <text class="t s" x="94" y="188.8">단골 142명 → 수신동의 98명 · (광고) 자동 삽입</text>
+
+          <!-- ===== L8 야간 판단 ===== -->
+          <polygon class="dc" points="132.5,198 187,210 132.5,222 78,210" />
+          <text class="t d" x="132.5" y="212" text-anchor="middle">지금 21시~08시인가?</text>
+          <text class="t br" x="137" y="227.5">아니오</text>
+
+          <path class="ln-g" marker-end="url(#ag)" d="M187,210 L204,210" />
+          <text class="t br" x="194" y="207">예</text>
+          <rect class="sk" x="205" y="202" width="60" height="16" rx="2.5" />
+          <text class="t sk-t" x="235" y="208.4" text-anchor="middle">보내지 않고 예약</text>
+          <text class="t s" x="235" y="213.6" text-anchor="middle">정보통신망법 야간 차단</text>
+
+          <!-- ===== L9 발송 ===== -->
+          <rect class="ex" x="0" y="229" width="50" height="14" rx="2.5" />
+          <text class="t ex-t" x="25" y="235" text-anchor="middle">Solapi 문자</text>
+          <text class="t ex-t" x="25" y="240.2" text-anchor="middle">Instagram 게시</text>
+          <path class="ln-p" marker-start="url(#ap)" d="M51,236 L77,236" />
+
+          <rect class="bx" x="78" y="228" width="109" height="16" rx="3" />
+          <text class="t n" x="85" y="238">⑥</text>
+          <text class="t m" x="94" y="235.4">발송 + 쿠폰 발급</text>
+          <text class="t s" x="94" y="240.8">동의한 단골에게 1인 1코드</text>
+
+          <!-- ===== L10 집계 ===== -->
+          <rect class="bx" x="78" y="251" width="109" height="16" rx="3" />
+          <text class="t n" x="85" y="261">⑦</text>
+          <text class="t m" x="94" y="258.4">쿠폰 사용 집계</text>
+          <text class="t s" x="94" y="263.8">이 캠페인이 만든 매출을 실측</text>
+
+          <!-- ===== 학습 고리 (⑦ → ②) ===== -->
+          <path class="ln-b" marker-end="url(#ab)"
+            d="M187,259 L268,259 L268,54 L188,54" />
+          <!-- 라벨은 세로로 돌리면 한글이 안 읽힌다 — 고리 안쪽 빈 자리에 가로로 둔다 -->
+          <text class="t" x="205" y="234"
+            style="font-size: 5.2px; font-weight: 800; fill: #3b7dd8">학습 고리</text>
+          <text class="t" x="205" y="241" style="font-size: 3.9px; fill: #253449">
+            보낸 날은 '평상시'가 아니다.
+          </text>
+          <text class="t" x="205" y="246.6" style="font-size: 3.9px; fill: #253449">
+            다음 진단의 기준선에서 빼서
+          </text>
+          <text class="t" x="205" y="252.2" style="font-size: 3.9px; fill: #253449">
+            캠페인 효과가 섞이지 않게 한다.
+          </text>
+        </svg>
       </section>
 
       <!-- ============ 하단 ============ -->
       <footer class="foot">
-        <div class="scope" style="flex: 1 1 auto">
+        <div style="flex: 1 1 auto">
           <div class="chips">
             <span class="chip">할인율 <b>≤ 20%</b></span>
             <span class="chip">정액 할인 <b>≤ 3,000원</b></span>
-            <span class="chip">LMS <b>≤ 2,000 byte</b></span>
-            <span class="chip">금칙어 <b>11개</b> 차단</span>
-            <span class="chip">창작 상호 차단</span>
+            <span class="chip">문자 <b>≤ 2,000 byte</b></span>
+            <span class="chip">금칙어 <b>11개</b></span>
             <span class="chip">서버 테스트 <b>183건 통과</b></span>
           </div>
-          <p class="foot-note">
-            에이전트가 어겨도 서버가 막는 값들이다. 프롬프트로 부탁하지 않고 코드로 강제한다.<br />
-            <b>정확히 적자면</b> — 쿠폰 추적은 실시간이 아니라 <b>쿠폰 코드 기반 누적 집계</b>이고,
-            문자·Instagram은 <b>본인 번호·본인 계정</b>에만 실제로 나간다.
+          <p class="note">
+            이 수치들은 <b>프롬프트로 부탁하지 않고 서버 코드가 막는다.</b> 에이전트가 어겨도
+            발송되지 않는다.<br />
+            쿠폰 추적은 실시간이 아니라 <b>코드 기반 누적 집계</b>이고, 문자·Instagram은
+            <b>본인 번호·본인 계정</b>에만 실제로 나간다.
           </p>
         </div>
         <div class="qr">
