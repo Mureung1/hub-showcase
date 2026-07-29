@@ -170,6 +170,9 @@ function MeetingMatch({ members, currentMemberId, currentTeamId }) {
           totalMembers={members.length}
           highlightedKey={highlightedKey}
           onToggleCell={handleToggleCell}
+          onCellMouseDown={handleCellMouseDown}
+          onCellMouseEnter={handleCellMouseEnter}
+          onDragEnd={handleDragEnd}
         />
       </div>
 

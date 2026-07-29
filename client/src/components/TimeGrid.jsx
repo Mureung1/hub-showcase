@@ -11,9 +11,19 @@ function slotKey(date, hour) {
   return `${date}_${hour}`;
 }
 
-function TimeGrid({ dates, slotStats, selectedKeys, totalMembers, highlightedKey, onToggleCell }) {
+function TimeGrid({
+  dates,
+  slotStats,
+  selectedKeys,
+  totalMembers,
+  highlightedKey,
+  onToggleCell,
+  onCellMouseDown,
+  onCellMouseEnter,
+  onDragEnd,
+}) {
   return (
-    <div className="time-grid">
+    <div className="time-grid" onMouseUp={onDragEnd}>
       <div className="time-grid-header">
         <div />
         {dates.map((date) => (
@@ -42,6 +52,8 @@ function TimeGrid({ dates, slotStats, selectedKeys, totalMembers, highlightedKey
                 isMine={selectedKeys.has(key)}
                 isHighlighted={key === highlightedKey}
                 onClick={() => onToggleCell(date, hour)}
+                onMouseDown={() => onCellMouseDown(date, hour)}
+                onMouseEnter={() => onCellMouseEnter(date, hour)}
               />
             );
           })}
