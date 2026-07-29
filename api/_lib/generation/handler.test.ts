@@ -341,7 +341,6 @@ describe('createGenerateHandler', () => {
 
   it.each([
     ['provider 4xx', { error: new GenerationProviderError('client_error'), type: 'reject' }],
-    ['provider 429', { error: new GenerationProviderError('rate_limited'), type: 'reject' }],
     [
       'unsafe output',
       {
@@ -362,6 +361,24 @@ describe('createGenerateHandler', () => {
     expect(response.status).toBe(500)
     expect(await response.json()).toEqual({ error: 'generation_failed' })
     expect(provider.callCount).toBe(1)
+  })
+
+  it('maps a provider 429 to the public rate-limited response without retrying', async () => {
+    const provider = new FakeProvider([
+      { error: new GenerationProviderError('rate_limited'), type: 'reject' },
+      { type: 'resolve', value: validProviderOutput },
+    ])
+    const { metrics, sink } = createMetricsCollector()
+    const response = await createHandler(provider, sink)(createRequest())
+
+    expect(response.status).toBe(429)
+    expect(await response.json()).toEqual({ error: 'rate_limited' })
+    expect(provider.callCount).toBe(1)
+    expect(metrics).toHaveLength(1)
+    expect(metrics[0]).toMatchObject({
+      attemptCount: 1,
+      status: 'provider_rate_limited',
+    })
   })
 
   it('returns only the public 500 error after two invalid structures', async () => {

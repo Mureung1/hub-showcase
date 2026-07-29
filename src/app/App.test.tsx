@@ -712,24 +712,103 @@ describe('App', () => {
     }
   })
 
-  it('직접 설명하기를 고르면 답장 모드에서 받은 메시지가 있어야 후보를 만들 수 있다', () => {
+  it('답장 직접 설명은 받은 내용 없이 상황만 적어도 후보를 만들 수 있다', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /답장할래요/ }))
     chooseProfessorMessenger()
     fireEvent.click(screen.getByRole('button', { name: '내 상황을 직접 설명하기' }))
 
+    const receivedMessageInput = screen.getByLabelText('받은 내용 (선택)')
+    const situationInput = screen.getByLabelText('상황 설명 (선택)')
+    const purposeFieldset = screen.getByRole('group', {
+      name: '어떤 말을 전하고 싶나요? (필수)',
+    })
+    const speechStyleFieldset = screen.getByRole('group', {
+      name: '평소 어떤 말투를 쓰나요? (필수)',
+    })
+
+    expect(screen.getByText('직접 설명으로 맞춤 작성 중')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '어떤 말을 받았는지 알려주라냥' })).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        '받은 내용을 적지 않아도 괜찮아요. 메시지를 붙여넣거나, 답장에 필요한 상황만 간단히 알려주세요.',
+      ),
+    ).toBeInTheDocument()
+    expect(receivedMessageInput).toHaveAttribute(
+      'placeholder',
+      '예: 교수님이 과제 제출 기한을 다시 확인해 달라고 하셨어요.',
+    )
+    expect(receivedMessageInput.compareDocumentPosition(situationInput)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+    expect(situationInput.compareDocumentPosition(purposeFieldset)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+    expect(purposeFieldset.compareDocumentPosition(speechStyleFieldset)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
     expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeDisabled()
     expect(screen.getByText('메시지 목적을 골라주세요.')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
     chooseHaeyoSpeechStyle()
 
-    fireEvent.change(screen.getByLabelText('받은 메시지 붙여넣기'), {
-      target: { value: '과제 기한 연장 문의 주셔서 확인했습니다.' },
+    expect(screen.getByText('받은 내용이나 상황 중 하나를 적어주세요.')).toBeInTheDocument()
+
+    fireEvent.change(situationInput, {
+      target: { value: '과제 제출 기한을 다시 확인해서 답장하고 싶어요.' },
     })
 
+    expect(receivedMessageInput).toHaveValue('')
     expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeEnabled()
-    expect(screen.getByText('23/500자')).toBeInTheDocument()
+    expect(screen.getByText('27/300자')).toBeInTheDocument()
+  })
+
+  it('답장 상황만 입력하면 receivedMessage 없이 reply 요청을 보낸다', async () => {
+    let capturedRequest: GenerationRequest | undefined
+    const generationExecutor: GenerationExecutor = async (request) => {
+      capturedRequest = request
+      return {
+        ok: true,
+        response: {
+          candidates: [
+            { text: '확인해서 다시 답장드리겠습니다.', toneLabel: '기본', toneLevel: 1 },
+            {
+              text: '확인한 뒤 다시 답장드려도 괜찮을까요?',
+              toneLabel: '더 부드럽게',
+              toneLevel: 2,
+            },
+            { text: '확인 후 다시 답장드리겠습니다.', toneLabel: '더 분명하게', toneLevel: 3 },
+          ],
+          source: 'ai',
+        },
+      }
+    }
+    render(
+      <MessageFlow
+        generationExecutor={generationExecutor}
+        interactionReporter={() => undefined}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /답장할래요/ }))
+    chooseProfessorMessenger()
+    fireEvent.click(screen.getByRole('button', { name: '내 상황을 직접 설명하기' }))
+    fireEvent.click(screen.getByRole('button', { name: '질문하기' }))
+    chooseHaeyoSpeechStyle()
+    fireEvent.change(screen.getByLabelText('상황 설명 (선택)'), {
+      target: { value: '과제 제출 기한을 다시 확인해서 답장하고 싶어요.' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '보낼 말 3가지 만들기' }))
+
+    await waitFor(() => expect(capturedRequest).toBeDefined())
+    expect(capturedRequest).toEqual({
+      mode: 'reply',
+      purpose: 'question',
+      route: 'manual_ai',
+      scenarioId: 'professor',
+      situation: '과제 제출 기한을 다시 확인해서 답장하고 싶어요.',
+      speechStyleId: 'haeyo',
+    })
   })
 
   it('직접 설명 자연어를 별도 형식 요구 없이 생성 executor에 그대로 전달한다', async () => {
@@ -1067,7 +1146,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: '내 상황을 직접 설명하기' }))
 
     expect(screen.getByLabelText('상황 설명 (선택)')).toHaveValue('')
-    expect(screen.getByLabelText('받은 메시지 붙여넣기')).toHaveValue('')
+    expect(screen.getByLabelText('받은 내용 (선택)')).toHaveValue('')
     expect(screen.getByRole('button', { name: '보낼 말 3가지 만들기' })).toBeDisabled()
   })
 
@@ -1120,7 +1199,7 @@ describe('App', () => {
     fireEvent.click(screen.getByRole('button', { name: /선배냥/ }))
     fireEvent.click(screen.getByRole('button', { name: '내 상황을 직접 설명하기' }))
 
-    expect(screen.getByText('메시지 목적')).toBeInTheDocument()
+    expect(screen.getByText('어떤 말을 전하고 싶나요? (필수)')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '질문하기' })).toHaveAttribute('aria-pressed', 'false')
 
     fireEvent.click(screen.getByRole('button', { name: '질문하기' }))

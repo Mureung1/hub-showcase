@@ -123,6 +123,11 @@ const providerFailureStatus = (error: unknown): GenerationMetricStatus => {
   return 'provider_unconfigured'
 }
 
+const publicErrorForProviderFailure = (error: unknown): PublicGenerationError =>
+  error instanceof GenerationProviderError && error.failure === 'rate_limited'
+    ? 'rate_limited'
+    : 'generation_failed'
+
 const canRetryProviderFailure = (error: unknown) =>
   error instanceof GenerationProviderError && error.failure === 'transient'
 
@@ -221,7 +226,11 @@ export const createGenerateHandler = ({
           }
 
           if (attemptCount < 2 && canRetryProviderFailure(error)) continue
-          return finish(errorResponse('generation_failed'), providerFailureStatus(error), attemptCount)
+          return finish(
+            errorResponse(publicErrorForProviderFailure(error)),
+            providerFailureStatus(error),
+            attemptCount,
+          )
         }
       }
 

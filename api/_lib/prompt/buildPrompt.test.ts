@@ -86,6 +86,7 @@ describe('buildPrompt', () => {
     expect(content).toContain('<scenario_id>professor</scenario_id>')
     expect(content).toContain('<purpose_id>ask</purpose_id>')
     expect(content).toContain('<speech_style_id>seumnida</speech_style_id>')
+    expect(content).toContain('<mode>initiate</mode>')
     expect(content).toContain('<situation>면담 가능한 시간을 여쭤보고 싶어요.</situation>')
     expect(content).not.toContain('<source>')
     expect(content).not.toContain('<transcript>')
@@ -126,6 +127,24 @@ describe('buildPrompt', () => {
     const currentInput = content.slice(content.indexOf('<current_input>'))
 
     expect(currentInput).not.toContain('<received_message>')
+  })
+
+  it('답장 요청도 상황만 입력하면 받은 메시지 태그를 생략한다', () => {
+    const content = buildPrompt(
+      {
+        ...professorRequest,
+        mode: 'reply',
+        situation: '과제 제출 기한을 다시 확인해서 답장하고 싶어요.',
+      },
+      professorExamples,
+    ).messages[0].content
+    const currentInput = content.slice(content.indexOf('<current_input>'))
+
+    expect(currentInput).not.toContain('<received_message>')
+    expect(currentInput).toContain('<mode>reply</mode>')
+    expect(currentInput).toContain(
+      '<situation>과제 제출 기한을 다시 확인해서 답장하고 싶어요.</situation>',
+    )
   })
 
   it.each([

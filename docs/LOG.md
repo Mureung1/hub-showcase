@@ -3,6 +3,12 @@
 > 작업 세션 단위의 진행 기록. 각 docs 파일은 "현재 확정된 요점"만 담고, "언제 무엇을 왜 했는지"는 여기에 남긴다.
 > 커밋된 작업은 git 타임스탬프 기준. 세션 중 미커밋 작업(대화로 진행된 문서 개정)은 대화 흐름 기준 추정 시각 — 분 단위 정확도를 보장하지 않는다.
 
+## 2026-07-29 (답장 직접 설명의 받은 내용 선택화)
+- UI가 "받은 메시지 붙여넣기"를 필수 행동처럼 안내하던 부담을 줄이기 위해 필드 라벨을 "받은 내용 (선택)"으로 바꾸고, 원문을 붙여넣거나 관계별 핵심 요약을 적을 수 있게 안내했다.
+- 답장 직접 설명은 받은 내용과 상황 설명을 각각 선택으로 두되 둘 중 하나만 입력하면 생성할 수 있도록 클라이언트 활성 조건과 공유 API 계약을 함께 바꿨다. 둘 다 없으면 생성하지 않아 관계·목적·말투만으로 구체 사실을 추측하는 결과를 막는다.
+- `receivedMessage` 없는 reply 요청은 `situation`만 prompt 데이터 블록에 넣고, 네 관계별 placeholder는 원문 인용형 대신 핵심 요약 예시를 제공한다. 먼저 연락·카드 경로, 글자 수 제한, 원문 비저장 경계는 유지했다.
+- 전체 45파일 388개 테스트, oxlint, API 타입검사, production build, `git diff --check`, 대상 명시적 `any`와 잔존 필수 문구 검사를 통과했다. 기존 jsdom `scrollTo` 로그와 CatCanvas 500 kB 초과 build 경고만 비차단으로 남았다.
+
 ## 2026-06-22 13:59
 ### 처리한 TODO
 - 저장소 초기화
@@ -1220,3 +1226,10 @@
 - 공개 main `index-Bo0zVbG7.js`는 로컬 검증 bundle과 SHA-256 `3ec66fd2cab9a03158b843319e8afe4e577973f84adc05d4e4b7764d4f8cd731`로 같았다. `/api/generate`·Google Gemini API 안내가 포함되고 `AI 연결 전 검증용 예시`·`개발·테스트용 예시`·대표 mock 후보 문장은 없었다.
 - 연결 가능한 Browser backend가 `[]`여서 Production 클릭을 이 세션에서 독립 재현하지 못했다. 동일 SHA Preview UI 통과, 공개 bundle 바이트 일치, Production same-origin API·DB 성공을 결합한 증거 한계를 [T31 검증 보고서](../harness/tasks/T31-technical-mvp-integration/verification.md)에 기록했다.
 - 전체 45파일 386테스트, 프론트·API 타입검사, template·DB·retrieval drift/eval, lint, Production build, 25개 하네스 상태 검사, `git diff --check`를 문서 마감 뒤 다시 통과했다. T31 AC-1~AC-11에 따라 plan을 `종료`, verification을 `통과`, CHECKLIST·PLAN을 완료 처리했다. T22는 외부 참여자 검증 전 `Pending`, T35는 retrieval offline 실험 미완료·운영 비활성으로 유지한다.
+
+## 2026-07-27 (발자국 3 직접 설명 흐름·provider 429 개선)
+- 사용자가 답장 모드의 발자국 3에서 받은 메시지 붙여넣기·상황 설명 화면과 실제 API 연결 점검을 요청했다. 공개 Production `/`은 HTTP 200이었고 합성 `manual_ai` 요청 두 건은 함수까지 도달했지만 HTTP 500을 반환했다. 원문 없는 `generation_runs` 조회 결과 두 건 모두 `provider_rate_limited`, attempt 1, latency 230ms/207ms여서 클라이언트→Vercel 연결이 아니라 Gemini provider 429가 현재 장애 원인임을 확인했다.
+- 로컬 `.env.local`의 Gemini 설정으로 비밀 값을 출력하지 않는 직접 상태 요청을 1회 수행한 결과 같은 모델이 HTTP 429 `RESOURCE_EXHAUSTED`와 선불 크레딧 소진 안내를 반환했다. Production 키와 로컬 키가 동일하다는 저장소 근거는 없으므로 Production 장애의 세부 원인까지 동일하다고 단정하지 않고, AI Studio에서 Production 키가 속한 프로젝트의 billing/credit을 별도로 확인해야 한다.
+- provider 429를 내부 metric으로만 구분하고 public 500으로 뭉개던 handler를 수정해 재시도 없이 HTTP 429 `rate_limited`로 반환하도록 했다. 클라이언트의 기존 "요청이 많아요. 잠시 후 다시 시도해주세요." 경로를 재사용하며 `provider_rate_limited` metric은 유지한다.
+- 답장 직접 설명 폼을 받은 메시지(필수) → 상황 설명(선택) → 목적(필수) → 개인 말투(필수) 순서로 재배치했다. 네 관계별 받은 메시지 예시 placeholder, 헤더의 "직접 설명으로 맞춤 작성 중", 답장 전용 입력 안내와 필수 라벨을 추가하고 SCREENS·SPEC 정본을 동기화했다.
+- handler·API client·App·message catalog 집중 4파일 128테스트와 전체 45파일 386테스트, oxlint, API 타입검사, template drift check, production build를 통과했다. 기존 jsdom `scrollTo` 로그와 CatCanvas 500 kB 초과 build 경고만 비차단이다. 브라우저 backend가 없어 실화면 캡처는 수행하지 못했고, 코드 변경은 사용자 요청 없는 commit/push 없이 로컬 작업트리에 남겼다. Production quota 해제와 수정 배포 후 실제 429 안내·정상 생성 왕복은 별도 운영 확인이 필요하다.

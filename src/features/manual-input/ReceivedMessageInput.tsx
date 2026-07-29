@@ -1,17 +1,18 @@
 type ReceivedMessageInputProps = {
   value: string
+  placeholder: string
   onChange: (value: string) => void
 }
 
-function ReceivedMessageInput({ value, onChange }: ReceivedMessageInputProps) {
+function ReceivedMessageInput({ value, placeholder, onChange }: ReceivedMessageInputProps) {
   return (
     <label className="field">
-      <span>받은 메시지 붙여넣기</span>
+      <span>받은 내용 (선택)</span>
       <textarea
-        aria-label="받은 메시지 붙여넣기"
+        aria-label="받은 내용 (선택)"
         maxLength={500}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="여기에 상대방이 보낸 메시지를 붙여넣어요"
+        placeholder={placeholder}
         value={value}
       />
       <span className="field-count" aria-live="polite">

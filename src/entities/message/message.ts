@@ -30,6 +30,7 @@ export type Scenario = {
   name: string
   summary: string
   example: string
+  receivedMessagePlaceholder: string
 }
 
 export type Purpose = {
@@ -145,6 +146,7 @@ export const scenarios: Scenario[] = [
     name: '팀플·조모임',
     summary: '할 말은 해야 할 때',
     example: '자료 마감이 오늘인데 팀원이 아직 공유를 안 했어요.',
+    receivedMessagePlaceholder: '예: 팀원이 자료 정리 가능 시점을 물었어요.',
   },
   {
     id: 'professor',
@@ -152,6 +154,7 @@ export const scenarios: Scenario[] = [
     name: '교수님·조교님',
     summary: '결석·기한 연장·질문, 정중하게',
     example: '과제 제출 기한을 하루만 연장 가능한지 여쭤보고 싶어요.',
+    receivedMessagePlaceholder: '예: 교수님이 과제 제출 기한을 다시 확인해 달라고 하셨어요.',
   },
   {
     id: 'senior',
@@ -159,6 +162,7 @@ export const scenarios: Scenario[] = [
     name: '선배·동기',
     summary: '존댓말 수위가 애매할 때',
     example: '동아리 회의 시간을 다시 확인하고 싶어요.',
+    receivedMessagePlaceholder: '예: 선배가 다음 회의 시간을 확인해 달라고 했어요.',
   },
   {
     id: 'friend',
@@ -166,6 +170,7 @@ export const scenarios: Scenario[] = [
     name: '친구·연인',
     summary: '마음은 있는데 말이 안 나올 때',
     example: '약속을 미뤄야 하는데 서운하지 않게 말하고 싶어요.',
+    receivedMessagePlaceholder: '예: 연인이 오늘 약속이 그대로 괜찮은지 물었어요.',
   },
 ]
 
