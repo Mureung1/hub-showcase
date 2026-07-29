@@ -31,12 +31,30 @@ const analysisTopics: Array<{
   { value: "amenities", label: "주변 시설·접근성", available: false, reason: "데이터 연결 예정" },
 ];
 
+function selectedMarketCount(
+  category: ProductCategory,
+  marketKey: MarketKey,
+  selected: Category | null,
+  selectedCategoryCount: number | null,
+) {
+  const catalogCount = category.store_counts_by_market?.[marketKey];
+  if (
+    category.name === selected &&
+    selectedCategoryCount !== null &&
+    (catalogCount === undefined || (catalogCount === 0 && selectedCategoryCount > 0))
+  ) {
+    return selectedCategoryCount;
+  }
+  return catalogCount;
+}
+
 function CategoryOptions({
   categories,
   marketKey,
   marketName,
   showMarketCounts,
   selected,
+  selectedCategoryCount,
   onChange,
 }: {
   categories: ProductCategory[];
@@ -44,13 +62,14 @@ function CategoryOptions({
   marketName: string;
   showMarketCounts: boolean;
   selected: Category | null;
+  selectedCategoryCount: number | null;
   onChange: (category: Category) => void;
 }) {
   const orderedCategories = showMarketCounts
     ? [...categories].sort((left, right) => {
-        const countDifference =
-          (right.store_counts_by_market?.[marketKey] ?? 0) -
-          (left.store_counts_by_market?.[marketKey] ?? 0);
+        const leftCount = selectedMarketCount(left, marketKey, selected, selectedCategoryCount);
+        const rightCount = selectedMarketCount(right, marketKey, selected, selectedCategoryCount);
+        const countDifference = (rightCount ?? -1) - (leftCount ?? -1);
         return countDifference || left.name.localeCompare(right.name, "ko-KR");
       })
     : categories;
@@ -60,7 +79,7 @@ function CategoryOptions({
     const { icon: Icon, tone } = resolveCategoryPresentation(name);
     const displayRank = showMarketCounts ? index + 1 : rank ?? index + 1;
     const marketStoreCount = showMarketCounts
-      ? (category.store_counts_by_market?.[marketKey] ?? 0)
+      ? selectedMarketCount(category, marketKey, selected, selectedCategoryCount)
       : undefined;
     return (
       <button
@@ -69,7 +88,7 @@ function CategoryOptions({
         className={`category-option ${selected === name ? "is-selected" : ""}`}
         aria-label={name}
         aria-pressed={selected === name}
-        title={`${displayRank}위${marketStoreCount === undefined ? "" : ` · ${marketName} ${marketStoreCount.toLocaleString("ko-KR")}곳`}`}
+        title={`${displayRank}위${marketStoreCount === undefined ? " · 상권 점포 수 확인 중" : ` · ${marketName} ${marketStoreCount.toLocaleString("ko-KR")}곳`}`}
         onClick={() => onChange(name)}
       >
         <span className="category-rank" aria-hidden="true">
@@ -81,9 +100,11 @@ function CategoryOptions({
         <span className="category-option-main">
           <span className="category-option-name">{name}</span>
         </span>
-        {marketStoreCount !== undefined && (
+        {showMarketCounts && (
           <strong className="category-market-count">
-            {marketStoreCount.toLocaleString("ko-KR")}곳
+            {marketStoreCount === undefined
+              ? "—"
+              : `${marketStoreCount.toLocaleString("ko-KR")}곳`}
           </strong>
         )}
         <span className="check" aria-hidden="true">
@@ -136,6 +157,7 @@ type MarketFiltersProps = {
   storesVisible: boolean;
   visibleStores: MarketStore[];
   selectedStoreName: string | null;
+  sameCategoryCount?: number | null;
   nearbyState: NearbyStoreState;
   onNearbyRetry: () => void;
   onClose: () => void;
@@ -146,7 +168,7 @@ type MarketFiltersProps = {
   onTopicChange: (topic: AnalysisTopic) => void;
   onBoundaryVisibleChange: (visible: boolean) => void;
   onStoresVisibleChange: (visible: boolean) => void;
-  onStoreChange: (storeName: string) => void;
+  onStoreChange: (storeKey: string) => void;
 };
 
 export function MarketFilters({
@@ -163,6 +185,7 @@ export function MarketFilters({
   storesVisible,
   visibleStores,
   selectedStoreName,
+  sameCategoryCount = null,
   nearbyState,
   onNearbyRetry,
   onClose,
@@ -181,6 +204,8 @@ export function MarketFilters({
       : catalogState === "connecting"
         ? "불러오는 중"
         : "기본 목록";
+  const resolvedSelectedCategoryCount =
+    nearbyState === "ready" || nearbyState === "empty" ? sameCategoryCount : null;
 
   return (
     <aside className="filter-panel">
@@ -278,6 +303,7 @@ export function MarketFilters({
               marketName={markets[marketKey].name}
               showMarketCounts={catalogState === "ranked"}
               selected={category}
+              selectedCategoryCount={resolvedSelectedCategoryCount}
               onChange={onCategoryChange}
             />
           )}
