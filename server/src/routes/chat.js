@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { requireAuth } from '../services/auth/requireAuth.js';
+import { chatRateLimit } from '../services/rateLimit/rateLimiter.js';
 import { detectWithRegex } from '../services/detectors/regexDetector.js';
 import { getProvider } from '../providers/index.js';
 import { AppError } from '../utils/errors.js';
 
 const router = Router();
 
-router.post('/', requireAuth, async (req, res, next) => {
+router.post('/', requireAuth, chatRateLimit, async (req, res, next) => {
   try {
     const { prompt } = req.body;
     if (!prompt) {
