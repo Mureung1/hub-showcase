@@ -170,7 +170,7 @@ function CollectStep({ subjects, onAddSubject, onRemoveSubject, onNext }) {
         aria-describedby={subjects.length === 0 ? "next-disabled-hint" : undefined}
         onClick={onNext}
       >
-        다음: 이해도 알려주기
+        다음: 분량·이해도 알려주기
       </button>
       {subjects.length === 0 && (
         <p id="next-disabled-hint" className="button-hint">

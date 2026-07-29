@@ -6,7 +6,7 @@ import ResultScreen from "./components/ResultScreen";
 import ResultSummary from "./components/ResultSummary";
 import { WEIGHT_PRESETS, DEFAULT_WEIGHT_KEY } from "./utils/priorityCalculator";
 import { fetchPriorityScores, scoreSubjectsLocally } from "./utils/priorityApi";
-import { UNKNOWN } from "./utils/scaleLabels";
+import { SCALE_MIDDLE, UNKNOWN } from "./utils/scaleLabels";
 import {
   fetchSubjects,
   createSubject,
@@ -23,13 +23,17 @@ const PLAN_HOURS_STORAGE_KEY = "exam-priority:planHours";
 // 저녁에 흔히 쓸 만한 시간. 화면에 그대로 보이고 바로 고칠 수 있어서 숨은 가정이 아니다.
 const DEFAULT_PLAN_HOURS = "3";
 
-// 1단계에서는 이름과 시험 날짜만 받는다. 나머지는 "아직 안 물어봤다"는 뜻의 모름으로 둔다.
-// 여기에 중립값 4를 넣으면, 사용자가 답한 적 없는 값이 점수에 섞인다. (priorityCalculator.js 참고)
+// 1단계에서는 이름과 시험 날짜만 받는다.
+//
+// 이해도·공부 분량은 2단계에서 모든 과목에 대해 반드시 거치는 항목이라, 가운데(4=보통)에서
+// 시작해 사용자가 좌우로 옮기게 한다. 빈 상태에서 고르게 하는 것보다 기준점이 있는 편이 빠르다.
+// 나머지는 "아직 안 물어봤다"는 뜻의 모름으로 둔다. 여기에 중립값을 넣으면 사용자가 답한 적
+// 없는 값이 점수에 섞인다. (priorityCalculator.js 참고)
 const NEW_SUBJECT_DEFAULTS = {
-  understanding: UNKNOWN,
+  understanding: SCALE_MIDDLE,
+  studyAmount: SCALE_MIDDLE,
   difficulty: UNKNOWN,
   grading: UNKNOWN,
-  studyAmount: UNKNOWN,
   availableTime: UNKNOWN,
   credits: null,
   gradeWeight: null,
@@ -87,6 +91,8 @@ function App() {
   // 이전 입력에 대한 점수가 잠깐 보이는 일이 없다.
   const scoreSignature = `${weightKey}|${JSON.stringify(activeSubjects)}`;
   const [serverScores, setServerScores] = useState(null);
+  // 서버가 응답하지 않아 localStorage 로만 도는 상태인지. 화면에 알려주는 용도다.
+  const [isServerDown, setIsServerDown] = useState(false);
   const scoredSubjects =
     serverScores?.signature === scoreSignature ? serverScores.subjects : locallyScored;
   const nextIdRef = useRef(
@@ -111,7 +117,14 @@ function App() {
 
     async function loadFromServer() {
       const result = await fetchSubjects();
-      if (ignore || !result.ok) {
+      if (ignore) {
+        return;
+      }
+
+      // 서버가 없으면 localStorage 로 계속 쓸 수 있지만, 그걸 화면에 알리지 않으면
+      // 사용자는 저장된 줄 안다. 어디에 저장되고 있는지는 말해줘야 한다.
+      setIsServerDown(!result.ok);
+      if (!result.ok) {
         return;
       }
 
@@ -240,6 +253,12 @@ function App() {
           과목 정보를 입력하면 오늘 먼저 공부할 과목을 알려드려요.
         </p>
       </header>
+
+      {isServerDown && (
+        <p className="server-note" role="status">
+          서버에 연결하지 못해 이 브라우저에만 저장하고 있어요. 다른 기기에서는 보이지 않아요.
+        </p>
+      )}
 
       <ProgressSteps current={step} />
 

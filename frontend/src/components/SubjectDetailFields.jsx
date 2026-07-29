@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ScoreSelector from "./ScoreSelector";
+import CreditsField from "./CreditsField";
 import {
   AVAILABLE_TIME_LEVELS,
   DIFFICULTY_LEVELS,
@@ -21,8 +22,10 @@ function withTopicParticle(word) {
 
 // 3단계(선택). 결과를 이미 본 다음에, 더 정확하게 하고 싶은 과목만 골라서 채운다.
 // 전부 기본값이 "모름"이다. 안 채우면 그 요인은 계산에서 빠지고 나머지로만 점수를 낸다.
-function SubjectDetailFields({ subject, onChange }) {
-  const [credits, setCredits] = useState(toInputValue(subject.credits));
+//
+// showStudyAmount: 2단계에서는 공부 분량을 이해도와 함께 앞에서 이미 받으므로 여기서는 감춘다.
+// 결과 화면에는 따로 받는 자리가 없어서 그대로 보여준다.
+function SubjectDetailFields({ subject, onChange, showStudyAmount = true }) {
   const [gradeWeight, setGradeWeight] = useState(toInputValue(subject.gradeWeight));
   const [previousScore, setPreviousScore] = useState(toInputValue(subject.previousScore));
   const [errorMessage, setErrorMessage] = useState("");
@@ -67,12 +70,14 @@ function SubjectDetailFields({ subject, onChange }) {
         levelLabels={DIFFICULTY_LEVELS}
       />
 
-      <ScoreSelector
-        label="공부 분량 (시험 범위)"
-        value={subject.studyAmount}
-        onChange={(value) => onChange(subject.id, { studyAmount: value })}
-        levelLabels={STUDY_AMOUNT_LEVELS}
-      />
+      {showStudyAmount && (
+        <ScoreSelector
+          label="공부 분량 (시험 범위)"
+          value={subject.studyAmount}
+          onChange={(value) => onChange(subject.id, { studyAmount: value })}
+          levelLabels={STUDY_AMOUNT_LEVELS}
+        />
+      )}
 
       <ScoreSelector
         label="확보 가능한 공부 시간"
@@ -88,33 +93,7 @@ function SubjectDetailFields({ subject, onChange }) {
         levelLabels={GRADING_LEVELS}
       />
 
-      <div className="form-group">
-        <label className="form-label" htmlFor={`credits-${subject.id}`}>
-          중요도 (학점 수)
-        </label>
-        <input
-          id={`credits-${subject.id}`}
-          className="form-input"
-          type="number"
-          min="0.5"
-          max="30"
-          step="0.5"
-          inputMode="decimal"
-          placeholder="예: 3"
-          value={credits}
-          onChange={(event) => setCredits(event.target.value)}
-          onBlur={(event) =>
-            commitNumber("credits", event.target.value, {
-              min: 0.5,
-              max: 30,
-              integer: false,
-              emptyValue: null,
-              label: "학점 수",
-            })
-          }
-        />
-        <p className="form-hint">학점이 높을수록 우선순위가 올라가요. 비우면 계산에서 빠져요.</p>
-      </div>
+      <CreditsField subject={subject} onChange={onChange} />
 
       <div className="form-group">
         <label className="form-label" htmlFor={`gradeWeight-${subject.id}`}>
@@ -145,7 +124,7 @@ function SubjectDetailFields({ subject, onChange }) {
 
       <div className="form-group">
         <label className="form-label" htmlFor={`previousScore-${subject.id}`}>
-          이전 시험 점수
+          이전 시험 점수 (선택)
         </label>
         <input
           id={`previousScore-${subject.id}`}

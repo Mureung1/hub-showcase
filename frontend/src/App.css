@@ -152,6 +152,17 @@
   color: var(--color-text-secondary);
 }
 
+/* 서버 없이 도는 중이라는 알림. 고장은 아니라서 danger 로 겁주지 않고,
+   그렇다고 흘려보내면 안 되니 배경을 깔아 눈에는 걸리게 둔다. */
+.server-note {
+  margin: 0 0 var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-card);
+  background-color: var(--color-primary-light);
+  font-size: var(--font-caption);
+  color: var(--color-text-secondary);
+}
+
 /* 카드 */
 .card {
   padding: var(--space-card);
@@ -1010,16 +1021,15 @@
   font-weight: 600;
 }
 
+/* 한 과목 안에 공부 분량과 이해도 두 항목이 들어간다. 붙어 있으면 어디까지가 한 항목인지
+   흐려져서 사이를 띄우되, 과목 사이 간격(space-card)보다는 좁게 둔다. */
+.understanding-item > .form-group + .form-group {
+  margin-top: var(--space-md);
+}
+
 /* 과목별 "더 자세히". 이해도 선택기와 붙어 보이지 않도록 한 칸 띄운다. */
 .understanding-item > .link-button {
   margin-top: var(--space-sm);
-}
-
-.step-progress-note {
-  margin: var(--space-card) 0 0;
-  text-align: center;
-  font-size: var(--font-caption);
-  color: var(--color-text-secondary);
 }
 
 /* 결과 카드 안의 도구 줄 */

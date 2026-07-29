@@ -2,6 +2,9 @@
 // 점수 계산에서는 이 항목을 아예 빼고 나머지로만 계산한다. (priorityCalculator.js 참고)
 export const UNKNOWN = 0;
 
+// 1~7 척도의 한가운데(=보통). 2단계에서 꼭 답하게 되어 있는 항목의 시작점으로 쓴다.
+export const SCALE_MIDDLE = 4;
+
 // 각 1~7 단계가 무슨 뜻인지 알려주는 라벨. "4"가 사람마다 다른 문제를 줄인다.
 // 입력 단계와 결과 화면의 추가 입력이 같은 라벨을 써야 해서 여기로 모아뒀다.
 export const UNDERSTANDING_LEVELS = [
