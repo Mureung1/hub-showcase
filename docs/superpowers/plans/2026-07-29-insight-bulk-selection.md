@@ -1,6 +1,6 @@
 # 보관함 인사이트 선택 삭제 구현 계획
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **실행 지침:** 체크박스 단위로 현재 세션에서 순서대로 구현한다. 서브에이전트는 사용하지 않는다.
 
 **Goal:** 보관함의 현재 목록에서 여러 인사이트를 안전하게 선택하고 서버에서 전체 성공 또는 전체 실패로 삭제한다.
 
@@ -255,9 +255,14 @@ begin
       message = '로그인한 사용자만 인사이트를 삭제할 수 있습니다.';
   end if;
 
-  select coalesce(array_agg(distinct target_id order by target_id), '{}')
+  select coalesce(
+    array_agg(distinct requested.target_id order by requested.target_id),
+    '{}'::uuid[]
+  )
   into requested_ids
-  from unnest(coalesce(target_insight_ids, '{}')) as target_id;
+  from unnest(
+    coalesce(target_insight_ids, '{}'::uuid[])
+  ) as requested(target_id);
 
   if cardinality(requested_ids) = 0 then
     raise exception using
@@ -308,7 +313,7 @@ Expected: 새 테스트 6건이 통과한다.
 
 ```powershell
 git add -- supabase/migrations/20260729000000_delete_user_insights.sql supabase/tests/database/insight_batch_delete.test.sql
-git commit -m "feat: 인사이트 일괄 삭제 데이터 계약"
+git commit -m "feat: 인사이트 일괄 삭제 함수와 검증 테스트 추가"
 ```
 
 ---
@@ -547,7 +552,7 @@ Expected: 두 파일의 테스트가 통과한다.
 
 ```powershell
 git add -- src/entities/insight/model/insight_repository.ts src/entities/insight/model/local_storage_insight_repository.ts src/entities/insight/model/local_storage_insight_repository.test.ts src/entities/insight/api/supabase_insight_repository.ts src/entities/insight/api/supabase_insight_repository.test.ts src/entities/insight/index.ts
-git commit -m "feat: 인사이트 저장소 일괄 삭제"
+git commit -m "feat: 인사이트 저장소 일괄 삭제 기능 구현"
 ```
 
 ---
@@ -699,7 +704,7 @@ Expected: 작업 공간 테스트가 통과한다.
 
 ```powershell
 git add -- src/app/model/use_insight_workspace.ts src/app/model/use_insight_workspace.test.tsx src/app/authenticated_workspace.tsx src/app/app.test.tsx src/app/authenticated_workspace.test.tsx src/app/authenticated_workspace_offline.test.tsx src/app/model/create_browser_insight_repository.test.ts src/app/model/create_repository_insight_capture_service.test.ts
-git commit -m "feat: 인사이트 일괄 삭제 상태 갱신"
+git commit -m "feat: 인사이트 일괄 삭제 후 작업공간 상태 갱신 구현"
 ```
 
 ---
@@ -868,7 +873,7 @@ Expected: 기존 카드 테스트와 새 선택 테스트가 통과한다.
 
 ```powershell
 git add -- src/entities/insight/ui/insight_grid.tsx src/entities/insight/ui/insight_card.tsx src/entities/insight/ui/insight_grid.css src/entities/insight/ui/insight_grid.test.tsx
-git commit -m "feat: 인사이트 카드 선택 모드"
+git commit -m "feat: 인사이트 카드 다중 선택 기능 추가"
 ```
 
 ---
@@ -1200,7 +1205,7 @@ Expected: 선택 모드와 기존 보관함·카드 테스트가 통과한다.
 
 ```powershell
 git add -- src/pages/library/ui/library_selection_toolbar.tsx src/pages/library/ui/library_selection_toolbar.css src/pages/library/ui/insight_batch_delete_dialog.tsx src/pages/library/ui/library_page.tsx src/pages/library/ui/library_page.css src/pages/library/ui/library_page.test.tsx
-git commit -m "feat: 보관함 인사이트 선택 삭제"
+git commit -m "feat: 보관함 인사이트 선택 및 일괄 삭제 기능 구현"
 ```
 
 ---
@@ -1254,8 +1259,8 @@ Expected: TypeScript와 Vite 웹 빌드가 통과한다.
 - [ ] **Step 4: 타입 정리 커밋**
 
 ```powershell
-git add -- src/app src/entities/insight
-git commit -m "fix: 일괄 삭제 저장소 구현 정합성"
+git add -- src/app/app.test.tsx src/app/authenticated_workspace.test.tsx src/app/authenticated_workspace.tsx src/app/authenticated_workspace_offline.test.tsx src/app/model/create_repository_insight_capture_service.test.ts src/pages/library/ui/library_page.test.tsx
+git commit -m "fix: 앱 작업공간에 인사이트 일괄 삭제 기능 연결"
 ```
 
 변경이 앞선 커밋에 모두 포함되어 별도 수정이 없으면 이 커밋은 만들지 않는다.
@@ -1282,8 +1287,10 @@ Expected: 지정한 다섯 테스트 파일만 통과한다.
 Run:
 
 ```powershell
-npx eslint src/entities/insight/model/insight_repository.ts src/entities/insight/model/local_storage_insight_repository.ts src/entities/insight/api/supabase_insight_repository.ts src/app/model/use_insight_workspace.ts src/app/authenticated_workspace.tsx src/entities/insight/ui/insight_grid.tsx src/entities/insight/ui/insight_card.tsx src/pages/library/ui/library_selection_toolbar.tsx src/pages/library/ui/insight_batch_delete_dialog.tsx src/pages/library/ui/library_page.tsx
-npx prettier --check src/entities/insight/model/insight_repository.ts src/entities/insight/model/local_storage_insight_repository.ts src/entities/insight/api/supabase_insight_repository.ts src/app/model/use_insight_workspace.ts src/app/authenticated_workspace.tsx src/entities/insight/ui/insight_grid.tsx src/entities/insight/ui/insight_card.tsx src/entities/insight/ui/insight_grid.css src/pages/library/ui/library_selection_toolbar.tsx src/pages/library/ui/library_selection_toolbar.css src/pages/library/ui/insight_batch_delete_dialog.tsx src/pages/library/ui/library_page.tsx src/pages/library/ui/library_page.css
+$changedTypeScriptFiles = git diff --name-only origin/main...HEAD -- 'src/**/*.ts' 'src/**/*.tsx'
+npx eslint -- $changedTypeScriptFiles
+$changedSourceFiles = git diff --name-only origin/main...HEAD -- 'src/**/*.ts' 'src/**/*.tsx' 'src/**/*.css'
+npx prettier --check -- $changedSourceFiles
 ```
 
 Expected: 변경한 TypeScript와 CSS 파일만 통과한다.
