@@ -126,6 +126,7 @@ const SubscriptionForm = () => {
               placeholder="예: 넷플릭스"
               value={serviceName}
               onChange={(e) => setServiceName(e.target.value)}
+              autoComplete="off"
               required
             />
           </div>
@@ -142,6 +143,7 @@ const SubscriptionForm = () => {
               placeholder="예: 17000"
               value={subAmount}
               onChange={(e) => setSubAmount(e.target.value)}
+              autoComplete="off"
               required
             />
           </div>
@@ -159,6 +161,7 @@ const SubscriptionForm = () => {
               placeholder="예: 20"
               value={billingDay}
               onChange={(e) => setBillingDay(e.target.value)}
+              autoComplete="off"
               required
             />
           </div>
@@ -199,6 +202,7 @@ const SubscriptionForm = () => {
               placeholder="예: 국민은행"
               value={bankName}
               onChange={(e) => setBankName(e.target.value)}
+              autoComplete="off"
               required
             />
           </div>
@@ -215,6 +219,7 @@ const SubscriptionForm = () => {
               placeholder="- 없이 숫자만 입력"
               value={accountNumber}
               onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ''))}
+              autoComplete="off"
               required
             />
           </div>
@@ -230,6 +235,7 @@ const SubscriptionForm = () => {
               placeholder="예: 홍길동"
               value={accountHolderName}
               onChange={(e) => setAccountHolderName(e.target.value)}
+              autoComplete="off"
               required
             />
           </div>
@@ -253,6 +259,7 @@ const SubscriptionForm = () => {
               placeholder="공유받은 초대 링크를 붙여넣어 주세요"
               value={joinInput}
               onChange={(e) => setJoinInput(e.target.value)}
+              autoComplete="off"
               required
             />
           </div>

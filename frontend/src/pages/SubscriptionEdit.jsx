@@ -110,6 +110,7 @@ const SubscriptionEdit = () => {
             type="text"
             value={serviceName}
             onChange={(e) => setServiceName(e.target.value)}
+            autoComplete="off"
             required
           />
         </div>
@@ -125,6 +126,7 @@ const SubscriptionEdit = () => {
             min="1"
             value={subAmount}
             onChange={(e) => setSubAmount(e.target.value)}
+            autoComplete="off"
             required
           />
         </div>
@@ -141,6 +143,7 @@ const SubscriptionEdit = () => {
             max="31"
             value={billingDay}
             onChange={(e) => setBillingDay(e.target.value)}
+            autoComplete="off"
             required
           />
         </div>
@@ -180,6 +183,7 @@ const SubscriptionEdit = () => {
             type="text"
             value={bankName}
             onChange={(e) => setBankName(e.target.value)}
+            autoComplete="off"
             required
           />
         </div>
@@ -195,6 +199,7 @@ const SubscriptionEdit = () => {
             inputMode="numeric"
             value={accountNumber}
             onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ''))}
+            autoComplete="off"
             required
           />
         </div>
@@ -209,6 +214,7 @@ const SubscriptionEdit = () => {
             type="text"
             value={accountHolderName}
             onChange={(e) => setAccountHolderName(e.target.value)}
+            autoComplete="off"
             required
           />
         </div>
