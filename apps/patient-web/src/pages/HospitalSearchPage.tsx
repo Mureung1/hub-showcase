@@ -8,11 +8,10 @@ import {
   medicalDepartments,
 } from "../data/hospitalSearchFilters";
 import { getApiHealth, getPatientConfig } from "../services/apiClient";
-import {
-  filterHospitalsByQuery,
-} from "../utils/filterHospitals";
+import { filterHospitalsByQuery } from "../utils/filterHospitals";
 
 type ApiState = "checking" | "connected" | "disconnected";
+type DevelopmentHospitalDataState = "loading" | "ready" | "unavailable";
 const developmentHospitalId = "10000000-0000-4000-8000-000000000001";
 
 interface MockHospital {
@@ -44,9 +43,9 @@ const mockHospitals: MockHospital[] = [
     name: "서울이비인후과",
     department: "이비인후과",
     district: "서울특별시 마포구",
-    waitingPatients: 5,
-    estimatedMinutes: 50,
-    remoteOpen: true,
+    waitingPatients: 0,
+    estimatedMinutes: 0,
+    remoteOpen: false,
   },
   {
     id: "10000000-0000-4000-8000-000000000002",
@@ -95,6 +94,8 @@ export function HospitalSearchPage() {
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [apiState, setApiState] = useState<ApiState>("checking");
+  const [developmentHospitalDataState, setDevelopmentHospitalDataState] =
+    useState<DevelopmentHospitalDataState>("loading");
   const [{ hospitals, province, cityDistrict, department }, dispatch] = useReducer(
     hospitalSearchReducer,
     {
@@ -136,8 +137,12 @@ export function HospitalSearchPage() {
             remoteOpen: config.queueStatus === "open",
           },
         });
+        setDevelopmentHospitalDataState("ready");
       } catch {
-        // The static cards remain visible while the development API is unavailable.
+        if (!active) return;
+        setDevelopmentHospitalDataState((current) =>
+          current === "ready" ? current : "unavailable",
+        );
       }
     };
     void refreshDevelopmentHospital();
@@ -149,18 +154,10 @@ export function HospitalSearchPage() {
   }, []);
 
   const cityDistricts = province
-    ? koreanAdministrativeDistricts[
-        province as keyof typeof koreanAdministrativeDistricts
-      ] ?? []
+    ? (koreanAdministrativeDistricts[province as keyof typeof koreanAdministrativeDistricts] ?? [])
     : [];
   const filteredHospitals = useMemo(
-    () =>
-      filterHospitalsByQuery(
-        hospitals,
-        query,
-        { province, cityDistrict },
-        department,
-      ),
+    () => filterHospitalsByQuery(hospitals, query, { province, cityDistrict }, department),
     [hospitals, query, province, cityDistrict, department],
   );
 
@@ -259,45 +256,80 @@ export function HospitalSearchPage() {
           </div>
 
           <div className="hospital-list">
-            {filteredHospitals.map((hospital) => (
-              <article className="hospital-card" key={hospital.id}>
-                <div className="hospital-card__body">
-                  <div className="hospital-card__title-row">
-                    <div>
-                      <h3>{hospital.name}</h3>
-                      <p>
-                        {hospital.department} · {hospital.district}
-                      </p>
+            {filteredHospitals.map((hospital) => {
+              const usesLiveQueueData = hospital.id === developmentHospitalId;
+              const isQueueDataLoading =
+                usesLiveQueueData && developmentHospitalDataState === "loading";
+              const isQueueDataUnavailable =
+                usesLiveQueueData && developmentHospitalDataState === "unavailable";
+              const canShowQueueData =
+                !usesLiveQueueData || developmentHospitalDataState === "ready";
+              const canOpenDetails = canShowQueueData && hospital.remoteOpen;
+
+              return (
+                <article className="hospital-card" key={hospital.id}>
+                  <div className="hospital-card__body">
+                    <div className="hospital-card__title-row">
+                      <div>
+                        <h3>{hospital.name}</h3>
+                        <p>
+                          {hospital.department} · {hospital.district}
+                        </p>
+                      </div>
+                      <span
+                        className={
+                          canOpenDetails ? "status-badge" : "status-badge status-badge--closed"
+                        }
+                      >
+                        {isQueueDataLoading
+                          ? "현황 확인 중"
+                          : isQueueDataUnavailable
+                            ? "현황 조회 실패"
+                            : hospital.remoteOpen
+                              ? "원격 접수 중"
+                              : "접수 마감"}
+                      </span>
                     </div>
-                    <span
-                      className={
-                        hospital.remoteOpen ? "status-badge" : "status-badge status-badge--closed"
-                      }
-                    >
-                      {hospital.remoteOpen ? "원격 접수 중" : "접수 마감"}
-                    </span>
+                    <div className="waiting-summary">
+                      {canShowQueueData ? (
+                        <>
+                          <span>
+                            <Clock3 size={17} aria-hidden="true" />앞 대기{" "}
+                            {hospital.waitingPatients}명
+                          </span>
+                          <strong>
+                            {hospital.estimatedMinutes > 0
+                              ? `약 ${hospital.estimatedMinutes}분`
+                              : "대기 없음"}
+                          </strong>
+                        </>
+                      ) : (
+                        <span>
+                          <Clock3 size={17} aria-hidden="true" />
+                          {isQueueDataLoading
+                            ? "대기 현황 확인 중"
+                            : "대기 현황을 불러오지 못했습니다"}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="waiting-summary">
-                    <span>
-                      <Clock3 size={17} aria-hidden="true" />앞 대기 {hospital.waitingPatients}명
-                    </span>
-                    <strong>
-                      {hospital.estimatedMinutes > 0
-                        ? `약 ${hospital.estimatedMinutes}분`
-                        : "대기 없음"}
-                    </strong>
-                  </div>
-                </div>
-                <button
-                  className="detail-button"
-                  type="button"
-                  disabled={!hospital.remoteOpen}
-                  onClick={() => navigate(`/hospitals/${hospital.id}/waiting/new`)}
-                >
-                  {hospital.remoteOpen ? "상세 보기" : "오늘 마감"}
-                </button>
-              </article>
-            ))}
+                  <button
+                    className="detail-button"
+                    type="button"
+                    disabled={!canOpenDetails}
+                    onClick={() => navigate(`/hospitals/${hospital.id}/waiting/new`)}
+                  >
+                    {isQueueDataLoading
+                      ? "확인 중"
+                      : isQueueDataUnavailable
+                        ? "새로고침 후 다시 시도"
+                        : hospital.remoteOpen
+                          ? "상세 보기"
+                          : "오늘 마감"}
+                  </button>
+                </article>
+              );
+            })}
           </div>
 
           {filteredHospitals.length === 0 && (
