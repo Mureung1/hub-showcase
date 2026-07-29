@@ -4,6 +4,7 @@
   "summary": "GS25 편의점 점주의 발주 의사결정을 돕는 AI 데이터 분석 대시보드입니다.",
   "githubUser": "YunTaeYong(윤태용)",
   "demoUrl": "",
+  "demoVideoUrl": "https://youtu.be/R2YufLjmPsY",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/dashboard-1.webp",
@@ -23,9 +24,9 @@
     "엑셀 업로드만으로 전체 데이터가 자동으로 갱신되는 ETL 파이프라인"
   ],
   "featureTags": [
-    "재무 분석",
-    "발주 추천",
-    "판매 패턴 분석"
+    "판매 패턴 분석",
+    "폐기 분석",
+    "재무 리포트"
   ],
   "techStack": [
     "React",

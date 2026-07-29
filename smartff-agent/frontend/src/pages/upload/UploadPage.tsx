@@ -16,6 +16,8 @@ type UploadType = {
   name: string;
   category: 'sales' | 'orders' | 'waste' | 'inventory' | 'hourly' | 'weekday';
   usedIn: string[];
+  // FF(신선식품)는 유통기한이 짧아 "재고" 개념 자체가 실사용과 안 맞아 보류 중 — 뒤에 ETL/파서가 없음
+  disabled?: boolean;
 };
 
 type UIState = {
@@ -63,6 +65,7 @@ const UPLOAD_TYPES: UploadType[] = [
     name: '재고',
     category: 'inventory',
     usedIn: ['Analysis'],
+    disabled: true,
   },
   {
     id: 'hourly',
@@ -112,8 +115,8 @@ type ParseStat = {
   skipped_rows: number;
 };
 
-// 발주/재고는 파서가 없어 실제 검증 통계를 낼 수 없음 — 있는 그대로 안내
-const UNSUPPORTED_VALIDATION_NAMES = ['발주 데이터', '재고'];
+// 발주는 파서가 없어 실제 검증 통계를 낼 수 없음 — 있는 그대로 안내
+const UNSUPPORTED_VALIDATION_NAMES = ['발주 데이터'];
 
 export default function UploadPage() {
   const [uploads, setUploads] = useState<UploadRecord[]>([]);
@@ -392,8 +395,9 @@ export default function UploadPage() {
     }
   };
 
-  const completeCount = UPLOAD_TYPES.filter((type) => getLatestForCategory(type.category)).length;
-  const progressPercentage = Math.round((completeCount / UPLOAD_TYPES.length) * 100);
+  const activeUploadTypes = UPLOAD_TYPES.filter((type) => !type.disabled);
+  const completeCount = activeUploadTypes.filter((type) => getLatestForCategory(type.category)).length;
+  const progressPercentage = Math.round((completeCount / activeUploadTypes.length) * 100);
 
   if (loading) {
     return (
@@ -472,10 +476,10 @@ export default function UploadPage() {
           ></div>
         </div>
         <p style={{ fontSize: '12px', color: colors.textSecondary, margin: '0 0 8px 0' }}>
-          {UPLOAD_TYPES.length}개 데이터 중 {completeCount}개 준비
+          {activeUploadTypes.length}개 데이터 중 {completeCount}개 준비
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {UPLOAD_TYPES.map((type) => {
+          {activeUploadTypes.map((type) => {
             const latest = getLatestForCategory(type.category);
             return (
               <span key={type.id} style={{ fontSize: '11px', fontWeight: '500' }}>
@@ -499,6 +503,42 @@ export default function UploadPage() {
           const categoryStyle = categoryColors[type.category];
           const state = uiState[type.id] || { selectedFileName: null, isUploading: false, error: null };
 
+          if (type.disabled) {
+            return (
+              <div
+                key={type.id}
+                style={{
+                  background: colors.bgPrimary,
+                  border: `2px dashed ${colors.borderColor}`,
+                  borderRadius: '12px',
+                  padding: '20px',
+                  opacity: 0.6,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      background: colors.textTertiary,
+                    }}></span>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: colors.textSecondary }}>
+                      {type.name}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '10px', fontWeight: '600', color: colors.textTertiary, background: colors.bgCard, padding: '2px 8px', borderRadius: '9999px' }}>
+                    준비 중
+                  </span>
+                </div>
+                <p style={{ fontSize: '11px', color: colors.textTertiary, margin: '0' }}>
+                  FF 상품은 유통기한이 짧아 재고 분석 지표가 아직 지원되지 않습니다.
+                </p>
+              </div>
+            );
+          }
+
           return (
             <div
               key={type.id}
@@ -507,7 +547,7 @@ export default function UploadPage() {
               onDrop={(e) => handleDrop(type.id, e)}
               style={{
                 background: categoryStyle.bg,
-                border: `2px solid ${state.isDragging ? colors.primary : type.category === 'inventory' ? '#FDE68A' : colors.borderColor}`,
+                border: `2px solid ${state.isDragging ? colors.primary : colors.borderColor}`,
                 borderRadius: '12px',
                 padding: '20px',
                 boxShadow: state.isDragging ? `0 0 8px ${colors.primary}40` : '0 1px 3px rgba(15, 23, 42, 0.05)',
@@ -714,12 +754,12 @@ export default function UploadPage() {
               { name: '판매 데이터', kind: 'sales' as const },
               { name: '발주 데이터', kind: null },
               { name: '폐기', kind: 'waste' as const },
-              { name: '재고', kind: null },
             ] as { name: string; kind: 'sales' | 'waste' | null }[]
           ).map((row) => {
             const stat = row.kind ? parseStats[row.kind] : null;
             const isUnsupported = UNSUPPORTED_VALIDATION_NAMES.includes(row.name);
-            const hasSkipped = stat ? stat.skipped_rows > 0 : false;
+            // 인식된 상품이 하나도 없으면(양식이 다르거나 손상된 파일) 성공이 아니라 경고로 표시
+            const hasSkipped = stat ? stat.skipped_rows > 0 || stat.valid_rows === 0 : false;
 
             return (
               <div
@@ -746,7 +786,9 @@ export default function UploadPage() {
                   {isUnsupported
                     ? '자동 검증 미지원 (파서 없음)'
                     : stat
-                      ? `${stat.filename}: ${stat.valid_rows}개 상품 정상 인식${stat.skipped_rows > 0 ? `, ${stat.skipped_rows}개 실패` : ''}`
+                      ? stat.valid_rows === 0
+                        ? `${stat.filename}: 인식된 상품이 없습니다. 파일 양식을 확인하세요.`
+                        : `${stat.filename}: ${stat.valid_rows}개 상품 정상 인식${stat.skipped_rows > 0 ? `, ${stat.skipped_rows}개 실패` : ''}`
                       : '이번 세션에 업로드된 데이터가 없습니다.'}
                 </p>
               </div>

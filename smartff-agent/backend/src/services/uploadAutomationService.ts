@@ -8,6 +8,8 @@ import fs from 'fs';
 import path from 'path';
 import { runSalesWasteEtl, runSingleParser, EtlResult, EtlStepResult, FileParseStat } from './etlService';
 import financialService from './financialService';
+import patternService from './patternService';
+import { persistToSupabase } from './masterDataSyncService';
 import { PRODUCT_CATEGORIES } from '../constants/productCategories';
 
 export type UploadStatus = 'complete' | 'waiting' | 'error';
@@ -91,6 +93,8 @@ export async function processSalesWasteUpload(
   }
 
   await financialService.reloadData();
+  await patternService.reloadData();
+  await persistToSupabase();
 
   return { success: true, filename, status: 'complete', etl, parseStats };
 }
