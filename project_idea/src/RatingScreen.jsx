@@ -3,15 +3,27 @@ import { API_BASE } from "./apiBase";
 
 function Stars({ value, onChange }) {
   return (
-    <div style={{ display: "flex", gap: 2 }}>
+    <div role="radiogroup" aria-label="별점" style={{ display: "flex", gap: 2 }}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <span
+        <button
           key={n}
+          type="button"
+          role="radio"
+          aria-checked={n === value}
+          aria-label={`${n}점`}
           onClick={() => onChange(n)}
-          style={{ cursor: "pointer", fontSize: 20, color: n <= value ? "#C98A1F" : "rgba(36,21,18,0.15)" }}
+          style={{
+            cursor: "pointer",
+            fontSize: 20,
+            color: n <= value ? "#C98A1F" : "rgba(36,21,18,0.15)",
+            border: "none",
+            background: "none",
+            padding: 0,
+            lineHeight: 1,
+          }}
         >
           ★
-        </span>
+        </button>
       ))}
     </div>
   );

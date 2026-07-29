@@ -43,6 +43,7 @@ function StepHeader({ step, avatarUrl, onProfileClick }) { // 로고 + "RideSpli
         {onProfileClick && (
           <button
             onClick={onProfileClick}
+            aria-label="내 프로필"
             style={{ border: "none", background: "none", padding: 0, cursor: "pointer", borderRadius: "50%", lineHeight: 0 }}
           >
             {avatarUrl ? (
