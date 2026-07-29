@@ -423,7 +423,7 @@ describe("App", () => {
     expect(parameters.get("store")).toBe("FLOWER-1");
     expect(parameters.get("storeName")).toBe("연남 꽃 작업실");
 
-    expect(document.querySelector(".selected-location")).toBeInTheDocument();
+    expect(document.querySelector(".selected-location")).not.toBeInTheDocument();
     expect(document.querySelector("main")).toHaveAttribute("data-storefront-3d-state", "idle");
   });
 });
