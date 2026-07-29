@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { categoryMatchesSelection } from "../market/categorySelection";
+import { categoryMatchesSelection, storeCategorySelection } from "../market/categorySelection";
 import { categoryFocusCode } from "../market/categorySemantics";
 import { MarketFilters } from "../market/MarketFilters";
 import { MarketInspector } from "../market/MarketInspector";
@@ -69,9 +69,12 @@ export function WorkspaceLayout({
     const store = storefronts.visibleStores.find(
       (candidate) => (candidate.id ?? candidate.name) === storeKey,
     );
+    if (!store) return;
     viewport.setStorefront3dUnavailable(false);
-    actions.chooseListedStore(storeKey);
-    if (store) viewport.focusCenter([store.longitude, store.latitude], true);
+    storefronts.storeSelection.selectListedStore(storeKey);
+    panels.setInspectorOpen(true);
+    selection.applyCategorySelection(storeCategorySelection(store.category, store.categoryCode));
+    viewport.focusCenter([store.longitude, store.latitude], true);
   }
 
   return (
