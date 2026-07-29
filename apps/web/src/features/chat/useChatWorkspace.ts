@@ -558,66 +558,121 @@ export function useChatWorkspace() {
     provider: Provider,
     event: SourceAnswerEvent,
   ) {
-    updateQuestion(chatId, questionId, (question) => {
-      const sourceAnswers = question.sourceAnswers.map((answer) => {
-        if (answer.provider !== provider) {
-          return answer;
-        }
-        const isSucceeded = event.status === "succeeded";
-        const isFailed = event.status === "failed";
-        const isProcessing = event.status === "processing";
-        const excludedFromComparison =
-          event.excludedFromComparison ?? answer.excludedFromComparison;
-        const timestamp = nowIso();
+    // updateQuestion 대신 setState를 직접 쓴다 — settle 시 충돌 0건이면 같은 갱신에서
+    // FinalAnswer·DecisionNote(별도 state)까지 만들어야 하기 때문이다.
+    setState((prev) => {
+      let createdNote: DecisionNote | null = null;
+      const chats = prev.chats.map((chat) => {
+        if (chat.id !== chatId) return chat;
         return {
-          ...answer,
-          status: event.status,
-          retryCount: event.retryCount ?? answer.retryCount,
-          excludedFromComparison,
-          // 6장: failed면 errorCode 필수 / succeeded면 성공이므로 코드 제거
-          errorCode: isSucceeded
-            ? null
-            : isFailed
-              ? (event.errorCode ?? answer.errorCode ?? "PROVIDER_TIMEOUT")
-              : answer.errorCode,
-          // 6장: succeeded면 structuredContent 필수 (Mock Section을 채운다)
-          structuredContent: isSucceeded
-            ? {
-                summary: mockSummaryByProvider[provider],
-                sections: [...mockSectionsByProvider[provider]],
+          ...chat,
+          questions: chat.questions.map((question) => {
+            if (question.id !== questionId) return question;
+            const sourceAnswers = question.sourceAnswers.map((answer) => {
+              if (answer.provider !== provider) {
+                return answer;
               }
-            : answer.structuredContent,
-          startedAt:
-            isProcessing && answer.startedAt === null
-              ? timestamp
-              : answer.startedAt,
-          completedAt:
-            isSucceeded || isFailed ? timestamp : answer.completedAt,
-          // 6장: excludedFromComparison=true면 excludedAt 필수
-          excludedAt:
-            excludedFromComparison && answer.excludedAt === null
-              ? timestamp
-              : answer.excludedAt,
-          updatedAt: timestamp,
-        };
-      });
+              const isSucceeded = event.status === "succeeded";
+              const isFailed = event.status === "failed";
+              const isProcessing = event.status === "processing";
+              const excludedFromComparison =
+                event.excludedFromComparison ?? answer.excludedFromComparison;
+              const timestamp = nowIso();
+              return {
+                ...answer,
+                status: event.status,
+                retryCount: event.retryCount ?? answer.retryCount,
+                excludedFromComparison,
+                // 6장: failed면 errorCode 필수 / succeeded면 성공이므로 코드 제거
+                errorCode: isSucceeded
+                  ? null
+                  : isFailed
+                    ? (event.errorCode ?? answer.errorCode ?? "PROVIDER_TIMEOUT")
+                    : answer.errorCode,
+                // 6장: succeeded면 structuredContent 필수 (Mock Section을 채운다)
+                structuredContent: isSucceeded
+                  ? {
+                      summary: mockSummaryByProvider[provider],
+                      sections: [...mockSectionsByProvider[provider]],
+                    }
+                  : answer.structuredContent,
+                startedAt:
+                  isProcessing && answer.startedAt === null
+                    ? timestamp
+                    : answer.startedAt,
+                completedAt:
+                  isSucceeded || isFailed ? timestamp : answer.completedAt,
+                // 6장: excludedFromComparison=true면 excludedAt 필수
+                excludedAt:
+                  excludedFromComparison && answer.excludedAt === null
+                    ? timestamp
+                    : answer.excludedAt,
+                updatedAt: timestamp,
+              };
+            });
 
-      // 세 Provider가 모두 최종 상태면 Mock Manager 결과(Agenda)를 만들고
-      // Question은 검토 단계로 전이한다 (0.4 상태 전이)
-      const allSettled = sourceAnswers.every(isSourceAnswerSettled);
-      const startsReview = allSettled && question.status === "processing";
-      return {
-        ...question,
-        sourceAnswers,
-        agendas: startsReview
-          ? buildMockAgendas(
+            // 세 Provider가 모두 최종 상태가 되기 전에는 SourceAnswer만 갱신한다.
+            const allSettled = sourceAnswers.every(isSourceAnswerSettled);
+            const startsReview =
+              allSettled && question.status === "processing";
+            if (!startsReview) {
+              return { ...question, sourceAnswers, updatedAt: nowIso() };
+            }
+
+            // 모두 최종 → Mock Manager 결과(Agenda)를 만든다 (0.4 상태 전이).
+            const agendas = buildMockAgendas(
               sourceAnswers,
               getActiveScenario().agendaTemplates,
               questionId,
-            )
-          : question.agendas,
-        status: startsReview ? "review_required" : question.status,
-        updatedAt: nowIso(),
+            );
+            // 충돌이 하나도 없이 전부 자동 통과(단일 소스 fallback 등)면 사용자 판단
+            // 트리거가 없으므로 여기서 바로 FinalAnswer·DecisionNote를 만들고 완료한다.
+            const allAgendasAutoFinal =
+              agendas.length > 0 &&
+              agendas.every(
+                (agenda) =>
+                  agenda.status === "passed" || agenda.status === "rejected",
+              );
+            if (allAgendasAutoFinal) {
+              const settledQuestion = { ...question, sourceAnswers, agendas };
+              const finalAnswer = buildMockFinalAnswer(
+                agendas,
+                sourceAnswers,
+                questionId,
+              );
+              createdNote = buildMockDecisionNote(
+                chat.id,
+                chat.title,
+                settledQuestion,
+                agendas,
+                finalAnswer,
+              );
+              const now = nowIso();
+              return {
+                ...settledQuestion,
+                finalAnswer,
+                status: "completed" as const,
+                completedAt: now,
+                updatedAt: now,
+              };
+            }
+            // 충돌이 있으면 검토 단계로 전이해 사용자 판단을 기다린다.
+            return {
+              ...question,
+              sourceAnswers,
+              agendas,
+              status: "review_required" as const,
+              updatedAt: nowIso(),
+            };
+          }),
+        };
+      });
+      return {
+        ...prev,
+        chats,
+        decisionNotes: createdNote
+          ? [...prev.decisionNotes, createdNote]
+          : prev.decisionNotes,
       };
     });
   }
