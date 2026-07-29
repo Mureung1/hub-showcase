@@ -69,16 +69,13 @@ export default function App() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="phone-frame-wrapper flex items-center justify-center min-h-screen">
       <div
+        className="phone-frame"
         style={{
-          width: 393,
-          height: 852,
           background: 'var(--background)',
-          borderRadius: 44,
           overflow: 'hidden',
           position: 'relative',
-          boxShadow: '0 40px 100px rgba(0,0,0,0.25), 0 0 0 10px #1A1D27',
           display: 'flex',
           flexDirection: 'column',
         }}

@@ -4,8 +4,9 @@
   "summary": "자취생을 위해 영수증을 찍으면 자동으로 지출을 정리하고, 소비 습관을 코칭해주는 AI 서비스입니다.",
   "githubUser": "jsoyeonj(주소연)",
   "demoUrl": "https://spendmate-wine.vercel.app/",
+  "demoVideoUrl": "https://drive.google.com/file/d/1LVYxUEEnAfAgltld_p4-OdDNcDmWCPKw/view?usp=sharing",
   "thumbnail": "thumbnail.png",
-  "screenshots": [],
+  "screenshots": ["screen.png"],
   "problem": "자취생은 매달 얼마를 왜 쓰는지 기록만 할 뿐 실제 소비 습관을 바꾸지 못합니다. 영수증을 일일이 손으로 입력하는 게 번거로워 기록 자체가 중단되고, 지금 속도로 쓰면 이번 달이 어떻게 끝날지 미리 알 방법이 없어 월말에야 위기를 깨닫습니다.",
   "targetUsers": [
     "자취/기숙사 대학생",
