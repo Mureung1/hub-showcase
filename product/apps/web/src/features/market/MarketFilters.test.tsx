@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { PRODUCT_CATALOG_BOOTSTRAP, type ProductCategory } from "../../services/productCatalog";
+import type { NearbyStoreState } from "../analysis/useNearbyStores";
 import type { Market } from "./types";
 import { MarketFilters } from "./MarketFilters";
 
@@ -35,10 +36,14 @@ function renderFilters({
   catalogState = "connecting",
   supportedCategories = PRODUCT_CATALOG_BOOTSTRAP.categories,
   marketKey = "연남",
+  sameCategoryCount = null,
+  nearbyState = "loading",
 }: {
   catalogState?: "ranked" | "connecting" | "bootstrap" | "error";
   supportedCategories?: ProductCategory[];
   marketKey?: "연남" | "홍대" | "합정";
+  sameCategoryCount?: number | null;
+  nearbyState?: NearbyStoreState;
 } = {}) {
   const callback = vi.fn();
   render(
@@ -61,7 +66,8 @@ function renderFilters({
       storesVisible
       visibleStores={[]}
       selectedStoreName={null}
-      nearbyState="loading"
+      sameCategoryCount={sameCategoryCount}
+      nearbyState={nearbyState}
       onNearbyRetry={callback}
       onClose={callback}
       onReset={callback}
@@ -144,5 +150,34 @@ describe("MarketFilters catalog state", () => {
     const sports = screen.getByRole("button", { name: "체육" });
     const beauty = screen.getByRole("button", { name: "미용" });
     expect(sports.compareDocumentPosition(beauty) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("uses the live nearby count when the catalog has no selected-market count", () => {
+    renderFilters({
+      catalogState: "ranked",
+      nearbyState: "ready",
+      sameCategoryCount: 7,
+      supportedCategories: [
+        {
+          name: "체육",
+          codes: [],
+          coverage: "partial",
+          rank: 1,
+          store_count: 216,
+          store_counts_by_market: {},
+        },
+        {
+          name: "미용",
+          codes: [],
+          coverage: "partial",
+          rank: 2,
+          store_count: 201,
+        },
+      ],
+    });
+
+    expect(screen.getByText("7곳")).toBeInTheDocument();
+    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.queryByText("0곳")).not.toBeInTheDocument();
   });
 });
