@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "title": "Beacon — 내 기록을 기억하는 AI 투자 코치",
+  "summary": "자연어로 조건을 걸면 시장을 대신 지켜보다 Discord로 알리고, 그렇게 남긴 매매를 과거 기록까지 끌어와 복기해 주는 AI 투자 코치입니다.",
+  "githubUser": "gyuwonlee1(이규원)",
+  "demoUrl": "",
+  "demoVideoUrl": "",
+  "thumbnail": "thumbnail.png",
+  "screenshots": [
+    "screenshots/stock.png",
+    "screenshots/review.png",
+    "screenshots/history.png",
+    "screenshots/watchlist.png"
+  ],
+  "problem": "개인 투자자는 업무·수업 때문에 장중 시세를 계속 지켜볼 수 없어 매매 타이밍을 놓치고, 매매 후에는 판단 근거를 남기지 않아 같은 실수를 반복합니다. 알림 도구와 복기 저널은 각각 존재하지만 신호를 받고 → 실행하고 → 되돌아보는 과정이 끊겨 있어 매매가 학습으로 이어지지 않습니다. 증권사 알림은 울리고 끝이라 복기가 없고, 노션·엑셀 일지는 손이 많이 가 며칠 만에 버려지며, ChatGPT 복기는 내 매매 기록과 실시간 시세에 접근하지 못합니다. Beacon은 감시·기록·복기를 하나의 계정과 하나의 기억으로 이어 붙여 이 끊긴 루프를 잇습니다.",
+  "targetUsers": [
+    "장중에 시세를 확인할 수 없는 20~30대 직장인 투자자",
+    "감정 매매가 잦고 판단 근거를 남기지 않는 대학생 투자자",
+    "투자 일지를 만들었다가 손이 많이 가 그만둔 사람"
+  ],
+  "features": [
+    "Discord에 \"삼성전자가 8만 원이 되면 알려줘\"처럼 말하면 Gemini가 조건으로 파싱하고, 확인 버튼을 눌러 확정합니다.",
+    "Supabase Cron이 5분마다 KIS Open API로 조건을 평가해, 충족되면 사용자별 Discord 채널로 알립니다.",
+    "알림에 붙은 매수·매도·관망 버튼으로 가격과 시각이 자동 저장되는 원클릭 매매 기록을 남깁니다.",
+    "복기 코칭 에이전트가 과거 매매·주가 흐름·지난 복기를 스스로 조회해 반복되는 행동 패턴을 짚어 줍니다.",
+    "종목 페이지에서 KIS 실데이터 차트(년/월/주/일)에 매매 마커와 조건 가격선을 표시하고, 차트를 클릭해 과거 일자 기록을 남깁니다.",
+    "복기는 매매를 추천하지 않고 계획(가설·목표가·손절가) 대비 실행만 비추는 \"거울 프레임\" 규칙을 따릅니다."
+  ],
+  "featureTags": [
+    "자연어 조건 알림",
+    "Discord 원클릭 기록",
+    "AI 매매 복기",
+    "거울 프레임",
+    "실시간 차트",
+    "관심종목",
+    "멀티유저 라우팅"
+  ],
+  "techStack": [
+    "React 19",
+    "Vite",
+    "React Router",
+    "lightweight-charts",
+    "Supabase",
+    "PostgreSQL",
+    "Supabase Edge Functions (Deno)",
+    "pg_cron",
+    "Gemini 2.5 Flash",
+    "KIS Open API",
+    "Discord Interactions API"
+  ],
+  "techHighlights": [
+    "복기는 1-shot LLM 호출이 아니라 Gemini function calling 루프입니다. search_past_trades·get_price_context·get_past_reviews 3개 도구를 최대 6회까지 스스로 골라 호출합니다.",
+    "환각을 막기 위해 복기가 인용한 cited_trade_ids를 함께 저장해, AI가 근거로 삼은 과거 매매를 사후에 검증할 수 있게 했습니다.",
+    "자본시장법상 투자자문 경계를 피하려고 \"거울 프레임\" 가드레일을 프롬프트와 스키마에 넣어, 미래 지시·종목 가치평가·수익률 기반 판정을 막고 plan_adherence 축을 신설했습니다.",
+    "Supabase Cron(pg_cron+pg_net)이 5분마다 Edge Function을 깨우고, monitor가 사용자별 notify_channel_id를 순회해 각자의 Discord 채널로만 알립니다.",
+    "모든 테이블에 RLS를 걸고 Discord 버튼 인터랙션도 조건 소유자와 클릭한 사용자를 대조해, 타인의 버튼으로는 데이터가 바뀌지 않게 했습니다.",
+    "lightweight-charts v5의 subscribeClick으로 클릭한 봉을 잡아, 주/월/년봉은 일자 선택 게이트를 거쳐 장마감 시각(KR 15:30 KST / US 16:00 ET, DST 인식)으로 기록합니다."
+  ],
+  "developmentWithAI": "저는 기획과 의사결정을 맡고, AI에게는 조사·구현·검증을 나눠 맡겼습니다. 먼저 plan.md·prd.md·design.md·roadmap.md를 단일 원천 문서로 만들어 AI가 매번 같은 기준을 읽게 했습니다. 기능은 weekly-plan 스킬로 하루 크기 태스크로 쪼개 Notion 보드에 올리고, 구현은 tdd-feature-loop로 수용 기준을 Given/When/Then으로 좁힌 뒤 테스트를 먼저 쓰게 했습니다. UI는 beacon-design 스킬이 디자인 토큰을 강제해 색·간격 하드코딩을 막았고, 완료 후에는 verify-feature-requirements Agent가 diff·테스트·lint·build를 근거로 PASS/FAIL을 따로 판정했습니다. AI가 낸 결과는 항상 제가 직접 실행해 확인했고, 라이브 DB와 Discord 경로는 수동 E2E로 검증했습니다.",
+  "agent": {
+    "summary": "Claude Code의 Skill과 Agent를 저장소(.claude/skills)에 직접 정의해, 계획 수립부터 구현·디자인·검증·PR 작성까지 반복 작업을 고정된 절차로 만들었습니다. 서비스 자체도 에이전트입니다 — 복기 기능은 Gemini function calling 루프로 DB와 KIS를 스스로 조회해 근거를 모은 뒤 판단합니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "verify-feature-requirements",
+        "purpose": "구현을 수정하지 않고 수용 기준·diff·테스트·lint·build만 근거로 기능의 PASS/FAIL을 독립 판정합니다."
+      },
+      {
+        "type": "skill",
+        "name": "weekly-plan",
+        "purpose": "루트·docs 문서를 전부 읽어 그 주의 목표를 하루 크기 태스크로 쪼개고 Notion 주간 보드로 배선합니다."
+      },
+      {
+        "type": "skill",
+        "name": "tdd-feature-loop",
+        "purpose": "요구사항을 Given/When/Then 하나로 좁히고 테스트를 먼저 작성하는 Red-Green-Refactor 절차를 강제합니다."
+      },
+      {
+        "type": "skill",
+        "name": "beacon-design",
+        "purpose": "docs/design.md의 디자인 토큰을 단일 원천으로 삼아 UI 색·타이포·간격의 하드코딩을 막습니다."
+      },
+      {
+        "type": "skill",
+        "name": "daily-pr",
+        "purpose": "그날 커밋과 대화 맥락을 모아 부트캠프 PR 템플릿 4개 섹션을 채운 PR 초안을 만듭니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "주간 계획 Workflow",
+        "steps": [
+          "루트·docs 문서 전체 재확인",
+          "그 주 목표와 수용 기준 추출",
+          "하루 크기 태스크로 분해",
+          "사용자 승인 후 Notion 주차 보드 생성",
+          "의존 순서로 우선순위 확정"
+        ]
+      },
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "roadmap.md 백로그에서 다음 작업 선택",
+          "Given/When/Then 수용 기준 작성",
+          "실패하는 테스트 먼저 작성",
+          "최소 변경으로 구현",
+          "npm test·lint·build 실행",
+          "로컬 화면과 라이브 DB로 수동 확인"
+        ]
+      },
+      {
+        "name": "검증·마감 Workflow",
+        "steps": [
+          "verify-feature-requirements Agent로 독립 검증",
+          "daily-pr 스킬로 PR 초안 작성",
+          "roadmap.md 상태 스냅샷 갱신",
+          "Notion 보드 상태 반영"
+        ]
+      }
+    ]
+  }
+}
