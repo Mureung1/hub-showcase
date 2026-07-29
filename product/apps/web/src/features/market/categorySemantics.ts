@@ -73,7 +73,7 @@ const FOCUS_CATEGORY_CODES: Record<CategorySemanticGroup, string> = {
 };
 
 export function resolveCategorySemanticGroup(category: string): CategorySemanticGroup {
-  const normalized = category.trim().casefold?.() ?? category.trim().toLocaleLowerCase("ko-KR");
+  const normalized = category.trim().toLocaleLowerCase("ko-KR");
   for (const rule of CATEGORY_RULES) {
     if (rule.terms.some((term) => normalized.includes(term.toLocaleLowerCase("ko-KR")))) {
       return rule.group;
@@ -92,5 +92,7 @@ export function categoryGroupLabel(category: string) {
 
 export function categoryFocusCode(category: string, sourceCode?: string | null) {
   const group = resolveCategorySemanticGroup(category);
-  return group === "generic" ? sourceCode?.trim() || FOCUS_CATEGORY_CODES.generic : FOCUS_CATEGORY_CODES[group];
+  return group === "generic"
+    ? sourceCode?.trim() || FOCUS_CATEGORY_CODES.generic
+    : FOCUS_CATEGORY_CODES[group];
 }
