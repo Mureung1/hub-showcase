@@ -10,6 +10,7 @@ import {
 } from '../lib/authId.js'
 import { get, set } from '../lib/storage.js'
 import * as dataStore from '../lib/dataStore.js'
+import { fetchWithTimeout } from '../lib/fetchWithTimeout.js'
 import { checkMigrationPrompt, declineMigration, migrateGuestData } from '../lib/guestMigration.js'
 import { sumMealRecordsNutrients, sumNutrients } from '../lib/mealStore.js'
 import { calcAssumedRecommendedNutrients } from '../lib/nutrition.js'
@@ -215,6 +216,17 @@ export function UserProvider({ children }) {
       }
     }
 
+    // FR-15 — 닉네임을 즉시 profiles에 반영한다(get_xp_leaderboard()가 profiles.nickname을 읽으므로,
+    // 온보딩(신체정보 입력) 전에도 리더보드에 닉네임이 뜨게 하기 위함). 실패해도 가입 자체는 막지
+    // 않는다 — 조용히 실패(나중에 프로필을 저장하면 이 값도 자연히 갱신될 기회가 있다).
+    try {
+      if (data.user?.id) {
+        await supabase.from('profiles').upsert({ id: data.user.id, nickname: String(nickname).trim() })
+      }
+    } catch (err) {
+      console.error('닉네임 초기 반영 실패:', err)
+    }
+
     clearLoginFailures(id)
   }, [])
 
@@ -238,6 +250,25 @@ export function UserProvider({ children }) {
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut()
+  }, [])
+
+  // FR-21 — 가입 직후(또는 재등록) 보안 질문/답을 서버에 등록한다. 로컬 session state의 갱신
+  // 타이밍에 기대지 않고 supabase.auth.getSession()으로 현재 토큰을 직접 읽는다(signup() 직후
+  // 호출되므로 state가 아직 반영 안 됐을 수 있음).
+  const registerSecurityQuestion = useCallback(async ({ questionId, answer }) => {
+    const {
+      data: { session: currentSession },
+    } = await supabase.auth.getSession()
+    const token = currentSession?.access_token
+    if (!token) throw new Error('로그인이 필요합니다.')
+
+    const res = await fetchWithTimeout('/api/auth/security-question/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ questionId, answer }),
+    })
+    const data = await res.json().catch(() => null)
+    if (!res.ok) throw new Error(data?.error || '보안 질문 등록에 실패했어요.')
   }, [])
 
   // 최초 로딩(useEffect)이 네트워크 오류 등으로 실패했을 때 LoadGate의 재시도 버튼이 부르는 함수.
@@ -353,6 +384,7 @@ export function UserProvider({ children }) {
       signup,
       login,
       logout,
+      registerSecurityQuestion,
       saveProfile,
       todayMeals,
       todayMealsLoading,
@@ -385,6 +417,7 @@ export function UserProvider({ children }) {
       signup,
       login,
       logout,
+      registerSecurityQuestion,
       saveProfile,
       todayMeals,
       todayMealsLoading,

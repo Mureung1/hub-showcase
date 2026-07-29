@@ -6,13 +6,19 @@ import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import CardSettingsPanel from '../components/CardSettingsPanel.jsx'
 import ChevronIcon from '../components/ChevronIcon.jsx'
+import BadgeShelfCard from '../components/BadgeShelfCard.jsx'
 import DataBackupPanel from '../components/DataBackupPanel.jsx'
+import LeaderboardSummaryCard from '../components/LeaderboardSummaryCard.jsx'
+import LevelCard from '../components/LevelCard.jsx'
+import QuestBoard from '../components/QuestBoard.jsx'
+import QuizCard from '../components/QuizCard.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import SchoolSearchField from '../components/SchoolSearchField.jsx'
 import SegmentedControl from '../components/SegmentedControl.jsx'
 import StandardComparisonList from '../components/StandardComparisonList.jsx'
 import TagMultiSelect from '../components/TagMultiSelect.jsx'
 import TextField from '../components/TextField.jsx'
+import WaterIntakeCard from '../components/WaterIntakeCard.jsx'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS } from '../lib/healthProfile.js'
 import { calcRecommendedNutrients, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { OCCUPATION_OPTIONS } from '../lib/occupationKeywords.js'
@@ -397,6 +403,19 @@ export default function Profile() {
           </button>
         )}
       </div>
+
+      {/* 온보딩(첫 입력) 단계는 신체정보를 아직 안 넣은 상태라 "오늘의 기록"류 위젯을 보여줄 맥락이
+          없다 — MY 탭으로 정착한 뒤에만 보여준다. */}
+      {!isOnboarding && (
+        <>
+          <LevelCard />
+          <LeaderboardSummaryCard />
+          <QuestBoard />
+          <QuizCard />
+          <BadgeShelfCard />
+          <WaterIntakeCard />
+        </>
+      )}
 
       {isOnboarding ? (
         <Card style={{ padding: 0, overflow: 'hidden' }}>
