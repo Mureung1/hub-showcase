@@ -3,7 +3,8 @@
   "title": "Bridge",
   "summary": "천천히 글을 쓰고 기다리는 경험을 제공하는, 편지 기반 익명 연결 플랫폼입니다. 직접 쓴 편지가 24시간 뒤 AI가 골라준 낯선 이의 편지와 이어집니다.",
   "githubUser": "bovoZhang(장성현)",
-  "demoUrl": "",
+  "demoUrl": "https://hub-iota-ten.vercel.app",
+  "demoVideoUrl": "https://youtu.be/8WdnuZO4bLk",
   "thumbnail": "thumbnail.webp",
   "screenshots": [],
   "problem": "짧고 즉각적인 소통에 익숙해지며 생각을 하나의 완성된 글로 표현해본 경험이 줄고 있습니다. 완전 공개(SNS)와 완전 사적(메신저) 사이의 중간 공간이 없어, 같은 고민을 가진 낯선 사람과 천천히 글로 연결될 기회가 부족합니다.",
@@ -14,13 +15,14 @@
   ],
   "features": [
     "직접 타이핑으로 장문의 편지를 처음부터 끝까지 작성합니다. (붙여넣기 차단, 글자 수 표시)",
-    "편지를 보낸 지 24시간 후, AI가 추천한 편지를 추천 이유와 함께 전달합니다.",
-    "받은 편지에 답장하거나 '스쳐 가기'를 선택하며 쓰기→기다리기→읽기→다시 쓰기 흐름을 이어갑니다.",
-    "저장소에서 내가 쓴 편지 / 받은 편지 / 이어진 편지를 확인합니다."
+    "편지를 보낸 지 24시간 후, Gemini가 감정·키워드를 분석해 고른 낯선 이의 편지를 추천 이유와 함께 전달합니다.",
+    "받은 편지에 답장하거나 '스쳐 가기'를 선택할 수 있고, 답장은 한 번으로 끝나지 않고 왕복 대화로 이어갈 수 있습니다.",
+    "저장소에서 내가 쓴 편지 / 받은 편지 / 이어진 편지를 실제 데이터로 확인합니다."
   ],
   "featureTags": [
     "장문 편지 작성",
-    "AI 추천 연결",
+    "AI 감정 매칭",
+    "왕복 답장",
     "익명 연결"
   ],
   "techStack": [
@@ -29,17 +31,28 @@
     "Express",
     "Prisma",
     "Supabase (PostgreSQL)",
-    "vitest"
+    "Google Gemini API",
+    "vitest",
+    "Vercel",
+    "Render"
   ],
   "techHighlights": [
     "useReducer 기반 상태 머신으로 편지 작성→발송→대기→도착 흐름과 24시간 카운트다운을 관리합니다.",
     "Express + Prisma + Supabase(PostgreSQL)로 편지 저장·조회 API를 구성하고, zod로 요청 값을 검증합니다.",
-    "Supabase Auth(JWT)로 로그인/회원가입을 처리하고, 검증 로직을 순수 함수로 분리해 vitest로 TDD했습니다."
+    "Supabase Auth(JWT)로 로그인/회원가입을 처리하고, 검증 로직을 순수 함수로 분리해 vitest로 TDD했습니다.",
+    "Gemini로 편지의 감정·키워드를 태깅하고 Tier 1~3 단계로 후보를 좁혀 추천합니다. 21개 감정 어휘 밖의 단어가 나오면 AI가 스스로 어휘를 학습해 확장합니다.",
+    "매칭된 상대의 작성자 정보는 API 응답 어디에도 노출되지 않도록 쿼리 단계부터 강제했고, 위기 신호 감지 시에도 작성자에게는 티 내지 않고 관리자만 서버 로그로 확인합니다.",
+    "Letter 모델에 threadId·replyToId·recipientId 자기참조 구조를 둬서, 답장이 한 번에 그치지 않고 여러 차례 오가는 대화로 이어지도록 설계했습니다."
   ],
-  "developmentWithAI": "저는 문제 정의와 핵심 기능, 화면 흐름을 정했습니다. AI(Claude Code)는 요구사항을 화면→API→DB가 닫히는 수직 슬라이스 단위 작업으로 나누고 코드 초안을 만들었습니다. 저는 결과를 직접 실행·테스트하고 검증 Agent로 점검하며 수정했습니다.",
+  "developmentWithAI": "저는 문제 정의와 핵심 기능, 화면 흐름을 정했습니다. AI(Claude Code)는 요구사항을 화면→API→DB가 닫히는 수직 슬라이스 단위 작업으로 나누고 코드 초안을 만들었습니다. 저는 결과를 직접 실행·테스트하고 검증 Agent로 점검하며 수정했습니다. 배포 과정에서는 실제 화면 스크린샷을 주고받으며 문제를 함께 진단하고 해결했습니다.",
   "agent": {
     "summary": "기획을 작업 단위로 쪼개고, TDD로 구현하고, 완료 기능을 검증하는 데 Claude Code의 Agent·Skill을 함께 사용했습니다.",
     "agentTools": [
+      {
+        "type": "skill",
+        "name": "feature-slice",
+        "purpose": "기능을 화면→API→DB가 닫히는 수직 슬라이스 단위로 쪼개 GitHub 이슈로 등록하는 스킬입니다."
+      },
       {
         "type": "agent",
         "name": "feature-verifier",
