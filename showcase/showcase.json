@@ -5,7 +5,9 @@
   "githubUser": "pkchanghyun-pixel(박창현)",
   "demoUrl": "",
   "thumbnail": "thumbnail.webp",
-  "screenshots": [],
+  "screenshots": [
+    "screenshots/home.webp"
+  ],
   "problem": "자취생은 냉장고에 어떤 재료가 있는지 잊거나 소비기한을 놓치기 쉽고, 남은 재료로 무엇을 만들 수 있는지 판단하는 데도 시간이 듭니다. 있는대로는 재료 관리와 메뉴 결정을 하나의 흐름으로 연결해 식재료 낭비와 매일의 메뉴 고민을 줄입니다.",
   "targetUsers": [
     "냉장고 재료를 제때 소비하고 싶은 1인 가구",
