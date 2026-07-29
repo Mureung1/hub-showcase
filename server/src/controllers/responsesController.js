@@ -77,7 +77,7 @@ export async function getResponsesByToken(req, res) {
 
   const { data, error } = await supabase
     .from('participants')
-    .select('id, name, status, responses(selected_slot_ids, selected_location_ids)')
+    .select('id, name, status, created_at, responses(selected_slot_ids, selected_location_ids, created_at)')
     .eq('letter_id', letter.id)
 
   if (error) return res.status(500).json({ data: null, error: error.message })
