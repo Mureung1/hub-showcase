@@ -15,6 +15,9 @@ const schema = z.object({
   KAMIS_CERT_ID: z.string().min(1).optional(),
   CLOVA_OCR_INVOKE_URL: z.string().url().optional(),
   CLOVA_OCR_SECRET_KEY: z.string().min(1).optional(),
+  AWS_REGION: z.string().min(1).default('ap-northeast-2'),
+  AWS_ACCESS_KEY_ID: z.string().min(1).optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().min(1).optional(),
   VAPID_PUBLIC_KEY: z.string().min(1).optional(),
   VAPID_PRIVATE_KEY: z.string().min(1).optional(),
 });
@@ -36,7 +39,8 @@ const integrations = [
   ['Supabase (레시피 DB)', Boolean(env.SUPABASE_URL && env.SUPABASE_KEY)],
   ['MAFRA 레시피 API', Boolean(env.MAFRA_API_KEY)],
   ['KAMIS 가격 API', Boolean(env.KAMIS_API_KEY && env.KAMIS_CERT_ID)],
-  ['Clova OCR', Boolean(env.CLOVA_OCR_INVOKE_URL && env.CLOVA_OCR_SECRET_KEY)],
+  ['Amazon Textract OCR', Boolean(env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY)],
+  ['Clova OCR (Textract 미설정 시 대체)', Boolean(env.CLOVA_OCR_INVOKE_URL && env.CLOVA_OCR_SECRET_KEY)],
   ['Web Push (유통기한 알림)', Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY)],
 ];
 for (const [name, on] of integrations) {
