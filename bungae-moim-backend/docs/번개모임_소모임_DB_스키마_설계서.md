@@ -169,7 +169,7 @@ erDiagram
 - 번개모임 신청: `status = 'confirmed'`로 즉시 insert (기획서 5번 참여 방식)
 - 소모임 신청: `status = 'pending'`으로 insert → 모임장이 `approved`/`rejected`로 변경
 - 모임 취소 시: 해당 모임의 참여 레코드를 일괄 `cancelled`로 갱신 (기획서 11번 "모임 취소" 행 — 마이페이지에 "취소됨"으로 노출)
-- ~~노쇼/불참 처리(신뢰도 하락)는 이 테이블의 상태 변화를 트리거로 애플리케이션에서 `users.trust_score`를 갱신하는 방식이면 충분합니다.~~ **2026-07-29부로 낡은 설명입니다.** 이 테이블의 `status` 변화만으로는 "몇 번 취소했는지", "노쇼였는지 진짜 참석이었는지"가 남지 않습니다(재신청이 같은 행의 `applied_at`/`responded_at`을 덮어씀). 그래서 취소는 5번 `participation_cancellations`에, 노쇼/참석 판정은 6번 `meeting_evaluations`에 **별도 이력**으로 쌓고, `users.trust_score`는 그 이력에서 계산됩니다.
+- ~~노쇼/불참 처리(신뢰도 하락)는 이 테이블의 상태 변화를 트리거로 애플리케이션에서 `users.trust_score`를 갱신하는 방식이면 충분합니다.~~ **2026-07-29부로 낡은 설명입니다.** 이 테이블의 `status` 변화만으로는 "몇 번 취소했는지", "노쇼였는지 진짜 참석이었는지"가 남지 않습니다(재신청이 같은 행의 `applied_at`/`responded_at`을 덮어씀). 그래서 취소는 6번 `participation_cancellations`에, 노쇼/참석 판정은 5번 `meeting_evaluations`에 **별도 이력**으로 쌓고, `users.trust_score`는 그 이력에서 계산됩니다.
 
 ---
 
