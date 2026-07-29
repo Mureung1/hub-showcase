@@ -9,6 +9,7 @@
     "migrate": "node scripts/migrate.js",
     "seed": "node scripts/seed.js",
     "seed:load": "node scripts/seedLoad.js",
+    "reset:owner": "node scripts/resetOwner.js",
     "verify:load": "node scripts/verifyLoad.js",
     "seed:geo": "node scripts/seedGeo.js",
     "explain:geo": "node scripts/explainGeo.js",
