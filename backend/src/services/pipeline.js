@@ -80,14 +80,69 @@ async function runStep1(jobId) {
 
     let imagePath = job.original_image_url;
 
+    console.log("[Step 1] 원본 이미지 URL:", imagePath);
+
+    // 로컬 경로인 경우
     if (!imagePath.startsWith("http")) {
       const cleanPath = imagePath.startsWith("/")
         ? imagePath.slice(1)
         : imagePath;
       imagePath = path.resolve(__dirname, `../../${cleanPath}`);
+
+      console.log("[Step 1] 로컬 이미지 경로:", imagePath);
+      console.log("[Step 1] 파일 존재:", fs.existsSync(imagePath));
+
+      // 로컬 파일이 없으면 Supabase Storage에서 다운로드 시도
+      if (!fs.existsSync(imagePath)) {
+        console.log("[Step 1] 로컬 파일 없음 → Supabase Storage에서 다운로드 시도");
+        try {
+          // Supabase Storage에서 다운로드
+          const filename = path.basename(imagePath);
+          const storageUrl = job.original_image_url;
+
+          if (storageUrl.includes("supabaseusercontent.com")) {
+            // 이미 Supabase Storage URL인 경우 다운로드
+            const downloadDir = path.resolve(__dirname, "../../ai-pipeline/download");
+            if (!fs.existsSync(downloadDir)) {
+              fs.mkdirSync(downloadDir, { recursive: true });
+            }
+
+            const tempPath = path.join(downloadDir, `temp_${Date.now()}.jpg`);
+            const response = await fetch(storageUrl);
+            const buffer = await response.buffer();
+            fs.writeFileSync(tempPath, buffer);
+
+            imagePath = tempPath;
+            console.log("[Step 1] Supabase Storage에서 다운로드 완료:", imagePath);
+          }
+        } catch (downloadErr) {
+          console.warn("[Step 1] Storage 다운로드 실패:", downloadErr.message);
+          throw new Error(`이미지 파일을 찾을 수 없습니다: ${job.original_image_url}`);
+        }
+      }
+    } else if (imagePath.startsWith("http")) {
+      // HTTP URL인 경우 다운로드
+      console.log("[Step 1] HTTP URL 이미지 다운로드 중:", imagePath);
+      try {
+        const downloadDir = path.resolve(__dirname, "../../ai-pipeline/download");
+        if (!fs.existsSync(downloadDir)) {
+          fs.mkdirSync(downloadDir, { recursive: true });
+        }
+
+        const tempPath = path.join(downloadDir, `temp_${Date.now()}.jpg`);
+        const response = await fetch(imagePath);
+        const buffer = await response.buffer();
+        fs.writeFileSync(tempPath, buffer);
+
+        imagePath = tempPath;
+        console.log("[Step 1] HTTP URL 다운로드 완료:", imagePath);
+      } catch (downloadErr) {
+        console.error("[Step 1] HTTP URL 다운로드 실패:", downloadErr.message);
+        throw new Error(`이미지 다운로드 실패: ${downloadErr.message}`);
+      }
     }
 
-    console.log("[Step 1] 이미지 경로:", imagePath);
+    console.log("[Step 1] 최종 이미지 경로:", imagePath);
     console.log("[Step 1] 파일 존재:", fs.existsSync(imagePath));
 
     const outputDir = path.resolve(__dirname, "../../ai-pipeline/output");
