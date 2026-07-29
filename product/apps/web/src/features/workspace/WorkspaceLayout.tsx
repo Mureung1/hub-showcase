@@ -8,7 +8,6 @@ import { MarketQuickMetrics } from "../market/MarketQuickMetrics";
 import { MarketMapCanvas } from "../map/MarketMapCanvas";
 import { MarketMapPanel } from "../map/MarketMapPanel";
 import type { SelectedStorefront } from "../map/storefronts/SelectedStorefrontLayer";
-import { useStorefrontBuildingPlacements } from "../map/storefronts/useStorefrontBuildingPlacement";
 import { MarketSearch } from "../search/MarketSearch";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 import type { PanelTextSize } from "./usePanelTextSize";
@@ -47,7 +46,7 @@ export function WorkspaceLayout({
       ),
     [selection.categorySelection, storefronts.visibleStores],
   );
-  const selectedFocusCandidate = useMemo<SelectedStorefront | null>(
+  const selectedFocusStorefront = useMemo<SelectedStorefront | null>(
     () =>
       viewport.presentationMode === "storefront3d" &&
       !viewport.storefront3dUnavailable &&
@@ -65,36 +64,13 @@ export function WorkspaceLayout({
         : null,
     [selectedStore, viewport.presentationMode, viewport.storefront3dUnavailable],
   );
-  const selectedFocusCandidates = useMemo(
-    () => (selectedFocusCandidate ? [selectedFocusCandidate] : []),
-    [selectedFocusCandidate],
-  );
-  const selectedFocusPlacements = useStorefrontBuildingPlacements(
-    selectedFocusCandidates,
-    storefronts.visibleStores,
-  );
-  const selectedFocusPlacement = selectedFocusCandidate
-    ? selectedFocusPlacements.find((placement) => placement.storeId === selectedFocusCandidate.id)
-    : undefined;
-  const selectedFocusStorefront: SelectedStorefront | null = selectedFocusCandidate
-    ? {
-        ...selectedFocusCandidate,
-        building: selectedFocusPlacement
-          ? {
-              id: selectedFocusPlacement.building.buildingId,
-              center: selectedFocusPlacement.building.center,
-              plotSizeMeters: selectedFocusPlacement.building.plotSizeMeters,
-              heightMeters: selectedFocusPlacement.building.heightMeters,
-              storeCountInBuilding: selectedFocusPlacement.building.storeCountInBuilding,
-            }
-          : null,
-      }
-    : null;
 
-  function selectAndFocusStore(storeName: string) {
-    const store = storefronts.visibleStores.find((candidate) => candidate.name === storeName);
+  function selectAndFocusStore(storeKey: string) {
+    const store = storefronts.visibleStores.find(
+      (candidate) => (candidate.id ?? candidate.name) === storeKey,
+    );
     viewport.setStorefront3dUnavailable(false);
-    actions.chooseListedStore(storeName);
+    actions.chooseListedStore(storeKey);
     if (store) viewport.focusCenter([store.longitude, store.latitude], true);
   }
 
@@ -120,6 +96,7 @@ export function WorkspaceLayout({
           storesVisible={selection.storesVisible}
           visibleStores={storefronts.listedStores}
           selectedStoreName={selectedStore?.name ?? null}
+          sameCategoryCount={storefronts.sameCategoryCount}
           nearbyState={nearby.state}
           onNearbyRetry={nearby.retry}
           onClose={() => panels.setFiltersOpen(false)}
@@ -190,6 +167,11 @@ export function WorkspaceLayout({
             categorySelection={selection.categorySelection}
             analysis={marketAnalysis.analysis}
             analysisState={marketAnalysis.analysisState}
+            sameCategoryCount={
+              nearby.state === "ready" || nearby.state === "empty"
+                ? storefronts.sameCategoryCount
+                : null
+            }
           />
         }
         market={market}
