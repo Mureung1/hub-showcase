@@ -326,5 +326,18 @@
   - **브라우저 회귀 (2026-07-30, 테스트 계정 로그인)**: 5개 시나리오 전부 PASS — happy-path(3사 SSE→Agenda→충돌 2해소→FinalAnswer→노트→completed), recheck-path(재검색 결과 박스에 recheckResult.response 렌더 정상, [이 결과로 결정]→user_accepted_after_recheck 통과), provider-excluded(제외 배너), all-rejected(고정 문구), single-source-fallback(auto_single_source 자동 통과·"단일 답변" 중립 라벨·합의 표현 없음). 전 시나리오 MockValidationBanner 미발생·콘솔 오류 없음
   - **회귀 1건 발견·수정**: single_source를 자동 통과로 바꾸면서 충돌 0건 Question이 사용자 판단 트리거를 잃어 FinalAnswer 없이 review_required에 갇혔다. `applySourceAnswerEvent` settle을 setState 기반으로 바꿔, 빌드된 Agenda가 전부 passed/rejected면 같은 갱신에서 FinalAnswer·DecisionNote 생성 후 completed로 전이하도록 수정(충돌이 있으면 기존대로 review_required). 재검증 완료
   - **미확인/후속**: 완료 뷰에서 single_source가 "결정 사항·사용자 판단 우선 적용" 그룹에 들어가고 노트 bullet이 "— 내 결정 반영"으로 나오는 건 사용자 판단이 아니므로 문구가 약간 어색(합의 오표기는 아님) — 문구 정교화는 T-019.4 후보. Manager 실제 판정·저장·web 소비는 T-019.2~4
-- 이후: SPEC-AI-002 나머지(T-019.2~4)~003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **T-019.2 완료 (2026-07-30)** — SPEC-AI-002 **Manager 분류 파이프라인 단계 1~5 실호출**. `buildAgendaDrafts(questionId, succeeded[]) → { drafts, managerMeta, trace }`. Agenda 저장·단계 6·7·SSE·web 재배선은 T-019.3~4. **라우터 미연결**(진입점은 개발 스크립트 `npm run manager:classify`뿐)
+  - **구조**: `apps/api/src/modules/agendas/`(types·service·ports/AgendaClassifier·adapters/openRouterClassifier+registry·pipeline/pickPivot·shuffle·suspiciousTitle·postProcess·scripts/classify+fixtures 3종·managerPrompts). 프롬프트 `prompts/manager/classify|leftover/v1.md`. env(§15.2, OPENROUTER_API_KEY·MANAGER_MODEL required)+`.env.example`. 반환 초안은 §7.7 균일형(participantCount+섹션+title·summary·displayOrder만; kind·stances·selectedContent는 단계 7=T-019.3)
+  - **OpenRouter**: fetch 직접 호출(명시 body 타입, any 없음), `response_format json_schema strict`·`provider.require_parameters`·max_tokens 미설정(§15.3). 쟁점 ID enum 런타임 생성(결정 2). 재현성: pivot=fnv1a·shuffle=mulberry32, Math.random 없음(AC1). 참여 provider 수는 코드가 셈(§7.2)
+  - **⚠️ 실측 (qwen/qwen3.7-plus, 2026-07-30) — 프롬프트는 v1 그대로, 튜닝 없이 통과**:
+    - **JSON 파싱 성공률 8/8 (100%)**, 스키마 검증 실패 0. 구조화 출력 **실작동 확인**(§18 미지수 해소)
+    - **재현성**: 같은 입력 5회 정렬 구조·pivot·shuffleSeed 완전 동일
+    - **stage3OutputTokens**: 1026~4496 (3사 fixture 평균 ~1515, 실제 질문 4496). **§5.5의 800토큰 가정을 2~5배 초과, §14.1 1500 경고를 8회 중 3회 넘김** → §5.5 재추정 또는 provider별 분할 검토 필요
+    - **stage3 지연**: fixture 20~44초, 실제 질문(5쟁점·7섹션) **84초 = 45초 타임아웃+재시도**. **§2.3의 5~15초 추정을 2~5배 초과.** qwen/qwen3.7-plus는 §2.3이 가정한 "최저가 티어"보다 느림 — 모델 재검토 신호(판단은 사용자). 타임아웃·재시도 로직은 정상 작동
+    - **multiAssignRate**: fixture 0%, 실제 질문 29%(임계 30% 직전). **leftoverRate**: fixture 0%, 단계4 트리거 fixture 50%. **titleRevisionRate**: 단계4 fixture 100%(의심 제목 1개 중 1개 중립화)
+    - **의미 정렬 품질(육안)**: 대체로 양호 — "정책 관리"↔"정책 작성 위치", "점검 체크리스트"↔"검증 방법" 동의어 병합 성공. 오정렬 1건: openai "역할 구분(anon/authenticated)"을 "service_role 키 취급"이 아닌 "기본 원칙"에 배정(경미)
+    - **단계 4 실검증**: 의심 제목 "service_role 키를 반드시 서버에서만 써야 하는 이유" → "service_role 키의 서버 사용 제한 이유"(반드시·이유 제거) + 무관 섹션(성능/인덱스)을 재배정 대신 **신규 쟁점 생성**(§6.4 편향 준수)
+  - **검증**: 루트 typecheck·build 통과, lint(web만) 통과. web 무변경 → Mock 4시나리오 흐름 영향 없음(브라우저 렌더 확인). DB 미기록·비밀값 미노출 준수
+  - **후속(T-019.3)**: 단계 6(합의/충돌 판정)·단계 7(selectedContent·kind 마감)·Agenda DB 저장·SSE Manager 이벤트. **모델 지연·토큰 초과는 T-019.3 착수 전 사용자 판단 필요**(모델 교체 여부)
+- 이후: SPEC-AI-002 나머지(T-019.3~4)~003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

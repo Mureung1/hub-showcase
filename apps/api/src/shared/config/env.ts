@@ -22,6 +22,15 @@ const defaultPromptsDir = fileURLToPath(
   new URL("../../../../../prompts", import.meta.url),
 );
 
+/**
+ * Manager 프롬프트(.md) 기본 경로 — 저장소 루트의 /prompts/manager (SPEC-AI-002 §15.1).
+ * 로더는 이 아래에서 `classify/<version>.md`·`leftover/<version>.md`를 읽는다.
+ * ⚠️ 배포 시 /prompts가 저장소 루트에 있어야 한다 (Render Root Directory 주의, §15.1).
+ */
+const defaultManagerPromptsDir = fileURLToPath(
+  new URL("../../../../../prompts/manager", import.meta.url),
+);
+
 const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   CLIENT_ORIGIN: z.string().min(1).default("http://localhost:5173"),
@@ -67,6 +76,27 @@ const envSchema = z.object({
   CLAUDE_MODEL: z.string().min(1).default("claude-haiku-4-5"),
   OPENAI_MODEL: z.string().min(1).default("gpt-5-nano"),
   GEMINI_MODEL: z.string().min(1).default("gemini-3.5-flash-lite"),
+
+  // --- SPEC-AI-002 §15.2 Manager(비교·분류 엔진) 설정 ---
+  // Manager는 BYOK 대상이 아니라 앱 키만 쓰는 내부 엔진이다(§15.2). 키 값은 메시지에 넣지 않는다.
+  OPENROUTER_API_KEY: z
+    .string({ message: "OPENROUTER_API_KEY가 필요합니다." })
+    .min(1, "OPENROUTER_API_KEY가 비어 있습니다."),
+  MANAGER_MODEL: z
+    .string({ message: "MANAGER_MODEL이 필요합니다." })
+    .min(1, "MANAGER_MODEL이 비어 있습니다."),
+  /** Manager 프롬프트 루트. 파일만 교체하면 되도록 런타임에 읽는다(§15.1). */
+  MANAGER_PROMPTS_DIR: z.string().min(1).default(defaultManagerPromptsDir),
+  /** 단계 3·4(AgendaClassifier) 프롬프트 버전. manager_meta.classifierVersion에 스탬프. */
+  CLASSIFIER_PROMPT_VERSION: z.string().min(1).default("v1"),
+  /** 단계 6(ConflictComparator) 프롬프트 버전. 단계 6은 T-019.3 — 여기선 자리만. */
+  COMPARATOR_PROMPT_VERSION: z.string().min(1).default("v1"),
+  /** 결정 6 — 충돌로 매핑할 유형 목록(쉼표 구분). 단계 6용이라 이번엔 읽기만 한다. */
+  MANAGER_CONFLICT_TYPES: z.string().min(1).default("main_answer"),
+  /** 단계 6 병렬 제한. 단계 6은 T-019.3 — 여기선 자리만. */
+  MANAGER_CONCURRENCY: z.coerce.number().int().positive().default(3),
+  /** Manager 호출당 타임아웃(ms). SPEC-AI-001의 45초 정책과 동일(§2.4). */
+  MANAGER_TIMEOUT_MS: z.coerce.number().int().positive().default(45000),
 })
   .superRefine((value, ctx) => {
     // 7.2: 플래그 ON이면 앱 기본 키 3종이 있어야 한다. 키 "값"은 메시지에 넣지 않는다.
