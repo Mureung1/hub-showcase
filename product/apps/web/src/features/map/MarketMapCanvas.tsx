@@ -77,7 +77,7 @@ type MarketMapCanvasProps = {
   selected: MarketStore | null;
   score: number | null;
   sameCategoryCount: number;
-  onSelectStore: (name: string) => void;
+  onSelectStore: (storeKey: string) => void;
   visibleSupportedRegion: boolean;
   onEvidenceOpen: () => void;
 };
@@ -95,7 +95,7 @@ function StoreMarker({
   prefabMode: boolean;
   detailed: boolean;
   count: number;
-  onSelect: (name: string) => void;
+  onSelect: (storeKey: string) => void;
 }) {
   const isSelected = selectedName === store.name;
   const isPrefab = prefabMode && isSelected && count === 1 && !detailed;
@@ -128,7 +128,7 @@ function StoreMarker({
                 .filter(Boolean)
                 .join(" ")
         }
-        onClick={() => onSelect(store.name)}
+        onClick={() => onSelect(store.id ?? store.name)}
       >
         {isPrefab ? (
           <>
