@@ -30,6 +30,11 @@ export function useNaverMap(containerRef, { center, zoom = 15, markers = [], fit
 
     const bounds = new naver.maps.LatLngBounds(centerLatLng, centerLatLng)
     let hasAny = false
+    // 안정성 점검(Phase B) — 이 effect가 재실행될 때마다(마커 목록·중심좌표 변경 등) 매번 새
+    // Marker/InfoWindow를 만들면서 예전엔 이전 것들을 정리하지 않았다 — 한 세션에서 검색을 여러 번
+    // 반복하면 이전 지도 인스턴스가 물고 있던 마커·리스너가 계속 쌓였다. 여기서 만든 것만 이 effect의
+    // cleanup에서 setMap(null)로 지도에서 떼어낸다(Naver Maps JS API v3의 표준 제거 방법).
+    const createdMarkers = []
 
     markers.forEach((m) => {
       const position = new naver.maps.LatLng(m.lat, m.lng)
@@ -44,6 +49,7 @@ export function useNaverMap(containerRef, { center, zoom = 15, markers = [], fit
           }
         : undefined
       const marker = new naver.maps.Marker({ map, position, icon, zIndex: m.zIndex })
+      createdMarkers.push(marker)
 
       if (m.content) {
         const infoWindow = new naver.maps.InfoWindow({ content: m.content })
@@ -68,7 +74,10 @@ export function useNaverMap(containerRef, { center, zoom = 15, markers = [], fit
       }
     }, 0)
 
-    return () => clearTimeout(relayoutTimer)
+    return () => {
+      clearTimeout(relayoutTimer)
+      createdMarkers.forEach((marker) => marker.setMap(null))
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded, containerRef, center?.lat, center?.lng, zoom, fitToMarkers, markersSignature])
 

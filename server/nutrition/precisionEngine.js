@@ -28,6 +28,7 @@
 // 그래서 더 손대지 않았다. NEIS 급식은 이 엔진의 원본 추정치가 아니라 officialTotals로
 // 캘리브레이션된 합계를 쓰므로(④), 이 오차는 캘리브레이션이 없는 학식(대학) 케이스에만 직접
 // 영향을 준다.
+import NodeCache from 'node-cache'
 import { lookupFood } from './foodLookup.js'
 import { classifyMenuRole } from '../../src/lib/mealPortions.js'
 import { getPlausibility } from '../../src/lib/foodData.js'
@@ -55,9 +56,12 @@ const GEMINI_TEMPERATURE = 0.1
 const PLAUSIBLE_MEAL_KCAL = { min: 300, max: 1400 }
 const EXTREME_FAT_CALORIE_RATIO = 0.6 // 지방 유래 칼로리 비중이 이 이상이면 이상치로 본다
 
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7일
+const CACHE_TTL_SECONDS = 7 * 24 * 60 * 60 // 7일
 
-const cache = new Map()
+// 안정성 점검(Phase B)에서 일반 Map → node-cache로 교체했다 — menus/officialTotals로 키가 갈리는
+// 요청은 두 번 다시 안 들어오면(예: 매번 다른 급식 메뉴 조합) 예전 Map은 그 항목을 절대 안 지웠다
+// (조회 시점에만 만료를 확인했으므로). node-cache는 checkperiod마다 스스로 정리한다.
+const cache = new NodeCache({ stdTTL: CACHE_TTL_SECONDS, checkperiod: 3600 })
 
 function round2(n) {
   return typeof n === 'number' && Number.isFinite(n) ? Math.round(n * 100) / 100 : null
@@ -80,21 +84,15 @@ function cacheKey(menuNames, schoolType, officialTotals) {
 }
 
 function getCached(key) {
-  const hit = cache.get(key)
-  if (!hit) return null
-  if (Date.now() > hit.expiresAt) {
-    cache.delete(key)
-    return null
-  }
-  return hit.value
+  return cache.get(key) ?? null
 }
 
 function setCached(key, value) {
-  cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS })
+  cache.set(key, value)
 }
 
 export function _clearCacheForTest() {
-  cache.clear()
+  cache.flushAll()
 }
 
 // 식약처 DB의 foodSize(1회 제공량)는 일반 외식·가정식 기준이라 "탕"류처럼 원래 여럿이 나눠 먹는

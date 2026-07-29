@@ -229,7 +229,6 @@ export function formatExpectedIntake(expected) {
 // SQL 채점 공식은 여전히 nutritionScore.js와 반드시 동일하게 유지해야 한다(CLAUDE.md).
 export const DEFICIENCY_TARGET_KEYS = ['carbs', 'protein', 'fat', 'fiber']
 export const RECORD_ONLY_KEYS = ['calories', 'sodium']
-export const UPPER_LIMIT_KEYS = ['sodium']
 
 // 오늘 부족한 영양소 상위 max개. 단위가 제각각(kcal/g/mg)인 절대량 대신 충족률(actual/recommended)
 // 오름차순으로 정렬한다 — 절대량 비교는 스케일이 큰 칼로리·나트륨·탄수화물이 항상 상위를 독식해

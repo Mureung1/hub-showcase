@@ -44,7 +44,10 @@ function normalizeMealRecord(raw) {
 export function getMeals(userId, dateKey) {
   if (!userId || !dateKey) return []
   const raw = get(storageKey(userId, dateKey), [])
-  return Array.isArray(raw) ? raw.map(normalizeMealRecord) : []
+  // 저장된 배열 안에 null/undefined 항목이 섞여 있으면(손상된 옛 데이터 등) normalizeMealRecord가
+  // raw.id 등을 읽다 던진다 — 그 항목 하나 때문에 그 날짜 전체를 못 읽는 것보다, 복구 불가능한
+  // 항목만 건너뛰고 나머지는 정상적으로 보여주는 쪽이 낫다.
+  return Array.isArray(raw) ? raw.filter(Boolean).map(normalizeMealRecord) : []
 }
 
 // userId 소유의 끼니 저장 키(meals:<userId>:<date>)가 존재하는 날짜(YYYY-MM-DD) 목록. dailyRecord의
@@ -82,7 +85,12 @@ export function addMealRecord(userId, dateKey, { items, mealType } = {}) {
   }
 
   const raw = get(storageKey(userId, dateKey), [])
-  set(storageKey(userId, dateKey), [...(Array.isArray(raw) ? raw : []), entry])
+  // set()은 localStorage 용량 초과 등으로 실패하면 false를 반환한다(storage.js) — 그걸 무시하고 그냥
+  // entry를 돌려주면 호출부(Analyze.jsx)가 저장 성공 토스트를 띄우는데 실제로는 아무것도 저장되지
+  // 않는, 원래보다 더 나쁜 "조용한 실패"가 된다. 명시적으로 던져 기존 저장 실패 처리(에러 토스트)로
+  // 이어지게 한다.
+  const saved = set(storageKey(userId, dateKey), [...(Array.isArray(raw) ? raw : []), entry])
+  if (!saved) throw new Error('저장 공간이 가득 찼어요. 데이터 백업 후 다시 시도해주세요.')
   return entry
 }
 
@@ -109,7 +117,8 @@ export function updateMealRecord(userId, dateKey, mealRecordId, { items } = {}) 
   })
   if (!updated) return null
 
-  set(storageKey(userId, dateKey), next)
+  const saved = set(storageKey(userId, dateKey), next)
+  if (!saved) throw new Error('저장 공간이 가득 찼어요. 데이터 백업 후 다시 시도해주세요.')
   return updated
 }
 
@@ -123,8 +132,8 @@ export function removeMealRecord(userId, dateKey, mealRecordId) {
   const next = (Array.isArray(raw) ? raw : []).filter((m) => m.id !== mealRecordId)
   if (next.length === 0) {
     remove(storageKey(userId, dateKey))
-  } else {
-    set(storageKey(userId, dateKey), next)
+  } else if (!set(storageKey(userId, dateKey), next)) {
+    throw new Error('저장 공간이 가득 찼어요. 데이터 백업 후 다시 시도해주세요.')
   }
 }
 
