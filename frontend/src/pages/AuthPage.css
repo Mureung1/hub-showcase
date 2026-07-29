@@ -84,6 +84,41 @@
   outline-offset: 1px;
 }
 
+/* 비밀번호 입력 + 표시 토글 */
+.rs-auth-pw {
+  display: flex;
+  gap: var(--clb-space-xs);
+  align-items: stretch;
+}
+.rs-auth-pw input {
+  flex: 1;
+}
+.rs-auth-pw-toggle {
+  flex: none;
+  padding: 0 12px;
+  border-radius: var(--clb-radius-control);
+  border: 1px solid var(--clb-edge-soft);
+  background: var(--clb-glass-faint);
+  color: var(--clb-muted);
+  font-size: var(--clb-text-label);
+  cursor: pointer;
+}
+.rs-auth-pw-toggle:hover {
+  color: var(--clb-ink);
+}
+
+.rs-auth-forgot {
+  margin: 0;
+  text-align: right;
+  font-size: var(--clb-text-label);
+}
+.rs-auth-forgot a {
+  color: var(--clb-muted);
+}
+.rs-auth-forgot a:hover {
+  color: var(--clb-gold);
+}
+
 .rs-auth-submit {
   width: 100%;
   margin-top: var(--clb-space-xs);

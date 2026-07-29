@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext.jsx'
+import { toKoAuthError } from '../lib/authErrors.js'
 import './AuthPage.css'
 
 // mode: 'login' | 'signup' — 라우트(/login, /signup)에 따라 App.jsx가 넘긴다.
@@ -13,6 +14,7 @@ function AuthPage({ mode = 'login' }) {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState(null)
@@ -58,7 +60,7 @@ function AuthPage({ mode = 'login' }) {
         navigate(from, { replace: true })
       }
     } catch (err) {
-      setError(err.message ?? '문제가 발생했어요.')
+      setError(toKoAuthError(err))
     } finally {
       setBusy(false)
     }
@@ -71,7 +73,7 @@ function AuthPage({ mode = 'login' }) {
       if (error) throw error
       // OAuth는 리다이렉트로 진행되므로 이후 처리는 돌아온 뒤 세션 구독이 담당.
     } catch (err) {
-      setError(err.message ?? '소셜 로그인에 실패했어요.')
+      setError(toKoAuthError(err, '소셜 로그인에 실패했어요.'))
     }
   }
 
@@ -142,16 +144,32 @@ function AuthPage({ mode = 'login' }) {
           </label>
           <label className="rs-auth-field">
             <span>비밀번호</span>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              autoComplete={isSignup ? 'new-password' : 'current-password'}
-              placeholder="6자 이상"
-            />
+            <div className="rs-auth-pw">
+              <input
+                type={showPw ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                autoComplete={isSignup ? 'new-password' : 'current-password'}
+                placeholder="6자 이상"
+              />
+              <button
+                type="button"
+                className="rs-auth-pw-toggle"
+                onClick={() => setShowPw((v) => !v)}
+                aria-label={showPw ? '비밀번호 숨기기' : '비밀번호 표시'}
+              >
+                {showPw ? '숨기기' : '표시'}
+              </button>
+            </div>
           </label>
+
+          {!isSignup && (
+            <p className="rs-auth-forgot">
+              <Link to="/reset-password">비밀번호를 잊으셨나요?</Link>
+            </p>
+          )}
 
           {error && <p className="rs-auth-error">{error}</p>}
           {notice && <p className="rs-auth-notice">{notice}</p>}

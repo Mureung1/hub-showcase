@@ -178,6 +178,38 @@
   margin-top: var(--clb-space-sm);
 }
 
+/* ---- 계정 설정 ---- */
+.rs-account-block {
+  padding: var(--clb-space-md) 0;
+  border-top: 1px solid var(--clb-edge-soft);
+  display: flex;
+  flex-direction: column;
+  gap: var(--clb-space-sm);
+}
+.rs-account-block:first-of-type {
+  border-top: none;
+  padding-top: var(--clb-space-sm);
+}
+.rs-account-h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.rs-account-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--clb-text-label);
+  color: var(--clb-muted);
+  max-width: 420px;
+}
+.rs-account-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--clb-space-sm);
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
 /* ---- 비밀번호 잠금 해제 모달 입력 ---- */
 .rs-pw-input {
   width: 100%;

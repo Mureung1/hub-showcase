@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import DocumentCard from '../components/DocumentCard.jsx'
+import AccountSettings from '../components/AccountSettings.jsx'
 import { deleteDraft, loadMyDrafts, loadMyPublished } from '../lib/storage.js'
 import { getLocalDocs, forgetLocalDoc } from '../lib/localDocs.js'
 import { useAuth } from '../lib/AuthContext.jsx'
@@ -13,9 +14,6 @@ function MyPage() {
   const [loadError, setLoadError] = useState(null)
   // 비회원이 이 브라우저에서 쓴 글(계정이 없어 서버로는 찾을 수 없다)
   const [localDocs, setLocalDocs] = useState([])
-  // 닉네임 — 설정하지 않으면 작성자명이 이메일 앞부분으로 공개된다
-  const [nickname, setNickname] = useState('')
-  const [nicknameSaved, setNicknameSaved] = useState(false)
 
   useEffect(() => {
     setLocalDocs(getLocalDocs())
@@ -35,27 +33,12 @@ function MyPage() {
         setLoadError(null)
       })
       .catch((err) => setLoadError(err.message ?? '문서를 불러오지 못했어요.'))
-    auth
-      .getProfile()
-      .then((p) => setNickname(p.nickname ?? ''))
-      .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.loading, auth.isLoggedIn])
 
   async function handleDelete(id) {
     await deleteDraft(id)
     setDrafts(await loadMyDrafts())
-  }
-
-  async function saveNickname(e) {
-    e.preventDefault()
-    setNicknameSaved(false)
-    try {
-      await auth.updateProfile({ nickname: nickname.trim() })
-      setNicknameSaved(true)
-    } catch (err) {
-      setLoadError(err.message ?? '닉네임을 저장하지 못했어요.')
-    }
   }
 
   // 이 브라우저에서 쓴 글 목록 — 비회원의 유일한 회수 수단이라 로그인 여부와 무관하게 보여준다.
@@ -130,30 +113,7 @@ function MyPage() {
 
       {loadError && <p className="rs-editor-error">{loadError}</p>}
 
-      {auth.isLoggedIn && (
-        <div className="rs-panel rs-home-section">
-          <h2>닉네임</h2>
-          <p className="rs-empty">
-            문서와 코멘트에 표시되는 이름이에요. 설정하지 않으면 이메일 앞부분이 공개돼요.
-          </p>
-          <form className="rs-nickname-form" onSubmit={saveNickname}>
-            <input
-              className="rs-pw-input"
-              value={nickname}
-              onChange={(e) => {
-                setNickname(e.target.value)
-                setNicknameSaved(false)
-              }}
-              placeholder="예: 기획하는 곰"
-              aria-label="닉네임"
-            />
-            <button type="submit" className="rs-btn rs-btn-primary">
-              저장
-            </button>
-          </form>
-          {nicknameSaved && <p className="rs-editor-saved">저장했어요.</p>}
-        </div>
-      )}
+      {auth.isLoggedIn && <AccountSettings />}
 
       <div className="rs-panel rs-home-section">
         <h2>내 초안 ({drafts.length})</h2>

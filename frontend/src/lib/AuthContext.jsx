@@ -46,6 +46,19 @@ export function AuthProvider({ children }) {
         }),
       signOut: () => supabase.auth.signOut(),
 
+      // 비밀번호 재설정 메일 발송 → 메일 링크가 /update-password로 돌아온다.
+      resetPassword: (email) =>
+        supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + '/update-password',
+        }),
+      // 로그인/복구 세션 상태에서 새 비밀번호 설정.
+      updatePassword: (password) => supabase.auth.updateUser({ password }),
+      // 이메일 변경 — Supabase가 확인 메일을 보낸다(보안 이메일 변경).
+      updateEmail: (email) => supabase.auth.updateUser({ email }),
+      // 비번 변경 전 본인 확인용 — 현재 비번으로 재로그인 시도.
+      reauthenticate: (email, currentPassword) =>
+        supabase.auth.signInWithPassword({ email, password: currentPassword }),
+
       // 프로필 조회/갱신(백엔드 경유). 로그인 상태에서만 의미가 있다.
       getProfile: () => request('/profile'),
       updateProfile: (patch) => request('/profile', { method: 'PATCH', body: patch }),

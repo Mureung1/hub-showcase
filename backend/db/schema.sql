@@ -62,10 +62,14 @@ create trigger documents_set_updated_at
 create table if not exists public.profiles (
   id           uuid primary key references auth.users(id) on delete cascade,
   nickname     text,
+  bio          text,                              -- 한 줄 소개(프로필)
   is_beginner  boolean not null default false,   -- 가입 시 "게임 기획이 처음이신가요?" 응답
   onboarded_at timestamptz,                       -- 튜토리얼 완료 시각(선택)
   created_at   timestamptz not null default now()
 );
+
+-- 기존 프로젝트에 bio 컬럼 추가(테이블이 이미 있으면 위 create가 건너뛰므로 별도 보강).
+alter table public.profiles add column if not exists bio text;
 
 -- 비회원 문서 수정용 비밀번호(해시). 회원 문서는 null, 비회원 문서는 author_id null + 이 값 설정.
 alter table public.documents
