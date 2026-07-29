@@ -8,13 +8,7 @@
     "server": "node server.js",
     "start": "node server.js",
     "build": "vite build",
-    "preview": "vite preview",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "test:e2e": "vitest run frontend/src/e2e/screenServerDatabase.e2e.test.jsx",
-    "test:analysis": "node scripts/verify-emotion-analysis.mjs",
-    "test:supabase": "node scripts/verify-supabase-connection.mjs",
-    "test:api": "node scripts/verify-emotion-analysis-api.mjs"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.35",
@@ -29,12 +23,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^7.0.0",
-    "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^6.0.3",
-    "esbuild": "^0.28.1",
-    "jsdom": "^29.1.1",
-    "vite": "^8.1.5",
-    "vitest": "^4.1.10"
+    "vite": "^8.1.5"
   }
 }
