@@ -790,26 +790,74 @@ class _EditTitleDialogState extends State<_EditTitleDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('퀘스트 제목 수정'),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        maxLength: 60,
-        textInputAction: TextInputAction.done,
-        onSubmitted: (_) => _save(),
-        decoration: const InputDecoration(hintText: '퀘스트 제목'),
+    final theme = Theme.of(context);
+
+    // 프로젝트 다이얼로그 관례(`Dialog` + 직접 레이아웃)를 따른다 — 저장된 퀘스트의
+    // [QuestEditDialog]·[QuestDeleteDialog]·환생 확인이 쓰는 **그 골격**이다.
+    // `AlertDialog`의 actions(OverflowBar)는 두 버튼을 오른쪽에 몰아 두고, 폭이
+    // 좁거나 글꼴 배율이 크면 세로로 쌓아 취소가 저장 위로 올라간다. 하단 Row +
+    // Expanded 2개면 항상 「왼쪽 취소 / 오른쪽 저장」이 반씩 폭을 나눠 갖는다.
+    //
+    // 배경색은 박지 않는다 — `dialogTheme`이 이미 흰 면을 잡고 있고, 다크는
+    // ColorScheme 경로가 뒤집는다.
+    return Dialog(
+      shape: const RoundedRectangleBorder(borderRadius: AppRadius.lgAll),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        // `AlertDialog`에서 옮겨 왔으니 **스크롤을 직접 챙긴다.** AlertDialog는
+        // 본문을 스크롤로 감싸 주지만 `Dialog`는 그냥 Column이라, 키보드가 올라온
+        // 큰 글꼴 배율에서 제목+입력칸+카운터+버튼이 남은 높이를 넘으면 버튼이
+        // 잘려 **저장할 방법이 사라진다**(환생 확인 다이얼로그와 같은 이유).
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('퀘스트 제목 수정', style: theme.textTheme.headlineMedium),
+              AppSpacing.gapMd,
+              TextField(
+                controller: _controller,
+                autofocus: true,
+                maxLength: 60,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _save(),
+                decoration: const InputDecoration(hintText: '퀘스트 제목'),
+              ),
+              AppSpacing.gapMd,
+
+              // 저장은 **주요 행동**이라 🟢 그린 그라디언트다(같은 화면의
+              // 「등록하기」= [_RegisterButton]과 같은 변형). 취소는 보조 행동이라
+              // 수정·삭제·환생 확인이 쓰는 그 중립 [TextButton] 그대로다.
+              //
+              // [IntrinsicHeight] + stretch로 두 버튼의 위·아랫선을 맞춘다 —
+              // GradientButton은 최소 높이 56이라 그냥 두면 취소 버튼만 짧아져
+              // 탭 영역이 어긋난다(이 파일의 「다시 나누기/등록하기」 줄과 동일).
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('취소'),
+                      ),
+                    ),
+                    AppSpacing.gapWSm,
+                    Expanded(
+                      child: GradientButton(
+                        // 제목이 비어 있으면 눌리지 않는다(notifier와 이중 방어).
+                        onPressed: _canSave ? _save : null,
+                        style: GradientButtonStyle.growth,
+                        label: '저장',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('취소'),
-        ),
-        FilledButton(
-          onPressed: _canSave ? _save : null,
-          child: const Text('저장'),
-        ),
-      ],
     );
   }
 }
