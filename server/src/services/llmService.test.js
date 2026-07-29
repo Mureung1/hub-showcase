@@ -3,6 +3,7 @@ import {
   buildFastAnalysisPrompt,
   buildFuzzyPattern,
   findVerbatimMatch,
+  parseEvaluationResponse,
   parseFastAnalysisResponse,
   parseSlowAnalysisResponse,
   pickDiversifiedTop3,
@@ -564,5 +565,82 @@ describe("pickDiversifiedTop3", () => {
 
       expect(evaluated.map((e) => e.label)).toEqual(originalOrder)
     })
+  })
+})
+
+describe("parseEvaluationResponse 백필 (GitHub #17)", () => {
+  function makeCandidate(n) {
+    return { title: `Headline ${n}`, link: `https://example.com/${n}`, source: "CNBC", sourceInitial: "CN" }
+  }
+
+  function makeResponse(evaluations) {
+    return { content: [{ text: JSON.stringify(evaluations) }] }
+  }
+
+  function translations(result) {
+    return result.map((r) => r.translation)
+  }
+
+  it("엄격 기준(투자4·독해3) 통과 후보가 3개 이상이면 백필 없이 기존 동작 그대로다", () => {
+    const candidates = [1, 2, 3, 4].map(makeCandidate)
+    const evaluations = [
+      { index: 1, investmentScore: 5, readabilityScore: 4, sector: "tech", translation: "t1", tickers: [] },
+      { index: 2, investmentScore: 4, readabilityScore: 3, sector: "macro", translation: "t2", tickers: [] },
+      { index: 3, investmentScore: 4, readabilityScore: 5, sector: "earnings", translation: "t3", tickers: [] },
+      { index: 4, investmentScore: 1, readabilityScore: 1, sector: "sports", translation: "t4", tickers: [] },
+    ]
+
+    const result = parseEvaluationResponse(makeResponse(evaluations), candidates)
+
+    expect(translations(result)).toEqual(["t1", "t2", "t3"])
+  })
+
+  it("통과 후보가 1개뿐이면 investmentScore 기준만 완화한 후보로 나머지 자리를 채운다", () => {
+    const candidates = [1, 2, 3].map(makeCandidate)
+    const evaluations = [
+      { index: 1, investmentScore: 5, readabilityScore: 4, sector: "tech", translation: "t1", tickers: [] },
+      { index: 2, investmentScore: 2, readabilityScore: 3, sector: "macro", translation: "t2", tickers: [] },
+      { index: 3, investmentScore: 3, readabilityScore: 4, sector: "earnings", translation: "t3", tickers: [] },
+    ]
+
+    const result = parseEvaluationResponse(makeResponse(evaluations), candidates)
+
+    expect(translations(result)).toEqual(["t1", "t3", "t2"])
+  })
+
+  it("통과 후보가 0개여도 백필 대상이 있으면 완전 폴백 대신 백필 결과를 반환한다", () => {
+    const candidates = [1, 2].map(makeCandidate)
+    const evaluations = [
+      { index: 1, investmentScore: 3, readabilityScore: 3, sector: "tech", translation: "t1", tickers: [] },
+      { index: 2, investmentScore: 2, readabilityScore: 4, sector: "macro", translation: "t2", tickers: [] },
+    ]
+
+    const result = parseEvaluationResponse(makeResponse(evaluations), candidates)
+
+    expect(translations(result)).toEqual(["t1", "t2"])
+  })
+
+  it("백필 대상까지 포함해도 전부 readabilityScore 기준 미달이면 여전히 예외를 던진다", () => {
+    const candidates = [1, 2].map(makeCandidate)
+    const evaluations = [
+      { index: 1, investmentScore: 5, readabilityScore: 1, sector: "tech", translation: "t1", tickers: [] },
+      { index: 2, investmentScore: 4, readabilityScore: 2, sector: "macro", translation: "t2", tickers: [] },
+    ]
+
+    expect(() => parseEvaluationResponse(makeResponse(evaluations), candidates)).toThrow(
+      "no candidates passed score thresholds",
+    )
+  })
+
+  it("후보가 총 2개뿐이면 백필해도 2개만 반환하고 3개로 패딩하지 않는다", () => {
+    const candidates = [1, 2].map(makeCandidate)
+    const evaluations = [
+      { index: 1, investmentScore: 5, readabilityScore: 5, sector: "tech", translation: "t1", tickers: [] },
+      { index: 2, investmentScore: 3, readabilityScore: 3, sector: "macro", translation: "t2", tickers: [] },
+    ]
+
+    const result = parseEvaluationResponse(makeResponse(evaluations), candidates)
+
+    expect(result).toHaveLength(2)
   })
 })

@@ -203,7 +203,12 @@ ${xmlParagraphs}
 
 위 원문을 바탕으로 아래 3가지 작업을 한 번에 수행하세요.
 
-1. terms — 기사 전체에서 초보 투자자가 알아야 할 핵심 금융/투자 용어를 3~5개 선별하세요. "term"은 원문에 등장한 영어 표현 그대로, "definition"은 초보자를 위한 한국어 설명입니다(50자 이내). "excerpt"는 해당 term이 등장한 문장을 원문에서 정확히 그대로 복사한 값입니다(재타이핑·의역·일부 발췌 금지, 스마트따옴표 변환 금지, 공백 정규화 금지, 하나의 <paragraph> 안에 온전히 포함). "excerptTranslation"은 그 excerpt 문장을 자연스러운 한국어로 번역한 값입니다.
+1. terms — 아래 기준을 모두 만족하는 핵심 금융/투자 용어를 정확히 3~5개 선별하세요.
+   - 난이도: 일반 사전적 의미만으로는 문장을 오독하게 되는, 금융 맥락에서 별도의 의미를 갖는 표현만 선택하세요(예: bear/bull, sell-off, guidance, hawkish/dovish). "stock", "price", "company"처럼 일상 어휘와 뜻이 같은 단어는 제외하세요.
+   - 중심성: 이 기사의 핵심 사건이나 주가 영향을 이해하는 데 직접 필요한 용어만 선택하고, 문맥과 무관하게 스쳐 지나가는 용어는 제외하세요.
+   - 중복 배제: 같은 개념을 가리키는 유의어(예: guidance와 outlook)를 동시에 선택하지 마세요.
+   - 위 기준을 충족하는 용어가 3개 미만이면, 기준에 가장 가깝게 부합하는 용어로 채워 반드시 3개 이상 반환하세요.
+   "term"은 원문에 등장한 영어 표현 그대로, "definition"은 초보자를 위한 한국어 설명입니다(50자 이내). "excerpt"는 해당 term이 등장한 문장을 원문에서 정확히 그대로 복사한 값입니다(재타이핑·의역·일부 발췌 금지, 스마트따옴표 변환 금지, 공백 정규화 금지, 하나의 <paragraph> 안에 온전히 포함). "excerptTranslation"은 그 excerpt 문장을 자연스러운 한국어로 번역한 값입니다.
 
 2. insight — 이 뉴스가 관련 종목 또는 섹터의 주가에 어떤 영향을 미칠 수 있는지 한국어 한 문장으로 해설하세요(80자 이내).
 
@@ -434,6 +439,12 @@ export async function callClaudeWithMetrics(prompt, options = {}) {
 const MIN_INVESTMENT_SCORE = 4
 const MIN_READABILITY_SCORE = 3
 
+// 엄격 기준 통과 후보가 3개 미만일 때만 쓰는 백필 기준. investmentScore만
+// 완화하고(그날 "시장을 뒤흔들 만큼"은 아니어도 다룰 가치는 있는 기사까지
+// 허용) readabilityScore 기준은 그대로 유지한다 — 학습용으로 읽기 어려운
+// 기사가 억지로 채워지는 걸 막기 위함. GitHub #17 참고.
+const BACKFILL_MIN_INVESTMENT_SCORE = 2
+
 function buildEvaluationPrompt(candidates) {
   const list = candidates
     .map((c, i) => `${i + 1}. [${c.source}] ${c.title}\n${c.bodyText}`)
@@ -494,7 +505,7 @@ export function pickDiversifiedTop3(evaluated) {
   return picked
 }
 
-function parseEvaluationResponse(response, candidates) {
+export function parseEvaluationResponse(response, candidates) {
   const text = response.content?.[0]?.text ?? ""
   const cleaned = text.replace(/```json|```/g, "").trim()
   const evaluations = JSON.parse(cleaned)
@@ -512,11 +523,26 @@ function parseEvaluationResponse(response, candidates) {
   const passed = evaluated.filter(
     (e) => e.investmentScore >= MIN_INVESTMENT_SCORE && e.readabilityScore >= MIN_READABILITY_SCORE,
   )
-  if (passed.length === 0) {
+
+  // 엄격 기준 통과가 3개 미만이면, readability는 유지한 채 investmentScore만
+  // 완화해 부족한 자리를 채운다(GitHub #17 — "1개만 통과해도 그대로 노출"
+  // 버그 수정). pickDiversifiedTop3가 investmentScore 내림차순으로 다시
+  // 정렬하므로 엄격 통과 후보가 항상 백필 후보보다 우선 채택된다.
+  let pool = passed
+  if (passed.length < 3) {
+    const backfill = evaluated
+      .filter((e) => !passed.includes(e))
+      .filter((e) => e.investmentScore >= BACKFILL_MIN_INVESTMENT_SCORE && e.readabilityScore >= MIN_READABILITY_SCORE)
+      .sort((a, b) => b.investmentScore - a.investmentScore)
+      .slice(0, 3 - passed.length)
+    pool = passed.concat(backfill)
+  }
+
+  if (pool.length === 0) {
     throw new Error("evaluateAndSelectArticles: no candidates passed score thresholds")
   }
 
-  return pickDiversifiedTop3(passed).map((e) => toCard(e.candidate, e))
+  return pickDiversifiedTop3(pool).map((e) => toCard(e.candidate, e))
 }
 
 const MOCK_READABILITY_SCORES = [5, 4, 3]
@@ -543,6 +569,8 @@ export async function evaluateAndSelectArticles(candidates) {
   }
 
   const prompt = buildEvaluationPrompt(candidates)
-  const response = await callClaude(prompt, { maxTokens: 2048 })
+  // maxTokens 4096: 후보가 많은 날(보통 10~30건, articleQualityFilter.js
+  // 참고)엔 평가 JSON 배열이 길어져 2048로는 잘려 파싱이 실패할 수 있었다.
+  const response = await callClaude(prompt, { maxTokens: 4096 })
   return parseEvaluationResponse(response, candidates)
 }

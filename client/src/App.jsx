@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from "react-router-dom"
+import { Routes, Route } from "react-router-dom"
 import { AuthProvider } from "./context/AuthContext.jsx"
 import Sidebar from "./components/Sidebar.jsx"
 import Dashboard from "./pages/Dashboard.jsx"
@@ -8,29 +8,20 @@ import Vocabulary from "./pages/Vocabulary.jsx"
 import Login from "./pages/Login.jsx"
 
 function App() {
-  const location = useLocation()
-  const showSidebar = location.pathname !== "/reader"
-
-  const routes = (
-    <Routes>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/reader" element={<Reader />} />
-      <Route path="/mypage" element={<InsightNote />} />
-      <Route path="/vocabulary" element={<Vocabulary />} />
-      <Route path="/login" element={<Login />} />
-    </Routes>
-  )
-
   return (
     <AuthProvider>
-      {showSidebar ? (
-        <div className="app-shell">
-          <Sidebar />
-          <div className="app-content">{routes}</div>
+      <div className="app-shell">
+        <Sidebar />
+        <div className="app-content">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/reader" element={<Reader />} />
+            <Route path="/mypage" element={<InsightNote />} />
+            <Route path="/vocabulary" element={<Vocabulary />} />
+            <Route path="/login" element={<Login />} />
+          </Routes>
         </div>
-      ) : (
-        routes
-      )}
+      </div>
     </AuthProvider>
   )
 }

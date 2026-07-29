@@ -2,7 +2,7 @@ import { useState } from "react"
 import Badge from "./Badge.jsx"
 import { SENTIMENT_META } from "../constants/sentiment.js"
 
-export default function BottomSheet({ decision, marketSentiment, insight, onClose }) {
+export default function BottomSheet({ decision, marketSentiment, insight, onSave, onDismiss }) {
   // slow lane(terms/insight/marketSentiment)이 fast lane보다 늦게 끝나면
   // 바텀시트가 열린 시점엔 아직 undefined일 수 있다 — 로딩 문구로 대체.
   const detailsLoading = marketSentiment === undefined || insight === undefined
@@ -10,15 +10,20 @@ export default function BottomSheet({ decision, marketSentiment, insight, onClos
   const [memoRevealed, setMemoRevealed] = useState(false)
   const [memo, setMemo] = useState("")
 
-  // 오버레이 클릭/닫기 버튼 모두 동일하게 trim된 메모(빈 문자열이면 null)를
-  // 넘기며 닫는다 — 바텀시트가 닫히는 모든 경로에서 저장 동작이 같아야 한다.
-  function handleClose() {
+  // "인사이트 노트에 저장" 버튼을 눌러야만 저장된다 — trim된 메모(빈
+  // 문자열이면 null)를 넘긴다.
+  function handleSave() {
     const trimmed = memo.trim()
-    onClose(trimmed === "" ? null : trimmed)
+    onSave(trimmed === "" ? null : trimmed)
+  }
+
+  // 오버레이 클릭/우측 상단 닫기 버튼은 저장 없이 그냥 닫는다(취소).
+  function handleDismiss() {
+    onDismiss()
   }
 
   return (
-    <div className="bottom-sheet-overlay" onClick={handleClose}>
+    <div className="bottom-sheet-overlay" onClick={handleDismiss}>
       <div
         className="bottom-sheet"
         role="dialog"
@@ -26,6 +31,15 @@ export default function BottomSheet({ decision, marketSentiment, insight, onClos
         aria-label="나의 판단과 AI 인사이트 비교"
         onClick={(e) => e.stopPropagation()}
       >
+        <button
+          type="button"
+          className="bottom-sheet-dismiss"
+          onClick={handleDismiss}
+          aria-label="저장하지 않고 닫기"
+        >
+          ✕
+        </button>
+
         <div className="bottom-sheet-compare">
           <div className="bottom-sheet-compare-item">
             <p className="bottom-sheet-compare-label">나의 선택</p>
@@ -68,8 +82,8 @@ export default function BottomSheet({ decision, marketSentiment, insight, onClos
           )}
         </div>
 
-        <button type="button" className="bottom-sheet-close" onClick={handleClose}>
-          닫기
+        <button type="button" className="bottom-sheet-save" onClick={handleSave}>
+          인사이트 노트에 저장
         </button>
       </div>
     </div>
