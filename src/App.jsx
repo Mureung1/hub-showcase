@@ -27,8 +27,11 @@ import {
 import { analyzeOpportunity } from "./services/analyzeOpportunity.js";
 import { sortTasksByUpcomingDate } from "./utils/taskSchedule.js";
 import {
+  DEFAULT_ALL_NOTICES_PER_SOURCE,
   MAX_ALL_NOTICES_PER_SOURCE,
+  MIN_ALL_NOTICES_PER_SOURCE,
   mergeSourceNoticeLinks,
+  normalizeAllNoticesPerSource,
 } from "./services/noticeOrdering.js";
 import { useAuth } from "./auth/useAuth.js";
 import { getUsernameFromUser } from "./auth/authIdentity.js";
@@ -166,6 +169,7 @@ function getErrorMessage(error) {
 
 function createInitialConfig() {
   return {
+    allNoticesPerSource: DEFAULT_ALL_NOTICES_PER_SOURCE,
     htmlSource: "",
     linkSelector: "a[href]",
     selectedSourceId: "custom",
@@ -185,11 +189,18 @@ function annotateLinks(links, source) {
   }));
 }
 
-function createScanSummary(sourceResults, failedSources = []) {
+function createScanSummary(
+  sourceResults,
+  failedSources = [],
+  allNoticesPerSource = DEFAULT_ALL_NOTICES_PER_SOURCE,
+) {
+  const normalizedAllNoticesPerSource = normalizeAllNoticesPerSource(allNoticesPerSource);
+
   return {
     allLinks: mergeSourceNoticeLinks(sourceResults, "allLinks", {
-      perSourceLimit: MAX_ALL_NOTICES_PER_SOURCE,
+      perSourceLimit: normalizedAllNoticesPerSource,
     }),
+    allNoticesPerSource: normalizedAllNoticesPerSource,
     failedSources,
     fetchedAt: new Date().toISOString(),
     isBatch: sourceResults.length > 1 || failedSources.length > 0,
@@ -434,9 +445,18 @@ function ConfigPanel({
           </div>
         </div>
 
+        <label className="field source-limit-field">
+          <span>전체 공지 수 (출처당)</span>
+          <input
+            type="number"
+            min={MIN_ALL_NOTICES_PER_SOURCE}
+            max={MAX_ALL_NOTICES_PER_SOURCE}
+            step="1"
+            value={config.allNoticesPerSource}
+            onChange={(event) => onChangeConfig({ allNoticesPerSource: event.target.value })}
+          />
+        </label>
       </div>
-
-
 
       <div className="action-row">
         <button className="primary-button" type="submit" disabled={isRunning}>
@@ -884,9 +904,12 @@ function OpportunityAgentWorkbench() {
   );
   const [customSources, setCustomSources] = useState([]);
   const [isSavingSource, setIsSavingSource] = useState(false);
-  const [config, setConfig] = useState(createInitialConfig);
-  const [knownLinks, setKnownLinks] = useState([]);
   const [initialScan] = useState(() => noticeHistoryStore.readLastScanResult());
+  const [config, setConfig] = useState(() => ({
+    ...createInitialConfig(),
+    allNoticesPerSource: initialScan?.allNoticesPerSource ?? DEFAULT_ALL_NOTICES_PER_SOURCE,
+  }));
+  const [knownLinks, setKnownLinks] = useState([]);
   const [scan, setScan] = useState(initialScan);
   const [status, setStatus] = useState(initialScan ? "complete" : "idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -1084,6 +1107,10 @@ function OpportunityAgentWorkbench() {
     const restoredScan = noticeHistoryStore.readLastScanResult();
 
     setScan(restoredScan);
+    setConfig((currentConfig) => ({
+      ...currentConfig,
+      allNoticesPerSource: restoredScan?.allNoticesPerSource ?? DEFAULT_ALL_NOTICES_PER_SOURCE,
+    }));
     setStatus(restoredScan ? "complete" : "idle");
     setKnownLinks([]);
     setNoticeAnalysisByUrl({});
@@ -1442,6 +1469,7 @@ function OpportunityAgentWorkbench() {
     }
 
     setConfig({
+      allNoticesPerSource: normalizeAllNoticesPerSource(config.allNoticesPerSource),
       htmlSource: "",
       linkSelector: "a[href]",
       selectedSourceId: source.id,
@@ -1667,13 +1695,17 @@ function OpportunityAgentWorkbench() {
   async function runCurrentSourceScan() {
     const { autoSaved, source } = await maybeAutoSaveCurrentSource();
     const result = await scanSource(source);
-    const scanWithModes = createScanSummary([result]);
+    const scanWithModes = createScanSummary([result], [], config.allNoticesPerSource);
     const nextScan = {
       ...scanWithModes,
       isBatch: false,
       targetUrl: result.targetUrl,
     };
 
+    setConfig((currentConfig) => ({
+      ...currentConfig,
+      allNoticesPerSource: scanWithModes.allNoticesPerSource,
+    }));
     setKnownLinks(noticeHistoryStore.readNoticeHistory(source.targetUrl, source.knownUrls));
     setLatestScan(nextScan);
     setDisplayMode("latest");
@@ -1795,14 +1827,18 @@ function OpportunityAgentWorkbench() {
       return;
     }
 
-    const scanSummary = createScanSummary(sourceResults, failedSources);
+    const scanSummary = createScanSummary(sourceResults, failedSources, config.allNoticesPerSource);
     const fallbackUrls = findSourceByUrl(sourceOptions, config.targetUrl)?.knownUrls ?? [];
 
+    setConfig((currentConfig) => ({
+      ...currentConfig,
+      allNoticesPerSource: scanSummary.allNoticesPerSource,
+    }));
     setKnownLinks(noticeHistoryStore.readNoticeHistory(config.targetUrl, fallbackUrls));
     setLatestScan(scanSummary);
     setDisplayMode("latest");
     setNoticeMessage(
-      `저장된 출처 ${sourceResults.length}개에서 최신 링크 ${scanSummary.latestLinks.length}개를 찾았습니다.` +
+      `저장된 출처 ${sourceResults.length}개에서 최신 링크 ${scanSummary.latestLinks.length}개를 찾았습니다. 전체 모드는 출처당 최대 ${scanSummary.allNoticesPerSource}개를 표시합니다.` +
         (failedSources.length ? ` ${failedSources.length}개 출처는 확인이 필요합니다.` : ""),
     );
     setStatus("complete");

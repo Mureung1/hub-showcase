@@ -175,7 +175,11 @@ h2 {
 
 
 .source-selection {
-  max-width: 440px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.32fr);
+  max-width: 640px;
+  align-items: end;
+  gap: 14px;
 }
 
 .source-select-row {
@@ -519,6 +523,7 @@ textarea:disabled {
   }
 
   .form-grid,
+  .source-selection,
   .metrics-row,
   .link-row {
     grid-template-columns: 1fr;

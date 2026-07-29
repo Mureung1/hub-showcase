@@ -1,4 +1,5 @@
 import { resolveTargetUrl } from "../agents/noticeLinkAgent.js";
+import { normalizeAllNoticesPerSource } from "../services/noticeOrdering.js";
 
 const historyNamespace = "opportunity-agent:known-links";
 const scanSnapshotNamespace = "opportunity-agent:last-scan-links";
@@ -222,6 +223,7 @@ export function normalizeLastScanResult(value) {
     .map(normalizeStoredSourceResult)
     .filter(Boolean);
   const allLinks = normalizeStoredLinks(value.allLinks);
+  const allNoticesPerSource = normalizeAllNoticesPerSource(value.allNoticesPerSource);
   const fetchedAt = normalizeText(value.fetchedAt);
 
   if (!fetchedAt || (!allLinks.length && !sourceResults.length)) {
@@ -230,6 +232,7 @@ export function normalizeLastScanResult(value) {
 
   return {
     allLinks,
+    allNoticesPerSource,
     failedSources: (Array.isArray(value.failedSources) ? value.failedSources : [])
       .filter((source) => source && typeof source === "object")
       .map((source) => ({
