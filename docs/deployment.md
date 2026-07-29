@@ -2,13 +2,23 @@
 
 프론트엔드는 Vercel, API 서버는 Render 에 올린다.
 
-**오늘의 최소 목표**
+## 배포 주소 (2026-07-29 연결 완료)
 
-- Vercel 주소에서 React 화면이 열린다.
-- Render 주소의 상태 확인 API(`/api/health`)가 응답한다.
+| | 주소 |
+|---|---|
+| 화면 (Vercel) | https://exam-priority-calculator.vercel.app |
+| API 서버 (Render) | https://exam-priority-server.onrender.com |
+| 상태 확인 | https://exam-priority-server.onrender.com/api/health |
 
-전체 연결이 끝나지 않아도 위 두 개면 최소 목표는 달성이다. 막힌 지점은 이 문서 맨 아래
-[막힌 지점](#막힌-지점) 에 적는다.
+둘은 환경변수 두 개로 이어져 있다. **한쪽 주소가 바뀌면 반대쪽도 같이 고쳐야 한다.**
+
+| 환경변수 | 어디에 | 값 |
+|---|---|---|
+| `VITE_API_BASE_URL` | Vercel | Render 주소 |
+| `CORS_ORIGIN` | Render | Vercel 주소 |
+
+연결 확인 근거는 [4. 배포 후 확인 결과](#4-배포-후-확인-결과-2026-07-29) 에 있다.
+남은 과제는 [막힌 지점](#막힌-지점) 을 본다.
 
 ---
 
@@ -125,7 +135,26 @@ Render 를 먼저 띄워야 Vercel 에 넣을 API 주소가 생긴다.
 
 ---
 
-## 4. 로컬에서 미리 확인한 것 (2026-07-28)
+## 4. 배포 후 확인 결과 (2026-07-29)
+
+실제 배포본에서 확인한 것이다.
+
+| 확인 | 결과 |
+|---|---|
+| Render `/api/health` | `{"status":"ok"}` HTTP 200 |
+| Render `/` | `{"service":"exam-priority-server","health":"/api/health"}` |
+| Vercel 화면 | HTTP 200, 정상 렌더 |
+| 번들에 Render 주소가 박혔는지 | 배포된 `index-*.js` 에서 1건 발견 |
+| Vercel 오리진의 요청 | `access-control-allow-origin` 헤더 붙음 |
+| **엉뚱한 오리진의 요청** | **헤더 없음 — CORS_ORIGIN 이 실제로 잠겨 있다** |
+| 배포 화면에서 과목 담기 | Render DB 에 저장됨(새 디폴트 이해도 4·분량 4까지 그대로) |
+| 새로고침 | 과목 유지, "서버에 연결하지 못해…" 안내 사라짐 |
+| 핵심 흐름 | 과목 담기 → 분량·이해도 → 결과(추천 과목·점수·이유·시간 배분) 완주 |
+
+> CORS 는 설정이 **비어 있어도** 허용 헤더가 붙는다(비면 전체 허용). 그래서 "헤더가 왔다"만으로는
+> 잠긴 걸 확인할 수 없다. **엉뚱한 오리진으로 한 번 더 찔러 헤더가 없는 것까지** 봐야 한다.
+
+## 5. 로컬에서 미리 확인한 것 (2026-07-28)
 
 배포 전에 "FE 와 BE 가 다른 주소일 때"를 로컬에서 그대로 흉내내서 확인했다.
 FE 를 `localhost:4173`, BE 를 `localhost:3999` 로 띄우고 `CORS_ORIGIN=http://localhost:4173`
@@ -152,7 +181,10 @@ FE 를 `localhost:4173`, BE 를 `localhost:3999` 로 띄우고 `CORS_ORIGIN=http
 
 ## 막힌 지점
 
-### 1. Supabase 아직 연결 안 됨 (오늘 남긴 것)
+> 배포 자체는 2026-07-29 에 끝났다(위 [배포 주소](#배포-주소-2026-07-29-연결-완료)).
+> 아래는 그 뒤에도 남아 있는 과제다.
+
+### 1. Supabase 아직 연결 안 됨
 
 수업 항목의 "Render 에 Supabase 연결 정보를 설정한다"를 오늘은 하지 않았다.
 
