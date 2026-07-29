@@ -38,6 +38,11 @@ export function getResponses(token) {
   return request(`/api/letters/${token}/responses`)
 }
 
+// PATCH /api/letters/:token/close-responses — 참여자 응답 마감
+export function closeResponses(token) {
+  return request(`/api/letters/${token}/close-responses`, { method: 'PATCH' })
+}
+
 // GET /api/letters/:token/roles — 역할 목록 조회
 export function getRoles(token) {
   return request(`/api/letters/${token}/roles`)
