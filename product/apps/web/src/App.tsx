@@ -9,6 +9,7 @@ import { usePanelTextSize } from "./features/workspace/usePanelTextSize";
 import { useProductWorkspaceModel } from "./features/workspace/useProductWorkspaceModel";
 import { PRODUCT_CATALOG_BOOTSTRAP } from "./services/productCatalog";
 import "./styles/global.css";
+import "./styles/suitFont.css";
 import "./styles/mapOverlays.css";
 import "./styles/panelAccessibility.css";
 
