@@ -16,14 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ParkingLotRealtimeLoadService {
 
-    private static final String REALTIME_CRON_5MIN = "0 */5 * * * *";
+    private static final String REALTIME_CRON_2MIN = "0 */2 * * * *";
     private static final int FETCH_START = 1;
     private static final int FETCH_END = 1000;
 
     private final SeoulParkingLotRealtimeClient seoulParkingLotRealtimeClient;
     private final ParkingLotRealtimeJdbcRepository parkingLotRealtimeJdbcRepository;
 
-    @Scheduled(cron = REALTIME_CRON_5MIN)
+    @Scheduled(cron = REALTIME_CRON_2MIN)
     @Transactional
     public void load() {
         List<ParkingLotRealtime> realtimes = seoulParkingLotRealtimeClient.fetchPage(FETCH_START, FETCH_END)
