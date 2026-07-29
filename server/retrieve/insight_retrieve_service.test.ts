@@ -95,6 +95,46 @@ describe('꺼내보기 의미 검색 서비스', () => {
     });
   });
 
+  it('검색 저장소 호출이 실패해도 확인한 실제 사용량으로 정산한다', async () => {
+    const dependencies = createDependencies();
+    dependencies.embedder.embed.mockResolvedValue({
+      usage: { kind: 'actual', promptTokens: 4 },
+      vector: queryVector,
+    });
+    dependencies.store.match.mockRejectedValue(new Error('검색 저장소 오류'));
+    const service = createInsightRetrieveService(dependencies);
+
+    await expect(
+      service.retrieve('access-token', { query: '오류 안내' })
+    ).resolves.toEqual({ ok: false, reason: 'retrieve-failed' });
+    expect(dependencies.store.reconcileUsage).toHaveBeenCalledWith({
+      promptTokens: 4,
+      reservationId: 'reservation-1',
+      settlement: 'actual',
+    });
+  });
+
+  it('사용량 정산만 실패하면 이미 만든 검색 결과를 반환한다', async () => {
+    const dependencies = createDependencies();
+    dependencies.embedder.embed.mockResolvedValue({
+      usage: { kind: 'actual', promptTokens: 4 },
+      vector: queryVector,
+    });
+    dependencies.store.match.mockResolvedValue(['insight-1']);
+    dependencies.store.reconcileUsage.mockRejectedValue(
+      new Error('사용량 정산 오류')
+    );
+    const service = createInsightRetrieveService(dependencies);
+
+    await expect(
+      service.retrieve('access-token', { query: '오류 안내' })
+    ).resolves.toEqual({
+      insightIds: ['insight-1'],
+      ok: true,
+      pendingCount: 0,
+    });
+  });
+
   it('동시에 시작해도 예산을 예약한 요청만 Gemini를 호출한다', async () => {
     const dependencies = createDependencies();
     dependencies.store.reserveUsage

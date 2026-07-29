@@ -172,9 +172,7 @@ export function parseBatchResponse(
   const vector = value.response.embedding?.values;
 
   if (!isEmbeddingVector(vector)) {
-    throw new Error(
-      '768차원 임베딩이 아닌 성공 응답이 있어 결과를 반영하지 않았습니다.'
-    );
+    return { kind: 'failed' };
   }
 
   const tokenCount = value.response.tokenCount;

@@ -1018,6 +1018,31 @@ describe('AuthenticatedWorkspace', () => {
     ).not.toBeNull();
   });
 
+  it('빈 상황은 꺼내보기 서비스에 전달하지 않는다', async () => {
+    const user = userEvent.setup();
+    const retrieve = vi.fn().mockResolvedValue({
+      insightIds: [],
+      ok: true as const,
+      pendingCount: 0,
+    });
+
+    render(
+      <DesignSystemProvider>
+        <AuthenticatedWorkspace retrieveService={{ retrieve }} />
+      </DesignSystemProvider>
+    );
+
+    await user.type(
+      screen.getByRole('textbox', {
+        name: '지금 꺼내 보고 싶은 상황',
+      }),
+      '   '
+    );
+    await user.keyboard('{Enter}');
+
+    expect(retrieve).not.toHaveBeenCalled();
+  });
+
   it('combines category filtering with deterministic all-result ranking', async () => {
     const user = userEvent.setup();
     const titleMatch = createInsight({

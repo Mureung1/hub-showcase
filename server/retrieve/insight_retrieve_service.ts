@@ -104,12 +104,6 @@ export function createInsightRetrieveService({
           createQueryEmbeddingText(query)
         );
         const usage = collectUsage([...documentResults, queryEmbedding]);
-        const insightIds = await store.match({
-          queryVector: queryEmbedding.vector,
-          threshold: RETRIEVE_SIMILARITY_THRESHOLD,
-          userId,
-        });
-        const pendingCount = await store.countPending(userId);
 
         if (usage) {
           settlement = {
@@ -117,6 +111,13 @@ export function createInsightRetrieveService({
             settlement: 'actual',
           };
         }
+
+        const insightIds = await store.match({
+          queryVector: queryEmbedding.vector,
+          threshold: RETRIEVE_SIMILARITY_THRESHOLD,
+          userId,
+        });
+        const pendingCount = await store.countPending(userId);
 
         result = {
           insightIds,
@@ -133,7 +134,9 @@ export function createInsightRetrieveService({
           reservationId: reservation.reservationId,
         });
       } catch {
-        return { ok: false, reason: 'retrieve-failed' };
+        if (!result.ok) {
+          return { ok: false, reason: 'retrieve-failed' };
+        }
       }
 
       return result;

@@ -348,7 +348,13 @@ export function AuthenticatedWorkspace({
   function handleRetrieve(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    void retrieve(retrieveQuery);
+    const query = retrieveQuery.trim();
+
+    if (!query) {
+      return;
+    }
+
+    void retrieve(query);
   }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
