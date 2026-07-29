@@ -80,9 +80,8 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
         dtstart: endDate.toISOString(),
         dtend: endDate.toISOString(),
         relatedPostingId: posting.id,
-        isAllDay: true,
         memo: posting.sourceUrl ? `링크: ${posting.sourceUrl}` : '',
-      })
+      } as any)
 
       // 2. Google Calendar에 동기화 (오늘 이후인 경우만)
       if (!isPast) {

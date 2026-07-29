@@ -384,12 +384,14 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
                 transition: 'all 120ms',
               }}
               onFocus={(e) => {
-                (e.currentTarget as HTMLInputElement).style.borderColor = '#6366f1'
-                (e.currentTarget as HTMLInputElement).style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)'
+                const input = e.currentTarget as HTMLInputElement
+                input.style.borderColor = '#6366f1'
+                input.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)'
               }}
               onBlur={(e) => {
-                (e.currentTarget as HTMLInputElement).style.borderColor = '#e5e7eb'
-                (e.currentTarget as HTMLInputElement).style.boxShadow = 'none'
+                const input = e.currentTarget as HTMLInputElement
+                input.style.borderColor = '#e5e7eb'
+                input.style.boxShadow = 'none'
               }}
             />
             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: '#9ca3af' }}>🔍</span>
@@ -731,7 +733,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
 
                     try {
                       const content = await file.text()
-                      const result = await calendarEventsApi.importIcs(content)
+                      const result = await calendarEventsApi.importIcs(content) as any
                       alert(`✅ ${result.count || 0}개 일정을 가져왔습니다`)
                       await loadCalendarEvents()
                     } catch (error) {

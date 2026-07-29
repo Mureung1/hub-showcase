@@ -338,24 +338,17 @@ export default function CalendarPage({ setCurrentPage }: CalendarPageProps) {
           type: eventData.type,
           dtstart: eventData.dtstart,
           dtend: eventData.dtend,
-          isAllDay: eventData.isAllDay,
-          startTime: eventData.startTime,
-          endTime: eventData.endTime,
           memo: eventData.memo,
-          hideFromRecommendation: eventData.hideFromRecommendation,
-        })
+          relatedPostingId: eventData.relatedPostingId,
+        } as any)
       } else if (modal.mode === 'edit' && modal.event) {
         await calendarEventsApi.update(modal.event.id, {
           title: eventData.title,
           type: eventData.type,
           dtstart: eventData.dtstart,
           dtend: eventData.dtend,
-          isAllDay: eventData.isAllDay,
-          startTime: eventData.startTime,
-          endTime: eventData.endTime,
           memo: eventData.memo,
-          hideFromRecommendation: eventData.hideFromRecommendation,
-        })
+        } as any)
       }
       loadEvents()
       setModal({ isOpen: false, mode: 'add' })
