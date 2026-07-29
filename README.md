@@ -138,7 +138,7 @@ flowchart TB
 | DB | Supabase (PostgreSQL) |
 | LLM | Groq (`llama-3.3-70b`, 무료·OpenAI 호환) — 원안 Claude, provider 교체 가능 |
 | 외부 연동 | 기상청·OpenWeatherMap(날씨) · Solapi(문자) · Instagram Graph API(본인 계정 게시) |
-| 테스트/품질 | Vitest · ESLint · `tsc --noEmit` (GitHub Actions CI) |
+| 테스트/품질 | Vitest (서버 183건) · ESLint · `tsc --noEmit` |
 
 ## 📁 프로젝트 구조
 
