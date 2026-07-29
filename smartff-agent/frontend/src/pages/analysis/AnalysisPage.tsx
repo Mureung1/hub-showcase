@@ -3,7 +3,7 @@ import type { Category, CategoryStatus } from '../../types/analysis';
 import type { FinancialRecord, FinancialSummary } from '../../types/financial';
 import type { WeekdayPatternResponse, HourlyPatternResponse } from '../../types/pattern';
 import type { Recommendation, RecommendationResponse } from '../../types/recommendation';
-import { ANALYSIS_MOCK_DATA, CATEGORIES } from '../../constants/analysisMockData';
+import { CATEGORIES } from '../../constants/analysisMockData';
 import { weekdaySummary, timeSummary, monthlyTrendSummary } from '../../utils/analysisSummary';
 import CategoryTabs from '../../components/analysis/CategoryTabs';
 import InsightStrip from '../../components/analysis/InsightStrip';
@@ -131,8 +131,6 @@ export default function AnalysisPage() {
       .catch((err) => setRecError(err instanceof Error ? err.message : 'Unknown error'));
   }, []);
 
-  const d = ANALYSIS_MOCK_DATA[category];
-
   const weekdayValues = weekdayPattern?.data.map((r) => r.avg_sales_amount) ?? [];
   const weekdayLabels = weekdayPattern?.data.map((r) => r.weekday) ?? [];
   const bestDayIdx = weekdayValues.length ? bestIdxOf(weekdayValues) : 0;
@@ -150,8 +148,10 @@ export default function AnalysisPage() {
 
   const latest = trendRecords[trendRecords.length - 1];
   const prev = trendRecords[trendRecords.length - 2];
-  const salesInfo = latest && prev ? trendLabelAndGood(latest.sales_amount, prev.sales_amount, false) : { label: d.salesTrend, good: d.salesGood };
-  const wasteInfo = latest && prev ? trendLabelAndGood(latest.waste_rate, prev.waste_rate, true) : { label: d.wasteTrend, good: d.wasteGood };
+  // 실데이터가 2개월 미만이면 증감을 계산할 수 없음 — 가짜 수치를 보여주는 대신 있는 그대로 안내
+  const INSUFFICIENT_DATA = { label: '데이터 부족', good: null as boolean | null };
+  const salesInfo = latest && prev ? trendLabelAndGood(latest.sales_amount, prev.sales_amount, false) : INSUFFICIENT_DATA;
+  const wasteInfo = latest && prev ? trendLabelAndGood(latest.waste_rate, prev.waste_rate, true) : INSUFFICIENT_DATA;
 
   const categoryRecs = recommendations?.filter((r) => r.category === category) ?? [];
   const primaryRec =
