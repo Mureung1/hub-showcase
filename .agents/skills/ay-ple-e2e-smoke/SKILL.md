@@ -1,6 +1,6 @@
 ---
 name: ay-ple-e2e-smoke
-description: Run Codex's repository-development AY-PLE smoke through the in-app Browser, exercising AY, source browsing, Chat, SemesterModeling, Review, and retained dogfood workspace safety.
+description: Run Codex's repository-development AY-PLE smoke through the in-app Browser. Use when the user asks for a live smoke, dogfood run, or comprehensive Browser validation across AY, sources, Chat, SemesterModeling, Review, and retained workspace safety.
 ---
 
 # AY-PLE E2E Smoke
@@ -47,24 +47,26 @@ For repository dogfood:
 
 1. Resolve the seed, generated target, built-in Skill catalog, and semester
    identity exactly as declared in the default fixture reference.
-2. Run the bundled `reconcile-dogfood-workspace.mts inspect` command with every
-   path and semester value explicit.
-   - On `ready`, reuse the workspace.
-   - On `reseedable`, stop only a running AY-PLE process that targets this exact
-     workspace. Run the helper's `reseed` command with
-     `--confirm-replace` exactly equal to the canonical target.
-   - On `conflict`, fail closed. Preserve the target and report the reasons;
-     never reinterpret a conflict as stale generated state.
-3. After `reseed`, follow `$semester-workspace-init` for the raw copied target.
-   Pass every sorted `baselinePaths` entry returned by the helper as an explicit
-   baseline. Bootstrap owns Git initialization, workspace identity,
-   `AGENTS.md`, complete Product Skill installation, Interaction MCP config, and
-   checkpoints; the E2E helper owns none of them.
-4. Inspect again and require `ready` before launching the App.
+2. Inspect and classify it through the reference's single
+   `ready | reseedable | conflict` contract. Reuse `ready`. Fail closed and
+   preserve every byte on `conflict`.
+3. On `reseedable`, stop only a running AY-PLE process that targets this exact
+   workspace, then run the helper's `stage` command. It must return a sibling
+   `stagingRoot`, sorted `baselinePaths`, and the prior target fingerprint
+   without changing the existing target.
+4. Follow `$semester-workspace-init` against `stagingRoot`, passing every
+   returned baseline path explicitly. Bootstrap owns Git initialization,
+   workspace identity, `AGENTS.md`, complete Product Skill installation,
+   Interaction MCP config, and checkpoints.
+5. Require the prepared staging root to satisfy the reference's
+   `staging-ready` facts and record its exact `HEAD`, then run the helper's
+   `activate` command with that `HEAD`, the prior target fingerprint, and exact
+   confirmation. Activation is the only cutover. Inspect the activated target
+   again and require `ready` before launching the App.
 
 For an arbitrary prepared SemesterWorkspace, resolve its real absolute path,
 confirm that it is an exact prepared Git root, and verify each scenario source
-is a regular file inside it. Do not run the reconcile helper.
+is a regular file inside it. Do not run the staging helper.
 
 Before App startup, build the Interaction MCP and verify the normal persistent
 production Runtime:

@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import {
   lstat,
   mkdir,
@@ -13,492 +13,369 @@ import {
 } from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { promisify } from 'node:util'
-
-import {
-  classifySemesterWorkspaceRootStateBytes,
-} from '../../../../packages/semester-workspace/src/v4-codec.js'
+import { parseArgs, promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
-const scaffoldCommitSubject = 'chore: initialize semester workspace'
-const baselineCommitSubject = 'chore: baseline semester materials'
-const fixtureReservedRoots = new Set([
-  '.agents',
-  '.codex',
-  '.git',
-  '.gitignore',
-  'agents.md',
-  'workspace-state.json',
-])
-const managedScaffoldPaths = [
-  '.codex/config.toml',
-  '.gitignore',
-  'AGENTS.md',
-] as const
-
-export type DogfoodWorkspaceInput = {
-  readonly fixtureRoot: string
-  readonly workspaceRoot: string
-  readonly builtInSkillCatalogRoot: string
-  readonly yearLevel: number
-  readonly termKey: string
-  readonly termDisplayName: string
-}
-
-export type DogfoodWorkspaceInspection = {
-  readonly classification: 'ready' | 'reseedable' | 'conflict'
-  readonly reasons: readonly string[]
-  readonly fixtureRoot: string
-  readonly workspaceRoot: string
-  readonly builtInSkillCatalogRoot: string
-  readonly baselinePaths: readonly string[]
-  readonly head?: string
-}
-
-export type DogfoodWorkspaceReseedResult = {
-  readonly action: 'reseeded'
-  readonly workspaceRoot: string
-  readonly baselinePaths: readonly string[]
-}
+const fixtureMarker = 'ay-ple.e2eDogfoodFixtureRoot'
+const workspaceMarker = 'ay-ple.e2eDogfoodWorkspaceRoot'
 
 type Tree = ReadonlyMap<string, Uint8Array>
 
-type PreparedInput = {
-  readonly input: DogfoodWorkspaceInput
+type DogfoodRoots = {
+  readonly fixtureRoot: string
+  readonly workspaceRoot: string
+}
+
+type PreparedRoots = DogfoodRoots & {
   readonly fixtureTree: Tree
-  readonly catalogTree: Tree
   readonly workspaceExists: boolean
 }
 
-type GitHistory = {
-  readonly head: string
-  readonly scaffoldCommit: string
-  readonly baselineCommit: string
-  readonly scaffoldPaths: readonly string[]
-  readonly baselinePaths: readonly string[]
-}
-
-export async function inspectDogfoodWorkspace(
-  input: DogfoodWorkspaceInput,
-): Promise<DogfoodWorkspaceInspection> {
-  return inspectPrepared(await prepareInput(input))
-}
-
-export async function reseedDogfoodWorkspace(
-  input: DogfoodWorkspaceInput & { readonly confirmReplace: string },
-): Promise<DogfoodWorkspaceReseedResult> {
-  const prepared = await prepareInput(input)
-  const inspection = await inspectPrepared(prepared)
-  if (input.confirmReplace !== prepared.input.workspaceRoot) {
-    throw new Error(
-      '--confirm-replace must exactly equal the canonical workspace root.',
-    )
-  }
-  if (inspection.classification === 'ready') {
-    throw new Error('Refusing to replace a ready dogfood workspace.')
-  }
-  if (inspection.classification === 'conflict') {
-    throw new Error(
-      `Refusing to replace a conflicting workspace: ${inspection.reasons.join(', ')}`,
-    )
-  }
-
-  const workspaceParent = path.dirname(prepared.input.workspaceRoot)
-  const workspaceName = path.basename(prepared.input.workspaceRoot)
+export async function stageDogfoodWorkspace(
+  input: DogfoodRoots & { readonly confirmReplace: string },
+) {
+  const roots = await prepareRoots(input)
+  assertConfirmation(input.confirmReplace, roots.workspaceRoot)
+  const target = await inspectReplaceableTarget(roots)
   const stagingRoot = await mkdtemp(
-    path.join(workspaceParent, `.${workspaceName}.ay-ple-e2e-staging-`),
+    path.join(
+      path.dirname(roots.workspaceRoot),
+      `.${path.basename(roots.workspaceRoot)}.ay-ple-e2e-staging-`,
+    ),
   )
-  let backupRoot: string | undefined
   try {
-    await writeTree(stagingRoot, prepared.fixtureTree)
-    if (prepared.workspaceExists) {
-      backupRoot = path.join(
-        workspaceParent,
-        `.${workspaceName}.ay-ple-e2e-backup-${randomBytes(8).toString('hex')}`,
-      )
-      await rename(prepared.input.workspaceRoot, backupRoot)
+    await writeTree(stagingRoot, roots.fixtureTree)
+  } catch (error) {
+    await rm(stagingRoot, { force: true, recursive: true })
+    throw error
+  }
+  return {
+    action: 'staged',
+    workspaceRoot: roots.workspaceRoot,
+    stagingRoot,
+    expectedTargetFingerprint: target.fingerprint,
+    baselinePaths: [...roots.fixtureTree.keys()],
+  }
+}
+
+export async function adoptDogfoodWorkspace(
+  input: DogfoodRoots & {
+    readonly confirmReplace: string
+    readonly expectedHead: string
+  },
+) {
+  const roots = await prepareRoots(input)
+  assertConfirmation(input.confirmReplace, roots.workspaceRoot)
+  if (!roots.workspaceExists) {
+    throw new Error('Only an existing prepared dogfood target can be adopted.')
+  }
+  await assertExactCleanLocalGitRoot(roots.workspaceRoot)
+  const [fixtureValue, workspaceValue, head] = await Promise.all([
+    gitConfig(roots.workspaceRoot, fixtureMarker),
+    gitConfig(roots.workspaceRoot, workspaceMarker),
+    gitOutput(roots.workspaceRoot, ['rev-parse', 'HEAD']),
+  ])
+  if (head !== input.expectedHead) {
+    throw new Error('Dogfood target HEAD changed before adoption.')
+  }
+  if (
+    (fixtureValue !== undefined && fixtureValue !== roots.fixtureRoot) ||
+    (workspaceValue !== undefined && workspaceValue !== roots.workspaceRoot)
+  ) {
+    throw new Error('Dogfood target has conflicting E2E ownership markers.')
+  }
+  const wroteFixture = fixtureValue === undefined
+  const wroteWorkspace = workspaceValue === undefined
+  await gitOutput(roots.workspaceRoot, [
+    'config',
+    '--local',
+    fixtureMarker,
+    roots.fixtureRoot,
+  ])
+  await gitOutput(roots.workspaceRoot, [
+    'config',
+    '--local',
+    workspaceMarker,
+    roots.workspaceRoot,
+  ])
+  try {
+    const adopted = await inspectReplaceableTarget(roots)
+    if (adopted.fingerprint !== `git:${input.expectedHead}`) {
+      throw new Error('Dogfood target changed while adoption was recorded.')
     }
+  } catch (error) {
+    if (wroteFixture) {
+      await unsetGitConfig(roots.workspaceRoot, fixtureMarker)
+    }
+    if (wroteWorkspace) {
+      await unsetGitConfig(roots.workspaceRoot, workspaceMarker)
+    }
+    throw error
+  }
+  return {
+    action: 'adopted',
+    workspaceRoot: roots.workspaceRoot,
+    head,
+  }
+}
+
+export async function activateDogfoodWorkspace(
+  input: DogfoodRoots & {
+    readonly stagingRoot: string
+    readonly confirmReplace: string
+    readonly expectedTargetFingerprint: string
+    readonly expectedStagingHead: string
+  },
+) {
+  const roots = await prepareRoots(input)
+  assertConfirmation(input.confirmReplace, roots.workspaceRoot)
+  const stagingRoot = await canonicalExistingDirectory(
+    input.stagingRoot,
+    'Staging root',
+  )
+  const expectedPrefix = `.${path.basename(roots.workspaceRoot)}.ay-ple-e2e-staging-`
+  if (
+    path.dirname(stagingRoot) !== path.dirname(roots.workspaceRoot) ||
+    !path.basename(stagingRoot).startsWith(expectedPrefix)
+  ) {
+    throw new Error('Staging root is not owned by this dogfood target.')
+  }
+  assertRootsDoNotOverlap([
+    ['fixture root', roots.fixtureRoot],
+    ['workspace root', roots.workspaceRoot],
+    ['staging root', stagingRoot],
+  ])
+
+  const target = await inspectReplaceableTarget(roots)
+  if (target.fingerprint !== input.expectedTargetFingerprint) {
+    throw new Error('Dogfood target changed after staging; original bytes were preserved.')
+  }
+  const head = await assertPreparedStaging(
+    stagingRoot,
+    roots.fixtureTree,
+  )
+  if (head !== input.expectedStagingHead) {
+    throw new Error('Prepared staging HEAD changed after readiness review.')
+  }
+  await gitOutput(stagingRoot, [
+    'config',
+    '--local',
+    fixtureMarker,
+    roots.fixtureRoot,
+  ])
+  await gitOutput(stagingRoot, [
+    'config',
+    '--local',
+    workspaceMarker,
+    roots.workspaceRoot,
+  ])
+
+  const backupRoot = roots.workspaceExists
+    ? path.join(
+        path.dirname(roots.workspaceRoot),
+        `.${path.basename(roots.workspaceRoot)}.ay-ple-e2e-backup-${randomBytes(8).toString('hex')}`,
+      )
+    : undefined
+  if (backupRoot !== undefined) {
+    await rename(roots.workspaceRoot, backupRoot)
+  }
+  try {
+    await rename(stagingRoot, roots.workspaceRoot)
     try {
-      await rename(stagingRoot, prepared.input.workspaceRoot)
+      await assertActivatedTarget(roots)
     } catch (error) {
+      await rename(roots.workspaceRoot, stagingRoot)
       if (backupRoot !== undefined) {
-        await rename(backupRoot, prepared.input.workspaceRoot)
-        backupRoot = undefined
+        await rename(backupRoot, roots.workspaceRoot)
       }
       throw error
     }
-    if (backupRoot !== undefined) {
-      await rm(backupRoot, { recursive: true })
-      backupRoot = undefined
+  } catch (error) {
+    if (backupRoot !== undefined && !(await pathExists(roots.workspaceRoot))) {
+      await rename(backupRoot, roots.workspaceRoot)
     }
-  } finally {
-    await rm(stagingRoot, { force: true, recursive: true })
+    throw error
   }
-
+  if (backupRoot !== undefined) {
+    await rm(backupRoot, { recursive: true })
+  }
   return {
-    action: 'reseeded',
-    workspaceRoot: prepared.input.workspaceRoot,
-    baselinePaths: [...prepared.fixtureTree.keys()],
+    action: 'activated',
+    workspaceRoot: roots.workspaceRoot,
+    head,
   }
 }
 
-async function inspectPrepared(
-  prepared: PreparedInput,
-): Promise<DogfoodWorkspaceInspection> {
-  const base = {
-    fixtureRoot: prepared.input.fixtureRoot,
-    workspaceRoot: prepared.input.workspaceRoot,
-    builtInSkillCatalogRoot: prepared.input.builtInSkillCatalogRoot,
-    baselinePaths: [...prepared.fixtureTree.keys()],
-  }
-  if (!prepared.workspaceExists) {
-    return {
-      classification: 'reseedable',
-      reasons: ['workspace_missing'],
-      ...base,
-    }
-  }
-
-  const gitMetadata = await lstat(
-    path.join(prepared.input.workspaceRoot, '.git'),
-  ).catch(() => undefined)
-  if (
-    gitMetadata !== undefined &&
-    (!gitMetadata.isDirectory() || gitMetadata.isSymbolicLink())
-  ) {
-    return {
-      classification: 'conflict',
-      reasons: ['workspace_not_exact_git_root'],
-      ...base,
-    }
-  }
-  const rawTree = gitMetadata === undefined
-    ? await readTreeIfUnprepared(prepared.input.workspaceRoot)
-    : undefined
-  if (rawTree !== undefined) {
-    return treeEquals(rawTree, prepared.fixtureTree)
-      ? {
-          classification: 'reseedable',
-          reasons: ['workspace_unprepared'],
-          ...base,
-        }
-      : {
-          classification: 'conflict',
-          reasons: ['unrecognized_generated_history'],
-          ...base,
-        }
-  }
-
-  const gitRoot = await git(
-    prepared.input.workspaceRoot,
-    ['rev-parse', '--show-toplevel'],
-    { allowFailure: true },
-  )
-  if (
-    gitRoot.exitCode !== 0 ||
-    (await realpath(gitRoot.stdout.trim()).catch(() => undefined)) !==
-      prepared.input.workspaceRoot
-  ) {
-    return {
-      classification: 'conflict',
-      reasons: ['workspace_not_exact_git_root'],
-      ...base,
-    }
-  }
-
-  const headResult = await git(prepared.input.workspaceRoot, [
-    'rev-parse',
-    'HEAD',
-  ], { allowFailure: true })
-  const head = headResult.exitCode === 0
-    ? headResult.stdout.trim()
-    : undefined
-  const status = await git(prepared.input.workspaceRoot, [
-    'status',
-    '--porcelain=v1',
-    '--untracked-files=all',
-  ])
-  if (status.stdout.length > 0) {
-    return {
-      classification: 'conflict',
-      reasons: ['workspace_dirty'],
-      head,
-      ...base,
-    }
-  }
-  const remotes = await git(prepared.input.workspaceRoot, ['remote'])
-  if (remotes.stdout.trim().length > 0) {
-    return {
-      classification: 'conflict',
-      reasons: ['unrecognized_generated_history'],
-      head,
-      ...base,
-    }
-  }
-
-  const history = await inspectGeneratedHistory(
-    prepared.input.workspaceRoot,
-  ).catch(() => undefined)
-  if (history === undefined) {
-    return {
-      classification: 'conflict',
-      reasons: ['unrecognized_generated_history'],
-      head,
-      ...base,
-    }
-  }
-
-  const conflictReasons: string[] = []
-  const reseedReasons: string[] = []
-  const trackedPaths = await nulSeparatedGitPaths(
-    prepared.input.workspaceRoot,
-    ['ls-files', '-z'],
-  )
-  const allowedPaths = new Set([
-    ...history.scaffoldPaths,
-    ...history.baselinePaths,
-    ...prepared.fixtureTree.keys(),
-    ...[...prepared.catalogTree.keys()].map(
-      (relativePath) => `.agents/skills/${relativePath}`,
-    ),
-  ])
-  if (trackedPaths.some((relativePath) => !allowedPaths.has(relativePath))) {
-    conflictReasons.push('unexpected_tracked_path')
-  }
-
-  const statePath = path.join(
-    prepared.input.workspaceRoot,
-    'workspace-state.json',
-  )
-  const stateBytes = await readRegularFile(statePath).catch(() => undefined)
-  if (stateBytes === undefined) {
-    conflictReasons.push('workspace_state_invalid')
-  } else {
-    const classification = classifySemesterWorkspaceRootStateBytes(stateBytes)
-    if (classification.status !== 'current_v4') {
-      conflictReasons.push('workspace_state_invalid')
-    } else {
-      const state = classification.state
-      if (
-        state.semester.yearLevel !== prepared.input.yearLevel ||
-        state.semester.term.key !== prepared.input.termKey ||
-        state.semester.term.displayName !== prepared.input.termDisplayName
-      ) {
-        conflictReasons.push('semester_identity_mismatch')
-      }
-      const initialStateBytes = await gitFile(
-        prepared.input.workspaceRoot,
-        history.scaffoldCommit,
-        'workspace-state.json',
-      ).catch(() => undefined)
-      const initialClassification = initialStateBytes === undefined
-        ? undefined
-        : classifySemesterWorkspaceRootStateBytes(initialStateBytes)
-      if (
-        initialClassification?.status !== 'current_v4' ||
-        initialClassification.state.workspaceId !== state.workspaceId
-      ) {
-        conflictReasons.push('workspace_identity_mismatch')
-      }
-      if (
-        typeof state.snapshot !== 'object' ||
-        state.snapshot === null ||
-        Array.isArray(state.snapshot)
-      ) {
-        conflictReasons.push('workspace_state_invalid')
-      } else if (Object.keys(state.snapshot).length > 0) {
-        reseedReasons.push('applied_snapshot')
-      }
-    }
-  }
-
-  for (const relativePath of managedScaffoldPaths) {
-    const current = await readRegularFile(
-      path.join(prepared.input.workspaceRoot, relativePath),
-    ).catch(() => undefined)
-    const initial = await gitFile(
-      prepared.input.workspaceRoot,
-      history.scaffoldCommit,
-      relativePath,
-    ).catch(() => undefined)
-    if (
-      current === undefined ||
-      initial === undefined ||
-      !bytesEqual(current, initial)
-    ) {
-      conflictReasons.push('managed_scaffold_drift')
-      break
-    }
-  }
-
-  const materialPaths = new Set([
-    ...history.baselinePaths,
-    ...prepared.fixtureTree.keys(),
-  ])
-  const workspaceMaterials = await readWorkspacePaths(
-    prepared.input.workspaceRoot,
-    materialPaths,
-  )
-  if (!treeEquals(workspaceMaterials, prepared.fixtureTree)) {
-    reseedReasons.push('fixture_tree_drift')
-  }
-
-  const installedSkillRoot = path.join(
-    prepared.input.workspaceRoot,
-    '.agents/skills',
-  )
-  const installedSkills = await readTree(installedSkillRoot).catch(
-    () => undefined,
-  )
-  if (
-    installedSkills === undefined ||
-    !treeEquals(installedSkills, prepared.catalogTree)
-  ) {
-    reseedReasons.push('built_in_skill_catalog_drift')
-  }
-
-  const reasons = unique(
-    conflictReasons.length > 0 ? conflictReasons : reseedReasons,
-  )
-  return {
-    classification:
-      conflictReasons.length > 0
-        ? 'conflict'
-        : reseedReasons.length > 0
-          ? 'reseedable'
-          : 'ready',
-    reasons,
-    head: history.head,
-    ...base,
-  }
-}
-
-async function prepareInput(
-  input: DogfoodWorkspaceInput,
-): Promise<PreparedInput> {
-  if (
-    !Number.isInteger(input.yearLevel) ||
-    input.yearLevel < 1 ||
-    input.yearLevel > 20
-  ) {
-    throw new Error('year-level must be an integer from 1 through 20.')
-  }
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.termKey)) {
-    throw new Error('term-key must be a lowercase ASCII slug.')
-  }
-  if (input.termDisplayName.trim().length === 0) {
-    throw new Error('term-display-name must not be empty.')
-  }
-
+async function prepareRoots(input: DogfoodRoots): Promise<PreparedRoots> {
   const fixtureRoot = await canonicalExistingDirectory(
     input.fixtureRoot,
     'Fixture root',
   )
-  const builtInSkillCatalogRoot = await canonicalExistingDirectory(
-    input.builtInSkillCatalogRoot,
-    'Built-in Skill catalog root',
+  const workspace = await canonicalTarget(
+    input.workspaceRoot,
+    'Workspace root',
   )
-  const workspace = await canonicalWorkspaceTarget(input.workspaceRoot)
   assertRootsDoNotOverlap([
     ['fixture root', fixtureRoot],
     ['workspace root', workspace.root],
-    ['built-in Skill catalog root', builtInSkillCatalogRoot],
   ])
-
   const fixtureTree = await readTree(fixtureRoot)
   if (fixtureTree.size === 0) {
     throw new Error('Fixture root must contain at least one regular file.')
   }
   for (const relativePath of fixtureTree.keys()) {
-    const rootSegment = relativePath.split('/')[0].toLowerCase()
-    if (fixtureReservedRoots.has(rootSegment)) {
+    if (
+      relativePath
+        .split('/')
+        .some((segment) => segment.toLowerCase() === '.git')
+    ) {
       throw new Error(
-        `Fixture path conflicts with Bootstrap ownership: ${relativePath}`,
+        `Fixture path contains reserved Git metadata: ${relativePath}`,
       )
     }
   }
-  const catalogTree = await readTree(builtInSkillCatalogRoot)
   return {
-    input: {
-      ...input,
-      fixtureRoot,
-      workspaceRoot: workspace.root,
-      builtInSkillCatalogRoot,
-    },
-    fixtureTree,
-    catalogTree,
+    fixtureRoot,
+    workspaceRoot: workspace.root,
     workspaceExists: workspace.exists,
+    fixtureTree,
   }
 }
 
-async function inspectGeneratedHistory(root: string): Promise<GitHistory> {
-  const log = await git(root, [
-    'log',
-    '--first-parent',
-    '--format=%H%x00%s%x00',
-    'HEAD',
-  ])
-  const fields = log.stdout
-    .split('\0')
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0)
-  const commits: { readonly hash: string; readonly subject: string }[] = []
-  for (let index = 0; index < fields.length; index += 2) {
-    const hash = fields[index]
-    const subject = fields[index + 1]
-    if (hash === undefined || subject === undefined) {
-      throw new Error('Unexpected Git log output.')
+async function inspectReplaceableTarget(
+  roots: PreparedRoots,
+): Promise<{ readonly fingerprint: string }> {
+  if (!roots.workspaceExists) return { fingerprint: 'missing' }
+
+  const dotGit = await lstat(
+    path.join(roots.workspaceRoot, '.git'),
+  ).catch(() => undefined)
+  if (dotGit === undefined) {
+    const tree = await readTree(roots.workspaceRoot)
+    if (!treeEquals(tree, roots.fixtureTree)) {
+      throw new Error(
+        'Unprepared dogfood target differs from the fixture; original bytes were preserved.',
+      )
     }
-    commits.push({ hash, subject })
+    return { fingerprint: `raw:${fingerprintTree(tree)}` }
   }
-  const scaffold = commits.find(
-    ({ subject }) => subject === scaffoldCommitSubject,
-  )
-  const baseline = commits.find(
-    ({ subject }) => subject === baselineCommitSubject,
-  )
-  if (scaffold === undefined || baseline === undefined) {
-    throw new Error('Generated Bootstrap checkpoints were not found.')
+  if (!dotGit.isDirectory() || dotGit.isSymbolicLink()) {
+    throw new Error('Dogfood target must use non-symlink Git metadata.')
   }
-  const ancestry = await git(root, [
-    'merge-base',
-    '--is-ancestor',
-    scaffold.hash,
-    baseline.hash,
-  ], { allowFailure: true })
-  if (ancestry.exitCode !== 0) {
-    throw new Error('Generated Bootstrap checkpoints have invalid ancestry.')
+
+  await assertExactCleanLocalGitRoot(roots.workspaceRoot)
+  const [markedFixture, markedWorkspace, head] = await Promise.all([
+    gitConfig(roots.workspaceRoot, fixtureMarker),
+    gitConfig(roots.workspaceRoot, workspaceMarker),
+    gitOutput(roots.workspaceRoot, ['rev-parse', 'HEAD']),
+  ])
+  if (
+    markedFixture !== roots.fixtureRoot ||
+    markedWorkspace !== roots.workspaceRoot
+  ) {
+    throw new Error(
+      'Dogfood target lacks the exact local E2E ownership markers; original bytes were preserved.',
+    )
   }
   return {
-    head: commits[0]?.hash ?? '',
-    scaffoldCommit: scaffold.hash,
-    baselineCommit: baseline.hash,
-    scaffoldPaths: await nulSeparatedGitPaths(root, [
-      'diff-tree',
-      '--root',
-      '--no-commit-id',
-      '--name-only',
-      '-r',
-      '-z',
-      scaffold.hash,
-    ]),
-    baselinePaths: await nulSeparatedGitPaths(root, [
-      'diff-tree',
-      '--no-commit-id',
-      '--name-only',
-      '-r',
-      '-z',
-      baseline.hash,
-    ]),
+    fingerprint: `git:${head}`,
   }
 }
 
-async function readTreeIfUnprepared(root: string): Promise<Tree | undefined> {
-  const inherited = await git(root, ['rev-parse', '--show-toplevel'], {
-    allowFailure: true,
+async function assertPreparedStaging(
+  stagingRoot: string,
+  fixtureTree: Tree,
+): Promise<string> {
+  const dotGit = await lstat(path.join(stagingRoot, '.git')).catch(
+    () => undefined,
+  )
+  if (
+    dotGit === undefined ||
+    !dotGit.isDirectory() ||
+    dotGit.isSymbolicLink()
+  ) {
+    throw new Error(
+      'Staging root must be prepared by semester-workspace-init before activation.',
+    )
+  }
+  await assertExactCleanLocalGitRoot(stagingRoot)
+  const stagedTree = await readTree(stagingRoot, { skipRootGit: true })
+  for (const [relativePath, expected] of fixtureTree) {
+    const actual = stagedTree.get(relativePath)
+    if (
+      actual === undefined ||
+      !Buffer.from(actual).equals(Buffer.from(expected))
+    ) {
+      throw new Error(
+        `Prepared staging changed fixture material: ${relativePath}`,
+      )
+    }
+  }
+  return gitOutput(stagingRoot, ['rev-parse', 'HEAD'])
+}
+
+async function assertActivatedTarget(roots: PreparedRoots): Promise<void> {
+  await assertExactCleanLocalGitRoot(roots.workspaceRoot)
+  const [markedFixture, markedWorkspace] = await Promise.all([
+    gitConfig(roots.workspaceRoot, fixtureMarker),
+    gitConfig(roots.workspaceRoot, workspaceMarker),
+  ])
+  if (
+    markedFixture !== roots.fixtureRoot ||
+    markedWorkspace !== roots.workspaceRoot
+  ) {
+    throw new Error('Activated dogfood target lost its ownership markers.')
+  }
+}
+
+async function assertExactCleanLocalGitRoot(root: string): Promise<void> {
+  const gitRoot = await realpath(
+    await gitOutput(root, ['rev-parse', '--show-toplevel']),
+  ).catch(() => undefined)
+  if (gitRoot !== root) {
+    throw new Error('Dogfood target must be the exact Git root.')
+  }
+  const [status, remotes] = await Promise.all([
+    gitOutput(root, [
+      'status',
+      '--porcelain=v1',
+      '--untracked-files=all',
+      '--ignored=matching',
+    ]),
+    gitOutput(root, ['remote']),
+  ])
+  if (status.length > 0) {
+    throw new Error(
+      'Dogfood target contains staged, unstaged, untracked, or ignored files.',
+    )
+  }
+  if (remotes.length > 0) {
+    throw new Error('Dogfood target with a Git remote is not replaceable.')
+  }
+}
+
+async function gitConfig(root: string, key: string): Promise<string | undefined> {
+  const value = await gitOutput(root, [
+    'config',
+    '--local',
+    '--get',
+    '--default',
+    '',
+    key,
+  ])
+  return value.length > 0 ? value : undefined
+}
+
+async function unsetGitConfig(root: string, key: string): Promise<void> {
+  await execFileAsync('git', ['config', '--local', '--unset-all', key], {
+    cwd: root,
+    encoding: 'utf8',
+  }).catch((error: unknown) => {
+    const failure = error as Error & { readonly code?: number }
+    if (failure.code !== 5) {
+      throw error
+    }
   })
-  if (inherited.exitCode === 0) return undefined
-  return readTree(root)
 }
 
 async function canonicalExistingDirectory(
@@ -521,28 +398,20 @@ async function canonicalExistingDirectory(
   return canonical
 }
 
-async function canonicalWorkspaceTarget(
+async function canonicalTarget(
   input: string,
+  label: string,
 ): Promise<{ readonly root: string; readonly exists: boolean }> {
-  assertCanonicalAbsolutePath(input, 'Workspace root')
-  const metadata = await lstat(input).catch(() => undefined)
-  if (metadata !== undefined) {
-    if (!metadata.isDirectory() || metadata.isSymbolicLink()) {
-      throw new Error('Workspace root must be a non-symlink directory.')
+  assertCanonicalAbsolutePath(input, label)
+  if (await pathExists(input)) {
+    return {
+      root: await canonicalExistingDirectory(input, label),
+      exists: true,
     }
-    const canonical = await realpath(input)
-    if (canonical !== input) {
-      throw new Error('Workspace root must not traverse a symlinked path.')
-    }
-    return { root: canonical, exists: true }
   }
   const parent = path.dirname(input)
-  const canonicalParent = await canonicalExistingDirectory(
-    parent,
-    'Workspace parent',
-  )
-  if (canonicalParent !== parent) {
-    throw new Error('Workspace parent must be canonical.')
+  if (await canonicalExistingDirectory(parent, `${label} parent`) !== parent) {
+    throw new Error(`${label} parent must be canonical.`)
   }
   return { root: input, exists: false }
 }
@@ -554,6 +423,14 @@ function assertCanonicalAbsolutePath(input: string, label: string): void {
     input === path.parse(input).root
   ) {
     throw new Error(`${label} must be a canonical absolute path.`)
+  }
+}
+
+function assertConfirmation(confirmReplace: string, workspaceRoot: string): void {
+  if (confirmReplace !== workspaceRoot) {
+    throw new Error(
+      '--confirm-replace must exactly equal the canonical workspace root.',
+    )
   }
 }
 
@@ -581,9 +458,12 @@ function containsPath(parent: string, candidate: string): boolean {
   )
 }
 
-async function readTree(root: string): Promise<Tree> {
+async function readTree(
+  root: string,
+  options: { readonly skipRootGit?: boolean } = {},
+): Promise<Tree> {
   const result = new Map<string, Uint8Array>()
-  await walkTree(root, '', result)
+  await walkTree(root, '', result, options)
   return new Map([...result].sort(([left], [right]) => comparePaths(left, right)))
 }
 
@@ -591,11 +471,19 @@ async function walkTree(
   root: string,
   relative: string,
   result: Map<string, Uint8Array>,
+  options: { readonly skipRootGit?: boolean },
 ): Promise<void> {
   const entries = (await readdir(path.join(root, relative), {
     withFileTypes: true,
   })).sort((left, right) => comparePaths(left.name, right.name))
   for (const entry of entries) {
+    if (
+      options.skipRootGit === true &&
+      relative === '' &&
+      entry.name === '.git'
+    ) {
+      continue
+    }
     const child = path.join(relative, entry.name)
     const absolute = path.join(root, child)
     const metadata = await lstat(absolute)
@@ -603,7 +491,7 @@ async function walkTree(
       throw new Error(`Unsafe symlink in tree: ${toPosixPath(child)}`)
     }
     if (metadata.isDirectory()) {
-      await walkTree(root, child, result)
+      await walkTree(root, child, result, options)
       continue
     }
     if (!metadata.isFile()) {
@@ -611,28 +499,6 @@ async function walkTree(
     }
     result.set(toPosixPath(child), await readFile(absolute))
   }
-}
-
-async function readWorkspacePaths(
-  root: string,
-  relativePaths: ReadonlySet<string>,
-): Promise<Tree> {
-  const result = new Map<string, Uint8Array>()
-  for (const relativePath of [...relativePaths].sort(comparePaths)) {
-    const bytes = await readRegularFile(
-      path.join(root, ...relativePath.split('/')),
-    ).catch(() => undefined)
-    if (bytes !== undefined) result.set(relativePath, bytes)
-  }
-  return result
-}
-
-async function readRegularFile(filePath: string): Promise<Uint8Array> {
-  const metadata = await lstat(filePath)
-  if (!metadata.isFile() || metadata.isSymbolicLink()) {
-    throw new Error(`Expected a non-symlink regular file: ${filePath}`)
-  }
-  return readFile(filePath)
 }
 
 async function writeTree(root: string, tree: Tree): Promise<void> {
@@ -647,78 +513,55 @@ function treeEquals(left: Tree, right: Tree): boolean {
   if (left.size !== right.size) return false
   for (const [relativePath, leftBytes] of left) {
     const rightBytes = right.get(relativePath)
-    if (rightBytes === undefined || !bytesEqual(leftBytes, rightBytes)) {
+    if (
+      rightBytes === undefined ||
+      !Buffer.from(leftBytes).equals(Buffer.from(rightBytes))
+    ) {
       return false
     }
   }
   return true
 }
 
-function bytesEqual(left: Uint8Array, right: Uint8Array): boolean {
-  return Buffer.from(left).equals(Buffer.from(right))
+function fingerprintTree(tree: Tree): string {
+  const digest = createHash('sha256')
+  for (const [relativePath, bytes] of tree) {
+    digest.update(relativePath)
+    digest.update('\0')
+    digest.update(bytes)
+    digest.update('\0')
+  }
+  return digest.digest('hex')
 }
 
-async function gitFile(
-  root: string,
-  commit: string,
-  relativePath: string,
-): Promise<Uint8Array> {
-  const result = await execFileAsync(
-    'git',
-    ['show', `${commit}:${relativePath}`],
-    {
-      cwd: root,
-      encoding: 'buffer',
-      maxBuffer: 16 * 1024 * 1024,
-    },
-  )
-  return result.stdout
-}
-
-async function nulSeparatedGitPaths(
+async function gitOutput(
   root: string,
   arguments_: readonly string[],
-): Promise<readonly string[]> {
-  const result = await git(root, ['-c', 'core.quotepath=false', ...arguments_])
-  return result.stdout
-    .split('\0')
-    .filter((value) => value.length > 0)
-    .map((value) => toPosixPath(value))
-    .sort(comparePaths)
-}
-
-async function git(
-  cwd: string,
-  arguments_: readonly string[],
-  options: { readonly allowFailure?: boolean } = {},
-): Promise<{
-  readonly stdout: string
-  readonly stderr: string
-  readonly exitCode: number
-}> {
+): Promise<string> {
   try {
     const result = await execFileAsync('git', arguments_, {
-      cwd,
+      cwd: root,
       encoding: 'utf8',
       maxBuffer: 16 * 1024 * 1024,
     })
-    return { ...result, exitCode: 0 }
+    return result.stdout.trim()
   } catch (error) {
     const failure = error as Error & {
-      readonly stdout?: string
       readonly stderr?: string
-      readonly code?: number
-    }
-    if (options.allowFailure) {
-      return {
-        stdout: failure.stdout ?? '',
-        stderr: failure.stderr ?? failure.message,
-        exitCode: typeof failure.code === 'number' ? failure.code : 1,
-      }
     }
     throw new Error(
       `Git command failed: git ${arguments_.join(' ')}\n${failure.stderr ?? failure.message}`,
     )
+  }
+}
+
+async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await lstat(filePath)
+    return true
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false
+    throw error
   }
 }
 
@@ -730,59 +573,56 @@ function toPosixPath(value: string): string {
   return value.split(path.sep).join('/')
 }
 
-function unique(values: readonly string[]): readonly string[] {
-  return [...new Set(values)]
-}
-
-type CliArguments = DogfoodWorkspaceInput & {
-  readonly command: 'inspect' | 'reseed'
-  readonly confirmReplace?: string
-}
-
-function parseArguments(arguments_: readonly string[]): CliArguments {
-  const command = arguments_[0]
-  if (command !== 'inspect' && command !== 'reseed') throw usage()
-  const values = new Map<string, string>()
-  for (let index = 1; index < arguments_.length; index += 2) {
-    const flag = arguments_[index]
-    const value = arguments_[index + 1]
-    if (
-      flag === undefined ||
-      value === undefined ||
-      !flag.startsWith('--') ||
-      values.has(flag)
-    ) {
-      throw usage()
-    }
-    values.set(flag, value)
-  }
-  const fixtureRoot = values.get('--fixture-root')
-  const workspaceRoot = values.get('--workspace-root')
-  const builtInSkillCatalogRoot = values.get(
-    '--built-in-skill-catalog-root',
-  )
-  const yearLevel = Number(values.get('--year-level'))
-  const termKey = values.get('--term-key')
-  const termDisplayName = values.get('--term-display-name')
-  const confirmReplace = values.get('--confirm-replace')
-  const allowedFlags = new Set([
-    '--fixture-root',
-    '--workspace-root',
-    '--built-in-skill-catalog-root',
-    '--year-level',
-    '--term-key',
-    '--term-display-name',
-    ...(command === 'reseed' ? ['--confirm-replace'] : []),
-  ])
+function parseArguments(arguments_: readonly string[]) {
+  const { positionals, values } = parseArgs({
+    args: [...arguments_],
+    allowPositionals: true,
+    strict: true,
+    options: {
+      'fixture-root': { type: 'string' },
+      'workspace-root': { type: 'string' },
+      'confirm-replace': { type: 'string' },
+      'staging-root': { type: 'string' },
+      'expected-target-fingerprint': { type: 'string' },
+      'expected-staging-head': { type: 'string' },
+      'expected-head': { type: 'string' },
+    },
+  })
+  const command = positionals[0]
   if (
-    [...values.keys()].some((flag) => !allowedFlags.has(flag)) ||
+    command !== 'stage' &&
+    command !== 'adopt' &&
+    command !== 'activate'
+  ) {
+    throw usage()
+  }
+  const fixtureRoot = values['fixture-root']
+  const workspaceRoot = values['workspace-root']
+  const confirmReplace = values['confirm-replace']
+  const stagingRoot = values['staging-root']
+  const expectedTargetFingerprint = values['expected-target-fingerprint']
+  const expectedStagingHead = values['expected-staging-head']
+  const expectedHead = values['expected-head']
+  if (
+    positionals.length !== 1 ||
     fixtureRoot === undefined ||
     workspaceRoot === undefined ||
-    builtInSkillCatalogRoot === undefined ||
-    termKey === undefined ||
-    termDisplayName === undefined ||
-    !Number.isFinite(yearLevel) ||
-    (command === 'reseed' && confirmReplace === undefined)
+    confirmReplace === undefined ||
+    (command === 'stage' &&
+      (stagingRoot !== undefined ||
+        expectedTargetFingerprint !== undefined ||
+        expectedStagingHead !== undefined ||
+        expectedHead !== undefined)) ||
+    (command === 'adopt' &&
+      (expectedHead === undefined ||
+        stagingRoot !== undefined ||
+        expectedTargetFingerprint !== undefined ||
+        expectedStagingHead !== undefined)) ||
+    (command === 'activate' &&
+      (stagingRoot === undefined ||
+        expectedTargetFingerprint === undefined ||
+        expectedStagingHead === undefined ||
+        expectedHead !== undefined))
   ) {
     throw usage()
   }
@@ -790,27 +630,35 @@ function parseArguments(arguments_: readonly string[]): CliArguments {
     command,
     fixtureRoot,
     workspaceRoot,
-    builtInSkillCatalogRoot,
-    yearLevel,
-    termKey,
-    termDisplayName,
     confirmReplace,
+    stagingRoot,
+    expectedTargetFingerprint,
+    expectedStagingHead,
+    expectedHead,
   }
 }
 
 function usage(): Error {
   return new Error(
-    'Usage: reconcile-dogfood-workspace.mts <inspect|reseed> --fixture-root <absolute-path> --workspace-root <absolute-path> --built-in-skill-catalog-root <absolute-path> --year-level <1-20> --term-key <slug> --term-display-name <name> [--confirm-replace <exact-workspace-root>]',
+    'Usage: reconcile-dogfood-workspace.mts stage --fixture-root <absolute-path> --workspace-root <absolute-path> --confirm-replace <exact-workspace-root> | adopt with the same roots plus --expected-head <value> | activate with the same roots plus --staging-root <absolute-path> --expected-target-fingerprint <value> --expected-staging-head <value>',
   )
 }
 
 async function main(): Promise<void> {
   const arguments_ = parseArguments(process.argv.slice(2))
-  const output = arguments_.command === 'inspect'
-    ? await inspectDogfoodWorkspace(arguments_)
-    : await reseedDogfoodWorkspace({
+  const output = arguments_.command === 'stage'
+    ? await stageDogfoodWorkspace(arguments_)
+    : arguments_.command === 'adopt'
+      ? await adoptDogfoodWorkspace({
+          ...arguments_,
+          expectedHead: arguments_.expectedHead ?? '',
+        })
+      : await activateDogfoodWorkspace({
         ...arguments_,
-        confirmReplace: arguments_.confirmReplace ?? '',
+        stagingRoot: arguments_.stagingRoot ?? '',
+        expectedTargetFingerprint:
+          arguments_.expectedTargetFingerprint ?? '',
+        expectedStagingHead: arguments_.expectedStagingHead ?? '',
       })
   console.log(JSON.stringify(output, null, 2))
 }

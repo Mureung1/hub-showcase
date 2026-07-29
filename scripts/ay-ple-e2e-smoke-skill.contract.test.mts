@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import {
-  cp,
   lstat,
   mkdir,
   mkdtemp,
   readFile,
   readdir,
   realpath,
+  rename,
   rm,
   symlink,
   writeFile,
@@ -21,9 +21,9 @@ import { promisify } from 'node:util'
 import { parse as parseYaml } from 'yaml'
 
 import {
-  inspectDogfoodWorkspace,
-  reseedDogfoodWorkspace,
-  type DogfoodWorkspaceInput,
+  activateDogfoodWorkspace,
+  adoptDogfoodWorkspace,
+  stageDogfoodWorkspace,
 } from '../.agents/skills/ay-ple-e2e-smoke/scripts/reconcile-dogfood-workspace.mjs'
 
 const execFileAsync = promisify(execFile)
@@ -36,7 +36,6 @@ const bootstrapScript = path.join(
   repositoryRoot,
   '.agents/skills/semester-workspace-init/scripts/bootstrap.mts',
 )
-const builtInSkillCatalogRoot = path.join(repositoryRoot, 'skills')
 const fixtureGitEnvironment = {
   GIT_AUTHOR_EMAIL: 'e2e-fixture@example.com',
   GIT_AUTHOR_NAME: 'E2E Fixture',
@@ -44,7 +43,7 @@ const fixtureGitEnvironment = {
   GIT_COMMITTER_NAME: 'E2E Fixture',
 }
 
-test('E2E Skill separates the Codex harness from AY and retains dogfood state', async () => {
+test('E2E Skill keeps lifecycle policy with Codex and uses a staged handoff', async () => {
   const [skill, fixtureReference, openAiSource] = await Promise.all([
     readFile(path.join(skillRoot, 'SKILL.md'), 'utf8'),
     readFile(
@@ -60,20 +59,27 @@ test('E2E Skill separates the Codex harness from AY and retains dogfood state', 
     skill,
     /never installed as an AY-PLE built-in\s+Product Skill/i,
   )
-  assert.match(skill, /reconcile[\s\S]*before (?:starting|launching) AY-PLE/i)
-  assert.match(skill, /semester-workspace-init/)
+  assert.match(skill, /stage[\s\S]*\$semester-workspace-init[\s\S]*activate/i)
+  assert.match(skill, /staging-ready[\s\S]*exact `HEAD`/i)
   assert.match(skill, /accept[\s\S]*Review/i)
   assert.match(skill, /retain[\s\S]*(?:workspace|process|Browser)/i)
   assert.match(skill, /arbitrary prepared SemesterWorkspace[\s\S]*review-only/i)
   assert.match(skill, /conflict[\s\S]*fail closed/i)
 
-  assert.match(fixtureReference, /immutable seed/i)
-  assert.match(fixtureReference, /generated, observable dogfood SemesterWorkspace/i)
-  assert.match(fixtureReference, /ready/)
-  assert.match(fixtureReference, /reseedable/)
-  assert.match(fixtureReference, /conflict/)
-  assert.match(fixtureReference, /accept the Review/i)
-  assert.match(fixtureReference, /retain/i)
+  for (const phrase of [
+    'immutable seed',
+    'generated, observable dogfood SemesterWorkspace',
+    '`ready`',
+    '`reseedable`',
+    '`conflict`',
+    'accept the Review',
+    'retain',
+  ]) {
+    assert.match(fixtureReference, new RegExp(escapeRegex(phrase), 'i'))
+  }
+  assert.match(fixtureReference, /existing target remains preserved/i)
+  assert.match(fixtureReference, /one-time adoption[\s\S]*\sadopt\s/i)
+  assert.match(fixtureReference, /staging-ready[\s\S]*exact `HEAD`/i)
   assert.doesNotMatch(fixtureReference, /\/Users\//)
   assert.doesNotMatch(
     `${skill}\n${fixtureReference}\n${openAiSource}`,
@@ -95,129 +101,195 @@ test('E2E Skill separates the Codex harness from AY and retains dogfood state', 
     openAi.interface?.default_prompt ?? '',
     /\$ay-ple-e2e-smoke/,
   )
-  assert.equal(openAi.policy?.allow_implicit_invocation, false)
+  assert.equal(openAi.policy?.allow_implicit_invocation, true)
 })
 
-test('dogfood lifecycle traces missing through Bootstrap, apply, and conflict', async () => {
+test('stage, Bootstrap, and activate preserve the prior target until cutover', async () => {
   await withFixture(async ({ fixtureRoot, workspaceRoot }) => {
-    const input = createInput(fixtureRoot, workspaceRoot)
-    const missing = await inspectDogfoodWorkspace(input)
-    assert.equal(missing.classification, 'reseedable')
-    assert.deepEqual(missing.reasons, ['workspace_missing'])
-    assert.deepEqual(missing.baselinePaths, [
-      'inbox/메모.txt',
-      'liberal-arts/exam.pdf',
-    ])
-
     await assert.rejects(
-      reseedDogfoodWorkspace({
-        ...input,
+      stageDogfoodWorkspace({
+        fixtureRoot,
+        workspaceRoot,
         confirmReplace: `${workspaceRoot}-wrong`,
       }),
       /confirm-replace/,
     )
     await assert.rejects(lstat(workspaceRoot), { code: 'ENOENT' })
 
-    const reseeded = await reseedDogfoodWorkspace({
-      ...input,
+    const staged = await stageDogfoodWorkspace({
+      fixtureRoot,
+      workspaceRoot,
       confirmReplace: workspaceRoot,
     })
-    assert.deepEqual(reseeded.baselinePaths, missing.baselinePaths)
-    assert.deepEqual(await listFiles(workspaceRoot), missing.baselinePaths)
-
-    await runBootstrap(input, missing.baselinePaths)
-    const ready = await inspectDogfoodWorkspace(input)
-    assert.equal(ready.classification, 'ready')
-    assert.deepEqual(ready.reasons, [])
-
-    const statePath = path.join(workspaceRoot, 'workspace-state.json')
-    const state = JSON.parse(await readFile(statePath, 'utf8')) as {
-      snapshot: Record<string, unknown>
-    }
-    state.snapshot = { courses: [{ title: '인도신화와철학' }] }
-    await writeFile(statePath, `${JSON.stringify(state, null, 2)}\n`)
-    await git(workspaceRoot, ['add', '--', 'workspace-state.json'])
-    await git(workspaceRoot, [
-      'commit',
-      '--quiet',
-      '-m',
-      'feat: model semester fixture',
+    assert.deepEqual(staged.baselinePaths, [
+      'inbox/메모.txt',
+      'liberal-arts/exam.pdf',
     ])
+    assert.deepEqual(await listFiles(staged.stagingRoot), staged.baselinePaths)
+    await assert.rejects(lstat(workspaceRoot), { code: 'ENOENT' })
 
-    const applied = await inspectDogfoodWorkspace(input)
-    assert.equal(applied.classification, 'reseedable')
-    assert.ok(applied.reasons.includes('applied_snapshot'))
-
-    await writeFile(path.join(workspaceRoot, 'scratch.txt'), 'inspect me\n')
-    const conflict = await inspectDogfoodWorkspace(input)
-    assert.equal(conflict.classification, 'conflict')
-    assert.deepEqual(conflict.reasons, ['workspace_dirty'])
-    const stateBeforeRefusal = await readFile(statePath)
+    await runBootstrap(staged.stagingRoot, staged.baselinePaths)
+    const stagedHead = await git(staged.stagingRoot, ['rev-parse', 'HEAD'])
     await assert.rejects(
-      reseedDogfoodWorkspace({
-        ...input,
+      activateDogfoodWorkspace({
+        fixtureRoot,
+        workspaceRoot,
+        stagingRoot: staged.stagingRoot,
         confirmReplace: workspaceRoot,
+        expectedTargetFingerprint: staged.expectedTargetFingerprint,
+        expectedStagingHead: `${stagedHead}-changed`,
       }),
-      /conflicting workspace/,
+      /staging HEAD changed/,
     )
-    assert.deepEqual(await readFile(statePath), stateBeforeRefusal)
+    await assert.rejects(lstat(workspaceRoot), { code: 'ENOENT' })
+    const activated = await activateDogfoodWorkspace({
+      fixtureRoot,
+      workspaceRoot,
+      stagingRoot: staged.stagingRoot,
+      confirmReplace: workspaceRoot,
+      expectedTargetFingerprint: staged.expectedTargetFingerprint,
+      expectedStagingHead: stagedHead,
+    })
+    assert.equal(activated.workspaceRoot, workspaceRoot)
     assert.equal(
-      await readFile(path.join(workspaceRoot, 'scratch.txt'), 'utf8'),
-      'inspect me\n',
+      await git(workspaceRoot, [
+        'config',
+        '--local',
+        '--get',
+        'ay-ple.e2eDogfoodFixtureRoot',
+      ]),
+      fixtureRoot,
     )
+    assert.equal(
+      await git(workspaceRoot, [
+        'config',
+        '--local',
+        '--get',
+        'ay-ple.e2eDogfoodWorkspaceRoot',
+      ]),
+      workspaceRoot,
+    )
+    assert.equal(
+      await git(workspaceRoot, [
+        'status',
+        '--porcelain=v1',
+        '--untracked-files=all',
+        '--ignored=matching',
+      ]),
+      '',
+    )
+
+    const priorHead = await git(workspaceRoot, ['rev-parse', 'HEAD'])
+    const priorState = await readFile(
+      path.join(workspaceRoot, 'workspace-state.json'),
+    )
+    const nextStage = await stageDogfoodWorkspace({
+      fixtureRoot,
+      workspaceRoot,
+      confirmReplace: workspaceRoot,
+    })
+    assert.equal(await git(workspaceRoot, ['rev-parse', 'HEAD']), priorHead)
+    assert.deepEqual(
+      await readFile(path.join(workspaceRoot, 'workspace-state.json')),
+      priorState,
+    )
+    await rm(nextStage.stagingRoot, { recursive: true })
   })
 })
 
-test('dogfood reseed is bounded to recognized clean generated workspaces', async () => {
+test('replacement safety rejects unowned, dirty, ignored, and unsafe inputs', async () => {
   await withFixture(async ({ root, fixtureRoot, workspaceRoot }) => {
-    const input = createInput(fixtureRoot, workspaceRoot)
-    const missing = await inspectDogfoodWorkspace(input)
-    await reseedDogfoodWorkspace({
-      ...input,
+    const staged = await stageDogfoodWorkspace({
+      fixtureRoot,
+      workspaceRoot,
       confirmReplace: workspaceRoot,
     })
-    await runBootstrap(input, missing.baselinePaths)
-
-    await writeFile(
-      path.join(fixtureRoot, 'liberal-arts/exam.pdf'),
-      Buffer.from([9, 8, 7, 6]),
-    )
-    const fixtureDrift = await inspectDogfoodWorkspace(input)
-    assert.equal(fixtureDrift.classification, 'reseedable')
-    assert.ok(fixtureDrift.reasons.includes('fixture_tree_drift'))
-
-    const catalogCopy = path.join(root, 'catalog')
-    await cp(builtInSkillCatalogRoot, catalogCopy, { recursive: true })
-    const copiedSkill = path.join(
-      catalogCopy,
-      'ay-ple-semester-modeling/SKILL.md',
-    )
-    await writeFile(
-      copiedSkill,
-      `${await readFile(copiedSkill, 'utf8')}\n<!-- changed catalog -->\n`,
-    )
-    const catalogDrift = await inspectDogfoodWorkspace({
-      ...input,
-      builtInSkillCatalogRoot: catalogCopy,
-    })
-    assert.equal(catalogDrift.classification, 'reseedable')
-    assert.ok(
-      catalogDrift.reasons.includes('built_in_skill_catalog_drift'),
-    )
-
-    const result = await reseedDogfoodWorkspace({
-      ...input,
+    await runBootstrap(staged.stagingRoot, staged.baselinePaths)
+    const stagedHead = await git(staged.stagingRoot, ['rev-parse', 'HEAD'])
+    await activateDogfoodWorkspace({
+      fixtureRoot,
+      workspaceRoot,
+      stagingRoot: staged.stagingRoot,
       confirmReplace: workspaceRoot,
+      expectedTargetFingerprint: staged.expectedTargetFingerprint,
+      expectedStagingHead: stagedHead,
     })
-    assert.equal(result.action, 'reseeded')
-    assert.deepEqual(await listFiles(workspaceRoot), result.baselinePaths)
-    await assert.rejects(lstat(path.join(workspaceRoot, '.git')), {
-      code: 'ENOENT',
-    })
-    assert.deepEqual(
-      await readFile(path.join(workspaceRoot, 'liberal-arts/exam.pdf')),
-      Buffer.from([9, 8, 7, 6]),
+
+    await mkdir(path.join(workspaceRoot, '.ay-ple'), { recursive: true })
+    await writeFile(
+      path.join(workspaceRoot, '.ay-ple/ignored.txt'),
+      'preserve me\n',
     )
+    await assert.rejects(
+      stageDogfoodWorkspace({
+        fixtureRoot,
+        workspaceRoot,
+        confirmReplace: workspaceRoot,
+      }),
+      /ignored files/,
+    )
+    assert.equal(
+      await readFile(
+        path.join(workspaceRoot, '.ay-ple/ignored.txt'),
+        'utf8',
+      ),
+      'preserve me\n',
+    )
+    await rm(path.join(workspaceRoot, '.ay-ple'), { recursive: true })
+
+    await writeFile(path.join(workspaceRoot, 'scratch.txt'), 'dirty\n')
+    await assert.rejects(
+      stageDogfoodWorkspace({
+        fixtureRoot,
+        workspaceRoot,
+        confirmReplace: workspaceRoot,
+      }),
+      /untracked/,
+    )
+    await rm(path.join(workspaceRoot, 'scratch.txt'))
+
+    const unownedRoot = path.join(root, 'unowned')
+    await mkdir(unownedRoot)
+    await runBootstrap(unownedRoot, [])
+    await assert.rejects(
+      stageDogfoodWorkspace({
+        fixtureRoot,
+        workspaceRoot: unownedRoot,
+        confirmReplace: unownedRoot,
+      }),
+      /ownership markers/,
+    )
+
+    const legacyRoot = path.join(root, 'legacy-dogfood')
+    const legacyStage = await stageDogfoodWorkspace({
+      fixtureRoot,
+      workspaceRoot: legacyRoot,
+      confirmReplace: legacyRoot,
+    })
+    await runBootstrap(legacyStage.stagingRoot, legacyStage.baselinePaths)
+    await rename(legacyStage.stagingRoot, legacyRoot)
+    await assert.rejects(
+      stageDogfoodWorkspace({
+        fixtureRoot,
+        workspaceRoot: legacyRoot,
+        confirmReplace: legacyRoot,
+      }),
+      /ownership markers/,
+    )
+    const legacyHead = await git(legacyRoot, ['rev-parse', 'HEAD'])
+    const adopted = await adoptDogfoodWorkspace({
+      fixtureRoot,
+      workspaceRoot: legacyRoot,
+      expectedHead: legacyHead,
+      confirmReplace: legacyRoot,
+    })
+    assert.equal(adopted.head, legacyHead)
+    const adoptedStage = await stageDogfoodWorkspace({
+      fixtureRoot,
+      workspaceRoot: legacyRoot,
+      confirmReplace: legacyRoot,
+    })
+    await rm(adoptedStage.stagingRoot, { recursive: true })
 
     const unsafeFixture = path.join(root, 'unsafe-fixture')
     await mkdir(unsafeFixture)
@@ -225,71 +297,18 @@ test('dogfood reseed is bounded to recognized clean generated workspaces', async
       path.join(fixtureRoot, 'inbox/메모.txt'),
       path.join(unsafeFixture, 'linked.txt'),
     )
-    const targetBefore = await snapshotTree(workspaceRoot)
+    const targetHead = await git(workspaceRoot, ['rev-parse', 'HEAD'])
     await assert.rejects(
-      inspectDogfoodWorkspace(createInput(unsafeFixture, workspaceRoot)),
-      /Unsafe symlink/,
-    )
-    assert.deepEqual(await snapshotTree(workspaceRoot), targetBefore)
-  })
-
-  await withFixture(async ({ fixtureRoot, workspaceRoot }) => {
-    const input = createInput(fixtureRoot, workspaceRoot)
-    const missing = await inspectDogfoodWorkspace(input)
-    await reseedDogfoodWorkspace({
-      ...input,
-      confirmReplace: workspaceRoot,
-    })
-    await runBootstrap(input, missing.baselinePaths)
-    await writeFile(path.join(workspaceRoot, 'unexpected.md'), 'committed\n')
-    await git(workspaceRoot, ['add', '--', 'unexpected.md'])
-    await git(workspaceRoot, [
-      'commit',
-      '--quiet',
-      '-m',
-      'docs: add unexpected fixture note',
-    ])
-
-    const conflict = await inspectDogfoodWorkspace(input)
-    assert.equal(conflict.classification, 'conflict')
-    assert.ok(conflict.reasons.includes('unexpected_tracked_path'))
-    const head = await git(workspaceRoot, ['rev-parse', 'HEAD'])
-    await assert.rejects(
-      reseedDogfoodWorkspace({
-        ...input,
+      stageDogfoodWorkspace({
+        fixtureRoot: unsafeFixture,
+        workspaceRoot,
         confirmReplace: workspaceRoot,
       }),
-      /conflicting workspace/,
+      /Unsafe symlink/,
     )
-    assert.equal(await git(workspaceRoot, ['rev-parse', 'HEAD']), head)
-
-    const symlinkedGitRoot = path.join(path.dirname(workspaceRoot), 'linked-git')
-    await mkdir(symlinkedGitRoot)
-    await symlink(
-      path.join(workspaceRoot, '.git'),
-      path.join(symlinkedGitRoot, '.git'),
-    )
-    const unsafeGit = await inspectDogfoodWorkspace(
-      createInput(fixtureRoot, symlinkedGitRoot),
-    )
-    assert.equal(unsafeGit.classification, 'conflict')
-    assert.deepEqual(unsafeGit.reasons, ['workspace_not_exact_git_root'])
+    assert.equal(await git(workspaceRoot, ['rev-parse', 'HEAD']), targetHead)
   })
 })
-
-function createInput(
-  fixtureRoot: string,
-  workspaceRoot: string,
-): DogfoodWorkspaceInput {
-  return {
-    fixtureRoot,
-    workspaceRoot,
-    builtInSkillCatalogRoot,
-    yearLevel: 2,
-    termKey: 'first-semester',
-    termDisplayName: '1학기',
-  }
-}
 
 async function withFixture(
   run: (paths: {
@@ -320,34 +339,37 @@ async function withFixture(
 }
 
 async function runBootstrap(
-  input: DogfoodWorkspaceInput,
+  target: string,
   baselinePaths: readonly string[],
 ): Promise<void> {
-  const arguments_ = [
-    '--import',
-    'tsx',
-    bootstrapScript,
-    '--target',
-    input.workspaceRoot,
-    '--year-level',
-    String(input.yearLevel),
-    '--term-key',
-    input.termKey,
-    '--term-display-name',
-    input.termDisplayName,
-    ...baselinePaths.flatMap((relativePath) => [
-      '--baseline',
-      relativePath,
-    ]),
-  ]
-  await execFileAsync('node', arguments_, {
-    cwd: repositoryRoot,
-    env: {
-      ...process.env,
-      ...fixtureGitEnvironment,
+  await execFileAsync(
+    'node',
+    [
+      '--import',
+      'tsx',
+      bootstrapScript,
+      '--target',
+      target,
+      '--year-level',
+      '2',
+      '--term-key',
+      'first-semester',
+      '--term-display-name',
+      '1학기',
+      ...baselinePaths.flatMap((relativePath) => [
+        '--baseline',
+        relativePath,
+      ]),
+    ],
+    {
+      cwd: repositoryRoot,
+      env: {
+        ...process.env,
+        ...fixtureGitEnvironment,
+      },
+      encoding: 'utf8',
     },
-    encoding: 'utf8',
-  })
+  )
 }
 
 async function git(
@@ -383,14 +405,6 @@ async function listFiles(root: string, relative = ''): Promise<string[]> {
   return files
 }
 
-async function snapshotTree(
-  root: string,
-): Promise<Readonly<Record<string, string>>> {
-  const snapshot: Record<string, string> = {}
-  for (const relativePath of await listFiles(root)) {
-    snapshot[relativePath] = (
-      await readFile(path.join(root, ...relativePath.split('/')))
-    ).toString('base64')
-  }
-  return snapshot
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
