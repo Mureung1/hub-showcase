@@ -5,6 +5,19 @@ import type {
 
 export const MAX_SELECTED_CHALLENGES = 1;
 
+export function getSelectedCandidateIndex(
+  candidates: TechnicalChallengeCandidate[],
+  selectedTitles: string[],
+): number {
+  const selectedTitle = selectedTitles[0];
+  if (!selectedTitle) return 0;
+
+  const selectedIndex = candidates.findIndex(
+    (candidate) => candidate.title === selectedTitle,
+  );
+  return selectedIndex >= 0 ? selectedIndex : 0;
+}
+
 export function toggleSelectedChallengeTitles(
   selectedTitles: string[],
   title: string,

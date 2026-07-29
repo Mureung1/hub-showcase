@@ -29,7 +29,6 @@ export function AnalysisPage({ result, reflectionDraft, reflectionAnalysis, onBa
   const reflectionSectionRef = useRef<HTMLElement | null>(null);
   const previousStepRef = useRef<1 | 2>(activeStep);
   const activeStepRef = useRef<1 | 2>(activeStep);
-  const allowBrowserBackRef = useRef(false);
   const [analysisCandidates, setAnalysisCandidates] = useState<TechnicalChallengeCandidate[]>(
     mergeTechnicalChallenges(
       result.analysis.technicalChallenges,
@@ -73,25 +72,16 @@ export function AnalysisPage({ result, reflectionDraft, reflectionAnalysis, onBa
     }
 
     const handleBrowserBack = () => {
-      if (allowBrowserBackRef.current) {
-        allowBrowserBackRef.current = false;
-        onBackToWorkspace();
-        return;
-      }
-
       window.history.pushState(
         { ...(window.history.state ?? {}), ptopAnalysisGuard: true },
         "",
         window.location.href,
       );
-
-      if (activeStepRef.current === 2) {
-        setActiveStep(1);
-        setSelectionToast("");
-        return;
-      }
-
-      setSelectionToast("분석 결과를 나가려면 ‘작업실로 돌아가기’를 눌러주세요.");
+      setSelectionToast(
+        activeStepRef.current === 2
+          ? "회고 작성을 끝내려면 상단의 ‘작업실로 돌아가기’를 눌러주세요."
+          : "분석 결과를 나가려면 상단의 ‘작업실로 돌아가기’를 눌러주세요.",
+      );
     };
 
     window.addEventListener("popstate", handleBrowserBack);
@@ -99,14 +89,16 @@ export function AnalysisPage({ result, reflectionDraft, reflectionAnalysis, onBa
   }, [onBackToWorkspace]);
 
   const leaveAnalysis = () => {
-    allowBrowserBackRef.current = true;
-    window.history.back();
-    window.setTimeout(() => {
-      if (!allowBrowserBackRef.current) return;
-
-      allowBrowserBackRef.current = false;
-      onBackToWorkspace();
-    }, 0);
+    window.history.replaceState(
+      {
+        ...(window.history.state ?? {}),
+        ptopAnalysisGuard: false,
+        ptopWorkspaceEntry: true,
+      },
+      "",
+      window.location.href,
+    );
+    onBackToWorkspace();
   };
 
   useEffect(() => {
@@ -164,7 +156,14 @@ export function AnalysisPage({ result, reflectionDraft, reflectionAnalysis, onBa
             initialDraft={reflectionDraftWithSelection}
             reflectionAnalysis={currentReflectionAnalysis}
             onSave={(draft) =>
-              saveReflectionDraftToApi(result.id, draft, undefined, undefined, analysisCandidates).then((response) => {
+              saveReflectionDraftToApi(
+                result.id,
+                draft,
+                undefined,
+                undefined,
+                analysisCandidates,
+                result.analysis.codeReferences ?? [],
+              ).then((response) => {
                 setCurrentReflectionAnalysis(response.reflectionAnalysis ?? null);
                 setAnalysisCandidates((current) =>
                   mergeTechnicalChallenges(

@@ -3,8 +3,22 @@ import test from "node:test";
 import {
   createCustomTechnicalChallengeCandidate,
   getSelectionBlockMessage,
+  getSelectedCandidateIndex,
   toggleSelectedChallengeTitles,
 } from "./repository-analysis/candidateSelection";
+
+const candidate = (title: string) => ({
+  title,
+  summary: "summary",
+  background: null,
+  problem: null,
+  solution: null,
+  technicalChallenge: "challenge",
+  whyItMatters: "why it matters",
+  confidence: "medium" as const,
+  requiresUserConfirmation: false,
+  evidence: [],
+});
 
 test("selects and deselects a candidate explicitly", () => {
   assert.deepEqual(toggleSelectedChallengeTitles([], "API 안정성"), {
@@ -29,6 +43,17 @@ test("does not keep a second candidate from a legacy multi-selection", () => {
     toggleSelectedChallengeTitles(["API 안정성", "상태 관리"], "API 안정성"),
     { titles: ["상태 관리"], blocked: false },
   );
+});
+
+test("restores the selected candidate detail when returning to the candidate step", () => {
+  const candidates = [
+    candidate("첫 번째 도전"),
+    candidate("두 번째 도전"),
+  ];
+
+  assert.equal(getSelectedCandidateIndex(candidates, ["두 번째 도전"]), 1);
+  assert.equal(getSelectedCandidateIndex(candidates, []), 0);
+  assert.equal(getSelectedCandidateIndex(candidates, ["없는 후보"]), 0);
 });
 
 test("provides a blocking message when continuing without a selection", () => {

@@ -158,8 +158,9 @@ export function AnalysisReflectionPanel({
               </span>
             </div>
             <p className="m-0 max-w-[576px] text-base font-semibold leading-[1.7] text-[var(--terminal-ink)] sm:text-lg">
-              분석하는 동안 궁금한 게 있어! 이 프로젝트를 진행하면서 가장
-              해결하기 어려웠던 문제는 뭐였어?
+              분석하는 동안 궁금한 게 있어!
+              <br />이 프로젝트를 진행하면서 가장 해결하기 어려웠던 문제는
+              뭐였어?
             </p>
           </div>
         </div>
@@ -208,20 +209,16 @@ export function AnalysisReflectionPanel({
           type="button"
           onClick={() => void saveAnswer()}
           disabled={
-            !canSendReflection(
-              saveStatus,
-              isAnalysisComplete,
-              draft[promptKey],
-            )
+            !canSendReflection(saveStatus, isAnalysisComplete, draft[promptKey])
           }
         >
           {saveStatus === "saving"
             ? "SAVING..."
             : saveStatus === "queued"
               ? "QUEUED"
-            : saveStatus === "saved"
-              ? "SENT"
-              : "SEND  >"}
+              : saveStatus === "saved"
+                ? "SENT"
+                : "SEND  >"}
         </button>
         {isAnalysisComplete && onViewResults && saveStatus === "saved" && (
           <button

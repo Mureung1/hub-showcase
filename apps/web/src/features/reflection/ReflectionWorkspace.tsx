@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type {
   PortfolioDraft,
+  PortfolioCodeSnippet,
   PortfolioImplementationStep,
   ReflectionAnalysis,
   RepositoryAnalysisResult,
@@ -45,6 +46,8 @@ export function ReflectionWorkspace({
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const [saveMessage, setSaveMessage] = useState("");
+  const [hasRequestedPortfolioDraft, setHasRequestedPortfolioDraft] =
+    useState(false);
   const generatedAnalysis = reflectionAnalysis ?? loadedReflectionAnalysis;
   const portfolioDraftSectionRef = useRef<HTMLDivElement | null>(null);
   const previousSaveStatusRef = useRef(saveStatus);
@@ -252,7 +255,10 @@ export function ReflectionWorkspace({
             disabled={
               !draft.postAnalysisReflection.trim() || saveStatus === "saving"
             }
-            onClick={() => void saveAnswer()}
+            onClick={() => {
+              setHasRequestedPortfolioDraft(true);
+              void saveAnswer();
+            }}
           >
             {saveStatus === "saving"
               ? "초안 만드는 중"
@@ -262,20 +268,24 @@ export function ReflectionWorkspace({
       </article>
 
       <div ref={portfolioDraftSectionRef} className="scroll-mt-24">
-      {saveStatus === "saving" ? (
-        <PortfolioDraftLoading />
-      ) : generatedAnalysis?.portfolioDraft ? (
-        <PortfolioDraftPreview
-          draft={generatedAnalysis.portfolioDraft}
-          evidence={generatedAnalysis.matchedChallengeEvidence}
-          pdfFileName={getPortfolioPdfFileName(
-            result.repository.owner,
-            result.repository.name,
-          )}
-        />
-        ) : generatedAnalysis ? (
-          <AlignmentNotice analysis={generatedAnalysis} />
-        ) : null}
+        {hasRequestedPortfolioDraft && (
+          <>
+            {saveStatus === "saving" ? (
+              <PortfolioDraftLoading />
+            ) : generatedAnalysis?.portfolioDraft ? (
+              <PortfolioDraftPreview
+                draft={generatedAnalysis.portfolioDraft}
+                evidence={generatedAnalysis.matchedChallengeEvidence}
+                pdfFileName={getPortfolioPdfFileName(
+                  result.repository.owner,
+                  result.repository.name,
+                )}
+              />
+            ) : generatedAnalysis ? (
+              <AlignmentNotice analysis={generatedAnalysis} />
+            ) : null}
+          </>
+        )}
       </div>
     </section>
   );
@@ -427,6 +437,9 @@ export function PortfolioDraftPreview({
       <PortfolioVisuals references={visualReferences} />
       <DraftSection label="Problem" value={draft.problem} />
       <DraftSection label="Solution" value={draft.solution} />
+      {draft.codeSnippets && draft.codeSnippets.length > 0 && (
+        <DraftCodeSnippets snippets={draft.codeSnippets} />
+      )}
       {draft.implementationSteps && draft.implementationSteps.length > 0 && (
         <DraftImplementationSteps steps={draft.implementationSteps} />
       )}
@@ -492,6 +505,48 @@ export function PortfolioDraftPreview({
         </p>
       )}
     </article>
+  );
+}
+
+function DraftCodeSnippets({ snippets }: { snippets: PortfolioCodeSnippet[] }) {
+  return (
+    <section className="grid gap-3 border-y border-ptop-line py-5">
+      <div className="grid gap-1">
+        <h5 className="m-0 text-sm font-extrabold uppercase tracking-[0.08em] text-ptop-mint-dark">
+          Core code
+        </h5>
+        <p className="m-0 text-xs leading-5 text-ptop-muted">
+          선택한 기술적 도전과 연결되는 실제 Repository 코드 일부입니다.
+        </p>
+      </div>
+      <div className="grid gap-4">
+        {snippets.map((snippet, index) => (
+          <article className="grid gap-2" key={`${snippet.filePath}-${index}`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {snippet.sourceUrl ? (
+                <a
+                  className="font-mono text-xs font-bold text-ptop-mint-dark underline decoration-ptop-mint/40 underline-offset-2"
+                  href={snippet.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {snippet.filePath} ↗
+                </a>
+              ) : (
+                <code className="text-xs font-bold text-ptop-mint-dark">{snippet.filePath}</code>
+              )}
+              <span className="rounded-full bg-ptop-soft-paper px-2 py-1 text-[0.68rem] font-bold text-ptop-muted">
+                {snippet.language}
+              </span>
+            </div>
+            <pre className="m-0 max-h-64 overflow-auto rounded-xl bg-[#17211e] p-4 text-xs leading-6 text-[#d9ffe8] print:max-h-none print:break-inside-avoid">
+              <code>{snippet.code}</code>
+            </pre>
+            <p className="m-0 text-sm leading-6 text-ptop-muted">{snippet.explanation}</p>
+          </article>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -609,16 +664,32 @@ function splitEvidenceSummary(value: string): string[] {
 }
 
 function AlignmentNotice({ analysis }: { analysis: ReflectionAnalysis }) {
+  const isMismatched = analysis.alignment === "mismatched";
+  const isPartial = analysis.alignment === "partial";
+
   return (
     <div
-      className="grid gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"
-      role="status"
+      className={`grid gap-2 rounded-xl border p-4 text-sm leading-6 ${
+        isMismatched
+          ? "border-rose-200 bg-rose-50 text-rose-900"
+          : isPartial
+            ? "border-amber-200 bg-amber-50 text-amber-900"
+            : "border-amber-200 bg-amber-50 text-amber-900"
+      }`}
+      role="alert"
     >
-      <strong>아직 포트폴리오 초안을 만들지 못했습니다.</strong>
+      <strong>
+        {isMismatched
+          ? "선택한 후보와 회고가 일치하지 않습니다."
+          : isPartial
+            ? "회고와 후보가 일부만 연결되었습니다."
+            : "아직 포트폴리오 초안을 만들지 못했습니다."}
+      </strong>
       <p className="m-0">{analysis.message}</p>
       <p className="m-0">
-        Repository 근거와 나의 실제 경험이 일치하는지 확인한 뒤 다시
-        시도해주세요.
+        {isMismatched
+          ? "선택한 기술적 도전과 실제로 경험한 작업이 연결되도록 회고를 다시 작성해 주세요."
+          : "Repository 근거와 나의 실제 경험이 연결되는지 확인한 뒤 다시 시도해 주세요."}
       </p>
     </div>
   );
