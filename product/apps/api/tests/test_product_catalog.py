@@ -73,16 +73,17 @@ def test_ranked_categories_use_unique_stores_and_per_market_counts() -> None:
 
     ranked = rank_product_categories(session, limit=4)
 
-    assert [category.name for category in ranked] == ["미용", "카페", "체육", "음식점"]
+    assert [category.name for category in ranked] == ["미용", "체육", "카페", "음식점"]
     assert ranked[0].store_count == 3
     assert ranked[0].market_count == 3
     assert ranked[0].store_counts_by_market == {"연남": 1, "홍대": 1, "합정": 1}
     assert ranked[0].coverage == "partial"
     assert ranked[0].analysis_category is None
     assert ranked[1].store_count == 2
-    assert ranked[1].store_counts_by_market == {"연남": 1, "홍대": 1}
-    assert ranked[1].coverage == "full"
-    assert ranked[1].analysis_category == "카페"
+    assert ranked[1].store_counts_by_market == {"연남": 2, "홍대": 1}
+    assert ranked[1].coverage == "partial"
+    assert ranked[1].analysis_category is None
     assert ranked[2].store_count == 2
-    assert ranked[2].store_counts_by_market == {"연남": 2, "홍대": 1}
-    assert ranked[2].coverage == "partial"
+    assert ranked[2].store_counts_by_market == {"연남": 1, "홍대": 1}
+    assert ranked[2].coverage == "full"
+    assert ranked[2].analysis_category == "카페"
