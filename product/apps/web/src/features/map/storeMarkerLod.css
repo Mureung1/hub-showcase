@@ -75,7 +75,7 @@
     0 6px 14px rgba(25, 55, 34, 0.2);
 }
 
-.selected-store-focus-anchor {
+.live-map .selected-store-focus-anchor {
   display: none;
 }
 
