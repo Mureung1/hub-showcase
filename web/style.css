@@ -188,15 +188,43 @@ body[data-state="error"] .starter {
   display: none;
 }
 
-/* ------------------------------------------------------- ③ 완료 헤더 자리 */
-/* 내용은 Week 4에서 채운다. 자리와 고정 동작만 미리 정의해 둔다. */
+/* ------------------------------------------------------------ ③ 완료 헤더 */
+/*
+ * 트렌드를 타임라인 맨 아래에 둔 결정(9-1)의 반쪽이다. 결론이 아래에 있어도
+ * 위로 올라간 사용자가 언제든 여기서 결과에 닿는다. 그래서 sticky는 장식이 아니다.
+ */
 .run-header {
   position: sticky;
   top: 0;
   z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  /* 좌우 여백을 .page의 콘텐츠 시작선에 맞춘다 — 헤더만 튀어나오면 고정이 어색해진다. */
+  padding: 0.7rem max(1.25rem, calc((100% - var(--page-width)) / 2 + 1.25rem));
   border-bottom: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(6px);
+}
+
+.run-header__title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* 통계는 근거지 자랑이 아니다. 제목보다 한 단계 물러나게 둔다. */
+.run-header__detail {
+  margin: 0.05rem 0 0;
+  color: var(--ink-3);
+  font-size: 0.8rem;
+}
+
+.run-header__restart {
+  flex-shrink: 0;
 }
 
 /* ---------------------------------------------------------------- 타임라인 */
@@ -312,6 +340,25 @@ body[data-state="error"] .starter {
 
 .entry--failed::before {
   top: 1.1rem;
+  background: var(--fail);
+}
+
+/*
+ * 트렌드 — 이 서비스의 하이라이트 3. 5단계의 결과물이라 과정 로그가 아니라
+ * 결과 카드와 같은 위계로 그린다. 타임라인의 마지막에 놓이므로 아래 여백을 넉넉히 준다.
+ */
+.entry--trend {
+  margin: 1.3rem 0 1.4rem;
+  padding: 1.15rem 1.3rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--fail);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(22, 32, 43, 0.04);
+}
+
+.entry--trend::before {
+  top: 1.35rem;
   background: var(--fail);
 }
 
@@ -602,6 +649,131 @@ body[data-state="error"] .timeline {
   border: 1px solid var(--line-2);
   background: var(--surface-2);
   color: var(--ink-3);
+}
+
+/* ── 트렌드 블록 (9-1) ─────────────────────────────────────────── */
+
+/*
+ * 결과 카드와 같은 위계로 둔다 — 트렌드는 과정이 아니라 결과물이다.
+ * 다만 카드와 색을 나눠 "개별 논문"과 "논문 사이"를 구별한다(--fail = 트렌드 강조,
+ * 토큰 정의 주석 참고). 이 색은 실패에도 쓰이지만 트렌드에서는 배경 없이
+ * 테두리와 제목에만 얹어, 경고로 읽히지 않게 한다.
+ */
+.trend__heading {
+  margin: 0;
+  color: var(--fail);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trend__subheading {
+  margin: 0.1rem 0 0.9rem;
+  color: var(--ink-2);
+  font-size: 0.86rem;
+}
+
+/*
+ * 번호는 CSS가 매긴다. gap이 없으면 항목이 하나 줄어들 뿐 번호는 어긋나지 않는다.
+ * 기본 마커 대신 counter를 쓰는 이유는 와이어프레임의 `1 · 제목` 형식 때문이다.
+ */
+.trend__flows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: flow;
+}
+
+.trend__flow {
+  counter-increment: flow;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.trend__flow:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.trend__flow-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.98rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.trend__flow-title::before {
+  content: counter(flow) " · ";
+  color: var(--fail);
+  font-weight: 700;
+}
+
+.trend__flow-body {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+/* 빈 곳(gap)은 야심찬 항목이다. 흐름과 같은 자리에 두되 톤만 한 단계 낮춘다. */
+.trend__flow--gap .trend__flow-body {
+  color: var(--ink-3);
+}
+
+/*
+ * 논문 칩 (9-2) — 주장에 붙는 근거다. 흐름 본문 바로 아래에 둬서
+ * "이 주장은 이 논문들에서 나왔다"가 한 덩어리로 읽히게 한다.
+ */
+.trend__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.trend__chip {
+  max-width: 100%;
+  padding: 0.12rem 0.55rem;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 0.76rem;
+  text-decoration: none;
+  white-space: nowrap;
+
+  /* 제목이 길면 자른다. 전문은 title 속성에 있다(app.js). */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 호버·포커스에서 트렌드 색으로 물든다 — 도착할 카드의 강조색과 같은 색이다. */
+.trend__chip:hover,
+.trend__chip:focus-visible {
+  border-color: var(--fail);
+  color: var(--fail);
+}
+
+/*
+ * 칩을 눌러 도착한 카드. 스크롤만 하면 어디에 왔는지 모르므로 한 번 물들였다 뺀다.
+ * 상태가 아니라 사건이라 남지 않는다 — app.js가 animationend에서 클래스를 지운다.
+ */
+@keyframes card-flash {
+  from {
+    border-color: var(--fail);
+    background: #fdf2ed;
+  }
+  to {
+    border-color: var(--line);
+    background: var(--surface);
+  }
+}
+
+.entry--flash {
+  animation: card-flash 1.2s ease-out;
 }
 
 /* 펼침 요소 — 화면을 바꾸지 않고 제자리에서 펼친다. 맥락을 잃지 않기 위해. */
