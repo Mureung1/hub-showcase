@@ -11,10 +11,13 @@ import type {
 
 type Fetcher = (input: string, init: RequestInit) => Promise<Response>;
 
+const RETRIEVE_REQUEST_TIMEOUT_MS = 35_000;
+
 export function createBrowserRetrieveService(
   client: SupabaseClient = getSupabaseClient(),
   fetcher: Fetcher = fetch,
-  apiOrigin: string = getInsightApiOrigin()
+  apiOrigin: string = getInsightApiOrigin(),
+  requestTimeoutMs: number = RETRIEVE_REQUEST_TIMEOUT_MS
 ): RetrieveService {
   return {
     async retrieve(query) {
@@ -25,14 +28,26 @@ export function createBrowserRetrieveService(
           return { ok: false, reason: 'permission-denied' };
         }
 
-        const response = await fetcher(`${apiOrigin}/api/insights/retrieve`, {
-          body: JSON.stringify({ query }),
-          headers: {
-            Authorization: `Bearer ${data.session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          method: 'POST',
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(
+          () => controller.abort(),
+          requestTimeoutMs
+        );
+        let response: Response;
+
+        try {
+          response = await fetcher(`${apiOrigin}/api/insights/retrieve`, {
+            body: JSON.stringify({ query }),
+            headers: {
+              Authorization: `Bearer ${data.session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            method: 'POST',
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
 
         if (response.status === 401) {
           return { ok: false, reason: 'permission-denied' };

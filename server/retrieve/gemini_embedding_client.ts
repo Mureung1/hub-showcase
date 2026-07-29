@@ -8,6 +8,10 @@ import {
 
 type EmbedContentInput = {
   config: {
+    abortSignal: AbortSignal;
+    httpOptions: {
+      timeout: number;
+    };
     outputDimensionality: number;
   };
   contents: string;
@@ -39,17 +43,22 @@ export type GeminiEmbeddingClient = {
 };
 
 const SAFE_EMBEDDING_ERROR = '검색 벡터를 만들지 못했습니다.';
+const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 
 export function createGeminiEmbeddingClient({
   embedContent,
+  requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
 }: {
   embedContent: EmbedContent;
+  requestTimeoutMs?: number;
 }): GeminiEmbeddingClient {
   return {
     async embed(input) {
       try {
         const response = await embedContent({
           config: {
+            abortSignal: AbortSignal.timeout(requestTimeoutMs),
+            httpOptions: { timeout: requestTimeoutMs },
             outputDimensionality: RETRIEVE_EMBEDDING_DIMENSIONS,
           },
           contents: input,
@@ -63,7 +72,7 @@ export function createGeminiEmbeddingClient({
 
         const promptTokens = response.usageMetadata?.promptTokenCount;
 
-        if (promptTokens === undefined) {
+        if (promptTokens === undefined || promptTokens === null) {
           return {
             usage: { kind: 'unavailable' },
             vector,
@@ -90,11 +99,13 @@ export function createGeminiEmbeddingClient({
 }
 
 export function createGoogleGeminiEmbeddingClient(
-  apiKey: string
+  apiKey: string,
+  requestTimeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS
 ): GeminiEmbeddingClient {
   const client = new GoogleGenAI({ apiKey });
 
   return createGeminiEmbeddingClient({
     embedContent: (input) => client.models.embedContent(input),
+    requestTimeoutMs,
   });
 }

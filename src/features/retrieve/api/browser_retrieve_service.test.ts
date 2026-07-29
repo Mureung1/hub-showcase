@@ -40,6 +40,7 @@ describe('브라우저 꺼내보기 서비스', () => {
         'Content-Type': 'application/json',
       },
       method: 'POST',
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -58,6 +59,41 @@ describe('브라우저 꺼내보기 서비스', () => {
       ok: false,
       reason: 'retrieve-failed',
     });
+  });
+
+  it('제한 시간이 지나면 서버 요청을 중단하고 재시도 가능한 실패를 반환한다', async () => {
+    vi.useFakeTimers();
+    let requestSignal: AbortSignal | null | undefined;
+    const fetcher = vi.fn((_input: string, init: RequestInit) => {
+      requestSignal = init.signal;
+
+      return new Promise<Response>((_resolve, reject) => {
+        if (!init.signal) {
+          reject(new Error('중단 신호 없음'));
+          return;
+        }
+
+        init.signal.addEventListener('abort', () => {
+          reject(new Error('요청 중단'));
+        });
+      });
+    });
+    const service = createBrowserRetrieveService(
+      createClient('access-token'),
+      fetcher,
+      '',
+      25
+    );
+
+    const result = service.retrieve('오류 안내');
+    await vi.advanceTimersByTimeAsync(25);
+
+    await expect(result).resolves.toEqual({
+      ok: false,
+      reason: 'retrieve-failed',
+    });
+    expect(requestSignal?.aborted).toBe(true);
+    vi.useRealTimers();
   });
 });
 

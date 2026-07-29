@@ -15,7 +15,11 @@ describe('Gemini 꺼내보기 임베딩', () => {
       vector: Array(768).fill(0.01),
     });
     expect(embedContent).toHaveBeenCalledWith({
-      config: { outputDimensionality: 768 },
+      config: {
+        abortSignal: expect.any(AbortSignal),
+        httpOptions: { timeout: 10_000 },
+        outputDimensionality: 768,
+      },
       contents: '검색 입력',
       model: 'gemini-embedding-2',
     });
@@ -31,6 +35,43 @@ describe('Gemini 꺼내보기 임베딩', () => {
     await expect(client.embed('검색 입력')).resolves.toEqual({
       usage: { kind: 'unavailable' },
       vector: Array(768).fill(0.01),
+    });
+  });
+
+  it('null 토큰 정보를 정상 벡터의 보수 정산 대상으로 반환한다', async () => {
+    const client = createGeminiEmbeddingClient({
+      embedContent: vi.fn().mockResolvedValue({
+        embeddings: [{ values: Array(768).fill(0.01) }],
+        usageMetadata: { promptTokenCount: null },
+      }),
+    });
+
+    await expect(client.embed('검색 입력')).resolves.toEqual({
+      usage: { kind: 'unavailable' },
+      vector: Array(768).fill(0.01),
+    });
+  });
+
+  it('Gemini 요청에 제한 시간과 중단 신호를 전달한다', async () => {
+    const embedContent = vi.fn().mockResolvedValue({
+      embeddings: [{ values: Array(768).fill(0.01) }],
+      usageMetadata: { promptTokenCount: 17 },
+    });
+    const client = createGeminiEmbeddingClient({
+      embedContent,
+      requestTimeoutMs: 25,
+    });
+
+    await client.embed('검색 입력');
+
+    expect(embedContent).toHaveBeenCalledWith({
+      config: {
+        abortSignal: expect.any(AbortSignal),
+        httpOptions: { timeout: 25 },
+        outputDimensionality: 768,
+      },
+      contents: '검색 입력',
+      model: 'gemini-embedding-2',
     });
   });
 
