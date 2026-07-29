@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  deleteExpiredGuestSessions,
   findActiveGuestSessionByKeyHash,
   listConversationMessagesByGuestSession
 } from "./guestSessionRepository.js";
 
 function createQueryClient(result) {
   const query = {};
-  ["select", "eq", "gt", "order", "limit"].forEach((method) => {
+  ["select", "eq", "gt", "lt", "order", "limit", "delete"].forEach((method) => {
     query[method] = vi.fn(() => query);
   });
   query.maybeSingle = vi.fn(async () => result);
@@ -54,5 +55,19 @@ describe("guest session repository isolation", () => {
       listConversationMessagesByGuestSession("all-guests", 20, client)
     ).rejects.toThrow("valid UUID");
     expect(client.from).not.toHaveBeenCalled();
+  });
+
+  it("deletes only sessions whose expiration is in the past", async () => {
+    const client = createQueryClient({ data: null, error: null });
+    const now = new Date("2026-07-29T06:00:00.000Z");
+
+    await deleteExpiredGuestSessions(now, client);
+
+    expect(client.from).toHaveBeenCalledWith("guest_sessions");
+    expect(client.query.delete).toHaveBeenCalledOnce();
+    expect(client.query.lt).toHaveBeenCalledWith(
+      "expires_at",
+      now.toISOString()
+    );
   });
 });

@@ -137,3 +137,21 @@ export async function deleteGuestSession(
     repositoryFailure("Failed to delete the guest session.", error);
   }
 }
+
+export async function deleteExpiredGuestSessions(
+  now = new Date(),
+  client = getSupabaseClient()
+) {
+  if (!(now instanceof Date) || Number.isNaN(now.valueOf())) {
+    throw new TypeError("now must be a valid Date.");
+  }
+
+  const { error } = await client
+    .from("guest_sessions")
+    .delete()
+    .lt("expires_at", now.toISOString());
+
+  if (error) {
+    repositoryFailure("Failed to delete expired guest sessions.", error);
+  }
+}

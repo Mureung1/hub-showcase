@@ -10,6 +10,7 @@ async function startServer(guestSessionOptions) {
     guestSessionOptions: {
       pepper,
       now: () => fixedNow,
+      purgeExpiredSessions: vi.fn(async () => undefined),
       ...guestSessionOptions
     },
     rateLimitOptions: { limit: 1000 }
@@ -34,13 +35,14 @@ afterEach(async () => {
 
 describe("guest session API", () => {
   it("returns a recovery key once and stores only its hash", async () => {
+    const purgeExpiredSessions = vi.fn(async () => undefined);
     const createSession = vi.fn(async ({ expiresAt }) => ({
       id: "550e8400-e29b-41d4-a716-446655440000",
       created_at: fixedNow.toISOString(),
       last_accessed_at: fixedNow.toISOString(),
       expires_at: expiresAt.toISOString()
     }));
-    const url = await startServer({ createSession });
+    const url = await startServer({ createSession, purgeExpiredSessions });
     const response = await fetch(url, { method: "POST" });
     const body = await response.json();
 
@@ -48,6 +50,7 @@ describe("guest session API", () => {
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(body.data.recoveryKey).toMatch(/^(?:[0-9A-HJKMNP-TV-Z]{4}-){7}[0-9A-HJKMNP-TV-Z]{4}$/);
     expect(createSession.mock.calls[0][0].keyHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(purgeExpiredSessions).toHaveBeenCalledWith(fixedNow);
     expect(JSON.stringify(createSession.mock.calls)).not.toContain(
       body.data.recoveryKey
     );

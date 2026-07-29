@@ -7,6 +7,7 @@ import {
 } from "../../security/guestRecoveryKey.js";
 import {
   createGuestSession,
+  deleteExpiredGuestSessions,
   deleteGuestSession,
   findActiveGuestSessionByKeyHash,
   touchGuestSession
@@ -56,6 +57,7 @@ function sessionDto(session) {
 export function createGuestSessionRouter({
   pepper = process.env.GUEST_KEY_PEPPER,
   createSession = createGuestSession,
+  purgeExpiredSessions = deleteExpiredGuestSessions,
   findSession = findActiveGuestSessionByKeyHash,
   touchSession = touchGuestSession,
   deleteSession = deleteGuestSession,
@@ -68,6 +70,7 @@ export function createGuestSessionRouter({
     const recoveryKey = generateGuestRecoveryKey();
     const keyHash = hashGuestRecoveryKey(recoveryKey, pepper);
     const currentTime = now();
+    await purgeExpiredSessions(currentTime);
     const expiresAt = new Date(
       currentTime.valueOf() +
         GUEST_SESSION_LIMITS.retentionDays * 24 * 60 * 60 * 1000
