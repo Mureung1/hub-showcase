@@ -91,6 +91,34 @@ export function createLocalStorageInsightRepository(
 
       return writeInsights(storage, nextInsights);
     },
+    async deleteMany(insightIds) {
+      const loadResult = readInsights(storage);
+      const uniqueInsightIds = [...new Set(insightIds)];
+
+      if (loadResult.warnings.includes('read-failed')) {
+        return { ok: false, reason: 'write-failed' };
+      }
+
+      if (uniqueInsightIds.length === 0) {
+        return { ok: false, reason: 'invalid-request' };
+      }
+
+      const insightIdSet = new Set(loadResult.insights.map(({ id }) => id));
+
+      if (uniqueInsightIds.some((id) => !insightIdSet.has(id))) {
+        return { ok: false, reason: 'not-found' };
+      }
+
+      const deleteIdSet = new Set(uniqueInsightIds);
+      const writeResult = writeInsights(
+        storage,
+        loadResult.insights.filter(({ id }) => !deleteIdSet.has(id))
+      );
+
+      return writeResult.ok
+        ? { deletedIds: uniqueInsightIds, ok: true }
+        : { ok: false, reason: 'write-failed' };
+    },
   };
 }
 

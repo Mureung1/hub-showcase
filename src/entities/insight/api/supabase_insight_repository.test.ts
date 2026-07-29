@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createSupabaseInsightRepository } from './supabase_insight_repository';
 
 const USER_ID = '00000000-0000-4000-8000-000000000001';
+const SECOND_INSIGHT_ID = '10000000-0000-4000-8000-000000000002';
 const INSIGHT = {
   categoryId: '20000000-0000-4000-8000-000000000001',
   createdAt: '2026-07-15T00:00:00.000Z',
@@ -303,6 +304,51 @@ describe('createSupabaseInsightRepository', () => {
     expect(query.eq).toHaveBeenNthCalledWith(1, 'id', INSIGHT.id);
     expect(query.eq).toHaveBeenNthCalledWith(2, 'user_id', USER_ID);
   });
+
+  it('선택한 인사이트 ID를 함수 한 번으로 삭제한다', async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [{ id: INSIGHT.id }, { id: SECOND_INSIGHT_ID }],
+      error: null,
+    });
+    const repository = createSupabaseInsightRepository(
+      { rpc } as unknown as SupabaseClient,
+      USER_ID
+    );
+
+    await expect(
+      repository.deleteMany([INSIGHT.id, SECOND_INSIGHT_ID])
+    ).resolves.toEqual({
+      deletedIds: [INSIGHT.id, SECOND_INSIGHT_ID],
+      ok: true,
+    });
+    expect(rpc).toHaveBeenCalledWith('delete_user_insights', {
+      target_insight_ids: [INSIGHT.id, SECOND_INSIGHT_ID],
+    });
+  });
+
+  it.each([
+    ['22023', 'invalid-request'],
+    ['P0002', 'not-found'],
+    ['42501', 'permission-denied'],
+    ['PGRST000', 'write-failed'],
+  ] as const)(
+    '일괄 삭제 오류 %s를 %s 결과로 변환한다',
+    async (code, reason) => {
+      const rpc = vi.fn().mockResolvedValue({
+        data: null,
+        error: { code, details: '', hint: '', message: '내부 오류' },
+      });
+      const repository = createSupabaseInsightRepository(
+        { rpc } as unknown as SupabaseClient,
+        USER_ID
+      );
+
+      await expect(repository.deleteMany([INSIGHT.id])).resolves.toEqual({
+        ok: false,
+        reason,
+      });
+    }
+  );
 
   it.each([
     ['42501', 'permission-denied'],

@@ -45,7 +45,7 @@ describe('LandingPage', () => {
     ).not.toBeNull();
     expect(
       screen.getByRole('heading', {
-        name: '발견한 링크를 인사이트로 저장하고 필요한 순간 다시 꺼내 보세요.',
+        name: '발견한 링크가 필요한 순간 다시 쓰이도록, 아맞다가 저장부터 꺼내보기까지 이어드려요.',
       })
     ).not.toBeNull();
     expect(

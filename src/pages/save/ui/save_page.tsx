@@ -81,9 +81,7 @@ export function SavePage({
       <div className="save-page__stage">
         <div className="save-page__primary">
           <header className="save-page__header">
-            {!isSharedSave ? (
-              <p className="save-page__kicker">URL을 입력하면 바로 저장해요</p>
-            ) : null}
+            <p className="save-page__kicker">저장</p>
             <h2 id="save-title">
               {isSharedSave
                 ? '공유한 링크를 저장할까요?'
@@ -191,6 +189,7 @@ export function SavePage({
 
               <label htmlFor="save-context-title">제목 (선택)</label>
               <TextField
+                disabled={isContextSaving}
                 id="save-context-title"
                 onChange={(event) =>
                   onContextDraftChange({
@@ -205,6 +204,7 @@ export function SavePage({
 
               <label htmlFor="save-context-memo">한 줄 메모 (선택)</label>
               <TextArea
+                disabled={isContextSaving}
                 id="save-context-memo"
                 onChange={(event) =>
                   onContextDraftChange({
@@ -220,7 +220,7 @@ export function SavePage({
               <label id="save-context-category-label">카테고리 (선택)</label>
               <Select
                 aria-labelledby="save-context-category-label"
-                disabled={categorySelectionDisabled}
+                disabled={categorySelectionDisabled || isContextSaving}
                 onValueChange={(value) => {
                   if (value === CREATE_CATEGORY_VALUE) {
                     onRequestCategoryCreation?.((categoryId) =>
@@ -263,7 +263,7 @@ export function SavePage({
 
               <div className="save-page__context-actions">
                 <Button
-                  disabled={isContextSaving}
+                  disabled={isContextSaving || contextSaveComplete}
                   hierarchy="primary"
                   loading={isContextSaving}
                   size="medium"
@@ -277,15 +277,17 @@ export function SavePage({
                         ? '변경 내용 저장하기'
                         : '인사이트 정보 저장하기'}
                 </Button>
-                <Button
-                  disabled={isContextSaving}
-                  hierarchy="secondary"
-                  onClick={onContextSkip}
-                  size="medium"
-                  type="button"
-                >
-                  지금은 건너뛰기
-                </Button>
+                {contextSaveComplete ? null : (
+                  <Button
+                    disabled={isContextSaving}
+                    hierarchy="secondary"
+                    onClick={onContextSkip}
+                    size="medium"
+                    type="button"
+                  >
+                    지금은 건너뛰기
+                  </Button>
+                )}
               </div>
             </form>
           </div>

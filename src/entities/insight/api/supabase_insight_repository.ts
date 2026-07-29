@@ -131,6 +131,31 @@ export function createSupabaseInsightRepository(
         return { ok: false, reason: 'write-failed' };
       }
     },
+    async deleteMany(insightIds) {
+      try {
+        const uniqueInsightIds = [...new Set(insightIds)];
+
+        if (uniqueInsightIds.length === 0) {
+          return { ok: false, reason: 'invalid-request' };
+        }
+
+        const { data, error } = await client.rpc('delete_user_insights', {
+          target_insight_ids: uniqueInsightIds,
+        });
+
+        if (error) {
+          return { ok: false, reason: toDeleteManyFailure(error) };
+        }
+
+        const deletedIds = parseDeletedInsightIds(data);
+
+        return deletedIds
+          ? { deletedIds, ok: true }
+          : { ok: false, reason: 'write-failed' };
+      } catch {
+        return { ok: false, reason: 'write-failed' };
+      }
+    },
   };
 }
 
@@ -181,6 +206,24 @@ function parseInsightRow(row: unknown, userId: string) {
   });
 }
 
+function parseDeletedInsightIds(data: unknown) {
+  if (!Array.isArray(data)) {
+    return null;
+  }
+
+  const deletedIds: string[] = [];
+
+  for (const row of data) {
+    if (!isRecord(row) || typeof row.id !== 'string') {
+      return null;
+    }
+
+    deletedIds.push(row.id);
+  }
+
+  return deletedIds;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -208,4 +251,16 @@ function toDeleteFailure(
 ): Exclude<InsightRepositoryWriteFailureReason, 'duplicate'> {
   const reason = toWriteFailure(error);
   return reason === 'duplicate' ? 'write-failed' : reason;
+}
+
+function toDeleteManyFailure(error: PostgrestError) {
+  if (error.code === '22023') {
+    return 'invalid-request' as const;
+  }
+
+  if (error.code === 'P0002') {
+    return 'not-found' as const;
+  }
+
+  return toDeleteFailure(error);
 }

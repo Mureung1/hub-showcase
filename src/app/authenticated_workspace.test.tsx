@@ -6,7 +6,6 @@ import {
   render,
   screen,
   waitFor,
-  within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
@@ -34,6 +33,7 @@ import type {
   NotionImportApi,
   PreparedImport,
 } from '@/features/insight-import';
+import type { RetrieveService } from '@/features/retrieve';
 import {
   pwaInstallPromptEvents,
   type BeforeInstallPromptEvent,
@@ -305,6 +305,7 @@ describe('AuthenticatedWorkspace', () => {
           categoryRepository={categoryRepository}
           importService={importService}
           repository={insightRepository}
+          retrieveService={createRetrieveService([importedInsight.id])}
         />
       </DesignSystemProvider>
     );
@@ -841,7 +842,10 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          repository={toAsyncRepository(repository)}
+          retrieveService={createRetrieveService(['project-design'])}
+        />
       </DesignSystemProvider>
     );
 
@@ -886,7 +890,10 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          repository={toAsyncRepository(repository)}
+          retrieveService={createRetrieveService(['insight-1'])}
+        />
       </DesignSystemProvider>
     );
 
@@ -946,7 +953,10 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          repository={toAsyncRepository(repository)}
+          retrieveService={createRetrieveService(['insight-1'])}
+        />
       </DesignSystemProvider>
     );
 
@@ -985,7 +995,10 @@ describe('AuthenticatedWorkspace', () => {
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace
+          repository={toAsyncRepository(repository)}
+          retrieveService={createRetrieveService(['insight-1'])}
+        />
       </DesignSystemProvider>
     );
 
@@ -1005,74 +1018,30 @@ describe('AuthenticatedWorkspace', () => {
     ).not.toBeNull();
   });
 
-  it('recomputes the same submitted workpack after edits, saves, and deletions', async () => {
+  it('빈 상황은 꺼내보기 서비스에 전달하지 않는다', async () => {
     const user = userEvent.setup();
-    const repository: InsightRepository = {
-      load: () => ({
-        insights: [createInsight({ title: 'signal 자료' })],
-        warnings: [],
-      }),
-      save: () => ({ ok: true }),
-    };
+    const retrieve = vi.fn().mockResolvedValue({
+      insightIds: [],
+      ok: true as const,
+      pendingCount: 0,
+    });
 
     render(
       <DesignSystemProvider>
-        <AuthenticatedWorkspace repository={toAsyncRepository(repository)} />
+        <AuthenticatedWorkspace retrieveService={{ retrieve }} />
       </DesignSystemProvider>
     );
 
-    const retrieveInput = screen.getByRole('textbox', {
-      name: '지금 꺼내 보고 싶은 상황',
-    });
-    await user.type(retrieveInput, 'signal');
-    await user.keyboard('{Enter}');
-    expect(screen.getByRole('status').textContent).toContain(
-      '“signal” 결과 1개'
-    );
-
-    await user.click(screen.getByRole('button', { name: '보관함' }));
-    await user.click(screen.getByRole('button', { name: '수정' }));
-    const titleInput = screen.getByRole('textbox', { name: '제목' });
-    await user.clear(titleInput);
-    await user.type(titleInput, '다른 자료');
-    await user.click(
-      screen.getByRole('button', { name: '변경 내용 저장하기' })
-    );
-    await user.click(screen.getByRole('button', { name: '홈' }));
-
-    expect(screen.getByRole('status').textContent).toContain(
-      '“signal” 결과 0개'
-    );
-
-    await user.click(screen.getByRole('button', { name: '저장' }));
     await user.type(
-      screen.getByRole('textbox', { name: 'URL' }),
-      'https://signal.example/article'
+      screen.getByRole('textbox', {
+        name: '지금 꺼내 보고 싶은 상황',
+      }),
+      '   '
     );
-    await user.click(screen.getByRole('button', { name: '저장하기' }));
-    await user.click(screen.getByRole('button', { name: '지금은 건너뛰기' }));
-    await user.click(screen.getByRole('button', { name: '홈' }));
+    await user.keyboard('{Enter}');
 
-    expect(screen.getByRole('status').textContent).toContain(
-      '“signal” 결과 1개'
-    );
-
-    await user.click(screen.getByRole('button', { name: '보관함' }));
-    const savedCard = screen
-      .getByRole('heading', { name: 'signal.example' })
-      .closest('article');
-
-    expect(savedCard).not.toBeNull();
-    await user.click(within(savedCard!).getByRole('button', { name: '삭제' }));
-    await user.click(
-      within(savedCard!).getByRole('button', { name: '인사이트 삭제하기' })
-    );
-    await user.click(screen.getByRole('button', { name: '홈' }));
-
-    expect(screen.getByRole('status').textContent).toContain(
-      '“signal” 결과 0개'
-    );
-  }, 10_000);
+    expect(retrieve).not.toHaveBeenCalled();
+  });
 
   it('combines category filtering with deterministic all-result ranking', async () => {
     const user = userEvent.setup();
@@ -1486,6 +1455,16 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.queryByRole('status', { name: '인사이트 정보를 저장했어요' })
     ).toBeNull();
+    expect(
+      (
+        screen.getByRole('button', {
+          name: '인사이트 정보 저장하기',
+        }) as HTMLButtonElement
+      ).disabled
+    ).toBe(false);
+    expect(
+      screen.getByRole('button', { name: '지금은 건너뛰기' })
+    ).not.toBeNull();
     await user.click(
       screen.getByRole('button', { name: '인사이트 정보 저장하기' })
     );
@@ -1495,6 +1474,16 @@ describe('AuthenticatedWorkspace', () => {
     expect(
       screen.getByRole('status', { name: '인사이트 정보를 저장했어요' })
     ).not.toBeNull();
+    expect(
+      screen.queryByRole('button', { name: '지금은 건너뛰기' })
+    ).toBeNull();
+    expect(
+      (
+        screen.getByRole('button', {
+          name: '변경 내용 저장하기',
+        }) as HTMLButtonElement
+      ).disabled
+    ).toBe(true);
 
     await user.click(screen.getByRole('button', { name: '보관함' }));
 
@@ -1508,6 +1497,17 @@ describe('AuthenticatedWorkspace', () => {
       target: { value: 'Design Systems' },
     });
     expect(screen.getByText('수정한 디자인 패턴')).not.toBeNull();
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    expect(
+      (screen.getByRole('textbox', { name: 'URL' }) as HTMLInputElement).value
+    ).toBe('');
+    expect(
+      screen.queryByRole('heading', {
+        name: '언제 다시 쓰고 싶은가요?',
+      })
+    ).toBeNull();
   }, 10_000);
 
   it('keeps the saved URL when personal context is skipped', async () => {
@@ -2248,6 +2248,16 @@ function createCategoryRepository(
   };
 }
 
+function createRetrieveService(insightIds: string[]): RetrieveService {
+  return {
+    retrieve: vi.fn(async () => ({
+      insightIds,
+      ok: true as const,
+      pendingCount: 0,
+    })),
+  };
+}
+
 function createRepository(): InsightRepository {
   return {
     load: () => ({ insights: [], warnings: [] }),
@@ -2314,6 +2324,28 @@ function toAsyncRepository(
       }
 
       return writeResult;
+    },
+    async deleteMany(insightIds) {
+      const uniqueInsightIds = [...new Set(insightIds)];
+      const currentInsightIdSet = new Set(currentInsights.map(({ id }) => id));
+
+      if (uniqueInsightIds.some((id) => !currentInsightIdSet.has(id))) {
+        return { ok: false, reason: 'not-found' };
+      }
+
+      const deletedIdSet = new Set(uniqueInsightIds);
+      const nextInsights = currentInsights.filter(
+        ({ id }) => !deletedIdSet.has(id)
+      );
+      const writeResult = repository.save(nextInsights);
+
+      if (writeResult.ok) {
+        currentInsights = nextInsights;
+      }
+
+      return writeResult.ok
+        ? { deletedIds: uniqueInsightIds, ok: true }
+        : { ok: false, reason: writeResult.reason };
     },
   };
 }

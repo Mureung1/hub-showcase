@@ -6,7 +6,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import type { Insight, RetrievedInsight } from '@/entities/insight';
+import type { Insight } from '@/entities/insight';
 import { DesignSystemProvider } from '@/shared/ui';
 
 import {
@@ -63,7 +63,7 @@ function renderHomePage(props: Partial<HomePageProps> = {}) {
 }
 
 describe('HomePage', () => {
-  it('defines a centered retrieval axis with responsive suggestion columns', () => {
+  it('defines a centered retrieval width with left-aligned content and responsive suggestion columns', () => {
     const styles = readFileSync(
       join(process.cwd(), 'src/pages/home/ui/home_page.css'),
       'utf8'
@@ -82,6 +82,8 @@ describe('HomePage', () => {
     expect(stageRule).toContain('background: var(--color-retrieve-blue);');
     expect(heroRule).toContain('width: min(820px, 100%);');
     expect(heroRule).toContain('margin-inline: auto;');
+    expect(heroRule).toContain('justify-items: start;');
+    expect(heroRule).toContain('text-align: left;');
     expect(bodyRule).toContain(
       'width: min(var(--layout-content-width), calc(100% - var(--spacing-8)));'
     );
@@ -275,16 +277,11 @@ describe('HomePage', () => {
   });
 
   it('renders submitted results with the exact query and safe source link', () => {
-    const result: RetrievedInsight = {
-      insight: createInsight({
-        memo: '온보딩 흐름 참고',
-        originalUrl: 'https://example.com/onboarding',
-        normalizedUrl: 'https://example.com/onboarding',
-      }),
-      score: 12,
-      matchedFields: ['memo'],
-      matchedTokens: ['온보딩'],
-    };
+    const result = createInsight({
+      memo: '온보딩 흐름 참고',
+      originalUrl: 'https://example.com/onboarding',
+      normalizedUrl: 'https://example.com/onboarding',
+    });
 
     render(
       <DesignSystemProvider>
@@ -298,6 +295,7 @@ describe('HomePage', () => {
           onRetrieve={vi.fn()}
           onRetryLoad={vi.fn()}
           onSituationClick={vi.fn()}
+          pendingCount={1}
           query="수정 중인 다른 초안"
           results={[result]}
           selectedSituation=""
@@ -307,14 +305,15 @@ describe('HomePage', () => {
       </DesignSystemProvider>
     );
 
-    expect(screen.getByRole('status').textContent).toContain('온보딩 작업');
-    expect(screen.getByRole('status').textContent).toContain('1개');
-    expect(screen.getByRole('status').textContent).toContain('결과');
+    expect(screen.getByText('“온보딩 작업” 결과 1개')).not.toBeNull();
     expect(
       screen.getByRole('heading', { name: '지금 상황에 맞는 인사이트' })
     ).not.toBeNull();
     expect(screen.queryByText('작업팩')).toBeNull();
     expect(screen.queryByText(/단서가 겹쳐요/)).toBeNull();
+    expect(
+      screen.getByText('최근 저장한 일부 인사이트는 검색 준비 중이에요.')
+    ).not.toBeNull();
     const sourceLink = screen.getByRole('link', { name: '원문 열기' });
     expect(sourceLink.getAttribute('href')).toBe(
       'https://example.com/onboarding'

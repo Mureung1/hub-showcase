@@ -15,6 +15,10 @@ import {
   NotionImportServiceError,
   type NotionImportService,
 } from './insight_import/notion_import_service.js';
+import type {
+  InsightRetrieveResult,
+  ServerInsightRetrieveService,
+} from './retrieve/insight_retrieve_service.js';
 
 export type CreateAppOptions = {
   captureService?: ServerInsightCaptureService;
@@ -23,6 +27,7 @@ export type CreateAppOptions = {
   logger?: Pick<Console, 'error'>;
   memoService?: ServerInsightMemoService;
   notionImportService?: NotionImportService;
+  retrieveService?: ServerInsightRetrieveService;
 };
 
 export type ImportCleanupService = {
@@ -90,6 +95,7 @@ export function createApp({
   logger = console,
   memoService,
   notionImportService,
+  retrieveService,
 }: CreateAppOptions = {}) {
   const app = express();
 
@@ -284,6 +290,28 @@ export function createApp({
     }
   );
 
+  app.post(
+    '/api/insights/retrieve',
+    parseCaptureJson,
+    async (request, response) => {
+      const accessToken = getBearerToken(request.header('authorization'));
+
+      if (!accessToken) {
+        response.status(401).json({ ok: false, reason: 'permission-denied' });
+        return;
+      }
+
+      if (!retrieveService) {
+        response.status(503).json({ ok: false, reason: 'retrieve-failed' });
+        return;
+      }
+
+      const result = await retrieveService.retrieve(accessToken, request.body);
+
+      response.status(getRetrieveStatus(result)).json(result);
+    }
+  );
+
   app.use(createCaptureErrorHandler(logger));
 
   return app;
@@ -441,6 +469,22 @@ function getMemoStatus(result: InsightMemoResult) {
 
   if (result.reason === 'not-found') {
     return 404;
+  }
+
+  return 503;
+}
+
+function getRetrieveStatus(result: InsightRetrieveResult) {
+  if (result.ok) {
+    return 200;
+  }
+
+  if (result.reason === 'permission-denied') {
+    return 401;
+  }
+
+  if (result.reason === 'invalid-request') {
+    return 400;
   }
 
   return 503;

@@ -58,8 +58,8 @@ button.category-filter__item:disabled {
 }
 
 .category-filter__mark {
-  width: var(--spacing-2);
-  height: var(--spacing-2);
+  width: var(--spacing-3);
+  height: var(--spacing-3);
   border-radius: var(--radius-button);
   background: var(--category-color);
   flex: 0 0 auto;

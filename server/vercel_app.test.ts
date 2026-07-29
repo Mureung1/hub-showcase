@@ -53,10 +53,27 @@ describe('Vercel API 진입점', () => {
     });
   });
 
+  it('같은 배포의 /api/insights/retrieve 요청을 처리한다', async () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://project.supabase.co');
+    vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_test');
+
+    const { default: app } = await import('../api/insights/retrieve');
+    const response = await request(app)
+      .post('/api/insights/retrieve')
+      .send({ query: '로그인 오류 안내' });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      ok: false,
+      reason: 'permission-denied',
+    });
+  });
+
   it.each([
     ['상태 확인', '../api/health.ts'],
     ['인사이트 캡처', '../api/insights/capture.ts'],
     ['인사이트 메모', '../api/insights/[insightId]/memo.ts'],
+    ['인사이트 꺼내보기', '../api/insights/retrieve.ts'],
   ])('%s 경로를 직접 Vercel 함수로 배치한다', (_, modulePath) => {
     const entrypoint = fileURLToPath(new URL(modulePath, import.meta.url));
 

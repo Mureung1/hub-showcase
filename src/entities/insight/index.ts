@@ -18,6 +18,7 @@ export {
   isInsightCaptureSource,
 } from './model/insight_capture';
 export type {
+  InsightRepositoryDeleteManyResult,
   InsightRepositoryDeleteResult,
   InsightRepository,
   InsightRepositoryLoadResult,
@@ -41,7 +42,5 @@ export type {
   InsightSearchResult,
   SearchInsightsOptions,
 } from './model/search_insights';
-export { retrieveInsights } from './model/retrieve_insights';
-export type { RetrievedInsight } from './model/retrieve_insights';
 export { InsightGrid } from './ui/insight_grid';
 export type { InsightCategoryOption } from './ui/insight_card';

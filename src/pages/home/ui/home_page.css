@@ -12,9 +12,9 @@
   display: grid;
   width: min(820px, 100%);
   margin-inline: auto;
-  justify-items: center;
+  justify-items: start;
   gap: var(--spacing-4);
-  text-align: center;
+  text-align: left;
 }
 
 .home-page__kicker {
@@ -95,6 +95,12 @@ button.home-page__search-action {
 .home-page__results {
   display: grid;
   gap: var(--spacing-4);
+}
+
+.home-page__pending {
+  color: var(--color-graphite);
+  font-size: var(--typography-label-size);
+  line-height: var(--typography-label-line-height);
 }
 
 .home-page__results-heading {

@@ -6,6 +6,8 @@ import {
   type CSSProperties,
   type FormEvent,
 } from 'react';
+import clsx from 'clsx';
+import { Check } from 'lucide-react';
 
 import {
   categoryPalette,
@@ -38,10 +40,16 @@ export type InsightCardProps = {
   onDeleteInsight?: (insightId: string) => Promise<InsightMutationResult>;
   onDeletionFocusFallback?: () => void;
   onEditFocusFallback?: () => void;
+  onToggleSelection?: (
+    insightId: string,
+    options: { range: boolean }
+  ) => void;
   onUpdateInsight?: (
     insightId: string,
     context: InsightContextInput
   ) => Promise<InsightMutationResult>;
+  selected?: boolean;
+  selectionMode?: boolean;
 };
 
 export type InsightCategoryOption = {
@@ -58,7 +66,10 @@ export function InsightCard({
   onDeletionFocusFallback,
   onEditFocusFallback,
   onRequestCategoryCreation,
+  onToggleSelection,
   onUpdateInsight,
+  selected = false,
+  selectionMode = false,
 }: InsightCardProps) {
   const fieldId = useId();
   const articleRef = useRef<HTMLElement>(null);
@@ -203,8 +214,14 @@ export function InsightCard({
   }
 
   return (
-    <article className="insight-card" ref={articleRef}>
-      {cardMode === 'editing' ? (
+    <article
+      className={clsx('insight-card', {
+        'insight-card--selected': selected,
+        'insight-card--selection': selectionMode,
+      })}
+      ref={articleRef}
+    >
+      {cardMode === 'editing' && !selectionMode ? (
         <form
           aria-label={`${insight.title} 수정`}
           className="insight-card__edit-form"
@@ -322,7 +339,26 @@ export function InsightCard({
             </ul>
           </div>
 
-          {cardMode === 'deleting' ? (
+          {selectionMode ? (
+            <button
+              aria-label={`${insight.title} ${
+                selected ? '선택 해제' : '선택'
+              }`}
+              aria-pressed={selected}
+              className="insight-card__selection-button"
+              onClick={(event) =>
+                onToggleSelection?.(insight.id, { range: event.shiftKey })
+              }
+              type="button"
+            >
+              <span
+                aria-hidden="true"
+                className="insight-card__selection-mark"
+              >
+                {selected ? <Check size={18} strokeWidth={3} /> : null}
+              </span>
+            </button>
+          ) : cardMode === 'deleting' ? (
             <div className="insight-card__delete-confirmation">
               <p>“{insight.title}” 인사이트를 삭제할까요?</p>
               <p>삭제하면 보관함에서 사라지고 되돌릴 수 없어요.</p>

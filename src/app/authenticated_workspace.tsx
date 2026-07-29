@@ -7,7 +7,6 @@ import type {
 } from '@/entities/category';
 import {
   filterInsights,
-  retrieveInsights,
   createBrowserInsightCaptureService,
   type InsightRepository,
   type InsightCaptureService,
@@ -20,6 +19,11 @@ import {
   type NotionImportApi,
 } from '@/features/insight-import';
 import { PwaInstallNotice, usePwaInstallPrompt } from '@/features/pwa-install';
+import {
+  createBrowserRetrieveService,
+  type RetrieveService,
+  useRetrieve,
+} from '@/features/retrieve';
 import { HomePage, type SuggestedSituation } from '@/pages/home';
 import { LibraryPage } from '@/pages/library';
 import { SavePage, type SaveContextDraft } from '@/pages/save';
@@ -147,6 +151,7 @@ export type AuthenticatedWorkspaceProps = {
   notionImportCallback?: NotionImportCallback;
   notionOpenWeb?: (authorizeUrl: string) => void;
   repository?: InsightRepository;
+  retrieveService?: RetrieveService;
   userId?: string;
 };
 
@@ -160,6 +165,7 @@ export function AuthenticatedWorkspace({
   notionImportCallback,
   notionOpenWeb,
   repository,
+  retrieveService,
   userId,
 }: AuthenticatedWorkspaceProps) {
   const [initialNotionCallback, setInitialNotionCallback] = useState(() =>
@@ -199,8 +205,17 @@ export function AuthenticatedWorkspace({
           : createUnavailableCategoryRepository()),
     [categoryRepository, repository, userId]
   );
+  const workspaceRetrieveService = useMemo(
+    () =>
+      retrieveService ??
+      (userId
+        ? createBrowserRetrieveService()
+        : createUnavailableRetrieveService()),
+    [retrieveService, userId]
+  );
   const {
     deleteInsight,
+    deleteInsights,
     detachCategory,
     insights,
     isLoading,
@@ -213,13 +228,20 @@ export function AuthenticatedWorkspace({
     captureService: workspaceCaptureService,
     repository: workspaceRepository,
   });
+  const {
+    clear: clearRetrieve,
+    errorReason: retrieveErrorReason,
+    pendingCount: retrievePendingCount,
+    results: retrieveResults,
+    retrieve,
+    submittedQuery: submittedRetrieveQuery,
+  } = useRetrieve(insights, workspaceRetrieveService);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(() =>
     initialSaveDraft ? 'save' : 'home'
   );
   const [activeCategory, setActiveCategory] = useState('all');
   const [globalQuery, setGlobalQuery] = useState('');
   const [retrieveQuery, setRetrieveQuery] = useState('');
-  const [submittedRetrieveQuery, setSubmittedRetrieveQuery] = useState('');
   const [selectedSituation, setSelectedSituation] = useState('');
   const [saveDraft, setSaveDraft] = useState<SaveInsightInput>(
     () => initialSaveDraft ?? { source: 'web', url: '' }
@@ -298,9 +320,6 @@ export function AuthenticatedWorkspace({
     });
   }, [activeCategory, categoryNameById, globalQuery, insights]);
 
-  const retrieveResults = useMemo(() => {
-    return retrieveInsights(insights, submittedRetrieveQuery);
-  }, [insights, submittedRetrieveQuery]);
   const libraryUnavailable = isLibraryUnavailable(
     loadWarnings,
     insights.length
@@ -309,7 +328,7 @@ export function AuthenticatedWorkspace({
   function handleSituationClick(situation: SuggestedSituation) {
     setSelectedSituation(situation.query);
     setRetrieveQuery(situation.query);
-    setSubmittedRetrieveQuery(situation.query);
+    void retrieve(situation.query);
   }
 
   function handleRetrieveQueryChange(value: string) {
@@ -322,14 +341,20 @@ export function AuthenticatedWorkspace({
 
   function handleRetrieveClear() {
     setRetrieveQuery('');
-    setSubmittedRetrieveQuery('');
     setSelectedSituation('');
+    clearRetrieve();
   }
 
   function handleRetrieve(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    setSubmittedRetrieveQuery(retrieveQuery.trim());
+    const query = retrieveQuery.trim();
+
+    if (!query) {
+      return;
+    }
+
+    void retrieve(query);
   }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
@@ -419,6 +444,16 @@ export function AuthenticatedWorkspace({
     setContextSaveFailed(false);
   }
 
+  function handleTabChange(tab: WorkspaceTab) {
+    if (tab === 'save' && activeTab !== 'save' && contextSaveComplete) {
+      saveDraftRevisionRef.current += 1;
+      setSaveDraft({ source: 'web', url: '' });
+      resetSaveFeedback();
+    }
+
+    setActiveTab(tab);
+  }
+
   function handleContextSkip() {
     setSavedInsightId(undefined);
     setContextDraft(EMPTY_CONTEXT_DRAFT);
@@ -474,7 +509,7 @@ export function AuthenticatedWorkspace({
             <span aria-hidden="true" className="workspace-brand__divider" />
             <h1>{getScreenTitle(activeTab)}</h1>
           </div>
-          <AppNavigation onTabChange={setActiveTab} tab={activeTab} />
+          <AppNavigation onTabChange={handleTabChange} tab={activeTab} />
           <div className="workspace-account">{accountControl}</div>
         </div>
       </header>
@@ -534,9 +569,10 @@ export function AuthenticatedWorkspace({
             loading={isLoading}
             onCategoryChange={setActiveCategory}
             onDeleteInsight={deleteInsight}
+            onDeleteInsights={deleteInsights}
             onManageCategories={openCategoryManager}
             onOpenImport={() => setImportOpen(true)}
-            onOpenSave={() => setActiveTab('save')}
+            onOpenSave={() => handleTabChange('save')}
             onQueryChange={setGlobalQuery}
             onRetryLoad={() => window.location.reload()}
             onRequestCategoryCreation={requestCategoryCreation}
@@ -558,14 +594,20 @@ export function AuthenticatedWorkspace({
                   : 'ready'
             }
             onClearQuery={handleRetrieveClear}
-            onOpenLibrary={() => setActiveTab('library')}
-            onOpenSave={() => setActiveTab('save')}
+            onOpenLibrary={() => handleTabChange('library')}
+            onOpenSave={() => handleTabChange('save')}
             onQueryChange={handleRetrieveQueryChange}
             onRetrieve={handleRetrieve}
             onRetryLoad={() => window.location.reload()}
             onSituationClick={handleSituationClick}
+            pendingCount={retrievePendingCount}
             query={retrieveQuery}
             results={retrieveResults}
+            retrieveErrorMessage={
+              retrieveErrorReason
+                ? '입력한 내용은 그대로 두었어요. 잠시 후 다시 시도해 주세요.'
+                : undefined
+            }
             selectedSituation={selectedSituation}
             situations={SUGGESTED_SITUATIONS}
             submittedQuery={submittedRetrieveQuery}
@@ -683,6 +725,9 @@ function createUnavailableInsightRepository(): InsightRepository {
     async delete() {
       return { ok: false, reason: 'permission-denied' };
     },
+    async deleteMany() {
+      return { ok: false, reason: 'permission-denied' };
+    },
     async list() {
       return { insights: [], warnings: ['permission-denied'] };
     },
@@ -721,6 +766,14 @@ function createUnavailableCategoryRepository(): CategoryRepository {
 function createUnavailableInsightCaptureService(): InsightCaptureService {
   return {
     async capture() {
+      return { ok: false, reason: 'permission-denied' };
+    },
+  };
+}
+
+function createUnavailableRetrieveService(): RetrieveService {
+  return {
+    async retrieve() {
       return { ok: false, reason: 'permission-denied' };
     },
   };

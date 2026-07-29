@@ -7,11 +7,18 @@ describe('readImportServerConfig', () => {
     expect(readImportServerConfig({})).toBeNull();
   });
 
-  it.each([
-    [{ CRON_SECRET: 'cron-secret' }, 'SUPABASE_SERVICE_ROLE_KEY'],
-    [{ SUPABASE_SERVICE_ROLE_KEY: 'service-role-key' }, 'CRON_SECRET'],
-  ])('일부 비밀 설정만 있으면 시작을 거부한다', (environment, missingKey) => {
-    expect(() => readImportServerConfig(environment)).toThrow(missingKey);
+  it('가져오기 설정에 필요한 서비스 역할 키가 없으면 거부한다', () => {
+    expect(() =>
+      readImportServerConfig({ CRON_SECRET: 'cron-secret' })
+    ).toThrow('SUPABASE_SERVICE_ROLE_KEY');
+  });
+
+  it('다른 서버 기능이 공유하는 서비스 역할 키만으로 가져오기를 켜지 않는다', () => {
+    expect(
+      readImportServerConfig({
+        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key',
+      })
+    ).toBeNull();
   });
 
   it('두 비밀 설정이 모두 있으면 서버 전용 설정을 반환한다', () => {

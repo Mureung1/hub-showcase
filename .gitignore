@@ -10,3 +10,4 @@ npm-debug.log*
 .vercel
 scripts/retrieve_experiment/.cache/
 scripts/retrieve_experiment/private/
+scripts/retrieve_backfill/state/

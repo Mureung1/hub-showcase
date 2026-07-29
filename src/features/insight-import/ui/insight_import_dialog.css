@@ -52,7 +52,7 @@ div.insight-import-dialog .ui-modal__content {
   min-width: 0;
   padding: var(--spacing-3);
   border-right: 1px solid var(--color-ash);
-  background: var(--color-mist);
+  background: var(--color-paper);
   flex-direction: column;
   gap: var(--spacing-1);
 }
@@ -97,7 +97,7 @@ button.insight-import-dialog__source-option.ui-button[aria-pressed='true'] {
 
 div.insight-import-dialog .ui-modal__footer {
   border-top: 1px solid var(--color-ash);
-  background: var(--color-canvas);
+  background: var(--color-surface);
   flex: 0 0 auto;
 }
 
@@ -375,7 +375,7 @@ div.insight-import-dialog .ui-modal__footer {
     padding: 0;
     border-right: 0;
     border-bottom: 1px solid var(--color-ash);
-    background: var(--color-canvas);
+    background: var(--color-surface);
     flex-direction: row;
     gap: 0;
   }
