@@ -1,73 +1,100 @@
 # 배포 및 검증 체크리스트
 
-이 프로젝트는 Vercel 정적 프런트엔드, Render Express 백엔드, Supabase
-데이터베이스로 배포한다. 실제 생성형 AI API는 연결하지 않는다.
+## 현재 구성
 
-## 1. Supabase
+```text
+Vercel: https://hub-five-topaz.vercel.app
+  └─ /api rewrite
+Render: https://relationship-ai-api.onrender.com
+  ├─ Supabase
+  └─ Gemini Developer API
+```
 
-1. 새 Supabase 프로젝트에서 `backend/supabase-schema.sql`을 적용한다.
-2. `backend/migrations`의 SQL을 파일명 순서대로 적용한다.
-3. `guest_sessions`, `conversation_messages`, `emotion_analyses` 테이블의
-   RLS가 활성화됐는지 확인한다.
-4. 브라우저에는 service role 키를 절대 제공하지 않는다.
+## Supabase
 
-완료 기준:
-
-- 서비스 역할을 사용하는 Express만 테이블을 읽고 쓸 수 있다.
-- 원문 게스트 복구 키가 DB에 저장되지 않는다.
-- 서로 다른 `guest_session_id`의 기록이 섞이지 않는다.
-
-## 2. Render
-
-1. 저장소 루트의 `render.yaml`로 Blueprint를 생성한다.
-2. Render 대시보드에서 다음 값을 입력한다.
-   - `SUPABASE_URL`
-   - `SUPABASE_SECRET_KEY`
-   - `CLIENT_URL`: 실제 Vercel 프로덕션 origin
-3. `GUEST_KEY_PEPPER`는 Blueprint의 `generateValue: true`로 생성한다.
-4. 배포 후 `/health`가 `200`과 `{"status":"ok"}`를 반환하는지 확인한다.
-5. 실제로 발급된 `onrender.com` 주소를 기록한다.
+1. `backend/supabase-schema.sql`을 적용합니다.
+2. `backend/migrations` SQL을 파일명 순서대로 한 번씩 적용합니다.
+3. `guest_sessions`, `conversation_messages`, `emotion_analyses`의 RLS를
+   확인합니다.
+4. `anon`, `authenticated` 역할이 직접 읽고 쓸 수 없는지 확인합니다.
 
 완료 기준:
 
-- 웹 서비스는 하나뿐이며 worker, cron, 폴링 작업이 없다.
-- `/health`가 준비되지 않은 설정에서 `503`을 반환한다.
-- 서버 로그에 복구 키, Supabase 키 또는 요청 본문이 출력되지 않는다.
+- 원문 복구 키가 DB에 없음
+- `emotion_analyses.guest_session_id`로 게스트 기록 격리
+- 만료 게스트 삭제 시 연결 기록도 cascade 삭제
+- 영상·프레임·랜드마크 데이터 없음
 
-## 3. Vercel
+## Render Free
 
-1. 실제 Render 주소가
-   `https://relationship-ai-api.onrender.com`인지 확인한다.
-2. 주소가 다르면 `vercel.json`의 첫 번째 rewrite `destination`만 실제
-   Render 주소로 변경하고 테스트·빌드·커밋한다.
-3. Vercel 프로젝트를 배포한다.
-4. 루트 페이지와 임의의 SPA 경로가 모두 앱을 표시하는지 확인한다.
-5. `/api/guest-sessions`가 Vercel Function 없이 Render로 전달되는지
-   확인한다.
+Render 웹 서비스 `relationship-ai-api`에 다음 값을 설정합니다.
+
+```text
+NODE_ENV=production
+SUPABASE_URL=...
+SUPABASE_SECRET_KEY=...
+GUEST_KEY_PEPPER=32자 이상의 무작위 비밀값
+CLIENT_URL=https://hub-five-topaz.vercel.app
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash-lite
+AI_RATE_LIMIT_MAX=10
+```
+
+Blueprint가 결제를 요구하는 환경이라면 기존 무료 Web Service의 Environment에서
+직접 설정합니다. 비밀값은 소스, Vercel과 `VITE_` 변수에 넣지 않습니다.
 
 완료 기준:
 
-- 브라우저 주소에는 Vercel origin만 보인다.
-- API 응답은 `Cache-Control: no-store`다.
-- 익명 모드에서는 네트워크 API 요청이 발생하지 않는다.
+- `GET /health`가 HTTP 200
+- `trust proxy=1`로 Render의 전달 주소 처리
+- worker, cron, keep-alive와 폴링 없음
+- 로그에 키와 요청 본문 없음
 
-## 4. 프로덕션 사용자 흐름
+## Vercel
 
-1. 익명 모드로 메시지를 작성하고 새로고침해 현재 탭에서 복원되는지
-   확인한다.
-2. 탭을 닫고 다시 열었을 때 익명 기록이 남지 않는지 확인한다.
-3. 새 게스트 키를 만들고 키를 별도로 보관한다.
-4. 게스트 기록을 만든 뒤 게스트에서 나간다.
-5. 다른 탭에서 키를 입력해 해당 기록만 복원되는지 확인한다.
-6. 잘못된 키로 다른 게스트 기록이나 키 존재 여부를 알 수 없는지
-   확인한다.
+`vercel.json`의 API rewrite가 SPA fallback보다 앞에 있어야 합니다.
 
-## 현재 확인된 범위
+```json
+{
+  "source": "/api/:path*",
+  "destination": "https://relationship-ai-api.onrender.com/api/:path*"
+}
+```
 
-- `npm run build`: 통과
-- 전체 Vitest: 통과
-- 로컬 프로덕션 프리뷰 루트: HTTP 200
-- 로컬 SPA fallback: HTTP 200
-- 로컬 빌드 JavaScript 자산: HTTP 200
-- 실제 Supabase, Render, Vercel 프로덕션 왕복: 미실행
-- 인앱 브라우저 시각 검증: 브라우저 연결 부재로 미실행
+배포:
+
+```bash
+npx vercel deploy --prod --yes
+```
+
+완료 기준:
+
+- 프로덕션 별칭이 최신 JS/CSS hash를 반환
+- 루트와 SPA 경로가 `index.html` 표시
+- `/api/ai-chat/responses`가 Render 라우트로 전달
+- `/api` 응답에 `Cache-Control: no-store`
+
+## 프로덕션 사용자 흐름
+
+1. 익명으로 시작하고 메시지를 저장합니다.
+2. 같은 탭 새로고침에서 복원되는지 확인합니다.
+3. 새 탭에서는 이전 익명 기록이 없는지 확인합니다.
+4. 게스트 키를 생성하고 한 번 표시되는 키를 복사합니다.
+5. 게스트 기록을 만든 뒤 `게스트에서 나가기`를 누릅니다.
+6. 다른 탭에서 키를 복구해 해당 기록만 확인합니다.
+7. 카메라 시작·중지와 화면 이동 시 카메라 종료를 확인합니다.
+8. 감정 신호 화면의 지구본 자동 회전과 드래그를 확인합니다.
+9. 두 번째·세 번째 화면의 `처음으로`를 확인합니다.
+
+## 2026-07-29 자동 확인
+
+- 전체 Vitest 38개 파일, 112개 테스트 통과
+- 프로덕션 빌드 통과
+- Vercel 프로덕션 HTTP 200
+- Render `/health` HTTP 200
+- Vercel 프록시의 AI 채팅 라우트가 인증 오류 `401`을 반환해 최신 라우트 확인
+
+실제 Gemini 생성 성공 여부는 API 키·무료 할당량을 소비하므로 이 점검에서는
+호출하지 않았습니다. 실제 카메라 권한과 화면 시각 비교도 브라우저에서 별도로
+확인합니다.
+

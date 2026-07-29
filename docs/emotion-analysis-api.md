@@ -1,32 +1,28 @@
-# Emotion Analysis API
+# 감정 분석 API
 
-## Base route
+## 인증 경계
 
-```text
-/api/emotion-analyses
-```
+모든 감정 분석 API는 `X-Guest-Key` 헤더가 필요합니다. 서버는 키를
+HMAC-SHA256으로 해시하고 활성 `guest_sessions` 레코드를 찾은 뒤, 해당
+`guest_session_id`만 저장·조회 조건으로 사용합니다.
 
-All request and response field names use `camelCase`. The server maps them to the Supabase
-`snake_case` columns.
+브라우저의 `sessionId` 쿼리나 본문 값은 서버 소유권 근거로 사용하지 않습니다.
 
-## Create an analysis
+## 분석 저장
 
 ```http
 POST /api/emotion-analyses
 Content-Type: application/json
+X-Guest-Key: XXXX-...
 ```
 
 ```json
 {
-  "sessionId": "7d7e3d50-c7a8-4d36-85fa-6a4dceca1077",
-  "situationText": "I have an important presentation tomorrow.",
+  "situationText": "내일 발표가 있어서 걱정돼.",
   "faceSignal": null,
   "faceSignalSource": "camera",
   "faceSignalConfidence": 0.72,
-  "faceSignalEvidence": [
-    "browDownLeft",
-    "eyeSquintLeft"
-  ],
+  "faceSignalEvidence": ["browDownLeft", "eyeSquintLeft"],
   "faceSignalHeuristicVersion": "v1",
   "voiceSignal": "fast",
   "selectedScenario": "tension",
@@ -37,35 +33,33 @@ Content-Type: application/json
     "responseApproach": "ask_gently",
     "needsConfirmation": true
   },
-  "aiResponse": "Tell me which part concerns you the most."
+  "aiResponse": "어떤 부분이 가장 걱정되는지 하나만 말해줄래?"
 }
 ```
 
-A successful request returns HTTP `201` and the stored record as
-`data.emotionAnalysis`.
+성공하면 HTTP `201`과 `data.emotionAnalysis`를 반환합니다.
 
-`faceSignalSource` defaults to `manual` for older clients. Manual input must not include camera
-metadata. Camera input must include a confidence value between 0 and 1 and a heuristic version.
-`faceSignalEvidence` accepts at most three server-approved blendshape feature names.
-Manual input requires one allowed `faceSignal`. Camera input stores `faceSignal` as `null`; when an
-older client sends a legacy camera value, the server discards it before persistence.
+- 상황 입력: 최대 500자
+- 카메라 evidence: 서버가 허용한 이름 최대 3개
+- 분석 JSON: 최대 20KB
+- AI 답변: 최대 2,000자
+- 카메라 입력: `faceSignal`을 `null`로 저장
+- 수동 입력: 카메라 메타데이터를 허용하지 않음
 
-The confidence value is a prototype expression-signal similarity, not an emotion probability or a
-medical assessment.
+영상, 프레임, 랜드마크, 장치 정보와 전체 blendshape 점수는 요청에 포함하지
+않습니다.
 
-The client never sends webcam video, image frames, facial landmark coordinates, camera device
-information, or the full blendshape result to this API.
-
-## List analyses for a session
+## 분석 기록 조회
 
 ```http
-GET /api/emotion-analyses?sessionId=7d7e3d50-c7a8-4d36-85fa-6a4dceca1077&limit=20
+GET /api/emotion-analyses?limit=20
+X-Guest-Key: XXXX-...
 ```
 
-`sessionId` is required. `limit` is optional and must be an integer between 1 and 100. The default
-is 20. Records are returned newest first in `data.emotionAnalyses`.
+`limit`은 1~100이며 기본값은 20입니다. 인증된 게스트의 기록만 최신순으로
+반환합니다.
 
-## Error format
+## 오류 형식
 
 ```json
 {
@@ -75,31 +69,26 @@ is 20. Records are returned newest first in `data.emotionAnalyses`.
     "message": "The request contains invalid fields.",
     "details": [
       {
-        "field": "sessionId",
-        "message": "sessionId must be a valid UUID."
+        "field": "situationText",
+        "message": "situationText must contain at most 500 characters."
       }
     ]
   }
 }
 ```
 
-## Verification
+주요 상태:
 
-Start the Express server, then run:
+- `400`: 입력 검증 실패
+- `401`: 게스트 키 없음·만료·오류
+- `429`: API 요청 제한
+- `502`: Supabase 작업 실패
+- `503`: 서버 필수 설정 누락
 
-```bash
-npm run test:api
-```
+## React 연결
 
-The verification script inserts one clearly labeled test record and confirms that the GET route can
-retrieve it.
+- 익명 모드는 이 API를 호출하지 않고 `sessionStorage`를 사용합니다.
+- 게스트 모드만 same-origin `/api`로 저장·조회합니다.
+- `X-Guest-Key`는 API 모듈 내부에서만 추가합니다.
+- 키를 URL, 본문, 로그 또는 오류 문구에 넣지 않습니다.
 
-## React integration
-
-The React client stores a browser-specific UUID in local storage. On startup, it requests the latest
-20 records for that session and restores the newest analysis result and conversation history. A new
-analysis is displayed only after the POST request has stored it successfully.
-
-Set `VITE_API_BASE_URL` when the Express API does not run at the default
-`http://127.0.0.1:3000` address. This variable contains only the public API address. Supabase secret
-keys must never use the `VITE_` prefix.
