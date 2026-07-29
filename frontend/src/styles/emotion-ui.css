@@ -170,6 +170,22 @@ body {
   letter-spacing: 0.03em;
 }
 
+.ai-status-waiting {
+  color: #6b7280;
+}
+
+.ai-status-listening {
+  color: #2563eb;
+}
+
+.ai-status-thinking {
+  color: #ea580c;
+}
+
+.ai-status-speaking {
+  color: #047857;
+}
+
 .ai-card__home {
   margin-left: 3px;
   padding: 6px 9px;
@@ -354,7 +370,9 @@ body {
 .main {
   position: relative;
   z-index: 1;
+  display: flex;
   flex: 1;
+  flex-direction: column;
   width: 100%;
   max-width: 660px;
   min-height: 0;
@@ -778,16 +796,42 @@ body {
 }
 
 .signal-details h4 {
+  margin: 0 0 12px;
   font-size: 0.8rem;
 }
 
+.signal-details .observation ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.signal-details .observation li {
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
 .scenario-buttons {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
 .scenario-buttons button {
   padding: 7px 10px;
+  border: 1px solid var(--emotion-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--emotion-ink);
+  cursor: pointer;
   font-size: 0.72rem;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.scenario-buttons button.active,
+.scenario-buttons button:hover {
+  border-color: var(--emotion-primary);
+  background: var(--emotion-primary);
+  color: #fff;
 }
 
 @media (max-width: 1180px) {
