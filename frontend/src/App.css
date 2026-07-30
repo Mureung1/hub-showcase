@@ -30,20 +30,23 @@
 .recipe-detail-actions {
   position: sticky;
   z-index: 9;
-  top: 72px;
+  top: 84px;
   display: grid;
   grid-template-columns: auto auto minmax(190px, 1fr);
   gap: 10px;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, .18);
-  border-radius: 29px 29px 0 0;
-  background: #006d36;
-  box-shadow: none;
+  margin: 14px 16px -64px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 18px;
+  background: rgba(20, 91, 54, .94);
+  box-shadow: 0 14px 34px rgba(21, 61, 39, .2);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
   isolation: isolate;
 }
 
 .recipe-detail-hero {
-  padding: 28px 34px 32px;
+  padding: 96px 34px 32px;
   color: #fff;
   background: linear-gradient(135deg, #006d36 0%, #17834b 100%);
 }
@@ -54,25 +57,27 @@
   min-height: 42px;
   padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 999px;
+  border-radius: 12px;
   border-color: rgba(255, 255, 255, 0.28);
   color: #fff;
-  background: #1b804d;
+  background: rgba(255, 255, 255, .09);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 800;
   white-space: nowrap;
-  transition: background .2s ease, border-color .2s ease;
+  transition: transform .2s ease, background .2s ease, border-color .2s ease;
 }
 
 .recipe-detail-actions .back-to-recipes:hover,
 .recipe-detail-actions .save-detail-recipe:hover {
+  transform: translateY(-1px);
   border-color: rgba(255, 255, 255, .46);
-  background: #2b8c59;
+  background: rgba(255, 255, 255, .16);
 }
 
 .recipe-detail-actions .consume-recipe-button {
   border-color: #ff7e47;
   background: var(--secondary);
+  box-shadow: 0 7px 16px rgba(132, 55, 23, .16);
 }
 
 .recipe-detail-actions .consume-recipe-button:disabled {
@@ -347,14 +352,19 @@
   }
 
   .recipe-detail-actions {
-    top: 64px;
+    top: 72px;
     grid-template-columns: 1fr 1fr;
-    padding: 10px 12px;
-    border-radius: 23px 23px 0 0;
+    margin: 10px 10px -104px;
+    padding: 9px;
+    border-radius: 16px;
   }
 
   .recipe-detail-actions .consume-recipe-button {
     grid-column: 1 / -1;
+  }
+
+  .recipe-detail-hero {
+    padding-top: 132px;
   }
 
   .substitute-list {
