@@ -5,6 +5,7 @@ import Header from './components/Header.jsx'
 import AppShell from './components/AppShell.jsx'
 import Card from './components/Card.jsx'
 import GuestMigrationPrompt from './components/GuestMigrationPrompt.jsx'
+import { useAppUpdateCheck } from './lib/appUpdate.js'
 import Spinner from './components/Spinner.jsx'
 import ForgotPassword from './pages/ForgotPassword.jsx'
 import Login from './pages/Login.jsx'
@@ -94,6 +95,9 @@ function RootRedirect() {
 // /profile은 최초 입력(온보딩)과 MY 탭(이미 프로필이 있는 경우) 두 가지로 쓰이지만, 둘 다 MY 탭을 통해
 // 다른 화면으로 자유롭게 이동할 수 있어야 하므로 탭바가 있는 쪽에 둔다. /login·/signup만 탭바를 숨긴다.
 export default function AppRouter() {
+  // 앱(APK)에서만 동작 — 웹에서는 no-op. App.jsx가 아니라 여기서 부르는 이유는 이 훅이 토스트를
+  // 쓰는데 ToastProvider를 렌더하는 쪽이 App.jsx라 거기서는 아직 컨텍스트 바깥이기 때문이다.
+  useAppUpdateCheck()
   return (
     <BrowserRouter>
       <Header />
