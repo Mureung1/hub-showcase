@@ -18,6 +18,20 @@ function setNotification(permission = "default") {
   return requestPermission;
 }
 
+// pushManager.getSubscription()이 반환할 구독 존재 여부를 고정해 둔
+// navigator.serviceWorker.ready mock. subscription이 null/객체로 바뀔 수 있도록
+// getSubscription을 vi.fn()으로 노출해 테스트 중 반환값을 바꿀 수 있게 한다.
+function setServiceWorker(initialSubscription = null) {
+  const getSubscription = vi.fn().mockResolvedValue(initialSubscription);
+  Object.defineProperty(navigator, "serviceWorker", {
+    configurable: true,
+    value: {
+      ready: Promise.resolve({ pushManager: { getSubscription } }),
+    },
+  });
+  return getSubscription;
+}
+
 function renderNavbar(path = "/home") {
   return render(
     <MemoryRouter initialEntries={[path]}>
@@ -30,6 +44,7 @@ describe("Navbar brand identity", () => {
   beforeEach(() => {
     subscribeToPush.mockReset();
     setNotification();
+    setServiceWorker(null);
   });
 
   it("Lv0 얼굴 로고와 접근 가능한 브랜드 링크를 표시한다", () => {
@@ -67,8 +82,40 @@ describe("Navbar brand identity", () => {
     );
   });
 
-  it("기본 권한에서는 기존 알림 요청과 Push 구독 흐름을 유지한다", async () => {
+  it("permission default에서는 '알림 켜기'가 활성 상태로 표시된다", () => {
+    setNotification("default");
+    renderNavbar();
+
+    expect(
+      screen.getByRole("button", { name: "🔔 알림 켜기" }),
+    ).not.toBeDisabled();
+  });
+
+  it("permission denied에서는 '알림 차단됨'으로 비활성 표시된다", () => {
+    setNotification("denied");
+    renderNavbar();
+
+    expect(screen.getByRole("button", { name: "🔔 알림 차단됨" })).toBeDisabled();
+  });
+
+  it("permission granted + subscription 확인 중에는 확인 중 상태로 비활성 표시된다", () => {
+    setNotification("granted");
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: {
+        ready: new Promise(() => {}),
+      },
+    });
+    renderNavbar();
+
+    expect(
+      screen.getByRole("button", { name: "🔔 알림 확인 중" }),
+    ).toBeDisabled();
+  });
+
+  it("permission default에서 클릭하면 기존처럼 권한 요청과 Push 구독을 수행한다", async () => {
     const requestPermission = setNotification("default");
+    subscribeToPush.mockResolvedValue(undefined);
     renderNavbar();
 
     fireEvent.click(screen.getByRole("button", { name: "🔔 알림 켜기" }));
@@ -77,16 +124,71 @@ describe("Navbar brand identity", () => {
       expect(requestPermission).toHaveBeenCalledTimes(1);
       expect(subscribeToPush).toHaveBeenCalledTimes(1);
     });
-    expect(screen.getByRole("button", { name: "🔔 알림 켜짐" })).toBeDisabled();
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "🔔 알림 켜짐" })).toBeDisabled();
+    });
   });
 
-  it.each([
-    ["granted", "🔔 알림 켜짐"],
-    ["denied", "🔔 알림 차단됨"],
-  ])("%s 권한의 기존 disabled 정책을 유지한다", (permission, label) => {
-    setNotification(permission);
+  it("permission granted + subscription 없음 → 재시도 버튼이 활성 상태로 뜬다", async () => {
+    setNotification("granted");
+    setServiceWorker(null);
     renderNavbar();
 
-    expect(screen.getByRole("button", { name: label })).toBeDisabled();
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "🔔 알림 다시 켜기" }),
+      ).not.toBeDisabled();
+    });
+  });
+
+  it("permission granted + subscription 존재 → '알림 켜짐' 비활성 상태로 뜬다", async () => {
+    setNotification("granted");
+    setServiceWorker({ endpoint: "https://example.com/existing" });
+    renderNavbar();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "🔔 알림 켜짐" })).toBeDisabled();
+    });
+  });
+
+  it("재시도 버튼 클릭 시 requestPermission을 다시 호출하지 않고 바로 재구독하며, 성공하면 '켜짐'으로 갱신된다", async () => {
+    const requestPermission = setNotification("granted");
+    setServiceWorker(null);
+    subscribeToPush.mockResolvedValue(undefined);
+    renderNavbar();
+
+    const retryButton = await screen.findByRole("button", {
+      name: "🔔 알림 다시 켜기",
+    });
+    fireEvent.click(retryButton);
+
+    await waitFor(() => {
+      expect(subscribeToPush).toHaveBeenCalledTimes(1);
+    });
+    expect(requestPermission).not.toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "🔔 알림 켜짐" })).toBeDisabled();
+    });
+  });
+
+  it("재구독이 실패하면 '켜짐'으로 잘못 표시되지 않고 재시도 가능한 상태를 유지한다", async () => {
+    setNotification("granted");
+    setServiceWorker(null);
+    subscribeToPush.mockRejectedValue(new Error("subscribe failed"));
+    renderNavbar();
+
+    const retryButton = await screen.findByRole("button", {
+      name: "🔔 알림 다시 켜기",
+    });
+    fireEvent.click(retryButton);
+
+    await waitFor(() => {
+      expect(subscribeToPush).toHaveBeenCalledTimes(1);
+    });
+
+    expect(
+      screen.getByRole("button", { name: "🔔 알림 다시 켜기" }),
+    ).not.toBeDisabled();
   });
 });
