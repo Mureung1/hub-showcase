@@ -327,7 +327,7 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 # ============================================================ 3. 채용공고 30건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
 # 주석은 recent 5건에만 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
-#   ("base", 기준선 항목명, 해설)                  → base_n
+#   ("base", 직무 공통 기대치 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
 SECTION_REQUIREDNESS = {
@@ -400,8 +400,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "라벨은 우대지만 통계상 필수화 추세인 항목입니다. 틀리면 안 되는 코드의 테스트가 이 회사에서는 특히 설득력 있습니다.")),
             )),
         ),
-        "summary": "기능을 만드는 사람보다 값이 어긋나지 않게 지키는 사람을 찾습니다. 기준선 항목은 대체로 공통 기대치 그대로이고, 트랜잭션 정합성과 장애 복구 두 축이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 3건 · 기준선 일치 5건",
+        "summary": "기능을 만드는 사람보다 값이 어긋나지 않게 지키는 사람을 찾습니다. 직무 공통 기대치 항목은 대체로 공통 기대치 그대로이고, 트랜잭션 정합성과 장애 복구 두 축이 이 공고의 실질 변별점입니다.",
+        "summary_ratio": "추가 요구 3건 · 직무 공통 기대치 일치 5건",
     },
     {
         "nn": "02",
@@ -461,8 +461,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "글솜씨가 아니라 결정을 남기는 습관을 봅니다. README 의 설계 결정 한 절이면 충분한 증거입니다.")),
             )),
         ),
-        "summary": "규모를 다뤄 본 흔적을 봅니다. 기준선 항목은 그대로 통하되 성능 개선과 이벤트 처리, 배포까지가 이 공고의 추가 요구입니다.",
-        "summary_ratio": "편차 3건 · 기준선 일치 5건",
+        "summary": "규모를 다뤄 본 흔적을 봅니다. 직무 공통 기대치 항목은 그대로 통하되 성능 개선과 이벤트 처리, 배포까지가 이 공고의 추가 요구입니다.",
+        "summary_ratio": "추가 요구 3건 · 직무 공통 기대치 일치 5건",
     },
     {
         "nn": "03",
@@ -492,7 +492,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             ("자격요건", (
                 ("Java·Spring 또는 동등한 서버 스택 개발 경험이 있으신 분", "java-spring", "application",
                  ("base", "서버 프레임워크로 API 완성",
-                  "스택을 열어 두었으므로 언어보다 완성 경험을 봅니다. 기준선 준비 그대로 통하는 문장입니다.")),
+                  "스택을 열어 두었으므로 언어보다 완성 경험을 봅니다. 직무 공통 기대치 준비 그대로 통하는 문장입니다.")),
                 ("관계형 데이터베이스 설계와 쿼리 최적화 경험이 있으신 분", "rdb-modeling", "application",
                  ("base", "RDB 설계·쿼리 기본기",
                   "설계와 최적화를 함께 적었지만 기대 수준은 공통 기대치와 같습니다. 근거를 말할 수 있는 인덱스 하나면 됩니다.")),
@@ -525,7 +525,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "만드는 능력보다 바꾸는 능력을 봅니다. 하위 호환·테스트·문서가 한 묶음으로 이 공고의 변별점을 이룹니다.",
-        "summary_ratio": "편차 3건 · 기준선 일치 4건",
+        "summary_ratio": "추가 요구 3건 · 직무 공통 기대치 일치 4건",
     },
     {
         "nn": "04",
@@ -583,8 +583,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("테스트 자동화를 도입해 보신 분", "test-automation", "application", None),
             )),
         ),
-        "summary": "끝까지 들고 가는 사람을 찾습니다. 기준선은 공통 기대치 그대로이고 배포·운영 오너십이 이 공고의 실질 관문입니다.",
-        "summary_ratio": "편차 3건 · 기준선 일치 4건",
+        "summary": "끝까지 들고 가는 사람을 찾습니다. 직무 공통 기대치은 공통 기대치 그대로이고 배포·운영 오너십이 이 공고의 실질 관문입니다.",
+        "summary_ratio": "추가 요구 3건 · 직무 공통 기대치 일치 4건",
     },
     {
         "nn": "05",
@@ -612,7 +612,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             ("자격요건", (
                 ("Java·Spring 기반 서버 개발 경험이 있으신 분", "java-spring", "application",
                  ("base", "서버 프레임워크로 API 완성",
-                  "게임사라도 플랫폼 서버는 일반 백엔드 스택입니다. 기준선 준비가 그대로 통합니다.")),
+                  "게임사라도 플랫폼 서버는 일반 백엔드 스택입니다. 직무 공통 기대치 준비가 그대로 통합니다.")),
                 ("대규모 동시 접속 환경의 성능 문제를 해결해 보신 분", "caching-performance", "tradeoff",
                  ("mark", "동시 접속 — 이 기업군의 첫 번째 관문",
                   "처리량과 지연을 함께 다뤄 본 경험을 묻습니다. 측정 도구와 개선 전후 수치가 답의 뼈대입니다.",
@@ -627,7 +627,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "mid", "같은 직군 40%")),
                 ("관계형 데이터베이스 튜닝 경험이 있으신 분", "rdb-modeling", "application",
                  ("base", "RDB 설계·쿼리 기본기",
-                  "튜닝까지 적혀 있지만 근거를 말할 수 있는 인덱스 설계면 기준선을 충족합니다.")),
+                  "튜닝까지 적혀 있지만 근거를 말할 수 있는 인덱스 설계면 직무 공통 기대치을 충족합니다.")),
             )),
             ("우대사항", (
                 ("AWS 등 클라우드에서 서비스를 운영해 보신 분", "cloud-infra", "application",
@@ -641,7 +641,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "급증하는 부하와 재화 정합성을 함께 다룰 사람을 찾습니다. 다른 기업군에서 우대이던 비동기 처리가 여기서는 자격요건입니다.",
-        "summary_ratio": "편차 3건 · 기준선 일치 3건",
+        "summary_ratio": "추가 요구 3건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "06",
@@ -1505,9 +1505,9 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 def axis_level(value: int | None) -> str:
     if value is None:
         return "—"
-    if value >= 70:
+    if value >= 80:
         return "강"
-    if value >= 31:
+    if value >= 21:
         return "중"
     return "약"
 
@@ -1836,7 +1836,7 @@ BASELINE_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("monitoring-incident", "운영·장애 대응 감각",
      "지표를 보고 장애를 알아채는 감각입니다. 직무 외 요구로 분류되지만 등장 빈도는 기본기에 가깝습니다."),
     ("container-deploy", "컨테이너 배포 경험",
-     "이미지를 빌드해 서비스를 올려 본 경험입니다. 기준선의 경계선에 걸쳐 있는 항목입니다."),
+     "이미지를 빌드해 서비스를 올려 본 경험입니다. 직무 공통 기대치의 경계선에 걸쳐 있는 항목입니다."),
     ("transaction-integrity", "트랜잭션 기본 이해",
      "커밋·롤백과 격리수준의 개념 이해입니다. 전체에서는 기본 이해지만 기업군에 따라 심화로 올라갑니다."),
 )
@@ -1845,14 +1845,14 @@ UNCHANGED_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("java-spring", "서버 프레임워크로 API 완성",
      "이 기업군도 요구 수준은 공통 기대치와 같습니다. 차별화 지점이 아니라 전제 조건입니다."),
     ("rdb-modeling", "RDB 설계·쿼리 기본기",
-     "스키마 설계 기본기는 공통 기대치 그대로입니다. 심화는 다른 편차 항목이 담당합니다."),
+     "스키마 설계 기본기는 공통 기대치 그대로입니다. 심화는 다른 추가 요구 항목이 담당합니다."),
     ("code-review-collab", "코드리뷰·협업 기록",
      "협업 기록 요구는 기업군과 무관하게 동일합니다. 준비했다면 어디에나 통하는 항목입니다."),
     ("rest-api-design", "REST API 설계·완성",
      "자원 설계와 예외 응답까지가 전 기업군 공통입니다. 더 요구하지도, 덜 보지도 않습니다."),
 )
 
-# 기업군별 편차. (차원 slug, 주제, 기준선, 편차, 근거, 해석, 신뢰도, 근거 블록, 체크 개념)
+# 기업군별 추가 요구. (차원 slug, 주제, 직무 공통 기대치, 추가 요구, 근거, 해석, 신뢰도, 근거 블록, 체크 개념)
 CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
     "fintech_finance": (
         ("transaction-integrity", "트랜잭션", "트랜잭션 개념 이해", "동시성·재처리·정합성 보장까지",
@@ -2115,13 +2115,13 @@ def interpretation_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
 # (slug, 제목, 부제, 이유, 증명 산출물, 채널, kind, 기본 필수 여부)
 CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...] = (
     ("crud-api", "CRUD REST API 프로젝트", "배포까지 완성한 한 도메인",
-     "기준선 · 최근 공고 전량이 API 개발을 요구합니다", "배포 URL + README + 커밋 기록",
+     "직무 공통 기대치 · 최근 공고 전량이 API 개발을 요구합니다", "배포 URL + README + 커밋 기록",
      ("portfolio",), "project", True),
     ("rdb-schema", "RDB 설계·쿼리 기본기", "스키마·조인·인덱스",
-     "기준선 · 관계형 데이터베이스 요구가 전 기업군 공통입니다", "ERD + 인덱스 설계 근거 문서",
+     "직무 공통 기대치 · 관계형 데이터베이스 요구가 전 기업군 공통입니다", "ERD + 인덱스 설계 근거 문서",
      ("portfolio", "interview"), "project", True),
     ("error-handling", "예외·에러 응답 설계", "실패 케이스 처리와 문서화",
-     "기준선 · 자격요건의 예외 처리 문장과 연결됩니다", "실패 케이스 처리 코드 + 응답 규약 문서",
+     "직무 공통 기대치 · 자격요건의 예외 처리 문장과 연결됩니다", "실패 케이스 처리 코드 + 응답 규약 문서",
      ("portfolio", "interview"), "project", True),
     ("tx-integrity", "트랜잭션·동시성 심화", "격리수준·멱등성·재처리 설명",
      "정합성을 요구하는 기업군의 최대 변별점입니다", "동시 요청 시나리오 구현 + 설계 설명 글",
@@ -2139,7 +2139,7 @@ CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...]
      "운영까지 함께 보는 팀이 늘고 있습니다", "장애 재현·복구 실험 기록 + 회고 글",
      ("essay", "interview"), "story", True),
     ("collab-story", "협업 문제 해결 서사", "갈등·문제를 해결한 경험",
-     "기준선 · 코드리뷰·협업 요구가 전 기업군 공통입니다", "문제 → 해결 → 배움 서술 준비",
+     "직무 공통 기대치 · 코드리뷰·협업 요구가 전 기업군 공통입니다", "문제 → 해결 → 배움 서술 준비",
      ("essay",), "story", True),
     ("test-habit", "테스트 작성 습관", "회귀를 막는 단위 테스트",
      "테스트 요구가 우대에서 자격요건으로 이동하는 중입니다", "테스트 코드 + 실패 사례 기록",
@@ -2179,7 +2179,7 @@ INTRO_ORDERS: tuple[tuple[str, tuple[str, ...]], ...] = (
 
 
 def cluster_concepts(cluster_id: str) -> tuple[str, ...]:
-    """기업군 편차가 가리키는 체크 개념. 순서가 편차 번호다."""
+    """기업군별 추가 요구가 가리키는 체크 개념. 순서가 추가 요구 번호다."""
     return tuple(entry[8] for entry in CLUSTER_DEVIATIONS[cluster_id])
 
 
@@ -2202,7 +2202,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "item_id": info["concept_id"],
             "title": info["title"], "subtitle": info["subtitle"],
             "reason": (
-                f"편차 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
+                f"추가 요구 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
             ),
             "evidence_needed": info["evidence_needed"],
             "channels": list(info["channels"]),
@@ -2308,7 +2308,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
 ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ...]], ...] = (
     (1, "STEP 01 · 3주", 3, "vhigh", "한 도메인을 배포까지 완성하기",
      "새 프로젝트를 벌이지 말고 기존 결과물 하나를 배포까지 끌고 가세요. 자원 설계와 예외 응답, 스키마 근거를 함께 정리합니다.",
-     "배포 URL + ERD + 인덱스 설계 근거 문서", "기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+     "배포 URL + ERD + 인덱스 설계 근거 문서", "직무 공통 기대치 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
      ("자원 설계", "인덱스 근거", "배포")),
     (2, "STEP 02 · 2주", 2, "vhigh", "실패를 다루기 — 에러 응답과 장애 복구 실험",
      "요청 검증과 에러 응답을 정리하고 의도적으로 장애를 만들어 복구 과정을 기록하세요.",
@@ -2319,9 +2319,9 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "부하 테스트 결과 + 개선 전후 지표 비교 문서 + 회귀 테스트 코드", "규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
      ("부하 테스트", "캐시", "지표 비교")),
     (4, "STEP 04 · 2주", 2, "mid", "기업군에 맞춰 마무리하기",
-     "지원 기업군의 편차 항목을 채우고 PR·리뷰에서 맡은 판단을 정리한 뒤 README와 자소서의 소개 순서를 다시 배치하세요. API 변경 문서도 같은 기록에 연결합니다.",
-     "편차 항목 산출물 + PR·리뷰 기록 + API 변경 문서 + 기업군 맞춤 소개 순서", "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
-     ("편차 보강", "소개 순서", "문서 정리")),
+     "지원 기업군의 추가 요구 항목을 채우고 PR·리뷰에서 맡은 판단을 정리한 뒤 README와 자소서의 소개 순서를 다시 배치하세요. API 변경 문서도 같은 기록에 연결합니다.",
+     "추가 요구 항목 산출물 + PR·리뷰 기록 + API 변경 문서 + 기업군 맞춤 소개 순서", "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+     ("추가 요구 보강", "소개 순서", "문서 정리")),
 )
 
 STEP_FILLS: tuple[tuple[str, ...], ...] = (
@@ -2357,7 +2357,7 @@ def roadmap_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         info = CONCEPT_INFO[slug]
         if slug in devs:
             kind = "dev"
-            text = f"{info['title']} (편차 {devs.index(slug) + 1})"
+            text = f"{info['title']} (추가 요구 {devs.index(slug) + 1})"
         elif info["kind"] == "study":
             kind, text = "study", f"{info['title']} (학습)"
         else:
@@ -2376,7 +2376,7 @@ def roadmap_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
                 added_dev = dev_slug
         if added_dev:
             dev_info = CONCEPT_INFO[added_dev]
-            body = f"{body} 기업군 편차인 {dev_info['title']} 작업도 이 단계의 결과물에 연결합니다."
+            body = f"{body} 기업군별 추가 요구인 {dev_info['title']} 작업도 이 단계의 결과물에 연결합니다."
             deliverable = f"{deliverable} + {dev_info['evidence_needed']}"
         step_text = f"{title} {body} {deliverable}"
         missing_titles = [CONCEPT_INFO[slug]["title"] for slug in slugs

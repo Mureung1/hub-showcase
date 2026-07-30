@@ -6,11 +6,14 @@ const files = [
   './data/preview.js',
   './screens/ReverseScreen.jsx',
   './screens/StatsScreen.jsx',
+  './screens/ChecklistScreen.jsx',
+  './screens/RoadmapScreen.jsx',
   './components/PostingAnalyzePanel.jsx',
 ]
 
 const forbiddenPhrases = [
   '직무 기준선',
+  '편차',
   '전체 baseline',
   '(baseline)',
   'baseline 위',

@@ -224,7 +224,7 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 # ============================================================ 3. 채용공고 15건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
 # 주석은 기존 recent 공고에 붙는다. 해석 payload의 세 종류 번호가 여기서 나온다.
-#   ("base", 기준선 항목명, 해설)                  → base_n
+#   ("base", 직무 공통 기대치 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
 SECTION_REQUIREDNESS = {
@@ -287,8 +287,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "mid", "같은 직군 40%")),
             )),
         ),
-        "summary": "쌓는 사람보다 매일 도는 것을 지키는 사람을 찾습니다. 기준선 항목은 대체로 공통 기대치 그대로이고, 처리 규모와 비용 두 축이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 4건",
+        "summary": "쌓는 사람보다 매일 도는 것을 지키는 사람을 찾습니다. 직무 공통 기대치 항목은 대체로 공통 기대치 그대로이고, 처리 규모와 비용 두 축이 이 공고의 실질 변별점입니다.",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 4건",
     },
     {
         "nn": "02",
@@ -339,8 +339,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "mid", "같은 직군 20%")),
             )),
         ),
-        "summary": "정확한 값을 만드는 사람을 찾습니다. 기준선 항목은 그대로 통하되 정합성 설계와 규제 이해가 이 공고의 추가 요구입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 5건",
+        "summary": "정확한 값을 만드는 사람을 찾습니다. 직무 공통 기대치 항목은 그대로 통하되 정합성 설계와 규제 이해가 이 공고의 추가 요구입니다.",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 5건",
     },
     {
         "nn": "03",
@@ -391,8 +391,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "수동 확인이 아니라 매번 도는 검사로 만드는지를 봅니다. 간단한 행 수 비교 검사부터가 시작입니다.")),
             )),
         ),
-        "summary": "정의를 합의하고 문서로 남기는 사람을 찾습니다. 기준선 세 항목이 그대로 자격요건에 있고, 인프라 구성과 지표 정의 문서화가 추가 요구입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 3건",
+        "summary": "정의를 합의하고 문서로 남기는 사람을 찾습니다. 직무 공통 기대치 세 항목이 그대로 자격요건에 있고, 인프라 구성과 지표 정의 문서화가 추가 요구입니다.",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "04",
@@ -437,8 +437,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "스타트업은 비용이 곧 생존입니다. 인스턴스를 줄이고도 시간을 지킨 기록이 강한 소재가 됩니다.")),
             )),
         ),
-        "summary": "혼자서 끝까지 끌고 갈 사람을 찾습니다. 기준선 항목은 그대로 통하되 오너십과 병목 개선이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 2건",
+        "summary": "혼자서 끝까지 끌고 갈 사람을 찾습니다. 직무 공통 기대치 항목은 그대로 통하되 오너십과 병목 개선이 이 공고의 실질 변별점입니다.",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 2건",
     },
     {
         "nn": "05",
@@ -488,8 +488,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "다른 기업군에서는 거의 사라진 문장이 여기서는 남아 있습니다. 있으면 가점, 없다고 탈락 사유는 아닙니다.")),
             )),
         ),
-        "summary": "합의하고 남기는 사람을 찾습니다. 기준선 세 항목이 자격요건에 그대로 있고, 요구사항 합의와 문서화가 이 공고의 변별점입니다.",
-        "summary_ratio": "편차 1건 · 기준선 일치 3건",
+        "summary": "합의하고 남기는 사람을 찾습니다. 직무 공통 기대치 세 항목이 자격요건에 그대로 있고, 요구사항 합의와 문서화가 이 공고의 변별점입니다.",
+        "summary_ratio": "추가 요구 1건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "06",
@@ -1298,9 +1298,9 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 def axis_level(value: int | None) -> str:
     if value is None:
         return "—"
-    if value >= 70:
+    if value >= 80:
         return "강"
-    if value >= 31:
+    if value >= 21:
         return "중"
     return "약"
 
@@ -1610,7 +1610,7 @@ STATISTICS_PAYLOAD = build_statistics_payload()
 
 
 # ============================================================ 7. 해석 payload
-# 기준선 여덟 항목. 앞 다섯은 요구 차원이고 뒤 셋은 차원 밖의 공통 기대치라
+# 직무 공통 기대치 여덟 항목. 앞 다섯은 요구 차원이고 뒤 셋은 차원 밖의 공통 기대치라
 # 등장 비율을 아래 술어로 따로 센다.
 PSEUDO_BASELINE: dict[str, tuple[str, Any]] = {
     "pipeline-ops": ("실패 감지와 재처리 운영", lambda dims: "workflow-orchestration" in dims),
@@ -1620,7 +1620,7 @@ PSEUDO_BASELINE: dict[str, tuple[str, Any]] = {
 
 
 def pseudo_pct(slug: str) -> int | None:
-    """차원 밖 기준선 항목의 최근 1년 등장 비율."""
+    """차원 밖 직무 공통 기대치 항목의 최근 1년 등장 비율."""
     predicate = PSEUDO_BASELINE[slug][1]
     hits = sum(1 for p in RECENT_POSTINGS if predicate(DIMS_BY_POSTING[p["nn"]]))
     return pct(hits, len(RECENT_POSTINGS))
@@ -1634,7 +1634,7 @@ BASELINE_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("workflow-orchestration", "워크플로 스케줄 운영",
      "DAG로 의존을 정의하고 실패를 재처리하는 운영 경험입니다. 데이터 플랫폼 팀과 경계가 겹치지만 등장 빈도는 기본기에 가깝습니다."),
     ("data-warehouse", "웨어하우스 테이블 모델링",
-     "분석용 테이블과 마트를 설계하는 능력입니다. 1년 새 등장이 뚜렷하게 늘어 기준선의 중심으로 올라온 항목입니다."),
+     "분석용 테이블과 마트를 설계하는 능력입니다. 1년 새 등장이 뚜렷하게 늘어 직무 공통 기대치의 중심으로 올라온 항목입니다."),
     ("streaming-ingest", "스트리밍 수집 기본 이해",
      "토픽·파티션과 컨슈머의 개념 이해입니다. 필수율이 0에 가까워 우대의 자리를 지키고 있습니다."),
     ("pipeline-ops", "실패 감지와 재처리 운영",
@@ -1656,7 +1656,7 @@ UNCHANGED_ITEMS: tuple[tuple[str, str, str], ...] = (
      "스트리밍은 어느 기업군에서도 우대 자리를 지킵니다. 필수 항목을 채운 다음의 선택지입니다."),
 )
 
-# 기업군별 편차. (차원 slug, 주제, 기준선, 편차, 근거, 해석, 신뢰도, 근거 블록, 체크 개념)
+# 기업군별 추가 요구. (차원 slug, 주제, 직무 공통 기대치, 추가 요구, 근거, 해석, 신뢰도, 근거 블록, 체크 개념)
 CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
     "bigtech_platform": (
         ("spark-batch", "처리 규모", "분산 배치를 돌려 본 경험", "파티션·셔플까지 조정해 본 경험",
@@ -1665,7 +1665,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
          "high", "#advanced", "spark-optimize"),
         ("sql-analytics", "쿼리 비용", "실행 계획을 읽는 정도", "스캔량과 비용을 줄여 본 경험까지",
          '우대사항의 "쿼리 비용과 스토리지 비용을 줄여 본 경험" 문장',
-         "규모가 큰 조직은 성능만큼 비용을 봅니다. 파티션을 잘라 스캔량을 줄인 전후 숫자 한 줄이면 이 편차는 채워집니다.",
+         "규모가 큰 조직은 성능만큼 비용을 봅니다. 파티션을 잘라 스캔량을 줄인 전후 숫자 한 줄이면 이 추가 요구는 채워집니다.",
          "mid", "#items", "cost-optimize"),
         ("streaming-ingest", "실시간 수집", "개념 이해", "이벤트 스트림 수집 운영까지",
          '우대사항의 "Kafka로 실시간 이벤트 스트림을 수집해 본 경험" 문장',
@@ -1904,70 +1904,70 @@ def interpretation_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
 # (slug, 제목, 부제, 이유, 증명 산출물, 채널, kind, 기본 필수 여부)
 CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...] = (
     ("batch-pipeline", "배치 파이프라인 프로젝트", "원천에서 마트까지 한 흐름",
-     "기준선 · 최근 공고 전량이 적재와 집계를 요구합니다", "저장소 + 실행 로그 + 파이프라인 구조도",
+     "직무 공통 기대치 · 최근 공고 전량이 적재와 집계를 요구합니다", "저장소 + 실행 로그 + 파이프라인 구조도",
      ("portfolio",), "project", True),
     ("sql-tuning", "SQL 집계와 실행 계획", "조인·집계·윈도우 함수",
-     "기준선 · SQL 요구가 등장 100%로 전제 조건입니다", "느린 쿼리 개선 전후 실행 계획 문서",
+     "직무 공통 기대치 · SQL 요구가 등장 100%로 전제 조건입니다", "느린 쿼리 개선 전후 실행 계획 문서",
      ("portfolio", "interview"), "project", True),
     ("airflow-dag", "DAG 스케줄 운영", "의존 순서와 재시도",
-     "기준선 · 오케스트레이션 요구가 등장 80%입니다", "DAG 코드 + 실행 이력 캡처",
+     "직무 공통 기대치 · 오케스트레이션 요구가 등장 80%입니다", "DAG 코드 + 실행 이력 캡처",
      ("portfolio", "interview"), "project", True),
     ("warehouse-modeling", "웨어하우스 테이블 모델링", "팩트·디멘전 분리",
-     "기준선 · 1년 새 등장이 50%에서 80%로 늘었습니다", "ERD + 테이블 설계 근거 문서",
+     "직무 공통 기대치 · 1년 새 등장이 50%에서 80%로 늘었습니다", "ERD + 테이블 설계 근거 문서",
      ("portfolio", "interview"), "project", True),
     ("data-quality", "데이터 품질 검증 절차", "행 수·중복·널 검사",
-     "기준선 · 값이 맞는지 확인하는 절차를 담당업무로 두는 공고가 다수입니다", "검증 규칙 목록 + 실패 시 알림 설정",
+     "직무 공통 기대치 · 값이 맞는지 확인하는 절차를 담당업무로 두는 공고가 다수입니다", "검증 규칙 목록 + 실패 시 알림 설정",
      ("portfolio", "interview"), "project", True),
     ("failure-recovery", "실패·재처리 운영 기록", "멈춘 배치를 되돌린 경험",
-     "기준선 · 배치는 멈추는 것이 전제라 복구 기록이 변별점이 됩니다", "장애 재현·복구 회고 글",
+     "직무 공통 기대치 · 배치는 멈추는 것이 전제라 복구 기록이 변별점이 됩니다", "장애 재현·복구 회고 글",
      ("essay", "interview"), "story", True),
     ("distributed-basics", "분산 처리 원리", "파티션·셔플·스큐",
-     "기준선 · 분산 배치 요구가 등장 80%이고 면접이 이론을 검증합니다", "개념 정리 글 + 실행 계획 해석",
+     "직무 공통 기대치 · 분산 배치 요구가 등장 80%이고 면접이 이론을 검증합니다", "개념 정리 글 + 실행 계획 해석",
      ("interview",), "study", True),
     ("modeling-theory", "차원 모델링 이론", "정규화와 스타 스키마",
-     "기준선 · 테이블을 왜 그렇게 나눴는지가 반복되는 질문입니다", "설계 근거를 담은 정리 글",
+     "직무 공통 기대치 · 테이블을 왜 그렇게 나눴는지가 반복되는 질문입니다", "설계 근거를 담은 정리 글",
      ("interview",), "study", True),
     ("spark-optimize", "분산 배치 병목 개선", "파티션 수와 셔플 조정",
-     "편차 · 규모를 다루는 기업군이 개선의 과정을 묻습니다", "개선 전후 실행 시간 비교표",
+     "규모를 다루는 기업군이 개선의 과정을 묻습니다", "개선 전후 실행 시간 비교표",
      ("portfolio", "interview"), "project", False),
     ("streaming-pipeline", "스트리밍 수집 구현", "토픽·컨슈머 그룹",
-     "편차 · 배치 주기를 줄이려는 조직에서 우대 이상으로 읽힙니다", "수집 파이프라인 저장소 + 지연 측정",
+     "배치 주기를 줄이려는 조직에서 우대 이상으로 읽힙니다", "수집 파이프라인 저장소 + 지연 측정",
      ("portfolio",), "project", False),
     ("stream-semantics", "스트리밍 시맨틱스", "중복·순서·정확히 한 번",
-     "편차 · 실시간 수집을 묻는 공고의 꼬리질문이 여기로 옵니다", "개념 정리 글",
+     "실시간 수집을 묻는 공고의 꼬리질문이 여기로 옵니다", "개념 정리 글",
      ("interview",), "study", False),
     ("cost-optimize", "처리 비용 줄이기", "스캔량과 자원 사용",
-     "편차 · 규모가 큰 조직은 성능만큼 비용을 봅니다", "비용 절감 전후 숫자 한 줄",
+     "규모가 큰 조직은 성능만큼 비용을 봅니다", "비용 절감 전후 숫자 한 줄",
      ("portfolio", "interview"), "study", False),
     ("volume-story", "데이터 규모를 숫자로 설명", "몇 건을 몇 분에",
-     "편차 · 규모 감각을 묻는 문장이 반복됩니다", "처리량·소요 시간 측정 기록",
+     "규모 감각을 묻는 문장이 반복됩니다", "처리량·소요 시간 측정 기록",
      ("essay", "interview"), "story", False),
     ("reconciliation", "집계 대사 파이프라인", "원천과 결과 비교",
-     "편차 · 금융 데이터는 값이 어긋나면 장부가 어긋납니다", "대사 쿼리 + 불일치 처리 절차",
+     "금융 데이터는 값이 어긋나면 장부가 어긋납니다", "대사 쿼리 + 불일치 처리 절차",
      ("portfolio", "interview"), "project", False),
     ("governance-rule", "비식별·보관 규칙", "마스킹과 보관 기간",
-     "편차 · 규제가 테이블 설계보다 먼저 들어오는 기업군이 있습니다", "비식별 규칙 설계 문서",
+     "규제가 테이블 설계보다 먼저 들어오는 기업군이 있습니다", "비식별 규칙 설계 문서",
      ("interview",), "study", False),
     ("metric-doc", "지표 정의 문서", "같은 이름 다른 정의",
-     "편차 · 고객사·조직마다 지표 정의가 달라 합의 기록이 값을 갖습니다", "지표 정의서 1편",
+     "고객사·조직마다 지표 정의가 달라 합의 기록이 값을 갖습니다", "지표 정의서 1편",
      ("portfolio", "essay"), "story", False),
     ("infra-basics", "실행 환경 구성 기초", "컨테이너와 배포",
-     "편차 · 데이터 팀이 실행 환경까지 맡는 조직이 있습니다", "컨테이너로 파이프라인을 띄운 기록",
+     "데이터 팀이 실행 환경까지 맡는 조직이 있습니다", "컨테이너로 파이프라인을 띄운 기록",
      ("portfolio",), "study", False),
     ("standard-doc", "표준 설계 산출물", "다음 사람이 그대로 쓰는 문서",
-     "편차 · 납품형 조직은 산출물 문서가 평가 대상입니다", "설계 산출물 문서 1벌",
+     "납품형 조직은 산출물 문서가 평가 대상입니다", "설계 산출물 문서 1벌",
      ("portfolio", "essay"), "story", False),
     ("requirement-doc", "요구 정리와 합의 기록", "범위를 좁힌 과정",
-     "편차 · 요구를 받아 적는 것이 아니라 합의한 기록을 봅니다", "요구 정리표 + 합의 메모",
+     "요구를 받아 적는 것이 아니라 합의한 기록을 봅니다", "요구 정리표 + 합의 메모",
      ("essay", "interview"), "story", False),
     ("handover-story", "운영 이관 준비", "남이 읽고 돌릴 수 있게",
-     "편차 · 만든 사람이 계속 보지 않는 조직이 있습니다", "실행 매뉴얼 + 인수인계 메모",
+     "만든 사람이 계속 보지 않는 조직이 있습니다", "실행 매뉴얼 + 인수인계 메모",
      ("essay",), "story", False),
     ("ownership-story", "전 과정 오너십 서사", "구성부터 운영까지 혼자",
-     "편차 · 인원이 적은 조직은 담당 범위가 넓습니다", "한 파이프라인을 끝까지 끌고 간 기록",
+     "인원이 적은 조직은 담당 범위가 넓습니다", "한 파이프라인을 끝까지 끌고 간 기록",
      ("essay", "interview"), "story", False),
     ("ml-dataset", "학습 데이터셋 관리", "버전과 품질",
-     "편차 · 소비처가 모델이면 중복·누락 기준이 더 빡빡합니다", "데이터셋 버전 기록 + 품질 지표",
+     "소비처가 모델이면 중복·누락 기준이 더 빡빡합니다", "데이터셋 버전 기록 + 품질 지표",
      ("portfolio",), "project", False),
 )
 
@@ -1992,7 +1992,7 @@ INTRO_ORDERS: tuple[tuple[str, tuple[str, ...]], ...] = (
 
 
 def cluster_concepts(cluster_id: str) -> tuple[str, ...]:
-    """기업군 편차가 가리키는 체크 개념. 순서가 편차 번호다."""
+    """기업군별 추가 요구가 가리키는 체크 개념. 순서가 추가 요구 번호다."""
     return tuple(entry[8] for entry in CLUSTER_DEVIATIONS[cluster_id])
 
 
@@ -2015,7 +2015,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "item_id": info["concept_id"],
             "title": info["title"], "subtitle": info["subtitle"],
             "reason": (
-                f"편차 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
+                f"추가 요구 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
             ),
             "evidence_needed": info["evidence_needed"],
             "channels": list(info["channels"]),
@@ -2140,7 +2140,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
 ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ...]], ...] = (
     (1, "STEP 01 · 3주", 3, "vhigh", "원천에서 마트까지 한 흐름 완성하기",
      "공개 데이터 하나를 골라 수집·적재·집계까지 한 줄로 이으세요. 테이블은 두 층으로 나누고 집계 쿼리의 실행 계획을 한 번 읽습니다.",
-     "저장소 + 파이프라인 구조도 + 실행 계획 문서", "기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+     "저장소 + 파이프라인 구조도 + 실행 계획 문서", "직무 공통 기대치 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
      ("적재", "집계", "실행 계획")),
     (2, "STEP 02 · 2주", 2, "vhigh", "매일 돌게 만들고 실패를 다루기",
      "스케줄러로 의존을 묶고 하루 이상 돌리세요. 일부러 실패를 만들어 재처리 절차를 기록합니다.",
@@ -2151,9 +2151,9 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "검증 규칙 목록 + 알림 설정 + ERD와 설계 근거", "적재보다 확인이 더 오래 걸리는 것이 실무입니다.",
      ("검증", "알림", "모델링")),
     (4, "STEP 04 · 2주", 2, "mid", "처리 규모와 지표 정의를 기업군에 맞춰 마무리하기",
-     "같은 입력으로 처리량·소요 시간을 측정하고 지표의 정의, 집계 주기, 담당자를 문서에 적으세요. 지원 기업군의 편차 항목이 있으면 같은 문서의 첫 번째 사례로 배치합니다.",
-     "입력 규모·처리 시간 비교표 + 지표 정의서 + 기업군 편차 항목 산출물", "필수가 채워진 뒤의 마무리입니다. 수치와 정의가 함께 있어야 결과를 다시 확인할 수 있습니다.",
-     ("처리 규모", "지표 정의", "편차 보강")),
+     "같은 입력으로 처리량·소요 시간을 측정하고 지표의 정의, 집계 주기, 담당자를 문서에 적으세요. 지원 기업군의 추가 요구 항목이 있으면 같은 문서의 첫 번째 사례로 배치합니다.",
+     "입력 규모·처리 시간 비교표 + 지표 정의서 + 기업군별 추가 요구 항목 산출물", "필수가 채워진 뒤의 마무리입니다. 수치와 정의가 함께 있어야 결과를 다시 확인할 수 있습니다.",
+     ("처리 규모", "지표 정의", "추가 요구 보강")),
 )
 
 STEP_FILLS: tuple[tuple[str, ...], ...] = (
@@ -2189,7 +2189,7 @@ def roadmap_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         info = CONCEPT_INFO[slug]
         if slug in devs:
             kind = "dev"
-            text = f"{info['title']} (편차 {devs.index(slug) + 1})"
+            text = f"{info['title']} (추가 요구 {devs.index(slug) + 1})"
         elif info["kind"] == "study":
             kind, text = "study", f"{info['title']} (학습)"
         else:
@@ -2970,7 +2970,7 @@ def _build_outputs(
     for cid in CLUSTER_ORDER:
         claim_id = add_claim(
             road_outputs[cid], "strategy", None, "cluster", cid,
-            f"{CLUSTERS[cid]} 지원자는 편차 항목을 STEP 01~03 안에서 함께 채우는 것이 유리하다.",
+            f"{CLUSTERS[cid]} 지원자는 추가 요구 항목을 STEP 01~03 안에서 함께 채우는 것이 유리하다.",
             {"cluster_id": cid, "concepts": [
                 CONCEPT_INFO[s]["concept_id"] for s in cluster_concepts(cid)
             ]},
