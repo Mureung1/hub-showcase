@@ -2,11 +2,9 @@ import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import type { MarketAnalysis, MarketStoreTrend } from "../../services/marketAnalysis";
 import { EvidenceCoverageSummary } from "./EvidenceCoverageSummary";
 import { InspectorFlow } from "./InspectorFlow";
-import {
-  InspectorHeader,
-  InspectorDecisionSummary,
-  InspectorScoreAndCompetition,
-} from "./MarketInspectorPlainLanguage";
+import { InspectorDecisionSummary } from "./MarketDecisionSummary";
+import { InspectorHeader } from "./MarketInspectorHeader";
+import { InspectorScoreAndCompetition } from "./MarketScoreAndCompetition";
 import {
   InspectorFootfall,
   InspectorPopulation,
