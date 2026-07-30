@@ -23,15 +23,20 @@ const BLOCKER_LABELS: Record<string, string> = {
   cluster_evidence_too_weak: "업종 밀집 효과를 판단할 근거가 약함",
 };
 
-function plainReasonMessage(reason: ScoreReason) {
-  if (reason.tone === "info") {
-    return reason.message
-      .replaceAll("peer group", "비교 상권")
-      .replaceAll("peer", "비교 상권")
-      .replaceAll("cohort", "같은 시기 점포군");
-  }
+function replaceInternalTerms(message: string) {
+  return message
+    .replaceAll("peer group", "비교 상권")
+    .replaceAll("peer", "비교 상권")
+    .replaceAll("cohort", "같은 시기 점포군");
+}
 
-  const percentile = Math.round(reason.percentile);
+function plainReasonMessage(reason: ScoreReason) {
+  if (reason.tone === "info") return replaceInternalTerms(reason.message);
+
+  const percentileMatch = /peer 백분위가 (\d+(?:\.\d+)?)/.exec(reason.message);
+  if (!percentileMatch) return replaceInternalTerms(reason.message);
+
+  const percentile = Math.round(Number(percentileMatch[1]));
   const lowerIsBetter = LOWER_IS_BETTER.has(reason.label);
   if (reason.tone === "positive") {
     return lowerIsBetter
