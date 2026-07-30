@@ -7,6 +7,7 @@ export async function recommendCurriculum({
   goal,
   followUpInstruction,
   previousPlan,
+  progressContext,
   tracks,
   config,
   recommendationProvider = runCurriculumPlannerAgent,
@@ -30,10 +31,15 @@ export async function recommendCurriculum({
     goal: trimmedGoal,
     followUpInstruction: trimmedFollowUp,
     previousPlan,
+    progressContext,
     tracks,
     config,
     knowledgeContext,
   })
 
-  return createGeneratedCurriculumPlan({ goal: trimmedGoal, recommendation, tracks })
+  const plan = createGeneratedCurriculumPlan({ goal: trimmedGoal, recommendation, tracks })
+
+  return trimmedFollowUp && previousPlan?.id
+    ? { ...plan, id: previousPlan.id }
+    : plan
 }

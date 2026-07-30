@@ -1,12 +1,12 @@
 .loadingContainer {
-  min-height: 260px;
+  width: 100%;
+  min-height: 100%;
   display: grid;
   place-content: center;
   justify-items: center;
   gap: 10px;
-  margin-top: 18px;
-  border: 1px solid #d5deea;
-  border-radius: 12px;
+  margin: 0;
+  border-radius: inherit;
   background: radial-gradient(circle at 50% 45%, rgb(232 242 255 / 95%), transparent 34%), #f8fbff;
 }
 

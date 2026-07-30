@@ -45,6 +45,8 @@
 
 ## API
 
+초기 생성은 새 `plan.id`로 저장합니다. 후속 수정과 `어제 내용 이어서`는 기존 `plan.id`를 유지해 같은 보관함 항목을 갱신합니다. 추천 API 자체는 저장하지 않으며, 추천 성공 후 generated API가 저장을 담당합니다.
+
 ```text
 GET    /api/curriculum/history
 GET    /api/curriculum/generated

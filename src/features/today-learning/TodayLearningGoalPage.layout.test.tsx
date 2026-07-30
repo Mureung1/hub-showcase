@@ -8,6 +8,10 @@ const todayLearningCss = readFileSync(
   new URL('./TodayLearningHub.module.css', import.meta.url),
   'utf8',
 )
+const curriculumLoadingCss = readFileSync(
+  new URL('./CurriculumLoading.module.css', import.meta.url),
+  'utf8',
+)
 
 describe('TodayLearningGoalPage layout', () => {
   afterEach(() => {
@@ -39,6 +43,24 @@ describe('TodayLearningGoalPage layout', () => {
     expect(markup).toContain('data-title-density="compact"')
     expect(todayLearningCss).toMatch(
       /\.topbar h1\[data-title-density='compact'\]\s*\{[^}]*font-size: 22px;/s,
+    )
+  })
+
+  it('keeps curriculum generation states inside one stable result slot', () => {
+    vi.stubEnv('VITE_ICU_API_MODE', 'mock')
+
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <TodayLearningGoalPage />
+      </MemoryRouter>,
+    )
+
+    expect(markup).toContain('data-generation-state-slot="idle"')
+    expect(todayLearningCss).toMatch(
+      /\.generationStateSlot\s*\{[^}]*position: relative;[^}]*min-height: 154px;/s,
+    )
+    expect(curriculumLoadingCss).toMatch(
+      /\.loadingContainer\s*\{[^}]*min-height: 100%;[^}]*margin: 0;/s,
     )
   })
 })

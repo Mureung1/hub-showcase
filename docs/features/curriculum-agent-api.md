@@ -20,6 +20,13 @@ type CurriculumRecommendationRequest = {
   goal: string
   followUpInstruction?: string
   previousPlan?: GeneratedCurriculumPlan
+  progressContext?: {
+    missionId: string
+    activeStepOffset: number
+    completedStepIds: string[]
+    completedAt: string | null
+    lastTestResult: LearningTestResult | null
+  }
 }
 ```
 
@@ -36,6 +43,10 @@ type CurriculumRecommendationResponse = {
   plan: GeneratedCurriculumPlan
 }
 ```
+
+`POST /api/curriculum/recommend`는 추천 결과만 반환하며 저장하지 않습니다. 화면은 추천 성공 후 `POST /api/curriculum/generated`를 한 번 호출해 명시적으로 저장합니다.
+
+후속 요청은 `previousPlan.id`를 유지합니다. `progressContext`가 있으면 완료한 단계와 현재 `activeStepOffset`을 기준으로 오늘 미션을 조정하며, 새 보관함 항목을 추가하지 않고 같은 커리큘럼을 갱신합니다.
 
 `GeneratedCurriculumPlan`은 Today Hub와 Workspace가 함께 사용하는 화면 contract입니다.
 

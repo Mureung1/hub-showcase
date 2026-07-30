@@ -32,6 +32,7 @@ export async function runCurriculumPlannerAgent({
   goal,
   followUpInstruction,
   previousPlan,
+  progressContext,
   tracks,
   config,
   knowledgeContext = [],
@@ -55,18 +56,34 @@ export async function runCurriculumPlannerAgent({
     goal,
     followUpInstruction,
     previousPlan,
+    progressContext,
     tracks,
     knowledgeContext,
     fetchImpl,
   })
 }
 
-export function createDryRunPayload({ goal, followUpInstruction, previousPlan, tracks, config, knowledgeContext = [] }) {
+export function createDryRunPayload({
+  goal,
+  followUpInstruction,
+  previousPlan,
+  progressContext,
+  tracks,
+  config,
+  knowledgeContext = [],
+}) {
   return {
     provider: config.provider,
     model: config.model,
     system_instruction: createSystemInstruction(),
-    input: JSON.parse(createPrompt({ goal, followUpInstruction, previousPlan, tracks, knowledgeContext })),
+    input: JSON.parse(createPrompt({
+      goal,
+      followUpInstruction,
+      previousPlan,
+      progressContext,
+      tracks,
+      knowledgeContext,
+    })),
   }
 }
 
@@ -110,6 +127,8 @@ export function createSystemInstruction() {
     'If followUpInstruction is provided, treat it as a revision request for previousPlanSummary, not as an unrelated new plan.',
     'When previousPlanSummary is provided, preserve the existing track, level, and modules unless the follow-up request clearly asks to change scope or sequence.',
     'Use previousPlanSummary.steps and previousPlanSummary.todayMission as the concrete baseline for the revised curriculum.',
+    'When progressContext is provided, keep the full step sequence aligned with previousPlanSummary.steps and generate todayMission for the step at activeStepOffset.',
+    'Treat progressContext.completedStepIds as already finished. Do not restart those steps or reset progress.',
     'Return only valid JSON. Do not wrap the answer in markdown.',
     'Pick one track, one starting level, and either three or four modules from that level, choosing whichever count best fits the module count in that level and the user goal.',
     'Use Korean for title, summary, todayMission, and rationale.',
@@ -118,16 +137,25 @@ export function createSystemInstruction() {
   ].join('\n')
 }
 
-export function createPrompt({ goal, followUpInstruction, previousPlan, tracks, knowledgeContext = [] }) {
+export function createPrompt({
+  goal,
+  followUpInstruction,
+  previousPlan,
+  progressContext,
+  tracks,
+  knowledgeContext = [],
+}) {
   return JSON.stringify({
     userGoal: goal,
     followUpInstruction: followUpInstruction || undefined,
     previousPlanSummary: previousPlan ? {
+      id: previousPlan.id,
       title: previousPlan.title,
       summary: previousPlan.summary,
       todayMission: previousPlan.todayMission,
       steps: previousPlan.steps,
     } : undefined,
+    progressContext: progressContext || undefined,
     catalog: createCatalog(tracks),
     knowledgeContext: createKnowledgeContext(knowledgeContext),
     constraints: {
@@ -168,14 +196,36 @@ export function extractJson(text) {
   return candidate.slice(start, end + 1)
 }
 
-async function callDeveloperGemini({ apiKey, model, goal, followUpInstruction, previousPlan, tracks, knowledgeContext, fetchImpl }) {
+async function callDeveloperGemini({
+  apiKey,
+  model,
+  goal,
+  followUpInstruction,
+  previousPlan,
+  progressContext,
+  tracks,
+  knowledgeContext,
+  fetchImpl,
+}) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
   const response = await fetchImpl(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: createSystemInstruction() }] },
-      contents: [{ role: 'user', parts: [{ text: createPrompt({ goal, followUpInstruction, previousPlan, tracks, knowledgeContext }) }] }],
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: createPrompt({
+            goal,
+            followUpInstruction,
+            previousPlan,
+            progressContext,
+            tracks,
+            knowledgeContext,
+          }),
+        }],
+      }],
       generationConfig: {
         temperature: 0.2,
         responseMimeType: 'application/json',
