@@ -94,6 +94,7 @@ export function subsidyToRow(subsidy: Subsidy): Omit<SubsidyRow, 'created_at'> {
 
 /** match_requests 테이블 row (snake_case) */
 export interface MatchRequestRow {
+  industry: string
   support_realm: string[]
   region: string
   district: string
@@ -110,6 +111,11 @@ export function profileToMatchRequestRow(
   sort: SortOption,
 ): MatchRequestRow {
   return {
+    // 이슈 #91/#92로 온보딩 업종(industry) 질문이 지원분야(supportRealm)로 완전히
+    // 교체되며 OnboardingProfile에서 industry 필드가 사라졌다. DB의 industry 컬럼은
+    // 이 프로젝트 관례대로 드롭하지 않고 남아있는 legacy NOT NULL 컬럼이라, 제약을
+    // 만족시키기 위해 빈 문자열로 채운다(이슈 #108).
+    industry: '',
     support_realm: profile.supportRealm,
     region: profile.region,
     district: profile.district,
