@@ -123,6 +123,7 @@ const SubscriptionForm = () => {
               id="serviceName"
               className="form-input"
               type="text"
+              lang="ko"
               placeholder="예: 넷플릭스"
               value={serviceName}
               onChange={(e) => setServiceName(e.target.value)}
@@ -199,6 +200,7 @@ const SubscriptionForm = () => {
               id="bankName"
               className="form-input"
               type="text"
+              lang="ko"
               placeholder="예: 국민은행"
               value={bankName}
               onChange={(e) => setBankName(e.target.value)}
@@ -232,6 +234,7 @@ const SubscriptionForm = () => {
               id="accountHolderName"
               className="form-input"
               type="text"
+              lang="ko"
               placeholder="예: 홍길동"
               value={accountHolderName}
               onChange={(e) => setAccountHolderName(e.target.value)}

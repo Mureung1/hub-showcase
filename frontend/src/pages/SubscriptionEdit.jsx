@@ -108,6 +108,7 @@ const SubscriptionEdit = () => {
             id="serviceName"
             className="form-input"
             type="text"
+            lang="ko"
             value={serviceName}
             onChange={(e) => setServiceName(e.target.value)}
             autoComplete="off"
@@ -181,6 +182,7 @@ const SubscriptionEdit = () => {
             id="bankName"
             className="form-input"
             type="text"
+            lang="ko"
             value={bankName}
             onChange={(e) => setBankName(e.target.value)}
             autoComplete="off"
@@ -212,6 +214,7 @@ const SubscriptionEdit = () => {
             id="accountHolderName"
             className="form-input"
             type="text"
+            lang="ko"
             value={accountHolderName}
             onChange={(e) => setAccountHolderName(e.target.value)}
             autoComplete="off"
