@@ -17,6 +17,7 @@ import * as repo from "./sourceAnswers.repository.js";
 import * as service from "./sourceAnswers.service.js";
 import * as agendasRepo from "../agendas/agendas.repository.js";
 import * as agendasService from "../agendas/agendas.service.js";
+import * as finalAnswersService from "../finalAnswers/finalAnswers.service.js";
 
 /**
  * SourceAnswer Controller (SPEC-AI-001 4장) + Manager 구간 이어붙이기 (SPEC-AI-002 §12.2).
@@ -113,6 +114,17 @@ async function streamManagerSegment(input: {
         onAgendaJudged: (agenda) => {
           writeEvent(response, { type: "agenda.judged", agenda });
         },
+        // SPEC-AI-003 §8.1 — 충돌 0건 경로에서만 온다. 스트림이 아직 열려 있다.
+        onFinalAnswerStart: () => {
+          writeEvent(response, { type: "final_answer.progress" });
+        },
+        onFinalAnswerDone: ({ finalAnswer, decisionNote }) => {
+          writeEvent(response, {
+            type: "final_answer.done",
+            finalAnswer,
+            decisionNote,
+          });
+        },
       },
     });
     writeEvent(response, { type: "agenda.done", agendas: result.agendas });
@@ -199,12 +211,40 @@ export async function postSourceAnswers(
     response.write(HEARTBEAT_FRAME);
   }, HEARTBEAT_INTERVAL_MS);
 
+  /**
+   * SPEC-AI-003 §7 — **Context를 서버가 구성한다.**
+   *
+   * 배선은 원래 있었지만 재료(FinalAnswer·DecisionNote)가 web Mock이라 DB에 없었다.
+   * 이제 서버가 저장하므로 비로소 동작한다(Epic 5 완성). web이 보낸 값보다 우선하며,
+   * 구성에 실패하면 web 값으로 물러난다 — 맥락이 없다고 생성을 막지는 않는다.
+   */
+  let serverContext: string | null = null;
+  try {
+    const built = await finalAnswersService.buildContextForQuestion({
+      client: userClient,
+      chatId: params.data.chatId,
+      questionId: params.data.questionId,
+    });
+    serverContext = built.text;
+    if (built.omittedNoteCount > 0) {
+      // §7.3 — 조용히 자르지 않는다. 생략 건수를 로그로도 남긴다(스냅샷에도 저장된다).
+      console.info(
+        `[context] DecisionNote ${built.omittedNoteCount}건 생략(상한 초과)`,
+      );
+    }
+  } catch (error) {
+    console.error(
+      "[context] 구성 실패 — web 값으로 대체:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
   try {
     const sourceAnswers = await service.runGeneration({
       ...prepared,
       userClient,
       questionId: params.data.questionId,
-      context: body.data.context ?? null,
+      context: serverContext ?? body.data.context ?? null,
       onUpdate: (event) => {
         writeEvent(response, {
           type: "source_answer.updated",

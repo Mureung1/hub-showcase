@@ -17,7 +17,12 @@ import {
   FALLBACK_NOTE_VERSION,
   type ComposeMetrics,
 } from "./finalAnswers.types.js";
-import { decideGenerationMode } from "./pipeline/generationMode.js";
+import {
+  decideGenerationMode,
+  isAgendaSetSettled,
+} from "./pipeline/generationMode.js";
+import * as agendasRepo from "../agendas/agendas.repository.js";
+import * as sourceAnswersRepo from "../sourceAnswers/sourceAnswers.repository.js";
 import { buildFallbackNote } from "./pipeline/fallbackNote.js";
 import { buildContext, type BuiltContext } from "./pipeline/context.js";
 import type {
@@ -243,18 +248,80 @@ export async function composeForQuestion(input: {
 }
 
 /**
+ * §2.1 — **트리거. 이 함수 하나만 존재한다.**
+ *
+ * ⚠️ `runManagerForQuestion`(충돌 0건)과 `applyUserDecision`(사용자 판단 후) 양쪽이
+ * **이것을 호출한다.** 조건을 각 지점에 복사하지 않는다 — SPEC-AI-002에서 같은 계열의
+ * 갇힘이 네 번 나왔고 원인이 매번 그것이었다(T-019.1·019.4·019.5·019.6).
+ *
+ * 아직 확정되지 않았거나 이미 생성된 경우 **조용히 null**을 돌려준다. 트리거는 여러 번
+ * 불릴 수 있고(사용자가 쟁점을 하나씩 해소한다) 그때마다 오류를 내면 안 된다.
+ */
+export async function composeIfSettled(input: {
+  userClient: SupabaseClient;
+  questionId: string;
+  progress?: ComposeProgress;
+}): Promise<ComposeResult | null> {
+  const adminClient = getAdminClient();
+
+  const [agendas, sourceAnswers, question] = await Promise.all([
+    agendasRepo.listByQuestion(adminClient, input.questionId),
+    sourceAnswersRepo.listByQuestion(adminClient, input.questionId),
+    findQuestionMessage(adminClient, input.questionId),
+  ]);
+
+  if (!isAgendaSetSettled(agendas)) return null;
+  // 이미 저장돼 있으면 조용히 넘어간다 — 409는 명시적 요청에만 낸다(§5.4).
+  if (await repo.findFinalAnswer(adminClient, input.questionId)) return null;
+  if (question === null) return null;
+
+  return composeForQuestion({
+    questionId: input.questionId,
+    questionMessage: question,
+    agendas,
+    sourceAnswers,
+    userClient: input.userClient,
+    progress: input.progress,
+  });
+}
+
+async function findQuestionMessage(
+  client: SupabaseClient,
+  questionId: string,
+): Promise<string | null> {
+  const { data, error } = await client
+    .from("questions")
+    .select("message")
+    .eq("id", questionId)
+    .maybeSingle();
+  if (error) throw new Error(`Question 조회 실패: ${error.message}`);
+  const message = (data as { message?: unknown } | null)?.message;
+  return typeof message === "string" ? message : null;
+}
+
+/**
  * §7 — 다음 Question을 위한 Context를 만든다.
  * `sourceAnswers.service.ts`가 `context_snapshot`에 저장하는 배선에 연결된다.
  */
 export async function buildContextForQuestion(input: {
   client: SupabaseClient;
   chatId: string;
-  sequenceNumber: number;
+  questionId: string;
 }): Promise<BuiltContext> {
   const env = loadEnv();
+  const { data, error } = await input.client
+    .from("questions")
+    .select("sequence_number")
+    .eq("id", input.questionId)
+    .maybeSingle();
+  if (error) throw new Error(`Question 조회 실패: ${error.message}`);
+  const sequenceNumber = Number(
+    (data as { sequence_number?: unknown } | null)?.sequence_number ?? 0,
+  );
+
   const priors = await repo.findPriorQuestions(input.client, {
     chatId: input.chatId,
-    beforeSequence: input.sequenceNumber,
+    beforeSequence: sequenceNumber,
   });
   return buildContext({ priors, maxNotes: env.CONTEXT_MAX_NOTES });
 }

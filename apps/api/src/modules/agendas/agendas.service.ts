@@ -23,6 +23,7 @@ import {
   type PipelineTrace,
 } from "./agendas.types.js";
 import * as repo from "./agendas.repository.js";
+import { composeIfSettled } from "../finalAnswers/finalAnswers.service.js";
 import { judgeDrafts } from "./pipeline/judge.js";
 import { getAgendaRechecker } from "./adapters/agendaRechecker.registry.js";
 import { formatStanceSummary, verifyRecheckResult } from "./pipeline/recheck.js";
@@ -536,6 +537,13 @@ export interface ManagerProgress {
   onAgendaJudged?: (agenda: Agenda) => Promise<void> | void;
   /** 단계 1~6 경과. 결과가 없는 구간의 무음을 없앤다(§12.2). */
   onStage?: StageProgress;
+  /** SPEC-AI-003 §8 — FinalAnswer 생성 시작(충돌 0건 경로에서만 의미가 있다). */
+  onFinalAnswerStart?: () => void;
+  /** SPEC-AI-003 §8 — 저장 완료. 충돌 0건 경로는 스트림이 아직 열려 있다. */
+  onFinalAnswerDone?: (result: {
+    finalAnswer: import("@decision-log/shared").FinalAnswer;
+    decisionNote: import("@decision-log/shared").DecisionNote;
+  }) => Promise<void> | void;
 }
 
 export interface RunManagerResult {
@@ -658,6 +666,29 @@ export async function runManagerForQuestion(input: {
 
   // 최종 스냅샷은 사용자 클라이언트(RLS)로 되읽는다.
   const agendas = await repo.listByQuestion(userClient, questionId);
+
+  // SPEC-AI-003 §2.1 — **트리거는 composeIfSettled 하나뿐이다.** 조건을 여기 복사하지
+  // 않는다. 충돌 0건이면 스트림이 아직 열려 있으므로 결과를 SSE로 내보낸다(§8.1).
+  try {
+    const composed = await composeIfSettled({
+      userClient,
+      questionId,
+      progress: { onStart: () => progress?.onFinalAnswerStart?.() },
+    });
+    if (composed) {
+      await progress?.onFinalAnswerDone?.({
+        finalAnswer: composed.finalAnswer,
+        decisionNote: composed.decisionNote,
+      });
+    }
+  } catch (error) {
+    // §5.1 — 저장하지 않고 Question은 processing에 남는다. Agenda 결과는 이미 저장됐다.
+    console.error(
+      "[finalAnswers] 생성 실패:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
   return { agendas, managerMeta, conflictCount };
 }
 
@@ -841,6 +872,26 @@ function reasonFor(
 }
 
 /**
+ * SPEC-AI-003 §8.1 — 사용자 판단 후 트리거. **PATCH 응답을 붙잡지 않는다.**
+ *
+ * 생성이 30~60초 걸리므로 응답을 기다리면 HTTP 타임아웃 위험이 있고 사용자는 아무 표시
+ * 없이 대기하게 된다. "시작됐다"만 알리고 끝내며, web은 `GET`으로 폴링한다(T-020.2).
+ * 스트림은 사용자 판단 중에 이미 닫혔으므로 SSE를 다시 열지 않는다.
+ */
+function triggerComposeInBackground(
+  userClient: SupabaseClient,
+  questionId: string,
+): void {
+  void composeIfSettled({ userClient, questionId }).catch((error) => {
+    // §5.1 — 실패해도 사용자 판단은 이미 저장됐다. Question은 processing에 남는다.
+    console.error(
+      "[finalAnswers] 사용자 판단 후 생성 실패:",
+      error instanceof Error ? error.message : error,
+    );
+  });
+}
+
+/**
  * 채택·직접 입력·제외를 적용한다(§9.2 사용자 행동 3행).
  * 상태 전이 검증은 여기(Service)서 하고, 허용되지 않은 전이는 409다(§12.4).
  */
@@ -879,13 +930,15 @@ export async function applyUserDecision(
 
   if (action === "reject") {
     // 제외 — 내용 없음이 아니라 "의도적으로 없음"이므로 NO_VALUE다(1.6 값 부재 규칙).
-    return repo.applyUserDecision(userClient, agendaId, {
+    const updated = await repo.applyUserDecision(userClient, agendaId, {
       status: "rejected",
       resolutionReason,
       selectedContent: null,
       selectedSourceRef: NO_VALUE,
       userNote,
     });
+    triggerComposeInBackground(userClient, questionId);
+    return updated;
   }
 
   if (action === "compose") {
@@ -897,13 +950,15 @@ export async function applyUserDecision(
         "직접 입력에는 내용이 필요합니다.",
       );
     }
-    return repo.applyUserDecision(userClient, agendaId, {
+    const updated = await repo.applyUserDecision(userClient, agendaId, {
       status: "passed",
       resolutionReason,
       selectedContent: content,
       selectedSourceRef: NO_VALUE,
       userNote,
     });
+    triggerComposeInBackground(userClient, questionId);
+    return updated;
   }
 
   // accept — 클라이언트가 보낸 참조가 이 Agenda의 stance에 실제로 있는지 확인하고,
@@ -932,11 +987,13 @@ export async function applyUserDecision(
     );
   }
 
-  return repo.applyUserDecision(userClient, agendaId, {
+  const updated = await repo.applyUserDecision(userClient, agendaId, {
     status: "passed",
     resolutionReason,
     selectedContent: content,
     selectedSourceRef: ref,
     userNote,
   });
+  triggerComposeInBackground(userClient, questionId);
+  return updated;
 }
