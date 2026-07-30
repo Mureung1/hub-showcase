@@ -14,7 +14,7 @@ export const config = {
   clientOrigin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
   anthropic: {
     apiKey: process.env.ANTHROPIC_API_KEY || "",
-    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514",
   },
   supabase: {
     url: (process.env.SUPABASE_URL || "").replace(/\/$/, ""),
@@ -23,8 +23,11 @@ export const config = {
   },
 };
 
-// 키가 있어야 실제 생성이 동작한다. 없으면 서버는 뜨지만 /api/generate 는 503.
-export const isAiConfigured = () => Boolean(config.anthropic.apiKey);
+// 짧은 예시값을 구성 완료로 오인하지 않는다. Anthropic 키는 sk-ant- 접두사와
+// 충분한 길이를 모두 만족해야 실제 생성 경로를 활성화한다.
+export const isAiConfigured = () =>
+  config.anthropic.apiKey.startsWith("sk-ant-") &&
+  config.anthropic.apiKey.length >= 32;
 
 // DB가 없어도 결정적 렌더러는 동작한다. 저장·조회 API만 503으로 명확히 실패한다.
 export const isSupabaseConfigured = () =>
