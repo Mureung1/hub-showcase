@@ -1,4 +1,4 @@
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const NAV_ITEMS = [
@@ -16,14 +16,14 @@ export default function AppLayout() {
     <div className="min-h-screen flex bg-surface">
       <aside className="w-[280px] shrink-0 border-r border-outline-variant flex flex-col justify-between sticky top-0 h-screen overflow-y-auto">
         <div>
-          <div className="px-stack-lg py-stack-lg">
+          <Link to="/" className="block px-stack-lg py-stack-lg">
             <span className="font-display-lg text-on-surface" style={{ fontSize: '24px', lineHeight: '32px', fontWeight: 700 }}>
               Newssist
             </span>
             <div className="font-label-mono text-label-mono uppercase tracking-wide text-primary mt-1">
               AI Intelligence
             </div>
-          </div>
+          </Link>
 
           <nav className="px-stack-md flex flex-col gap-1">
             {NAV_ITEMS.map((item) => (
@@ -87,12 +87,13 @@ export default function AppLayout() {
             <button type="button" className="w-9 h-9 flex items-center justify-center rounded bg-btn-gray" title="알림">
               <span className="material-symbols-outlined text-[20px] text-on-surface">notifications</span>
             </button>
-            <div
+            <Link
+              to="/mypage"
               className="w-9 h-9 flex items-center justify-center rounded-full bg-btn-gray font-label-mono text-label-mono text-on-surface"
               title={user?.email}
             >
               {user?.email?.[0]?.toUpperCase() || '?'}
-            </div>
+            </Link>
           </div>
         </header>
 
