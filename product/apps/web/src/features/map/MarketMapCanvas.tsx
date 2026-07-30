@@ -1,3 +1,4 @@
+import type { GeoJSONSource } from "maplibre-gl";
 import { ChevronRight, MapPinned } from "lucide-react";
 import { lazy, Suspense, useMemo, useState, type RefObject } from "react";
 import Map, { Layer, Marker, Popup, type MapRef } from "react-map-gl/maplibre";
@@ -20,7 +21,11 @@ import { getMapPresentationProfile, type MapPresentationMode } from "./mapPresen
 import { SelectedMarketBoundary } from "./SelectedMarketBoundary";
 import "./storeMarkerLod.css";
 import { StoreDensityHeatmap } from "./StoreDensityHeatmap";
-import { STORE_POINT_HIT_LAYER_ID } from "./stores/storeGeoJson";
+import {
+  STORE_CLUSTER_CIRCLE_LAYER_ID,
+  STORE_POINT_HIT_LAYER_ID,
+  STORE_POINT_SOURCE_ID,
+} from "./stores/storeGeoJson";
 import { StorePointLayers } from "./stores/StorePointLayers";
 import { SupportedRegionOverlays } from "./SupportedRegionOverlays";
 import { storefrontStoreIdentity } from "./storefronts/storefrontObjectField";
@@ -75,6 +80,7 @@ type MarketMapCanvasProps = {
   selected: MarketStore | null;
   score: number | null;
   onSelectStore: (storeKey: string) => void;
+  onClearSelection: () => void;
   visibleSupportedRegion: boolean;
   onEvidenceOpen: () => void;
 };
@@ -252,7 +258,7 @@ function MapContents({
             "#d5c3e2",
           ],
           "fill-extrusion-height": ["to-number", ["get", "render_height"], 8],
-          "fill-extrusion-opacity": effectivePresentationMode === "storefront3d" ? 0.5 : 0.94,
+          "fill-extrusion-opacity": effectivePresentationMode === "storefront3d" ? 0.72 : 0.94,
           "fill-extrusion-vertical-gradient": true,
         }}
       />
@@ -294,7 +300,10 @@ function MapContents({
               className="storefront-object-hit-target"
               aria-label={`${store.name} 3D 점포 선택`}
               title={`${store.name} · ${store.category}`}
-              onClick={() => onSelectStore(store.id ?? store.name)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectStore(store.id ?? store.name);
+              }}
             />
           </Marker>
         ))}
@@ -370,6 +379,7 @@ export function MarketMapCanvas({
   selected,
   score,
   onSelectStore,
+  onClearSelection,
   visibleSupportedRegion,
   onEvidenceOpen,
 }: MarketMapCanvasProps) {
@@ -435,7 +445,9 @@ export function MarketMapCanvas({
         dragPan
         scrollZoom
         touchZoomRotate
-        interactiveLayerIds={storesVisible ? [STORE_POINT_HIT_LAYER_ID] : []}
+        interactiveLayerIds={
+          storesVisible ? [STORE_CLUSTER_CIRCLE_LAYER_ID, STORE_POINT_HIT_LAYER_ID] : []
+        }
         onLoad={(event) => {
           event.target.on("styleimagemissing", addMissingStyleImageFallback);
           hideExternalBuildingLayers(event.target);
@@ -445,11 +457,42 @@ export function MarketMapCanvas({
         onIdle={() => setMapReady(true)}
         onStyleData={(event) => hideExternalBuildingLayers(event.target)}
         onClick={(event) => {
+          const clusterFeature = event.features?.find(
+            (feature) => feature.layer.id === STORE_CLUSTER_CIRCLE_LAYER_ID,
+          );
+          if (clusterFeature?.geometry.type === "Point") {
+            const rawClusterId = clusterFeature.properties?.cluster_id;
+            const clusterId =
+              typeof rawClusterId === "number" ? rawClusterId : Number(rawClusterId);
+            const source = event.target.getSource(STORE_POINT_SOURCE_ID) as
+              | GeoJSONSource
+              | undefined;
+            if (source && Number.isFinite(clusterId)) {
+              const center = clusterFeature.geometry.coordinates as [number, number];
+              void source
+                .getClusterExpansionZoom(clusterId)
+                .then((zoom) => {
+                  event.target.easeTo({
+                    center,
+                    zoom: Math.min(zoom, 17.5),
+                    duration: 450,
+                    essential: true,
+                  });
+                })
+                .catch(() => undefined);
+            }
+            return;
+          }
+
           const storeFeature = event.features?.find(
             (feature) => feature.layer.id === STORE_POINT_HIT_LAYER_ID,
           );
           const storeKey = storeFeature?.properties?.storeKey;
-          if (typeof storeKey === "string") onSelectStore(storeKey);
+          if (typeof storeKey === "string") {
+            onSelectStore(storeKey);
+            return;
+          }
+          onClearSelection();
         }}
         onMouseEnter={(event) => {
           event.target.getCanvas().style.cursor = "pointer";
