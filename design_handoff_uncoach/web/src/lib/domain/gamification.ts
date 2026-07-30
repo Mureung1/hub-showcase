@@ -66,7 +66,7 @@ export function levelInfo(xp: number): LevelInfo {
 // --- 데일리 목표 (듀오링고식 일일 XP 목표) ---
 //
 // 오늘 벌어들인 XP가 목표치를 넘으면 그날의 목표 달성. 자정(dayStart)에 리셋된다.
-// '오늘 XP'는 오늘 세션들의 총점 합 — XP의 지배 성분(세션 점수)과 같은 통화를 쓴다.
+// '오늘 XP'는 오늘 세션들의 sessionXP 합 — 평생 XP(totalXP)와 같은 통화를 쓴다.
 // ponytail: 목표치는 기본 상수 하나. 사용자별 선택(캐주얼/보통/집중)은 Profile+Settings가 필요해 나중에.
 
 export const DAILY_XP_GOAL = 40;
