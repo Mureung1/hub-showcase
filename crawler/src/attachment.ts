@@ -28,9 +28,12 @@ export function parseAttachment(item: BizinfoAnnouncement): AttachmentInfo | nul
   return { atchFileId: idMatch[1], format, downloadUrl: item.printFlpthNm }
 }
 
+/** connect 이후 응답이 멈춰도(fetch 기본 동작은 무한 대기) 크롤러 전체가 걸리지 않도록 상한을 둔다 */
+const DOWNLOAD_TIMEOUT_MS = 30_000
+
 /** 첨부파일을 다운로드해 Buffer로 반환한다. 실패 시 에러를 던진다(호출부에서 개별 처리) */
 export async function downloadAttachment(url: string): Promise<Buffer> {
-  const res = await fetch(url)
+  const res = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) })
   if (!res.ok) {
     throw new Error(`첨부파일 다운로드 실패: ${res.status} ${res.statusText}`)
   }

@@ -9,6 +9,9 @@ import { GEMINI_API_KEY } from './env.js'
 const PRIMARY_MODEL = 'gemini-2.5-flash'
 const SECONDARY_MODEL = 'gemini-3.1-flash-lite'
 
+/** SDK 자체는 요청 타임아웃을 안 걸어서(2026-07-30 실측: 10분간 응답 없이 멈춤), 상한을 명시한다 */
+const GENERATE_TIMEOUT_MS = 60_000
+
 export interface ExtractedFields {
   employees: string | null
   employeesMaxCount: number | null
@@ -113,7 +116,11 @@ async function generate(model: string, document: ExtractionDocument): Promise<Ex
   const response = await client().models.generateContent({
     model,
     contents: createUserContent(buildContentParts(document)),
-    config: { responseMimeType: 'application/json', responseSchema: RESPONSE_SCHEMA },
+    config: {
+      responseMimeType: 'application/json',
+      responseSchema: RESPONSE_SCHEMA,
+      httpOptions: { timeout: GENERATE_TIMEOUT_MS },
+    },
   })
   return JSON.parse(response.text ?? '') as ExtractedFields
 }
