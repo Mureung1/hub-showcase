@@ -7,6 +7,7 @@ export const STORE_CLUSTER_COUNT_LAYER_ID = "localtwin-store-cluster-counts";
 export const STORE_POINT_LAYER_ID = "localtwin-store-points-visible";
 export const STORE_CATEGORY_ICON_LAYER_ID = "localtwin-store-category-icons";
 export const STORE_POINT_HIT_LAYER_ID = "localtwin-store-points-hit";
+export const STORE_HOVER_HALO_LAYER_ID = "localtwin-store-hover-halo";
 export const STORE_SELECTED_HALO_LAYER_ID = "localtwin-store-selected-halo";
 export const STORE_SELECTED_POINT_LAYER_ID = "localtwin-store-selected-point";
 
