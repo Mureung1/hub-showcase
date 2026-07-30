@@ -139,19 +139,27 @@
             </section>
 
             <section class="panel fill spread">
-              <h2><span class="n">3</span>검증은 사람이 눈으로 보기 전에</h2>
+              <h2><span class="n">3</span>검증 방법<small>자동 검사 + 수동 확인</small></h2>
+              <div class="row" style="justify-content: flex-start">
+                <span class="tag ok">자동 검사</span>
+              </div>
               <div class="row">
                 <div class="box ok pad-s"><div class="t">빌드 · 타입</div></div>
                 <div class="box ok pad-s"><div class="t">단위 테스트</div></div>
                 <div class="box ok pad-s"><div class="t">린트</div></div>
               </div>
+              <div class="row" style="justify-content: flex-start">
+                <span class="tag warn">수동 확인</span>
+              </div>
               <div class="row">
                 <div class="box warn pad-s"><div class="t">실제 API 호출</div></div>
                 <div class="box warn pad-s"><div class="t">DB 조회</div></div>
+                <div class="box warn pad-s"><div class="t">UI 클릭 검증</div></div>
               </div>
               <p class="cap">
-                커밋 메시지 형식은 자동 검사로 막고, 삭제 작업은
-                <b>1,554건 중 86건</b>처럼 건수를 먼저 확인한 뒤 실행했다.
+                자동 검사는 빌드·테스트·린트에 커밋 메시지 형식까지 포함해 막아주고, 자동화가 안
+                되는 API·DB 확인은 위험한 작업 전 영향 범위부터 본다 — 삭제 전
+                <b>1,554건 중 86건</b> 확인처럼.
               </p>
             </section>
           </div>

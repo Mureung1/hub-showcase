@@ -383,6 +383,10 @@ main.grid {
   background: var(--warning-bg);
   color: var(--warning);
 }
+.tag.ok {
+  background: var(--success-bg);
+  color: var(--success);
+}
 
 /* stats */
 .stats {

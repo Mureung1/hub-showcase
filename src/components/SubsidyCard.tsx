@@ -1,9 +1,9 @@
-import type { Subsidy } from '@hub/shared'
+import type { SubsidyListItem } from '@hub/shared'
 import { getDdayClass, getDdayLabel } from '../utils/dday'
 import './SubsidyCard.css'
 
 interface SubsidyCardProps {
-  subsidy: Subsidy
+  subsidy: SubsidyListItem
   onClick: () => void
 }
 

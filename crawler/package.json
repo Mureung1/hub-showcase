@@ -6,6 +6,7 @@
   "scripts": {
     "run": "tsx src/index.ts",
     "backfill": "tsx src/backfill.ts",
+    "backfill:kstartup": "tsx src/backfill-kstartup.ts",
     "build": "tsc",
     "lint": "oxlint src"
   },

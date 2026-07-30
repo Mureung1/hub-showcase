@@ -6,5 +6,6 @@ export type {
   OnboardingProfile,
   SortOption,
   Subsidy,
+  SubsidyListItem,
   SubsidyListResponse,
 } from './types/subsidy.js'

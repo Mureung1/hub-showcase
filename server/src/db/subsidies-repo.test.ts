@@ -2,6 +2,10 @@ import type { OnboardingProfile } from '@hub/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SubsidyRow } from './mappers.js'
 
+// 이슈 #109: loadAll()에 TTL 캐시가 생겨 모듈 스코프에 결과가 남는다.
+// 테스트마다 state.rows를 바꿔가며 match()를 호출하므로, 매 테스트 전 캐시를 비워
+// 이전 테스트의 mock 응답이 재사용되지 않도록 한다.
+
 const state = vi.hoisted(() => ({ rows: [] as SubsidyRow[], single: null as SubsidyRow | null }))
 
 vi.mock('./supabase.js', () => ({
@@ -20,7 +24,12 @@ vi.mock('./supabase.js', () => ({
   },
 }))
 
-import { findById, match } from './subsidies-repo.js'
+import { __resetFindByIdCacheForTests, __resetLoadAllCacheForTests, findById, match } from './subsidies-repo.js'
+
+beforeEach(() => {
+  __resetLoadAllCacheForTests()
+  __resetFindByIdCacheForTests()
+})
 
 function makeRow(overrides: Partial<SubsidyRow>): SubsidyRow {
   return {
@@ -271,5 +280,16 @@ describe('findById — 프로필 기반 재계산 (이슈 #61)', () => {
     state.single = null
     const result = await findById('no-such-id', { region: '서울', supportRealm: ['경영'] })
     expect(result).toBeNull()
+  })
+
+  it('같은 id를 다시 조회하면 캐시를 쓰고, 프로필별 매칭도는 매번 새로 계산한다 (이슈 #122)', async () => {
+    state.single = makeRow({ id: '1', region: ['서울'], match_score: 50 })
+    const first = await findById('1', { region: '서울', supportRealm: ['경영'] })
+    expect(first?.match).toBe(70) // 50 + 20(region)
+
+    // supabase mock을 바꿔도(캐시 히트라면 반영 안 됨) 캐시된 원본 데이터를 그대로 쓴다
+    state.single = makeRow({ id: '1', region: [], match_score: 999 })
+    const second = await findById('1', { region: '부산', supportRealm: ['금융'] })
+    expect(second?.match).toBe(50) // 캐시된 원본(match_score 50) 기준, region 불일치라 가점 없음
   })
 })

@@ -50,6 +50,10 @@ const validProfile = {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // 실제로는 항상 Promise를 반환하는 async 함수라, mock도 기본값을 맞춰둔다
+  // (이슈 #118 — bare vi.fn()의 기본 undefined 반환이 route의 .catch() 체이닝과
+  // 맞물려 이중 응답/unhandled rejection을 유발했었다).
+  mockInsertMatchRequest.mockResolvedValue(undefined)
 })
 
 describe('POST /api/match', () => {
