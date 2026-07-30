@@ -13,11 +13,11 @@ export async function getProfile() {
   return res.json();
 }
 
-export async function createProfile({ nickname, keywordIds }) {
+export async function createProfile({ keywordIds }) {
   const res = await fetch('/api/profile', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
-    body: JSON.stringify({ nickname, keywordIds }),
+    body: JSON.stringify({ keywordIds }),
   });
   if (!res.ok) throw new Error((await res.json()).error);
   return res.json();

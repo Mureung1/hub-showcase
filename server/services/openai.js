@@ -13,6 +13,27 @@ async function createEmbedding(text) {
   return response.data[0].embedding;
 }
 
+// "IT"처럼 짧은 키워드는 네이버 검색에서 매칭이 약해서, 관련 검색어로 넓혀 검색량을 보완한다
+async function expandSearchQuery(keywordName) {
+  const response = await client.chat.completions.create({
+    model: CHAT_MODEL,
+    messages: [
+      {
+        role: 'system',
+        content:
+          '너는 뉴스 검색 서비스의 어시스턴트야. 사용자가 입력한 관심 키워드 하나를 네이버 뉴스 검색에 쓸 검색어 여러 개로 확장해줘. ' +
+          '원래 키워드가 짧은 약어이거나 검색 결과가 적을 수 있는 단어라면, 같은 주제를 가리키는 동의어/관련어를 포함해 2~4개의 검색어 배열을 만들어. ' +
+          '원래 키워드도 배열에 반드시 포함시켜. 응답은 반드시 {"queries": ["...", "..."]} 형태의 JSON만 출력해.',
+      },
+      { role: 'user', content: keywordName },
+    ],
+    response_format: { type: 'json_object' },
+  });
+
+  const parsed = JSON.parse(response.choices[0].message.content);
+  return parsed.queries?.length > 0 ? parsed.queries : [keywordName];
+}
+
 async function describeCluster(titles) {
   const response = await client.chat.completions.create({
     model: CHAT_MODEL,
@@ -113,6 +134,7 @@ async function generateWeeklyReport(clusters) {
 
 module.exports = {
   createEmbedding,
+  expandSearchQuery,
   describeCluster,
   summarizeArticle,
   simplifyArticle,

@@ -37,7 +37,7 @@ export default function Insight() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-container-padding py-stack-lg">
+    <div className="px-container-padding py-stack-lg">
       <div className="mb-stack-lg">
         <h1 className="font-display-lg text-on-surface" style={{ fontSize: '36px', lineHeight: '44px', fontWeight: 700 }}>
           인사이트

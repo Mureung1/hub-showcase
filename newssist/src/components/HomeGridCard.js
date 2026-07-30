@@ -42,7 +42,7 @@ export default function HomeGridCard({ article, hero = false, isBookmarked, onTo
 
         <div className="h-[40%] -m-stack-sm mt-0 p-stack-sm pt-6 bg-gradient-to-t from-white/55 via-white/25 to-transparent backdrop-blur-sm overflow-hidden">
           <h3
-            className={`font-headline-sm text-on-surface line-clamp-2 ${hero ? 'text-headline-md' : 'text-headline-sm'}`}
+            className={`font-headline-sm text-on-surface line-clamp-2 ${hero ? 'text-headline-sm' : 'text-body-lg'}`}
           >
             {article.title}
           </h3>

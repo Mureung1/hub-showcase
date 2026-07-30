@@ -119,7 +119,7 @@ export default function Article() {
 
   return (
     <div className="min-h-screen bg-surface">
-      <div className="max-w-6xl mx-auto px-container-padding py-stack-lg flex gap-stack-lg items-start justify-center">
+      <div className="px-container-padding py-stack-lg flex gap-stack-lg items-start justify-center">
       <div className="max-w-2xl w-full">
         <Link
           to="/"
@@ -139,7 +139,7 @@ export default function Article() {
         </div>
 
         <div className="flex items-start justify-between gap-stack-md mb-stack-lg">
-          <h1 className="font-headline-md text-headline-md text-on-surface" style={{ fontSize: '28px', lineHeight: '36px' }}>
+          <h1 className="font-headline-sm text-headline-sm text-on-surface">
             {article.title}
           </h1>
           <button

@@ -1,5 +1,6 @@
 import { createContext, useEffect, useReducer } from 'react';
 import { supabase } from '../utils/supabaseClient';
+import { translateAuthError } from '../utils/authErrorMessages';
 
 export const AuthContext = createContext(null);
 
@@ -51,7 +52,7 @@ export function AuthProvider({ children }) {
   async function signUp(email, password) {
     const { error } = await supabase.auth.signUp({ email, password });
     if (error) {
-      dispatch({ type: 'AUTH_ERROR', payload: error.message });
+      dispatch({ type: 'AUTH_ERROR', payload: translateAuthError(error.message) });
       throw error;
     }
   }
@@ -59,7 +60,7 @@ export function AuthProvider({ children }) {
   async function signIn(email, password) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      dispatch({ type: 'AUTH_ERROR', payload: error.message });
+      dispatch({ type: 'AUTH_ERROR', payload: translateAuthError(error.message) });
       throw error;
     }
     // 성공 시엔 dispatch 안 함 — onAuthStateChange 리스너가 처리함(중복 방지)
