@@ -10,6 +10,7 @@
 - [프로젝트 소개 영상](project-introduction-video/n091-park-changhyun-project-introduction.mp4)
 - [AI Agent 부스 전시 포스터](booth-exhibition-poster/n091-park-changhyun-ai-agent.pdf)
 - [프로젝트 소개 부스 전시 포스터](booth-exhibition-poster/n091-park-changhyun-project-introduction.pdf)
+- [데모데이 발표 가이드](docs/DEMO_DAY_PRESENTATION_GUIDE.md)
 - [AI와 함께 개발한 과정](docs/AI_DEVELOPMENT_WORKFLOW.md)
 - [개발 환경 및 협업 가이드](docs/DEVELOPMENT_GUIDE.md)
 
@@ -218,6 +219,7 @@ npm.cmd run build
 
 | 문서 | 내용 |
 | --- | --- |
+| [DEMO_DAY_PRESENTATION_GUIDE.md](docs/DEMO_DAY_PRESENTATION_GUIDE.md) | 서비스 소개, 핵심 시나리오, 기술 설명, 예상 질문과 데모 장애 대응 |
 | [DEMO_DAY_CORE_FLOW.md](docs/DEMO_DAY_CORE_FLOW.md) | 서비스 기획, 대상 사용자와 핵심 시연 흐름 |
 | [AI_DEVELOPMENT_WORKFLOW.md](docs/AI_DEVELOPMENT_WORKFLOW.md) | 3주간 AI Agent와 함께 개발한 과정 |
 | [DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md) | 개발 환경, 명령, API·로그·보안과 커밋 규칙 |
