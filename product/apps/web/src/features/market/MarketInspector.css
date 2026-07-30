@@ -5,3 +5,43 @@
 .partial-competition-summary {
   margin-top: 14px;
 }
+
+.filter-panel :where(p, span, small, li, button, label, summary),
+.inspector-panel :where(p, span, small, li, button, label, summary) {
+  font-weight: 500;
+}
+
+.filter-panel :where(b, strong, .panel-heading p, .filter-label),
+.inspector-panel :where(b, strong, .inspector-title p, .section-title > span) {
+  font-weight: 700;
+}
+
+.decision-confidence-note {
+  margin-top: -2px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: rgba(241, 248, 244, 0.88);
+  line-height: 1.55;
+}
+
+.decision-data-status ul {
+  margin: 7px 0 6px;
+  padding-left: 18px;
+  line-height: 1.55;
+}
+
+.decision-glossary {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(35, 82, 60, 0.12);
+}
+
+.decision-glossary summary {
+  cursor: pointer;
+  color: #287451;
+}
+
+.decision-glossary p {
+  margin: 7px 0 0;
+  line-height: 1.5;
+}
