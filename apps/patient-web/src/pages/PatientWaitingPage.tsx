@@ -9,7 +9,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { formatPatientCounts, type QueuePosition } from "@baro-jinryo/shared";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AppHeader } from "../components/AppHeader";
 
@@ -24,10 +24,6 @@ export function PatientWaitingPage({ waiting, onCancel, onDefer }: PatientWaitin
   const [dismissedNotificationKey, setDismissedNotificationKey] = useState<string | null>(null);
   const mockNotification =
     waiting && waiting.entry.status !== "cancelled" ? createMockNotification(waiting) : null;
-
-  useEffect(() => {
-    setDismissedNotificationKey(null);
-  }, [mockNotification?.key]);
 
   if (!waiting || waiting.entry.status === "cancelled") {
     return (
