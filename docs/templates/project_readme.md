@@ -39,6 +39,11 @@
 - [Decision Log](decisions/decision_log.md): 승인·거부·보류 결정 기록
 - [Version History](versions/version_history.md): 확정 문서 적용 이력
 
+첫 프로젝트 창작 규칙이 실제로 생성된 경우에만 다음 링크를 추가한다. 규칙이
+없으면 빈 링크나 예정 경로를 남기지 않는다.
+
+- [Project Creative Agents](agents/README.md): 프로젝트별 창작 행동 규칙 색인
+
 ## Reading Guide
 
 1. 이 README에서 프로젝트와 현재 문서 구성을 파악한다.
@@ -53,3 +58,5 @@
 - 문서 생성·삭제·이동 또는 담당 범위 변경이 승인 적용될 때 같은 승인 범위에서
   이 목록과 설명을 갱신한다.
 - 상세 사실을 복제하지 않고 한 문장 요약과 상대경로 링크만 유지한다.
+- Project Creative Agents는 행동 설정 링크이며 Confirmed Design Documents에
+  넣지 않는다.

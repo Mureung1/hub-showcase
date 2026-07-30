@@ -31,6 +31,8 @@ Codex가 에이전트 실행부 역할을 하고, 이 저장소의 Markdown 파�
   플레이 가능성과 창작 공개를 독립 검수한다.
 - `design_creative_planner.toml`: 일반 기획 GAP을 분류하고 사용자가 허가한
   GAP에만 복수 대안과 추천안을 만든다.
+- `design_creative_reviewer.toml`: 프로젝트 창작 규칙이 요구한 비시나리오
+  독립 검수를 수행한다.
 
 모든 custom agent는 read-only handoff를 메인 Codex에 반환한다. 메인 Codex가
 프로젝트·범위와 사용자 허가를 확정하고, 필수 검수 결과가 해소된 뒤에만
@@ -41,6 +43,12 @@ Approval Queue에 `pending` 항목을 저장한다.
 완성한다. 호출은 전문 `agent_type`과 `fork_turns: "none"`을 사용하며,
 부모 대화 전체 대신 작업에 필요한 사용자 사실, 선택, 금지사항, 권한 경계와
 근거 파일만 명시적으로 전달한다.
+
+창작 agent type은 저장소 공용 실행 역할이다. 프로젝트별 창작 정체성은
+`workspace/projects/<project_slug>/agents/rules/`의 독립 분야별 규칙으로
+저장하고, Task Packet이 규칙 기준(`active_current | archived_snapshot`)과
+정확한 규칙 ID·경로·버전·SHA-256을 공용 실행 역할에 전달한다. 프로젝트
+규칙마다 별도 custom agent 설정을 만들지 않는다.
 
 에이전트 동작 테스트는 `docs/workflows/behavior_testing.md`의 출처 게이트를
 먼저 통과한다. 합성 입력은 등록 프로젝트 밖의 전용 픽스처를 `/tmp`에 복사해
@@ -82,6 +90,10 @@ GAP을 분류하고, 사용자가 명시적으로 허가한 설계 공백에만 
 - `projects/<project_slug>/README.md`: Project Brief와 확정 문서에서 파생한
   프로젝트 소개, 현재 초점, 확정 문서 지도와 작업 기록 링크
 - `projects/<project_slug>/project_brief.md`: 프로젝트 정체성, 현재 초점과 제약
+- `projects/<project_slug>/agents/`: 첫 프로젝트 창작 규칙이 구현될 때만
+  생성되는 선택적 행동 설정
+  - `README.md`: active·retired 프로젝트 창작 규칙 색인
+  - `rules/`: 분야별 독립 창작 규칙. canonical game fact를 소유하지 않는다.
 - `projects/<project_slug>/design/`: 승인된 확정 기획 문서와 문서 색인
   - `assets/`: 승인 적용과 동일성 검증이 끝난 canonical 이미지 에셋
   - `game/`: 상위 게임 개요와 전체 방향
@@ -110,24 +122,29 @@ GAP을 분류하고, 사용자가 명시적으로 허가한 설계 공백에만 
 모든 전문 호출
   Main → Specialist Task Packet 검증
        → provenance gate
+       → 필요한 경우 Project Creative Agent Rule 검증
        → agent_type + fork_turns: "none"
        → specialist entry check
        → read-only handoff
        → Main return check
 
 일반 시나리오
-  Main → scenario_designer → scenario_reviewer → Main → pending
+  Main → project scenario rule → scenario_designer
+       → scenario_reviewer → Main → pending
 
 시나리오·스크립트 검토 전용
   Main → scenario_reviewer → Main → review report
 
 인게임 스크립트
-  Main → scenario_writer → scenario_reviewer → Main → pending
+  Main → project script rule → scenario_writer
+       → scenario_reviewer → Main → pending
 
 일반 기획 창작
   Main → design_creative_planner(classify)
        → 사용자 허가
+       → project field rule 확인
        → design_creative_planner(generate_options)
+       → rule review policy에 따른 design_creative_reviewer
        → 사용자 선택·원본 재확인
        → design_creative_planner(incorporate_selection)
        → Main → pending
@@ -137,6 +154,23 @@ GAP을 분류하고, 사용자가 명시적으로 허가한 설계 공백에만 
 에이전트로 되돌려 재검수한다. `design_creative_planner`에는 메인 Codex가
 확인한 정확한 GAP ID만 전달하며, 서브에이전트가 창작 허가를 추정하지 않는다.
 Approval Queue 저장, 승인 판단, 원본 재확인과 적용은 메인 Codex에만 있다.
+
+프로젝트 창작 규칙이 없으면 창작 호출 전에
+`blocked_missing_creative_rule`로 창작 실행을 중단하고 현재 대화에서
+planning-only 설정 workflow를 자동으로 수행한다. 메인 Codex는 필요한
+항목의 용도를 설명하고 최소 확정 근거로 완성된 권장안을 제시하며, 사용자가
+답하지 않은 항목은 공개한 보수적 기본값으로 채운다. 기존 규칙이 요청과 맞지
+않으면
+`blocked_creative_rule_mismatch`로 중단하며 사용자가 개정을 요청하기 전에는
+자동 수정하지 않는다. 색인은 canonical role, `exact | subtree` 대상 경로와
+허용 작업으로 active 규칙 하나를 선택하며 범위가 겹치면 무결성 검증에서
+실패한다.
+
+과거 창작·검수 결과는 생성 당시 규칙 ID·버전·SHA-256과 상태를 유지한다.
+active 규칙 변경만으로 자동 재검수하거나 무효화하지 않고, 새 창작·수정은
+현재 active 규칙을 사용한다. Packet이 지목한 active 파일 또는 archive
+snapshot 자체가 전달한 버전·SHA-256과 다를 때만
+`blocked_creative_rule_integrity`로 중단한다.
 
 Task Packet에 프로젝트, Phase·작업 종류, 범위, 필수 근거, 사용자 사실·선택,
 권한 경계, 금지사항 또는 기대 출력이 빠졌으면 전문 agent는
@@ -168,6 +202,9 @@ Codex는 다음 작업을 승인 없이 수행할 수 있다.
 - 명시적으로 허가된 기획 창작 대안 작성
 - 승인 큐 항목 작성
 - 충돌/영향도 분석
+- planning-only 설정 설계에서 합의된 프로젝트 창작 규칙을 사용자의 명시적 구현 요청으로
+  생성·개정. 이 규칙은 행동 설정이며 같은 요청으로 확정 design 문서를
+  변경하지 않는다.
 
 Codex는 다음 작업을 사용자 승인 없이 수행하지 않는다.
 
@@ -228,7 +265,9 @@ README, `design/README.md`와 game overview의 영향받는 링크·설명을 �
 신규·수정·재구성 비시나리오 Draft는 `design_creative_planner`의 `classify`
 Phase에서 누락을 `creative_fillable`, `user_fact`, `dependency` GAP으로
 분류한다. 메인 Codex가 창작 가능한 GAP을 먼저 보여주고, 사용자의 명시적 허가
-후 정확한 GAP ID만 `generate_options` Phase에 전달한다. 선택된 안만
+후 정확한 GAP ID와 active 프로젝트 창작 규칙만 `generate_options` Phase에
+전달한다. 규칙이 요구한 비시나리오 독립 검수는
+`design_creative_reviewer`가 수행한다. 선택된 안만
 `incorporate_selection` Phase에서 `CP-*` 각주와 Creative Proposal Log를 갖춘
 Draft에 넣는다. 실제 프로젝트 사실은 창작하지 않고, 밸런스 수치는 검증
 조건이 있는 `provisional` 가설로 둔다. 창작안 선택은 승인이 아니며 원본
@@ -237,12 +276,14 @@ Draft에 넣는다. 실제 프로젝트 사실은 창작하지 않고, 밸런스
 일반 시나리오 작성·변경은 `scenario_designer`가
 `docs/skills/scenario_review.md`를 적용한다. 요청 원안에 따른 Draft와 더 나은
 사건 순서·공개 시점·분기·Outcome의 이유·영향을 분리하고,
-`scenario_reviewer`가 독립 검수한다. 사용자가 권고를 선택한 뒤에도 원본
+active 일반 시나리오 창작 규칙을 적용한 뒤 `scenario_reviewer`가 독립
+검수한다. 사용자가 권고를 선택한 뒤에도 원본
 재확인, 작성자 갱신과 재검수를 거쳐 `pending`으로 다시 검토받기 전에는 승인
 대상이나 canonical 내용이 아니다.
 
 인게임 스크립트는 `scenario_writer`가 작성하고 `scenario_reviewer`가 독립
-검수하며 `docs/workflows/write_ingame_script.md`를 따른다. 구체 창작은 `CW-*`,
+검수하며 active 인게임 스크립트 창작 규칙과
+`docs/workflows/write_ingame_script.md`를 따른다. 구체 창작은 `CW-*`,
 원본 구조 변경은 `NR-*`로 공개한다. 상위 시나리오 변경은 스크립트·링크와
 하나의 `restructure` 항목으로 관리하고 승인 전에는 `design/narrative/`에
 저장하지 않는다. 세계관 정사·시스템 규칙 변경 의존성은 별도 고위험 항목으로
@@ -269,5 +310,9 @@ Draft에 넣는다. 실제 프로젝트 사실은 창작하지 않고, 밸런스
 - 선택된 개선 권고가 원본 재확인과 갱신된 `pending` 승인을 거치는가
 - 기획 GAP이 유형별로 분류되고 명시적 허가 전에는 창작 대안이 생성되지 않는가
 - 선택된 기획 창작만 `CP-*`로 Draft에 포함되고 선택 후 다시 `pending`을 거치는가
+- 창작 작업에 규칙 기준과 정확한 프로젝트 규칙 ID·경로·버전·SHA-256,
+  검수 계약이 전달되었는가
+- 규칙 없음·적용 범위 불일치·참조 무결성 불일치 상태에서 창작 결과가
+  생성되지 않았는가
 - `user_fact`는 `TBD`, 검증 전 수치는 `provisional`과 검증 조건을 유지하는가
 - 모든 검색·승인·결정·버전 기록이 같은 프로젝트 ID와 루트를 사용하는가

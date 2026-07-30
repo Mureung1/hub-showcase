@@ -7,7 +7,8 @@
 충돌, 불필요한 전체 대화 복사, 광범위한 재탐색과 권한 추정을 방지한다.
 
 적용 대상은 `scenario_designer`, `scenario_writer`, `scenario_reviewer`,
-`design_creative_planner`의 모든 신규 호출과 후속 호출이다.
+`design_creative_planner`, `design_creative_reviewer`의 모든 신규 호출과 후속
+호출이다.
 
 ## Required Specialist Task Packet
 
@@ -26,6 +27,9 @@
 9. 임의 창작 금지, `TBD`, 의존성과 충돌 처리 조건
 10. 입력 산출물 또는 이전 handoff와 기대 출력 형식
 11. 반환 후 메인 검토와 독립 검수 조건
+12. 창작 규칙이 필요한 작업이면 프로젝트 창작 에이전트 ID, 규칙 기준
+    `active_current | archived_snapshot`, 규칙 경로·버전·SHA-256, 적용 범위와
+    검수 계약
 
 메인 Codex는 현재 사용자 요청과 작업에 영향을 주는 이전 사용자 발화를
 Task Packet과 대조한다. 파일에 아직 기록되지 않은 사용자 사실, 선택,
@@ -43,6 +47,14 @@ Task Packet과 대조한다. 파일에 아직 기록되지 않은 사용자 사�
 agent를 호출하지 않는다. 메인 Codex가 먼저 사용자에게 필요한 정보를
 확인한다.
 
+창작 대안 생성·선택 반영, 일반 시나리오 작성·변경 또는 인게임 스크립트
+집필에는 `docs/workflows/project_creative_agent_setup.md`의 정확한 `active`
+규칙이 필요하다. 규칙이 없으면 전문 agent를 호출하지 않고
+`blocked_missing_creative_rule`, 범위가 맞지 않으면
+`blocked_creative_rule_mismatch`로 중단한다. `design_creative_planner`의
+`classify`, 검토 전용, 검색·요약과 비창작 구조화 단계는 Task Packet에
+`창작 규칙 필요: 아니요`와 이유를 적어 규칙 없이 호출할 수 있다.
+
 출처 유형이 없거나, 합성 데이터를 사용자 사실·확정 사실로 분류했거나,
 Task Packet과 테스트 매니페스트의 출처가 충돌하면
 `blocked_test_provenance`로 중단한다. 이 오류는 일반 인계 필드 누락을 뜻하는
@@ -54,7 +66,7 @@ Task Packet과 테스트 매니페스트의 출처가 충돌하면
 
 ```text
 agent_type: <scenario_designer | scenario_writer | scenario_reviewer |
-  design_creative_planner>
+  design_creative_planner | design_creative_reviewer>
 fork_turns: "none"
 message: <완성된 Specialist Task Packet>
 ```
@@ -91,6 +103,9 @@ message: <완성된 Specialist Task Packet>
 - Task Packet에 필수 근거 파일을 구체적인 경로로 적는다.
 - 전문 agent는 해당 파일, 직접 연결된 필수 canonical owner와 지정 workflow만
   읽는다.
+- 프로젝트 창작 규칙은 먼저 프로젝트 `agents/README.md`에서 선택한 정확한
+  파일 하나만 읽는다. 다른 규칙이나 다른 프로젝트의 `agents/`를 열거하지
+  않는다.
 - 저장소 전체 파일 목록 출력, `docs/dev-log/` 탐색, 같은 문서의 반복 읽기와
   요청 범위 밖 자료 수집을 기본 동작으로 하지 않는다.
 - 추가 파일이 필요하면 handoff에 필요 이유와 경로를 기록한다. 추가 파일이
@@ -116,6 +131,14 @@ message: <완성된 Specialist Task Packet>
   판정이나 새로운 설정을 만들지 않는다.
 - Task Packet에 없는 승인, 창작 허가, 대안 선택 또는 적용 권한을 추정하지
   않는다.
+- 창작 규칙이 필요한 작업에는 정확한 규칙 ID, 경로, 버전, SHA-256, 적용
+  범위와 검수 정책이 있어야 한다. 누락되면
+  `blocked_missing_creative_rule`, 범위가 다르면
+  `blocked_creative_rule_mismatch`, Packet이 지목한 active 규칙 또는 archive
+  snapshot의 실제 버전·SHA-256이 전달값과 다르면
+  `blocked_creative_rule_integrity`를 반환하고 Draft·대안·검수 판정을
+  만들지 않는다. 현재 active 규칙이 과거 결과의 pinned version보다
+  새롭다는 사실만으로는 차단하지 않는다.
 
 ## Main-Agent Return Check
 
@@ -130,6 +153,9 @@ message: <완성된 Specialist Task Packet>
 5. 필요한 자체 검수와 독립 검수 상태가 명확하다.
 6. `blocked_missing_handoff`, `blocked_test_provenance`, 필수 수정 또는
    미해결 충돌이 남지 않았다.
+7. 창작 작업이면 프로젝트 창작 규칙 기준, ID·경로·버전·SHA-256과 적용
+   범위가 Packet이 지목한 active 규칙 또는 archive snapshot과 일치하고
+   규칙에 지정된 독립 검수가 완료되었다.
 
 하나라도 실패하면 결과를 확정 사실처럼 제시하거나 `pending`으로 저장하거나
 적용하지 않는다. 메인 Codex가 Task Packet을 보완해 같은 전문 agent에
@@ -145,4 +171,5 @@ message: <완성된 Specialist Task Packet>
 - 전달한 사실·입력의 출처 유형과 테스트 픽스처 표시
 - 전달한 권한과 명시적으로 부여하지 않은 권한
 - 직접 확인한 근거 파일
+- 적용한 프로젝트 창작 에이전트 규칙 기준·ID·경로·버전·SHA-256과 검수 정책
 - 반환 판정과 메인 Codex의 대조 결과

@@ -26,13 +26,30 @@ missing, or synthetic data is classified as a user or confirmed fact, return
 Do not issue a verdict, inspect further sources, rewrite the artifact, or
 silently repair the classification.
 
+Project creative rule gate:
+Read docs/workflows/project_creative_agent_setup.md. A newly authored general
+scenario or in-game script Draft must arrive with the exact active Project
+Creative Agent Rule basis, ID, path, version, SHA-256, applicability, and
+`independent_always` review contract. Return
+`blocked_missing_creative_rule`, `blocked_creative_rule_mismatch`, or
+`blocked_creative_rule_integrity` as applicable without issuing a substantive
+verdict. A newer active rule does not automatically invalidate or re-review an
+artifact pinned to an archived rule. Review under the current active rule only
+when the user explicitly requests it, and keep that re-review read-only. Direct
+review of an existing artifact may state
+`창작 규칙 필요: 아니요`; without a rule, identify defects and required action
+but do not create a concrete replacement structure or new authorial
+recommendation.
+
 1. Read the applicable AGENTS.md in full.
 2. Resolve exactly one target project with docs/workflows/project_workspace.md.
 3. Identify the artifact type: general scenario Draft, in-game script Draft, a revision of either, or a direct review of an existing scenario artifact. Require the author handoff for a newly authored Draft; for direct review require the exact target path, requested scope, and source list.
 4. Read the relevant confirmed project sources yourself; do not rely only on the author summary.
 5. Apply docs/skills/scenario_review.md for general scenarios. For in-game scripts also apply docs/workflows/write_ingame_script.md, docs/skills/scenario_writing.md, and docs/templates/ingame_script.md.
 6. Do not use docs/dev-log/ as current guidance.
-7. If the artifact, project, scope, required sources, user decisions, or the supplied Task Packet is missing, return `blocked_missing_handoff` with the exact missing inputs instead of guessing.
+7. When a creative rule is required, read only the exact transmitted rule and
+   verify it as behavioral guidance rather than a canonical fact source.
+8. If the artifact, project, scope, required sources, user decisions, or the supplied Task Packet is missing, return `blocked_missing_handoff` with the exact missing inputs instead of guessing.
 
 Independence rules:
 - Do not rewrite the Draft, edit project files, or assemble an approval item.
@@ -78,6 +95,8 @@ Return a Scenario Review Report containing:
 - Continuity, reachability, data, dependency, and approval-boundary summaries as applicable.
 - Authorial reconsiderations kept separate from required corrections.
 - A concise routing instruction to `scenario_designer`, `scenario_writer`, or the main agent for a review-only result.
+- The Project Creative Agent Rule basis, ID, version, SHA-256, applicability result,
+  and review-contract compliance when a rule was required.
 
 Use `pass` only when no blocking or required_revision finding remains. Do not claim the artifact is approved, canonical, or ready to apply; only the main agent can decide whether a reviewed artifact is ready to present or persist as pending. Do not spawn further subagents.
 """

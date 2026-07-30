@@ -8,6 +8,11 @@ UI와 기술 기획 초안의 누락 정보를 분류하고, 사용자가 명시
 전에는 확정 사실로 취급하지 않는다. 메인 Codex는 허가 경계, 원본 재확인과
 Approval Queue 저장을 통제한다.
 
+대안 생성과 선택 반영은
+`docs/workflows/project_creative_agent_setup.md`에서 planning-only 설정 설계와 사용자의 구현
+요청을 거쳐 생성된 해당 분야의 active 프로젝트 창작 규칙을 추가로 요구한다.
+`classify` Phase에는 규칙이 필요하지 않다.
+
 ## Agent Responsibilities
 
 - 메인 Codex: 프로젝트·문서 역할·작업 Phase를 확정해 위임하고, 전체 GAP을
@@ -17,7 +22,8 @@ Approval Queue 저장을 통제한다.
   `classify | generate_options | incorporate_selection` Phase 중 지정된 작업만
   수행한다.
 - `classify` Phase에는 대안을 만들지 않는다. `generate_options` Phase는 메인
-  Codex가 전달한 사용자 허가와 정확한 GAP ID가 있을 때만 실행한다.
+  Codex가 전달한 사용자 허가, 정확한 GAP ID와 프로젝트 창작 규칙이 있을
+  때만 실행한다.
 - `incorporate_selection` Phase는 사용자가 선택한 CP 대안만 Draft에 각주로
   반영하며, 원본 재확인과 독립적인 메인 검토를 거쳐 다시 `pending`으로 둔다.
 - 서브에이전트는 Approval Queue나 확정·결정·버전 문서를 직접 수정하지 않는다.
@@ -81,16 +87,21 @@ Approval Queue 저장을 통제한다.
    위험도, 필요한 조치를 표로 제시하고 Creative Design Brief를 반환한다.
 3. 메인 Codex가 전체 `creative_fillable` 항목을 한 번에 보여주고 어떤 GAP을
    창작으로 채울지 명시적으로 선택해 달라고 요청한다.
-4. 사용자가 처음부터 대상 GAP 또는 범위를 지정해 창작 보완을 요청했다면
+4. 허가된 GAP의 분야에 맞는 active 프로젝트 창작 규칙을 확인한다. 규칙이
+   없으면 `blocked_missing_creative_rule`로 중단하고 창작 규칙 설정 계획을
+   안내한다. 기존 규칙이 맞지 않으면 자동 개정하지 않는다.
+5. 사용자가 처음부터 대상 GAP 또는 범위를 지정해 창작 보완을 요청했다면
    별도 허가 질문을 반복하지 않되, 메인 Codex가 허가 범위를 명시해
    `generate_options` Phase로 전달한다.
-5. “채워줘”, GAP ID 선택 또는 동등하게 명확한 문구가 없으면 대안을 만들지
+6. “채워줘”, GAP ID 선택 또는 동등하게 명확한 문구가 없으면 대안을 만들지
    않고 `TBD`를 유지한다.
 
 ## Option Generation
 
 허가된 GAP마다 `CP-<document_slug>-<number>`를 만들고 다음을 지킨다.
 
+- active 프로젝트 창작 규칙의 목표, 우선 원칙, 금지 요소, tradeoff와 검수
+  기준을 대안 판단에 적용한다. 규칙을 canonical fact 근거로 사용하지 않는다.
 - 위험도는 `docs/skills/conflict_review.md`의 `low | medium | high`를 사용한다.
 - `low`와 `medium`에는 서로 구별되는 대안 2개를 만든다.
 - 세계관 정사, 핵심 루프·규칙, 문서 간 계약 또는 제작 범위를 바꾸는
@@ -136,8 +147,11 @@ Markdown 각주를 직접 붙인다. 각주에는 AI 기획 창작임을 밝히�
 
 ## Selection And Approval
 
-1. 사용자가 대안을 선택하면 메인 Codex가 관련 원본과 영향을 다시 확인하고
-   정확한 선택 결과를 `incorporate_selection` Phase로 전달한다.
+1. 사용자가 과거 대안을 선택해도 해당 대안은 생성 당시 규칙 ID·버전·SHA-256
+   기록을 유지한다. 선택 자체는 active 규칙 변경만으로 차단하지 않는다.
+   선택안을 Draft에 반영하는 `incorporate_selection`은 새 창작 단계이므로
+   현재 active 규칙과 관련 원본을 사용하고, 과거 대안의 pinned 규칙 정보를
+   입력 provenance로 함께 전달한다.
 2. 대상, 목적과 핵심 범위가 같으면 기존 승인 항목을 개정하고 선택 이력을
    Decision History에 추가한 뒤 `pending`으로 둔다.
 3. 핵심 범위나 canonical owner가 달라지면 기존 항목을 보존하고 연결된 새
@@ -150,6 +164,19 @@ Markdown 각주를 직접 붙인다. 각주에는 AI 기획 창작임을 밝히�
 7. 명시적 승인과 적용 직전 원본 재확인 후에만 `design/`에 반영한다.
 8. 적용된 CP ID와 남은 `provisional` 항목을 Decision Log와 Version History에
    기록한다.
+
+## Independent Review
+
+프로젝트 창작 규칙의 검수 정책을 따른다.
+
+- `self_and_main`: 작성 agent 자체 검수와 메인 검토
+- `independent_high_risk`: high-risk 결과를 `design_creative_reviewer`가 검수
+- `independent_always`: 모든 결과를 `design_creative_reviewer`가 검수
+
+독립 검수자는 같은 규칙과 원본을 직접 읽고 규칙 적합성, 출처 충실도, 대안
+구별성, 추천 근거, canonical owner 영향, CP 공개와 승인 경계를 확인한다.
+`blocking` 또는 `required_revision`이 남으면 원 작성 agent에 돌려보내고
+재검수하기 전에는 사용자 최종안이나 `pending` 승인 항목으로 저장하지 않는다.
 
 ## Output
 

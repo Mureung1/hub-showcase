@@ -43,16 +43,26 @@
 9. 비시나리오 `creative_fillable` 공백이 있으면 창작 가능한 항목을 한 번에
    보여주고 사용자가 명시적으로 허가하기 전에는 대안을 만들지 않는다.
    일반 시나리오의 구조 개선은 별도 Scenario Improvement Review 규칙을 따른다.
-10. 승인 전에는 `workspace/projects/<project_slug>/design/`을 수정하지 않는다.
-11. 생성, 수정, 삭제, 기획서화 결과물은 같은 프로젝트의 승인 큐 항목 초안으로 작성한다.
+10. 창작 대안 생성, 일반 시나리오 작성·변경 또는 인게임 스크립트 집필 전에
+    `docs/workflows/project_creative_agent_setup.md`에서 해당 프로젝트와 분야의
+    정확한 `active` 창작 규칙을 확인한다. 규칙이 없거나 맞지 않으면 전문
+    창작 agent를 호출하지 않는다.
+11. 승인 전에는 `workspace/projects/<project_slug>/design/`을 수정하지 않는다.
+12. 생성, 수정, 삭제, 기획서화 결과물은 같은 프로젝트의 승인 큐 항목 초안으로 작성한다.
 
 ## Subagent Orchestration
 
 메인 Codex는 서브에이전트에 위임하기 전에 프로젝트, branch, canonical owner,
 요청 범위, 제외 범위, 근거 파일과 사용자에게 받은 창작 허가·선택을 명시한
 작업 패키지를 만든다. 서브에이전트는 작업 패키지 범위를 스스로 넓히지 않는다.
+창작 규칙이 필요한 작업에는 프로젝트 창작 에이전트 ID, 규칙 기준, 규칙
+경로·버전·SHA-256, 적용 범위와 검수 정책도 포함한다.
 
 ### General Scenario Pipeline
+
+작성 파이프라인에 들어가기 전에 일반 시나리오용 프로젝트 창작 규칙을
+확인한다. 검토 전용 요청은 규칙 없이 문제를 판정할 수 있지만 구체적인 대체
+구조를 새로 제안하려면 규칙이 필요하다.
 
 검토 전용 요청은 `scenario_reviewer`가 대상 문서와 원본을 직접 확인해
 `Scenario Review Report`를 반환하며, 파일이나 Draft를 수정하지 않는다.
@@ -70,6 +80,9 @@
 
 ### In-Game Script Pipeline
 
+집필 전에 인게임 스크립트용 프로젝트 창작 규칙과
+`independent_always` 검수 계약을 확인한다.
+
 1. `scenario_writer`가 Writer's Brief, 플레이어 대본·씬 명세, `CW-*`와
    `NR-*`를 포함한 초안을 작성한다.
 2. `scenario_reviewer`가 원본 충실도, 서사 품질, 씬 데이터, 도달 가능성,
@@ -84,11 +97,21 @@
    분류한다. 일반 시나리오 구조와 인게임 스크립트는 각 작성 에이전트의 전용
    규칙을 따른다.
 2. 메인 Codex가 분류를 검토해 전체 GAP을 사용자에게 제시한다.
-3. 사용자가 허가한 정확한 `creative_fillable` GAP ID만
+3. `generate_options` 전에 해당 분야의 프로젝트 창작 규칙을 확인한다.
+   규칙이 없으면 `blocked_missing_creative_rule`, 범위가 맞지 않으면
+   `blocked_creative_rule_mismatch`로 창작 실행을 중단한다. 누락된 규칙은
+   `docs/workflows/project_creative_agent_setup.md`의 planning-only 설정
+   설계로 즉시 라우팅하고, 불일치 규칙은 사용자가 개정을 요청하기 전에는
+   자동 변경하지 않는다.
+4. 사용자가 허가한 정확한 `creative_fillable` GAP ID만
    `generate_options` Phase에 전달한다.
-4. 사용자가 대안을 선택하면 원본을 재확인한 뒤 정확한 선택 결과만
-   `incorporate_selection` Phase에 전달한다.
-5. 메인 Codex가 CP 각주, 대안 보존, 의존성, 수치 검증과 승인 경계를 확인한
+5. 규칙의 검수 정책이 `independent_always`이거나 high-risk 결과에
+   `independent_high_risk`이면 `design_creative_reviewer`가 같은 규칙과
+   원본을 직접 읽어 검수한다.
+6. 사용자가 과거 대안을 선택하면 생성 당시 규칙 ID·버전·SHA-256은 입력
+   provenance로 보존한다. 선택안을 반영하는 `incorporate_selection`은 새
+   창작 단계이므로 현재 active 규칙과 원본으로 정확한 선택 결과만 전달한다.
+7. 메인 Codex가 CP 각주, 대안 보존, 의존성, 수치 검증과 승인 경계를 확인한
    뒤에만 `pending` 승인 항목을 저장한다.
 
 모든 작성·창작·검수 서브에이전트는 read-only handoff만 반환한다. Approval
@@ -263,7 +286,8 @@ Queue, 확정 문서, Decision Log와 Version History의 저장·상태 변경·
    `dependency` GAP을 구분한다.
 2. 사용자가 창작 보완을 허가하지 않으면 모든 GAP을 `TBD`로 유지한다.
 3. 사용자가 전체 또는 일부 GAP을 명시적으로 허가하면 메인 Codex가 정확한
-   GAP ID를 `design_creative_planner`의 `generate_options` Phase에 전달한다.
+   GAP ID와 해당 분야의 active 프로젝트 창작 규칙을
+   `design_creative_planner`의 `generate_options` Phase에 전달한다.
    서브에이전트는 `docs/skills/design_creative_completion.md`에 따라 저·중위험은
    2개, 고위험은 3개 대안과 추천안을 만든다.
 4. 사용자가 대안을 선택하기 전에는 `CP-*`를 Draft에 넣지 않는다.
@@ -275,6 +299,8 @@ Queue, 확정 문서, Decision Log와 Version History의 저장·상태 변경·
    승인 항목 또는 원자적 `restructure` 항목을 만든다.
 8. 일반 시나리오 구조와 인게임 스크립트에는 각각 Scenario Improvement,
    `CW-*`·`NR-*` 규칙을 우선하고 `CP-*`를 중복 부여하지 않는다.
+9. 프로젝트 창작 규칙의 독립 검수 정책이 적용되면 필수 finding을 원 작성
+   agent가 해소하고 재검수하기 전에는 결과를 `pending`으로 저장하지 않는다.
 
 ## Output
 
@@ -306,6 +332,8 @@ Queue, 확정 문서, Decision Log와 Version History의 저장·상태 변경·
 - 일반 시나리오 검토에 인게임 스크립트용 `NR-*`를 강제하지 않는다.
 - 기획 창작 대안은 사용자의 명시적 허가 전에는 생성하지 않으며, 대안 선택을
   갱신된 Draft의 승인으로 간주하지 않는다.
+- 프로젝트 창작 규칙이 없거나 요청과 맞지 않으면 창작 결과를 만들지 않는다.
+  기존 규칙은 사용자가 개정을 요청하기 전에는 자동 변경하지 않는다.
 - 시나리오 Draft나 인게임 스크립트에 `scenario_reviewer`의 `blocking` 또는
   `required_revision` 결과가 남아 있으면 사용자 검토용 최종안이나 `pending`
   승인 항목으로 저장하지 않는다.

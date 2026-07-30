@@ -21,8 +21,13 @@
   `design_creative_planner`의 `classify` Phase에서
   `docs/skills/document_completion.md`로 누락 유형을 분류한다.
 - 사용자가 비시나리오 창작 보완을 명시적으로 허가한 `creative_fillable`만
+  해당 분야의 active 프로젝트 창작 규칙과 함께
   `design_creative_planner`의 `generate_options` Phase에서
   `docs/skills/design_creative_completion.md`에 따라 복수 대안으로 제안한다.
+- 규칙이 없으면 창작하지 않고
+  `docs/workflows/project_creative_agent_setup.md`의 planning-only 설정 설계로
+  라우팅한다. 기존 규칙은 사용자가 개정을 요청하기 전에는 자동 변경하지
+  않는다.
 - 선택된 창작안도 `CP-*`로 공개하고 갱신된 Draft의 승인과 구분한다.
 - 승인 전 산출물은 Approval Queue 초안으로 작성한다.
 - 초안과 승인 항목에 프로젝트 ID를 기록한다.

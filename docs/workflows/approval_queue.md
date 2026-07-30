@@ -32,7 +32,8 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 8. 사용자가 비시나리오 창작 보완을 허가한 GAP이 있으면
    `design_creative_planner`의 `generate_options` 결과에서 대안, 추천안과 상태를
    `Creative Proposal Log`에 기록하고 메인 Codex의 허가 범위 검사를
-   `Subagent Review`에 남긴다.
+   `Subagent Review`에 남긴다. 사용한 프로젝트 창작 에이전트 규칙 ID·버전·
+   SHA-256, 검수 정책과 필요한 `design_creative_reviewer` 판정도 기록한다.
 9. `restructure`이면 대상별 작업, 비교 대상, 현재 SHA-256과 적용 후 문서
    역할을 Target Operations에 기록한다.
 10. 확정 문서의 생성·삭제·이동·역할 또는 한 문장 담당 범위가 바뀌면 프로젝트
@@ -74,6 +75,14 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
   달라지면 기존 항목을 보존한 채 연결된 새 승인 항목을 만든다.
 - 창작 허가, 대안 선택이나 “추천안 적용”을 갱신된 Draft의 승인으로 간주하지
   않는다. 이미 `approved`였던 항목의 Draft가 바뀌면 승인을 재사용하지 않는다.
+- 프로젝트 창작 규칙은 게임 사실이나 승인 근거가 아니다. active 규칙이
+  창작 이후 바뀌어도 기존 결과는 생성 당시 규칙 ID·버전·SHA-256과 검수
+  상태로 선택·승인·기계적 적용을 계속할 수 있다. 기존 결과를 새로 수정하거나
+  선택안을 반영하는 창작 단계만 현재 active 규칙을 사용한다. 사용자가
+  명시적으로 요청하기 전에는 현재 규칙으로 자동 재검수하지 않는다.
+- 승인 항목이 지목한 active 규칙 또는 archive snapshot의 실제 버전·SHA-256이
+  기록과 다르면 `blocked_creative_rule_integrity`로 중단한다. canonical
+  원본 변경에 따른 재확인은 별도로 수행한다.
 
 ## Apply Approved Item Steps
 
@@ -94,9 +103,10 @@ AI가 만든 변경안을 사용자가 검토하고 결정할 수 있게 관리�
 8. `restructure`이면 모든 기존 대상의 비교 결과와 모든 신규 문서의 역할
    중복 여부를 먼저 확인한다. 하나라도 불일치하면 어떤 대상도 변경하지 않는다.
 9. `Subagent Review`가 있으면 시나리오 독립 검수의 `blocking` 또는
-   `required_revision`이 해소되었는지, 기획 창작이 사용자 허가 GAP 범위를
-   벗어나지 않았는지 확인한다. 검수 근거가 없거나 필수 결과가 남아 있으면
-   적용하지 않고 `needs_reconfirmation`으로 이동한다.
+   `required_revision`과 프로젝트 창작 규칙이 요구한 비시나리오 독립 검수의
+   필수 finding이 해소되었는지, 기획 창작이 사용자 허가 GAP 범위를 벗어나지
+   않았는지 확인한다. 검수 근거가 없거나 필수 결과가 남아 있으면 적용하지
+   않고 `needs_reconfirmation`으로 이동한다.
 10. `Scenario Improvement Review`가 있으면 `proposed`나 `declined` 권고가
    Draft에 섞이지 않았는지 확인한다. `incorporated` 권고도 갱신된 Draft가
    명시적으로 승인된 경우에만 적용 대상으로 본다.

@@ -27,13 +27,31 @@ missing, or synthetic data is classified as a user or confirmed fact, return
 Do not draft, recommend improvements, inspect further sources, or silently
 repair the classification.
 
+Project creative rule gate:
+Read docs/workflows/project_creative_agent_setup.md. General scenario
+authoring, change, restructure, and selected-improvement incorporation require
+the `active_current` rule basis, exact Project Creative Agent Rule ID, path,
+version, SHA-256, applicability, and `independent_always` review contract in
+the Task Packet.
+Return `blocked_missing_creative_rule` if absent,
+`blocked_creative_rule_mismatch` if the project, scenario scope, or base agent
+does not match, and `blocked_creative_rule_integrity` if the exact active rule
+or archived snapshot named in the packet does not match its path, version, or
+SHA-256. Do not draft, recommend an improvement, or silently revise a rule in
+those states. A newer active rule does not invalidate an older result pinned to
+its original rule. New authoring or revision uses the current active rule;
+current-rule re-review happens only on the user's explicit request. A project
+rule is behavioral guidance and never a canonical story fact.
+
 1. Read the applicable AGENTS.md in full.
 2. Resolve exactly one target project with docs/workflows/project_workspace.md.
 3. Confirm the target scenario role, requested document or section, coverage, exclusions, and whether the task is create, update, restructure, or review-driven revision.
 4. Follow docs/workflows/document_change.md, docs/workflows/document_structure.md, and the applicable write_design_doc.md or propose_change.md flow.
 5. Apply docs/skills/scenario_review.md, docs/skills/document_completion.md, and docs/templates/scenario.md.
 6. Do not use docs/dev-log/ as current guidance.
-7. If the project, canonical owner, requested coverage, user selections, or the supplied Task Packet is materially ambiguous, stop drafting and return `blocked_missing_handoff` with only the missing information and focused questions.
+7. Read only the exact project creative rule transmitted in the Task Packet;
+   do not enumerate other project rules.
+8. If the project, canonical owner, requested coverage, user selections, or the supplied Task Packet is materially ambiguous, stop drafting and return `blocked_missing_handoff` with only the missing information and focused questions.
 
 Read sources in this order:
 1. The user's current request, supplied materials, constraints, and explicit selections.
@@ -43,6 +61,8 @@ Read sources in this order:
 5. Approval items or temporary ideas only when the user explicitly names them as proposal inputs.
 
 Build a project-adapted Scenario Designer's Brief for the handoff. State the project's narrative promise, requested experience, source boundaries, target dramatic function, causality and motivation thesis, choice and reveal principles, production constraints, and the distinction between source-faithful content and proposed improvements. Do not invent a generic persona or reuse another project's narrative style.
+Apply the active project rule's creative priorities, anti-goals, tradeoffs, and
+review criteria without treating it as story canon.
 
 Authoring process:
 1. Build a private source map for required beats, entry and exit states, characters and motivations, reveals, choices, branches, outcomes, state changes, and dependencies. Separate confirmed facts, user-provided proposal inputs, gaps, conflicts, and authorial recommendations.
@@ -69,4 +89,6 @@ Review and approval boundary:
 - Never modify design/, approvals/, decisions/, or versions/. Never mark an item approved or applied.
 
 Return a concise handoff naming the project, target scenario and coverage, operation type, source files, Draft sections, Scenario Improvement Review count, GAP and TBD counts, conflicts, dependencies, synchronization targets, and failed self-review checks. Mark it `ready_for_independent_review`. Do not spawn further subagents.
+Include the Project Creative Agent Rule basis, ID, version, SHA-256, and mandatory
+`scenario_reviewer` routing in the handoff.
 """

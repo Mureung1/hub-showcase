@@ -26,13 +26,33 @@ missing, or synthetic data is classified as a user or confirmed fact, return
 Do not classify gaps, generate options, inspect further sources, or silently
 repair the classification.
 
+Project creative rule gate:
+Read docs/workflows/project_creative_agent_setup.md. The `classify` Phase does
+not require a project creative rule and the Task Packet must state that reason.
+The `generate_options` and `incorporate_selection` Phases require the exact
+Project Creative Agent Rule basis, ID, path, version, SHA-256, applicability,
+and review contract in the packet. New option generation and selection
+incorporation use `active_current`. Return `blocked_missing_creative_rule` if
+the rule is absent, `blocked_creative_rule_mismatch` if its project, role,
+scope, or base agent does not cover the work, and
+`blocked_creative_rule_integrity` if the exact active rule or archived snapshot
+named in the packet does not match its path, version, or SHA-256. In these
+states do not generate options, revise a Draft, or silently select or edit
+another rule. A newer active rule does not invalidate older options pinned to
+their original rule. `incorporate_selection` is a new creative step and uses
+the current active rule while preserving the selected option's pinned rule as
+input provenance. Treat the rule as behavioral guidance, never as a source of
+canonical game facts.
+
 1. Read the applicable AGENTS.md in full.
 2. Resolve exactly one target project with docs/workflows/project_workspace.md.
 3. Confirm the target document roles, fields, operation type, and one explicit phase: `classify`, `generate_options`, or `incorporate_selection`.
 4. Follow docs/workflows/document_change.md, docs/workflows/document_structure.md, docs/skills/document_completion.md, and docs/skills/design_creative_completion.md.
 5. Do not use docs/dev-log/ as current guidance.
 6. Read only approval items or temporary ideas that the user explicitly authorizes as proposal inputs.
-7. If project, canonical owner, phase, scope, user authorization, or the supplied Task Packet is materially ambiguous, return `blocked_missing_handoff` with the missing information and focused questions without generating options.
+7. Read only the exact project creative rule transmitted for a creative Phase;
+   do not enumerate the project's other rules.
+8. If project, canonical owner, phase, scope, user authorization, or the supplied Task Packet is materially ambiguous, return `blocked_missing_handoff` with the missing information and focused questions without generating options.
 
 Build a project-adapted Creative Design Brief for the handoff. State the project promise, target role and design responsibility, player or production objective, confirmed constraints, evidence base, authorized GAP IDs, risk posture, downstream owners, and validation thesis. Do not adopt a generic designer persona or reuse another project's decisions.
 
@@ -46,6 +66,8 @@ Phase rules:
 
 `generate_options`
 - Require the main agent to provide the user's explicit authorization and exact authorized creative_fillable GAP IDs.
+- Apply the selected project's creative objectives, priorities, anti-goals,
+  tradeoffs, and review criteria from the transmitted active rule.
 - Generate alternatives only for those IDs. Low and medium risk receive two materially different alternatives; high risk receives three.
 - For every alternative include design intent, project evidence, player impact, production impact, downstream document impact, and key tradeoffs.
 - Recommend one alternative with a concrete reason grounded in the project's promise and constraints.
@@ -55,6 +77,8 @@ Phase rules:
 
 `incorporate_selection`
 - Require the user's exact selected CP alternatives and reconfirm current sources.
+- Reconfirm the same Project Creative Agent Rule version and SHA-256 used to
+  generate the selected alternatives.
 - Put only selected content into the revised Draft with CP footnotes. Preserve all alternatives, rationale, impacts, selection history, and validation needs in the Creative Proposal Log.
 - If the canonical owner or core scope changes, identify the linked or atomic restructure proposal instead of forcing the content into the current document.
 - Return the revised proposal to pending review. Selection and creative authorization are not approval.
@@ -77,6 +101,10 @@ Review and approval boundary:
 - Return the Creative Design Brief, Creative Completion Review, authorized Creative Proposal Log, recommendation, selected revision if requested, source summary, conflicts, dependencies, validation needs, and failed self-review checks to the main agent.
 - Do not write or update the Approval Queue yourself. Only the main agent may review and persist the result as a pending approval item.
 - Never modify design/, approvals/, decisions/, or versions/. Never mark an item approved or applied.
+- Return the rule basis, ID, version, SHA-256, and required review routing. When the
+  rule selects `independent_always`, or `independent_high_risk` for a high-risk
+  result, mark the handoff for `design_creative_reviewer`; do not claim that
+  independent review has passed.
 
 Mark the handoff `ready_for_main_review`. Do not spawn further subagents.
 """

@@ -15,6 +15,9 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
 - 기획 창작: 프로젝트 적응형 `design_creative_planner`가 기획서의 빈 부분을
   창작 가능한 GAP과 사용자 확인이 필요한 사실로 구분한다. 사용자가 허가한
   GAP에만 복수 대안과 추천안을 만들고, 선택된 창작 내용은 `CP-*`로 공개한다.
+- 프로젝트별 창작 규칙: 창작 역할을 미리 만들지 않고 실제 요청이 생기면
+  planning-only 설정 설계에서 분야별 독립 규칙을 완성한다. 사용자의 구현 요청으로 활성화한
+  규칙을 기존 전문 에이전트가 읽어 해당 프로젝트 전용 창작자로 동작한다.
 - 시나리오 창작·검수: `scenario_designer`가 원안 기반 시나리오 Draft와 구조
   개선안을 분리해 작성하고 `scenario_reviewer`가 원본을 직접 대조해 독립
   검수한다.
@@ -23,6 +26,170 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
   구조 변경은 `NR-*`로 공개하며 `scenario_reviewer`가 독립 검수한다.
 - 승인과 추적: 모든 창작·변경안은 승인 전 제안이며, 명시적 승인과 원본
   재확인 후에만 확정 문서에 반영하고 Decision Log와 Version History에 남긴다.
+
+## 창작 에이전트와 PCA 이해하기
+
+### 가장 간단한 개념
+
+이 작업장에서 “프로젝트용 창작 에이전트를 만든다”는 것은 대부분 새로운
+프로그램이나 custom agent를 프로젝트마다 복제한다는 뜻이 아니다.
+
+저장소에는 역할이 다른 공용 전문 에이전트가 이미 존재한다. 프로젝트에서
+창작이 필요해지면 해당 전문 에이전트가 읽을 **Project Creative Agent
+Rule(PCA)** 을 만든다. PCA는 그 전문 에이전트가 특정 프로젝트에서 어떤
+자료를 보고, 어느 범위까지, 어떤 방향과 절차로 창작할지를 정하는 프로젝트별
+행동 규칙이다.
+
+| 구성 요소 | 답하는 질문 | 저장 위치 |
+|---|---|---|
+| 공용 전문 에이전트 | 누가 어떤 종류의 작업을 수행하는가? | `.codex/agents/*.toml` |
+| 프로젝트 PCA | 이 프로젝트에서 무엇을 참고해 어떤 범위와 방식으로 창작하는가? | `workspace/projects/<project_slug>/agents/rules/*.md` |
+| 확정 기획 문서 | 이 게임에서 현재 사실로 확정된 것은 무엇인가? | `workspace/projects/<project_slug>/design/` |
+| Specialist Task Packet | 이번 한 번의 호출에서 정확히 무엇을 전달하고 허가했는가? | 호출 전에 메인 Codex가 작성 |
+
+따라서 PCA는 세계관이나 시나리오 사실을 대신 보관하지 않는다. 세계관,
+시나리오, 시스템과 콘텐츠의 확정 사실은 계속 `design/` 아래의 담당 문서가
+소유한다. PCA에는 그 문서들의 정확한 위치와 우선순위, 창작 권한과 금지사항을
+기록한다.
+
+```text
+사용자 창작 요청
+  → 메인 Codex가 프로젝트·문서 역할·대상 경로·작업을 판정
+  → 프로젝트 PCA 색인에서 일치하는 active 규칙 선택
+  → PCA와 필요한 확정 문서로 Specialist Task Packet 작성
+  → 공용 창작 에이전트 실행
+  → 필요한 독립 reviewer 검수
+  → 사용자에게 제안 또는 pending 승인 초안으로 제시
+  → 명시적 승인 후에만 확정 문서 반영
+```
+
+### 공용 창작 에이전트의 기능
+
+| 에이전트 | 주 기능 | 창작 결과와 경계 |
+|---|---|---|
+| `design_creative_planner` | 시스템·콘텐츠·UI 등 비시나리오 기획의 누락을 분류하고, 허가된 GAP에 복수 대안과 추천안을 생성 | 선택된 창작은 `CP-*`로 공개하며 사용자 사실이나 외부 계약은 만들지 않음 |
+| `design_creative_reviewer` | PCA가 요구하는 비시나리오 창작 결과를 작성자와 독립적으로 검수 | 직접 Draft를 고치지 않고 출처·범위·위험·검증 조건을 판정 |
+| `scenario_designer` | 일반 시나리오의 사건 인과, Scene, 선택·분기, 정보 공개, Outcome과 인물 동기를 설계 | 원안 기반 Draft와 더 나은 구조를 제안하는 `Scenario Improvement Review`를 분리 |
+| `scenario_writer` | 확정 시나리오를 플레이어가 보는 대사·지문·선택지와 Scene 구현 명세로 집필 | 구체 창작은 `CW-*`, 상위 서사 구조 변경은 `NR-*`로 공개 |
+| `scenario_reviewer` | 일반 시나리오와 인게임 스크립트를 원본에 직접 대조해 독립 검수 | 작성자의 요약에 의존하지 않고 필수 수정과 선택적 권고를 구분 |
+
+메인 Codex는 별도의 창작 전문 역할이 아니라 조정자다. 대상 프로젝트와
+근거를 확정하고, 사용자 권한을 Task Packet에 기록하고, 작성자와 reviewer의
+결과를 대조하며 승인 큐 저장과 적용을 담당한다. 전문 에이전트와 reviewer는
+확정 문서나 승인 기록을 직접 수정하지 않는다.
+
+### PCA에 들어가는 내용
+
+PCA는 한 분야의 창작 행동을 재현 가능하게 만드는 데 필요한 다음 내용을
+가진다.
+
+- 분야, canonical document role과 사용할 공용 `agent_type`
+- `exact | subtree` 대상 경로와 허용 작업
+- 적용 범위, 제외 범위와 중단 조건
+- 입력 확인부터 Draft·대안 작성, 검수와 완료까지의 수행 절차
+- 프로젝트가 원하는 창작 목표, 플레이 경험, 우선 원칙과 tradeoff
+- 참고할 확정 문서의 정확한 경로와 출처 우선순위
+- 제안할 수 있는 범위, 임의 창작 금지와 `TBD`로 남길 사실
+- `CP-*`, `Scenario Improvement Review`, `CW-*`·`NR-*` 중 사용할
+  provenance 방식
+- 검수 정책, reviewer, 필수 검수 항목과 통과 기준
+- 규칙 ID, 버전과 변경 이력
+
+하나의 PCA를 프로젝트 전체 창작 규칙으로 사용하지 않는다. 예를 들어 메인
+시나리오 구조와 인게임 스크립트는 같은 이야기를 다뤄도 담당 에이전트,
+작성 절차와 provenance가 다르므로 별도 PCA가 필요하다. 반대로 프로젝트의
+문체나 세계관이 다르다는 이유만으로 공용 `scenario_designer` 자체를 새로
+만들지는 않는다. 그런 차이는 프로젝트 PCA와 확정 근거 문서로 전달한다.
+
+### 프로젝트에서 PCA를 만드는 과정
+
+사용자가 PCA 파일 구조를 미리 알거나 직접 작성할 필요는 없다. 자연어로
+창작을 요청하면 다음 순서로 진행된다.
+
+1. 사용자가 프로젝트와 원하는 창작 작업을 말한다.
+2. 메인 Codex가 프로젝트, canonical role, 대상 문서 경로와
+   `author | revise | restructure | generate_options |
+   incorporate_selection` 작업을 판정한다.
+3. 프로젝트의 `agents/README.md` 색인에서 정확히 일치하는 active PCA를
+   찾는다.
+4. 일치하는 PCA가 있으면 해당 규칙 하나와 필요한 확정 문서만 읽고 창작
+   작업을 시작한다.
+5. PCA가 없으면 창작 결과부터 만들지 않고
+   `blocked_missing_creative_rule` 상태에서 planning-only 설정 설계를
+   시작한다.
+6. Codex가 현재 요청과 최소 확정 문서에서 알 수 있는 값을 미리 채우고,
+   결과를 실질적으로 바꾸는 선택만 권장 기본값과 함께 질문한다. 사용자가
+   답하지 않은 항목은 공개한 보수적 기본값이나 `TBD` 원칙으로 완성한다.
+7. Codex가 모든 항목이 채워진 PCA 설정 계획과 자신이 보충한 값·근거를
+   보여준다. 이 단계에서는 아직 파일을 만들지 않는다.
+8. 사용자가 `권장안 그대로 PCA를 구현해줘`처럼 명시적으로 구현을 요청하면
+   PCA 파일과 프로젝트 색인을 생성한다. 이 요청은 PCA 구현만 허가하며
+   `design/` 확정 문서 변경이나 창작안 승인을 뜻하지 않는다.
+9. 저장된 PCA의 ID·경로·버전·SHA-256을 확인한 뒤, 원래 창작 요청에 필요한
+   권한이 충분하면 전문 에이전트 작업을 재개한다.
+
+새 프로젝트를 만들 때 모든 분야의 PCA를 한꺼번에 만들지 않는다. 시스템
+창작을 처음 요청하면 시스템 PCA만, 메인 시나리오 창작을 처음 요청하면 메인
+시나리오 PCA만 만드는 JIT 방식이다.
+
+### 사용자가 실제로 입력할 수 있는 예
+
+새 창작 요청:
+
+```text
+<project_slug> 프로젝트의 메인 시나리오를 작성해줘.
+현재 PCA가 없으면 필요한 설정 계획을 권장 기본값까지 채워서 먼저 보여줘.
+```
+
+제시된 계획을 그대로 구현:
+
+```text
+제시한 권장안 그대로 이 프로젝트의 PCA를 구현하고 원래 작업을 재개해줘.
+```
+
+기존 PCA의 범위를 바꾸고 싶을 때:
+
+```text
+<project_slug>의 메인 시나리오 PCA가 사이드 시나리오에는 적용되지 않게
+분리하는 개정 계획을 만들어줘. 아직 파일은 수정하지 마.
+```
+
+PCA가 없다는 상태는 오류로 작업을 포기했다는 뜻이 아니다. 프로젝트별 창작
+방식을 먼저 합의하기 위한 안전한 준비 단계다. 다만 설정 계획을 보여준
+것만으로는 PCA가 생성되지 않으므로, 파일 생성을 원하면 구현 요청을 한 번
+명시해야 한다.
+
+PCA가 없어도 검색·요약·검토 전용 보고, 비시나리오 기획의 GAP 분류,
+확정 자료의 비창작 구조화, 임시 아이디어 기록과 승인된 변경안의 기계적
+적용은 계속할 수 있다. 구체적인 대안·서사·대사처럼 새로운 창작 내용을
+만드는 단계에서만 해당 분야의 active PCA가 필요하다.
+
+### PCA 변경과 과거 결과
+
+- PCA를 개정하기 전 기존 파일은
+  `agents/rules/archive/<rule_slug>/v<version>.md`에 원문 그대로 보존하고
+  SHA-256을 색인에 기록한다.
+- 새 창작·수정·재구성·선택 반영은 현재 active PCA를 사용한다.
+- 과거 결과는 생성 당시 PCA ID·버전·SHA-256과 검수 상태를 유지한다. active
+  PCA가 바뀌었다는 이유만으로 자동 무효화하거나 재검수하지 않는다.
+- 사용자가 현재 규칙으로 재검수를 명시적으로 요청하면 기존 원문을 고치지
+  않는 read-only 재검수 결과를 추가한다.
+- Task Packet이 지목한 실제 PCA 또는 archive snapshot의 경로·버전·해시가
+  다를 때만 `blocked_creative_rule_integrity`로 중단한다.
+
+### 공용 에이전트를 새로 만드는 경우
+
+프로젝트의 분위기, 세계관, 문체나 장르가 다르다는 이유만으로는 새 공용
+에이전트를 만들지 않는다. 다음처럼 작업 책임 자체가 근본적으로 달라져 기존
+역할의 PCA로 표현하기 어려울 때만 새 custom agent를 검토한다.
+
+- 입력과 산출물 형식, 작성 절차가 기존 역할과 전혀 다른 전문 작업
+- 별도의 provenance 체계와 독립 검수 계약이 필요한 작업
+- 기존 에이전트에 추가하면 서로 충돌하는 권한이나 품질 기준을 갖는 작업
+
+`scenario_designer`와 `scenario_writer`가 분리된 이유가 이에 해당한다.
+전자는 상위 사건 구조와 분기를 설계하고 개선안을 Draft와 분리하지만, 후자는
+플레이어 노출 문장과 Scene 명세를 집필하고 `CW-*`·`NR-*`를 사용한다.
 
 ## Core Principle
 
@@ -111,6 +278,8 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
   만들지 않는다.
 - 메인 Codex가 전체 GAP 목록과 “창작으로 채울까요?”를 먼저 제시한다.
   사용자가 허가한 정확한 GAP ID만 `generate_options` Phase에 전달한다.
+- `generate_options`와 `incorporate_selection`에는 해당 프로젝트·분야의
+  active 창작 규칙이 필요하다. `classify`에는 규칙이 필요하지 않다.
 - 허가된 저·중위험 GAP에는 대안 2개, 고위험 GAP에는 대안 3개와 추천안을
   제시한다. 선택된 안만 Draft에 `CP-*` 각주로 넣고 모든 대안과 영향을
   `Creative Proposal Log`에 보존한다.
@@ -122,6 +291,39 @@ Codex는 문서 요청 분기, 자료 기반 기획서 초안 작성, 변경안 
   승인 뒤에만 확정 문서에 반영한다.
 - 일반 시나리오 구조는 `Scenario Improvement Review`, 인게임 스크립트는
   `CW-*`·`NR-*`를 우선하며 같은 내용에 `CP-*`를 중복 사용하지 않는다.
+
+### Project Creative Agent Rules
+
+- 새 프로젝트와 기존 프로젝트에 창작 규칙을 자동 생성하지 않는다.
+- 첫 창작 요청에 맞는 규칙이 없으면 결과를 만들지 않고
+  `blocked_missing_creative_rule`로 창작 실행을 중단한 뒤 현재 대화에서
+  planning-only 설정 설계를 자동으로 시작한다. 에이전트가 항목의 용도를
+  설명하고 확인 가능한 값과 보수적 기본값을 채운 완성안을 먼저 제시한다.
+- 사용자가 일부 항목에 답하지 않아도 표시된 기본값으로 계획을 완성하고,
+  무엇을 어떤 근거로 보충했는지 보고한다. 실제 UI Plan mode 전환은 요구하지
+  않으며 명시적 구현 요청 전에는 저장하지 않는다.
+- 완성 계획의 구현 요청을 받으면
+  `workspace/projects/<project_slug>/agents/rules/`에 active 규칙을 저장한다.
+  규칙은 행동 설정이며 세계관·시스템·콘텐츠 사실을 소유하지 않는다.
+- 각 분야 규칙은 독립 파일이다. 공통 창작 방향 문서나 규칙별 custom
+  agent 설정을 만들지 않고 기존 `design_creative_planner`,
+  `scenario_designer`, `scenario_writer`가 규칙을 실행한다.
+- 색인은 canonical role, `exact | subtree` 대상 경로와 허용 작업으로
+  active 규칙을 결정적으로 선택한다. 같은 role에서 경로와 작업이 겹치는
+  active 규칙은 만들 수 없다.
+- 기존 규칙이 요청과 맞지 않으면 `blocked_creative_rule_mismatch`로
+  중단한다. 불일치 내용을 설명하고 개정 여부를 물으며, 사용자가 개정을
+  요청하기 전에는 자동 수정하지 않는다.
+- 시나리오와 대본은 항상 `scenario_reviewer`가 독립 검수한다. 비시나리오는
+  규칙 설정 설계에서 검수 정책을 반드시 정하고, 필요한 독립 검수는
+  `design_creative_reviewer`가 수행한다.
+- Task Packet은 규칙 기준·ID·경로·버전·SHA-256과 검수 계약을 전달한다.
+  active 규칙이 바뀌어도 과거 결과는 당시 규칙과 검수 상태로 선택·승인·
+  기계적 적용을 계속한다. 새 창작·수정은 현재 active 규칙을 사용하고 현재
+  규칙 재검수는 사용자가 명시적으로 요청할 때만 수행한다.
+- 규칙 개정 전 원문은 archive snapshot으로 보존한다. Packet이 지목한 파일과
+  버전·SHA-256이 실제 파일과 다를 때만
+  `blocked_creative_rule_integrity`로 중단한다.
 
 ### Specialist Agent Handoff
 
@@ -308,6 +510,7 @@ README.md
 .codex/
   agents/
     design_creative_planner.toml
+    design_creative_reviewer.toml
     scenario_designer.toml
     scenario_reviewer.toml
     scenario_writer.toml
@@ -326,6 +529,9 @@ workspace/
     <project_slug>/
       README.md
       project_brief.md
+      agents/                 # 첫 창작 규칙 구현 시에만 생성
+        README.md
+        rules/
       design/
         assets/
         game/
@@ -348,7 +554,11 @@ workspace/
 - `AGENTS.md`: Codex가 이 저장소에서 반드시 지켜야 하는 전체 규칙
 - `docs/workflows/project_workspace.md`: 대상 프로젝트 선택과 새 프로젝트 생성·분리 절차
 - `docs/workflows/specialist_agent_handoff.md`: 전문 에이전트 필수 인계 정보, 호환 호출 방식과 반환 검증
+- `docs/workflows/project_creative_agent_setup.md`: 프로젝트별 JIT 창작 규칙의 planning-only 설정, 저장, 실행과 검수 절차
+- `docs/templates/project_creative_agent_setup_plan.md`: 누락된 창작 규칙의 설명·기본값·완성 계획 형식
 - `docs/templates/specialist_task_packet.md`: 부모 대화 대신 전문 에이전트에 전달할 작업 계약 형식
+- `docs/templates/project_creative_agent_rule.md`: 분야별 프로젝트 창작 규칙 형식
+- `docs/templates/project_creative_agent_index.md`: 프로젝트 창작 규칙 색인 형식
 - `docs/workflows/behavior_testing.md`: 합성 동작 테스트의 출처 표시, 격리 실행과 결과 보고 규칙
 - `docs/templates/behavior_test_manifest.md`: 동작 테스트 전에 작성하는 출처·환경 계약
 - `docs/workflows/`: 작업별 실행 절차. 문서 관련 요청은 `document_change`를 먼저 따른다.
@@ -366,6 +576,7 @@ workspace/
 - `.codex/agents/scenario_designer.toml`: 일반 시나리오 Draft와 분리 개선안을 작성하는 custom agent
 - `.codex/agents/scenario_reviewer.toml`: 일반 시나리오와 인게임 스크립트를 독립 검수하는 custom agent
 - `.codex/agents/design_creative_planner.toml`: 일반 기획 GAP을 분류하고 허가된 GAP의 대안을 만드는 custom agent
+- `.codex/agents/design_creative_reviewer.toml`: 규칙이 요구한 비시나리오 창작 결과를 독립 검수하는 custom agent
 - `workspace/project_registry.md`: 프로젝트 목록과 현재 기본 프로젝트
 - `workspace/projects/`: 프로젝트별 실제 기획 문서와 작업 상태
 
@@ -383,8 +594,11 @@ python3 -m unittest discover -s tests -v
 테스트 코드는 등록 프로젝트의 필수 구조, 실제 탐색 문서의 로컬 링크, 승인
 ID 중복과 제목·Metadata 일치, `applied` 승인 항목의 Decision Log·Version
 History 연결, 테스트 입력의 출처 분류와 Behavior Test Manifest의 격리
-조건을 검사한다. 템플릿의 예시 경로, Approval Queue 안의 역사적 Draft
-링크, 외부 URL과 코드 블록은 링크 검사에서 제외한다.
+조건, 선택적으로 존재하는 프로젝트 창작 규칙의 ID·분야·실행 agent·검수
+정책·색인 연결뿐 아니라 경로 선택자·대상 경로·허용 작업의 동기화, active
+규칙 범위 중복과 archive snapshot의 버전·SHA-256도 검사한다. 템플릿의 예시
+경로, Approval Queue 안의 역사적 Draft 링크, 외부 URL과 코드 블록은 링크
+검사에서 제외한다.
 
 자동 판정하기 어려운 에이전트 행동과 기획 품질은 변경 후 다음 항목을 별도로
 확인한다.
@@ -405,6 +619,10 @@ History 연결, 테스트 입력의 출처 분류와 Behavior Test Manifest의 �
   단계를 모두 거쳤는가
 - 일반 기획 창작이 `design_creative_planner`의 Phase와 사용자 허가 GAP 범위를
   지켰는가
+- 창작 규칙이 없는 요청에서 Draft·대안이 생성되지 않고 planning-only 설정으로
+  라우팅되었는가
+- 프로젝트 창작 규칙이 다른 프로젝트의 사실이나 규칙과 섞이지 않았으며,
+  지정한 검수 정책을 거쳤는가
 - 기획 문서와 변경안이 `docs/templates/`의 형식을 따르는가
 - 상세 정보가 올바른 canonical owner 문서에 있고 개요서에는 요약과 링크만 있는가
 - 프로젝트 루트 README가 간단한 소개와 현재 존재하는 확정 문서만 보여주며

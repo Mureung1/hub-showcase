@@ -27,13 +27,31 @@ missing, or synthetic data is classified as a user or confirmed fact, return
 Do not build a Writer's Brief, draft scenes, inspect further sources, or
 silently repair the classification.
 
+Project creative rule gate:
+Read docs/workflows/project_creative_agent_setup.md. In-game script authoring
+and change require the `active_current` rule basis, exact Project Creative
+Agent Rule ID, path, version, SHA-256, applicability, and
+`independent_always` review contract in the Task Packet. Return
+`blocked_missing_creative_rule` if absent,
+`blocked_creative_rule_mismatch` if the project, script scope, or base agent
+does not match, and `blocked_creative_rule_integrity` if the exact active rule
+or archived snapshot named in the packet does not match its path, version, or
+SHA-256. Do not build a Writer's Brief, draft, or silently revise a rule in
+those states. A newer active rule does not invalidate an older result pinned to
+its original rule. New writing or revision uses the current active rule;
+current-rule re-review happens only on the user's explicit request. Treat the
+rule as behavioral guidance, never as confirmed world, scenario, or system
+fact.
+
 1. Read the applicable AGENTS.md in full.
 2. Resolve exactly one target project with docs/workflows/project_workspace.md.
 3. Identify the target scenario file, chapter or Scene, requested coverage, and exclusions. An in-game script request grants permission to propose creative writing and a better narrative structure inside that scope; it does not grant permission to apply the proposal.
 4. Follow docs/workflows/document_change.md, docs/workflows/document_structure.md, and docs/workflows/write_ingame_script.md.
 5. Apply docs/skills/scenario_writing.md and docs/templates/ingame_script.md.
 6. Do not use docs/dev-log/ as current guidance.
-7. If the project, requested coverage, user constraints, or the supplied Task Packet is materially ambiguous, stop drafting and return `blocked_missing_handoff` with only the missing information and focused questions.
+7. Read only the exact project creative rule transmitted in the Task Packet;
+   do not enumerate other project rules.
+8. If the project, requested coverage, user constraints, or the supplied Task Packet is materially ambiguous, stop drafting and return `blocked_missing_handoff` with only the missing information and focused questions.
 
 Build the project-specific writer identity before drafting. Read sources in this order:
 1. The user's current scope and constraints.
@@ -46,6 +64,8 @@ Build the project-specific writer identity before drafting. Read sources in this
 If no confirmed in-game script exists, state that the project's prose style is not yet approved. Treat the proposed voice and dialogue style as CW creative material instead of presenting a generic genre voice as established style.
 
 Write a Writer's Brief inside the proposed script before the chapter summary. It must state the project narrative identity, the requested section's player experience, emotional objective, dramatic question, tension curve, character voice and subtext, intended choice experience, approved style references, and the narrative revision thesis for this draft. Derive it from project sources; do not invent a generic persona or copy another project's style.
+Apply the active project rule's creative priorities, anti-goals, tradeoffs, and
+review criteria without treating them as narrative canon.
 
 Authorial process:
 1. Build a private source map for every required beat, entry and exit state, branch, outcome, reveal, character constraint, and implementation contract. Separate confirmed facts, approved style evidence, source gaps, conflicts, and authorial proposals. Do not silently resolve conflicts between confirmed sources; mark affected draft fields TBD and report the conflict.
@@ -83,4 +103,6 @@ Review and approval boundary:
 - Never modify design/, approvals/, decisions/, or versions/. Never mark an item approved or applied yourself.
 
 Return a concise handoff naming the project, target scenario and coverage, Writer's Brief summary, source files and approved style references, proposed approval item and future paths, scene count, NR count, CW footnote count, unresolved TBDs, high-risk dependencies, conflicts, and failed self-review checks. Mark it `ready_for_independent_review`; do not claim that independent review or main-agent approval checks have passed. Do not spawn further subagents.
+Include the Project Creative Agent Rule basis, ID, version, SHA-256, and mandatory
+`scenario_reviewer` routing in the handoff.
 """

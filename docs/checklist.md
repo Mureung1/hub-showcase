@@ -383,3 +383,39 @@
   `docs/templates/behavior_test_manifest.md`,
   `docs/templates/specialist_task_packet.md`, `.codex/agents/`,
   `scripts/workspace_validation.py`, `tests/`.
+
+### 6.19 프로젝트 로컬 JIT 창작 규칙
+
+- 검증 입력: 창작 규칙이 없는 프로젝트에서 시스템 창작을 처음 요청하고,
+  현재 대화의 planning-only 설정 설계에서 분야별 규칙과 비시나리오 검수
+  정책의 완성 권장안을 받는 요청.
+- [x] 새 프로젝트에 `agents/`를 미리 만들지 않고 첫 창작 요청에서만 규칙
+  설정 workflow로 진입하는 정책이 정의되어 있다.
+- [x] 규칙이 없으면 `blocked_missing_creative_rule`, 범위가 맞지 않으면
+  `blocked_creative_rule_mismatch`, Packet이 지목한 규칙 파일의
+  버전·SHA-256이 실제 파일과 다르면 `blocked_creative_rule_integrity`로
+  중단한다.
+- [x] 항목 용도를 설명하고 분야, 범위, 기존 실행 agent, 작성 절차, 원칙,
+  금지사항, 근거, provenance와 검수 정책을 기본값까지 포함해 모두 결정하는
+  planning-only 설정 템플릿이 있다.
+- [x] 사용자 미응답 항목은 공개한 보수적 기본값으로 완성하고 보충 내역을
+  대화로 보고하되 PCA 본문에는 저장하지 않는다.
+- [x] 사용자의 구현 요청으로 분야별 독립 규칙을 active 상태로 저장하며
+  공통 창작 문서나 규칙별 custom agent를 만들지 않는다.
+- [x] 일반 시나리오·대본은 항상 독립 검수하고, 비시나리오는 규칙의 검수
+  정책에 따라 `design_creative_reviewer`를 호출한다.
+- [ ] 규칙 없는 창작 요청에서 Draft·대안·개선 권고가 생성되지 않는다.
+- [ ] 같은 분야 규칙이 서로 다른 프로젝트 사이에서 섞이지 않는다.
+- [ ] 색인의 모든 routing 메타데이터가 규칙과 일치하고 경로·작업이 겹치는
+  active 규칙이 차단된다.
+- [ ] archive snapshot의 버전·SHA-256이 검증되며 새 창작 routing에서
+  제외된다.
+- [ ] active 규칙 변경만으로 과거 결과를 자동 재검수·무효화하지 않는다.
+- [ ] 규칙 문장이 canonical fact나 승인 근거로 사용되지 않는다.
+- [ ] 사용자가 개정을 요청하지 않은 기존 규칙을 자동으로 바꾸지 않는다.
+- 확인 파일: `AGENTS.md`,
+  `docs/workflows/project_creative_agent_setup.md`,
+  `docs/templates/project_creative_agent_setup_plan.md`,
+  `docs/templates/project_creative_agent_rule.md`,
+  `docs/workflows/specialist_agent_handoff.md`, `.codex/agents/`,
+  `scripts/workspace_validation.py`, `tests/`.
