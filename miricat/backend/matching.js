@@ -51,6 +51,9 @@ const REGIONS = {
   gwangju: { minX: 126.55, maxX: 127.10, minY: 34.95, maxY: 35.40 },
   jeju: { minX: 126.10, maxX: 127.00, minY: 33.10, maxY: 33.60 },
   daegu: { minX: 128.30, maxX: 128.80, minY: 35.60, maxY: 36.05 },
+  changwon: { minX: 128.45, maxX: 128.90, minY: 35.05, maxY: 35.35 },
+  ulsan: { minX: 129.00, maxX: 129.47, minY: 35.40, maxY: 35.72 },
+  incheon: { minX: 126.35, maxX: 126.85, minY: 37.20, maxY: 37.65 },
 };
 const SOURCE_REGION = {
   daejeon_bus: 'daejeon_sejong', daejeon_city: 'daejeon_sejong', sejong_sctc: 'daejeon_sejong',
@@ -59,6 +62,9 @@ const SOURCE_REGION = {
   gwangju_bus: 'gwangju',
   jeju_bus: 'jeju',
   daegu_bus: 'daegu',
+  changwon_bus: 'changwon',
+  ulsan_its: 'ulsan',
+  incheon_bus: 'incheon',
 };
 function sameRegion(route, sourceId) {
   const region = REGIONS[SOURCE_REGION[sourceId]];

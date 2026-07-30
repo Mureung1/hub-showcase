@@ -83,8 +83,99 @@ def _daegu_fetch_body(source, seq):
     return " ".join(_html.unescape(text).split())
 
 
+_changwon_session = None   # 창원은 목록 API가 세션 쿠키 + CSRF 토큰을 요구한다
+
+
+def _changwon_fetch_list(source):
+    """창원 BIS 전용: notice.do에서 세션·토큰을 받고 getNotice.do(JSON)를 조회."""
+    global _changwon_session
+    _changwon_session = requests.Session()
+    page = _changwon_session.get("https://bus.changwon.go.kr/info/notice.do",
+                                 headers=HEADERS, timeout=10, verify=False).text
+    m = re.search(r'name="CSRFToken" value="([a-f0-9]+)"', page)
+    if not m:
+        return []
+    resp = _changwon_session.post("https://bus.changwon.go.kr/info/getNotice.do",
+                                  data={"pageIndex": "1", "searchKeyword": "", "CSRFToken": m.group(1)},
+                                  headers={**HEADERS, "X-Requested-With": "XMLHttpRequest"},
+                                  timeout=10, verify=False)
+    items = []
+    for row in resp.json().get("rows", []):
+        items.append((str(row.get("noticeNo")), " ".join((row.get("noticeSj") or "").split())))
+    return items[:MAX_ITEMS_PER_RUN]
+
+
+def _changwon_fetch_body(source, seq):
+    sess = _changwon_session or requests
+    resp = sess.get(f"https://bus.changwon.go.kr/info/noticeView.do?seq={seq}",
+                    headers=HEADERS, timeout=10, verify=False)
+    soup = BeautifulSoup(resp.text, "html.parser")
+    box = soup.select_one("article")
+    return box.get_text(" ", strip=True) if box else ""
+
+
+_ulsan_cache = {}   # 울산도 목록 JSON에 본문(notcCtnt)이 같이 온다
+
+
+def _ulsan_fetch_list(source):
+    """울산 ITS 전용: 그리드 API(POST JSON)가 공지 목록+본문을 함께 준다."""
+    body = {
+        "postData": {"serviceName": "noticeService"},
+        "paging": {"firstPageOnPageList": 0, "lastPageOnPageList": 0,
+                   "recordCountPerPage": 10, "pageIndex": 1, "totalPage": 0, "countPerPage": 10},
+        "record": {"notcType": [{"value": "B"}]},
+        "sorting": {},
+    }
+    resp = requests.post("https://its.ulsan.kr/grid/getGridList.json", json=body,
+                         headers={**HEADERS, "X-Requested-With": "XMLHttpRequest"}, timeout=10)
+    items = []
+    for row in resp.json().get("rows", []):
+        seq = str(row.get("notcNo"))
+        _ulsan_cache[seq] = row
+        items.append((seq, " ".join((row.get("notcTitl") or "").split())))
+    return items[:MAX_ITEMS_PER_RUN]
+
+
+def _ulsan_fetch_body(source, seq):
+    row = _ulsan_cache.get(str(seq))
+    if not row:
+        return ""
+    import html as _html
+    text = re.sub(r"<[^>]+>", " ", row.get("notcCtnt") or "")
+    return " ".join(_html.unescape(text).split())
+
+
+_incheon_cache = {}   # 인천도 목록 JSON에 본문(bbscontent)이 같이 온다
+
+
+def _incheon_fetch_list(source):
+    """인천 BIS 전용: 게시판 API(POST)가 목록+본문을 함께 준다."""
+    resp = requests.post("https://bus.incheon.go.kr/bbs/selectBbsList.do",
+                         data={"searchWord": "", "searchType": "", "top_flag": "N",
+                               "page": "0", "rowcnt": "10", "bbstpcd": "1"},
+                         headers={**HEADERS, "X-Requested-With": "XMLHttpRequest"}, timeout=10)
+    items = []
+    for row in resp.json().get("resultList", []):
+        seq = str(row.get("bbsno"))
+        _incheon_cache[seq] = row
+        items.append((seq, " ".join((row.get("title") or "").split())))
+    return items[:MAX_ITEMS_PER_RUN]
+
+
+def _incheon_fetch_body(source, seq):
+    row = _incheon_cache.get(str(seq))
+    if not row:
+        return ""
+    import html as _html
+    text = re.sub(r"<[^>]+>", " ", row.get("bbscontent") or "")
+    return " ".join(_html.unescape(text).split())
+
+
 # 표준(HTML+정규식) 틀을 못 따르는 소스들의 전용 페처 (목록 함수, 본문 함수)
 FETCHERS = {
+    "incheon": (_incheon_fetch_list, _incheon_fetch_body),
+    "ulsan": (_ulsan_fetch_list, _ulsan_fetch_body),
+    "changwon": (_changwon_fetch_list, _changwon_fetch_body),
     "daegu": (_daegu_fetch_list, _daegu_fetch_body),
     "gbis_route_change": (_gbis_fetch_list, _gbis_fetch_body),
     "topis": (_topis_fetch_list, _topis_fetch_body),

@@ -89,6 +89,39 @@ SOURCES = [
                 "차량 단위 일일 소음이라 제외.",
     },
     {
+        "id": "changwon_bus",
+        "name": "창원 버스정보시스템 공지",
+        "active": True,                     # 2026-07-31 검증 (세션+CSRF 목록 API, 상세 GET)
+        "fetcher": "changwon",
+        "list_url": "https://bus.changwon.go.kr/info/notice.do",   # 대표 URL(기록용)
+        "list_pattern": None,
+        "view_url": "https://bus.changwon.go.kr/info/noticeView.do?seq={id}",
+        "note": "목록은 CSRF 토큰 필요(POST getNotice.do) — 세션으로 해결. "
+                "운행계통 변경·노선 시간표 임시변경 등 교통 공지 전용 게시판.",
+    },
+    {
+        "id": "ulsan_its",
+        "name": "울산 교통정보센터 공지",
+        "active": True,                     # 2026-07-31 검증 (그리드 JSON API — 본문 동봉)
+        "fetcher": "ulsan",
+        "list_url": "https://its.ulsan.kr/noti/notice.do",   # 대표 URL(기록용)
+        "list_pattern": None,
+        "view_url": "https://its.ulsan.kr/noti/notice.do",   # SPA라 목록 페이지가 원문 링크
+        "note": "울산 ITS 공지 — 사고 발생·처리 같은 실시간성 공지 포함. "
+                "그리드 API(POST /grid/getGridList.json) 역공학으로 수집.",
+    },
+    {
+        "id": "incheon_bus",
+        "name": "인천 버스정보시스템 공지",
+        "active": True,                     # 2026-07-31 검증 (게시판 API — 본문 동봉)
+        "fetcher": "incheon",
+        "list_url": "https://bus.incheon.go.kr/bis/notice.view",   # 대표 URL(기록용)
+        "list_pattern": None,
+        "view_url": "https://bus.incheon.go.kr/bis/notice.view",   # 상세가 POST 폼이라 목록이 원문 링크
+        "note": "도로통제 임시우회·행사 임시운행 등 교통 공지. 목록 API(POST /bbs/selectBbsList.do)에 "
+                "본문 동봉이라 재요청 없음.",
+    },
+    {
         "id": "seoul_topis",
         "name": "서울 TOPIS 교통소식",
         "active": True,                     # 2026-07-28 검증 완료 (JSON 목록+본문 동봉·원문 링크 렌더)

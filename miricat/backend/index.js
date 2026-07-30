@@ -35,6 +35,9 @@ const COVERAGE = [
   { name: '광주권', minX: 126.55, maxX: 127.10, minY: 34.95, maxY: 35.40 },
   { name: '제주권', minX: 126.10, maxX: 127.00, minY: 33.10, maxY: 33.60 },
   { name: '대구권', minX: 128.30, maxX: 128.80, minY: 35.60, maxY: 36.05 },
+  { name: '창원권', minX: 128.45, maxX: 128.90, minY: 35.05, maxY: 35.35 },
+  { name: '울산권', minX: 129.00, maxX: 129.47, minY: 35.40, maxY: 35.72 },
+  { name: '인천권', minX: 126.35, maxX: 126.85, minY: 37.20, maxY: 37.65 },
 ];
 const inCoverage = (points) =>
   !points?.length ||   // 좌표 없는 옛 경로는 보수적으로 관할 취급
@@ -78,7 +81,7 @@ async function sendFirstReport(route, check) {
   } else if (check.covered) {
     payload = { content: `🐾 새 보초 — **${route.name}** 등록. 모아둔 공지 ${check.checked}건과 대조했고, 지금 영향 주는 공지는 없어요.` };
   } else {
-    payload = { content: `🐾 새 보초 — **${route.name}** 등록. 도로 돌발상황은 전국을 확인하지만, 이 지역 버스 게시판은 아직 감시 전이에요 (현재 서울·경기·대전·세종·대구·광주·부산·제주).` };
+    payload = { content: `🐾 새 보초 — **${route.name}** 등록. 도로 돌발상황은 전국을 확인하지만, 이 지역 버스 게시판은 아직 감시 전이에요 (현재 서울·인천·경기·대전·세종·대구·울산·광주·부산·창원·제주).` };
   }
   const r = await fetch(webhook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
   return r.ok;   // 화면이 "보냈어요"를 사실일 때만 말하게

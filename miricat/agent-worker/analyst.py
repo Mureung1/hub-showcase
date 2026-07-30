@@ -17,6 +17,9 @@ REGIONS = {
     "gwangju":        {"min_x": 126.55, "max_x": 127.10, "min_y": 34.95, "max_y": 35.40},
     "jeju":           {"min_x": 126.10, "max_x": 127.00, "min_y": 33.10, "max_y": 33.60},
     "daegu":          {"min_x": 128.30, "max_x": 128.80, "min_y": 35.60, "max_y": 36.05},
+    "changwon":       {"min_x": 128.45, "max_x": 128.90, "min_y": 35.05, "max_y": 35.35},
+    "ulsan":          {"min_x": 129.00, "max_x": 129.47, "min_y": 35.40, "max_y": 35.72},
+    "incheon":        {"min_x": 126.35, "max_x": 126.85, "min_y": 37.20, "max_y": 37.65},
 }
 SOURCE_REGION = {
     "daejeon_bus": "daejeon_sejong", "daejeon_city": "daejeon_sejong", "sejong_sctc": "daejeon_sejong",
@@ -25,6 +28,9 @@ SOURCE_REGION = {
     "gwangju_bus": "gwangju",
     "jeju_bus": "jeju",
     "daegu_bus": "daegu",
+    "changwon_bus": "changwon",
+    "ulsan_its": "ulsan",
+    "incheon_bus": "incheon",
 }
 
 def same_region(route, source_id):
