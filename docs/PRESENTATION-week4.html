@@ -1,0 +1,538 @@
+<title>respec 최종 발표 — 4주차 라이브 데모</title>
+<style>
+  :root {
+    --sky: #3a5be3;
+    --violet: #8b3ff2;
+    --cyan: #1fe0cf;
+    --glass: rgba(255, 255, 255, 0.16);
+    --glass-strong: rgba(255, 255, 255, 0.26);
+    --glass-faint: rgba(255, 255, 255, 0.10);
+    --edge: rgba(255, 255, 255, 0.40);
+    --edge-soft: rgba(255, 255, 255, 0.20);
+    --ink: #ffffff;
+    --muted: rgba(255, 255, 255, 0.78);
+    --muted-dim: rgba(255, 255, 255, 0.55);
+    --gold: #ffcf7a;
+    --gold-ink: #4a2e00;
+    --success: #baffd9;
+    --radius-panel: 26px;
+    --radius-control: 16px;
+    --font-display: system-ui, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --font-mono: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    --maxw: 1000px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: var(--font-display);
+    color: var(--ink);
+    background: var(--sky);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.55;
+  }
+
+  /* ---- The "world": fixed gradient + drifting orbs ---- */
+  .world {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background: linear-gradient(155deg, var(--sky) 0%, var(--violet) 54%, var(--cyan) 100%);
+    overflow: hidden;
+  }
+  .orb { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.55; will-change: transform; }
+  .orb.a { width: 46vw; height: 46vw; left: -8vw; top: -6vw;
+    background: radial-gradient(circle at 30% 30%, #7aa8ff, transparent 70%);
+    animation: drift1 26s ease-in-out infinite; }
+  .orb.b { width: 40vw; height: 40vw; right: -6vw; top: 30vh;
+    background: radial-gradient(circle at 60% 40%, #c79bff, transparent 70%);
+    animation: drift2 32s ease-in-out infinite; }
+  .orb.c { width: 34vw; height: 34vw; left: 24vw; bottom: -10vw;
+    background: radial-gradient(circle at 50% 50%, #6ff0e2, transparent 70%);
+    animation: drift3 29s ease-in-out infinite; }
+  @keyframes drift1 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(6vw, 5vh); } }
+  @keyframes drift2 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-5vw, -6vh); } }
+  @keyframes drift3 { 0%,100% { transform: translate(0,0); } 50% { transform: translate(4vw, -4vh); } }
+
+  /* ---- Deck scaffolding ---- */
+  main { scroll-snap-type: y proximity; height: 100vh; overflow-y: auto; scroll-behavior: smooth; }
+  .slide { scroll-snap-align: center; min-height: 100vh; display: grid; place-items: center; padding: 72px 24px; }
+  .panel {
+    width: 100%;
+    max-width: var(--maxw);
+    background: var(--glass);
+    border: 1px solid var(--edge-soft);
+    border-radius: var(--radius-panel);
+    box-shadow: 0 30px 70px rgba(20, 14, 55, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    -webkit-backdrop-filter: blur(28px);
+    backdrop-filter: blur(28px);
+    padding: clamp(28px, 5vw, 56px);
+  }
+
+  .eyebrow {
+    font-size: 0.76rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--gold); font-weight: 700; margin: 0 0 18px;
+  }
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2.2rem, 5.5vw, 3.4rem); line-height: 1.08; letter-spacing: -0.01em; }
+  h2 { font-size: clamp(1.6rem, 3.6vw, 2.2rem); line-height: 1.15; margin-bottom: 8px; }
+  h3 { font-size: 1.12rem; }
+  p { color: var(--muted); margin: 12px 0 0; }
+  .lead { font-size: 1.12rem; color: var(--muted); max-width: 62ch; }
+  strong { color: var(--ink); font-weight: 700; }
+  .gold { color: var(--gold); }
+
+  /* ---- Hero ---- */
+  .hero-mark { display: inline-flex; align-items: baseline; gap: 12px; margin-bottom: 26px; }
+  .hero-mark b { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.01em; }
+  .hero-mark span { color: var(--muted-dim); font-family: var(--font-mono); font-size: 0.9rem; letter-spacing: 0.14em; }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: 10px 26px; margin-top: 34px; color: var(--muted-dim); font-size: 0.9rem; }
+  .hero-meta b { color: var(--muted); font-weight: 600; }
+
+  /* ---- Chips ---- */
+  .chips { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px; }
+  .chip { font-size: 0.8rem; padding: 6px 13px; border-radius: 999px;
+    background: var(--glass-faint); border: 1px solid var(--edge-soft); color: var(--muted); }
+  .chip.gold { background: rgba(255, 207, 122, 0.16); border-color: rgba(255, 207, 122, 0.5); color: var(--gold); }
+  .chip.mono { font-family: var(--font-mono); font-size: 0.76rem; }
+
+  /* ---- Generic grid ---- */
+  .grid { display: grid; gap: 16px; margin-top: 28px; }
+  .grid.two { grid-template-columns: repeat(2, 1fr); }
+  .grid.three { grid-template-columns: repeat(3, 1fr); }
+  .card { background: var(--glass-faint); border: 1px solid var(--edge-soft);
+    border-radius: var(--radius-control); padding: 20px 22px; }
+  .card h3 { margin-bottom: 6px; }
+  .card p { margin-top: 4px; font-size: 0.95rem; }
+  .card .role { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-dim); }
+  .card ul { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 0.93rem; }
+  .card ul li { margin-top: 5px; }
+
+  /* ---- Flow ---- */
+  .flow { display: flex; align-items: stretch; gap: 0; margin-top: 30px; flex-wrap: wrap; }
+  .node { flex: 1 1 130px; background: var(--glass-faint); border: 1px solid var(--edge-soft);
+    border-radius: var(--radius-control); padding: 18px 14px; text-align: center; }
+  .node.gate { border-color: rgba(255, 207, 122, 0.5); background: rgba(255, 207, 122, 0.12); }
+  .node .tier { font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-dim); }
+  .node .name { font-weight: 700; margin-top: 6px; }
+  .node .sub { font-size: 0.8rem; color: var(--muted-dim); margin-top: 4px; font-family: var(--font-mono); }
+  .arrow { display: grid; place-items: center; padding: 0 4px; color: var(--gold); font-size: 1.3rem; flex: 0 0 auto; }
+  .arrow small { display: block; font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted-dim); letter-spacing: 0; text-align: center; }
+
+  /* ---- Numbered steps ---- */
+  .steps { display: grid; gap: 11px; margin-top: 24px; }
+  .step { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start;
+    background: var(--glass-faint); border: 1px solid var(--edge-soft);
+    border-radius: var(--radius-control); padding: 14px 20px; }
+  .step .num { font-family: var(--font-mono); font-weight: 700; font-size: 0.95rem;
+    width: 30px; height: 30px; display: grid; place-items: center;
+    background: rgba(255, 207, 122, 0.18); color: var(--gold);
+    border: 1px solid rgba(255, 207, 122, 0.45); border-radius: 999px; }
+  .step .body { font-size: 0.96rem; }
+  .step .body b { color: var(--ink); }
+  .step .body .proof { display: inline-block; margin-top: 4px; font-size: 0.8rem; color: var(--success); font-family: var(--font-mono); }
+
+  /* ---- Evidence ---- */
+  .evidence { display: grid; gap: 14px; margin-top: 26px; grid-template-columns: 1.1fr 0.9fr; }
+  @media (max-width: 760px) { .evidence { grid-template-columns: 1fr; } }
+  pre { margin: 0; background: rgba(12, 8, 32, 0.42); border: 1px solid var(--edge-soft);
+    border-radius: var(--radius-control); padding: 18px 20px; overflow-x: auto;
+    font-family: var(--font-mono); font-size: 0.82rem; line-height: 1.6; color: #e8ecff; }
+  pre .k { color: var(--gold); }
+  pre .s { color: var(--success); }
+  pre .c { color: var(--muted-dim); }
+  .metrics { display: grid; gap: 12px; align-content: start; }
+  .metric { background: var(--glass-faint); border: 1px solid var(--edge-soft);
+    border-radius: var(--radius-control); padding: 14px 20px; }
+  .metric .big { font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .metric .lbl { font-size: 0.84rem; color: var(--muted-dim); margin-top: 2px; }
+
+  /* ---- Lists ---- */
+  .next-list { margin: 24px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+  .next-list li { padding-left: 26px; position: relative; color: var(--muted); }
+  .next-list li::before { content: "→"; position: absolute; left: 0; color: var(--gold); font-weight: 700; }
+
+  .closing { text-align: center; }
+  .closing .thanks { font-size: 0.9rem; color: var(--muted-dim); font-family: var(--font-mono); letter-spacing: 0.1em; margin-top: 30px; }
+
+  /* ---- Progress dots ---- */
+  nav.dots { position: fixed; right: 22px; top: 50%; transform: translateY(-50%); z-index: 10;
+    display: flex; flex-direction: column; gap: 12px; }
+  nav.dots a { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.28);
+    border: 1px solid var(--edge-soft); transition: all 0.25s; }
+  nav.dots a.active { background: var(--gold); border-color: var(--gold); transform: scale(1.3); }
+  nav.dots a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+  .hint { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 10;
+    font-size: 0.76rem; color: var(--muted-dim); font-family: var(--font-mono); letter-spacing: 0.08em;
+    display: flex; gap: 8px; align-items: center; }
+
+  /* Reveal on scroll */
+  .panel { opacity: 0; transform: translateY(18px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .panel.in { opacity: 1; transform: none; }
+
+  @media (max-width: 720px) {
+    .grid.two, .grid.three { grid-template-columns: 1fr; }
+    nav.dots { display: none; }
+    .flow { flex-direction: column; }
+    .arrow { transform: rotate(90deg); padding: 6px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .orb { animation: none; }
+    html, main { scroll-behavior: auto; }
+    .panel { transition: none; opacity: 1; transform: none; }
+  }
+
+  /* ---- Print / PDF export: one slide per landscape page ---- */
+  @media print {
+    @page { size: 1280px 720px; margin: 0; }
+    html, body, main { height: auto; overflow: visible; }
+    .world, nav.dots, .hint { display: none !important; }
+    body { background: none; }
+    .slide {
+      min-height: 0; height: 720px; width: 1280px;
+      padding: 56px 72px; page-break-after: always; break-after: page;
+      display: grid; place-items: center;
+      background: linear-gradient(155deg, var(--sky) 0%, var(--violet) 54%, var(--cyan) 100%);
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .slide:last-child { page-break-after: avoid; break-after: auto; }
+    .panel {
+      opacity: 1 !important; transform: none !important;
+      -webkit-backdrop-filter: none; backdrop-filter: none;
+      background: rgba(255, 255, 255, 0.14);
+      padding: 40px 52px;
+    }
+    /* 데모 슬라이드는 스텝이 많다 — 한 장에 맞게 조인다 */
+    .steps { gap: 7px; margin-top: 16px; }
+    .step { padding: 9px 16px; }
+    .grid, .flow, .evidence { margin-top: 18px; }
+  }
+</style>
+
+<div class="world" aria-hidden="true">
+  <div class="orb a"></div>
+  <div class="orb b"></div>
+  <div class="orb c"></div>
+</div>
+
+<nav class="dots" aria-label="슬라이드 이동">
+  <a href="#s1" aria-label="1. 타이틀"></a>
+  <a href="#s2" aria-label="2. 문제와 사용자"></a>
+  <a href="#s3" aria-label="3. respec의 한 바퀴"></a>
+  <a href="#s4" aria-label="4. 라이브 데모"></a>
+  <a href="#s5" aria-label="5. 워크플로우"></a>
+  <a href="#s6" aria-label="6. Agent와 Skill"></a>
+  <a href="#s7" aria-label="7. 사람과 AI의 역할"></a>
+  <a href="#s8" aria-label="8. 검증과 발견"></a>
+  <a href="#s9" aria-label="9. 배포"></a>
+  <a href="#s10" aria-label="10. 마무리"></a>
+</nav>
+
+<main>
+  <!-- 1. Title -->
+  <section class="slide" id="s1">
+    <div class="panel">
+      <div class="hero-mark"><b>respec</b><span>역기획 · 순기획 플랫폼</span></div>
+      <p class="eyebrow">4주차 최종 발표 · 라이브 데모</p>
+      <h1>쓰고, 평가받고, 겨루는<br><span class="gold">한 바퀴를 배포까지</span></h1>
+      <p class="lead">게임 기획 지망생이 역기획서와 오리지널 기획안을 가이드 템플릿으로 쓰고, 사람과 AI 양쪽에게 피드백·자동 채점을 받고, 챌린지로 겨루는 웹 플랫폼. 오늘은 로컬이 아니라 <strong>배포된 주소</strong>에서 돌립니다.</p>
+      <div class="hero-meta">
+        <span><b>발표자</b> N011 권혁준</span>
+        <span><b>프론트</b> respec-gamma.vercel.app</span>
+        <span><b>백엔드</b> respec.onrender.com</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Problem -->
+  <section class="slide" id="s2">
+    <div class="panel">
+      <p class="eyebrow">문제와 사용자</p>
+      <h2>역기획서 앞에서 <span class="gold">세 번 막힙니다</span></h2>
+      <p class="lead">역기획서는 게임 기획 지망생에게 사실상 필수 포트폴리오인데, 처음 쓰는 사람은 매번 같은 세 곳에서 멈춥니다.</p>
+      <div class="grid three">
+        <div class="card">
+          <div class="role">벽 ①</div>
+          <h3>백지의 벽</h3>
+          <p>무엇을 어떤 순서로 써야 하는지 모른다. → <strong>직군별 템플릿 + 섹션 가이드</strong></p>
+        </div>
+        <div class="card">
+          <div class="role">벽 ②</div>
+          <h3>피드백의 벽</h3>
+          <p>다 써도 봐줄 사람이 없다. '요약'인지 '의도 분석'인지 스스로 판정하기 어렵다. → <strong>사람 + AI 섹션별 피드백</strong></p>
+        </div>
+        <div class="card">
+          <div class="role">벽 ③</div>
+          <h3>완성의 벽</h3>
+          <p>마감이 없으니 끝나지 않는다. → <strong>배점 공개 + AI 자동 채점 챌린지</strong></p>
+        </div>
+      </div>
+      <div class="chips">
+        <span class="chip gold">사용자</span>
+        <span class="chip">게임 기획자 지망생</span>
+        <span class="chip">처음 써 보는 사람</span>
+        <span class="chip">포트폴리오 준비 취업 준비생</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. The loop -->
+  <section class="slide" id="s3">
+    <div class="panel">
+      <p class="eyebrow">respec의 한 바퀴</p>
+      <h2>작성에서 <span class="gold">리더보드</span>까지 끊기지 않는다</h2>
+      <p class="lead">모든 읽기·쓰기는 <span class="chip mono">storage.js → api.js → Express → Supabase</span> 하나의 길을 지나고, 작성자·AI 여부·점수 같은 민감한 값은 전부 서버가 정합니다.</p>
+      <div class="flow">
+        <div class="node"><div class="tier">1</div><div class="name">가이드 작성</div><div class="sub">템플릿 10종</div></div>
+        <div class="arrow">→<small>RAWG 자동완성</small></div>
+        <div class="node"><div class="tier">2</div><div class="name">발행</div><div class="sub">status flip</div></div>
+        <div class="arrow">→<small>서버에서만 호출</small></div>
+        <div class="node"><div class="tier">3</div><div class="name">AI 피드백 · 채점</div><div class="sub">Gemini + JSON schema</div></div>
+        <div class="arrow">→<small>ai_score</small></div>
+        <div class="node"><div class="tier">4</div><div class="name">리더보드 · 코멘트</div><div class="sub">점수순 정렬</div></div>
+      </div>
+      <div class="chips">
+        <span class="chip gold">라이브 데이터 · 2026-07-30</span>
+        <span class="chip">발행 66편</span>
+        <span class="chip">저자 23명</span>
+        <span class="chip">게임 23종</span>
+        <span class="chip">AI 예시 37편</span>
+        <span class="chip">챌린지 제출 12편 · 최고 91점</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Live demo -->
+  <section class="slide" id="s4">
+    <div class="panel">
+      <p class="eyebrow">라이브 데모 · 배포 주소에서</p>
+      <h2>이 순서 그대로 <span class="gold">눌러 보입니다</span></h2>
+      <div class="steps">
+        <div class="step"><div class="num">1</div><div class="body"><b>둘러보기</b> — 발행 66편·저자 23명. 장르·분류 두 축 필터, 금색 'AI 예시' 배지.<span class="proof">GET /api/documents?status=published</span></div></div>
+        <div class="step"><div class="num">2</div><div class="body"><b>문서 상세</b> — 섹션별 사람 코멘트 + AI 총평 패널. 새로고침해도 남는다(jsonb 저장).<span class="proof">GET /api/documents/:id</span></div></div>
+        <div class="step"><div class="num">3</div><div class="body"><b>챌린지</b> — 4개 동시 진행, 카드마다 <b>채점 배점을 미리 공개</b>. 종료 챌린지는 점수순 리더보드(제출 12편).<span class="proof">ai_score DESC</span></div></div>
+        <div class="step"><div class="num">4</div><div class="body"><b>작성하기</b> — 역기획·순기획 템플릿, 긴 문단 대신 짧은 구조화 필드.<span class="proof">템플릿 10종 = 역기획 4 + 순기획 6</span></div></div>
+        <div class="step"><div class="num">5</div><div class="body"><b>게임 검색 <code>Zelda</code></b> — 실제 게임 DB(RAWG) 자동완성 → 고르면 <b>장르 렌즈</b>가 뜬다.<span class="proof">GET /api/games/search · 키는 서버에만</span></div></div>
+        <div class="step"><div class="num">6</div><div class="body"><b>발행</b> — 새 행이 아니라 초안 행의 status를 뒤집는다. '태그 필수'는 앱이 아니라 <b>DB 제약</b>이 막는다.<span class="proof">PATCH /api/documents/:id · publish_requires_tags</span></div></div>
+        <div class="step"><div class="num">7</div><div class="body"><b>AI 채점 1콜</b> — 공개된 배점 그대로 총점·항목별 점수와 한 줄 근거. 응답 형식은 JSON 스키마로 강제.<span class="proof">POST /:id/ai-feedback → comments + ai_score</span></div></div>
+      </div>
+      <div class="chips">
+        <span class="chip gold">사전 점검</span>
+        <span class="chip">Render 워밍업(콜드스타트 ~50초)</span>
+        <span class="chip">AI 한도 1콜 남기기</span>
+        <span class="chip">게임 검색은 영어로</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Workflow -->
+  <section class="slide" id="s5">
+    <div class="panel">
+      <p class="eyebrow">만든 순서 · docs/WORKFLOW.md</p>
+      <h2>완료는 <span class="gold">"한 바퀴가 관찰됐다"</span>일 때만</h2>
+      <p class="lead">단계마다 입력·확인 기준·결과물·실패 시 돌아갈 곳을 적었습니다. 사람이 멈춰 서는 지점은 셋뿐입니다 — 계획 뒤, PR 반영 전, 배포 뒤.</p>
+      <div class="flow">
+        <div class="node"><div class="tier">1</div><div class="name">분석</div><div class="sub">완료 기준</div></div>
+        <div class="arrow">→</div>
+        <div class="node"><div class="tier">2</div><div class="name">계획</div><div class="sub">하루 크기</div></div>
+        <div class="arrow">→</div>
+        <div class="node gate"><div class="tier">사람 ①</div><div class="name">범위 승인</div><div class="sub">컷 순서</div></div>
+        <div class="arrow">→</div>
+        <div class="node"><div class="tier">3</div><div class="name">TDD · 구현</div><div class="sub">실패 테스트 먼저</div></div>
+        <div class="arrow">→</div>
+        <div class="node"><div class="tier">4</div><div class="name">검증</div><div class="sub">PASS/FAIL</div></div>
+        <div class="arrow">→</div>
+        <div class="node gate"><div class="tier">사람 ②</div><div class="name">PR 머지</div><div class="sub">CI 초록</div></div>
+        <div class="arrow">→</div>
+        <div class="node"><div class="tier">5</div><div class="name">배포 · 관찰</div><div class="sub">사람 ③</div></div>
+      </div>
+      <p style="margin-top:22px"><strong>완료의 정의</strong> — "코드가 그럴듯하다"가 아니라 <span class="gold">요청이 서버를 거쳐 DB에 저장되고 다시 조회돼 화면 데이터로 돌아오는 한 바퀴가 관찰됐다</span>. 이 문장을 문서에 박고, 검사 자체를 Agent에게 맡겼습니다.</p>
+    </div>
+  </section>
+
+  <!-- 6. Agents -->
+  <section class="slide" id="s6">
+    <div class="panel">
+      <p class="eyebrow">Agent · Skill 협업 배치</p>
+      <h2>많이 만들기보다 <span class="gold">판단 근거를 고정</span></h2>
+      <p class="lead">Agent 2개 + Skill 1개만 만들고, 셋 다 프로젝트 문서(BACKLOG·기획서·DESIGN_SYSTEM)를 먼저 읽게 했습니다. 그래야 같은 질문에 매번 다른 기준으로 답하지 않습니다.</p>
+      <div class="grid three">
+        <div class="card">
+          <div class="role">Agent · 계획</div>
+          <h3>plan-breakdown</h3>
+          <p>주차 목표를 하루 크기로 분해해 <b>표 하나</b>로만 답한다. 파일도 이슈도 만들지 않는다.</p>
+          <ul><li>2주차: 테이블 2개→1개(JSONB) 지적 반영</li><li>크리티컬 패스(Supabase 키) 발견</li></ul>
+        </div>
+        <div class="card">
+          <div class="role">Agent · 검증</div>
+          <h3>feature-verify</h3>
+          <p>"다 됐다" 직전에 엔드포인트를 직접 두드려 <b>요구사항별 PASS/FAIL</b>. 코드 수정 권한은 없다.</p>
+          <ul><li>하나라도 FAIL이면 전체 FAIL</li><li>검증이 막히면 BLOCKED로 정지</li></ul>
+        </div>
+        <div class="card">
+          <div class="role">Skill · 디자인</div>
+          <h3>design-guide</h3>
+          <p>새 화면이 토큰·글래스 4요소·game-feel 규칙에서 벗어났는지 <b>8항목 체크리스트</b>로 자체 점검.</p>
+          <ul><li>스타일이 바뀌면 화면·토큰·문서·Skill을 함께 고친다</li></ul>
+        </div>
+      </div>
+      <div class="chips">
+        <span class="chip gold">4주차 추가</span>
+        <span class="chip mono">.github/workflows/ci.yml</span>
+        <span class="chip">PR마다 backend test · frontend lint·test·build</span>
+        <span class="chip">Hook은 미도입 — 1인 규모에선 관리 비용이 더 컸다</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Human vs AI -->
+  <section class="slide" id="s7">
+    <div class="panel">
+      <p class="eyebrow">역할 구분</p>
+      <h2>사람이 정한 것과 <span class="gold">AI가 한 것</span></h2>
+      <div class="grid two">
+        <div class="card">
+          <div class="role">사람 (나)</div>
+          <h3>목표 · 범위 · 완료 판정</h3>
+          <ul>
+            <li>무슨 문제를 풀지, 무엇을 MVP에서 뺄지</li>
+            <li>P0/P1/P2 확정과 밀릴 때 자르는 순서</li>
+            <li>데이터 모델·인증 경계 결정(프론트는 Supabase를 인증에만 직접 호출)</li>
+            <li>디자인 방향 — 쿨톤 글래스, 강조색은 gold 하나</li>
+            <li>라이브에서 직접 써보고 "쓸 만한가" 판정</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="role">AI (Agent · Claude Code)</div>
+          <h3>분해 · 초안 · 검증</h3>
+          <ul>
+            <li>주차 목표를 하루 크기 작업으로 분해, 누락·크리티컬 패스 지적</li>
+            <li>테스트·코드 초안 작성과 리팩터</li>
+            <li>다이어그램 작성과 매핑표 정리</li>
+            <li>내 "됐다"를 엔드포인트로 검증해 PASS/FAIL 보고</li>
+            <li>배포 설정·환경변수 문서화</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top:22px">규칙은 <span class="chip mono">CLAUDE.md</span>에 적어 매 작업에 상시 적용했습니다 — LLM 키는 백엔드에만, 목데이터 스키마는 기획서 §5와 일치, 커밋·브랜치·CSS 컨벤션.</p>
+    </div>
+  </section>
+
+  <!-- 8. Verification -->
+  <section class="slide" id="s8">
+    <div class="panel">
+      <p class="eyebrow">검증 · 그림이 잡아낸 것</p>
+      <h2>가장 큰 수확은 <span class="gold">기능이 아니라 검증</span></h2>
+      <p class="lead">아키텍처 다이어그램을 AI와 함께 그리며 화살표마다 "이 값은 누가 정하나"를 설명하게 했더니, 클라이언트가 보낸 값을 서버가 그대로 믿는 지점이 드러났습니다.</p>
+      <div class="evidence">
+        <pre><span class="c"># 라이브 헬스체크 (배포 백엔드 + DB)</span>
+<span class="k">GET</span> https://respec.onrender.com/api/health
+<span class="s">{"status":"ok","db":"ok"}</span>
+
+<span class="c"># 발견해 고친 것들 (ARCHITECTURE.md §4)</span>
+사람 코멘트를 <span class="k">AI 코멘트로 위장</span> 가능      → 막음
+남의 <span class="k">초안이 목록·단건</span>으로 유출        → 404로 숨김
+재발행 시 <span class="k">코멘트·좋아요 삭제</span>          → 서버가 필드 거부
+<span class="k">anon 키</span>만으로 DB 직접 접근            → 전 테이블 RLS ON
+미리보기로 <span class="k">AI 한도 우회</span>              → 한도 합산
+AI 실패가 <span class="k">조용히 사라짐</span>              → 배너 + 재시도
+<span class="c">→ 6건 수정 + 1건은 "의도된 설계"로 확정, 전부 회귀 테스트</span></pre>
+        <div class="metrics">
+          <div class="metric"><div class="big">28 + 36</div><div class="lbl">백엔드 · 프론트 자동 테스트 (전부 통과)</div></div>
+          <div class="metric"><div class="big">7건</div><div class="lbl">신뢰 경계 문제 발견 → 6건 수정</div></div>
+          <div class="metric"><div class="big">CI</div><div class="lbl">PR마다 lint · test · build 자동 실행</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. Deploy -->
+  <section class="slide" id="s9">
+    <div class="panel">
+      <p class="eyebrow">배포 구조 · docs/DEPLOY.md</p>
+      <h2>비밀값은 <span class="gold">서버 쪽에만</span></h2>
+      <div class="flow">
+        <div class="node"><div class="tier">Frontend</div><div class="name">Vercel</div><div class="sub">frontend/ · Vite</div></div>
+        <div class="arrow">→<small>VITE_API_URL</small></div>
+        <div class="node"><div class="tier">Backend</div><div class="name">Render</div><div class="sub">backend/ · Express</div></div>
+        <div class="arrow">→<small>service_role</small></div>
+        <div class="node"><div class="tier">Data · Auth</div><div class="name">Supabase</div><div class="sub">Postgres · Auth</div></div>
+        <div class="arrow">→<small>서버에서만</small></div>
+        <div class="node"><div class="tier">외부 API</div><div class="name">Gemini · RAWG</div><div class="sub">키는 Render에만</div></div>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <h3>배포하며 배운 것</h3>
+          <ul>
+            <li>Vercel Hobby가 <code>Co-Authored-By</code>를 협업 커밋으로 보고 차단 → 단일 작성자 커밋</li>
+            <li><code>VITE_API_URL</code> 미설정 시 배포본이 자기 도메인의 <code>/api</code>를 호출해 실패</li>
+            <li>Render 무료 인스턴스 콜드스타트 ~50초 → 데모 직전 워밍업을 체크리스트로</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>비밀 경계</h3>
+          <ul>
+            <li>프론트가 갖는 키는 <b>공개용 anon 하나</b>뿐</li>
+            <li>service_role · Gemini · RAWG 키는 <b>Render에만</b></li>
+            <li>실제 <code>.env</code>는 커밋하지 않고 <code>.env.example</code>만</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. Closing -->
+  <section class="slide" id="s10">
+    <div class="panel closing">
+      <p class="eyebrow">남은 한계와 마무리</p>
+      <h2>정직하게 <span class="gold">남은 것들</span></h2>
+      <ul class="next-list" style="max-width: 52ch; margin-inline: auto; text-align: left;">
+        <li>코멘트 동시 쓰기 유실 — jsonb read-modify-write. 코멘트 테이블 정규화가 다음 큰 조각</li>
+        <li>AI 예시 96편 잔여 — Gemini 무료 하루 20건. 발표용 한도 보존이 우선</li>
+        <li>CORS 전체 허용 → Vercel 도메인으로 제한(데모 이후)</li>
+        <li>지인 사용성 테스트 3인 미실시</li>
+      </ul>
+      <p class="lead" style="margin: 28px auto 0; text-align: left; max-width: 60ch;">respec은 기획을 <strong>쓰고 · 평가받고 · 겨루는</strong> 한 바퀴를 라이브로 돌려낸 플랫폼이고, 그 과정을 <strong>순서와 확인 기준이 있는 워크플로우</strong>로 남겼습니다.</p>
+      <p class="thanks">respec · 감사합니다</p>
+    </div>
+  </section>
+</main>
+
+<div class="hint" aria-hidden="true">← → 방향키로 이동 · 우측 점 클릭</div>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')]
+  const dots = [...document.querySelectorAll('nav.dots a')]
+
+  // Reveal panels + sync progress dots
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) {
+        e.target.querySelector('.panel')?.classList.add('in')
+        const i = slides.indexOf(e.target)
+        dots.forEach((d, di) => d.classList.toggle('active', di === i))
+      }
+    }
+  }, { threshold: 0.5 })
+  slides.forEach((s) => io.observe(s))
+
+  // Keyboard navigation
+  const main = document.querySelector('main')
+  function current() {
+    const y = main.scrollTop + main.clientHeight / 2
+    return slides.findIndex((s) => s.offsetTop <= y && s.offsetTop + s.offsetHeight > y)
+  }
+  addEventListener('keydown', (ev) => {
+    if (['ArrowDown', 'PageDown', 'ArrowRight'].includes(ev.key)) {
+      ev.preventDefault()
+      slides[Math.min(current() + 1, slides.length - 1)]?.scrollIntoView()
+    } else if (['ArrowUp', 'PageUp', 'ArrowLeft'].includes(ev.key)) {
+      ev.preventDefault()
+      slides[Math.max(current() - 1, 0)]?.scrollIntoView()
+    }
+  })
+</script>

@@ -1,0 +1,53 @@
+name: CI
+
+# 왜 두 트리거인가: PR Checks에 결과를 남기고(리뷰 기준), feature 브랜치에 push할 때도
+# 바로 돌려 PR을 열기 전에 깨진 걸 알 수 있게 한다.
+on:
+  pull_request:
+  push:
+    branches:
+      - 'feature/**'
+
+# 같은 브랜치에 연속 push하면 이전 실행은 취소한다(무료 러너 시간 절약).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: backend (test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      # 테스트는 lib/supabase.js를 mock하고 LLM 클라이언트는 지연 생성이라
+      # 실제 키·DB 없이 돈다. CI에 비밀값을 넣지 않는 이유.
+      - run: npm test
+
+  frontend:
+    name: frontend (lint · test · build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      # VITE_* 없이도 빌드는 통과한다(supabaseClient가 키 없으면 null을 export).
+      # 실제 값은 Vercel 환경변수에서 주입된다.
+      - run: npm run build

@@ -54,13 +54,13 @@ Task는 보통 "함수 하나 짜기"처럼 잘게 쪼개지 않고, "화면 하
 
 이번 주 목표는 **기능 강화 + 테스트로 검증 + Agent 산출물**이다. 수직슬라이스는 지난주에 끝났으므로 슬라이스 완성이 아니라 그 위에 쌓는다. 아래는 이번 주 신규 Task(기존 4주 계획에 없던 항목 포함).
 
-- [ ] **P0** backend 테스트 인프라 — `index.js`를 `app.js`(export)/`index.js`(listen)로 분리, vitest + supertest, **supabase 클라이언트 mock**(실 DB 오염 방지) *(신규)*
-- [ ] **P0** frontend 테스트 인프라 — vitest + jsdom + @testing-library/react *(신규)*
-- [ ] **P0** **초안 자동저장 (TDD 대상)** — 순수 함수(`makeSnapshot`/`hasUnsavedChanges`/`shouldAutosave`)를 테스트 먼저 작성 → 구현 → EditorPage debounce 연결 *(신규)*
-- [ ] **P0** **로그인/로그아웃** — 프론트가 Supabase Auth 직접 사용(이메일+구글), 백엔드는 JWT 검증해 `author_id` 기록·소유권 확인, 내 초안만 조회 *(1주차 P0 이월분 실행)*
-- [ ] **P0** Agent 산출물 ① `.claude/skills/test-writer/` 테스트코드 생성 Skill *(신규)*
-- [ ] **P0** Agent 산출물 ② `.claude/agents/code-review.md` 코드 검증 Agent + 로그인 diff에 실제 적용 *(신규)*
-- [ ] **P0** Agent 산출물 ③ `docs/WORKFLOW.md` 나만의 워크플로우 문서 *(신규)*
+- [x] **P0** backend 테스트 인프라 — `index.js`를 `app.js`(export)/`index.js`(listen)로 분리, vitest + supertest, **supabase 클라이언트 mock**(실 DB 오염 방지) *(신규 — `app.test.js`·`documents.auth.test.js`에서 `vi.mock('./lib/supabase.js')`. 현재 28 테스트 통과)*
+- [x] **P0** frontend 테스트 인프라 — vitest + jsdom + @testing-library/react *(신규 — `vite.config.js`의 `test` 블록 + `src/test/setup.js`. 현재 36 테스트 통과)*
+- [x] **P0** **초안 자동저장 (TDD 대상)** — 순수 함수(`makeSnapshot`/`hasUnsavedChanges`/`shouldAutosave`)를 테스트 먼저 작성 → 구현 → EditorPage debounce 연결 *(신규 — `frontend/src/lib/autosave.js` + `autosave.test.js`)*
+- [x] **P0** **로그인/로그아웃** — 프론트가 Supabase Auth 직접 사용(이메일+구글), 백엔드는 JWT 검증해 `author_id` 기록·소유권 확인, 내 초안만 조회 *(1주차 P0 이월분 실행 — `AuthContext.jsx` + `requireAuth.js`. 4주차에 비밀번호 재설정·이메일 변경·프로필까지 추가)*
+- [ ] **P0** Agent 산출물 ① `.claude/skills/test-writer/` 테스트코드 생성 Skill *(신규 — **미실행.** TDD 단계가 매번 같은 절차(순수 함수는 vitest, 라우트는 supertest 회귀)로 수렴해 Skill로 뽑을 변주가 없었다. 절차는 `docs/WORKFLOW.md` §2의 4단계에 문장으로 고정)*
+- [ ] **P0** Agent 산출물 ② `.claude/agents/code-review.md` 코드 검증 Agent + 로그인 diff에 실제 적용 *(신규 — **미실행.** 검증을 셋으로 나눠 대체: 동작은 `feature-verify` Agent, 설계는 아키텍처 다이어그램 리뷰(→ 신뢰경계 7건 발견), 회귀는 `.github/workflows/ci.yml`)*
+- [x] **P0** Agent 산출물 ③ `docs/WORKFLOW.md` 나만의 워크플로우 문서 *(신규 — 4주차에 작성. 단계별 입력·확인 기준·결과물·복구 지점 표 + 개발 루프/Agent 배치 mermaid 2종 + 사람 결정 vs AI 수행 표)*
 - [x] **P0** 아키텍처 시각화 — README에 mermaid(구조 + 데이터 흐름 시퀀스), 낡은 서술 교정 *(신규 — `docs/ARCHITECTURE.md`에 전체 구조 1장 + 발행→AI 시퀀스 + 인증/권한 시퀀스, README에 전체 구조 게재. 그리며 발견한 5건은 아래 "아키텍처 다이어그램에서 발견한 개선점" 참조)*
 
 **이번 주 기준선**: 계정별로 로그인해 자기 문서를 쓰고, 타이핑만 해도 자동 저장되며, 그 동작이 테스트로 검증된다.
@@ -88,10 +88,10 @@ Task는 보통 "함수 하나 짜기"처럼 잘게 쪼개지 않고, "화면 하
 챌린지 공개 대시보드(`connect-AIAgentChallenge-26-1/hub`)가 **참가자 브랜치 루트의 `showcase/showcase.json`** 을 매일 23시(KST)에 수집한다. 규격은 공용 저장소 `dashboard-page` 브랜치의 `dashboard/schemas/showcase.schema.json`(Ajv, `additionalProperties: false`)과 `dashboard/scripts/collect-local-showcases.mjs`가 정한다. **`thumbnail`은 필수이고 파일이 실제로 없으면 수집기가 예외를 던져 브랜치 전체가 대시보드에서 빠지므로**, 항목을 비울 때도 이미지는 반드시 넣어둔다. 남은 항목은 다음 주까지 하나씩 채워 PR에 같이 올린다.
 
 - [x] **P0** `showcase/showcase.json` + `thumbnail.webp` + `screenshots/home.webp` 추가 *(2026-07-23. Ajv 검증 통과. 카드가 16:9 `object-fit:cover`로 잘라내므로 썸네일은 홈 화면 상단 크롭본)*
-- [ ] **P0** `demoUrl` 채우기 — 4주차 "Vercel 배포" Task가 끝나야 값이 생긴다. 현재는 `""`
+- [x] **P0** `demoUrl` 채우기 — `https://respec-gamma.vercel.app` *(2026-07-30 반영. 데모 영상 링크 `demoVideoUrl`도 함께)*
 - [ ] **P1** `screenshots` 2장 추가(최대 3장) — 가이드형 에디터, AI 섹션별 피드백 화면
-- [ ] **P1** 기능이 늘면 `features`(최대 5개)·`featureTags`(최대 3개)·`techHighlights`(최대 3개) 갱신
-- [ ] **P1** Agent/Skill을 새로 만들면 `agent.agentTools`·`agent.workflows`에 반영 — 2주차 P0인 test-writer Skill·code-review Agent가 생기면 추가
+- [x] **P1** 기능이 늘면 `features`·`featureTags`·`techHighlights` 갱신 *(2026-07-30. 순기획 템플릿·RAWG 연동·AI 자동 채점·라이브 배포 반영)*
+- [x] **P1** Agent/Skill을 새로 만들면 `agent.agentTools`·`agent.workflows`에 반영 — 실제 산출물은 Agent 2개(plan-breakdown·feature-verify) + Skill 1개(design-guide)로 확정. test-writer·code-review는 미실행이라 넣지 않고, `workflows`에 CI 검사 단계를 추가했다
 
 ## 1주차 Task — 기반 구축
 
@@ -131,11 +131,23 @@ Task는 보통 "함수 하나 짜기"처럼 잘게 쪼개지 않고, "화면 하
 기준 문서: `project-plan.md` §3.3(챌린지), §3.4(LLM 자동 피드백), §10(성공 지표)
 
 - [x] **P0** LLM 피드백 실 구현 — backend 엔드포인트, 프롬프트 4관점(구조 완결성/구체성/예외 질문/역기획 관점), 일일 호출 제한(ai_feedback_logs) *(Claude API 대신 **Google Gemini**(`gemini-2.5-flash`, 무료 티어)로 구현 — `backend/src/lib/aiFeedback.js`. `responseSchema`로 섹션별 코멘트 + 총평 구조 강제. 회원 전용·일일 5회)*
-- [ ] **P0** 챌린지 페이지 실 데이터 연동 + 운영자 어드민(생성·마감 수동 처리 수준)
-- [ ] **P0** 가이드 정적 페이지 내용 완성 (역기획서란?, 참고 자료 큐레이션)
-- [ ] **P0** QA — 기획서 §4 유저 플로우 A/B/C 전체 동작 확인, 지인 사용성 테스트 3인
-- [ ] **P0** Vercel 배포
-- [ ] **P0** README/Wiki 문서 정리, PR 최종 제출
+- [x] **P0** 챌린지 페이지 실 데이터 연동 *(제출·AI 자동 채점·점수순 리더보드는 실제 DB(`documents.ai_score`)로 동작. **챌린지 정의 자체는 의도적으로 프론트 시드**(`frontend/src/data/challenges.js`) — 운영자가 큐레이션하는 소수 항목이라 테이블·어드민을 두지 않았다. 어드민 화면은 미도입으로 확정)*
+- [x] **P0** 가이드 정적 페이지 내용 완성 *(역기획서란?/좋은 역기획서의 조건/흔한 실수/참고 자료/바로 시작하기 5개 패널. 현직자 글 큐레이션 한 줄만 "준비 중"으로 남음)*
+- [ ] **P0** QA — 기획서 §4 유저 플로우 A/B/C 전체 동작 확인, 지인 사용성 테스트 3인 *(핵심 흐름(플로우 A+AI 채점)은 라이브 검증 완료. 지인 3인 테스트는 미실시)*
+- [x] **P0** Vercel 배포 *(프론트 https://respec-gamma.vercel.app · 백엔드(Render) https://respec.onrender.com. 설정·검증 기록은 `docs/DEPLOY.md`)*
+- [ ] **P0** README/Wiki 문서 정리, PR 최종 제출 *(4주차 진행 중 — README에 WORKFLOW.md 링크 추가 완료, 최종 PR 제출 남음)*
+
+## 4주차 마무리 (2026-07-30) — 워크플로우 문서 · CI · 데모 준비
+
+새 기능을 넣지 않는 주다. 손댄 것은 **문서 + `showcase/showcase.json` + `.github/workflows/ci.yml`**뿐이고 `frontend/src`·`backend/src`는 건드리지 않았다.
+
+- [x] **P0** `docs/WORKFLOW.md` — 나만의 워크플로우(과제 ①) + Agent 협업 시각화(과제 ②)를 한 문서로
+- [x] **P0** CI 도입 — `.github/workflows/ci.yml`(PR·feature push에서 backend test / frontend lint·test·build). 비밀값 없이 도는 것을 확인하고 넣었다
+- [x] **P0** 문서를 실제 상태와 일치시키기 — 이 백로그의 2주차·4주차 항목, showcase.json, DEPLOY.md 검증 기록
+- [x] **P0** 데모 자료 — `docs/PRESENTATION-week4.md`(대본·시연 순서·예상 질문) + `docs/PRESENTATION-week4.html`(슬라이드)
+- [x] **P0** 라이브 재검증 — `/api/health` `db:ok`, 발행 66편, RAWG 8건, 프론트 200, 번들이 Render 주소 호출
+- [ ] **P1** CORS를 Vercel 도메인으로 제한 — 데모 이후로 미룸(데모 주간에 배포 리스크를 만들지 않는다)
+- [ ] **P1** AI 예시 96편 남은 생성 — Gemini 무료 하루 20건. 발표용 한도 보존이 우선
 
 ## P2 — 이번 프로젝트 범위 밖 (기획서 §8)
 
