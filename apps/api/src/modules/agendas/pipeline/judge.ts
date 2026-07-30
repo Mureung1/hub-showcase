@@ -131,6 +131,8 @@ export async function judgeDrafts(
     stancesDiscarded: { empty_output: 0, empty_quotes: 0, not_participant: 0, duplicate_provider: 0 },
     stanceSurvival: [],
     stancesFilled: 0,
+    rejectedQuotes: [],
+    rejectedQuotesOmitted: 0,
   };
 
   let quotesTotal = 0;
@@ -194,6 +196,20 @@ export async function judgeDrafts(
         quotesTotal += grounded.quotesTotal;
         quotesRejected += grounded.quotesRejected;
         rejectedQuotes.push(...grounded.rejected);
+        // §14.2 — 쟁점당 최대 5건. 넘치면 몇 건이 생략됐는지 함께 남긴다.
+        const KEEP_PER_AGENDA = 5;
+        for (const [i, r] of grounded.rejected.entries()) {
+          if (i < KEEP_PER_AGENDA) {
+            quality.rejectedQuotes.push({
+              provider: r.provider,
+              sectionId: r.sectionId,
+              reason: r.reason,
+              diff: r.diff,
+            });
+          } else {
+            quality.rejectedQuotesOmitted += 1;
+          }
+        }
         for (const [reason, count] of Object.entries(grounded.stancesDiscarded)) {
           quality.stancesDiscarded[reason] =
             (quality.stancesDiscarded[reason] ?? 0) + count;

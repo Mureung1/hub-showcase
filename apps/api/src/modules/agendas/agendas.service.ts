@@ -80,6 +80,8 @@ function emptyQualityMetrics(): ManagerQualityMetrics {
     stancesDiscarded: {},
     stanceSurvival: [],
     stancesFilled: 0,
+    rejectedQuotes: [],
+    rejectedQuotesOmitted: 0,
   };
 }
 

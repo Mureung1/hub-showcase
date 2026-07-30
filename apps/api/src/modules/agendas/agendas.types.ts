@@ -135,6 +135,21 @@ export interface ManagerQualityMetrics {
    * LLM 요약이 아니라 섹션 제목으로 채워졌다는 뜻이므로 품질 해석에 필요하다.
    */
   stancesFilled: number;
+  /**
+   * 폐기된 인용의 **차이 내역** (§14.2). 전문이 아니라 `provider`·`sectionId`·사유·차이만 담는다.
+   *
+   * ⚠️ **§16.3의 예외다.** T-019.3.1·T-019.4에서 `quoteRejectRate`가 두 번 연속 임계를
+   * 넘었는데 이 값이 없어 원인을 모른 채 재실행에 의존했고, 두 번 다 재현되지 않아
+   * 원 표본을 끝내 못 얻었다. **진단값이 저장되는 곳까지 도달해야 사후 분석이 된다.**
+   */
+  rejectedQuotes: {
+    provider: string;
+    sectionId: string | null;
+    reason: string;
+    diff: string | null;
+  }[];
+  /** 쟁점당 5건 상한으로 생략된 건수. **조용한 절단을 만들지 않는다**(§14.2). */
+  rejectedQuotesOmitted: number;
 }
 
 /**

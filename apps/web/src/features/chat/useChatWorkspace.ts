@@ -31,6 +31,7 @@ import type { SourceAnswerEvent } from "./scenarios";
 import type { MockAgendaTemplate } from "./mockData";
 import {
   allProvidersFailedContent,
+  managerFailedContent,
   allRejectedFinalAnswerContent,
   mockAgendaTemplates,
   mockFinalAnswerContent,
@@ -538,6 +539,30 @@ export function useChatWorkspace() {
             };
           }),
         }));
+
+        /**
+         * 경로 C — 새로고침 복원도 **확정 스냅샷**이다(§12.1).
+         *
+         * ⚠️ 이 호출이 없으면 `agenda.done`(경로 A)에서만 마감이 판단되고, 새로고침하는
+         * 순간 다시 갇힌다. SSE로 왔든 GET으로 왔든 **확정된 0건은 같은 처리로 수렴**해야
+         * 한다. 대상을 0건으로 좁히는 이유는 비어 있지 않은 복원이 이미 정상 동작하고
+         * 있어(T-019.4 F-6), 다시 태우면 DecisionNote가 중복 생성될 수 있기 때문이다.
+         */
+        for (const { chat, questions } of stored) {
+          for (const question of questions) {
+            const restored = agendasByQuestion.get(question.id) ?? [];
+            const managerRan = (answersByQuestion.get(question.id) ?? []).some(
+              (answer) => answer.status === "succeeded",
+            );
+            if (
+              restored.length === 0 &&
+              managerRan &&
+              question.status !== "completed"
+            ) {
+              applyAgendas(chat.id, question.id, [], { final: true });
+            }
+          }
+        }
       })
       .catch((error) => {
         console.error(
@@ -548,6 +573,9 @@ export function useChatWorkspace() {
     return () => {
       cancelled = true;
     };
+    // 마운트 1회 복원이다. applyAgendas는 매 렌더 새로 만들어지므로 의존성에 넣으면
+    // 복원이 반복 실행된다 — 의도적으로 제외한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverBacked]);
 
   const activeChat =
@@ -1051,6 +1079,14 @@ export function useChatWorkspace() {
     chatId: string,
     questionId: string,
     next: Agenda[] | ((prev: Agenda[]) => Agenda[]),
+    /**
+     * **Agenda 집합이 확정된 시점인가.** `agenda.done`·GET 화해·새로고침 복원이 true다.
+     * `agenda.created`(draft 목록)·`agenda.judged`(진행 중)는 false다.
+     *
+     * 0건을 "Manager 완전 실패"로 볼 수 있는 것은 확정 시점뿐이다 — 아직 오는 중인
+     * 빈 배열과 섞이면 정상 실행을 실패로 오판한다.
+     */
+    options?: { final?: boolean },
   ) {
     let completes = false;
     setState((prev) => {
@@ -1066,12 +1102,21 @@ export function useChatWorkspace() {
             const agendas =
               typeof next === "function" ? next(question.agendas) : next;
 
-            const allFinal =
-              agendas.length > 0 &&
-              agendas.every(
-                (agenda) =>
-                  agenda.status === "passed" || agenda.status === "rejected",
-              );
+            /**
+             * ⚠️ **`agendas.length > 0`을 조건에서 뺐다.**
+             *
+             * 같은 계열의 갇힘이 세 번 나왔다 — T-019.1(충돌 0건), T-019.4(Manager 완전
+             * 실패), 그리고 이번. 원인은 매번 **마감 판단이 "무언가 있다"는 전제에 매달려**
+             * 있었던 것이다. `every`는 빈 배열에서 true이므로 **0건도 자연스럽게 마감**이
+             * 되고, 그래야 같은 계열이 또 안 나온다.
+             */
+            const allFinal = agendas.every(
+              (agenda) =>
+                agenda.status === "passed" || agenda.status === "rejected",
+            );
+            // Manager가 쟁점을 하나도 만들지 못한 경우(§2.5 완전 실패). 확정 시점에만 판단한다.
+            const managerProducedNothing =
+              (options?.final ?? false) && agendas.length === 0;
 
             if (!allFinal) {
               // 아직 판단할 것이 남았다. 충돌이 하나라도 있으면 사용자 판단을 기다린다.
@@ -1088,21 +1133,52 @@ export function useChatWorkspace() {
               };
             }
 
+            // 아직 확정 전인 0건(진행 중)은 건드리지 않는다 — 정상 실행을 실패로 오판한다.
+            if (agendas.length === 0 && !managerProducedNothing) {
+              return question;
+            }
+
             // 전부 마감됨 → FinalAnswer·DecisionNote 생성 후 완료(여전히 브라우저 Mock).
             completes = true;
             const settledQuestion = { ...question, agendas };
-            const finalAnswer = buildMockFinalAnswer(
-              agendas,
-              question.sourceAnswers,
-              questionId,
-            );
-            createdNote = buildMockDecisionNote(
-              chat.id,
-              chat.title,
-              settledQuestion,
-              agendas,
-              finalAnswer,
-            );
+            const now0 = nowIso();
+            /**
+             * §2.5·§6.2 — Manager 완전 실패. **3사 전멸과 다르다.**
+             * 원문 세 개는 그대로 살아 있으므로 `sourceAnswers`를 건드리지 않고,
+             * 없는 판정을 있는 것처럼 보이지 않게 쟁점 목록도 만들지 않는다.
+             */
+            const finalAnswer: FinalAnswer = managerProducedNothing
+              ? {
+                  id: crypto.randomUUID(),
+                  questionId,
+                  content: managerFailedContent,
+                  // 비교 결과가 없다는 뜻을 기존 enum으로 표기한다(전용 값은 AI-003 재검토).
+                  generationMode: "all_agendas_rejected",
+                  createdAt: now0,
+                }
+              : buildMockFinalAnswer(
+                  agendas,
+                  question.sourceAnswers,
+                  questionId,
+                );
+            createdNote = managerProducedNothing
+              ? {
+                  id: crypto.randomUUID(),
+                  questionId,
+                  content: managerFailedContent,
+                  createdAt: now0,
+                  updatedAt: now0,
+                  chatId: chat.id,
+                  title: chat.title,
+                  bullets: [managerFailedContent],
+                }
+              : buildMockDecisionNote(
+                  chat.id,
+                  chat.title,
+                  settledQuestion,
+                  agendas,
+                  finalAnswer,
+                );
             const now = nowIso();
             return {
               ...settledQuestion,
@@ -1230,7 +1306,8 @@ export function useChatWorkspace() {
             return;
           }
           if (event.type === "agenda.done") {
-            applyAgendas(chatId, questionId, event.agendas);
+            // 확정 스냅샷 — 0건이면 Manager 완전 실패다(§2.5).
+            applyAgendas(chatId, questionId, event.agendas, { final: true });
             agendasApplied = true;
             return;
           }
@@ -1246,7 +1323,9 @@ export function useChatWorkspace() {
       // 특정 이벤트 이름이 아니라 "스냅샷을 받았는가"로 판단한다.
       if (!agendasApplied) {
         try {
-          applyAgendas(chatId, questionId, await loadAgendas(chatId, questionId));
+          applyAgendas(chatId, questionId, await loadAgendas(chatId, questionId), {
+            final: true,
+          });
         } catch (error) {
           console.error(
             "[agendas] 스냅샷 화해 실패:",

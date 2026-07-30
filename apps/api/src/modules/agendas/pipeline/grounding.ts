@@ -49,10 +49,71 @@ export type QuoteRejectReason =
   | "other_provider" // 다른 AI의 원문에서 가져왔다(§11-3)
   | "not_in_this_agenda"; // 그 AI의 원문이지만 이 쟁점에 배정된 섹션이 아니다
 
+/**
+ * 폐기된 인용의 **차이만** 남긴다 (§14.2).
+ *
+ * ⚠️ **전문을 저장하지 않는다.** §11.2가 밝힌 대로 폐기 사유의 대부분이 최소 의역이라
+ * 전문을 남기면 "거의 원문과 같은 문장"이 쌓일 뿐이고, 진단 가치는 **차이**에 있다.
+ *
+ * **§16.3의 예외임을 명시한다.** §16.3의 취지는 "Manager 원문 응답을 통째로 저장하지
+ * 않는다"이지 진단값을 버리라는 것이 아니다. T-019.3.1과 T-019.4에서 두 번 연속으로
+ * `quoteRejectRate`가 임계를 넘었는데 **원인을 알 수 없어 재실행에 의존**했다.
+ */
 export interface RejectedQuote {
   provider: AiProvider;
-  quote: string;
+  /** 어느 섹션과 대조했는가. 원문을 되짚을 때의 앵커다. */
+  sectionId: string | null;
   reason: QuoteRejectReason;
+  /**
+   * 가장 가까운 원문과의 첫 불일치 — 예: `"와→과 (idx 12)"`.
+   * `not_in_source`가 아니면 차이 계산이 무의미하므로 null.
+   */
+  diff: string | null;
+}
+
+/** `diff` 문자열 상한 (§14.2). */
+const DIFF_MAX = 200;
+
+/**
+ * 폐기된 quote와 **가장 비슷한 원문 구간**을 찾아 첫 불일치를 문자열로 만든다.
+ *
+ * 편집 거리 라이브러리를 들이지 않는다 — 목적은 "무엇이 달라서 걸렸는가"를 아는 것뿐이다.
+ * quote 앞부분과 일치하는 시작 위치들을 훑어 **가장 길게 일치하는 곳**을 후보로 잡고,
+ * 그 지점부터 문자 단위로 비교해 첫 불일치 인덱스와 양쪽 문자를 남긴다.
+ *
+ * 유사 구간을 못 찾으면 그것 자체가 **실제 날조의 표식**이다.
+ */
+function describeDiff(quote: string, sections: DraftSourceRef[]): string {
+  const needle = normalizeForGrounding(quote);
+  if (needle.length === 0) return "빈 인용";
+
+  let best = { score: 0, at: -1, content: "" };
+  for (const section of sections) {
+    const hay = normalizeForGrounding(section.content);
+    // 시작 문자가 같은 위치만 후보로 본다 — 전수 비교 없이 충분히 좁혀진다.
+    for (let i = 0; i < hay.length; i++) {
+      if (hay[i] !== needle[0]) continue;
+      let match = 0;
+      while (
+        match < needle.length &&
+        i + match < hay.length &&
+        hay[i + match] === needle[match]
+      ) {
+        match += 1;
+      }
+      if (match > best.score) best = { score: match, at: i, content: hay };
+    }
+  }
+
+  // 앞부분조차 거의 안 맞으면 유사 구간이 없다고 본다.
+  if (best.at < 0 || best.score < Math.min(6, needle.length)) {
+    return "원문에 유사 구간 없음";
+  }
+
+  const idx = best.score;
+  const fromChar = best.content[best.at + idx] ?? "(원문 끝)";
+  const toChar = needle[idx] ?? "(인용 끝)";
+  return `${fromChar}→${toChar} (idx ${idx})`.slice(0, DIFF_MAX);
 }
 
 export interface GroundingResult {
@@ -159,10 +220,18 @@ export function groundStances(
               normalizeForGrounding(quote),
             ),
         );
+        const reason: QuoteRejectReason = inOtherProvider
+          ? "other_provider"
+          : "not_in_source";
         rejected.push({
           provider,
-          quote,
-          reason: inOtherProvider ? "other_provider" : "not_in_source",
+          // 대조 앵커 — 가장 비슷한 구간이 있던 섹션을 특정하기 어려우면 첫 섹션을 쓴다.
+          sectionId: providerRefs[0]?.sectionId ?? null,
+          reason,
+          // §14.2 — 타 provider 인용은 "어디서 왔는지"가 사유로 이미 드러나므로
+          // 차이 계산이 무의미하다. 날조 의심 건만 계산한다.
+          diff:
+            reason === "not_in_source" ? describeDiff(quote, providerRefs) : null,
         });
         continue;
       }

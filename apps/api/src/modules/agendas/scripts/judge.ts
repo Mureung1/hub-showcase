@@ -317,6 +317,61 @@ function fabricationCases(): void {
         return filled.filled.length === 0 && filled.stances.length === 2;
       },
     },
+    // --- T-019.5 A · 폐기 인용의 차이 기록 (§14.2) -------------------------
+    {
+      name: "⭐ 조사 차이(와→과) — diff 에 위치가 기록되어야",
+      output: make([
+        // 원문: "가장 중요한 원칙은 기본 거부다." → 조사만 바꾼다
+        { provider: "claude", quotes: ["가장 중요한 원칙은 기본 거부가다."], text: "조사" },
+        { provider: "openai", quotes: ["먼저 접근 주체를 정의하고"], text: "주체" },
+      ]),
+      expect: "reason=not_in_source, diff 에 첫 불일치 문자와 idx",
+      check: (r) => {
+        const rq = r.rejected[0];
+        return (
+          r.quotesRejected === 1 &&
+          rq?.reason === "not_in_source" &&
+          rq.sectionId === "claude-s1" &&
+          /→.*\(idx \d+\)/.test(rq.diff ?? "") &&
+          // ⚠️ 전문을 저장하지 않는다(§14.2)
+          !("quote" in rq)
+        );
+      },
+    },
+    {
+      name: "⭐ 마크다운 기호 제거 — diff 기록",
+      output: make([
+        { provider: "claude", quotes: ["가장 중요한 원칙은 기본 거부다"], text: "종결부호 제거" },
+        { provider: "openai", quotes: ["먼저 접근 주체를 정의하고"], text: "주체" },
+      ]),
+      expect: "부분 문자열이면 통과, 아니면 diff 기록 — 어느 쪽이든 조용히 사라지지 않는다",
+      check: (r) =>
+        r.quotesRejected === 0 ||
+        /idx \d+|유사 구간 없음/.test(r.rejected[0]?.diff ?? ""),
+    },
+    {
+      name: "⭐ 실제 날조 — 유사 구간 없음으로 구분되어야",
+      output: make([
+        {
+          provider: "claude",
+          quotes: ["블록체인 기반 분산 원장으로 권한을 관리하라."],
+          text: "날조",
+        },
+        { provider: "openai", quotes: ["먼저 접근 주체를 정의하고"], text: "주체" },
+      ]),
+      expect: "diff = '원문에 유사 구간 없음' — 의역과 구분된다",
+      check: (r) => r.rejected[0]?.diff === "원문에 유사 구간 없음",
+    },
+    {
+      name: "⭐ 타 provider 인용 — 차이 계산은 하지 않고 사유만",
+      output: make([
+        { provider: "claude", quotes: ["먼저 접근 주체를 정의하고"], text: "타 provider" },
+        { provider: "openai", quotes: ["먼저 접근 주체를 정의하고"], text: "주체" },
+      ]),
+      expect: "reason=other_provider, diff=null (계산 무의미)",
+      check: (r) =>
+        r.rejected[0]?.reason === "other_provider" && r.rejected[0]?.diff === null,
+    },
     {
       name: "인용은 냈지만 전부 날조 → empty_quotes 가 아니어야 (오귀인 방지)",
       output: make([
@@ -645,7 +700,7 @@ function reportRuns(questionId: string, runs: RunSummary[]): void {
     }
     for (const rq of rejects.slice(0, 12)) {
       console.log(
-        `    [${rq.reason}] ${rq.provider}: ${JSON.stringify(rq.quote.slice(0, 100))}`,
+        `    [${rq.reason}] ${rq.provider}/${rq.sectionId ?? "-"}: ${rq.diff ?? "(차이 계산 안 함)"}`,
       );
     }
     if (rejects.length > 12) console.log(`    ... 외 ${rejects.length - 12}건`);

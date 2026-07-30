@@ -74,6 +74,19 @@ export const allRejectedFinalAnswerContent =
  * 모든 Provider가 재시도 후에도 실패해 비교할 답변이 하나도 없을 때 이 문구로 마무리하고
  * Question을 완료 처리한다(FinalAnswer + DecisionNote 모두 저장 후 completed).
  */
+/**
+ * Manager 완전 실패 안내 (SPEC-AI-002 §2.5·§6.2).
+ *
+ * ⚠️ **3사 전멸(`allProvidersFailedContent`)과 다른 상황이다.** 그때는 답변 자체가 없지만
+ * 여기서는 **원문 세 개가 멀쩡히 있고 비교만 실패**했다. 그래서 문구도 다르고, 화면에서
+ * 3열 원문을 지우면 안 된다.
+ */
+export const managerFailedContent =
+  "세 AI의 답변은 모두 받았습니다. 다만 답변을 쟁점 단위로 나누어 " +
+  "비교하는 과정에서 문제가 생겨 비교 결과를 만들지 못했습니다.\n" +
+  "위의 답변 세 개는 그대로 확인하실 수 있습니다.\n" +
+  "비교가 필요하시면 같은 질문을 다시 보내주세요.";
+
 export const allProvidersFailedContent =
   "모든 AI 응답을 받지 못했습니다. 잠시 후 다시 질문해 주세요.";
 
