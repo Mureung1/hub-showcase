@@ -21,7 +21,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:server": "npm run test --workspace server",
-    "test:all": "npm run test && npm run test:server"
+    "test:all": "npm run test && npm run test:server",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "date-fns": "^4.4.0",
@@ -30,6 +31,7 @@
     "react-router-dom": "^7.18.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.17",

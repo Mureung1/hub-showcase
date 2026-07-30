@@ -1,122 +1,446 @@
 # CLAUDE.md
 
-이 파일은 Claude Code(claude.ai/code)가 이 저장소에서 작업할 때 참고하는 가이드다.
+이 문서는 Claude Code가 잔소리봇 저장소에서 작업할 때 가장 먼저 따라야 하는
+프로젝트 운영 가이드다. 사용자 소개는 `README.md`, 현재 구현·검증·백로그
+상태는 `docs/checklist.md` 상단 대시보드를 기준으로 한다.
 
-## 프로젝트
+## 1. 프로젝트 목적
 
-**잔소리봇 (Nagging-bot)** — ""AI Agent Challenge" 프로젝트. 대학생은 학업(과제·시험공부·발표·조별과제 등)을 시작하지 못하고 미루는 이유가 저마다 다르다 — 뭐부터 해야 할지 몰라서, 하기 싫어서, 놀고 싶어서 등. 하지만 기존 리마인더 앱은 "시간 됐어요" 같은 획일적 알림만 보낼 뿐, 사용자가 _왜_ 못 시작하는지에 맞춘 해법을 제시하지 못해 같은 회피가 반복된다.
+**잔소리봇**은 회피 이유를 파악하고, 지금 바로 시작할 수 있는 첫 행동을
+제안하는 AI 학업 실행 도우미다.
 
-핵심 아이디어는 **회피 이유에 맞춘 맞춤 개입**이다: 에이전트가 사용자가 시작하지 못하는 이유를 파악하고, 그에 맞는 첫 행동(마이크로태스크)을 제안해 실제로 시작하도록 돕는다. 단순한 "리마인더 + AI + 캐릭터"가 아니라, 회피 이유를 진단하고 그에 맞게 반응하는 것이 차별점이며, 챗봇형 UI로 넛지를 전달하는 것 자체가 핵심은 아니다.
+핵심 제품 원칙:
 
-1~3주차 작업이 완료된 상태다: 프런트는 랜딩/소개 페이지(`ProjectIntro.jsx`) 외에도 등록·홈·포커스 모드·잔소리봇 개입 모달(Lv1~4) 등 실제 화면이 구현돼 있고, 백엔드는 Prisma + Supabase(Postgres)로 연결되어 할일/회피이유/이벤트/Push 구독 라우트(`server/src/routes/`)와 레벨 계산 로직(`server/src/lib/scoring.ts`)이 동작한다. 현재는 4주차(통합·배포·발표 준비) 진행 중이며, Web Push 발송 파이프라인(`send-push` 서버리스 함수 등)은 아직 미완성이다.
+- 사용자를 비난하거나 단순히 반복 알림을 보내는 서비스가 아니다.
+- 막막함, 하기 싫음, 다른 유혹, 완벽주의 등 시작을 막는 이유를 먼저 확인한다.
+- 긴 계획보다 지금 실행할 수 있는 마이크로태스크 하나를 제안한다.
+- 개입은 Lv1~Lv4로 강해지지만 따뜻한 동행자 톤을 유지한다.
+- Focus, Completion, History까지 같은 행동과 완료 기록을 일관되게 전달한다.
 
-참고 문서: [@docs/plan.md](docs/plan.md) (기획서), [@docs/checklist.md](docs/checklist.md) (작업 분해), [@docs/wireframe.md](docs/wireframe.md) (화면 단위 와이어프레임), [@docs/design-concept.md](docs/design-concept.md) (디자인 컨셉/철학), [@docs/design-research.md](docs/design-research.md) (유사 서비스 리서치·디자인 톤 결정 과정).
+현재 제품 흐름:
 
-1주차 프로토타입 범위: 등록~홈 화면까지. 포커스 화면(및 레벨 시스템)은 2주차.
-
-## 핵심 기능
-
-- ① 첫 행동(마이크로태스크) 제안 — "무엇부터 시작할지"를 해결
-- ② 회피 원인 기반 맞춤 개입 — "왜 시작하지 못하는지"를 해결
-- 두 기능이 함께 동작해야 사용자가 실제로 첫 행동을 시작함 — 하나만으로는 불충분.
-
-## 기술 스택
-
-- 프런트엔드: Vite + React (구현됨)
-- 백엔드: Express (구현됨). `server/src/app.ts`에 라우트가 등록돼 있고(`/api/tasks`, `/api/push-subscriptions`), `server/src/routes/`에 실제 라우트 파일이 있다.
-- 라우팅: `react-router-dom`
-- DB: Supabase(Postgres) 확정. Prisma로 연결하며, 서버리스 환경 대응을 위해 pooled(`DATABASE_URL`)/non-pooled(`DIRECT_URL`) 커넥션을 분리해 사용한다. 로컬 SQLite/Postgres 파일을 직접 쓰지 않는다 — 서버리스 배포 시 디스크가 인스턴스 간 공유/영속되지 않아 데이터가 유실되기 때문.
-- Web Push: `web-push`(VAPID)
-- PWA/서비스워커: 별도 라이브러리 없이 수기 `manifest.json` + 최소 `service-worker.js` (기본 캐싱만). `vite-plugin-pwa` 등은 지금 필요 이상의 기능이라 쓰지 않는다.
-- 타입 검사: tsconfig(`allowJs` + `checkJs` + `strict`)로 "any 금지"를 강제한다. 기존 `.jsx`는 그대로 두고 `// @ts-check`로 점진 적용하며, 새로 만지는 파일부터 `.ts`/`.tsx`로 전환한다. `@types/react`는 이미 devDependency로 있음. `npm run typecheck`(`tsc --noEmit`)로 확인.
-- 테스트: Vitest 도입 완료(총 50개 테스트 통과 — 프론트 `src/lib/**` 4개 파일 38개, `server/src/routes/**` 2개 파일 12개). `lib/**`(순수 함수)는 단위 테스트, `routes/**`(Express 라우트)는 supertest 기반 통합 테스트로 구분해서 작성한다 — 자세한 규칙은 `test-writer` Skill 참고.
-- 날짜/시간: DB에는 UTC ISO 8601 문자열로 저장한다. 프론트의 D-day 계산/포맷팅에는 `date-fns`를 쓴다(tree-shakeable, 불필요한 로케일 번들 없음).
-
-## 명령어
-
-```
-npm run dev          # Vite 개발 서버 실행 (프론트만)
-npm run dev:server   # Express dev 서버 실행 (server/, tsx watch, PORT=3001)
-npm run dev:all      # 프론트+백엔드 동시 실행 (concurrently)
-npm run build        # 프론트 프로덕션 빌드
-npm run build:server # server/를 tsc로 dist/에 빌드 (api/index.js가 이 결과물을 import)
-npm run lint         # oxlint 실행
-npm run preview      # 로컬에서 프로덕션 빌드 미리보기
+```text
+Landing → Register → Home → Nudge → Focus → Completion → History
 ```
 
-Express 앱은 `server/`에 있다(`npm install`을 루트에서 실행하면 `workspaces`로 함께 설치됨). `api/index.js`는 Vercel 서버리스 진입점으로 `server/dist/app.js`를 그대로 감싸서 노출하며, `vercel.json`의 rewrite로 `/api/*` 요청이 전부 이 함수로 간다. 로컬 개발 중에는 `vite.config.js`의 `server.proxy`가 `/api`를 `http://localhost:3001`(Express dev 서버)로 넘겨주므로, 프론트 코드는 로컬/배포 구분 없이 항상 `/api`로만 호출하면 된다.
+## 2. 현재 구현 상태를 판단하는 기준
 
-DB 연결은 Prisma + Supabase(Postgres)로 설정돼 있다(`server/prisma/schema.prisma`, `server/.env.example` 참고). 서버리스 커넥션 고갈을 막기 위해 `DATABASE_URL`은 pooled(pgbouncer, 포트 6543), `DIRECT_URL`은 마이그레이션 전용 non-pooled(포트 5432) 커넥션을 사용한다. 현재 정의된 모델: `Task`, `AvoidanceReason`, `TaskEvent`, `AppState`, `PushSubscription`(`feedbacks`는 아직 미정의).
+기능 상태를 추측하지 않는다. 다음 순서로 확인한다.
 
-## 디렉토리 구조
+1. `docs/checklist.md` 상단 **현재 상태 대시보드**
+2. 실제 컴포넌트·서버 라우트·Prisma schema
+3. 해당 테스트
+4. README와 기획 문서
 
+상태 용어:
+
+- **완료**: 코드에 실제 실행 경로가 있다.
+- **검증 완료**: 자동 테스트 또는 기록된 실제 환경 검증 근거가 있다.
+- **백로그**: 필요성과 범위가 확인됐지만 구현 또는 검증이 끝나지 않았다.
+- **미구현 아이디어**: 장기 후보이며 현재 제품 기능처럼 설명하지 않는다.
+
+주요 백로그를 현재 기능으로 오해하지 말 것:
+
+- Task별 `nextNudgeAt` 서버 영속화
+- 외부 Cron 기반 서버 알림 스케줄러
+- 피드백 기반 자동 개인화
+- Android Chrome Web Push 실기기 검증
+- 다중 사용자·인증·사용자별 Push 구독
+- 정식 Pomodoro, 외부 캘린더, 시간대별 Journey 테마
+
+## 3. 기술 스택과 구조
+
+### Frontend
+
+- React 19 + Vite
+- React Router
+- JavaScript/JSX와 TypeScript 혼용
+- 컴포넌트별 순수 CSS
+- `src/lib/api.js`의 `apiFetch`를 통한 동일 오리진 `/api` 호출
+
+### Backend
+
+- Express + TypeScript
+- 로컬: `server/src/index.ts`
+- Vercel: `api/index.js`가 빌드된 Express 앱을 serverless 함수로 노출
+- API:
+  - `/api/tasks`
+  - `/api/history`
+  - `/api/microtasks/lv2`
+  - `/api/microtasks/lv3`
+  - `/api/push-subscriptions`
+  - `/api/health`
+
+### Database
+
+- Supabase PostgreSQL + Prisma
+- `DATABASE_URL`: 서버리스용 pooled connection
+- `DIRECT_URL`: migration용 direct connection
+- Prisma Client는 `server/src/db/client.ts` 싱글톤을 사용한다.
+- 현재 모델:
+  - `Task`
+  - `AvoidanceReason`
+  - `TaskEvent`
+  - `AppState`
+  - `PushSubscription`
+  - `Feedback`
+
+`AppState.streak` row는 하위 호환을 위해 남아 있지만 현재 streak 계산에는
+사용하지 않는다. streak는 Asia/Seoul 기준 `done` 이벤트 날짜로 계산한다.
+
+### 주요 디렉터리
+
+```text
+src/
+  components/       React 화면·컴포넌트와 RTL 테스트
+  lib/              프런트 순수 함수, API·세션 유틸
+  assets/           Shared Journey 배경·캐릭터·UI 이미지
+server/
+  src/routes/       Express API와 Supertest
+  src/lib/          scoring, Gemini, Push 등 서버 로직
+  prisma/           schema와 migration
+api/index.js        Vercel serverless 진입점
+e2e/                Playwright 사용자 흐름
+public/             manifest, Service Worker, 정적 아이콘
+docs/               기획·현재 상태·디자인·워크플로우
+.claude/agents/     Claude Agent 정의
+.claude/skills/     프로젝트 Skill 정의
+showcase/           챌린지 메타데이터와 대표 화면
 ```
-/hub
-├── src/                    # 기존 프론트 (Vite 루트, 그대로 유지)
-│   ├── components/
-│   ├── lib/                 # api.js(fetch 래퍼) 등
-│   └── hooks/               # 필요해지면 추가
-├── server/                  # Express 앱 본체 (TypeScript)
-│   ├── src/
-│   │   ├── app.ts             # Express 앱 정의(라우트 등록)
-│   │   ├── index.ts           # 로컬 dev 리스너 (PORT=3001)
-│   │   ├── routes/            # tasks.ts, pushSubscriptions.ts (+ 각 .test.ts)
-│   │   └── db/
-│   │       └── client.ts      # Prisma Client 싱글톤
-│   ├── prisma/
-│   │   └── schema.prisma      # Task/AvoidanceReason/TaskEvent/AppState/PushSubscription 모델 정의됨
-│   ├── .env.example
-│   └── package.json          # 루트 npm workspace로 연결
-├── api/
-│   └── index.js              # Vercel 서버리스 진입점 — server/dist/app.js를 감싸기만 함
-├── vercel.json                # /api/* rewrite
-└── docs/
+
+## 4. 실행 명령
+
+루트 `package.json`의 npm workspace가 `server/`를 함께 관리한다.
+
+```bash
+npm install             # 루트와 server workspace 의존성 설치
+npm run dev             # Vite 프런트만 실행
+npm run dev:server      # Express 서버만 실행
+npm run dev:all         # 프런트와 Express를 함께 실행
+npm run build           # Vite 프로덕션 빌드
+npm run build:server    # Express TypeScript 빌드
+npm run preview         # Vite 빌드 로컬 미리보기
+npm run typecheck       # 루트 TypeScript/checkJs 검사
+npm run lint            # oxlint
+npm test                # 프런트 Vitest
+npm run test:server     # 서버 Vitest
+npm run test:all        # 프런트와 서버 Vitest
+npm run test:e2e        # Playwright E2E
 ```
 
-- 로컬 개발: `server/`를 Express 앱으로 직접 구동(별도 포트). 배포: `api/index.js`가 같은 Express 앱을 서버리스 함수로 감싸 실행 — "Express"라는 기술 선택과 "서버리스 함수"(checklist.md `send-push`, `daily-checkin-scan`)라는 배포 요구사항을 동시에 만족시키기 위함.
-- 루트 `package.json`에 `workspaces: ["server"]`를 추가해 `npm install` 한 번으로 프론트/백엔드를 함께 관리한다.
-- `daily-checkin-scan`처럼 주기 실행이 필요한 함수는 Vercel Cron이 `api/` 아래의 라우트를 스케줄대로 호출하는 방식으로 구현한다.
+환경변수:
 
-## 아키텍처
+- 프런트 `.env`
+  - `VITE_API_BASE_URL`
+  - `VITE_VAPID_PUBLIC_KEY`
+  - `VITE_NUDGE_MODE`
+- 서버 `server/.env`
+  - `DATABASE_URL`
+  - `DIRECT_URL`
+  - `PORT`
+  - `VAPID_PUBLIC_KEY`
+  - `VAPID_PRIVATE_KEY`
+  - `VAPID_SUBJECT`
+  - `GEMINI_API_KEY`
+  - `GEMINI_MODEL`
 
-- 엔트리 포인트: `src/main.jsx`가 `<App />`(`src/App.jsx`)을 `index.html`의 `#root`에 마운트한다.
-- `App.jsx`는 현재 `ProjectIntro`(프로젝트 소개 페이지)만 렌더링한다. 온보딩, 체크인, 넛지, 대시보드 등 실제 기능이 추가되면 `App.jsx`는 단일 정적 페이지가 아니라 실제 라우터/레이아웃으로 확장될 예정이다.
-- `ProjectIntro.jsx`는 콘텐츠-as-데이터 패턴을 따른다: 페이지 카피는 파일 상단의 평범한 배열/객체(`PROBLEM_CARDS`, `TIMELINE_ITEMS`, `FEATURE_GROUPS`)에 두고, 아래 JSX는 그것을 매핑만 한다. 앞으로 추가할 섹션도 반복되는 JSX 블록을 하드코딩하는 대신 이 패턴을 따를 것.
-- 아이콘은 손으로 작성한 인라인 SVG 컴포넌트다(아이콘 라이브러리 의존성 없음) — 새 아이콘도 이 방식(viewBox 24x24, stroke 기반, `aria-hidden`/`focusable="false"`)과 일관되게 유지할 것.
-- 스타일링은 컴포넌트별 순수 CSS(`ComponentName.css`를 `ComponentName.jsx` 옆에 두고 직접 import)다 — CSS-in-JS나 Tailwind는 쓰지 않는다.
-- 린팅은 ESLint가 아니라 `oxlint`를 사용한다 — 설정은 `.oxlintrc.json`, `react`/`oxc` 플러그인 활성화(`react/rules-of-hooks`는 error).
+비밀키와 실제 DB URL을 문서, 코드, 로그, 커밋에 넣지 않는다.
 
-## 컨벤션
+## 5. 테스트 전략
 
-- 린팅: `oxlint` (`.oxlintrc.json`, `react`/`oxc` 플러그인, `react/rules-of-hooks`는 error) — 기존과 동일.
-- 스타일링: 컴포넌트별 순수 CSS(`ComponentName.css`를 옆에 두고 import) — 기존과 동일.
-- 콘텐츠: `ProjectIntro.jsx`처럼 페이지 카피는 파일 상단 배열/객체로 분리하고 JSX는 매핑만 하는 content-as-data 패턴을 유지한다.
-- 환경변수: 프론트는 `.env`(`VITE_` 접두사), 백엔드는 `server/.env`로 분리한다. 각각 `.env.example`을 커밋하고, `.env`는 `.gitignore`에 추가돼 있다.
-- 로컬 개발 포트/프록시: Vite dev 서버(5173) → `vite.config.js`의 `server.proxy`로 `/api`를 Express dev 서버(3001)로 프록시한다. 프로덕션의 "동일 오리진 `/api`" 구조와 로컬 환경을 일치시키기 위함.
-- CORS 설정 안 함: 로컬은 Vite proxy, 배포는 `vercel.json` rewrite로 항상 동일 오리진에서 `/api`를 호출하므로 CORS 자체가 발생하지 않는다. `cors` 미들웨어를 추가할 필요 없음.
-- API 응답 포맷: 성공 응답은 리소스를 그대로 반환하고, 에러는 `{ error: { code, message } }` 형태 + 적절한 HTTP status로 통일한다.
-- 프론트 API 호출: `fetch`를 직접 흩어 쓰지 않고 `src/lib/api.js`의 `apiFetch(path, options)`를 통해서만 호출한다. 성공 시 응답 body를 그대로 반환하고, 실패 시 서버의 `{ error: { code, message } }`를 파싱해 `ApiError`를 throw한다 — 에러 처리를 호출부마다 반복하지 않기 위함.
-- "시작 예정 시각" 와이어 포맷: 등록 폼의 `<input type="time">`은 시:분만 담고 있으므로, 프론트에서 "오늘 날짜 + 입력한 시:분"을 합쳐 완전한 ISO 8601 datetime(UTC)으로 변환한 뒤 API로 보낸다. 서버/DB도 항상 완전한 datetime 문자열로 주고받는다 — 시:분만 있는 값으로는 "시작 예정 시각 도달" 여부를 판정할 기준(어느 날짜인지)이 없기 때문. 마감 D-day는 이 시작 시각과 무관한 별도 필드로 유지한다(plan.md 3의 "시작 예정 시각"과 "마감까지 D-day"는 서로 다른 입력값).
-- Prisma Client는 `server/src/db/client.ts`에서 싱글톤으로 export해서 쓴다. 서버리스 환경에서 요청마다 `new PrismaClient()`를 만들면 커넥션이 금방 고갈되기 때문. 이 싱글톤 패턴은 Prisma Client를 쓰는 한 DB 종류와 무관하게 유지된다.
-- Node 버전은 `.nvmrc`(루트) + 각 `package.json`의 `engines.node`로 고정한다(`>=24.11.1`). 팀원 간 로컬 Node 버전이 어긋나면 `tsx`/ESM 관련 문제가 날 수 있어서.
+고정 테스트 개수를 문서에 기록하지 않는다. 테스트 수보다 검증 범위와 실패
+조건을 기록한다.
 
-## 커밋 규칙
+### Vitest
 
-- Conventional Commits 축약형을 쓴다: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` + 한글 설명. 기존 커밋 이력은 그대로 두고 이 시점 이후부터 적용한다.
-- 예시:
-  - `feat: 할일 등록 폼과 회피 이유 선택 UI 추가`
-  - `fix: 압력 게이지가 레벨 4에서 100%를 넘게 표시되는 버그 수정`
-  - `chore: server 워크스페이스 초기 세팅 및 Prisma+Supabase 연결`
-- 브랜치 전략은 별도로 두지 않는다 — `main` + 짧은 feature 브랜치를 PR로 병합하는 트렁크 기반이면 충분하다. 4주 단기 해커톤 규모이고, 이미 `.github/workflows/auto-merge.yml`로 PR 자동병합이 갖춰져 있어 develop/release 같은 장기 브랜치를 둘 이유가 없기 때문.
+- `src/lib/**`, `server/src/lib/**`의 순수 함수와 상태 변환
+- happy path, 경계값, 실제 버그 회귀를 포함한다.
+- 날짜 함수는 내부에서 현재 시각을 만들지 말고 `now`를 주입한다.
+- KST 계산은 OS timezone이 아니라 UTC timestamp + offset/day ordinal을 쓴다.
 
-## 하지 말 것
+### React Testing Library
 
-**(컨벤션)**
+- 컴포넌트 렌더링, 조건부 UI, 접근성 이름, 사용자 상호작용
+- 중복 제출·중복 완료·늦은 응답처럼 화면 상태와 비동기 흐름이 얽힌 회귀
+- 구현 세부 DOM보다 사용자가 보는 역할·이름·동작을 우선 검증한다.
 
-- `any` 타입 금지
-- 외부 UI 라이브러리 금지 — 별도 합의 전까지
+### Supertest
 
-**(설계)**
+- Express 입력 검증, 응답 코드·body, transaction, 멱등성, DB 결과
+- 테스트용 Supabase가 확인된 경우에만 DB 테스트를 실행한다.
+- `DATABASE_URL`이 없으면 관련 suite를 skip하고, 값이 있지만 test 식별자가
+  없으면 실행을 중단한다.
+- 개발·Production DB를 테스트 데이터로 수정하지 않는다.
 
-- `subjects`(과목) 테이블을 두지 않는다 — plan.md 문제 정의에 근거 없음
-- 체크인은 날짜 단위 기록이 아니라 할일별 이벤트 로그(`task_events`) 구조로 설계한다 — "매일 체크인"이 아니라 "세션 재개용 재트리거"임에 유의
+### Playwright
+
+현재 자동화:
+
+- Landing smoke
+- Register 제목·D-day 빈 값 검증
+- 할 일 생성 → Home → Focus 완료 → History
+
+아직 자동화하지 않은 범위:
+
+- Register 새로고침
+- Focus sessionStorage 복구 E2E
+- API 실패 UI E2E
+
+Playwright fixture도 Task를 생성·삭제하므로 격리된 테스트 DB를 사용한다.
+
+### 변경별 최소 검증
+
+- 순수 함수: 해당 Vitest + 전체 프런트/서버 관련 suite
+- React UI: RTL + typecheck + lint + build
+- Express/Prisma: Supertest + server typecheck/build, 단 DB 격리 확인 후
+- 핵심 사용자 흐름: Playwright 검토
+- Service Worker/Web Push: mock 테스트만으로 실환경 검증을 대체하지 않는다.
+
+## 6. Gemini와 rule-based fallback
+
+- Gemini 호출은 서버에서만 수행한다. API key를 프런트에 노출하지 않는다.
+- Lv2와 Lv3는 각각 `/api/microtasks/lv2`, `/api/microtasks/lv3`를 사용한다.
+- 서버는 provider response, structured output, microTask 형식과 품질을 검증한다.
+- API 오류, timeout, 응답 형식 오류, 빈 응답, 품질 검사 실패는 가능한 경우
+  `source: "rule_based"`와 안전한 마이크로태스크를 `200`으로 반환한다.
+- `configuration_missing`은 배포 설정 오류이므로 정상 fallback으로 숨기지 않는다.
+- 외부 클라이언트에는 안정적인 오류 계약을 유지하고, 세부 validation stage/rule은
+  길이 제한·개행 제거·payload 비노출 원칙으로 내부 로그에만 남긴다.
+- 서버가 반환한 `microTask`와 `source`를 프런트에서 다시 계산하거나 바꾸지 않는다.
+- 모달에 표시한 최종 행동은 Focus, done event, History까지 동일해야 한다.
+- 늦은 Gemini 응답이 이미 확정된 fallback·메시지·Focus session을 덮지 않게 한다.
+- memory evidence는 실제 과거 완료 근거가 검증된 경우에만 저장한다.
+
+## 7. Focus와 완료 계약
+
+- `entryMode`: direct 또는 intervention 진입 방식
+- `entryLevel`: 개입으로 시작한 경우의 개입 레벨. direct는 `null`
+- `journeyLevel`: Focus에 표시할 캐릭터·배경 레벨
+- `microTask`, `generationSource`, `memoryEvidence`: 제안 행동의 출처와 근거
+- 시작 시점의 `journeyLevel`은 Focus 중 Task level이 변해도 유지한다.
+- Focus session은 `sessionStorage`에 저장하며 유효성·최대 수명을 검사한다.
+- 완료 요청은 중복 호출을 막고 첫 번째 결과만 기록한다.
+- 멈추기는 일시정지가 아니라 Focus session 종료 후 Home 복귀다.
+- 600초 미만 멈추기는 level/skipCount를 유지한다.
+- 600초 이상 멈추기는 표시 레벨을 정확히 한 단계 완화한다.
+- stopped는 Task를 active로 유지하고 날짜 기반 streak에 영향을 주지 않는다.
+
+완료·멈추기·세션 복구 코드는 고위험 영역이다. 관련 불변식을 바꾸는 작업은
+요청 범위를 넓혀 추측하지 말고 기존 테스트와 API 계약부터 확인한다.
+
+## 8. Web Push와 알림
+
+현재 구현은 실제 Web Push다.
+
+```text
+PushSubscription 생성
+→ DB 저장
+→ 프런트 타이머가 notification_sent 요청
+→ 서버 level_up 기록
+→ VAPID 발송
+→ Service Worker 수신
+→ OS 알림
+```
+
+구현된 범위:
+
+- Notification 권한과 PushSubscription 상태를 별도로 관리
+- permission은 granted지만 subscription이 없으면 재구독 가능
+- Push 구독 저장·삭제 API
+- 모든 저장 구독에 레벨 상승 Push 브로드캐스트
+- 404/410 만료 구독 자동 삭제
+- 발송 실패 분류 로그
+- Service Worker Push 표시, 알림 클릭, 오프라인 폴백
+- Desktop Chrome·Edge, iPhone 홈 화면 PWA 수신 검증
+
+현재 한계:
+
+- 다음 알림 시각은 `HomePage`의 클라이언트 timer가 계산한다.
+- `nextNudgeAt`은 DB에 영속화되지 않는다.
+- 앱이 닫힌 상태에서 예약 시각을 판단하는 서버 scheduler/Cron은 없다.
+- Android Chrome 실기기 검증은 남아 있다.
+
+따라서 “앱 종료 후에도 서버가 예약 알림을 계속 생성한다”고 설명하지 않는다.
+Vercel serverless 내부에 `setInterval` 기반 scheduler를 만들지 않는다.
+
+## 9. Shared Journey와 디자인
+
+디자인 철학:
+
+- Calm, Premium, Warm, Clear
+- 캐릭터는 장식이 아니라 함께 걷는 동행자
+- 레벨이 강해져도 비난·공포·게임 보상 화면처럼 만들지 않는다.
+- 기존 디자인 토큰과 실제 에셋을 우선 사용한다.
+
+현재 레벨 색:
+
+- Lv1: 민트 `--level-1`
+- Lv2: 보라 `--level-2`
+- Lv3: 코랄·더스티 로즈 `--level-3`
+- Lv4: 부드러운 적색 `--level-4`
+
+현재 Journey 배경:
+
+- Lv0 `journey_lv0_clear.png`
+- Lv1 `journey_lv1_partly_cloudy.png`
+- Lv2 `journey_lv2_cloudy.png`
+- Lv3 `journey_lv3_rain.png`
+- Lv4 `journey_lv4_storm.png`
+
+화면별 역할:
+
+- Landing: 서비스 가치와 사용 흐름
+- Home: Stats, Journey Hero, 상태별 Task
+- Register: 낮은 마찰의 단일 Form과 안내 캐릭터
+- Nudge Modal: Lv1~Lv4 캐릭터와 개입
+- Focus: 레벨별 Walking 캐릭터·Journey 배경
+- Completion: 성공 캐릭터와 제한적인 sparkles
+- History: compact Insight와 기록
+
+스타일 작업 전 `.claude/skills/nagging-bot-design/SKILL.md`, 실제 CSS와
+`src/assets`를 함께 확인한다. Skill이 현재 코드와 충돌하면 실제 구현과
+사용자의 최신 확정 사항을 우선하고, 임의로 과거 규칙을 되살리지 않는다.
+
+기본 UI 규칙:
+
+- CSS-in-JS, Tailwind, 새 UI 라이브러리를 임의로 추가하지 않는다.
+- 컴포넌트 옆 전용 CSS와 `src/index.css` 토큰을 재사용한다.
+- 새 전역 token은 명시적 요청 없이 추가하지 않는다.
+- 장식 이미지는 `alt=""`, 정보는 텍스트로도 전달한다.
+- 키보드 `focus-visible`, 충분한 대비, 최소 44px 터치 영역을 유지한다.
+- 자동 애니메이션은 `prefers-reduced-motion`을 지원한다.
+- 데스크톱뿐 아니라 1440/768/390px를 기본 반응형 검토 대상으로 삼는다.
+
+## 10. API·데이터 규칙
+
+- 프런트는 직접 `fetch`를 흩어 쓰지 말고 기존 API helper 패턴을 따른다.
+- 성공 응답은 현재 라우트 계약의 `{ data: ... }`와 추가 메타데이터를 유지한다.
+- 오류는 `{ error: { code, message } }`와 적절한 HTTP status를 사용한다.
+- 입력 검증을 완화하거나 문자열을 숫자로 암묵 변환하지 않는다.
+- 날짜·시간은 API/DB에서 완전한 UTC ISO datetime을 사용한다.
+- KST 날짜 통계는 day ordinal 방식으로 계산한다.
+- Prisma migration 없이 schema를 바꾸지 않는다.
+- 개발 DB를 직접 수정하거나 SQL로 보정하지 않는다.
+- 애플리케이션 데이터 변경은 정상 API 경로를 사용한다.
+
+고위험 데이터 흐름:
+
+- done 중복 요청과 완료 이벤트 멱등성
+- stopped 중복 요청
+- Task 삭제와 notification event 경합
+- memoryEvidence의 클라이언트 위조
+- Push 중복 발송·만료 구독
+- 늦은 비동기 응답의 상태 역전
+
+## 11. Git과 배포 워크플로우
+
+기본 흐름:
+
+```text
+work
+→ Vercel Preview
+→ 브라우저·테스트 검증
+→ main 병합
+→ Vercel Production
+```
+
+- `work`는 Preview 검증용 통합 브랜치다.
+- Preview는 `VITE_NUDGE_MODE=demo`로 짧은 간격을 수동 검증한다.
+- Production은 실제 분 단위 간격을 사용한다.
+- 클라이언트 요청값으로 demo/production 모드를 선택하게 만들지 않는다.
+- Preview에서 확인한 commit SHA와 실제 배포 bundle이 일치하는지 확인한다.
+- main 병합 전에 typecheck, lint, 관련 테스트, production build를 확인한다.
+- Preview URL을 README의 대표 Production 주소로 쓰지 않는다.
+- 커밋은 Conventional Commits 형식을 사용한다.
+  - `feat: ...`
+  - `fix: ...`
+  - `test: ...`
+  - `docs: ...`
+  - `chore: ...`
+  - `refactor: ...`
+
+Claude Code는 사용자의 명시적 요청 없이 다음을 수행하지 않는다.
+
+- branch 생성·전환
+- `git add`, commit, push
+- merge, rebase, reset, restore, clean
+- PR 생성·병합
+
+작업 트리에 기존 변경이 있으면 사용자 소유로 간주하고, 관련 없는 변경을
+수정·포맷·되돌리지 않는다.
+
+## 12. Agent와 Skill
+
+### Agents
+
+- **feature-slice**: 요구를 하루 안에 끝낼 수 있는 GitHub Issue와 검증 가능한
+  완료 조건으로 분해한다. 코드를 작성하지 않는다.
+- **feature-verify**: Issue 완료 조건을 실제 코드·테스트·브라우저/API 결과로
+  확인한다. 파일을 수정하지 않는다.
+- **code-review**: 병합 전 코드 구조, 예외 처리, 테스트 누락, 데이터·보안
+  위험을 검토한다. 승인 없이 수정하지 않는다.
+
+### Skills
+
+- **simple-tdd**: 순수 함수에서 스펙 승인 → Red → Green → Refactor 순서를
+  지킨다. UI나 DB 라우트 테스트 절차를 대체하지 않는다.
+- **test-writer**: Vitest/Supertest 테스트 분류, 응답 계약, DB 가드와 teardown
+  규칙을 제공한다.
+- **nagging-bot-design**: 브랜드 토큰, Shared Journey, 캐릭터, 반응형,
+  접근성 기준을 제공한다. 실제 UI와 충돌하는 과거 규칙은 재검증한다.
+
+Agent는 “무엇을 수행할지”, Skill은 “어떤 절차와 기준으로 수행할지”를
+정의한다. 사용자가 Agent나 Skill을 지정하면 해당 문서를 먼저 읽는다.
+
+## 13. AI 도구 역할
+
+- **사용자**: 문제, 우선순위, 범위, 제품 정책과 최종 판단을 결정한다.
+- **Claude Code**: 초기 기능 구현, Agent/Skill 실행, 테스트와 수정, 반복 개발을
+  지원한다.
+- **OpenAI Codex**: 저장소 분석, 설계·UI/UX 검토, 구현 계획, 기능 구현 보조,
+  코드·문서 감사와 교차 검증을 지원한다.
+- **Gemini**: 제품 런타임에서 마이크로태스크를 생성한다.
+
+도구 역할을 경쟁 관계나 고정 소유권으로 설명하지 않는다. Claude Code와
+Codex 결과가 다르면 실제 파일, 테스트, 데이터 흐름과 사용자 판단으로
+결정한다. AI의 완료 보고서는 증거가 아니라 검증 대상이다.
+
+## 14. 새 작업의 필수 절차
+
+1. 요청 범위와 변경 금지 항목을 적는다.
+2. 관련 코드·테스트·문서를 먼저 읽는다.
+3. 현재 데이터 흐름과 기존 불변식을 설명한다.
+4. 필요한 경우 구현 계획과 완료 조건을 먼저 제시하고 승인을 기다린다.
+5. 한 이슈 범위만 최소 변경한다.
+6. 정상·경계·회귀 테스트를 추가하거나 기존 테스트로 근거를 남긴다.
+7. typecheck, lint, build와 위험에 맞는 테스트를 실행한다.
+8. DB 접근 테스트는 격리를 확인한 뒤에만 실행한다.
+9. 실제 브라우저가 필요한 UI·PWA·Push는 mock만으로 완료 처리하지 않는다.
+10. 변경 파일, 실행한 검증, 생략한 검증과 이유, 남은 위험을 보고한다.
+
+## 15. 금지 사항
+
+- 요청 범위 밖 리팩터링·기능·문구 변경
+- 근거 없는 validation, fallback, 데이터 필드 추가
+- 기존 제품 동작을 “더 좋아 보인다”는 이유만으로 변경
+- `any` 추가 또는 타입 오류 무시
+- 새 라이브러리·공통 추상화의 선제 도입
+- 개발·Production DB 직접 수정
+- 테스트 DB 확인 없는 server/E2E 실행
+- 외부 provider 전체 payload나 민감 정보 로그
+- 이미지 임의 생성·재압축·변형
+- Service Worker·Push·완료 멱등성의 무관한 정리
+- 사용자의 요청 없는 Git 변경
+
+## 16. 참고 문서
+
+- `README.md`: 프로젝트 소개와 실행 요약
+- `docs/checklist.md`: 현재 상태 대시보드와 개발 기록
+- `docs/plan.md`: 문제 정의와 초기 기획
+- `docs/wireframe.md`: 화면·전환 문서
+- `docs/design-concept.md`: Shared Journey 철학
+- `docs/design-research.md`: 디자인 결정 과정
+- `docs/workflow.md`: AI Agent 협업 방식
+- `.claude/agents/`: Agent 정의
+- `.claude/skills/`: Skill 정의
+- `AGENTS.md`: 저장소 공통 안전·작업 규칙
