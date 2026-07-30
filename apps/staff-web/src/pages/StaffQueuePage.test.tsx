@@ -124,6 +124,21 @@ describe("StaffQueuePage 알림 발송 이력", () => {
     expect(screen.getByText("3번째")).toBeInTheDocument();
   });
 
+  it("팀 안의 인원별로 다음 동작을 처리하고 완료된 칸은 버튼을 숨긴다", () => {
+    renderPage(
+      vi.fn(async () => notifications),
+      "connected",
+      vi.fn(async () => undefined),
+      vi.fn(async () => undefined),
+      vi.fn(async () => undefined),
+      vi.fn(async () => undefined),
+      [{ ...entry, patientCount: 2, arrivedPatientCount: 1 }],
+    );
+
+    expect(screen.getByText("도착 처리 완료")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "도착 처리" })).toHaveLength(1);
+  });
+
   it("선택한 환자의 알림 종류와 발송 결과를 표시한다", async () => {
     const { onGetNotificationHistory } = renderPage();
 

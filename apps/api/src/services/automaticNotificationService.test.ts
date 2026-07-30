@@ -27,6 +27,8 @@ const waiting: WaitingEntry = {
   status: "remote_waiting",
   queueOrder: 5,
   patientCount: 1,
+  arrivedPatientCount: 0,
+  calledPatientCount: 0,
   lookupTokenHash: null,
   patientDeferCount: 0,
   noShowMoveCount: 0,

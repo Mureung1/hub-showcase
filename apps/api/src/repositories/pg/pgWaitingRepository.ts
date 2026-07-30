@@ -26,6 +26,8 @@ const waitingEntryRowSchema = z.object({
   status: waitingStatusSchema,
   queue_order: z.number().int().positive(),
   patient_count: z.number().int().min(1).max(9),
+  arrived_patient_count: z.number().int().min(0).max(9).default(0),
+  called_patient_count: z.number().int().min(0).max(9).default(0),
   lookup_token_hash: z.string().nullable(),
   patient_defer_count: z.number().int().min(0).max(1),
   no_show_move_count: z.number().int().min(0).max(1),
@@ -51,7 +53,8 @@ type WaitingEntryCountRow = z.infer<typeof waitingEntryCountRowSchema>;
 
 const waitingEntryColumns = `
   id, queue_id, account_id, source, phone_number, ticket_number, status,
-  queue_order, patient_count, lookup_token_hash, patient_defer_count,
+  queue_order, patient_count, arrived_patient_count, called_patient_count,
+  lookup_token_hash, patient_defer_count,
   no_show_move_count, preparation_notified_at, onsite_near_turn_notified_at,
   entry_requested_at, arrival_deadline_at, called_at, cancelled_at,
   created_at, updated_at, version
@@ -60,6 +63,7 @@ const waitingEntryColumns = `
 const qualifiedWaitingEntryColumns = `
   entry.id, entry.queue_id, entry.account_id, entry.source, entry.phone_number,
   entry.ticket_number, entry.status, entry.queue_order, entry.patient_count,
+  entry.arrived_patient_count, entry.called_patient_count,
   entry.lookup_token_hash, entry.patient_defer_count, entry.no_show_move_count,
   entry.preparation_notified_at, entry.onsite_near_turn_notified_at,
   entry.entry_requested_at, entry.arrival_deadline_at, entry.called_at,
@@ -78,6 +82,8 @@ function toWaitingEntry(row: unknown): WaitingEntry {
     status: entry.status,
     queueOrder: entry.queue_order,
     patientCount: entry.patient_count,
+    arrivedPatientCount: entry.arrived_patient_count,
+    calledPatientCount: entry.called_patient_count,
     lookupTokenHash: entry.lookup_token_hash,
     patientDeferCount: entry.patient_defer_count,
     noShowMoveCount: entry.no_show_move_count,
@@ -299,6 +305,70 @@ export class PgWaitingRepository implements WaitingRepository {
         input.fromStatuses,
         input.toStatus,
       ],
+    );
+    return result.rows[0] ? toWaitingEntry(result.rows[0]) : null;
+  }
+
+  async advanceArrival(
+    executor: DatabaseExecutor,
+    waitingEntryId: string,
+    expectedVersion: number,
+  ): Promise<WaitingEntry | null> {
+    const result = await executor.query<WaitingEntryRow>(
+      `
+        UPDATE public.waiting_entries
+        SET arrived_patient_count = LEAST(patient_count, arrived_patient_count + 1),
+            status = CASE
+              WHEN arrived_patient_count + 1 >= patient_count THEN 'onsite_waiting'
+              ELSE status
+            END,
+            entry_requested_at = CASE
+              WHEN arrived_patient_count + 1 >= patient_count THEN NULL
+              ELSE entry_requested_at
+            END,
+            arrival_deadline_at = CASE
+              WHEN arrived_patient_count + 1 >= patient_count THEN NULL
+              ELSE arrival_deadline_at
+            END,
+            version = version + 1,
+            updated_at = now()
+        WHERE id = $1
+          AND version = $2
+          AND status = 'entry_requested'
+          AND arrived_patient_count < patient_count
+        RETURNING ${waitingEntryColumns}
+      `,
+      [waitingEntryId, expectedVersion],
+    );
+    return result.rows[0] ? toWaitingEntry(result.rows[0]) : null;
+  }
+
+  async advanceCall(
+    executor: DatabaseExecutor,
+    waitingEntryId: string,
+    expectedVersion: number,
+  ): Promise<WaitingEntry | null> {
+    const result = await executor.query<WaitingEntryRow>(
+      `
+        UPDATE public.waiting_entries
+        SET called_patient_count = LEAST(patient_count, called_patient_count + 1),
+            status = CASE
+              WHEN called_patient_count + 1 >= patient_count THEN 'called'
+              ELSE status
+            END,
+            called_at = CASE
+              WHEN called_patient_count + 1 >= patient_count THEN now()
+              ELSE called_at
+            END,
+            version = version + 1,
+            updated_at = now()
+        WHERE id = $1
+          AND version = $2
+          AND status = 'onsite_waiting'
+          AND called_patient_count < patient_count
+        RETURNING ${waitingEntryColumns}
+      `,
+      [waitingEntryId, expectedVersion],
     );
     return result.rows[0] ? toWaitingEntry(result.rows[0]) : null;
   }

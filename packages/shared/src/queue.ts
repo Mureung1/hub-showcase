@@ -32,6 +32,8 @@ export interface QueueEntry {
   inputMode: PatientInputMode;
   patientCounts: PatientCounts;
   patientCount: number;
+  arrivedPatientCount?: number | undefined;
+  calledPatientCount?: number | undefined;
   categorySnapshot: PatientCategoryDefinition[];
   status: WaitingStatus;
   registeredAt: string;
@@ -89,6 +91,8 @@ export interface QueuePatientSlot {
   estimatedMinutes: number | null;
   patientSlotNumber: number | null;
   patientSlotCount: number | null;
+  arrived: boolean;
+  called: boolean;
   isFirstTeamSlot: boolean;
 }
 
@@ -280,20 +284,34 @@ export function expandQueuePositionsToPatientSlots(
         estimatedMinutes: null,
         patientSlotNumber: null,
         patientSlotCount: null,
+        arrived: false,
+        called: false,
         isFirstTeamSlot: true,
       };
       return [inactiveSlot];
     }
 
+    const arrivedPatientCount =
+      position.entry.arrivedPatientCount ??
+      (["onsite_waiting", "called"].includes(position.entry.status)
+        ? position.entry.patientCount
+        : 0);
+    const calledPatientCount =
+      position.entry.calledPatientCount ??
+      (position.entry.status === "called" ? position.entry.patientCount : 0);
+
     return Array.from({ length: position.entry.patientCount }, (_, index): QueuePatientSlot => {
       const patientPosition = position.position! + index;
+      const patientSlotNumber = index + 1;
       return {
         entry: position.entry,
         teamNumber: position.teamNumber,
         position: patientPosition,
         estimatedMinutes: (patientPosition - 1) * averageMinutesPerPatient,
-        patientSlotNumber: index + 1,
+        patientSlotNumber,
         patientSlotCount: position.entry.patientCount,
+        arrived: patientSlotNumber <= arrivedPatientCount,
+        called: patientSlotNumber <= calledPatientCount,
         isFirstTeamSlot: index === 0,
       };
     });

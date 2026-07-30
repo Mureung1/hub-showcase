@@ -48,98 +48,107 @@ export function StaffQueueTable({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
-            <tr
-              className={selectedId === row.entry.id ? "is-selected" : ""}
-              key={`${row.entry.id}-${row.patientSlotNumber ?? "inactive"}`}
-              onClick={() => onOpen(row.entry.id)}
-            >
-              <td>{row.teamNumber ? `${row.teamNumber}팀` : "-"}</td>
-              <td>{row.position ? `${row.position}번째` : "-"}</td>
-              <td>
-                <strong>{row.entry.ticketNumber}</strong>
-                {row.patientSlotCount && row.patientSlotCount > 1 && (
-                  <small className="queue-slot-count">
-                    {row.patientSlotNumber}/{row.patientSlotCount}
-                  </small>
-                )}
-              </td>
-              <td>
-                <span className={`source-label source-label--${row.entry.source}`}>
-                  {row.entry.source === "remote" ? "원격" : "현장"}
-                </span>
-              </td>
-              <td>
-                <span className={`waiting-state waiting-state--${row.entry.status}`}>
-                  {statusLabels[row.entry.status]}
-                </span>
-              </td>
-              <td>{row.entry.registeredAt}</td>
-              <td>
-                <div className="row-actions">
-                  {row.isFirstTeamSlot && row.entry.status === "entry_requested" && (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onChangeStatus(row.entry.id, "onsite_waiting");
-                      }}
-                    >
-                      <UserCheck size={17} /> 도착 처리
-                    </button>
+          {rows.map((row) => {
+            const statusText =
+              row.entry.status === "entry_requested" && row.arrived
+                ? "도착 처리 완료"
+                : row.entry.status === "onsite_waiting" && row.called
+                  ? "호출 완료"
+                  : statusLabels[row.entry.status];
+
+            return (
+              <tr
+                className={selectedId === row.entry.id ? "is-selected" : ""}
+                key={`${row.entry.id}-${row.patientSlotNumber ?? "inactive"}`}
+                onClick={() => onOpen(row.entry.id)}
+              >
+                <td>{row.teamNumber ? `${row.teamNumber}팀` : "-"}</td>
+                <td>{row.position ? `${row.position}번째` : "-"}</td>
+                <td>
+                  <strong>{row.entry.ticketNumber}</strong>
+                  {row.patientSlotCount && row.patientSlotCount > 1 && (
+                    <small className="queue-slot-count">
+                      {row.patientSlotNumber}/{row.patientSlotCount}
+                    </small>
                   )}
-                  {row.isFirstTeamSlot && row.entry.status === "onsite_waiting" && (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onChangeStatus(row.entry.id, "called");
-                      }}
-                    >
-                      <Megaphone size={17} /> 진료실 호출
-                    </button>
-                  )}
-                  {row.isFirstTeamSlot && row.entry.status === "held" && (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onRestore(row.entry.id);
-                      }}
-                    >
-                      <RotateCcw size={17} /> 대기열 복귀
-                    </button>
-                  )}
-                  {row.isFirstTeamSlot && row.position !== null && (
-                    <>
+                </td>
+                <td>
+                  <span className={`source-label source-label--${row.entry.source}`}>
+                    {row.entry.source === "remote" ? "원격" : "현장"}
+                  </span>
+                </td>
+                <td>
+                  <span className={`waiting-state waiting-state--${row.entry.status}`}>
+                    {statusText}
+                  </span>
+                </td>
+                <td>{row.entry.registeredAt}</td>
+                <td>
+                  <div className="row-actions">
+                    {row.entry.status === "entry_requested" && !row.arrived && (
                       <button
                         type="button"
-                        aria-label={`접수번호 ${row.entry.ticketNumber} 한 칸 위로`}
-                        disabled={activeRows[0]?.entry.id === row.entry.id}
                         onClick={(event) => {
                           event.stopPropagation();
-                          onMove(row.entry.id, -1);
+                          onChangeStatus(row.entry.id, "onsite_waiting");
                         }}
                       >
-                        <ArrowUp size={17} />
+                        <UserCheck size={17} /> 도착 처리
                       </button>
+                    )}
+                    {row.entry.status === "onsite_waiting" && !row.called && (
                       <button
                         type="button"
-                        aria-label={`접수번호 ${row.entry.ticketNumber} 한 칸 아래로`}
-                        disabled={activeRows.at(-1)?.entry.id === row.entry.id}
                         onClick={(event) => {
                           event.stopPropagation();
-                          onMove(row.entry.id, 1);
+                          onChangeStatus(row.entry.id, "called");
                         }}
                       >
-                        <ArrowDown size={17} />
+                        <Megaphone size={17} /> 진료실 호출
                       </button>
-                    </>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
+                    )}
+                    {row.isFirstTeamSlot && row.entry.status === "held" && (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onRestore(row.entry.id);
+                        }}
+                      >
+                        <RotateCcw size={17} /> 대기열 복귀
+                      </button>
+                    )}
+                    {row.isFirstTeamSlot && row.position !== null && (
+                      <>
+                        <button
+                          type="button"
+                          aria-label={`접수번호 ${row.entry.ticketNumber} 한 칸 위로`}
+                          disabled={activeRows[0]?.entry.id === row.entry.id}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onMove(row.entry.id, -1);
+                          }}
+                        >
+                          <ArrowUp size={17} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`접수번호 ${row.entry.ticketNumber} 한 칸 아래로`}
+                          disabled={activeRows.at(-1)?.entry.id === row.entry.id}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            onMove(row.entry.id, 1);
+                          }}
+                        >
+                          <ArrowDown size={17} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </section>

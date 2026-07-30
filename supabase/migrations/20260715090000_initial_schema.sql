@@ -213,6 +213,8 @@ create table public.waiting_entries (
   status varchar(30) not null,
   queue_order integer not null,
   patient_count integer not null,
+  arrived_patient_count integer not null default 0,
+  called_patient_count integer not null default 0,
   lookup_token_hash varchar(64) unique,
   patient_defer_count integer not null default 0,
   no_show_move_count integer not null default 0,
@@ -234,6 +236,10 @@ create table public.waiting_entries (
     check (queue_order > 0),
   constraint waiting_entries_patient_count_check
     check (patient_count between 1 and 9),
+  constraint waiting_entries_arrived_patient_count_check
+    check (arrived_patient_count between 0 and patient_count),
+  constraint waiting_entries_called_patient_count_check
+    check (called_patient_count between 0 and patient_count),
   constraint waiting_entries_patient_defer_count_check
     check (patient_defer_count between 0 and 1),
   constraint waiting_entries_no_show_move_count_check

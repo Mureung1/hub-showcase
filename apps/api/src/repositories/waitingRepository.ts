@@ -11,6 +11,8 @@ export interface WaitingEntry {
   status: WaitingStatus;
   queueOrder: number;
   patientCount: number;
+  arrivedPatientCount: number;
+  calledPatientCount: number;
   lookupTokenHash: string | null;
   patientDeferCount: number;
   noShowMoveCount: number;
@@ -92,6 +94,16 @@ export interface WaitingRepository {
   transitionStatus(
     executor: DatabaseExecutor,
     input: TransitionWaitingInput,
+  ): Promise<WaitingEntry | null>;
+  advanceArrival(
+    executor: DatabaseExecutor,
+    waitingEntryId: string,
+    expectedVersion: number,
+  ): Promise<WaitingEntry | null>;
+  advanceCall(
+    executor: DatabaseExecutor,
+    waitingEntryId: string,
+    expectedVersion: number,
   ): Promise<WaitingEntry | null>;
   restoreHeldToEnd(
     executor: DatabaseExecutor,

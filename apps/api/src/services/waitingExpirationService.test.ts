@@ -32,6 +32,8 @@ const baseWaiting: WaitingEntry = {
   status: "entry_requested",
   queueOrder: 1,
   patientCount: 1,
+  arrivedPatientCount: 0,
+  calledPatientCount: 0,
   lookupTokenHash: null,
   patientDeferCount: 0,
   noShowMoveCount: 0,
