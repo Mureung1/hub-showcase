@@ -179,6 +179,21 @@ export function __resetLoadAllCacheForTests(): void {
 }
 
 /**
+ * findById() 결과 캐시 (이슈 #122) — loadAll()과 동일한 TTL 정책(10분, 이슈 #113 근거 참고).
+ * id별로 원본 Subsidy(프로필 무관, DB 그대로의 값)만 캐싱한다 — `scoreForProfile`은 캐시
+ * 히트/미스와 무관하게 항상 요청 시점에 재계산한다 (한 사용자의 프로필로 계산된 match 값이
+ * 캐시에 박혀서 다른 프로필 요청에 잘못 나가면 안 되므로). Supabase 에러로 FALLBACK을 반환한
+ * 경우는 loadAll()과 동일하게 캐싱하지 않는다 — 다음 요청에서 재시도할 수 있도록.
+ */
+const DETAIL_CACHE_TTL_MS = 600_000
+const detailCache = new Map<string, { data: Subsidy; fetchedAt: number }>()
+
+/** 테스트 전용: findById() 캐시를 초기화한다. 프로덕션 코드에서는 호출하지 않는다. */
+export function __resetFindByIdCacheForTests(): void {
+  detailCache.clear()
+}
+
+/**
  * 리스트/매칭에 필요한 컬럼만 select — 상세 전용 텍스트 필드(method/qualifications/documents/
  * how/apply_where/where_url/contact 등)는 리스트 조회에서 아예 가져오지 않는다 (이슈 #114).
  * `findById()`는 이 select를 쓰지 않고 그대로 `select('*')`를 유지한다.
@@ -255,21 +270,36 @@ export async function findById(
   id: string,
   profile?: Pick<OnboardingProfile, 'region' | 'supportRealm'>,
 ): Promise<Subsidy | null> {
-  const { data, error } = await supabase
-    .from(SUBSIDIES_TABLE)
-    .select('*')
-    .eq('id', id)
-    .maybeSingle()
+  const cached = detailCache.get(id)
+  let item: Subsidy
 
-  if (error) {
-    console.error('[subsidies-repo] 단건 조회 실패, 샘플 데이터로 대체:', error.message)
-    const fallback = FALLBACK.find((item) => item.id === id)
-    if (!fallback) return null
-    return profile ? { ...fallback, match: scoreForProfile(fallback, profile) } : fallback
+  if (cached && performance.now() - cached.fetchedAt < DETAIL_CACHE_TTL_MS) {
+    console.log(
+      `[timing] findById: cache hit (id=${id}, age=${(performance.now() - cached.fetchedAt).toFixed(1)}ms), supabase 조회 생략`,
+    )
+    item = cached.data
+  } else {
+    console.log(`[timing] findById: cache miss (id=${id}), supabase 조회 시작`)
+    const startedAt = performance.now()
+    const { data, error } = await supabase
+      .from(SUBSIDIES_TABLE)
+      .select('*')
+      .eq('id', id)
+      .maybeSingle()
+    console.log(`[timing] findById: supabase 조회 took ${(performance.now() - startedAt).toFixed(1)}ms`)
+
+    if (error) {
+      console.error('[subsidies-repo] 단건 조회 실패, 샘플 데이터로 대체:', error.message)
+      const fallback = FALLBACK.find((item) => item.id === id)
+      if (!fallback) return null
+      return profile ? { ...fallback, match: scoreForProfile(fallback, profile) } : fallback
+    }
+    if (!data) return null
+
+    item = rowToSubsidy(data as SubsidyRow)
+    detailCache.set(id, { data: item, fetchedAt: performance.now() })
   }
-  if (!data) return null
 
-  const item = rowToSubsidy(data as SubsidyRow)
   return profile ? { ...item, match: scoreForProfile(item, profile) } : item
 }
 
