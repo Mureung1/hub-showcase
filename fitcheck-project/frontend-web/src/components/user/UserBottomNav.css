@@ -11,7 +11,7 @@
   border-top: 1px solid var(--border);
   z-index: 100;
   padding: 0 0.5rem;
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  padding-bottom: var(--safe-bottom, env(safe-area-inset-bottom, 0));
 }
 
 .user-bottom-nav-item {

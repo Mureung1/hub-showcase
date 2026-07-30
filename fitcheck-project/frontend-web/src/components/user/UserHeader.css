@@ -17,7 +17,7 @@
   max-width: none;
   margin: 0;
   min-height: var(--header-height);
-  padding: 0.75rem clamp(1rem, 2.5vw, 2rem);
+  padding: calc(0.75rem + var(--safe-top)) clamp(1rem, 2.5vw, 2rem) 0.75rem;
   box-sizing: border-box;
 }
 

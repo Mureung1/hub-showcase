@@ -40,7 +40,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.875rem clamp(1rem, 4vw, 2rem);
+  padding: calc(0.875rem + var(--safe-top)) clamp(1rem, 4vw, 2rem) 0.875rem;
   background: rgba(250, 250, 248, 0.92);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
