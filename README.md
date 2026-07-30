@@ -14,11 +14,20 @@
 ![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase&logoColor=white)
 ![Groq](https://img.shields.io/badge/LLM-Groq-F55036)
 
-[📋 프로젝트 보드](https://github.com/users/shyang0319/projects/2) ·
+[🚀 **서비스 체험**](https://weatherpilot-web.vercel.app) ·
+[🎬 **시연 영상**](https://drive.google.com/file/d/1r4RuD_JG0EDgkzNKjcjVuv_YxTFA8rTn/view?usp=drive_link) ·
 [📖 기획서 Wiki](https://github.com/shyang0319/hub/wiki/%5BN111_%EC%96%91%EC%84%9C%ED%98%95%5D-WeatherPilot(%EC%9B%A8%EB%8D%94%ED%8C%8C%EC%9D%BC%EB%9F%BF)-%EC%84%9C%EB%B9%84%EC%8A%A4-%EA%B8%B0%ED%9A%8D%EC%95%88) ·
+[📋 프로젝트 보드](https://github.com/users/shyang0319/projects/2) ·
 [🗂 백로그](docs/WeatherPilot_백로그.md)
 
 </div>
+
+> [!NOTE]
+> **체험 링크는 데모 모드(`VITE_MOCK_MODE=true`)로 돌아갑니다.** 날씨 4종(비·맑음·한파·폭염)을
+> 눌러 화면 흐름을 끝까지 볼 수 있고, 발송을 눌러도 실제 문자·게시는 나가지 않습니다.
+> 실연동(기상청·OpenWeatherMap·Groq·Supabase 실호출)은 아래 **시작하기**를 따라 로컬에서
+> 확인할 수 있습니다. 백엔드는 https://weatherpilot-server.onrender.com (무료 플랜이라 첫 요청은
+> 절전 해제로 최대 60초).
 
 ---
 
@@ -27,10 +36,14 @@
 - 🌦️ **다중 소스 날씨 앙상블** — 기상청 + OpenWeatherMap을 가중 병합, 한쪽 장애 시 폴백
 - 📊 **실매출 기반 진단** — 매출 이력으로 "이 가게는 비 오는 날 −22%"를 실계산
 - 🤖 **LLM 마케팅 제안 생성** — 날씨·진단·매장 프로필로 문구·쿠폰 초안 자동 작성
+- 🎫 **쿠폰 두 형태 + 상한 강제** — 정률(`10% 할인`)·정액(`2,000원 할인`)을 모두 지원하고,
+  상한(20% / 3,000원)을 `packages/shared`에서 한 번만 정의해 서버·화면·데모가 같은 판정을 씁니다
 - 🛡️ **법적 필터 서버 강제** — 정보통신망법 `(광고)` 표기·수신동의·야간 차단을 서버에서 보장
 - 🎟️ **쿠폰 사용 추적** — 쿠폰 코드 기반 귀속 매출 실측, 캠페인 성과 리포트
 - 📷 **SNS 자동 게시** — 인스타그램 본인 계정에 캡션 게시, 미설정·실패 시 "문구 복사" 폴백
 - 🎯 **채널 역할 분리** — 단골 문자는 *전환*(1인 1코드로 실측), SNS는 *도달*(신규 유입)
+- 🩹 **빈 화면 없는 폴백** — 오늘 제안 생성이 실패하면 지난 캠페인을 대신 띄우고
+  "오늘 것이 아니다"를 화면에 밝힙니다 (외부 API가 흔들려도 화면이 비지 않게)
 
 ```
 날씨 수집 → 매출 진단 → LLM 제안 → 검토·승인 → 발송(법적 필터·SNS 게시) → 쿠폰 추적
@@ -46,7 +59,7 @@ flowchart TB
 
   subgraph FE["화면 · apps/web — React + Vite (Vercel)"]
     dash["① Dashboard<br/>오늘 날씨·진단·제안"]
-    edit["② EditView<br/>문구·할인율 편집 + 법적 체크"]
+    edit["② EditView<br/>문구·쿠폰(정률/정액) 편집 + 법적 체크"]
     sent["③ SentView<br/>발송 결과·쿠폰 추적·SNS 복사"]
     client["api/client.ts<br/>fetch 래퍼 · MOCK_MODE"]
     dash --> edit --> sent
@@ -63,7 +76,7 @@ flowchart TB
     boot["서버 기동 잡 · 실운영 경로<br/>무료 플랜은 06:30에 절전 · 임계 없음"]
     pipe["agent 파이프라인<br/>날씨 앙상블 → 진단 → LLM"]
     quality["품질검사 — 생성 시<br/>가드레일 + 한국어 · 내부정보"]
-    guard["가드레일 — 발송 시<br/>할인 ≤20% · 금지어"]
+    guard["가드레일 — 발송 시<br/>할인율 ≤20% · 할인액 ≤3,000원<br/>금지어 · 상한은 shared/promoLimits"]
     legal["legal/filter — 서버 강제<br/>동의 · (광고) · 야간 차단"]
     rsales["/sales · /sales/csv<br/>일매출 입력 · CSV 업로드"]
     rredeem["POST /coupons/:code/redeem<br/>(매장 단말 모의)"]
@@ -108,6 +121,7 @@ flowchart TB
   rredeem -- "사용·주문액 기록" --> coupons
 
   campaigns -. "발송한 날(status=sent)은 다음 진단의 기준선에서 제외" .-> pipe
+  campaigns -. "오늘 제안이 없으면 지난 캠페인을 stale로 반환(폴백)" .-> rproposal
 
   pipe -- "예보" --> kma
   pipe --> owm
@@ -138,7 +152,7 @@ flowchart TB
 
 | 영역 | 사용 |
 |---|---|
-| 모노레포 | npm workspaces (`apps/*`, `packages/*`) |
+| 모노레포 | npm workspaces (`apps/*`, `packages/*`) — 공용 타입 + 공용 판정(`packages/shared`) |
 | 프론트 | React + TypeScript (Vite) — 인라인 스타일만 |
 | 백엔드 | Node + Express + TypeScript |
 | DB | Supabase (PostgreSQL) |
@@ -149,11 +163,18 @@ flowchart TB
 ## 📁 프로젝트 구조
 
 ```
-apps/web         프론트 (React, App.tsx 진입)
-apps/server      백엔드 — agent(날씨·진단·생성) / routes(API) / db(Supabase)
-packages/shared  FE·BE 공용 타입 (날씨·진단·제안)
-docs             기획·설계 문서
+apps/web         프론트 (React, App.tsx 진입) — api/client.ts에 MOCK_MODE 스위치
+apps/server      백엔드 — agent(날씨·진단·생성) / routes(API) / legal(법적 필터) / db(Supabase)
+packages/shared  FE·BE 공용 타입 + 공용 판정
+                 promoLimits(쿠폰 상한) · sms(문자 본문) · sns(SNS 캡션) · weather/diagnosis/proposal
+showcase         쇼케이스 등록 자료 (showcase.json · 스크린샷 · 썸네일)
+tools            정적 생성물 원본 (프로모 카드 · 쇼케이스 썸네일 HTML)
+skills           weatherpilot-design — 디자인 토큰·컴포넌트 규칙
+docs             기획·설계 문서 · 발표/부스 자료
 ```
+
+> `packages/shared`에는 타입만 두지 않습니다. 값이 갈리면 "화면은 괜찮다는데 서버가 거부"하는
+> 상황이 생기는 판정(쿠폰 상한·문자 본문·SNS 캡션)을 여기 한 곳에 두고 양쪽이 import 합니다.
 
 ## 🚀 시작하기
 
@@ -163,21 +184,44 @@ docs             기획·설계 문서
 # 1. 의존성 설치
 npm install
 
-# 2. 환경변수 — apps/server/.env 에 작성 (.env.example 참고)
-#    KMA_SERVICE_KEY / OWM_API_KEY / SUPABASE_URL / SUPABASE_SECRET_KEY / GROQ_API_KEY
-
-# 3. DB 스키마 — Supabase SQL Editor 에서 apps/server/src/db/schema.sql 실행 후 시드
+# 2. DB 스키마 — Supabase SQL Editor 에서 apps/server/src/db/schema.sql 실행 후 시드
 npm run db:seed -w apps/server
 
-# 4. 개발 서버 (web :5173 + server :4000 동시 기동)
+# 3. 개발 서버 (web :5173 + server :4000 동시 기동)
 npm run dev
 ```
 
-빠른 확인:
+### 환경변수
+
+**서버** — `apps/server/.env` (시크릿은 전부 서버 전용. 프론트에 두지 않습니다)
+
+| 그룹 | 키 | 없으면 |
+|---|---|---|
+| 날씨 | `KMA_SERVICE_KEY` `OWM_API_KEY` | 한쪽만 있어도 폴백 동작, 둘 다 없으면 진단 불가 |
+| DB | `SUPABASE_URL` `SUPABASE_SECRET_KEY` | 필수 |
+| LLM | `GROQ_API_KEY` | 필수 (없으면 템플릿 폴백) |
+| 문자 | `SOLAPI_API_KEY` `SOLAPI_API_SECRET` `SOLAPI_SENDER` `SOLAPI_TEST_TO` `OWNER_PHONE` | **dry-run** — 실발송 없이 로그만 |
+| 인스타 | `IG_ACCESS_TOKEN` `IG_USER_ID` `IG_DEMO_IMAGE_URL` `IG_API_HOST` `IG_API_VERSION` | 게시 생략 후 "문구 복사" 폴백 |
+| 기타 | `PORT` `CORS_ORIGINS` `DEMO_WEATHER` `LLM_DEBUG` | 기본값 사용 |
+
+**프론트** — `apps/web/.env.local`
 
 ```bash
-curl http://localhost:4000/weather/today   # 오늘 매장 앙상블 날씨
+VITE_MOCK_MODE=false                  # 기본값은 true(mock). 서버 실연동하려면 false
+VITE_API_BASE=http://localhost:4000   # 미설정 시 이 값
 ```
+
+> `VITE_MOCK_MODE`를 지정하지 않으면 **mock으로 동작합니다**(`api/client.ts`).
+> 서버 없이도 화면 흐름을 볼 수 있게 한 데모 보험이라, 실연동을 보려면 `false`로 두세요.
+
+### 빠른 확인
+
+```bash
+curl http://localhost:4000/weather/today    # 앙상블 날씨 — sources에 ["kma","owm"]가 오면 두 API 병합
+curl http://localhost:4000/proposal/today   # 오늘 생성된 제안(진단·문구·쿠폰)
+```
+
+`seeded: true`가 보이면 `DEMO_WEATHER`로 날씨를 고정한 상태입니다(진단·문구·발송은 그대로 실동작).
 
 ### 채널별 지표
 
@@ -208,4 +252,8 @@ curl http://localhost:4000/weather/today   # 오늘 매장 앙상블 날씨
 ## 📚 문서
 
 - **설계**: [아키텍처](docs/아키텍처.md) · [기획안](docs/WeatherPilot_기획안.md) · [기술 로드맵](docs/WeatherPilot_기술로드맵.md) · [개발 백로그](docs/WeatherPilot_백로그.md)
-- **발표**: [1~3주차 발표 자료](docs/WeatherPilot_데모발표_0724.pptx) · [발표 대본](docs/발표대본_1-3주차.md)
+- **검증**: [UAT 기록](docs/UAT_0724.md) — 사용성 테스트 도구·프로토콜·결과
+- **발표·데모**: [발표 자료](docs/WeatherPilot_데모발표_0724.pptx) · [발표 대본](docs/발표대본_1-3주차.md) · [데모 런북](docs/데모_런북_0731.md) · [부스 응대 대본](docs/부스_대본_0731.md)
+- **제출**: [제출물 패키지](docs/제출물_0731.md) — 링크·설명문·검증 방법 모음
+- **인쇄물**: [기획 A3](docs/booth/N111_양서형_WeatherPilot_기획.pdf) · [워크플로우 A3](docs/booth/N111_양서형_WeatherPilot_워크플로우.pdf) — 원본 HTML은 `docs/booth/`, 생성은 `bash docs/booth/build-pdf.sh`
+- **쇼케이스**: [`showcase/showcase.json`](showcase/showcase.json) — 등록 자료·스크린샷·썸네일
