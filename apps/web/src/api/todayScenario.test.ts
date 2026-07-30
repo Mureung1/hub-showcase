@@ -86,6 +86,7 @@ describe("A. 정상 케이스", () => {
     expect(s.diagText).toBe("비 평균 −18%");
     expect(s.impHead).toBe("이 가게 데이터 기준 −18% 예상");
     expect(s.impDetail).toContain("캠페인 없던 30일"); // 실측(estimated=false) 분기
+    expect(s.impDetail).toContain("방어 마케팅으로 하락을 줄일 수 있습니다.");
     expect(s.emoji).toBe("🌧️");
   });
 
@@ -99,6 +100,9 @@ describe("A. 정상 케이스", () => {
     expect(s.diagTone).toBe("up");
     expect(s.todayDown).toBe(false);
     expect(s.impHead).toBe("이 가게 데이터 기준 +12% 기대");
+    // 회귀: 상승인데 "하락을 줄일 수 있습니다"가 붙어 impHead와 모순됐다 (부스 화면 노출)
+    expect(s.impDetail).toContain("방어할 하락이 없는 날");
+    expect(s.impDetail).not.toContain("하락을 줄일 수 있습니다");
   });
 
   it("A3: 실데이터가 mock base를 덮는다 — title·copy·temp·cond·sourceLabel", () => {
@@ -149,6 +153,7 @@ describe("B. delta 산출 분기", () => {
 
     expect(s.diagText).toBe("흐림 · 평균과 비슷");
     expect(s.impHead).toBe("이 가게 데이터 기준 평균 수준");
+    expect(s.impDetail).toContain("방어할 하락이 없는 날"); // flat도 down이 아니다
     expect(s.predSales).toBe(800000);
     expect(s.target).toBe(800000);
     expect(s.diagTone).toBe("up");
