@@ -718,5 +718,23 @@
     1. 단일 소스인데 섹션 헤더가 **"공통 권장 사항"**으로 나온다. §9.3 금지어는 아니지만 어색하다
     2. FinalAnswer 본문의 `**강조**` 마크다운이 **원문 그대로** 보인다(2번째 질문). AnswerCard가 평문 렌더다
   - **검증**: 루트 typecheck·lint(web만)·build 통과. 커밋 `92c2e36`
-- 이후: 폐기 인용 차이 축적 후 §11.2 개정 판단 · G 통제 재측정(effort:low) · AC2(단계 3b) · 마크다운 렌더 판단 → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **T-020.3 완료 (2026-07-31)** — T-020.2가 남긴 표시 정확성 2건. 3사 실행 **1회**
+  - **1. FinalAnswer 평문 강제 (프롬프트)** — `final/v1.md`·`finalNote/v1.md`에 마크다운 금지를 넣었다. **렌더러를 넣지 않은 이유**: `selectedContent`에는 사용자가 직접 쓴 `user_composed`가 섞여 화면에 나가므로 마크다운 렌더는 sanitize를 요구한다. 평문이 안전하고 Export에도 지장이 없다
+    - `finalNote/v1.md`는 `finalAnswer`를 **그대로 되돌려 담는** 프롬프트라, 금지가 `decisionNote`에만 걸린다고 명시했다. 안 그러면 확정된 본문을 모델이 고쳐 쓸 여지가 생긴다
+    - 실측(`사내 문서 검색…`, 충돌 0건): `**`·`#`·`-`·`1.` **전부 0건**(FinalAnswer 1,278자·DecisionNote 441자, 정규식 검사)
+  - **2. 단일 소스 헤더 정정** — `generationMode === "single_source_fallback"`이면 **"자동 통과 항목"**, 아니면 기존 "공통 권장 사항". 하나만 답한 것을 "공통"이라 부르면 **하지 않은 일을 한 것처럼 표시**하는 T-019.6 계열의 문제다
+    - **상태가 아니라 `generationMode`로 판단한다.** 상태로 분기하면 "3사가 답했는데 이 쟁점만 한 곳이 다뤘다"와 "애초에 한 곳만 답했다"를 구분하지 못한다
+  - **회귀 (4종, 분기 양쪽 모두)**
+
+    | 경로 | 헤더 |
+    |---|---|
+    | `single-source-fallback` (Mock) | ✅ "자동 통과 항목 (2)" — 공통·합의·일치 없음 |
+    | `multi_source` (서버 실질문) | ✅ "공통 권장 사항 (8)" 유지 |
+    | `recheck-path` (Mock, multi) | ✅ "공통 권장 사항 (1)" + "결정 사항 (2)" |
+    | `all-rejected` (Mock) | ✅ 고정 문구만 — 헤더 이전에 early return |
+  - **3. 데모 데이터 정리** — Chat 2건 삭제(FK CASCADE로 하위 정리): `872be2e2`(검증 부산물 `1f399b86` 보유) · `a986b4e7`. 둘 다 `review_required`이고 FinalAnswer가 없어 잃을 확정 결과가 없었다
+    - ⚠️ **정리 범위 밖으로 남은 것 9건**: `processing` 8 · `review_required` 1 (2026-07-23~30 부산물). 지시 대상이 아니라 건드리지 않았다
+  - ⚠️ **`v1`을 제자리 수정했다** — 지시대로 버전을 올리지 않았으므로, 이미 저장된 `prompt_version="v1"` 행들은 **금지 지시가 없던 시점의 출력**이다. 프롬프트 버전으로는 둘을 구분할 수 없다
+  - **검증**: 루트 typecheck·lint(web만)·build 통과
+- 이후: 폐기 인용 차이 축적 후 §11.2 개정 판단 · G 통제 재측정(effort:low) · AC2(단계 3b) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정
