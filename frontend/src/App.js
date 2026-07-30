@@ -5,9 +5,6 @@ import axios from 'axios';
 import * as tsparticlesReact from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim"; 
 
-// ==============================================================================
-// 🌐 API URL 동적 할당 및 유저 식별자 로직
-// ==============================================================================
 const getApiBaseUrl = () => {
   if (process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL.trim() !== "") {
     return process.env.REACT_APP_API_URL;
@@ -17,7 +14,6 @@ const getApiBaseUrl = () => {
 };
 const API_BASE_URL = getApiBaseUrl();
 
-// 유저 고유 ID 생성기 (브라우저에 영구 저장되어 나만의 히스토리를 유지함)
 const getUserId = () => {
   let uid = localStorage.getItem('legal_ai_uid');
   if (!uid) {
@@ -27,13 +23,28 @@ const getUserId = () => {
   return uid;
 };
 const USER_ID = getUserId();
-// ==============================================================================
 
-// Particles 컴포넌트 안전 추출
+// 🚀 백엔드 분류망 확장에 맞춘 카테고리 리스트 업데이트 (직접 입력 항목 제거)
+const CASE_TYPES = [
+  "대여금 반환 청구",
+  "매매대금 및 계약금 반환 청구",
+  "공사대금 및 용역대금 청구",
+  "임대차 보증금 반환",
+  "차임(월세) 연체 및 명도 소송",
+  "손해배상 청구 (불법행위/신체상해)",
+  "명예훼손 및 모욕 위자료 청구",
+  "지식재산권 침해 금지 및 손해배상",
+  "사기 피해에 따른 부당이득 반환 및 손해배상",
+  "이혼 및 위자료 청구",
+  "상속재산분할 및 유류분 반환 청구",
+  "이웃분쟁 (층간소음/누수) 손해배상",
+  "임금 및 퇴직금 체불 진정",
+  "기타 손해배상 및 부당이득 반환"
+];
+
 const Particles = tsparticlesReact.default || tsparticlesReact.Particles || tsparticlesReact;
 
 function App() {
-  // ---------------- 반응형(모바일) 감지 상태 ----------------
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
@@ -42,7 +53,6 @@ function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // ---------------- 상태 관리 ----------------
   const [activeTab, setActiveTab] = useState("create");
   const [query, setQuery] = useState("");
   const [chatLog, setChatLog] = useState([]);
@@ -74,14 +84,12 @@ function App() {
     title: "", facts: "", legal_basis: "전문가(AI) 상담 또는 관련 법령 참조", demands: "", deadline: ""
   });
 
-  // --- Particles 초기화 ---
   const particlesInit = useCallback(async (engine) => {
     if (typeof loadSlim === 'function') {
       await loadSlim(engine);
     }
   }, []);
 
-  // ---------------- 디자인 시스템 ----------------
   const designSystem = {
     colors: {
       bgMain: '#050914',      
@@ -103,7 +111,6 @@ function App() {
   };
   const colors = designSystem.colors;
 
-  // --- 밤하늘 별/별자리 효과 설정 ---
   const particlesOptions = useMemo(() => ({
     background: { color: { value: "transparent" } },
     fpsLimit: 60, 
@@ -139,10 +146,8 @@ function App() {
     marginTop: 0, borderLeft: `5px solid ${colors.primary}`, paddingLeft: '15px'
   };
 
-  // ---------------- 로직 구현 (USER_ID 적용) ----------------
   const fetchCasesAndStats = async () => {
     try {
-      // 내 ID에 해당하는 사건만 가져옴
       const res = await axios.get(`${API_BASE_URL}/api/cases`, { params: { user_id: USER_ID } });
       setCases(res.data.reverse());
       const statsRes = await axios.get(`${API_BASE_URL}/api/agent-stats`);
@@ -204,7 +209,7 @@ function App() {
         doc_type: selectedDocType, 
         document_content: response.data.document_content, 
         related_laws: relatedLaws,
-        user_id: USER_ID // 사건 저장 시 소유자 명시
+        user_id: USER_ID 
       });
       setCurrentCaseId(caseRes.data.id); 
     } catch (error) { setDocResult("문서 생성 실패: 서버 에러"); }
@@ -222,18 +227,24 @@ function App() {
   const handleCardFeedback = async (lawTitle, isUseful, e) => {
     e.stopPropagation(); 
     const existingVote = votedCards[lawTitle];
+    const currentCaseType = manualForm.title || "기타 사건"; 
+
     if (existingVote) {
         if((existingVote.voteType === 'up') === isUseful) {
             try {
-                await axios.post(`${API_BASE_URL}/api/card-feedback`, { law_title: lawTitle, is_useful: isUseful, is_cancel: true, user_id: USER_ID });
+                await axios.post(`${API_BASE_URL}/api/card-feedback`, { 
+                    law_title: lawTitle, is_useful: isUseful, is_cancel: true, user_id: USER_ID, case_type: currentCaseType 
+                });
                 setVotedCards(prev => { const newVotes = { ...prev }; delete newVotes[lawTitle]; return newVotes; });
             } catch (error) {}
             return;
         } else { alert("이미 평가하셨습니다."); return; }
     }
     try {
-      await axios.post(`${API_BASE_URL}/api/card-feedback`, { law_title: lawTitle, is_useful: isUseful, is_cancel: false, user_id: USER_ID });
-      setVotedCards(prev => ({ ...prev, [lawTitle]: { voteType: isUseful ? 'up' : 'down', message: isUseful ? '📈 학습됨' : '📉 학습됨' } }));
+      await axios.post(`${API_BASE_URL}/api/card-feedback`, { 
+          law_title: lawTitle, is_useful: isUseful, is_cancel: false, user_id: USER_ID, case_type: currentCaseType 
+      });
+      setVotedCards(prev => ({ ...prev, [lawTitle]: { voteType: isUseful ? 'up' : 'down', message: isUseful ? '📈 해당 사건에 학습됨' : '📉 학습됨' } }));
     } catch (error) {}
   };
 
@@ -336,7 +347,23 @@ function App() {
                   <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '15px' }}>
                     <input placeholder="원고 (본인)" value={manualForm.sender_name} onChange={e => setManualForm({...manualForm, sender_name: e.target.value})} style={inputStyle} />
                     <input placeholder="피고 (상대방)" value={manualForm.receiver_name} onChange={e => setManualForm({...manualForm, receiver_name: e.target.value})} style={inputStyle} />
-                    <input placeholder="사건 유형 (예: 대여금 반환)" value={manualForm.title} onChange={e => setManualForm({...manualForm, title: e.target.value})} style={{...inputStyle, gridColumn: isMobile ? 'auto' : '1 / -1'}} />
+                    
+                    {/* 🚀 [수정됨] HTML5 Native <datalist>를 활용한 완벽한 하이브리드 UI */}
+                    <div style={{ gridColumn: isMobile ? 'auto' : '1 / -1' }}>
+                      <input 
+                        list="case-types" 
+                        placeholder="사건 유형 선택 또는 직접 입력 (예: 대여금)" 
+                        value={manualForm.title} 
+                        onChange={e => setManualForm({...manualForm, title: e.target.value})} 
+                        style={{...inputStyle, width: '100%', cursor: 'text'}} 
+                      />
+                      <datalist id="case-types">
+                        {CASE_TYPES.map(type => (
+                          <option key={type} value={type} />
+                        ))}
+                      </datalist>
+                    </div>
+                    
                     <textarea placeholder="핵심 사실관계 (수정 가능)" value={manualForm.facts} onChange={e => setManualForm({...manualForm, facts: e.target.value})} style={{...inputStyle, gridColumn: isMobile ? 'auto' : '1 / -1', height: '100px'}} />
                   </div>
                   {isAgentReplied && (
@@ -441,7 +468,7 @@ function App() {
               )}
             </div>
 
-            {/* 오른쪽: 관련 법령 (모바일에서는 맨 아래로, 데스크탑에서는 고정) */}
+            {/* 오른쪽: 관련 법령 */}
             <div style={{ flex: '1', width: isMobile ? '100%' : 'auto', minWidth: isMobile ? '0' : '320px', position: isMobile ? 'static' : 'sticky', top: '20px', maxHeight: isMobile ? 'none' : 'calc(100vh - 40px)', display: 'flex', flexDirection: 'column' }}>
               <div style={{ ...cardStyle, marginBottom: 0, display: 'flex', flexDirection: 'column', height: '100%' }}>
                 <h3 style={{ marginTop: 0, color: colors.white, fontSize: '1.1rem', borderBottom: `2px solid ${colors.border}`, paddingBottom: '15px' }}>📖 핵심 판례/법령</h3>
