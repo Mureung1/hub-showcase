@@ -1,6 +1,7 @@
 import type { PetId, PetStageId } from "../data/assetManifest";
 import type { ManagerBehaviorIntent } from "./managerBehaviorIntent";
 import type { PetBehaviorStyle } from "./petBehaviorStateMachine";
+import type { ManagerStats } from "./statGrowth";
 
 export type ManagerTone = "calm" | "friendly" | "firm";
 export type QuestSize = "tiny" | "balanced" | "challenge";
@@ -22,6 +23,7 @@ export interface ManagerState {
   petId: PetId;
   level: number;
   exp: number;
+  stats: ManagerStats;
   mood: "waiting" | "focused" | "happy" | "recovering";
   line: string;
   behaviorStyle: PetBehaviorStyle;

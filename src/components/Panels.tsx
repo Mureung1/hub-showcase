@@ -50,11 +50,11 @@ export function ProfilePanel({ profile, onProfileChange }: ProfilePanelProps) {
           />
         </label>
         <label>
-          퀘스트 크기
+          진행 강도
           <select value={profile.questSize} onChange={(event) => onProfileChange({ ...profile, questSize: event.target.value as UserProfile["questSize"] })}>
-            <option value="tiny">아주 작게</option>
+            <option value="tiny">가볍게</option>
             <option value="balanced">보통</option>
-            <option value="challenge">조금 도전적</option>
+            <option value="challenge">도전적으로</option>
           </select>
         </label>
       </div>
@@ -99,7 +99,7 @@ export function QuestPanel({ quest, status, onAccept, onComplete, onFail, onRese
       {status === "failed" && (
         <div className="recovery-note">
           <strong>복구 퀘스트 생성됨</strong>
-          <span>실패 이유를 앱 데이터로 남기고 다음 퀘스트 크기를 낮춥니다.</span>
+          <span>실패 이유를 앱 데이터로 남기고 다음 진행 강도를 낮춥니다.</span>
         </div>
       )}
     </section>

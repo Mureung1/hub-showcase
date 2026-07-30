@@ -1,9 +1,22 @@
 import type { WindowId } from "../data/windowRegistry";
+import type { ManagerStatEvaluation } from "./statGrowth";
 import type { Difficulty, Quest, QuestType } from "./questLogic";
 
 export type QuestStatus = "draft" | "active" | "success" | "failed" | "recovery";
 
 export type QuestCompletionResult = "success" | "recovery";
+
+export interface QuestAcceptancePreview {
+  difficulty: Difficulty;
+  rewardExp: number;
+  statEvaluation: ManagerStatEvaluation;
+  reason: string;
+}
+
+export interface QuestAcceptancePreviewState {
+  snapshotKey: string;
+  preview: QuestAcceptancePreview;
+}
 
 export function getQuestWorkflowWindows(status: QuestStatus): WindowId[] | null {
   if (status === "active") return ["runner", "manager"];
@@ -54,5 +67,27 @@ export function applyDifficultyEvaluationToQuest(
     ...current,
     difficulty: evaluation.difficulty,
     rewardExp: evaluation.rewardExp,
+  };
+}
+
+export function createQuestDraftSnapshotKey(quest: Quest): string {
+  return JSON.stringify({
+    title: quest.title,
+    type: quest.type,
+    amount: quest.amount,
+    unit: quest.unit,
+    deadline: quest.deadline,
+  });
+}
+
+export function isQuestAcceptancePreviewCurrent(quest: Quest, previewState: QuestAcceptancePreviewState | null): boolean {
+  return previewState?.snapshotKey === createQuestDraftSnapshotKey(quest);
+}
+
+export function applyQuestAcceptancePreviewToQuest(quest: Quest, preview: QuestAcceptancePreview): Quest {
+  return {
+    ...quest,
+    difficulty: preview.difficulty,
+    rewardExp: preview.rewardExp,
   };
 }

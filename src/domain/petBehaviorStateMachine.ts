@@ -50,7 +50,10 @@ export interface BehaviorContext {
 }
 
 export function getBehaviorCandidates(_context: BehaviorContext): BehaviorCandidate[] {
-  const candidates: BehaviorCandidate[] = [{ state: "idle", weight: 1, reason: "default" }];
+  const candidates: BehaviorCandidate[] = [
+    { state: "idle", weight: 1, reason: "default" },
+    { state: "wander", weight: 4, reason: "baseline_roam" },
+  ];
 
   for (const object of _context.objects) {
     if (object.type === "ladder" && isNearRect(_context.pet, object.rect, 32)) {

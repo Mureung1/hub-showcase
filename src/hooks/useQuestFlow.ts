@@ -3,7 +3,16 @@ import type { WindowId } from "../data/windowRegistry";
 import type { CreateQuestEventRequest } from "../layers/storage/questLogApi";
 import type { ManagerState, UserProfile } from "../domain/appState";
 import { getPersonaLine } from "../domain/managerPersonaPolicy";
-import { applyDifficultyEvaluationToQuest, applyQuestPatch, getQuestCompletionResult, getQuestWorkflowWindows, type QuestStatus } from "../domain/questFlowPolicy";
+import {
+  applyQuestAcceptancePreviewToQuest,
+  applyQuestPatch,
+  createQuestDraftSnapshotKey,
+  getQuestCompletionResult,
+  getQuestWorkflowWindows,
+  isQuestAcceptancePreviewCurrent,
+  type QuestAcceptancePreviewState,
+  type QuestStatus,
+} from "../domain/questFlowPolicy";
 import { createRecoveryQuest, type Quest } from "../domain/questLogic";
 
 export interface UseQuestFlowInput {
@@ -25,7 +34,11 @@ export interface UseQuestFlowInput {
   recordOutcomeStreak: (result: "success" | "failed") => void;
   saveQuestEvent: (request: CreateQuestEventRequest) => void;
   recommendQuest?: () => void;
-  reevaluateQuestBeforeAccept?: (quest: Quest) => Promise<{ difficulty: Quest["difficulty"]; rewardExp: number } | null>;
+  acceptancePreview: QuestAcceptancePreviewState | null;
+  acceptedPreview: QuestAcceptancePreviewState | null;
+  setAcceptancePreview: Dispatch<SetStateAction<QuestAcceptancePreviewState | null>>;
+  setAcceptedPreview: Dispatch<SetStateAction<QuestAcceptancePreviewState | null>>;
+  onAcceptNeedsPreview?: () => void;
   createQuestEventRequest: (
     quest: Quest,
     result: NonNullable<CreateQuestEventRequest["result"]>,
@@ -38,6 +51,9 @@ export interface UseQuestFlowInput {
       managerBefore?: ManagerState;
       managerAfter?: ManagerState;
       soundEnabled?: boolean;
+      statEvaluation?: QuestAcceptancePreviewState["preview"]["statEvaluation"];
+      statEvaluationSource?: "llm" | "rule_fallback" | "quest_acceptance_preview";
+      questAcceptancePreviewReason?: string;
     },
   ) => CreateQuestEventRequest;
 }
@@ -61,7 +77,11 @@ export function useQuestFlow({
   recordOutcomeStreak,
   saveQuestEvent,
   recommendQuest,
-  reevaluateQuestBeforeAccept,
+  acceptancePreview,
+  acceptedPreview,
+  setAcceptancePreview,
+  setAcceptedPreview,
+  onAcceptNeedsPreview,
   createQuestEventRequest,
 }: UseQuestFlowInput) {
   function openTodayQuest() {
@@ -69,6 +89,8 @@ export function useQuestFlow({
       setQuest(createQuest(profile));
       setQuestStatus("draft");
       setPreviousQuestTitle("");
+      setAcceptancePreview(null);
+      setAcceptedPreview(null);
       setManager((current) => ({ ...current, mood: "waiting", line: getPersonaLine("quest_recommended", getManagerPersona(current, profile)) }));
       setWorkflowWindows(["quest", "manager"]);
       recommendQuest?.();
@@ -88,20 +110,20 @@ export function useQuestFlow({
     setQuest((current) => applyQuestPatch(current, patch));
   }
 
-  async function acceptQuest() {
-    let acceptedQuest = quest;
-    if (reevaluateQuestBeforeAccept) {
-      try {
-        const evaluation = await reevaluateQuestBeforeAccept(quest);
-        if (evaluation) {
-          acceptedQuest = applyDifficultyEvaluationToQuest(quest, evaluation);
-          setQuest(acceptedQuest);
-        }
-      } catch {
-        acceptedQuest = quest;
-      }
+  function acceptQuest() {
+    const currentPreview = acceptancePreview;
+    if (!currentPreview || !isQuestAcceptancePreviewCurrent(quest, currentPreview)) {
+      setAcceptancePreview(null);
+      onAcceptNeedsPreview?.();
+      return;
     }
 
+    const acceptedQuest = applyQuestAcceptancePreviewToQuest(quest, currentPreview.preview);
+    setQuest(acceptedQuest);
+    setAcceptedPreview({
+      snapshotKey: createQuestDraftSnapshotKey(acceptedQuest),
+      preview: currentPreview.preview,
+    });
     setQuestStatus("active");
     setWorkflowWindows(["runner", "manager"]);
     setManager((current) => ({ ...current, mood: "focused", line: getPersonaLine("quest_started", getManagerPersona(current, profile)) }));
@@ -112,9 +134,20 @@ export function useQuestFlow({
     recordOutcomeStreak("success");
     const eventLine = getPersonaLine("quest_completed", getManagerPersona(manager, profile));
     const nextManager = addExp(manager, quest.rewardExp, eventLine);
+    const currentAcceptedPreview = acceptedPreview;
+    const preview = currentAcceptedPreview && isQuestAcceptancePreviewCurrent(quest, currentAcceptedPreview) ? currentAcceptedPreview.preview : null;
     setManager((current) => addExp(current, quest.rewardExp, getPersonaLine("quest_completed", getManagerPersona(current, profile))));
-    saveQuestEvent(createQuestEventRequest(quest, result, quest.rewardExp, "happy", { managerLine: eventLine, managerBefore: manager, managerAfter: nextManager, soundEnabled: manager.soundEnabled }));
+    saveQuestEvent(createQuestEventRequest(quest, result, quest.rewardExp, "happy", {
+      managerLine: eventLine,
+      managerBefore: manager,
+      managerAfter: nextManager,
+      soundEnabled: manager.soundEnabled,
+      statEvaluation: preview?.statEvaluation,
+      statEvaluationSource: preview ? "quest_acceptance_preview" : undefined,
+      questAcceptancePreviewReason: preview?.reason,
+    }));
     setQuestStatus("success");
+    setAcceptedPreview(null);
     setWorkflowWindows(["manager"]);
   }
 
@@ -130,6 +163,8 @@ export function useQuestFlow({
     saveQuestEvent(createQuestEventRequest(quest, "failed", 0, "recovering", { failureReason: selectedFailureReason, managerLine: getPersonaLine("quest_failed", getManagerPersona(manager, profile)), managerBefore: manager, managerAfter: manager, soundEnabled: manager.soundEnabled }));
     setQuest(createRecoveryQuest(quest));
     setQuestStatus("recovery");
+    setAcceptancePreview(null);
+    setAcceptedPreview(null);
     setWorkflowWindows(["recovery", "manager"]);
     setManager((current) => ({ ...current, mood: "recovering", line: getPersonaLine("recovery_created", getManagerPersona(current, profile)) }));
   }

@@ -7,11 +7,11 @@ import {
   defaultWindowPetActiveEdges,
   defaultWindowPetPlacementDrafts,
   defaultWindowPetPlacementProfile,
-  getReviewWindowPetPlacementProfileId,
-  getRuntimeWindowPetPlacementProfileId,
+  getRuntimeWindowPetPlacementProfileIdForReviewSet,
   readWindowPetPlacementProfile,
   resolveWindowPetPosition,
   runtimeWindowPetSlots,
+  windowPetRuntimeBaseSpriteSize,
   writeWindowPetPlacementProfile,
   type WindowPetAttachSide,
   type WindowPetMotion,
@@ -84,7 +84,7 @@ export function SpriteSheetReviewTool() {
     windowSize: { width: effectiveMockWindow.width, height: effectiveMockWindow.height },
     frameWidth: selectedAnimation.frameWidth,
     anchor: selectedAnimation.anchor,
-    baseSpriteSize: selectedAnimation.frameWidth * scale,
+    baseSpriteSize: windowPetRuntimeBaseSpriteSize,
   });
   const previewSpriteScale = resolvedPreviewPosition.size / selectedAnimation.frameWidth;
   const anchorX = (currentPlacement.mirrorX ? selectedAnimation.frameWidth - selectedAnimation.anchor.x : selectedAnimation.anchor.x) * previewSpriteScale;
@@ -109,10 +109,10 @@ export function SpriteSheetReviewTool() {
     const element = mockWindowRef.current;
     if (!element) return undefined;
 
-    const stageRect = element.offsetParent instanceof HTMLElement
-      ? element.offsetParent.getBoundingClientRect()
-      : { left: 0, top: 0 };
     const measure = () => {
+      const stageRect = element.offsetParent instanceof HTMLElement
+        ? element.offsetParent.getBoundingClientRect()
+        : { left: 0, top: 0 };
       const rect = element.getBoundingClientRect();
       setMeasuredMockWindow({
         x: rect.left - stageRect.left,
@@ -191,7 +191,7 @@ export function SpriteSheetReviewTool() {
       ...profiles,
       [reviewSetId]: currentPlacementProfile,
     }));
-    setSaveMessage(`Saved placement profile: ${profileId}`);
+    setSaveMessage(`Saved runtime canonical placement profile: ${profileId}`);
   }
 
   function updateGeometry(animation: SpriteAnimationAsset, image: HTMLImageElement) {
@@ -364,7 +364,7 @@ export function SpriteSheetReviewTool() {
           Save placement
         </button>
         <p className="sprite-placement-save-message">
-          {saveMessage || "Save writes this placement to the same browser origin used by the runtime preview."}
+          {saveMessage || "Save writes this pet/stage placement to the runtime canonical profile used by the app."}
         </p>
       </section>
 
@@ -546,11 +546,7 @@ function readInitialPlacementProfilesBySet(): PlacementProfilesBySet {
 }
 
 function getPlacementProfileIdForReviewSet(reviewSet: SpriteReviewSet): WindowPetPlacementProfileId {
-  if (reviewSet.id.endsWith("-canonical")) {
-    return getRuntimeWindowPetPlacementProfileId(reviewSet.petId, reviewSet.stage);
-  }
-
-  return getReviewWindowPetPlacementProfileId(reviewSet.id);
+  return getRuntimeWindowPetPlacementProfileIdForReviewSet(reviewSet);
 }
 
 function getMockEdgePoint(mockWindow: MockWindowRect, edge: AttachSide) {

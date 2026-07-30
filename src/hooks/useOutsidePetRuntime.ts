@@ -5,6 +5,7 @@ import {
   advanceOutsidePetBehavior,
   getNearestOutsidePetSide,
   getNearbyLadder,
+  outsidePetFreeRoamTickMs,
   outsidePetFieldRect,
   outsidePetInitialState,
   outsidePetSpriteSize,
@@ -12,6 +13,8 @@ import {
   resolveOutsidePetAttachmentPosition,
   resolveOutsidePetHorizontalMove,
   resolveOutsidePetRoamPosition,
+  resolveOutsidePetWalkInStep,
+  shouldChooseNextOutsidePetRoamAnimation,
   resolveStoppedInteractionAnimation,
   resolveReturningOutsidePetStep,
   startOutsidePetBehavior,
@@ -62,25 +65,7 @@ export function useOutsidePetRuntime({
       setOutsidePet((current) => {
         if (current.phase !== "walk_in") return current;
 
-        const step = current.side === "left" ? 18 : -18;
-        const nextX = current.position.x + step;
-        const reachedTarget = current.side === "left" ? nextX >= targetX : nextX <= targetX;
-        if (reachedTarget) {
-          return {
-            ...current,
-            phase: "free_roam",
-            animation: "idle",
-            behavior: "idle",
-            behaviorTicks: 0,
-            roamTicks: 0,
-            attachedObjectId: undefined,
-            platformId: undefined,
-            climbProgress: undefined,
-            position: { ...current.position, x: targetX },
-          };
-        }
-
-        return { ...current, position: { ...current.position, x: nextX }, direction: step > 0 ? 1 : -1 };
+        return resolveOutsidePetWalkInStep(current, targetX);
       });
     }, 90);
 
@@ -111,11 +96,12 @@ export function useOutsidePetRuntime({
         const attachedObject = current.attachedObjectId
           ? interactionObjects.find((object) => object.id === current.attachedObjectId)
           : undefined;
-        const nextAnimation = getNextRoamAnimation(current, interactionObjects);
+        const shouldChooseNextAnimation = shouldChooseNextOutsidePetRoamAnimation(current);
+        const nextAnimation = shouldChooseNextAnimation ? getNextRoamAnimation(current, interactionObjects) : current.animation;
         const speed = resolveOutsidePetAnimationSpeed(nextAnimation);
         const horizontalMove = resolveOutsidePetHorizontalMove(current, interactionObjects, speed);
         if (horizontalMove.stoppedForTarget) {
-          const targetAnimation = resolveStoppedInteractionAnimation(current, interactionObjects);
+          const targetAnimation = resolveStoppedInteractionAnimation(current, interactionObjects, nextAnimation);
           if (targetAnimation && isAnimationSupported(targetAnimation)) {
             const startedTargetBehavior = startOutsidePetBehavior(current, interactionObjects, targetAnimation);
             if (startedTargetBehavior.behavior !== current.behavior || startedTargetBehavior.animation !== current.animation) {
@@ -146,13 +132,15 @@ export function useOutsidePetRuntime({
         return {
           ...current,
           animation: resolvedAnimation,
+          behavior: resolvedAnimation === "idle" ? "idle" : "wander",
+          behaviorTicks: shouldChooseNextAnimation ? 0 : (current.behaviorTicks ?? 0) + 1,
           attachedObjectId: nextAttachedObject?.id,
           direction: horizontalMove.direction,
           roamTicks: nextRoamTicks,
           position: nextPosition,
         };
       });
-    }, 1100);
+    }, outsidePetFreeRoamTickMs);
 
     return () => window.clearInterval(timer);
   }, [getNextRoamAnimation, interactionObjects, isAnimationSupported, outsidePet.phase, setOutsidePet]);

@@ -120,12 +120,13 @@ export function transformPixelTvSamplePixels(
       const index = (y * width + x) * 4;
       const alpha = source[index + 3];
       const edge = getPixelEdgeStrength(source, width, height, x, y);
-      const edgeShade = edge > 48 ? 0.74 : 1;
+      const edgeShade = edge > 48 ? 0.62 : 1;
       const tone = clampColor(getPixelLuma(source, width, x, y) * edgeShade);
 
-      result[index] = tone;
-      result[index + 1] = tone;
-      result[index + 2] = tone;
+      const warmedTone = applySubtlePixelTvWarmTone(tone);
+      result[index] = warmedTone.red;
+      result[index + 1] = warmedTone.green;
+      result[index + 2] = warmedTone.blue;
       result[index + 3] = alpha;
     }
   }
@@ -147,6 +148,14 @@ function getPixelLuma(pixels: Uint8ClampedArray, width: number, x: number, y: nu
 
 function clampColor(value: number): number {
   return Math.max(0, Math.min(255, Math.round(value)));
+}
+
+function applySubtlePixelTvWarmTone(tone: number) {
+  return {
+    red: clampColor(tone * 1.04),
+    green: clampColor(tone),
+    blue: clampColor(tone * 0.95),
+  };
 }
 
 export function canPixelizeSource(width: number, height: number): boolean {

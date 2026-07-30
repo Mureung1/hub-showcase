@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { applyDifficultyEvaluationToQuest, applyQuestPatch, calculateQuestReward, getQuestWorkflowWindows, getQuestCompletionResult } from "./questFlowPolicy";
+import {
+  applyDifficultyEvaluationToQuest,
+  applyQuestAcceptancePreviewToQuest,
+  applyQuestPatch,
+  calculateQuestReward,
+  createQuestDraftSnapshotKey,
+  getQuestWorkflowWindows,
+  getQuestCompletionResult,
+  isQuestAcceptancePreviewCurrent,
+} from "./questFlowPolicy";
 import type { Quest } from "./questLogic";
 
 const quest: Quest = {
@@ -63,6 +72,76 @@ describe("quest flow policy", () => {
       difficulty: "hard",
       deadline: "today 23:59",
       rewardExp: 52,
+    });
+  });
+
+  it("keys a quest draft snapshot by user-editable fields", () => {
+    const base = createQuestDraftSnapshotKey({
+      title: "Read database chapters",
+      type: "time",
+      amount: 30,
+      unit: "min",
+      difficulty: "normal",
+      deadline: "today 23:59",
+      rewardExp: 16,
+    });
+    const changedRewardOnly = createQuestDraftSnapshotKey({
+      title: "Read database chapters",
+      type: "time",
+      amount: 30,
+      unit: "min",
+      difficulty: "normal",
+      deadline: "today 23:59",
+      rewardExp: 30,
+    });
+    const changedAmount = createQuestDraftSnapshotKey({
+      title: "Read database chapters",
+      type: "time",
+      amount: 45,
+      unit: "min",
+      difficulty: "normal",
+      deadline: "today 23:59",
+      rewardExp: 16,
+    });
+    const changedDifficultyOnly = createQuestDraftSnapshotKey({
+      title: "Read database chapters",
+      type: "time",
+      amount: 30,
+      unit: "min",
+      difficulty: "hard",
+      deadline: "today 23:59",
+      rewardExp: 16,
+    });
+
+    expect(changedRewardOnly).toBe(base);
+    expect(changedDifficultyOnly).toBe(base);
+    expect(changedAmount).not.toBe(base);
+  });
+
+  it("accepts a reward preview only while the draft snapshot is unchanged", () => {
+    const preview = {
+      difficulty: "hard" as const,
+      rewardExp: 48,
+      statEvaluation: {
+        difficulty: "hard" as const,
+        statBudget: 15,
+        primaryStats: ["knowledge" as const],
+        statDeltas: [
+          { stat: "knowledge" as const, amount: 12 },
+          { stat: "diligence" as const, amount: 3 },
+        ],
+        reason: "server-side memo",
+      },
+      reason: "server-side reward memo",
+    };
+    const snapshotKey = createQuestDraftSnapshotKey(quest);
+
+    expect(isQuestAcceptancePreviewCurrent(quest, { snapshotKey, preview })).toBe(true);
+    expect(isQuestAcceptancePreviewCurrent({ ...quest, title: "Changed" }, { snapshotKey, preview })).toBe(false);
+    expect(applyQuestAcceptancePreviewToQuest(quest, preview)).toEqual({
+      ...quest,
+      difficulty: "hard",
+      rewardExp: 48,
     });
   });
 });

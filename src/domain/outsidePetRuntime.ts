@@ -34,8 +34,13 @@ export type OutsidePetBehavior =
   | "idle_on_platform"
   | "jump_down";
 
-export const outsidePetFieldRect = { x: 190, y: 430, width: 780, height: 116 };
+export const outsidePetFieldRect = { x: 190, y: 620, width: 780, height: 116 };
 export const outsidePetSpriteSize = 96;
+export const outsidePetWalkInStepPx = 10;
+export const outsidePetInteractionCandidateRangePx = 220;
+export const outsidePetFreeRoamTickMs = 1100;
+export const outsidePetFreeRoamStateChangeTicks = 7;
+const outsidePetLadderBottomReachPx = 96;
 
 export const outsidePetInitialState: OutsidePetState = {
   phase: "inside",
@@ -127,10 +132,36 @@ export function resolveOutsidePetDirection(pet: OutsidePetState, objects: Intera
 }
 
 export function resolveOutsidePetAnimationSpeed(animation: PetAnimationState): number {
-  if (animation === "run") return 21;
-  if (animation === "walk") return 11;
-  if (animation === "jump") return 28;
+  if (animation === "run") return 14;
+  if (animation === "walk") return 7;
+  if (animation === "jump") return 18;
   return 0;
+}
+
+export function resolveOutsidePetWalkInStep(pet: OutsidePetState, targetX: number): OutsidePetState {
+  const step = pet.side === "left" ? outsidePetWalkInStepPx : -outsidePetWalkInStepPx;
+  const nextX = pet.position.x + step;
+  const reachedTarget = pet.side === "left" ? nextX >= targetX : nextX <= targetX;
+  if (reachedTarget) {
+    return {
+      ...pet,
+      phase: "free_roam",
+      animation: "idle",
+      behavior: "idle",
+      behaviorTicks: outsidePetFreeRoamStateChangeTicks,
+      roamTicks: 0,
+      attachedObjectId: undefined,
+      platformId: undefined,
+      climbProgress: undefined,
+      position: { ...pet.position, x: targetX, y: outsidePetFieldRect.y },
+    };
+  }
+
+  return {
+    ...pet,
+    position: { x: nextX, y: outsidePetFieldRect.y },
+    direction: step > 0 ? 1 : -1,
+  };
 }
 
 export function resolveOutsidePetHorizontalMove(
@@ -152,11 +183,32 @@ export function resolveOutsidePetHorizontalMove(
   return { x, direction: pet.direction, stoppedForTarget: false };
 }
 
-export function resolveStoppedInteractionAnimation(pet: OutsidePetState, objects: InteractionObject[]): PetAnimationState | null {
+export function shouldChooseNextOutsidePetRoamAnimation(pet: OutsidePetState): boolean {
+  return (pet.behaviorTicks ?? outsidePetFreeRoamStateChangeTicks) >= outsidePetFreeRoamStateChangeTicks;
+}
+
+export function resolveStoppedInteractionAnimation(pet: OutsidePetState, objects: InteractionObject[], requestedAnimation?: PetAnimationState): PetAnimationState | null {
+  if (requestedAnimation === "jump") return null;
   const target = getNearestStoppedInteractionObject(pet, objects);
   if (target?.type === "ladder") return "climbing";
   if (target?.type === "platform") return "jump";
   return null;
+}
+
+export function resolveAvailableOutsidePetRoamAnimations(
+  objects: InteractionObject[],
+  supportedAnimations: PetAnimationState[],
+  pet?: OutsidePetState,
+): PetAnimationState[] {
+  const hasLadder = hasInteractionCandidateInRange(objects, "ladder", pet);
+  const hasPlatform = hasInteractionCandidateInRange(objects, "platform", pet);
+  return supportedAnimations.filter((animation) => {
+    if (animation === "climbing") return hasLadder;
+    if (animation === "jump") return hasPlatform;
+    if (animation === "hanging") return false;
+    if (animation === "hiding") return false;
+    return true;
+  });
 }
 
 export function advanceOutsidePetBehavior(pet: OutsidePetState, _objects: InteractionObject[]): OutsidePetState {
@@ -296,6 +348,7 @@ function getNearestStoppedInteractionObject(pet: OutsidePetState, objects: Inter
   const petCenterX = pet.position.x + outsidePetSpriteSize / 2;
   const targets = objects
     .filter((object) => object.type === "ladder" || object.type === "platform")
+    .filter((object) => object.type !== "ladder" || isLadderReachableFromPet(pet, object))
     .map((object) => ({ object, distance: Math.abs(getRectCenterX(object.rect) - petCenterX) }))
     .sort((a, b) => a.distance - b.distance);
   const nearest = targets[0];
@@ -311,10 +364,30 @@ function getStoppedInteractionObjectByType(
   return target?.type === type ? target : undefined;
 }
 
+function hasInteractionCandidateInRange(
+  objects: InteractionObject[],
+  type: "ladder" | "platform",
+  pet: OutsidePetState | undefined,
+): boolean {
+  const candidates = objects.filter((object) => object.type === type);
+  if (!pet) return candidates.length > 0;
+
+  const petCenterX = pet.position.x + outsidePetSpriteSize / 2;
+  return candidates.some((object) => Math.abs(getRectCenterX(object.rect) - petCenterX) <= outsidePetInteractionCandidateRangePx);
+}
+
 function advanceClimbBehavior(pet: OutsidePetState, objects: InteractionObject[]): OutsidePetState {
   const ladder = pet.attachedObjectId ? objects.find((object) => object.id === pet.attachedObjectId && object.type === "ladder") : undefined;
   if (!ladder) {
-    return { ...pet, animation: "idle", behavior: "idle", behaviorTicks: 0, attachedObjectId: undefined, climbProgress: undefined };
+    return {
+      ...pet,
+      animation: "idle",
+      behavior: "idle",
+      behaviorTicks: 0,
+      attachedObjectId: undefined,
+      climbProgress: undefined,
+      position: { x: pet.position.x, y: outsidePetFieldRect.y },
+    };
   }
 
   if (pet.behavior === "climb_ladder") {
@@ -376,7 +449,14 @@ function advanceClimbBehavior(pet: OutsidePetState, objects: InteractionObject[]
 function advancePlatformBehavior(pet: OutsidePetState, objects: InteractionObject[]): OutsidePetState {
   const platform = pet.platformId ? objects.find((object) => object.id === pet.platformId && object.type === "platform") : undefined;
   if (!platform) {
-    return { ...pet, animation: "idle", behavior: "idle", behaviorTicks: 0, platformId: undefined };
+    return {
+      ...pet,
+      animation: "idle",
+      behavior: "idle",
+      behaviorTicks: 0,
+      platformId: undefined,
+      position: { x: pet.position.x, y: outsidePetFieldRect.y },
+    };
   }
 
   if (pet.behavior === "jump_to_platform") {
@@ -457,7 +537,7 @@ function resolvePlatformBehaviorRenderPosition(pet: OutsidePetState, platform: I
 }
 
 export function getNearbyLadder(petRect: { x: number; y: number; width: number; height: number }, objects: InteractionObject[]): InteractionObject | undefined {
-  return objects.find((object) => object.type === "ladder" && isNearObject(petRect, object.rect, 96));
+  return objects.find((object) => object.type === "ladder" && isLadderReachableFromRect(petRect, object));
 }
 
 function getNearbyPlatform(petRect: { x: number; y: number; width: number; height: number }, objects: InteractionObject[]): InteractionObject | undefined {
@@ -474,6 +554,18 @@ function getNearbyPlatform(petRect: { x: number; y: number; width: number; heigh
 
 function getRectCenterX(rect: { x: number; width: number }): number {
   return rect.x + rect.width / 2;
+}
+
+function isLadderReachableFromPet(pet: OutsidePetState, ladder: InteractionObject): boolean {
+  return isLadderReachableFromRect({ x: pet.position.x, y: pet.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize }, ladder);
+}
+
+function isLadderReachableFromRect(petRect: { x: number; y: number; width: number; height: number }, ladder: InteractionObject): boolean {
+  const petCenterX = petRect.x + petRect.width / 2;
+  const ladderCenterX = getRectCenterX(ladder.rect);
+  const petTopY = petRect.y;
+  const ladderBottomY = ladder.rect.y + ladder.rect.height;
+  return Math.abs(ladderCenterX - petCenterX) < 36 && Math.abs(ladderBottomY - petTopY) <= outsidePetLadderBottomReachPx;
 }
 
 function isNearObject(a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }, threshold: number) {

@@ -13,6 +13,8 @@ export interface StatDelta {
   amount: number;
 }
 
+export type ManagerStats = Record<StatKey, number>;
+
 export type GrowthQuestType = "time" | "quantity" | "action" | "recovery";
 export type GrowthEventType = "quest_completed" | "quest_failed" | "recovery_completed";
 export type GrowthDifficulty = "easy" | "normal" | "hard";
@@ -49,6 +51,20 @@ const questStatProfiles: Record<GrowthQuestType, { primary: StatKey; secondary: 
 
 export function getQuestStatDeltas(questType: GrowthQuestType, eventType: GrowthEventType, difficulty: GrowthDifficulty = "normal"): StatDelta[] {
   return createRuleFallbackStatEvaluation({ questType, eventType, difficulty }).statDeltas;
+}
+
+export function createInitialManagerStats(): ManagerStats {
+  return Object.fromEntries(statKeys.map((stat) => [stat, 0])) as ManagerStats;
+}
+
+export function applyManagerStatDeltas(stats: ManagerStats, statDeltas: readonly StatDelta[]): ManagerStats {
+  return statDeltas.reduce<ManagerStats>(
+    (nextStats, delta) => ({
+      ...nextStats,
+      [delta.stat]: Math.max(0, nextStats[delta.stat] + delta.amount),
+    }),
+    { ...stats },
+  );
 }
 
 export function createRuleFallbackStatEvaluation(input: RuleFallbackStatEvaluationInput): ManagerStatEvaluation {

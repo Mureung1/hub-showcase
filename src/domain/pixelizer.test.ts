@@ -83,10 +83,10 @@ describe("pixelizer", () => {
     expect(createPixelTvPhotoFileName(new Date(2026, 6, 29, 10, 11, 12))).toBe("pixel-tv-photo-20260729-101112.png");
   });
 
-  it("converts the low-res sample to grayscale while preserving alpha", () => {
+  it("adds a subtle warm tint to the low-res sample while preserving alpha", () => {
     const pixels = new Uint8ClampedArray([120, 90, 40, 255]);
 
-    expect(Array.from(transformPixelTvSamplePixels(pixels, 1, 1))).toEqual([93, 93, 93, 255]);
+    expect(Array.from(transformPixelTvSamplePixels(pixels, 1, 1))).toEqual([97, 93, 88, 255]);
   });
 
   it("darkens strong edges in the low-res sample", () => {
@@ -96,6 +96,15 @@ describe("pixelizer", () => {
     ]);
 
     expect(Array.from(transformPixelTvSamplePixels(pixels, 2, 2).slice(4, 8))).toEqual([0, 0, 0, 255]);
+  });
+
+  it("pushes bright edge pixels down enough to read as outlined", () => {
+    const pixels = new Uint8ClampedArray([
+      255, 255, 255, 255, 0, 0, 0, 255,
+      255, 255, 255, 255, 0, 0, 0, 255,
+    ]);
+
+    expect(Array.from(transformPixelTvSamplePixels(pixels, 2, 2).slice(0, 4))).toEqual([164, 158, 150, 255]);
   });
 
   it("places the TV screen and manager sprite together in one photo composition", () => {

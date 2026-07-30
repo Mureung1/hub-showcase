@@ -3,13 +3,17 @@ import type { InteractionObject } from "./interactionObjects";
 import * as outsidePetRuntime from "./outsidePetRuntime";
 import {
   advanceOutsidePetBehavior,
+  outsidePetFreeRoamStateChangeTicks,
+  outsidePetFreeRoamTickMs,
   outsidePetFieldRect,
   outsidePetSpriteSize,
+  resolveAvailableOutsidePetRoamAnimations,
   resolveOutsidePetDirection,
   resolveOutsidePetLayerZIndex,
   resolveOutsidePetAnimationSpeed,
   resolveOutsidePetHorizontalMove,
   resolveOutsidePetRoamPosition,
+  resolveOutsidePetWalkInStep,
   shouldUseImmediateOutsidePetPosition,
   resolveStoppedInteractionAnimation,
   resolveReturningOutsidePetStep,
@@ -22,7 +26,7 @@ const ladder: InteractionObject = {
   id: "ladder-1",
   type: "ladder",
   resizeAxis: "vertical",
-  rect: { x: 300, y: 240, width: 36, height: 160 },
+  rect: { x: 300, y: outsidePetFieldRect.y - 160, width: 36, height: 160 },
 };
 
 const platform: InteractionObject = {
@@ -115,6 +119,24 @@ describe("outside pet runtime", () => {
     expect(resolveStoppedInteractionAnimation(pet, [ladder, platform])).toBe("climbing");
   });
 
+  it("does not start climbing when only horizontally aligned with a high ladder", () => {
+    const highLadder = { ...ladder, rect: { ...ladder.rect, y: outsidePetFieldRect.y - 320 } };
+    const petCenterNearLadder = highLadder.rect.x + highLadder.rect.width / 2;
+    const pet = createPet({
+      position: { x: petCenterNearLadder - outsidePetSpriteSize / 2, y: outsidePetFieldRect.y },
+      direction: 1,
+      animation: "walk",
+    });
+
+    expect(resolveStoppedInteractionAnimation(pet, [highLadder])).toBeNull();
+    const notClimbing = startOutsidePetBehavior(pet, [highLadder], "climbing");
+    expect(notClimbing).toMatchObject({
+      animation: "climbing",
+      behavior: undefined,
+    });
+    expect(notClimbing.attachedObjectId).toBeUndefined();
+  });
+
   it("attaches to the ladder when starting a stopped ladder behavior from the ground", () => {
     const petCenterNearLadder = ladder.rect.x + ladder.rect.width / 2;
     const pet = createPet({
@@ -163,6 +185,17 @@ describe("outside pet runtime", () => {
     expect(resolveStoppedInteractionAnimation(pet, [nearbyPlatform, ladder])).toBe("climbing");
   });
 
+  it("does not replace an explicit jump tick with ladder climbing", () => {
+    const petCenterNearLadder = ladder.rect.x + ladder.rect.width / 2;
+    const pet = createPet({
+      position: { x: petCenterNearLadder - outsidePetSpriteSize / 2, y: outsidePetFieldRect.y },
+      direction: 1,
+      animation: "walk",
+    });
+
+    expect(resolveStoppedInteractionAnimation(pet, [ladder], "jump")).toBeNull();
+  });
+
   it("keeps still animations from moving horizontally", () => {
     expect(resolveOutsidePetAnimationSpeed("idle")).toBe(0);
     expect(resolveOutsidePetAnimationSpeed("happy")).toBe(0);
@@ -185,11 +218,58 @@ describe("outside pet runtime", () => {
   });
 
   it("keeps walk and run speeds visually distinct", () => {
-    expect(resolveOutsidePetAnimationSpeed("walk")).toBe(11);
-    expect(resolveOutsidePetAnimationSpeed("run")).toBe(21);
+    expect(resolveOutsidePetAnimationSpeed("walk")).toBe(7);
+    expect(resolveOutsidePetAnimationSpeed("run")).toBe(14);
     expect(resolveOutsidePetAnimationSpeed("run")).toBeGreaterThan(resolveOutsidePetAnimationSpeed("walk"));
     expect(resolveOutsidePetAnimationSpeed("jump")).toBeGreaterThan(0);
     expect(resolveOutsidePetAnimationSpeed("climbing")).toBe(0);
+  });
+
+  it("keeps the roaming field low near the desktop taskbar area", () => {
+    expect(outsidePetFieldRect.y).toBe(620);
+  });
+
+  it("keeps free roam state changes at least seven seconds apart", () => {
+    expect(outsidePetFreeRoamTickMs * outsidePetFreeRoamStateChangeTicks).toBeGreaterThanOrEqual(7000);
+  });
+
+  it("walks in more gently when leaving the journal", () => {
+    const pet = createPet({
+      phase: "walk_in",
+      side: "left",
+      position: { x: outsidePetFieldRect.x - 20, y: outsidePetFieldRect.y },
+      animation: "walk",
+    });
+
+    expect(resolveOutsidePetWalkInStep(pet, outsidePetFieldRect.x + 64)).toMatchObject({
+      phase: "walk_in",
+      position: { x: pet.position.x + 10, y: outsidePetFieldRect.y },
+      direction: 1,
+    });
+  });
+
+  it("falls back to calm varied roam animations when no interaction objects exist", () => {
+    expect(resolveAvailableOutsidePetRoamAnimations([], ["idle", "walk", "run", "happy", "focused", "hiding", "jump"])).toEqual([
+      "idle",
+      "walk",
+      "run",
+      "happy",
+      "focused",
+    ]);
+  });
+
+  it("adds interaction animations only when their objects are within roaming reach", () => {
+    const pet = createPet({ position: { x: 240, y: outsidePetFieldRect.y } });
+    const farLadder = { ...ladder, rect: { ...ladder.rect, x: 820 } };
+    const nearPlatform = { ...platform, rect: { ...platform.rect, x: 320 } };
+
+    expect(
+      resolveAvailableOutsidePetRoamAnimations(
+        [farLadder, nearPlatform],
+        ["idle", "walk", "run", "happy", "focused", "jump", "climbing"],
+        pet,
+      ),
+    ).toEqual(["idle", "walk", "run", "happy", "focused", "jump"]);
   });
 
   it("uses immediate positioning while attached to ladder or platform objects", () => {
@@ -303,6 +383,60 @@ describe("outside pet runtime", () => {
       platformId: undefined,
     });
     expect(grounded.position.y).toBe(outsidePetFieldRect.y);
+  });
+
+  it("keeps a platform jump visible for at least one advancement tick before landing", () => {
+    const pet = createPet({
+      animation: "walk",
+      position: { x: platform.rect.x + 24, y: outsidePetFieldRect.y },
+    });
+
+    const jumping = startOutsidePetBehavior(pet, [platform], "jump");
+    const stillJumping = advanceOutsidePetBehavior(jumping, [platform]);
+
+    expect(stillJumping).toMatchObject({
+      animation: "jump",
+      behavior: "jump_to_platform",
+      platformId: platform.id,
+      behaviorTicks: 1,
+    });
+  });
+
+  it("grounds a platform-attached pet when the platform disappears", () => {
+    const jumping = createPet({
+      animation: "jump",
+      behavior: "jump_to_platform",
+      behaviorTicks: 1,
+      platformId: platform.id,
+      position: { x: platform.rect.x, y: platform.rect.y - outsidePetSpriteSize - 24 },
+    });
+
+    expect(advanceOutsidePetBehavior(jumping, [])).toMatchObject({
+      animation: "idle",
+      behavior: "idle",
+      behaviorTicks: 0,
+      platformId: undefined,
+      position: { x: jumping.position.x, y: outsidePetFieldRect.y },
+    });
+  });
+
+  it("grounds a ladder-attached pet when the ladder disappears", () => {
+    const climbing = createPet({
+      animation: "climbing",
+      behavior: "climb_ladder",
+      attachedObjectId: ladder.id,
+      climbProgress: 0.7,
+      position: { x: ladder.rect.x, y: ladder.rect.y },
+    });
+
+    expect(advanceOutsidePetBehavior(climbing, [])).toMatchObject({
+      animation: "idle",
+      behavior: "idle",
+      behaviorTicks: 0,
+      attachedObjectId: undefined,
+      climbProgress: undefined,
+      position: { x: climbing.position.x, y: outsidePetFieldRect.y },
+    });
   });
 
   it("keeps platform jumps visually attached while the platform moves", () => {

@@ -17,6 +17,20 @@ const baseContext: BehaviorContext = {
 };
 
 describe("pet behavior state machine", () => {
+  it("keeps a baseline wander candidate when no interaction objects are nearby", () => {
+    const candidates = getBehaviorCandidates(baseContext);
+
+    expect(candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ state: "idle", reason: "default" }),
+        expect.objectContaining({ state: "wander", reason: "baseline_roam" }),
+      ]),
+    );
+    expect(candidates.find((candidate) => candidate.state === "wander" && candidate.reason === "baseline_roam")?.weight).toBeGreaterThan(
+      (candidates.find((candidate) => candidate.state === "idle" && candidate.reason === "default")?.weight ?? 0) * 3,
+    );
+  });
+
   it("adds approach_ladder candidate when a ladder is nearby", () => {
     const candidates = getBehaviorCandidates({
       ...baseContext,

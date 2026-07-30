@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyManagerStatDeltas,
+  createInitialManagerStats,
   createRuleFallbackStatEvaluation,
   getQuestStatDeltas,
   normalizeManagerStatEvaluation,
@@ -37,6 +39,34 @@ describe("stat growth", () => {
 
   it("does not increase stats for failed events", () => {
     expect(getQuestStatDeltas("time", "quest_failed", "hard")).toEqual([]);
+  });
+
+  it("creates all manager stats at zero", () => {
+    expect(createInitialManagerStats()).toEqual({
+      diligence: 0,
+      persistence: 0,
+      creativity: 0,
+      knowledge: 0,
+      strength: 0,
+      agility: 0,
+      stamina: 0,
+      charm: 0,
+    });
+  });
+
+  it("accumulates LLM or fallback stat deltas onto manager stats", () => {
+    expect(
+      applyManagerStatDeltas(
+        { ...createInitialManagerStats(), diligence: 2 },
+        [
+          { stat: "diligence", amount: 3 },
+          { stat: "charm", amount: 1 },
+        ],
+      ),
+    ).toMatchObject({
+      diligence: 5,
+      charm: 1,
+    });
   });
 
   it("accepts a valid LLM-style stat allocation when the total matches the difficulty budget", () => {
