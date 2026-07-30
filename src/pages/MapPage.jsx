@@ -15,7 +15,11 @@ import Skeleton from '../components/Skeleton.jsx'
 import Spinner from '../components/Spinner.jsx'
 import { geminiCompleteWithRetry, parseJsonLoose } from '../lib/gemini.js'
 import { EXPECTED_INTAKE_SCHEMA, GEMINI_TEMPERATURE, KEYWORDS_SCHEMA } from '../lib/geminiSchemas.js'
+import { CNU_CAFETERIA_LOCATIONS } from '../data/cnuCafeteriaLocations.js'
+import { CNU_BUILDINGS } from '../lib/cnuBuildings.js'
 import { getCurrentPosition } from '../lib/geolocation.js'
+import { defaultMealKindFor, getSelectedMealKind } from '../lib/mealKind.js'
+import { getSchoolLocation } from '../lib/schoolLocation.js'
 import { ALLERGY_OPTIONS, labelizeTags } from '../lib/healthProfile.js'
 import {
   filterPlacesByCategory,
@@ -309,13 +313,16 @@ function buildExpectedPrompt(places, deficientRows, allergyLabels = [], { sodium
 조건:
 - representativeMenu는 그 식당 카테고리에서 실제로 흔히 파는 구체적인 메뉴명이어야 한다(예: "국밥" 카테고리 → "쇠고기국밥"). 식당 이름이나 카테고리를 그대로 반복하지 마라.
 - 수치는 식품의약품안전처 한국식품영양성분 데이터베이스(국가표준식품성분표)와 한국영양학회 기준값 수준의 표준 1인분 기준으로 계산해라. (URL 조회가 아니라 네가 아는 그 DB 수준의 기준값이라는 의미다.)
-- 과대추정 금지: 통상적인 1인분 현실 범위를 벗어나면 스스로 재검토하고 보수적인 값으로 고쳐라.
+- **식당에서 파는 1인분** 기준이다. 급식·가정식보다 양이 많고 조리에 기름·양념·설탕이 더 들어간다는 점을 반드시 반영해라(구이·볶음·튀김·조림을 재료만으로 계산하면 실제보다 크게 낮아진다).
+- 과대추정과 과소추정을 **모두** 피해라: 통상적인 1인분 현실 범위를 벗어나면 스스로 재검토해라. 한쪽으로 몰아서 보수적으로만 잡지 마라.
 - expected에는 부족한 영양소 키(${deficientKeys})를 반드시 숫자로 포함하고, 나머지 키도 아는 값이면 숫자로, 확신이 없으면 null로 채워라.
 - 사용할 수 있는 키와 단위: calories(kcal), protein(g), carbs(g), fat(g), fiber(g), sodium(mg).
 - place_name은 아래 목록의 이름과 정확히 같아야 한다.${allergyLine}${sodiumLine}
 - priceRange: 그 대표 메뉴가 대중적으로 가격대가 잘 알려진 음식(예: 김밥, 국밥, 짜장면)이면 현실적인
   원화 가격 범위를 {min, max}로 추정해라. 특정 식당·지역마다 가격이 크게 다르거나 확신이 없으면
   절대 숫자를 지어내지 말고 priceRange 전체를 null로 남겨라. 단정적인 가격이나 허위 가격은 금지다.
+- isFranchise: 그 식당이 전국 단위 프랜차이즈/체인이면 true, 개인이 운영하는 동네 식당이면 false다.
+  전국 체인은 업체가 제출한 공식 영양성분이 존재해 그 수치를 우선 조회한다 — 판단이 애매하면 false.
 
 식당 목록:
 ${placeText}
@@ -323,7 +330,7 @@ ${placeText}
 설명이나 마크다운 없이, 아래 스키마와 정확히 일치하는 JSON만 반환해:
 {
   "places": [
-    { "place_name": "식당 이름", "representativeMenu": "대표 메뉴명", "expected": { "protein": 0 }, "priceRange": { "min": 8000, "max": 9000 } }
+    { "place_name": "식당 이름", "representativeMenu": "대표 메뉴명", "expected": { "protein": 0 }, "priceRange": { "min": 8000, "max": 9000 }, "isFranchise": false }
   ]
 }`
 }
@@ -367,6 +374,7 @@ async function attachExpectedIntake(places, deficientRows, allergyLabels = [], {
             expected: p.expected,
             representativeMenu: typeof p.representativeMenu === 'string' ? p.representativeMenu : null,
             priceRange: isValidPriceRange(p.priceRange) ? p.priceRange : null,
+            isFranchise: p.isFranchise === true,
           },
         ]),
     )
@@ -584,7 +592,44 @@ export default function MapPage() {
   // 쓰면 places가 null인 동안(검색 전) 리렌더마다 새 배열이 생겨 지도가 매번 통째로 재생성된다.
   // 스폰서 식당(광고, isAd)은 실제 좌표가 없는 목업 항목이라 지도 마커 대상에서는 제외한다(목록에는 남긴다).
   const mapPlaces = useMemo(() => (places ?? []).filter((place) => !place.isAd), [places])
+  // 학식·급식 뷰에서는 식당 검색 결과 대신 충남대 학식당 5곳을 핀으로 띄운다 — 좌표는 이미
+  // cnuCafeteriaLocations.js에 실측값으로 있고(건물 위치는 안 변해 정적 데이터), NaverPlaceMap이
+  // 기대하는 place 모양(place_name / x=lng / y=lat)으로만 맞춰주면 된다.
+  const cnuPlaces = useMemo(
+    () =>
+      CNU_BUILDINGS.map((b) => {
+        const point = CNU_CAFETERIA_LOCATIONS[b.key]
+        return point ? { place_name: b.mapSearchName, x: String(point.lng), y: String(point.lat) } : null
+      }).filter(Boolean),
+    [],
+  )
   const [myPosition, setMyPosition] = useState(null)
+  // 내 학교(초·중·고) 좌표. NEIS엔 위경도가 없어 학교 이름으로 지오코딩해 얻고 기기에 캐시한다.
+  const [schoolPoint, setSchoolPoint] = useState(null)
+  // schoolPoint===null만으로는 "아직 조회 중"과 "조회했지만 못 찾음"을 구분할 수 없다 — 둘 다 같은
+  // 값이라 지도에 핀이 안 보여도 사용자에게 원인을 알릴 수 없었다(리뷰에서 발견). 조회가 끝났는데도
+  // 못 찾은 경우만 별도로 표시한다.
+  const [schoolLocationFailed, setSchoolLocationFailed] = useState(false)
+  const school = profile?.school ?? null
+  useEffect(() => {
+    let cancelled = false
+    setSchoolPoint(null)
+    setSchoolLocationFailed(false)
+    if (!school?.code) return
+    getSchoolLocation(school).then((point) => {
+      if (cancelled) return
+      setSchoolPoint(point)
+      setSchoolLocationFailed(!point)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [school?.code, school?.name, school?.officeName])
+
+  // 학식·급식 뷰가 지금 "대학 학식"인지 "급식"인지 — CafeteriaPanel이 마운트 직후와 전환 때마다
+  // 알려준다. 이 값으로 지도가 보여줘야 할 곳이 완전히 달라지므로 지도도 알아야 한다.
+  const [mealKind, setMealKind] = useState(() => getSelectedMealKind(defaultMealKindFor(profile?.school)))
+
   const [locationNotice, setLocationNotice] = useState('')
   const [nearbyLoading, setNearbyLoading] = useState(false)
   // "목록 더 보기" — 새 검색을 시작할 때마다 다시 접힌 상태로 되돌린다(핸들러들에서 리셋).
@@ -595,10 +640,23 @@ export default function MapPage() {
   const [duelMode, setDuelMode] = useState(false)
   const [duelSelectedKeys, setDuelSelectedKeys] = useState([])
   const [duelPair, setDuelPair] = useState(null) // [placeA, placeB] | null
-  // 바텀시트 접힘(330px)/펼침(640px) — 지도 탭 개편(지도·달력 모바일 개편 3안). 학식·급식으로
-  // 탭을 바꿔도 그대로 유지된다(사용자가 펼쳐둔 상태를 기억하는 편이 자연스럽다).
-  const [sheetExpanded, setSheetExpanded] = useState(false)
+  // 바텀시트 스냅 상태 — 'min'(180px) / 'mid'(420px) / 'max'(상단 오버레이 바로 아래).
+  // 학식·급식으로 탭을 바꿔도 그대로 유지된다(사용자가 펼쳐둔 상태를 기억하는 편이 자연스럽다).
+  const [sheetSnap, setSheetSnap] = useState('min')
   const screenTop = useMapScreenTop()
+  // 시트가 max일 때 세그먼트·칩을 덮지 않도록, 오버레이가 실제로 차지하는 높이를 재서 넘긴다
+  // (학식·급식 뷰에선 칩이 없어 더 낮다 — 상수로 박으면 한쪽이 어긋난다).
+  const overlayRef = useRef(null)
+  const [overlayHeight, setOverlayHeight] = useState(0)
+  useLayoutEffect(() => {
+    const node = overlayRef.current
+    if (!node) return
+    const measure = () => setOverlayHeight(node.getBoundingClientRect().height)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
 
   function handleToggleDuelMode() {
     setDuelMode((v) => !v)
@@ -633,6 +691,29 @@ export default function MapPage() {
   // 학생/대학생 직업이면 첫 진입 시 학식·급식을 우선 보여준다(FR-2.2 mealShortcut) — 그 외/미설정은
   // 기존과 동일하게 '주변 식당'부터 보여준다. 최초 렌더 한 번만 결정하고, 이후 직접 고른 탭은 유지한다.
   const [view, setView] = useState(() => getOccupationRecommendation(profile?.occupation).mealShortcut ?? 'nearby')
+
+  // ── 지도 시작 위치는 "지금 보고 있는 화면"이 정한다 ─────────────────────────
+  //   주변 식당  → 내 현재 위치 중심(검색하면 결과에 맞춰 fitBounds)
+  //   대학 학식  → 그 대학 학식당 **전부**가 한눈에 들어오게(내 위치는 bounds에서 뺀다 — 타지에
+  //                있으면 내 위치까지 담으려다 전국 지도가 된다)
+  //   급식       → 프로필에 설정한 초·중·고 학교 위치로 이동 + 그 지점에 핀
+  //
+  // 예전엔 학식·급식 뷰가 학교 설정과 무관하게 항상 충남대 5곳을 띄웠고, 그게 "시작하자마자 전국
+  // 지도"의 원인이었다(내 위치는 서울인데 핀은 대전).
+  const isUnivView = view === 'cafeteria' && mealKind === 'university'
+  const isK12View = view === 'cafeteria' && mealKind === 'k12'
+
+  const cafeteriaPlaces = useMemo(() => {
+    if (isUnivView) return cnuPlaces
+    if (isK12View && schoolPoint && school?.name) {
+      return [{ place_name: school.name, x: String(schoolPoint.lng), y: String(schoolPoint.lat) }]
+    }
+    return []
+  }, [isUnivView, isK12View, schoolPoint, school?.name, cnuPlaces])
+
+  // ⚠️ focus는 "정말로 중심을 고정하고 싶을 때만" 채운다. myPosition을 폴백으로 넣으면 focus가
+  // **항상** 채워져 주변 식당 검색 결과에 fitBounds가 안 걸린다(검색해도 화면이 안 움직인다).
+  const mapFocus = isK12View && schoolPoint ? schoolPoint : null
 
   function handleChangeCategory(key) {
     setSelectedFoodCategory(key)
@@ -870,7 +951,13 @@ export default function MapPage() {
         }}
       >
         {myPosition ? (
-          <NaverPlaceMap myPosition={myPosition} places={mapPlaces} fullScreen />
+          <NaverPlaceMap
+            myPosition={myPosition}
+            places={view === 'cafeteria' ? cafeteriaPlaces : mapPlaces}
+            focus={mapFocus}
+            fitPlacesOnly={isUnivView}
+            fullScreen
+          />
         ) : (
           <div
             style={{
@@ -883,18 +970,21 @@ export default function MapPage() {
           />
         )}
 
-        <MapTopOverlay
-          view={view}
-          onChangeView={setView}
-          categoryKey={categoryKey}
-          onChangeCategory={handleChangeCategory}
-          disabled={nearbyLoading}
-        />
+        <div ref={overlayRef}>
+          <MapTopOverlay
+            view={view}
+            onChangeView={setView}
+            categoryKey={categoryKey}
+            onChangeCategory={handleChangeCategory}
+            disabled={nearbyLoading}
+          />
+        </div>
 
         {view === 'nearby' && (
           <BottomSheet
-            expanded={sheetExpanded}
-            onToggle={() => setSheetExpanded((v) => !v)}
+            snap={sheetSnap}
+            onSnapChange={setSheetSnap}
+            topInset={overlayHeight}
             footer={
               places &&
               places.length > 0 && (
@@ -933,9 +1023,18 @@ export default function MapPage() {
         )}
 
         {view === 'cafeteria' && (
-          <BottomSheet expanded={sheetExpanded} onToggle={() => setSheetExpanded((v) => !v)}>
+          <BottomSheet snap={sheetSnap} onSnapChange={setSheetSnap} topInset={overlayHeight}>
             <div style={{ padding: '4px 18px 18px', display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-              <CafeteriaPanel />
+              {/* 지도에 핀이 안 보이는 이유를 안내한다 — schoolLocationFailed 없이는 "아직 조회
+                  중"과 "찾지 못함"을 구분할 수 없어 무음 실패였다(리뷰에서 발견). 급식 메뉴 목록
+                  자체(CafeteriaPanel)는 이 실패와 무관하게 정상 동작하므로 안내만 얹는다. */}
+              {isK12View && school?.name && schoolLocationFailed && (
+                <p style={{ ...styles.helperText, fontSize: font.size.xs, margin: 0 }}>
+                  "{school.name}" 위치를 지도에서 찾지 못했어요. 급식 메뉴는 아래에서 계속 볼 수 있어요.
+                </p>
+              )}
+              {/* 지금 보고 있는 쪽(대학 학식/급식)을 지도에 알려, 지도가 알맞은 곳으로 움직이게 한다. */}
+              <CafeteriaPanel onMealKindChange={setMealKind} />
             </div>
           </BottomSheet>
         )}

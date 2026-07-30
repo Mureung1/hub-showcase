@@ -21,7 +21,11 @@ function placeIdentity(place) {
 // 뜨는" 레이아웃으로 바뀌면서 추가했다 — 부모(MapPage.jsx)가 position:absolute; inset:0인 컨테이너
 // 안에 이 컴포넌트를 넣고, 이 컴포넌트는 그 부모를 100% 채우기만 하면 된다(기존처럼 자체 높이
 // 320px 카드로 렌더하지 않음). 로딩/에러 상태도 카드가 아니라 그 전체 영역 위에 겹쳐 보여준다.
-export default function NaverPlaceMap({ myPosition, places = [], fullScreen = false }) {
+// focus: 지도 중심으로 삼을 좌표({lat,lng}). 생략하면 내 위치가 중심이다. 학식·급식 뷰처럼 "지금 내가
+// 서 있는 곳"보다 "그 급식을 먹는 장소"가 중요한 화면에서 학교 좌표를 넘긴다.
+// fitPlacesOnly: 화면을 places에만 맞춘다(내 위치는 bounds에서 제외). 대학 학식당처럼 "그 장소들이
+// 한눈에 들어오는 게 목적"인 화면용 — 내 위치를 함께 담으면 타지에 있을 때 전국 지도가 된다.
+export default function NaverPlaceMap({ myPosition, places = [], focus = null, fitPlacesOnly = false, fullScreen = false }) {
   const containerRef = useRef(null)
 
   const markers = useMemo(() => {
@@ -29,6 +33,7 @@ export default function NaverPlaceMap({ myPosition, places = [], fullScreen = fa
       id: 'me',
       lat: myPosition.lat,
       lng: myPosition.lng,
+      skipBounds: fitPlacesOnly,
       // 내 위치는 식당 마커(기본 빨간 핀)와 구분되도록 포인트 컬러의 원형 아이콘을 쓴다.
       icon: {
         content: `<div style="width:16px;height:16px;border-radius:50%;background:${colors.primary};border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);"></div>`,
@@ -47,17 +52,21 @@ export default function NaverPlaceMap({ myPosition, places = [], fullScreen = fa
     }))
 
     return [myLocationMarker, ...placeMarkers]
-  }, [myPosition, places])
+  }, [myPosition, places, fitPlacesOnly])
 
   // markers에는 내 위치 핀이 항상 포함돼 있어(장소가 0개여도) 훅 내부의 "마커 있음" 판정만으로는
   // fitBounds 여부를 못 정한다 — 장소가 진짜 0개일 때 내 위치 한 점으로만 fitBounds하면 최대 줌으로
   // 조여버리므로(기존 버그였던 지점), 실제 장소(식당) 유무를 여기서 직접 계산해 넘긴다.
   const hasAnyPlace = places.length > 0
 
+  // focus가 주어졌으면 그 지점을 중심으로 고정하고 fitBounds는 걸지 않는다 — 학교 한 곳을 보여주려는
+  // 화면에서 fitBounds를 걸면 내 위치까지 담으려고 다시 줌아웃한다(그게 "전국 지도로 시작"의 원인이었다).
+  const center = focus ?? myPosition
+
   const { loaded, error: loadError } = useNaverMap(containerRef, {
-    center: myPosition,
+    center,
     markers,
-    fitToMarkers: hasAnyPlace,
+    fitToMarkers: hasAnyPlace && !focus,
   })
 
   if (loadError) {

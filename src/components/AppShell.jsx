@@ -10,7 +10,11 @@ import { colors, layout } from '../styles/theme.js'
 // 탭바(고정 위치)에 콘텐츠 마지막 줄이 가리지 않도록 확보하는 하단 여백. export하는 이유: 지도 탭
 // (MapPage.jsx)이 화면 전체를 차지하는 지도+바텀시트 레이아웃으로 개편되면서, 탭바 바로 위까지
 // 정확히 차오르는 높이를 직접 계산해야 하는 유일한 페이지가 됐다 — 같은 상수를 이중 관리하지 않는다.
-export const TAB_BAR_CLEARANCE = 76
+//
+// safe-area를 더하는 이유: BottomTabBar 자신은 paddingBottom에 env(safe-area-inset-bottom)을 넣어
+// 제스처 내비게이션 바를 피하는데, 이 여백은 76px 고정이라 그만큼 모자랐다 — 그 기기에서 탭바가
+// 지도 바텀시트 하단(“두 곳 비교하기” 버튼)을 덮었다.
+export const TAB_BAR_CLEARANCE = 'calc(76px + env(safe-area-inset-bottom))'
 
 // 챗봇 런처(리텐션 강화 v4)를 띄울 탭 — MY(/profile)는 제외. AppShell은 이 4개 외에도 /login·
 // /signup·/forgot-password(hideTabBar)와 /·/result·404에도 재사용되므로, "/profile만 제외" 대신
