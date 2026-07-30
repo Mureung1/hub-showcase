@@ -6,7 +6,8 @@ const norm = (s) => (s || '').toLowerCase().replace(/노선/g, '').replace(/[\s�
 const hit = (value, token) => {
   const a = norm(value), b = norm(token);
   if (!a || !b) return false;
-  if (/^\d+$/.test(a) && /^\d+$/.test(b)) return a === b;   // 숫자 노선은 정확일치만 ("46"⊂"462" 오탐 방지)
+  const routeNum = /^\d+(-\d+)?$/;   // 버스 노선번호: 숫자 또는 "348-1" 갈래번호
+  if (routeNum.test(a) && routeNum.test(b)) return a === b;   // 노선번호는 정확일치만 ("46"⊂"462", "48"⊂"348-1" 오탐 방지)
   return a === b || a.includes(b) || b.includes(a);
 };
 

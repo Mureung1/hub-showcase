@@ -52,12 +52,14 @@ def _norm(s):
     return "".join(ch for ch in s if ch not in " 번")
 
 
+_ROUTE_NUM = re.compile(r"^\d+(-\d+)?$")   # 버스 노선번호: 숫자 또는 "348-1"·"320-2" 같은 갈래번호
+
 def _hit(value, token):
     a, b = _norm(value), _norm(token)
     if not a or not b:
         return False
-    if a.isdigit() and b.isdigit():
-        return a == b                   # 숫자 노선은 정확일치만 — "46" ⊂ "462" 오탐 방지
+    if _ROUTE_NUM.match(a) and _ROUTE_NUM.match(b):
+        return a == b                   # 노선번호는 정확일치만 — "46"⊂"462", "48"⊂"348-1" 오탐 방지
     return a == b or a in b or b in a   # 문자 섞인 것(B1·급행2·정류장명)만 부분일치 허용
 
 _DATE_RE = re.compile(r"(\d{4})[.\-]\s*(\d{1,2})[.\-]\s*(\d{1,2})")  # 연도 포함 완전 날짜
