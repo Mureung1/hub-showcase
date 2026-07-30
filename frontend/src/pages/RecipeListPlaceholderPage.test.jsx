@@ -209,6 +209,41 @@ async function openTransferShare() {
 }
 
 describe("RecipeListPlaceholderPage", () => {
+  it("모바일 메뉴를 열고 Escape로 닫은 뒤 트리거로 초점을 돌려준다", async () => {
+    renderLogoutPage();
+
+    const menuButton = await screen.findByRole("button", {
+      name: "메뉴 열기",
+    });
+    expect(menuButton).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(menuButton);
+
+    const mobileMenu = screen.getByRole("dialog", {
+      name: "모바일 메뉴",
+    });
+    expect(menuButton).toHaveAttribute("aria-expanded", "true");
+    expect(
+      within(mobileMenu).getByRole("link", { name: "레시피북" }),
+    ).toHaveAttribute("href", "/recipes");
+    expect(
+      within(mobileMenu).getByRole("link", { name: "새 레시피 기록" }),
+    ).toHaveAttribute("href", "/recipes/new");
+    expect(
+      within(mobileMenu).getByRole("link", { name: "전달 코드" }),
+    ).toHaveAttribute("href", "/transfer-invitations");
+    expect(
+      within(mobileMenu).getByRole("button", { name: "메뉴 닫기" }),
+    ).toHaveFocus();
+
+    fireEvent.keyDown(mobileMenu, { key: "Escape" });
+
+    expect(
+      screen.queryByRole("dialog", { name: "모바일 메뉴" }),
+    ).not.toBeInTheDocument();
+    expect(menuButton).toHaveFocus();
+  });
+
   it("Firebase 로그아웃 성공 후 로그인 화면으로 이동한다", async () => {
     signOutMock.mockResolvedValue();
     renderLogoutPage();
@@ -308,6 +343,12 @@ describe("RecipeListPlaceholderPage", () => {
     expect(
       await screen.findByText("아직 레시피가 없습니다."),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText("첫 번째 레시피를 기록해 보세요."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("첫 레시피 추가 화면은 다음 단계에서 연결됩니다."),
+    ).not.toBeInTheDocument();
   });
 
   it("레시피 목록 카드로 해당 상세 경로를 연다", async () => {
@@ -357,8 +398,14 @@ describe("RecipeListPlaceholderPage", () => {
       </AuthContext.Provider>,
     );
 
+    expect(
+      await screen.findByRole("heading", {
+        name: "어떤 레시피를 펼쳐볼까요?",
+      }),
+    ).toBeInTheDocument();
+
     fireEvent.click(
-      await screen.findByRole("link", { name: /김치찌개/ }),
+      screen.getByRole("link", { name: /김치찌개/ }),
     );
 
     expect(

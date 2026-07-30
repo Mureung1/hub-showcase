@@ -85,10 +85,9 @@ const LoginPage = () => {
           disabled={isLoggingIn}
           onClick={() => handleGoogleLogin()}
           aria-busy={isLoggingIn}
-          aria-label="구글 계정으로 나의 레시피북 열기"
+          aria-label="Google 계정으로 로그인"
         >
-          <span className="relative z-1">{isLoggingIn ? "열람 준비 중..." : "내 레시피북 펼치기"}</span>
-          {/* 구글 계정에 대한 언급 필요할 수 도 aria-label 추가 */}
+          <span className="relative z-1">{isLoggingIn ? "로그인 중..." : "Google 계정으로 로그인"}</span>
         </button>
         {error && (
           <p
@@ -110,6 +109,9 @@ const LoginPage = () => {
           md:w-[min(31rem,38vw)]
         "
         aria-labelledby="welcome-title">
+        <p className="mx-auto max-w-64 text-center text-sm font-medium leading-6 text-[#fbf7ec] [text-shadow:0_2px_4px_rgb(0_0_0/72%)] md:hidden">
+          흩어진 레시피와 기억을 한 권에 담아보세요.
+        </p>
         <p className="hidden text-[0.9rem] font-bold tracking-[0.08em] text-[#efd28f] md:mb-[1.4rem] md:block">
           나만의 레시피북
         </p>
