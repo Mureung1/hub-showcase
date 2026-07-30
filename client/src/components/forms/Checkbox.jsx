@@ -1,15 +1,20 @@
 import React from 'react';
+import { playSfx } from '../../lib/sound.js';
 
 /** Checkbox — fills wedgwood-deep when checked with a 0.9→1.05→1 pop (0.35s, §7).
-    완료만 조용히 쌓인다: unchecked state is never emphasized. */
-export function Checkbox({ checked = false, onChange, label, style }) {
+    완료만 조용히 쌓인다: unchecked state is never emphasized.
+    soundType: 'click'(기본) | 'finish' — 마지막 항목 체크 등 완료 순간에는 'finish'로 지정. */
+export function Checkbox({ checked = false, onChange, label, soundType = 'click', style }) {
   return (
     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 'var(--text-body-size)', color: checked ? 'var(--ink)' : 'var(--ink-soft)', ...style }}>
       <style>{`@keyframes lco-check-pop { 0% { transform: scale(0.9); } 60% { transform: scale(1.05); } 100% { transform: scale(1); } }`}</style>
       <input
         type="checkbox"
         checked={checked}
-        onChange={(e) => onChange && onChange(e.target.checked)}
+        onChange={(e) => {
+          playSfx(soundType);
+          onChange?.(e.target.checked);
+        }}
         style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
       />
       <span

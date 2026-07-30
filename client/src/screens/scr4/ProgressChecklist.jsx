@@ -6,7 +6,7 @@ import { Input } from '../../components/forms/Input.jsx'
 import { Checkbox } from '../../components/forms/Checkbox.jsx'
 import { Button } from '../../components/forms/Button.jsx'
 import { NAV_ITEMS } from '../../mocks/mockData.js'
-import { getLetterByToken, getRoles, createRoleTasks, updateRoleTask, deleteRoleTask } from '../../lib/api.js'
+import { getLetterByToken, getRoles, createRoleTasks, updateRoleTask, deleteRoleTask, updateRole, getSuggestions } from '../../lib/api.js'
 import letterBgFloralLace from '../../assets/letter-bg-floral-lace.jpg'
 import laceDoily from '../../assets/vintage-lace-doily.png'
 import laceTrimStrip from '../../assets/vintage-lace-trim-strip.png'
@@ -32,6 +32,8 @@ export function ProgressChecklist() {
   const [role, setRole] = useState(null)
   const [tasks, setTasks] = useState([])
   const [newLabel, setNewLabel] = useState('')
+  const [suggestStatus, setSuggestStatus] = useState('idle') // idle | loading | fallback | error
+  const [suggestNote, setSuggestNote] = useState('')
 
   useEffect(() => {
     let cancelled = false
@@ -92,6 +94,49 @@ export function ProgressChecklist() {
     setNewLabel('')
     createRoleTasks(token, roleId, [label]).then((result) => {
       if (!result.error) setTasks((prev) => [...prev, ...result.data])
+    })
+  }
+
+  // 이 역할(roleId)분 업무만 AI에게 추천받는다 — suggestForLetter는 이미 업무 있는
+  // 역할엔 빈 배열을 주도록 프롬프트가 짜여 있어(server/src/controllers/suggestController.js),
+  // 업무가 이미 있는 상태에서 다시 눌러도 안전하게 아무 일도 일어나지 않는다.
+  async function runSuggest() {
+    setSuggestStatus('loading')
+    setSuggestNote('')
+    const result = await getSuggestions(token)
+    if (result.error) {
+      setSuggestStatus('error')
+      setSuggestNote(result.error)
+      return
+    }
+    const data = result.data
+    if (data?.fallback) {
+      setSuggestStatus('fallback')
+      setSuggestNote(data.reason || '추천을 만들 수 없어요')
+      return
+    }
+    const match = (data.role_suggestions ?? []).find((s) => s.role_id === roleId)
+    if (!match?.tasks?.length) {
+      setSuggestStatus('fallback')
+      setSuggestNote('추천할 업무가 없어요')
+      return
+    }
+    const created = await createRoleTasks(token, roleId, match.tasks)
+    if (created.error) {
+      setSuggestStatus('error')
+      setSuggestNote(created.error)
+      return
+    }
+    setTasks((prev) => [...prev, ...created.data])
+    setSuggestStatus('idle')
+  }
+
+  // 업무 없이 역할 자체만 완료로 표시 — ProgressWorkspace.jsx에서 옮겨온 기능.
+  function toggleRoleDone() {
+    const nextDone = !role.done
+    setRole((prev) => ({ ...prev, done: nextDone }))
+    updateRole(token, roleId, { done: nextDone }).then((result) => {
+      if (result.error) setRole((prev) => ({ ...prev, done: !nextDone }))
     })
   }
 
@@ -184,13 +229,23 @@ export function ProgressChecklist() {
               </>
             )
             const href =
-              item.key === 'participants'
+              item.key === 'home'
                 ? `${item.href}${token ? `?token=${token}` : ''}`
-                : item.key === 'coordinate'
-                  ? `/scr2/roles${token ? `?token=${token}` : ''}`
-                  : item.key === 'progress'
-                    ? `/scr4/workspace${token ? `?token=${token}` : ''}`
-                    : null
+                : item.key === 'participants'
+                  ? `${item.href}${token ? `?token=${token}` : ''}`
+                  : item.key === 'coordinate'
+                    ? `/scr2/roles${token ? `?token=${token}` : ''}`
+                    : item.key === 'progress'
+                      ? `/scr4/workspace${token ? `?token=${token}` : ''}`
+                      : item.key === 'harvest'
+                        ? `/scr5/review${token ? `?token=${token}` : ''}`
+                        : item.key === 'settlement'
+                          ? `/scr5/settlement${token ? `?token=${token}` : ''}`
+                          : item.key === 'notifications'
+                            ? `/notifications${token ? `?token=${token}` : ''}`
+                            : item.key === 'profile'
+                              ? `/profile${token ? `?token=${token}` : ''}`
+                              : null
             return href ? (
               <Link key={item.key} to={href} style={itemStyle}>
                 {content}
@@ -266,7 +321,12 @@ export function ProgressChecklist() {
                 {tasks.map((task) => (
                   <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '12px 0', borderBottom: '1px dashed var(--line)' }}>
                     <div style={{ flex: 1 }}>
-                      <Checkbox checked={task.done} onChange={() => toggleTask(task)} label={task.label} style={{ fontSize: '16px', color: NEAR_WHITE }} />
+                      <Checkbox
+                        checked={task.done}
+                        onChange={() => toggleTask(task)}
+                        label={task.label}
+                        style={{ fontSize: '16px', color: NEAR_WHITE }}
+                      />
                     </div>
                     {tasks.length > 1 ? (
                       <button
@@ -281,14 +341,31 @@ export function ProgressChecklist() {
                   </div>
                 ))}
               </div>
+              {tasks.length === 0 ? (
+                <Checkbox
+                  checked={Boolean(role.done)}
+                  onChange={toggleRoleDone}
+                  label="업무 없이 역할만 완료 처리"
+                  style={{ fontSize: '14px', color: NEAR_WHITE, marginTop: '10px' }}
+                />
+              ) : null}
             </div>
 
-            <div style={{ width: '100%', maxWidth: '640px', display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-              <div style={{ flex: 1 }}>
-                <Input variant="underline" placeholder="업무 추가" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
+            <div style={{ width: '100%', maxWidth: '640px', display: 'flex', alignItems: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
+              <Button variant="primary" size="sm" onClick={runSuggest} disabled={suggestStatus === 'loading'}>
+                {suggestStatus === 'loading' ? '추천을 준비하고 있어요…' : 'AI에게 추천받기'}
+              </Button>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', gap: '8px', minWidth: '200px' }}>
+                <div style={{ flex: 1 }}>
+                  <Input variant="underline" placeholder="업무 추가" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
+                </div>
+                <Button size="sm" variant="accent" onClick={addTask}>직접 추가</Button>
               </div>
-              <Button size="sm" variant="accent" onClick={addTask}>추가</Button>
             </div>
+
+            {suggestStatus === 'error' || suggestStatus === 'fallback' ? (
+              <div style={{ width: '100%', maxWidth: '640px', fontFamily: 'var(--font-body)', fontSize: '13px', color: NEAR_WHITE }}>{suggestNote}</div>
+            ) : null}
 
             <div style={{ width: '100%', maxWidth: '640px', fontFamily: 'var(--font-body)', fontSize: '13px', color: NEAR_WHITE }}>{`${doneCount}/${total} 완료`}</div>
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countResponded, getSelectedSlotIds, isResponded } from './participantStatus.js'
+import { countResponded, getSelectedLocationIds, getSelectedSlotIds, isResponded, tallyVotes } from './participantStatus.js'
 
 describe('isResponded', () => {
   // 1. 정상 케이스 — 실제 API가 주는 형태(단일 객체). 어제 버그의 핵심 회귀 케이스:
@@ -70,5 +70,35 @@ describe('getSelectedSlotIds', () => {
 
   it('단일 객체면 selected_slot_ids를 그대로 반환한다', () => {
     expect(getSelectedSlotIds({ responses: { selected_slot_ids: ['slot1', 'slot2'] } })).toEqual(['slot1', 'slot2'])
+  })
+})
+
+describe('getSelectedLocationIds', () => {
+  it('null이면 빈 배열을 반환한다', () => {
+    expect(getSelectedLocationIds({ responses: null })).toEqual([])
+  })
+
+  it('단일 객체면 selected_location_ids를 그대로 반환한다', () => {
+    expect(getSelectedLocationIds({ responses: { selected_location_ids: ['loc1'] } })).toEqual(['loc1'])
+  })
+})
+
+describe('tallyVotes', () => {
+  it('후보별 득표 수를 정확히 센다', () => {
+    const participants = [
+      { responses: { selected_slot_ids: ['slot1'] } },
+      { responses: { selected_slot_ids: ['slot1', 'slot2'] } },
+      { responses: null },
+    ]
+    expect(tallyVotes(participants, ['slot1', 'slot2', 'slot3'], getSelectedSlotIds)).toEqual({
+      slot1: 2,
+      slot2: 1,
+      slot3: 0,
+    })
+  })
+
+  it('후보 목록에 없는 id는 집계에 반영하지 않는다', () => {
+    const participants = [{ responses: { selected_slot_ids: ['stale-slot'] } }]
+    expect(tallyVotes(participants, ['slot1'], getSelectedSlotIds)).toEqual({ slot1: 0 })
   })
 })

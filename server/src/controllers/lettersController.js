@@ -39,3 +39,25 @@ export async function getLetterByToken(req, res) {
   if (error) return res.status(404).json({ data: null, error: '모임을 찾을 수 없어요' })
   res.json({ data, error: null })
 }
+
+// PATCH /api/letters/:token/close-responses — 참여자 응답 마감(전원 응답 판단 기준)
+export async function closeResponses(req, res) {
+  const { data: letter, error: letterError } = await supabase
+    .from('letters')
+    .select('id')
+    .eq('link_token', req.params.token)
+    .single()
+
+  if (letterError) return res.status(404).json({ data: null, error: '모임을 찾을 수 없어요' })
+
+  const { data, error } = await supabase
+    .from('letters')
+    .update({ responses_closed: true })
+    .eq('id', letter.id)
+    .select()
+    .single()
+
+  if (error) return res.status(500).json({ data: null, error: error.message })
+
+  res.json({ data, error: null })
+}

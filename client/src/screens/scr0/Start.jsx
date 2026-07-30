@@ -4,10 +4,9 @@ import { Button } from '../../components/forms/Button.jsx'
 import { Input } from '../../components/forms/Input.jsx'
 import doily from '../../assets/vintage-lace-doily.png'
 import waxSeal from '../../assets/vintage-wax-seal-swan.png'
-import pearls from '../../assets/pearls-cutout.png'
 
 // SCR0 · 0 시작 화면 — docs/design 「Letter&Co Design System.zip」templates/start/Start.dc.html 이식.
-// 도일리 오벌 프레임 + 왁스씰 + 진주 장식, 미스트 배경. 장식 요소는 도일리 프레임 1계열만 사용.
+// 도일리 오벌 프레임 + 왁스씰, 미스트 배경. 장식 요소는 도일리 프레임 1계열만 사용.
 export function Start() {
   const navigate = useNavigate()
   const [showJoin, setShowJoin] = useState(false)
@@ -65,8 +64,7 @@ export function Start() {
           <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '9px', padding: '0 78px', textAlign: 'center', zIndex: 1 }}>
             <div style={{ fontFamily: "'Signatie', var(--font-script)", fontSize: '54px', lineHeight: 1, color: 'var(--wedgwood-deep)', marginTop: '22px' }}>Letter&amp;Co</div>
             <div style={{ width: '34px', height: '1px', background: 'var(--line)', margin: '2px 0' }} />
-            <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '18px', color: 'var(--ink)' }}>모임 조율을 편지처럼</div>
-            <img src={pearls} alt="" style={{ width: '118px', opacity: 0.85, marginTop: '4px' }} />
+            <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '18px', color: 'var(--ink)' }}>모임 조율을 간편하게</div>
           </div>
         </div>
 

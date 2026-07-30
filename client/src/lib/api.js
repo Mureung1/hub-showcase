@@ -38,6 +38,11 @@ export function getResponses(token) {
   return request(`/api/letters/${token}/responses`)
 }
 
+// PATCH /api/letters/:token/close-responses — 참여자 응답 마감
+export function closeResponses(token) {
+  return request(`/api/letters/${token}/close-responses`, { method: 'PATCH' })
+}
+
 // GET /api/letters/:token/roles — 역할 목록 조회
 export function getRoles(token) {
   return request(`/api/letters/${token}/roles`)
@@ -81,4 +86,24 @@ export function confirmLetter(token, payload) {
 // POST /api/letters/:token/suggest — 시간·장소·역할 추천
 export function getSuggestions(token) {
   return request(`/api/letters/${token}/suggest`, { method: 'POST' })
+}
+
+// POST /api/letters/:token/harvest-reviews — 결산 평가 제출(재제출 시 갱신)
+export function createHarvestReview(token, payload) {
+  return request(`/api/letters/${token}/harvest-reviews`, { method: 'POST', body: JSON.stringify(payload) })
+}
+
+// GET /api/letters/:token/harvest-reviews — 결산 평가 목록 조회
+export function getHarvestReviews(token) {
+  return request(`/api/letters/${token}/harvest-reviews`)
+}
+
+// POST /api/letters/:token/expenses — 지출 항목 추가
+export function createExpense(token, payload) {
+  return request(`/api/letters/${token}/expenses`, { method: 'POST', body: JSON.stringify(payload) })
+}
+
+// GET /api/letters/:token/expenses — 지출 항목 목록 조회
+export function getExpenses(token) {
+  return request(`/api/letters/${token}/expenses`)
 }
