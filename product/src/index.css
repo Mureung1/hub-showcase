@@ -1820,6 +1820,11 @@ button.view-tab { font-weight: 750; }
 
 /* 개별 공고: 원문·해석 같은 폭 */
 .posting-layout { grid-template-columns: 1fr 1fr; }
+.posting-layout > * { min-width: 0; }
+
+@media (max-width: 860px) {
+  .posting-layout { grid-template-columns: 1fr; }
+}
 
 /* ===== 합격 전략 슬라이스 ===== */
 
