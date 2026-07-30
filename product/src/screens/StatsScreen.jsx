@@ -136,7 +136,7 @@ function StatsScreen({ go, job }) {
           <header className="report-header" id="summary">
             <span className="eyebrow">{job.display_name} 공고 {recentN}건 기반 리서치 · 이전 스냅샷 {meta.snapshots.prev.n}건 비교</span>
             <h1>공고의 절반 이상이 "신입"이라 쓰고 경력급 준비를 요구합니다. 기술 이름이 아니라 요구의 구조를 읽습니다.</h1>
-            <p>여러 공고에서 반복되는 요구를 리얼리티 중심으로 집계했습니다. 이 통계는 다음 단계(채용공고 해석)에서 직무 기준선과 편차를 읽는 기준이 됩니다.</p>
+            <p>여러 공고에서 반복되는 요구를 리얼리티 중심으로 집계했습니다. 이 통계는 다음 단계(채용공고 해석)에서 직무 공통 기대치와의 차이를 읽는 기준이 됩니다.</p>
             <div className="data-note">
               <span>{meta.snapshots.recent.label}: {recentN}건</span>
               <span>{meta.snapshots.prev.label}: {meta.snapshots.prev.n}건</span>

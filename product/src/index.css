@@ -1,9 +1,10 @@
 :root {
-  --color-bg: #F5F6FA;
-  --color-surface: #FFFFFF;
-  --color-surface-soft: #F0F1F7;
-  --color-border: #E3E5EF;
-  --color-border-strong: #C9CDDD;
+  --color-bg: #ECF5FF;
+  --color-surface: rgba(255, 255, 255, 0.88);
+  --color-surface-solid: #FFFFFF;
+  --color-surface-soft: rgba(238, 246, 255, 0.86);
+  --color-border: rgba(178, 204, 230, 0.68);
+  --color-border-strong: rgba(150, 183, 215, 0.82);
   --color-text-primary: #111827;
   --color-text-secondary: #64748B;
   --color-text-muted: #94A3B8;
@@ -20,14 +21,15 @@
   --radius-md: 12px;
   --radius-lg: 18px;
 
-  --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 14px 38px rgba(58, 91, 132, 0.11);
   --shadow-float: 0 18px 50px rgba(15, 23, 42, 0.12);
   --color-topbar: #171A46;
   --color-topbar-text: #FFFFFF;
   --color-topbar-muted: #C9CCE3;
-  --glass-surface: rgba(255, 255, 255, 0.88);
-  --glass-border: rgba(211, 215, 229, 0.84);
-  --glass-blur: 22px;
+  --glass-surface: rgba(255, 255, 255, 0.76);
+  --glass-surface-strong: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.92);
+  --glass-blur: 18px;
 
   --font-sans: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
 }
@@ -52,8 +54,9 @@ body {
   margin: 0;
   font-family: var(--font-sans);
   background:
-    radial-gradient(circle at 8% 0%, rgba(99, 102, 241, 0.08), transparent 28rem),
-    linear-gradient(180deg, #F8F8FC 0%, var(--color-bg) 38%);
+    radial-gradient(circle at 8% 0%, rgba(99, 102, 241, 0.14), transparent 29rem),
+    radial-gradient(circle at 92% 24%, rgba(56, 189, 248, 0.12), transparent 25rem),
+    linear-gradient(180deg, #F5FAFF 0%, var(--color-bg) 38%, #EAF4FF 100%);
   color: var(--color-text-primary);
   line-height: 1.55;
 }
@@ -269,10 +272,12 @@ a {
 .source-card,
 .roadmap-card,
 .job-select-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
 }
 
 .hero-card {
@@ -493,10 +498,10 @@ a {
   background: var(--color-surface-soft);
 }
 
-.preview-item:nth-child(4n + 1) { background: #F0F1FF; border-color: #E0E2FA; }
-.preview-item:nth-child(4n + 2) { background: #EFF7FF; border-color: #DCECFB; }
-.preview-item:nth-child(4n + 3) { background: #F6F0FF; border-color: #EAE0FA; }
-.preview-item:nth-child(4n) { background: #EEF9F6; border-color: #DDEFE9; }
+.preview-item:nth-child(4n + 1) { background: #F0F2FF; border-color: #DEE3FA; }
+.preview-item:nth-child(4n + 2) { background: #EEF6FF; border-color: #DCEAF8; }
+.preview-item:nth-child(4n + 3) { background: #F2F5FF; border-color: #E0E6FA; }
+.preview-item:nth-child(4n) { background: #EFF7FF; border-color: #DCECF9; }
 
 .preview-item strong {
   display: block;
@@ -548,13 +553,9 @@ a {
 .metric-card {
   min-height: 116px;
   padding: 18px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(237, 246, 255, 0.74));
+  border-color: var(--glass-border);
 }
-
-.metric-card:nth-child(5n + 1) { background: #F8F7FF; border-color: #E6E3FA; }
-.metric-card:nth-child(5n + 2) { background: #F4F9FF; border-color: #DFEBF8; }
-.metric-card:nth-child(5n + 3) { background: #F3FAF8; border-color: #DDEFE9; }
-.metric-card:nth-child(5n + 4) { background: #FFFAF2; border-color: #F5E8D3; }
-.metric-card:nth-child(5n) { background: #FFF7FA; border-color: #F4E1E8; }
 
 .metric-card .num {
   display: block;
@@ -1357,7 +1358,7 @@ button.view-tab { font-weight: 750; }
 }
 
 /* KPI 강조 카드 */
-.metric-card--alert { border-color: #FBCFE8; }
+.metric-card--alert { border-color: var(--glass-border); }
 .metric-card--alert .num { color: #E11D48; }
 
 /* 다음 슬라이스 자리 표시 */
@@ -2167,6 +2168,32 @@ button.view-tab { font-weight: 750; }
   background: var(--color-primary-light); color: var(--color-primary-dark);
 }
 
+/* ---------- Unified blue-glass surfaces ---------- */
+.status-panel,
+.baseline-card,
+.dev-card,
+.strategy-card,
+.done-strip,
+.rc-card,
+.study-card,
+.mini-check,
+.apply-bar,
+.notice-card,
+.scope-switch {
+  background: var(--glass-surface);
+  border-color: var(--glass-border);
+  box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.25);
+}
+
+/* 표와 긴 공고 원문은 글래스 질감을 유지하되 읽기 쉽도록 더 불투명하게 둔다. */
+.panel--table,
+.posting-list,
+.posting-raw {
+  background: var(--glass-surface-strong);
+}
+
 @media (max-width: 860px) {
   .scope-switch__tier { grid-template-columns: 1fr; gap: 6px; }
   .scope-switch__tier-label { padding-top: 0; }
@@ -2176,7 +2203,7 @@ button.view-tab { font-weight: 750; }
 /* ── 3단 공고 목록 — 기업군에 매이지 않는 선택지 ────────────────────────
    직무의 공고 전체가 한 목록에 들어오므로 줄마다 어느 기업군인지 배지로 밝힌다.
    목록은 길어질 수 있어 최대 높이를 두고 그 안에서 스크롤한다.
-   본문 카드와 같은 불투명 흰 면을 그대로 쓴다 — 반투명은 상단바·사이드바 몫이다. */
+   긴 목록은 본문 글래스보다 불투명한 면을 사용해 행 구분과 가독성을 유지한다. */
 .posting-list--scope { max-height: 232px; margin-top: 2px; }
 .posting-row--scope { grid-template-columns: 1fr 1.5fr auto auto; }
 .posting-cluster {

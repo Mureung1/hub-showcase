@@ -3,12 +3,14 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const files = [
+  './data/preview.js',
   './screens/ReverseScreen.jsx',
   './screens/StatsScreen.jsx',
   './components/PostingAnalyzePanel.jsx',
 ]
 
 const forbiddenPhrases = [
+  '직무 기준선',
   '전체 baseline',
   '(baseline)',
   'baseline 위',
