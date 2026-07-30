@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- 적응형 아이콘의 배경 레이어. 전경(ic_launcher_foreground)은 branding/symbol image.png를
+         잘라 만든 것이고 그 원본 배경이 순백이 아니라 #FEFEFE라, 배경도 같은 값으로 맞춰
+         런처가 전경을 안전영역까지 줄이는 경우에도 가장자리에 이음매가 보이지 않게 한다.
+         scripts/make-android-icons.ps1의 $BG와 반드시 같은 값이어야 한다. -->
+    <color name="ic_launcher_background">#FEFEFE</color>
 </resources>

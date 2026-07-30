@@ -79,6 +79,15 @@ export default function Login() {
           </AppButton>
         </form>
 
+        <button
+          type="button"
+          className="tds-press"
+          onClick={() => navigate('/forgot-password')}
+          style={{ display: 'block', margin: `${spacing.md}px auto 0`, ...styles.linkButton }}
+        >
+          비밀번호를 잊으셨나요?
+        </button>
+
         <p style={{ ...styles.helperText, fontSize: font.size.xs, textAlign: 'center', marginTop: spacing.md }}>
           로그인하면 이 기기에서 자동으로 로그인 상태가 유지돼요.
         </p>

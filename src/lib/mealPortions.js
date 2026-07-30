@@ -14,6 +14,10 @@ export const PORTION_WEIGHTS = {
   drink: 200,
 }
 
+// 트레이(급식 한 판) 기준의 기본값 — 한 판에는 주찬보다 부찬이 많아서 "모르면 반찬"이 통계적으로
+// 맞다. 다만 식당 단품 분석처럼 트레이가 아닌 맥락에서는 이 값이 크게 과소평가가 된다. 그래서
+// classifyMenuRole은 패턴에 실제로 걸렸는지(matched)를 함께 돌려주고, 호출부가 맥락에 맞는 폴백을
+// 고르게 한다 — 기본값 하나를 뒤집어 양쪽을 다 틀리게 만들지 않기 위함.
 const DEFAULT_ROLE = 'side'
 
 // rice+noodle 동시 케이스에서 noodle에 적용하는 감량 중량(PRD 규칙) — 밥과 면을 둘 다 정량으로
@@ -63,6 +67,11 @@ const ROLE_PATTERNS = [
     '국',
   ].map((pattern) => ({ pattern, role: 'soup' })),
   // main — 단백질 중심 주요리
+  //
+  // 갈비·족발·강정·생선조림 계열이 통째로 빠져 있어서 "돼지갈비" 같은 대표 메뉴가 어떤 패턴에도
+  // 안 걸리고 기본값(side 50g)으로 떨어졌다 — 실제보다 2~5배 과소 계산된 직접 원인이다.
+  // '갈비'(2글자)는 '갈비탕'(soup, 3글자)·'닭갈비'·'떡갈비'보다 짧아 정렬상 뒤에 오므로,
+  // 그 셋을 가로채지 않고 "돼지갈비/소갈비/양념갈비/왕갈비/LA갈비/생갈비"만 받는다.
   ...[
     '제육볶음',
     '돈까스',
@@ -72,18 +81,32 @@ const ROLE_PATTERNS = [
     '깐풍기',
     '닭갈비',
     '떡갈비',
+    '갈비찜',
+    '갈비구이',
     '불고기',
     '삼겹살',
     '보쌈',
     '수육',
+    '족발',
+    '찜닭',
     '고등어구이',
     '갈치구이',
+    '고등어조림',
+    '삼치조림',
+    '갈치조림',
+    '생선조림',
+    '생선구이',
     '오징어볶음',
     '닭볶음탕',
     '스테이크',
+    '햄버거',
+    '샌드위치',
+    '피자',
     '까스',
     '치킨',
     '돈육',
+    '강정',
+    '갈비',
   ].map((pattern) => ({ pattern, role: 'main' })),
   // side — 밑반찬류
   ...[
@@ -122,12 +145,14 @@ const ROLE_PATTERNS = [
   ...['배추김치', '총각김치', '열무김치', '오이소박이', '깍두기', '김치'].map((pattern) => ({ pattern, role: 'kimchi' })),
 ].sort((a, b) => b.pattern.length - a.pattern.length)
 
+// 반환의 matched: 실제로 패턴에 걸렸는지. false면 role/weight는 기본값(반찬 50g)이라 근거가 없다 —
+// 트레이 밖 맥락(식당 단품)에서는 이 값을 그대로 쓰면 안 된다.
 export function classifyMenuRole(menuName) {
   const name = (menuName || '').trim()
   const matched =
     ROLE_PATTERNS.find(({ pattern }) => name.endsWith(pattern)) ?? ROLE_PATTERNS.find(({ pattern }) => name.includes(pattern))
   const role = matched ? matched.role : DEFAULT_ROLE
-  return { role, weight: PORTION_WEIGHTS[role] }
+  return { role, weight: PORTION_WEIGHTS[role], matched: Boolean(matched) }
 }
 
 // menuNames: string[] — 한 트레이(끼니)의 메뉴명 목록. 각 메뉴에 역할·중량을 배분한다.

@@ -4,10 +4,16 @@
 // 탭을 옮길 때마다 하단 탭바까지 함께 다시 그려졌다("탭바 깜빡임"의 구조적 원인 중 하나).
 // 지금은 AppShell을 라우트 위로 올리고 콘텐츠만 <Outlet/>으로 갈아끼운다 — 이 성질이 깨지면
 // 화면에는 티가 잘 안 나면서 깜빡임만 슬그머니 돌아오므로, DOM 노드 동일성으로 못 박아둔다.
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import AppShell from '../components/AppShell.jsx'
+
+// AppShell은 리텐션 강화 v4부터 레벨업 팝업(항목1)/챗봇 런처(항목6)를 useUser()로 직접 읽어 렌더한다
+// — 이 테스트는 <UserProvider> 없이 AppShell만 단독으로 렌더하므로, useUser()를 최소 스텁으로
+// 대체하고 ChatBotSheet는 완전히 비워, 그 두 기능과 무관한 "레이아웃 라우트" 성질만 검증한다.
+vi.mock('../context/UserContext.jsx', () => ({ useUser: () => ({ levelUpPopup: null, dismissLevelUpPopup: () => {} }) }))
+vi.mock('../components/ChatBotSheet.jsx', () => ({ default: () => null }))
 
 function renderShell(initialPath = '/analyze') {
   return render(

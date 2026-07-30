@@ -3,6 +3,8 @@ import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
 import ChevronIcon from './ChevronIcon.jsx'
 import ConfidenceBadge from './ConfidenceBadge.jsx'
+import FoodNameCorrection from './FoodNameCorrection.jsx'
+import MealCardExporter from './MealCardExporter.jsx'
 import MealTypePicker from './MealTypePicker.jsx'
 import NutrientEditForm from './NutrientEditForm.jsx'
 import { NutrientBars } from './NutritionCard.jsx'
@@ -160,6 +162,9 @@ export default function AnalysisResultCard({
   // 썼는지, 전부 AI 추정인지 구분해준다.
   titleOverride,
   sourceNote,
+  // 판 단위 검증 경고 문구(src/lib/mealStandards.js). 합계가 그 장면의 현실 범위를 벗어났을 때만
+  // 채워지고, **수치는 그대로 둔다** — 정답지 없이 밴드로 값을 깎지 않는다는 원칙 때문이다.
+  plateWarning,
   // 트랙 2 §2 — precisionEngine이 이미 계산해 돌려주던 신뢰도(high/medium/low). 사진/텍스트/라벨
   // 분석 경로에서는 undefined라 ConfidenceBadge가 아무것도 그리지 않는다(기존 화면과 동일).
   confidence,
@@ -172,6 +177,10 @@ export default function AnalysisResultCard({
   // 기준(analysis가 그렇듯)으로 넘긴다 — 호출부가 servings 배율을 이미 나눠서 넘겨준다.
   // 생략하면(기존 호출부와 동일) "직접 수정" 진입점 자체가 보이지 않는다.
   onEditNutrients,
+  // 조리법 1탭 보정. { searchName, matchedName, busy, onCorrect(method) } — 생략하면 줄 자체가
+  // 안 보인다. 호출부가 "DB 매칭이 확실하지 않은 단일 음식"일 때만 넘긴다(잘 맞은 결과 밑에
+  // "고쳐보세요"가 붙으면 맞는 값을 의심하게 만든다).
+  correction,
 }) {
   const { items } = analysis
   const displayAnalysis = scaleMealAnalysisByServings(analysis, servings)
@@ -188,6 +197,10 @@ export default function AnalysisResultCard({
   // 음식이 1개일 때만 그 음식의 1인분 기준량을 물어본다 — 여러 개면 어느 음식 기준인지 애매하다.
   // 결과가 바뀔 때(다시 찍기 등)마다 다시 조회하고, 매칭 안 되면(null) 힌트를 아예 숨긴다.
   const [gramHint, setGramHint] = useState(null)
+  // FR-2 — 사진이 있을 때만("메뉴 이름만" 텍스트 분석엔 사진이 없다). AnalysisResultCard는 저장
+  // 성공과 동시에 언마운트되므로(Analyze.jsx의 resetToIdle), "저장 후" 전용 화면을 따로 만들지 않고
+  // 이 카드가 떠 있는 동안 바로 만들 수 있게 한다.
+  const [showExporter, setShowExporter] = useState(false)
   useEffect(() => {
     setGramHint(null)
     if (items.length !== 1 || !onServingsChange) return
@@ -245,8 +258,33 @@ export default function AnalysisResultCard({
             총 <strong style={{ color: colors.textStrong }}>{formatNutrient(displayAnalysis.total.calories)}</strong> kcal
           </p>
           {sourceNote && <p style={{ margin: '2px 0 0', fontSize: font.size.xs, color: colors.muted }}>{sourceNote}</p>}
+          {/* 판 단위 검증 — 합계가 그 장면의 현실 범위를 벗어났을 때만. 값을 자동으로 고치지 않고
+              알리기만 하므로(mealStandards.js 참고), 사용자가 직접 수정하거나 다시 찍을 수 있게 한다. */}
+          {plateWarning && (
+            <p style={{ margin: `${spacing.xs}px 0 0`, fontSize: font.size.xs, color: colors.deficientText, lineHeight: 1.4 }}>
+              {plateWarning}
+            </p>
+          )}
+          {photoUrl && (
+            <button
+              type="button"
+              className="tds-press"
+              onClick={() => setShowExporter(true)}
+              style={{ ...styles.linkButton, marginTop: spacing.xs, fontSize: font.size.xs }}
+            >
+              인증샷 카드 만들기 📸
+            </button>
+          )}
         </div>
       </div>
+
+      {showExporter && (
+        <MealCardExporter
+          photoUrl={photoUrl}
+          mealTotal={displayAnalysis.total}
+          onClose={() => setShowExporter(false)}
+        />
+      )}
 
       {/* a-2. 인분 수 조절(6주차 §2) — onServingsChange가 있을 때만(생략하면 기존과 동일하게 숨김) */}
       {onServingsChange && (
@@ -291,6 +329,18 @@ export default function AnalysisResultCard({
           </>
         )}
       </div>
+
+      {/* b-1. 조리법 보정 — 호출부가 correction을 줄 때만 보인다(= DB 매칭이 확실하지 않은 단일 음식).
+          "직접 수정"이 결과 수치를 손으로 덮어쓰는 것과 달리, 이건 **검색어를 고쳐 DB를 다시 조회**한다 —
+          사용자가 아는 건 영양수치가 아니라 자기가 먹은 음식이므로 이쪽이 물어보기 쉬운 질문이다. */}
+      {correction && !editing && (
+        <FoodNameCorrection
+          searchName={correction.searchName}
+          matchedName={correction.matchedName}
+          busy={correction.busy}
+          onCorrect={correction.onCorrect}
+        />
+      )}
 
       {/* b-2. 음식별 상세 — 여러 개일 때만. 기본 접힘, "자세한 식사"로 펼친다. */}
       {canExpand && (

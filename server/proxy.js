@@ -5,12 +5,19 @@ import path from 'node:path'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { rateLimit } from 'express-rate-limit'
+import NodeCache from 'node-cache'
 import { mapNeisAllergy } from '../src/lib/allergyRules.js'
+import { normalizeLoginId, validatePassword } from '../src/lib/authId.js'
 import { resolveCnuWeekResult } from '../src/lib/cnuWeekFallback.js'
+import { findSecurityQuestion, normalizeSecurityAnswer, validateQuestionId, validateSecurityAnswer } from '../src/lib/securityQuestions.js'
 import { isSupportedUniversity } from '../src/lib/universities.js'
+import { SECURITY_HEADERS } from './securityHeaders.js'
+import { getSecurityQuestionByLoginId, registerSecurityQuestion, verifyAndResetPassword } from './auth/securityQuestionStore.js'
 import * as cnuUnivMealAdapter from './univMealAdapters/cnu.js'
-import { lookupFood } from './nutrition/foodLookup.js'
+import { lookupFood, toFoodItemResponse } from './nutrition/foodLookup.js'
 import { analyzeTray } from './nutrition/precisionEngine.js'
+import { resolveFoodItems } from './nutrition/resolveFood.js'
+import { getSupabaseAdmin } from './supabaseAdmin.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -27,11 +34,40 @@ const NAVER_LOCAL_SEARCH_URL = 'https://naverapihub.apigw.ntruss.com/search/v1/l
 // 지역 검색 정렬: 'comment'(리뷰 많은 순 — 추천 품질용 기본값) | 'random'(무작위 — 예전 동작)
 const NAVER_LOCAL_SORT = 'comment'
 
+// FR-5 — 식약처/네이버 응답 캐싱(24시간). Render(상시 프로세스)에서는 이 TTL이 그대로 유효하지만,
+// Vercel 서버리스는 인스턴스가 언제든 재생성될 수 있어 캐시가 항상 살아있다는 보장이 없다 — "24시간
+// 캐싱"의 실효성은 배포 환경에 따라 다르다는 걸 여기 명시해둔다. 완전한 해결(Redis 등 외부 공유
+// 스토어)은 비용·인프라가 추가로 필요해 이번 범위 밖. 히트/미스를 로그로 남겨, 운영 후 실측치로
+// docs/04-프로젝트설명.md의 "비용 분석" 절처럼 효과를 검증할 수 있게 한다. 캐시는 조회(GET 성격) 응답만
+// 저장한다 — 로컬 유사 매칭(local-fuzzy)은 이미 인메모리 조회라 캐싱할 이유가 없다.
+const CACHE_TTL_SECONDS = 24 * 60 * 60
+const foodDbCache = new NodeCache({ stdTTL: CACHE_TTL_SECONDS })
+const placesCache = new NodeCache({ stdTTL: CACHE_TTL_SECONDS })
+
 // 식약처 식품영양성분DB: "음식"(조리식) API가 기본, "가공식품" API는 편의점/포장/프랜차이즈 제품 보완용 폴백. 파라미터·응답 구조는 동일하다.
 const FOODSAFETY_SOURCES = {
   food: { url: 'https://api.data.go.kr/openapi/tn_pubr_public_nutri_food_info_api', envKey: 'FOODSAFETY_API_KEY' },
   process: { url: 'https://api.data.go.kr/openapi/tn_pubr_public_nutri_process_info_api', envKey: 'FOODSAFETY_PROC_API_KEY' },
 }
+
+// /api/resolve-food 상한. items는 한 끼 분석에 들어오는 음식 수라 현실적으로 10개를 잘 넘지 않는데,
+// 20으로 2배 여유를 둔 건 반찬 많은 한 판 트레이 같은 정상 사용까지 걸리지 않게 하기 위해서다 —
+// 그 이상은 잘못된 사용이거나 남용이므로 거절한다. 데드라인 상한은 Gemini 식별(2~4초)과 합쳐 전체
+// 7초 목표 안에 들어오도록 잡은 값이다(resolveFood.js의 DEFAULT_DEADLINE_MS 참고).
+const RESOLVE_FOOD_MAX_ITEMS = 20
+const RESOLVE_FOOD_MAX_DEADLINE_MS = 4000
+// /api/precision-analyze도 같은 이유로 상한이 필요하다. 이쪽은 한 판(트레이) 메뉴 목록이라 실제
+// 급식은 5~10품이고, 넘는 건 잘못된 사용이거나 남용이다. 상한이 없으면 배열 하나가 그대로
+// foodLookup(동기 파일 기반 조회) 반복 + Gemini 프롬프트 길이로 이어져, 이벤트 루프를 수십 초
+// 잡아먹고 유료 토큰을 그만큼 태운다(리뷰 실측: 무제한일 때 19초 정지 + 13.5만 자 프롬프트).
+const PRECISION_ANALYZE_MAX_MENUS = 30
+
+// 스키마 없이 재요청해볼 가치가 있는 상태 코드 — "구조화 출력을 거부했다"를 실제로 뜻하는 것만.
+// 429/401/402는 스키마와 무관하고, 재요청하면 이미지 포함 본문을 한 번 더 태울 뿐이다.
+const SCHEMA_FALLBACK_STATUSES = new Set([400, 422])
+// 허용 맥락 — server/nutrition/foodLookup.js의 ORIGIN_PREFERENCE 키와 같아야 한다.
+// 같은 음식이라도 어디서 나왔느냐로 참조할 식약처 출처가 갈린다(급식 132kcal/100g vs 외식 294).
+const RESOLVE_FOOD_CONTEXTS = new Set(['restaurant', 'packaged', 'cafeteria', 'home'])
 
 // NEIS(나이스) 교육정보 개방포털: 학교기본정보(학교 검색) + 급식식단정보(초중고 급식 조회).
 const NEIS_SCHOOL_INFO_URL = 'https://open.neis.go.kr/hub/schoolInfo'
@@ -119,7 +155,12 @@ function respondToProxyError(res, err, label) {
 
 // 급식(NEIS)·학식(크롤링) 데이터는 하루 단위로만 바뀌므로, 자정까지 남은 시간만큼만 캐시해
 // 호출을 아낀다(당일 TTL — PRD 1.5). 서버 프로세스 메모리에만 있어 재배포/재시작 시 자연히 비워진다.
-const dayCache = new Map()
+// 안정성 점검(Phase B)에서 일반 Map → node-cache로 교체했다 — 예전엔 "같은 키를 다시 조회할 때만"
+// 만료 항목을 지웠는데, 한 번도 안 지웠는데(예: /api/precision-analyze·/api/school-meal처럼 학교
+// 코드·날짜 범위·메뉴 배열로 키가 갈리는 요청) 두 번 다시 안 들어오는 키는 프로세스가 살아있는 한
+// 영원히 메모리에 남았다(Render 같은 상시 프로세스에서 서서히 메모리를 갉아먹는 방향). node-cache는
+// checkperiod마다 스스로 만료 항목을 쓸어내 조회 여부와 무관하게 정리된다.
+const dayCache = new NodeCache({ checkperiod: 600 })
 
 function msUntilNextMidnight() {
   const now = new Date()
@@ -128,23 +169,19 @@ function msUntilNextMidnight() {
 }
 
 function getCached(key) {
-  const entry = dayCache.get(key)
-  if (!entry) return undefined
-  if (Date.now() >= entry.expiresAt) {
-    dayCache.delete(key)
-    return undefined
-  }
-  return entry.value
+  return dayCache.get(key)
 }
 
+// node-cache는 ttl=0을 "만료 없음"으로 해석하므로(자정 그 순간 호출되는 극단적 경우
+// msUntilNextMidnight()가 0에 가까워질 수 있음) 최소 1초는 보장한다.
 function setCached(key, value) {
-  dayCache.set(key, { value, expiresAt: Date.now() + msUntilNextMidnight() })
+  dayCache.set(key, value, Math.max(1, Math.ceil(msUntilNextMidnight() / 1000)))
 }
 
 // 대학 학식 주간 크롤링(4주차 보강 Step 7-1)은 자정 기준이 아니라 명시적 24시간 TTL을 쓴다 —
-// 메뉴 정정 가능성을 감안해 "하루 1회 재확인" 의미로, 같은 dayCache Map을 키 네임스페이스로만 구분해 재사용한다.
+// 메뉴 정정 가능성을 감안해 "하루 1회 재확인" 의미로, 같은 dayCache를 키 네임스페이스로만 구분해 재사용한다.
 function setCachedWithTtl(key, value, ttlMs) {
-  dayCache.set(key, { value, expiresAt: Date.now() + ttlMs })
+  dayCache.set(key, value, Math.max(1, Math.ceil(ttlMs / 1000)))
 }
 
 // YYYYMMDD 형식 + 실존하는 날짜인지(예: 20260231 같은 값 거부)까지 확인한다.
@@ -228,9 +265,21 @@ const app = express()
 // Render/Vercel 둘 다 리버스 프록시 한 홉을 거쳐 요청이 들어온다. 이걸 켜지 않으면
 // req.ip가 프록시 자신의 IP로 고정돼 아래 rate limiter가 모든 사용자를 한 버킷으로 묶어버린다.
 app.set('trust proxy', 1)
+
+// 보안 응답 헤더. 값과 그렇게 정한 이유는 server/securityHeaders.js에 있다 —
+// vercel.json의 headers 블록과 같은 값이어야 하고, securityHeaders.test.js가 그걸 강제한다.
+app.use((req, res, next) => {
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v)
+  next()
+})
+
 // 사진(base64)을 받는 /api/gemini만 큰 본문이 필요하다 — 나머지 라우트까지 15mb를 전부 허용하면
 // 이미지가 필요 없는 라우트(/api/fooddb 등)로도 대용량 POST를 보내 메모리를 낭비시키기 쉬워진다.
-app.use('/api/gemini', express.json({ limit: '15mb' }))
+// 8mb인 이유: 클라이언트(PhotoUpload.jsx의 resizeImageToBase64)가 업로드 즉시 1024px/quality 0.85로
+// 리사이즈해서 보내 실사용 페이로드는 base64 인코딩을 감안해도 대개 수백 KB~2MB대다 — 15mb는 정상
+// 트래픽 대비 과도하게 여유로워(요청 하나당 메모리·파싱 비용이 그만큼 크다), 정상 사용은 충분히
+// 여유 있게 담으면서 최악의 단일 요청 비용은 줄이는 선으로 낮췄다.
+app.use('/api/gemini', express.json({ limit: '8mb' }))
 app.use(express.json({ limit: '1mb' }))
 
 // express.json이 위 limit 초과("entity.too.large") 또는 잘못된 JSON("entity.parse.failed")을
@@ -285,10 +334,17 @@ app.use('/api', apiLimiter)
 // 다시 만들어 나머지 쿼리 파라미터가 전부 사라졌다 — POST 바디로만 값을 받는 라우트만 있던 동안은
 // 드러나지 않다가, 쿼리 파라미터가 실제 동작에 필요한 GET 라우트(/api/school-search 등)가 생기며
 // 그 라우트들이 프로덕션(Vercel)에서만 400으로 실패하는 문제로 나타났다.
+// vercelSubpath는 Vercel의 rewrite가 원래 요청 경로를 실어 보내는 값이지만, 이 미들웨어 입장에서는
+// 그냥 쿼리 파라미터라 누구든 직접 지어 보낼 수 있다. Express 라우터는 이 문자열로 파일시스템에
+// 접근하지 않고(정적 파일 서빙은 이 분기가 도는 Vercel 환경에서는 아예 마운트되지 않는다 — 아래
+// NODE_ENV==='production' && !VERCEL 블록 참고) 이미 정의된 라우트와 단순 문자열 매칭만 하므로
+// "../" 같은 값을 넣어도 실제로 새로 열리는 경로는 없다(전부 이미 공개 라우트다). 그래도 안전한
+// 문자만 허용해두면 이 값이 나중에 다른 용도로 쓰이게 되더라도 같은 걱정을 새로 할 필요가 없다.
+const SAFE_SUBPATH = /^[a-zA-Z0-9/_-]+$/
 if (process.env.VERCEL) {
   app.use((req, res, next) => {
     const subpath = req.query?.vercelSubpath
-    if (typeof subpath === 'string') {
+    if (typeof subpath === 'string' && SAFE_SUBPATH.test(subpath)) {
       const [, search = ''] = req.url.split('?')
       const params = new URLSearchParams(search)
       params.delete('vercelSubpath')
@@ -299,7 +355,10 @@ if (process.env.VERCEL) {
   })
 }
 
-app.post('/api/gemini', geminiLimiter, async (req, res) => {
+// FR-6 — /api/gemini의 실제 처리 로직을 함수로 뽑아 /api/chat(Meal-Bot 챗봇)과 공유한다. 두 라우트는
+// 서로 다른(분리된) 리미터를 쓴다 — 챗봇을 많이 써도 사진 분석(/api/gemini)의 30회/10분 한도가
+// 줄어들지 않는다. 로직 자체는 완전히 동일하게 옮겼을 뿐 아무것도 바꾸지 않았다.
+async function handleGeminiRequest(req, res) {
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) {
     return res.status(500).json({ error: 'OPENROUTER_API_KEY is not configured on the server' })
@@ -352,9 +411,16 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
     let openRouterRes = await callOpenRouter(requestBody)
     let data = await openRouterRes.json()
 
-    // 스키마 강제가 원인일 수 있는 실패(4xx)면 스키마 없이 1회 재시도한다 — 모델/프로바이더가
-    // 구조화 출력을 거부해도 기능 전체가 죽지 않게. 클라이언트의 parseJsonLoose가 그 폴백을 받는다.
-    if (!openRouterRes.ok && requestBody.response_format && openRouterRes.status < 500) {
+    // 스키마 강제가 원인일 수 있는 실패면 스키마 없이 1회 재시도한다 — 모델/프로바이더가 구조화
+    // 출력을 거부해도 기능 전체가 죽지 않게. 클라이언트의 parseJsonLoose가 그 폴백을 받는다.
+    //
+    // ⚠️ 조건을 "4xx 전체"로 두면 안 된다. 429(레이트리밋)·401(키)·402(크레딧)까지 폴백을 타는데,
+    // 그 재요청 본문에는 base64 이미지가 그대로 다시 들어간다. fetchWithRetry가 429를 이미 최대
+    // 4회 재시도하므로 사용자 탭 한 번에 이미지 포함 요청이 최대 8회 나가고 — 레이트리밋 상황에서
+    // 호출량을 오히려 두 배로 늘려 상황을 악화시킨다. 게다가 429 백오프(~7초) + 폴백 요청까지
+    // 더하면 Vercel maxDuration 30초를 넘겨 함수가 죽는다(클라이언트는 28초에 이미 포기한 뒤라
+    // 그 시간과 토큰은 100% 낭비). 스키마 거부를 실제로 뜻하는 코드만 남긴다.
+    if (!openRouterRes.ok && requestBody.response_format && SCHEMA_FALLBACK_STATUSES.has(openRouterRes.status)) {
       console.warn(
         `OpenRouter response_format 요청 실패(${openRouterRes.status}) — 스키마 없이 재시도:`,
         data?.error?.message || '',
@@ -370,7 +436,7 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
       return res.status(openRouterRes.status).json({ error: data?.error?.message || 'OpenRouter API error' })
     }
 
-    // 토큰 사용량·응답 시간 로그 — docs/04-프로젝트설명/cost-analysis.md의 추정치를 실측값으로 교체할 때 근거로 쓴다.
+    // 토큰 사용량·응답 시간 로그 — docs/04-프로젝트설명.md "비용 분석" 절의 추정치를 실측값으로 교체할 때 근거로 쓴다.
     if (data?.usage) {
       console.log(
         `Gemini usage: prompt=${data.usage.prompt_tokens ?? '?'} completion=${data.usage.completion_tokens ?? '?'} ` +
@@ -384,7 +450,19 @@ app.post('/api/gemini', geminiLimiter, async (req, res) => {
   } catch (err) {
     respondToProxyError(res, err, 'OpenRouter proxy request')
   }
+}
+
+app.post('/api/gemini', geminiLimiter, handleGeminiRequest)
+// Meal-Bot 챗봇 전용 — 시간당 15회(사용자 확인 필요 항목, 확장기능_구현프롬프트.md 참고). 대화가
+// 자유 텍스트(schema 없음)로 geminiComplete를 호출하면 이 라우트로 온다.
+const chatLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: '잠시 후 다시 시도해주세요.' },
 })
+app.post('/api/chat', chatLimiter, handleGeminiRequest)
 
 // POST /api/precision-analyze - 6주차 §1 정밀 영양 산출 엔진(precisionEngine.analyzeTray) 프록시.
 // menus(메뉴명 배열)만 프론트가 넘기면 나머지(식약처 DB 매칭·Gemini 폴백·캘리브레이션)는 서버가
@@ -396,11 +474,48 @@ app.post('/api/precision-analyze', geminiLimiter, async (req, res) => {
   if (!Array.isArray(menus) || menus.length === 0 || !menus.every((m) => typeof m === 'string' && m.trim())) {
     return res.status(400).json({ error: 'menus(문자열 배열)가 필요합니다' })
   }
+  if (menus.length > PRECISION_ANALYZE_MAX_MENUS) {
+    return res.status(400).json({ error: `menus는 최대 ${PRECISION_ANALYZE_MAX_MENUS}개까지 처리합니다` })
+  }
   try {
     const result = await analyzeTray({ menus, mealType, schoolType, officialTotals: officialTotals ?? null })
     res.json(result)
   } catch (err) {
     respondToProxyError(res, err, '/api/precision-analyze')
+  }
+})
+
+// POST /api/resolve-food - 통합 해석 엔진(server/nutrition/resolveFood.js) 프록시.
+//
+// 예전엔 클라이언트(Analyze.jsx findFoodMatch)가 항목마다 /api/fooddb를 **최대 9번 순차** 호출했다.
+// 음식 5개짜리 사진이면 45요청이라 IP당 60요청/분 제한(apiLimiter)에 스스로 걸렸고, 최악 지연은
+// 75초에 달했다. 이제 항목 배열을 한 번에 받아 요청 1회로 끝낸다.
+//
+// 지연 상한은 서버가 직접 강제한다(deadlineMs) — 예산을 넘겨도 에러가 아니라 그 시점까지 확보한
+// 결과로 정상 응답하므로, 느린 업스트림이 사용자 화면을 멈춰 세우지 못한다.
+// Gemini를 호출하지 않으므로(식별은 이미 끝난 상태로 들어온다) geminiLimiter는 걸지 않는다.
+app.post('/api/resolve-food', async (req, res) => {
+  const { items, deadlineMs, context } = req.body || {}
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'items(배열)가 필요합니다' })
+  }
+  if (items.length > RESOLVE_FOOD_MAX_ITEMS) {
+    return res.status(400).json({ error: `items는 최대 ${RESOLVE_FOOD_MAX_ITEMS}개까지 처리합니다` })
+  }
+
+  try {
+    const budget = Number(deadlineMs)
+    const resolved = await resolveFoodItems(items, {
+      // 클라이언트가 더 짧은 예산을 요구하면 존중하되, 서버 상한을 넘기지는 못하게 한다.
+      deadlineMs: Number.isFinite(budget) && budget > 0 ? Math.min(budget, RESOLVE_FOOD_MAX_DEADLINE_MS) : undefined,
+      searchRemote: lookupFoodSafety,
+      // 요청 전체의 기본 맥락. 알 수 없는 값이 오면 'restaurant'로 떨어뜨린다.
+      // 항목별 servingContext(AI가 사진을 보고 판정한 값)는 resolveFoodItems 안에서 이것보다 우선한다.
+      context: RESOLVE_FOOD_CONTEXTS.has(context) ? context : 'restaurant',
+    })
+    res.json({ items: resolved })
+  } catch (err) {
+    respondToProxyError(res, err, '/api/resolve-food')
   }
 })
 
@@ -421,6 +536,109 @@ app.get('/api/food-serving', (req, res) => {
     return res.json({ servingGram: null, matched: false, matchType: null })
   }
   res.json({ servingGram: result.item.servingGram ?? null, matched: true, matchType: result.matchType })
+})
+
+// ── FR-21: 비밀번호 찾기(보안 질문 방식) ──────────────────────────────────────────
+// 이 앱의 로그인 ID는 실제 메일을 주고받지 않는 합성 이메일(<id>@mealyze.app, src/lib/authId.js)로
+// Supabase Auth에 등록되어 이메일 인증 재설정이 불가능하다 — 가입 시 등록한 보안 질문/답으로 본인
+// 확인 후 서버(SERVICE_ROLE_KEY)가 직접 비밀번호를 바꿔준다. 여기서 서버가 처음으로 Supabase를
+// 직접 호출한다(그 외 모든 라우트는 클라이언트가 anon key + RLS로 직접 접근).
+const authWriteLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' },
+})
+const authReadLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' },
+})
+// 비밀번호 재설정 자체는 IP 제한(보조 방어)만으로 충분하지 않다 — securityQuestionStore.js의 계정
+// (login_id) 단위 DB 잠금이 주 방어선이다(IP를 바꿔도 우회할 수 없음).
+const authResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' },
+})
+
+const GENERIC_RESET_ERROR = '아이디 또는 답변이 올바르지 않습니다.'
+
+// 가입 직후 클라이언트가 자신의 세션 access_token을 실어 보안 질문/답을 등록한다.
+app.post('/api/auth/security-question/register', authWriteLimiter, async (req, res) => {
+  const authHeader = req.headers.authorization || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null
+  if (!token) {
+    return res.status(401).json({ error: '로그인이 필요합니다' })
+  }
+
+  const { questionId, answer } = req.body || {}
+  const questionError = validateQuestionId(questionId)
+  const answerError = validateSecurityAnswer(answer)
+  if (questionError || answerError) {
+    return res.status(400).json({ error: questionError || answerError })
+  }
+
+  try {
+    const admin = getSupabaseAdmin()
+    const { data: userData, error: userError } = await admin.auth.getUser(token)
+    if (userError || !userData?.user) {
+      return res.status(401).json({ error: '로그인이 필요합니다' })
+    }
+
+    const user = userData.user
+    const loginId = normalizeLoginId(user.user_metadata?.login_id || String(user.email || '').split('@')[0])
+    await registerSecurityQuestion({ userId: user.id, loginId, questionId, answer: normalizeSecurityAnswer(answer) })
+    res.json({ success: true })
+  } catch (err) {
+    respondToProxyError(res, err, '/api/auth/security-question/register')
+  }
+})
+
+// GET /api/auth/security-question?loginId=◯◯ - 비밀번호 찾기 1단계(아이디 입력 → 등록된 질문 표시).
+app.get('/api/auth/security-question', authReadLimiter, async (req, res) => {
+  const loginId = typeof req.query.loginId === 'string' ? normalizeLoginId(req.query.loginId) : ''
+  if (!loginId) {
+    return res.status(400).json({ error: 'loginId is required' })
+  }
+  res.set('Cache-Control', 'no-store')
+
+  try {
+    const row = await getSecurityQuestionByLoginId(loginId)
+    if (!row) return res.json({ found: false })
+    const question = findSecurityQuestion(row.questionId)
+    res.json({ found: true, question: question?.question ?? null })
+  } catch (err) {
+    respondToProxyError(res, err, '/api/auth/security-question')
+  }
+})
+
+// POST /api/auth/reset-password - 비밀번호 찾기 2단계(답 확인 + 새 비밀번호 설정).
+app.post('/api/auth/reset-password', authResetLimiter, async (req, res) => {
+  const { loginId: rawLoginId, answer, newPassword } = req.body || {}
+  const loginId = typeof rawLoginId === 'string' ? normalizeLoginId(rawLoginId) : ''
+  const answerError = validateSecurityAnswer(answer)
+  const passwordError = validatePassword(newPassword)
+  if (!loginId || answerError || passwordError) {
+    return res.status(400).json({ error: passwordError || answerError || 'loginId is required' })
+  }
+
+  try {
+    const result = await verifyAndResetPassword({ loginId, answer: normalizeSecurityAnswer(answer), newPassword })
+    if (result === 'ok') return res.json({ success: true })
+    if (result === 'locked') {
+      return res.status(429).json({ error: '시도가 너무 많아요. 15분 후 다시 시도해주세요.' })
+    }
+    // 'wrong'과 'not_found'를 같은 문구로 응답해 계정 존재 여부를 드러내지 않는다.
+    return res.status(400).json({ error: GENERIC_RESET_ERROR })
+  } catch (err) {
+    respondToProxyError(res, err, '/api/auth/reset-password')
+  }
 })
 
 // POST /api/places - 카카오 키워드 장소 검색 프록시 (KAKAO_REST_API_KEY는 서버에서만 사용)
@@ -597,9 +815,17 @@ app.post('/api/naver-places', async (req, res) => {
   if (!query || typeof query !== 'string' || !query.trim()) {
     return res.status(400).json({ error: 'query is required' })
   }
+  const trimmedQuery = query.trim()
+
+  const cachedPlaces = placesCache.get(trimmedQuery)
+  if (cachedPlaces) {
+    console.log('[cache] naver-places hit', trimmedQuery)
+    return res.json(cachedPlaces)
+  }
+  console.log('[cache] naver-places miss', trimmedQuery)
 
   const url = new URL(NAVER_LOCAL_SEARCH_URL)
-  url.searchParams.set('query', query.trim())
+  url.searchParams.set('query', trimmedQuery)
   // display 실측(2026-07): 10/15/30을 요청해도 항상 최대 5건만 반환된다(API Hub 지역 검색의 실질
   // 상한). 후보 풀을 늘리려면 이 값이 아니라 "서로 다른 키워드로 병렬 검색"을 늘려야 한다(MapPage).
   url.searchParams.set('display', '5')
@@ -657,6 +883,7 @@ app.post('/api/naver-places', async (req, res) => {
       }
     })
 
+    placesCache.set(trimmedQuery, places)
     res.json(places)
   } catch (err) {
     respondToProxyError(res, err, 'Naver local search proxy request')
@@ -735,26 +962,48 @@ async function callFoodSafetyApi(baseUrl, apiKey, foodName, rawKey) {
   return { upstreamRes, raw, data }
 }
 
-// POST /api/fooddb - 식약처 전국통합식품영양성분정보 검색 프록시. body.source로 "음식"(기본) / "가공식품" DB를 선택한다.
-// (FOODSAFETY_API_KEY / FOODSAFETY_PROC_API_KEY는 서버에서만 사용)
-app.post('/api/fooddb', async (req, res) => {
-  const { foodName, source = 'food' } = req.body || {}
+// 진행 중인 식약처 조회를 검색어+소스 단위로 합치는 맵. foodDbCache는 **완료된 뒤에만** 효과가
+// 있어서, 같은 음식이 여러 개 담긴 사진(예: 반찬 트레이)이 동시에 같은 이름을 조회하면 전부 캐시를
+// 놓치고 업스트림을 그대로 때렸다. 여기에 진행 중 promise를 담아 첫 요청 하나만 나가게 한다.
+// (src/lib/menuNutrition.js가 클라이언트에서 쓰던 패턴을 서버로 옮긴 것.)
+const foodDbInflight = new Map()
 
+// 실패/무결과를 짧게 기억하는 네거티브 캐시. 예전엔 에러를 전혀 캐싱하지 않아, 업스트림이 죽어
+// 있으면 재시도할 때마다 5~10초 타임아웃 비용을 처음부터 다시 지불했다.
+const FOODDB_NEGATIVE_TTL_SECONDS = 60
+
+function connectionFailedError(message) {
+  const err = new Error(message)
+  err.code = 'FOODDB_CONNECTION_FAILED'
+  return err
+}
+
+// 식약처 음식/가공식품 DB 조회 — 캐시 → 인플라이트 합류 → 업스트림 순.
+// 성공 시 normalizeFoodItem 배열을 반환하고, 연결 실패는 code='FOODDB_CONNECTION_FAILED'로 던진다.
+// /api/fooddb와 /api/resolve-food가 같은 함수를 공유해 캐시·중복제거 효과를 함께 누린다.
+async function lookupFoodSafety(foodName, source) {
   const sourceConfig = FOODSAFETY_SOURCES[source]
-  if (!sourceConfig) {
-    return res.status(400).json({ error: `source must be one of: ${Object.keys(FOODSAFETY_SOURCES).join(', ')}` })
-  }
-
+  if (!sourceConfig) throw new Error(`unknown source: ${source}`)
   const apiKey = process.env[sourceConfig.envKey]
   if (!apiKey) {
-    return res.status(500).json({ error: `${sourceConfig.envKey} is not configured on the server` })
+    const err = new Error(`${sourceConfig.envKey} is not configured on the server`)
+    err.status = 500
+    throw err
   }
 
-  if (!foodName || typeof foodName !== 'string' || !foodName.trim()) {
-    return res.status(400).json({ error: 'foodName is required' })
+  const cacheKey = `${source}:${foodName}`
+  const cached = foodDbCache.get(cacheKey)
+  if (cached) {
+    console.log('[cache] fooddb hit', cacheKey)
+    // 네거티브 캐시 항목은 저장할 때 감싼 모양 그대로 돌려주지 않고 원래 실패로 되살린다.
+    if (cached.__failed) throw connectionFailedError('식약처 API 서버에 연결할 수 없습니다(최근 실패 캐시)')
+    return cached
   }
 
-  try {
+  const inflight = foodDbInflight.get(cacheKey)
+  if (inflight) return inflight
+
+  const promise = (async () => {
     let { upstreamRes, raw, data } = await callFoodSafetyApi(sourceConfig.url, apiKey, foodName, false)
 
     // JSON 파싱 실패(보통 서비스키 인증 오류 시 XML로 응답) 또는 인증 오류 메시지면 반대 방식(raw key)으로 재시도
@@ -764,41 +1013,109 @@ app.post('/api/fooddb', async (req, res) => {
 
     if (!data) {
       console.error(`FoodSafety API(${source}): JSON 파싱 실패, 원본 응답 일부:`, raw.slice(0, 500))
-      return res.status(502).json({ error: '식약처 API 응답을 해석할 수 없습니다' })
+      const err = new Error('식약처 API 응답을 해석할 수 없습니다')
+      err.status = 502
+      throw err
     }
 
     const resultCode = data?.response?.header?.resultCode
 
     // resultCode 03 = NODATA_ERROR: 검색 결과가 없다는 정상 응답(이때는 body 자체가 없다)이라 빈 배열로 처리한다.
     if (resultCode === '03') {
-      return res.json([])
+      foodDbCache.set(cacheKey, [])
+      return []
     }
 
     const items = extractFoodItems(data)
-
     if (items === null) {
       console.error(`FoodSafety API(${source}): items 구조를 찾을 수 없음, 원본 응답 일부:`, JSON.stringify(data).slice(0, 500))
-      return res.status(502).json({ error: `식약처 API 응답 형식이 예상과 다릅니다 (resultCode: ${resultCode ?? '알 수 없음'})` })
+      const err = new Error(`식약처 API 응답 형식이 예상과 다릅니다 (resultCode: ${resultCode ?? '알 수 없음'})`)
+      err.status = 502
+      throw err
     }
 
     if (!upstreamRes.ok && items.length === 0) {
       console.error(`FoodSafety API(${source}) error:`, resultCode, data?.response?.header?.resultMsg)
-      return res.status(upstreamRes.status).json({ error: data?.response?.header?.resultMsg || 'FoodSafety API error' })
+      const err = new Error(data?.response?.header?.resultMsg || 'FoodSafety API error')
+      err.status = upstreamRes.status
+      throw err
     }
 
-    res.json(items.map(normalizeFoodItem))
+    const payload = items.map(normalizeFoodItem)
+    foodDbCache.set(cacheKey, payload)
+    return payload
+  })()
+    .catch((err) => {
+      // 네트워크 연결 실패(타임아웃 포함)만 네거티브 캐싱한다 — 파싱/형식 오류는 검색어에 따라
+      // 달라질 수 있어 짧게라도 기억하면 멀쩡한 검색어까지 막을 수 있다.
+      if (!err.status) {
+        foodDbCache.set(cacheKey, { __failed: true }, FOODDB_NEGATIVE_TTL_SECONDS)
+        throw connectionFailedError(err.message)
+      }
+      throw err
+    })
+    .finally(() => {
+      foodDbInflight.delete(cacheKey)
+    })
+
+  foodDbInflight.set(cacheKey, promise)
+  return promise
+}
+
+// POST /api/fooddb - 식약처 전국통합식품영양성분정보 검색 프록시. body.source로 "음식"(기본) / "가공식품" DB를 선택한다.
+// (FOODSAFETY_API_KEY / FOODSAFETY_PROC_API_KEY는 서버에서만 사용)
+//
+// FR-8 — source==='local-fuzzy'는 식약처 실시간 API를 아예 안 거친다. findFoodMatch의 7단계 완전일치
+// 시도가 전부 실패했을 때만 클라이언트가 이 source로 마지막 8번째 요청을 보내고, 이미 검증된 로컬
+// 유사 매칭(precisionEngine이 쓰는 것과 같은 foodLookup.js)을 그대로 재사용한다 — foodLookup.js
+// 자체는 수정하지 않는다. load()가 지연 로드(첫 호출 시에만 5.3MB 파싱)라 이 폴백이 실제로 트리거되는
+// 요청에서만 그 비용을 치른다.
+//
+// 레시피DB(COOKRCP01)는 이제 이 라우트를 거치지 않는다 — 전체 1,141건을 빌드 타임에 번들해
+// (scripts/buildRecipeDB.js → server/data/recipeDB.json) 서버 메모리에서 바로 조회하므로,
+// /api/resolve-food가 로컬 음식DB와 함께 in-process로 본다(server/nutrition/recipeLookup.js).
+app.post('/api/fooddb', async (req, res) => {
+  const { foodName, source = 'food' } = req.body || {}
+
+  if (source === 'local-fuzzy') {
+    if (!foodName || typeof foodName !== 'string' || !foodName.trim()) {
+      return res.status(400).json({ error: 'foodName is required' })
+    }
+    // 안정성 점검(Phase B) — 이 분기만 try/catch 없이 나가 있으면(foodDB.json 최초 로드 실패 등)
+    // 다른 모든 실패 경로와 다르게 이 앱의 일관된 JSON 에러 모양({error: ...}) 대신 Express 기본
+    // 에러 응답이 나가 프론트의 res.json() 파싱 기대와 어긋난다.
+    try {
+      const result = lookupFood(foodName)
+      return res.json(result ? [toFoodItemResponse(result.item)] : [])
+    } catch (err) {
+      console.error('local-fuzzy lookup failed:', err)
+      return res.status(500).json({ error: '로컬 매칭 조회에 실패했습니다' })
+    }
+  }
+
+  if (!FOODSAFETY_SOURCES[source]) {
+    return res.status(400).json({ error: `source must be one of: ${Object.keys(FOODSAFETY_SOURCES).join(', ')}` })
+  }
+
+  if (!foodName || typeof foodName !== 'string' || !foodName.trim()) {
+    return res.status(400).json({ error: 'foodName is required' })
+  }
+
+  try {
+    const payload = await lookupFoodSafety(foodName.trim(), source)
+    res.json(payload)
   } catch (err) {
-    // 이 catch에 도달하는 예외는 전부 식약처 서버로의 네트워크 연결 실패(타임아웃 포함)다.
-    // 그 외 실패 케이스는 위에서 전부 명시적으로 status를 응답하고 return하기 때문이다.
-    // 배포 리전(해외 IP)에서는 api.data.go.kr 접속이 아예 안 되는 경우가 있는데, 이를 "검색
-    // 결과 없음"(NODATA, 200 [])과 똑같이 응답하면 프론트가 계속 나머지 소스/재검색어로
-    // 재시도한다 — 연결 자체가 안 되는 상황에서는 그 재시도도 전부 똑같이 실패할 뿐이라
-    // 시간만 누적된다. 그래서 코드(FOODDB_CONNECTION_FAILED)를 실어 503으로 응답해 프론트가
-    // "연결 실패"와 "결과 없음"을 구분해, 연결 실패일 때는 남은 재시도를 건너뛰고 즉시 AI
-    // 추정치로 폴백하도록 한다(findFoodMatch 참고). 국내(로컬)에서는 연결이 정상이라 이 분기를
-    // 타지 않고 기존처럼 식약처 DB를 계속 활용한다.
-    console.error(`FoodSafety proxy(${source}) upstream connection failed:`, err.message)
-    res.status(503).json({ error: '식약처 API 서버에 연결할 수 없습니다', code: 'FOODDB_CONNECTION_FAILED' })
+    if (err.code === 'FOODDB_CONNECTION_FAILED') {
+      // 배포 리전(해외 IP)에서는 api.data.go.kr 접속이 아예 안 되는 경우가 있는데, 이를 "검색
+      // 결과 없음"(NODATA, 200 [])과 똑같이 응답하면 프론트가 계속 나머지 소스/재검색어로
+      // 재시도한다 — 연결 자체가 안 되는 상황에서는 그 재시도도 전부 똑같이 실패할 뿐이라
+      // 시간만 누적된다. 그래서 코드를 실어 503으로 응답해 프론트가 "연결 실패"와 "결과 없음"을
+      // 구분하고, 연결 실패일 때는 남은 재시도를 건너뛰게 한다.
+      console.error(`FoodSafety proxy(${source}) upstream connection failed:`, err.message)
+      return res.status(503).json({ error: '식약처 API 서버에 연결할 수 없습니다', code: 'FOODDB_CONNECTION_FAILED' })
+    }
+    console.error(`FoodSafety API(${source}) 조회 실패:`, err.message)
+    res.status(err.status || 502).json({ error: err.message || 'FoodSafety API error' })
   }
 })
 
@@ -952,12 +1269,20 @@ app.get('/api/univ-meal', async (req, res) => {
     }
   }
 
-  const fallbackWeek = univMealFallbackData[univ] ?? null
-  const result = resolveCnuWeekResult({ liveResult, fallbackWeek })
-  if (!forceFailure) {
-    setCachedWithTtl(cacheKey, result, UNIV_WEEK_CACHE_TTL_MS)
+  // 안정성 점검(Phase B) — 위 크롤링 실패는 의도적으로 삼켜 폴백으로 넘어가지만(정상 동작), 아래
+  // 두 줄은 이 라우트의 다른 모든 실패 경로와 다르게 try/catch 밖에 있었다 — resolveCnuWeekResult가
+  // 예상 못한 입력(손상된 폴백 JSON 등)에 던지면 이 앱의 일관된 JSON 에러 모양 대신 Express 기본
+  // 에러 응답이 나갔다.
+  try {
+    const fallbackWeek = univMealFallbackData[univ] ?? null
+    const result = resolveCnuWeekResult({ liveResult, fallbackWeek })
+    if (!forceFailure) {
+      setCachedWithTtl(cacheKey, result, UNIV_WEEK_CACHE_TTL_MS)
+    }
+    res.json(result)
+  } catch (err) {
+    respondToProxyError(res, err, `univ-meal(${univ}) resolve`)
   }
-  res.json(result)
 })
 
 // Render처럼 이 서버 프로세스 하나가 빌드된 프론트(dist)까지 함께 서빙하는 배포에서만 켠다.

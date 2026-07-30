@@ -70,7 +70,7 @@ describe('AnalysisResultCard — 저장 전 수동 보정(트랙 2 §4)', () => 
 
     fireEvent.click(screen.getByText('직접 수정'))
 
-    expect(screen.getByLabelText('칼로리')).toHaveValue(300)
+    expect(screen.getByLabelText('칼로리')).toHaveValue('300')
     expect(onEditNutrients).not.toHaveBeenCalled()
   })
 
@@ -103,7 +103,7 @@ describe('AnalysisResultCard — 저장 전 수동 보정(트랙 2 §4)', () => 
 
     fireEvent.click(screen.getByText('직접 수정'))
     // 2인분 표시라 칼로리 입력 초깃값은 600(300*2)이어야 한다.
-    expect(screen.getByLabelText('칼로리')).toHaveValue(600)
+    expect(screen.getByLabelText('칼로리')).toHaveValue('600')
 
     fireEvent.change(screen.getByLabelText('칼로리'), { target: { value: '500' } })
     fireEvent.click(screen.getByText('적용'))
@@ -133,5 +133,64 @@ describe('AnalysisResultCard — 저장 전 수동 보정(트랙 2 §4)', () => 
 
     expect(onEditNutrients).not.toHaveBeenCalled()
     expect(screen.getByText('직접 수정')).toBeInTheDocument()
+  })
+})
+
+// 조리법 보정 — AI가 정한 DB 검색명이 틀렸을 때 1탭으로 고쳐 재조회하는 줄.
+// 이 앱의 정확도는 dbSearchName 하나에 걸려 있고, 그중 가장 자주 틀리는 축이 조리법이다.
+describe('AnalysisResultCard — 조리법 보정', () => {
+  const CORRECTION = { searchName: '고등어구이', matchedName: '고등어구이', busy: false, onCorrect: () => {} }
+
+  it('correction을 주지 않으면 보정 줄이 아예 안 보인다 — 기존 화면과 동일', () => {
+    render(<AnalysisResultCard {...BASE_PROPS} analysis={SINGLE_ITEM_ANALYSIS} />)
+    expect(screen.queryByRole('button', { name: '조림' })).not.toBeInTheDocument()
+  })
+
+  it('correction을 주면 조리법 칩과 "무엇으로 계산했는지"를 보여준다', () => {
+    render(<AnalysisResultCard {...BASE_PROPS} analysis={SINGLE_ITEM_ANALYSIS} correction={CORRECTION} />)
+    expect(screen.getByText('고등어구이')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '조림' })).toBeInTheDocument()
+  })
+
+  it('현재 조리법 칩은 선택 상태이고 다시 누를 수 없다 — 재조회할 이유가 없으므로', () => {
+    render(<AnalysisResultCard {...BASE_PROPS} analysis={SINGLE_ITEM_ANALYSIS} correction={CORRECTION} />)
+    const current = screen.getByRole('button', { name: '구이' })
+    expect(current).toHaveAttribute('aria-pressed', 'true')
+    expect(current).toBeDisabled()
+  })
+
+  it('다른 조리법을 누르면 그 조리법으로 재조회를 요청한다', () => {
+    const onCorrect = vi.fn()
+    render(<AnalysisResultCard {...BASE_PROPS} analysis={SINGLE_ITEM_ANALYSIS} correction={{ ...CORRECTION, onCorrect }} />)
+    fireEvent.click(screen.getByRole('button', { name: '조림' }))
+    expect(onCorrect).toHaveBeenCalledWith('조림')
+  })
+
+  it('DB 매칭에 실패했으면 AI 추정으로 계산했다고 알린다', () => {
+    render(
+      <AnalysisResultCard {...BASE_PROPS} analysis={SINGLE_ITEM_ANALYSIS} correction={{ ...CORRECTION, matchedName: null }} />,
+    )
+    expect(screen.getByText(/DB에서 못 찾아 AI 추정으로 계산했어요/)).toBeInTheDocument()
+  })
+
+  it('재조회 중에는 칩을 눌러도 요청이 겹치지 않게 막는다', () => {
+    const onCorrect = vi.fn()
+    render(<AnalysisResultCard {...BASE_PROPS} analysis={SINGLE_ITEM_ANALYSIS} correction={{ ...CORRECTION, busy: true, onCorrect }} />)
+    expect(screen.getByRole('button', { name: '조림' })).toBeDisabled()
+  })
+})
+
+// 판 단위 검증 — 합계가 그 장면의 현실 범위를 벗어났을 때만 뜬다. **수치는 그대로 두고 알리기만**
+// 한다(정답지 없이 밴드로 값을 깎지 않는다는 원칙, src/lib/mealStandards.js 참고).
+describe('AnalysisResultCard — 판 단위 검증 경고', () => {
+  it('plateWarning이 없으면 아무것도 그리지 않는다', () => {
+    render(<AnalysisResultCard {...BASE_PROPS} />)
+    expect(screen.queryByText(/이례적|보다 많습니다|보다 적습니다/)).not.toBeInTheDocument()
+  })
+
+  it('plateWarning이 있으면 문구를 보여주되 합계 수치는 건드리지 않는다', () => {
+    render(<AnalysisResultCard {...BASE_PROPS} plateWarning="총 1800kcal은 학교급식 한 끼 기준 약 800kcal보다 많습니다." />)
+    expect(screen.getByText(/학교급식 한 끼 기준 약 800kcal보다 많습니다/)).toBeInTheDocument()
+    expect(screen.getAllByText('380').length).toBeGreaterThan(0) // 원래 합계 그대로(경고가 값을 바꾸지 않는다)
   })
 })

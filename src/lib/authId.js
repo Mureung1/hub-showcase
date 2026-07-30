@@ -25,7 +25,8 @@ import { get, set } from './storage.js'
 // 인증 내부용 합성 이메일의 도메인. 실제로 메일을 주고받지 않는 네임스페이스지만, 일부 이메일 형식
 // 검증기가 알 수 없는 TLD를 거부하는 경우가 있어 실재하는 TLD를 쓴다. 바꿔야 한다면 이 한 줄만 고치면
 // 되지만, 이미 가입한 계정의 로그인이 전부 깨지므로 운영 중에는 절대 바꾸지 말 것.
-export const ID_EMAIL_DOMAIN = 'mealyze.app'
+// 안정성 점검(Phase B) — 이 파일 밖에서 이 상수를 쓰는 곳이 없어 export를 뗐다(이 파일 안에서는 계속 쓴다).
+const ID_EMAIL_DOMAIN = 'mealyze.app'
 
 // PRD FR-1.1: 영문 소문자 + 숫자, 4~20자.
 const LOGIN_ID_RE = /^[a-z0-9]{4,20}$/

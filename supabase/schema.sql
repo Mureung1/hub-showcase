@@ -39,6 +39,15 @@ create table if not exists public.profiles (
   -- 형태: { "calories":n, "protein":n, "carbs":n, "fat":n, "fiber":n, "sodium":n }
   recommended   jsonb not null default '{}',
 
+  -- 게이미피케이션 v2: 누적 총 경험치. 레벨/진행률은 src/lib/levelSystem.js가 이 값 하나로 매번
+  -- 다시 계산한다(SQL에 공식을 복제하지 않음). 신체정보(age/sex 등)와 무관하게 독립적으로 갱신되므로
+  -- 온보딩 전 사용자도 값을 쌓을 수 있다.
+  total_xp      integer not null default 0 check (total_xp >= 0),
+
+  -- 게이미피케이션 v3(FR-15): 리더보드에 표시할 닉네임. 가입 시 UserContext.jsx의 signup()이 즉시
+  -- 채운다(온보딩 전에도 반영). get_xp_leaderboard()가 유일하게 이 값을 다른 사용자에게 노출한다.
+  nickname      text,
+
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );
@@ -245,18 +254,157 @@ $$;
 revoke all on function public.get_daily_leaderboard() from public;
 grant execute on function public.get_daily_leaderboard() to authenticated;
 
+-- ---------------------------------------------------------------------
+-- 8) quest_claims: 게이미피케이션 v2 — 퀘스트(src/lib/quests.js) 수령 이력. 날짜+퀘스트 단위로
+--    한 번만 수령할 수 있게 (user_id,date,quest_id) 유니크 제약을 최종 방어선으로 둔다.
+-- ---------------------------------------------------------------------
+create table if not exists public.quest_claims (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  date        date not null,
+  quest_id    text not null,
+  xp_awarded  integer not null check (xp_awarded >= 0),
+  created_at  timestamptz not null default now(),
+  unique (user_id, date, quest_id)
+);
+
+comment on table public.quest_claims is '퀘스트 수령 이력. (user_id,date,quest_id) 유니크 제약으로 중복 지급 방지.';
+
+create index if not exists idx_quest_claims_user_id on public.quest_claims (user_id);
+
+alter table public.quest_claims enable row level security;
+
+create policy "quest_claims_select_own" on public.quest_claims for select to authenticated using (auth.uid() = user_id);
+create policy "quest_claims_insert_own" on public.quest_claims for insert to authenticated with check (auth.uid() = user_id);
+create policy "quest_claims_update_own" on public.quest_claims for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "quest_claims_delete_own" on public.quest_claims for delete to authenticated using (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------
+-- 9) badge_unlocks: 게이미피케이션 v2 — 뱃지(src/lib/badgeSystem.js) 잠금해제 이력(영구 보존).
+--    도감 화면은 조건을 재평가하지 않고 이 테이블에 있는 것만 신뢰한다(스트릭이 끊겨도 유지).
+-- ---------------------------------------------------------------------
+create table if not exists public.badge_unlocks (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  badge_id     text not null,
+  unlocked_at  timestamptz not null default now(),
+  unique (user_id, badge_id)
+);
+
+comment on table public.badge_unlocks is '뱃지 잠금해제 이력(영구 보존). (user_id,badge_id) 유니크 제약으로 중복 방지.';
+
+create index if not exists idx_badge_unlocks_user_id on public.badge_unlocks (user_id);
+
+alter table public.badge_unlocks enable row level security;
+
+create policy "badge_unlocks_select_own" on public.badge_unlocks for select to authenticated using (auth.uid() = user_id);
+create policy "badge_unlocks_insert_own" on public.badge_unlocks for insert to authenticated with check (auth.uid() = user_id);
+create policy "badge_unlocks_update_own" on public.badge_unlocks for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "badge_unlocks_delete_own" on public.badge_unlocks for delete to authenticated using (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------
+-- 10) increment_total_xp: quest_claims insert가 성공했을 때만 이 RPC로 profiles.total_xp를
+--     원자적으로 더한다. 프로필 행이 아직 없는 사용자(온보딩 전)도 upsert로 안전하게 생성된다 —
+--     age/sex 등은 전부 nullable이라 total_xp만 있는 행도 CHECK 제약을 위반하지 않는다.
+-- ---------------------------------------------------------------------
+create or replace function public.increment_total_xp(p_delta integer)
+returns integer
+language sql
+security definer
+set search_path = public
+as $$
+  insert into public.profiles (id, total_xp)
+  values (auth.uid(), greatest(p_delta, 0))
+  on conflict (id) do update
+    set total_xp = public.profiles.total_xp + greatest(p_delta, 0)
+  returning total_xp;
+$$;
+
+revoke all on function public.increment_total_xp(integer) from public;
+grant execute on function public.increment_total_xp(integer) to authenticated;
+
+-- ---------------------------------------------------------------------
+-- 11) security_questions: 게이미피케이션 v3 — 비밀번호 찾기(보안 질문 방식, FR-21). 이 앱의 로그인
+--     ID는 합성 이메일(<id>@mealyze.app)로 등록되어 이메일 인증 재설정이 불가능해, 가입 시 등록한
+--     보안 질문/답으로 본인 확인 후 서버가 직접 비밀번호를 바꿔준다. answer_hash/answer_salt는
+--     사용자 본인에게도 노출하지 않으므로 RLS는 켜되 정책을 하나도 만들지 않는다 — 오직 서버
+--     (SUPABASE_SERVICE_ROLE_KEY로 RLS 우회, server/supabaseAdmin.js)만 접근한다. login_id는
+--     비밀번호 재설정이 로그인 전(세션 없음) 상태라 auth.uid()를 쓸 수 없어 별도로 둔다.
+-- ---------------------------------------------------------------------
+create table if not exists public.security_questions (
+  user_id       uuid primary key references auth.users(id) on delete cascade,
+  login_id      text not null unique,
+  question_id   text not null,
+  answer_hash   text not null,   -- crypto.scrypt 해시(hex)
+  answer_salt   text not null,   -- 사용자별 salt(hex)
+  fail_count    smallint not null default 0,
+  locked_until  timestamptz,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+
+comment on table public.security_questions is
+  '비밀번호 찾기용 보안 질문/답변 해시. 클라이언트는 RLS로 전부 차단 — 서버(SERVICE_ROLE_KEY)만 읽고 쓴다.';
+
+alter table public.security_questions enable row level security;
+-- 정책 없음(의도적) — RLS enable만으로 anon/authenticated 접근이 전부 막힌다.
+
+create or replace function public.set_updated_at_security_questions()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists trg_security_questions_updated_at on public.security_questions;
+create trigger trg_security_questions_updated_at
+  before update on public.security_questions
+  for each row
+  execute function public.set_updated_at_security_questions();
+
+-- ---------------------------------------------------------------------
+-- 12) get_xp_leaderboard: 게이미피케이션 v3 — 듀오링고식 XP 리더보드(FR-15). total_xp 기준 전체
+--     순위 + 닉네임을 반환한다. get_daily_leaderboard()(7번 섹션, 오늘의 영양 점수)와 달리 닉네임을
+--     의도적으로 반환한다 — "다른 사용자 신원 절대 비노출" 원칙에서 이 함수에 한해 의도적으로
+--     벗어난다(듀오링고식 경쟁 UI는 다른 사람 이름이 보여야 성립). 레벨/진행률은 반환하지 않는다 —
+--     src/lib/levelSystem.js가 total_xp만으로 클라이언트에서 항상 다시 계산한다.
+-- ---------------------------------------------------------------------
+create or replace function public.get_xp_leaderboard()
+returns table (rank bigint, nickname text, total_xp integer, is_me boolean)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    row_number() over (order by p.total_xp desc, p.id) as rank,
+    coalesce(p.nickname, '익명의 도전자') as nickname,
+    p.total_xp,
+    p.id = auth.uid() as is_me
+  from public.profiles p
+  where p.total_xp > 0
+  order by p.total_xp desc, p.id
+  limit 200;
+$$;
+
+revoke all on function public.get_xp_leaderboard() from public;
+grant execute on function public.get_xp_leaderboard() to authenticated;
+
 -- =====================================================================
--- 점검용: 아래 두 SELECT를 SQL Editor에서 따로 실행해 실제 배포된 상태를 눈으로 확인할 수 있다.
+-- 점검용: 아래 SELECT를 SQL Editor에서 따로 실행해 실제 배포된 상태를 눈으로 확인할 수 있다.
 -- (스키마를 이미 적용한 뒤, RLS/정책이 정말 켜져 있는지 재확인하고 싶을 때 이 파일 재실행 없이
 -- 이 블록만 복사해서 써도 된다.)
 -- =====================================================================
 
--- 1) 두 테이블 모두 rowsecurity = true여야 한다. false면 RLS가 꺼진 것 — 즉시 조치 필요.
--- select tablename, rowsecurity from pg_tables where schemaname = 'public' and tablename in ('profiles', 'meals');
+-- 1) 다섯 테이블 모두 rowsecurity = true여야 한다. false면 RLS가 꺼진 것 — 즉시 조치 필요.
+-- select tablename, rowsecurity from pg_tables where schemaname = 'public' and tablename in ('profiles', 'meals', 'quest_claims', 'badge_unlocks', 'security_questions');
 
--- 2) 테이블당 4개(select/insert/update/delete), 총 8개 행이 나와야 하고, qual/with_check 컬럼에
---    전부 auth.uid() 비교식이 들어있어야 한다(비어 있으면 그 동작은 무조건 막히거나 무조건 뚫린 것).
+-- 2) profiles/meals/quest_claims/badge_unlocks는 테이블당 4개(select/insert/update/delete), 총
+--    16개 행이 나와야 하고, qual/with_check 컬럼에 전부 auth.uid() 비교식이 들어있어야 한다(비어
+--    있으면 그 동작은 무조건 막히거나 무조건 뚫린 것). security_questions는 정책이 0행이어야 정상
+--    (서버만 접근하는 의도적 설계).
 -- select tablename, policyname, cmd, roles, qual, with_check
 -- from pg_policies
--- where schemaname = 'public' and tablename in ('profiles', 'meals')
+-- where schemaname = 'public' and tablename in ('profiles', 'meals', 'quest_claims', 'badge_unlocks')
 -- order by tablename, cmd;
+-- select count(*) from pg_policies where schemaname = 'public' and tablename = 'security_questions'; -- 0이어야 정상

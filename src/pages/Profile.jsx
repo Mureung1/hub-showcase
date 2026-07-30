@@ -4,24 +4,28 @@ import { useUser } from '../context/UserContext.jsx'
 import { useToast } from '../context/ToastContext.jsx'
 import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
-import CardSettingsPanel from '../components/CardSettingsPanel.jsx'
 import ChevronIcon from '../components/ChevronIcon.jsx'
 import DataBackupPanel from '../components/DataBackupPanel.jsx'
+import MyDailyQuestWidget from '../components/MyDailyQuestWidget.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
 import SchoolSearchField from '../components/SchoolSearchField.jsx'
 import SegmentedControl from '../components/SegmentedControl.jsx'
-import StandardComparisonList from '../components/StandardComparisonList.jsx'
+import ShortcutGrid from '../components/ShortcutGrid.jsx'
+import StatusCard from '../components/StatusCard.jsx'
 import TagMultiSelect from '../components/TagMultiSelect.jsx'
-import TextField from '../components/TextField.jsx'
+import NumberField from '../components/NumberField.jsx'
+import WaterIntakeCard from '../components/WaterIntakeCard.jsx'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS } from '../lib/healthProfile.js'
 import { calcRecommendedNutrients, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { OCCUPATION_OPTIONS } from '../lib/occupationKeywords.js'
 import { validateBodyInfo } from '../lib/profileValidation.js'
+import { toDateKey } from '../lib/records.js'
 import { OCCUPATION_FOR_UNIVERSITY, occupationForSchoolKind } from '../lib/schoolOccupation.js'
-import { getStandardIntake } from '../lib/standardIntake.js'
 import { TABS } from '../lib/tabs.js'
 import { SUPPORTED_UNIVERSITIES } from '../lib/universities.js'
 import { useDocumentTitle } from '../lib/useDocumentTitle.js'
+import { useQuestBoard } from '../lib/useQuestBoard.js'
+import { getWaterIntake, toggleSupplement } from '../lib/waterIntake.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
 const SEX_OPTIONS = [
@@ -48,7 +52,7 @@ function LabeledSegmentedControl({ label, ...rest }) {
 }
 
 export default function Profile() {
-  const { profile, recommended, tempSex, saveProfile, authMode, logout } = useUser()
+  const { profile, tempSex, saveProfile, authMode, authUser, effectiveUserId, logout } = useUser()
   const { showToast } = useToast()
   const navigate = useNavigate()
   const isOnboarding = !profile
@@ -62,7 +66,40 @@ export default function Profile() {
   // 입력 폼 섹션은 온보딩(첫 입력)일 때는 기본 펼침, MY 탭(이미 프로필이 있는 경우)일 때는 기본
   // 접힘으로 시작한다 — 어느 쪽이든 접었다 펼 수 있다.
   const [expanded, setExpanded] = useState(isOnboarding)
-  const [recommendedExpanded, setRecommendedExpanded] = useState(false)
+  // MY 탭 개편(1a/2a 시안) — "데이터 내보내기/가져오기" 행도 건강 정보와 같은 방식(제자리 펼침)으로
+  // DataBackupPanel(기존 완결된 컴포넌트 — 파일 선택·중복 날짜 다이얼로그·토스트까지 전부 포함)을
+  // 그대로 보여준다. 새 화면/라우트를 만들지 않는다.
+  const [csvExpanded, setCsvExpanded] = useState(false)
+
+  // MY 탭 개편 — 요약 카드("주간 퀘스트 M/5")와 "오늘의 퀘스트" 위젯이 같은 주간 보드 데이터를
+  // 쓰므로 여기서 한 번만 불러와 두 컴포넌트에 그대로 내려준다(각자 다시 fetch하지 않음).
+  // autoClaim: false — 실제 클레임은 끼니 저장 직후 runGamification 또는 /profile/quests 화면
+  // 하나로만 일어난다(useQuestBoard.js 헤더 주석 참고).
+  const { board: questBoard } = useQuestBoard({ weeklyCount: 5, autoClaim: false })
+
+  // MY 탭 개편(1a/2a 시안) — "영양제" 바로가기는 화면 이동 없이 즉시 토글 + 토스트다(⚠️ 임의 변경
+  // 금지 항목). 실제 XP 지급은 이 화면에서 바로 클레임하지 않는다 — supplementTaken은 waterIntake.js
+  // 한 곳에 저장되고, quests.js의 'supplement' 퀘스트 조건이 그 값을 그대로 읽으므로(questBoard.js의
+  // buildContext) 다음에 autoClaim:true 화면(예: /profile/quests, 끼니 저장 직후)을 지날 때 자연히
+  // 정산된다 — 이 화면에서 직접 클레임하면 autoClaim:true 인스턴스가 하나 더 생겨(useQuestBoard.js
+  // 헤더 주석이 경고하는 중복 클레임 레이스) 게스트 쪽에서 이중 지급될 위험이 있다. 토스트 문구의
+  // "+N XP"는 오늘 이미 불러온 questBoard(autoClaim:false)를 보고 "지금 로테이션에 들어있고 아직
+  // 안 받았으면"만 표시한다 — 실제 지급 시점과는 무관하게 순수 안내 문구.
+  const todayKey = toDateKey(new Date())
+  const [supplementTaken, setSupplementTaken] = useState(() => getWaterIntake(effectiveUserId, todayKey).supplementTaken)
+
+  function handleToggleSupplement() {
+    const next = toggleSupplement(effectiveUserId, todayKey)
+    setSupplementTaken(next.supplementTaken)
+    if (next.supplementTaken) {
+      const supplementQuest = questBoard?.daily?.find((q) => q.id === 'supplement')
+      const message =
+        supplementQuest && !supplementQuest.claimed ? `영양제 기록 완료 · +${supplementQuest.xp}XP` : '영양제 기록 완료'
+      showToast(message, { tone: 'success', duration: 1800 })
+    } else {
+      showToast('영양제 기록을 취소했어요', { tone: 'info', duration: 1800 })
+    }
+  }
 
   const [form, setForm] = useState(() => ({
     age: profile?.age?.toString() ?? '',
@@ -96,7 +133,17 @@ export default function Profile() {
   }
 
   function handleSelectK12School(school) {
-    setSelectedSchool({ type: 'k12', officeCode: school.officeCode, code: school.schoolCode, name: school.name, kind: school.kind })
+    // officeName까지 저장한다 — 지도 탭의 학교 핀이 NEIS에 없는 좌표를 이름으로 지오코딩할 때
+    // 지역을 좁히는 데 쓴다(schoolLocation.js buildQuery). 이게 빠져 있어서 "중앙초등학교"처럼
+    // 동명 학교가 수백 km 떨어진 엉뚱한 곳에 찍히고 그대로 캐시됐다(리뷰에서 발견).
+    setSelectedSchool({
+      type: 'k12',
+      officeCode: school.officeCode,
+      officeName: school.officeName,
+      code: school.schoolCode,
+      name: school.name,
+      kind: school.kind,
+    })
     suggestOccupation(occupationForSchoolKind(school.kind))
   }
 
@@ -145,14 +192,6 @@ export default function Profile() {
     })
   }, [form, isComplete])
 
-  // 표준 대비 비교 카드용: 폼을 편집 중이면 그 값을, 아니면 저장된 값을 따른다.
-  const recommendedForDisplay = preview ?? recommended
-  const standardIntake = useMemo(() => {
-    const age = form.age ? Number(form.age) : profile?.age
-    if (!age) return null
-    return getStandardIntake(form.sex, age)
-  }, [form.age, form.sex, profile?.age])
-
   async function handleSave() {
     if (!preview || saving) return
 
@@ -200,36 +239,35 @@ export default function Profile() {
 
   const formFields = (
     <>
-      <TextField
+      {/* type="number"가 아니라 NumberField다 — 안드로이드 웹뷰에서 type=number는 화면 글자를 남긴 채
+          value만 ''로 만들어, 신규 가입자가 신체정보를 다 채워도 저장 버튼이 끝내 안 켜졌다(출시용
+          APK에서 실제 발생, 같은 폰 크롬은 정상). 자세한 근거는 lib/numericInput.js 헤더 주석. */}
+      <NumberField
         label="나이"
         id="profile-age"
-        type="number"
-        min="1"
         autoFocus={isOnboarding}
         placeholder="25"
         value={form.age}
-        onChange={(e) => updateField('age', e.target.value)}
+        onValueChange={(v) => updateField('age', v)}
         error={validation.errors.age}
       />
       <LabeledSegmentedControl label="성별" options={SEX_OPTIONS} value={form.sex} onChange={(v) => updateField('sex', v)} />
-      <TextField
+      <NumberField
         label="키 (cm)"
         id="profile-height"
-        type="number"
-        min="1"
+        decimal
         placeholder="170"
         value={form.heightCm}
-        onChange={(e) => updateField('heightCm', e.target.value)}
+        onValueChange={(v) => updateField('heightCm', v)}
         error={validation.errors.heightCm}
       />
-      <TextField
+      <NumberField
         label="몸무게 (kg)"
         id="profile-weight"
-        type="number"
-        min="1"
+        decimal
         placeholder="65"
         value={form.weightKg}
-        onChange={(e) => updateField('weightKg', e.target.value)}
+        onValueChange={(v) => updateField('weightKg', v)}
         error={validation.errors.weightKg}
       />
       <LabeledSegmentedControl
@@ -381,22 +419,84 @@ export default function Profile() {
           할 일 화면이라 제목이 역할을 한다. */}
       {isOnboarding && <ScreenHeader title="내 정보 입력" subtitle="정확한 영양 분석을 위해 알려주세요" />}
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: spacing.md }}>
-        {authMode === 'user' ? (
-          <button type="button" className="tds-press" onClick={handleLogout} style={styles.buttonSecondary}>
-            로그아웃
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="tds-press"
-            onClick={() => navigate('/login')}
-            style={styles.buttonSecondary}
-          >
-            로그인 / 회원가입
-          </button>
-        )}
-      </div>
+      {isOnboarding && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: spacing.md }}>
+          {authMode === 'user' ? (
+            <button type="button" className="tds-press" onClick={handleLogout} style={styles.buttonSecondary}>
+              로그아웃
+            </button>
+          ) : (
+            <button type="button" className="tds-press" onClick={() => navigate('/login')} style={styles.buttonSecondary}>
+              로그인 / 회원가입
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* MY 탭 개편(1a/2a 시안) — 인사 행. authUser.displayName은 닉네임>아이디 순으로 이미 고른
+          표시 이름(authId.js) — Analyze.jsx 홈 인사와 같은 규칙. "설정"은 이 화면에 별도 설정
+          전용 화면이 없어, 가장 가까운 개념인 "건강 정보" 편집 카드를 펼치는 동작으로 연결했다. */}
+      {!isOnboarding && (
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: spacing.lg, gap: spacing.sm }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+            <span style={{ fontSize: 22, fontWeight: 800, color: colors.textStrong, letterSpacing: '-0.4px' }}>
+              {authUser?.displayName ?? '게스트'}님
+            </span>
+            <span style={{ fontSize: 12.5, color: colors.muted }}>오늘도 잘 챙기고 있어요</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, fontSize: 12.5, color: colors.muted, flexShrink: 0 }}>
+            <button
+              type="button"
+              className="tds-press"
+              onClick={() => setExpanded(true)}
+              style={{ border: 'none', background: 'none', color: 'inherit', fontSize: 'inherit', cursor: 'pointer', padding: 0 }}
+            >
+              설정
+            </button>
+            <span style={{ color: '#DFE3E8' }}>|</span>
+            {authMode === 'user' ? (
+              <button
+                type="button"
+                className="tds-press"
+                onClick={handleLogout}
+                style={{ border: 'none', background: 'none', color: 'inherit', fontSize: 'inherit', cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}
+              >
+                로그아웃
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="tds-press"
+                onClick={() => navigate('/login')}
+                style={{ border: 'none', background: 'none', color: 'inherit', fontSize: 'inherit', cursor: 'pointer', padding: 0, whiteSpace: 'nowrap' }}
+              >
+                로그인 / 회원가입
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 온보딩(첫 입력) 단계는 신체정보를 아직 안 넣은 상태라 "오늘의 기록"류 위젯을 보여줄 맥락이
+          없다 — MY 탭으로 정착한 뒤에만 보여준다. MY 탭 개편(1a/2a 시안) — 요약 카드(레벨+리더보드
+          순위+XP 바+오늘 획득 XP·주간 퀘스트·배지 3칸을 하나로 통합, StatusCard.jsx) + 위젯 2개
+          (오늘 물/오늘의 퀘스트) + 바로가기 8개 그리드 구조. 예전엔 이 아래 있던 개별 카드들(퀘스트
+          게시판·리더보드 요약·퀴즈·배지 선반)이 전부 여기 있었지만, 이제는 각자 전용 화면
+          (/profile/quests 등)으로 이동했다. */}
+      {!isOnboarding && (
+        <>
+          <StatusCard questBoard={questBoard} />
+          <div style={{ display: 'flex', gap: spacing.md, marginTop: spacing.md, marginBottom: spacing.lg, alignItems: 'stretch' }}>
+            <div style={{ flex: 1 }}>
+              <WaterIntakeCard />
+            </div>
+            <div style={{ flex: 1 }}>
+              <MyDailyQuestWidget questBoard={questBoard} />
+            </div>
+          </div>
+          <ShortcutGrid supplementTaken={supplementTaken} onToggleSupplement={handleToggleSupplement} />
+        </>
+      )}
 
       {isOnboarding ? (
         <Card style={{ padding: 0, overflow: 'hidden' }}>
@@ -430,44 +530,113 @@ export default function Profile() {
           {expanded && <div style={{ padding: `0 ${spacing.xl}px ${spacing.xl}px` }}>{formFields}</div>}
         </Card>
       ) : (
-        <Card style={{ padding: 0, overflow: 'hidden' }}>
-          <button
-            type="button"
-            className="tds-press"
-            onClick={() => setExpanded((v) => !v)}
-            aria-expanded={expanded}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: spacing.md,
-              background: 'none',
-              border: 'none',
-              padding: spacing.xl,
-              cursor: 'pointer',
-              textAlign: 'left',
-            }}
-          >
-            <div>
-              <h3 style={{ margin: 0, fontSize: font.size.md, fontWeight: 600, color: colors.textStrong }}>건강 정보</h3>
-              <p style={{ margin: `${spacing.xs}px 0 0`, fontSize: font.size.xs, color: colors.textSub }}>{summaryLine}</p>
-            </div>
-            <span style={{ color: colors.muted }}>
-              <ChevronIcon open={expanded} />
-            </span>
-          </button>
+        <>
+          {/* MY 탭 개편(1a/2a 시안) — 예전엔 "건강 정보"(제자리 펼침 편집)·"하루 권장 섭취량"(링크)·
+              "카드 표시 항목"(링크)·DataBackupPanel이 전부 별개 카드로 세로로 쌓여 있었다. 이제
+              "내 정보 · 데이터" 리스트 카드 하나로 묶는다 — "카드 표시 항목"은 바로가기 그리드의
+              "카드 항목" 타일로 이미 옮겨졌으니(§ShortcutGrid) 여기서는 뺐다. 건강 정보/CSV 두 행은
+              기존과 똑같이 제자리에서 펼쳐지고(새 화면·라우트 없음), 안의 내용(formFields·저장
+              버튼·DataBackupPanel)은 전혀 안 건드렸다 — 감싸는 시각적 틀만 바뀌었다. */}
+          <h3 style={{ margin: `${spacing.xl}px 4px ${spacing.md}px`, fontSize: font.size.sm, fontWeight: 700, color: colors.textStrong }}>
+            내 정보 · 데이터
+          </h3>
+          <Card style={{ padding: 0, overflow: 'hidden' }}>
+            <button
+              type="button"
+              className="tds-press"
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: spacing.md,
+                background: 'none',
+                border: 'none',
+                padding: spacing.xl,
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: font.size.md, fontWeight: 600, color: colors.textStrong }}>건강 정보</h3>
+                <p style={{ margin: `${spacing.xs}px 0 0`, fontSize: font.size.xs, color: colors.textSub }}>{summaryLine}</p>
+              </div>
+              <span style={{ color: colors.muted, flexShrink: 0 }}>
+                <ChevronIcon open={expanded} />
+              </span>
+            </button>
 
-          {expanded && (
-            <div style={{ padding: `0 ${spacing.xl}px ${spacing.xl}px` }}>
-              {formFields}
-              {saveError && <p style={styles.errorText}>{saveError}</p>}
-              <AppButton onClick={handleSave} disabled={!preview || saving} style={{ marginTop: spacing.md }}>
-                {saving ? '저장 중...' : '저장하기'}
-              </AppButton>
+            {expanded && (
+              <div style={{ padding: `0 ${spacing.xl}px ${spacing.xl}px` }}>
+                {formFields}
+                {saveError && <p style={styles.errorText}>{saveError}</p>}
+                <AppButton onClick={handleSave} disabled={!preview || saving} style={{ marginTop: spacing.md }}>
+                  {saving ? '저장 중...' : '저장하기'}
+                </AppButton>
+              </div>
+            )}
+
+            <div style={{ height: 1, background: colors.border, margin: `0 ${spacing.xl}px` }} />
+
+            <button
+              type="button"
+              className="tds-press"
+              onClick={() => navigate('/profile/recommended')}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: spacing.md,
+                background: 'none',
+                border: 'none',
+                padding: spacing.xl,
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: font.size.md, fontWeight: 600, color: colors.textStrong }}>하루 권장 섭취량</h3>
+              <span style={{ color: colors.muted, flexShrink: 0 }}>›</span>
+            </button>
+
+            <div style={{ height: 1, background: colors.border, margin: `0 ${spacing.xl}px` }} />
+
+            <button
+              type="button"
+              className="tds-press"
+              onClick={() => setCsvExpanded((v) => !v)}
+              aria-expanded={csvExpanded}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: spacing.md,
+                background: 'none',
+                border: 'none',
+                padding: spacing.xl,
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: font.size.md, fontWeight: 600, color: colors.textStrong }}>데이터 내보내기 / 가져오기</h3>
+                <p style={{ margin: `${spacing.xs}px 0 0`, fontSize: font.size.xs, color: colors.textSub }}>CSV로 저장하고 다른 기기로 옮기기</p>
+              </div>
+              <span style={{ color: colors.muted, flexShrink: 0 }}>
+                <ChevronIcon open={csvExpanded} />
+              </span>
+            </button>
+          </Card>
+
+          {csvExpanded && (
+            <div style={{ marginTop: spacing.md }}>
+              <DataBackupPanel />
             </div>
           )}
-        </Card>
+        </>
       )}
 
       {isOnboarding && preview && (
@@ -484,43 +653,6 @@ export default function Profile() {
         </Card>
       )}
 
-      {!isOnboarding && recommendedForDisplay && standardIntake && (
-        <Card style={{ padding: 0, overflow: 'hidden' }}>
-          <button
-            type="button"
-            className="tds-press"
-            onClick={() => setRecommendedExpanded((v) => !v)}
-            aria-expanded={recommendedExpanded}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: spacing.md,
-              background: 'none',
-              border: 'none',
-              padding: spacing.xl,
-              cursor: 'pointer',
-              textAlign: 'left',
-            }}
-          >
-            <h2 style={{ fontSize: font.size.lg, margin: 0, color: colors.textStrong }}>하루 권장 섭취량</h2>
-            <span style={{ color: colors.muted }}>
-              <ChevronIcon open={recommendedExpanded} />
-            </span>
-          </button>
-
-          {recommendedExpanded && (
-            <div style={{ padding: `0 ${spacing.xl}px ${spacing.xl}px` }}>
-              <p style={{ margin: `0 0 ${spacing.lg}px`, fontSize: font.size.xs, color: colors.textSub }}>
-                같은 나이·성별 표준 평균과 비교했어요
-              </p>
-              <StandardComparisonList mine={recommendedForDisplay} standard={standardIntake} />
-            </div>
-          )}
-        </Card>
-      )}
-
       {isOnboarding && (
         <>
           {saveError && <p style={styles.errorText}>{saveError}</p>}
@@ -529,9 +661,6 @@ export default function Profile() {
           </AppButton>
         </>
       )}
-
-      {!isOnboarding && <CardSettingsPanel />}
-      <DataBackupPanel />
     </div>
   )
 }

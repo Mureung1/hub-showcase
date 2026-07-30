@@ -9,11 +9,13 @@ import Card from './Card.jsx'
 import ChevronIcon from './ChevronIcon.jsx'
 import CnuCafeteriaLocationCard from './CnuCafeteriaLocationCard.jsx'
 import MealCard from './MealCard.jsx'
+import SegmentedControl from './SegmentedControl.jsx'
 import Skeleton from './Skeleton.jsx'
 import { MILAIZE_ALLERGENS } from '../lib/allergyRules.js'
 import { CNU1_EXTERNAL_LINK, CNU_BUILDINGS, getSelectedCnuBuilding, setSelectedCnuBuilding } from '../lib/cnuBuildings.js'
 import { buildDaySlots, isDayEmpty } from '../lib/cnuDayView.js'
 import { openExternalLink } from '../lib/externalLink.js'
+import { defaultMealKindFor, getSelectedMealKind, setSelectedMealKind } from '../lib/mealKind.js'
 import { NUTRITION_SOURCE } from '../lib/nutrition.js'
 import { requestPrecisionAnalysis } from '../lib/precisionAnalysis.js'
 import { getSchoolMeals } from '../lib/schoolMeal.js'
@@ -240,41 +242,61 @@ function NoSchoolCard() {
   )
 }
 
-function WeekTabs({ weekDates, selectedKey, todayKey, onSelect }) {
+const MEAL_KIND_OPTIONS = [
+  { key: 'university', label: '대학 학식' },
+  { key: 'k12', label: '급식' },
+]
+
+// 지도 탭 개편(지도·달력 모바일 개편 3안) — 예전엔 profile.school.type으로만 자동 결정되고 사용자가
+// 직접 바꿀 방법이 없었다. 이제 눈에 보이는 토글로 직접 전환할 수 있다(초기값만 저장된 학교 종류를
+// 따름). 시안은 이 토글을 흰 Card가 아니라 어두운 필(active #191f28)로 그린다 — SegmentedControl의
+// accentColor/inactiveBg를 그 값으로 바꿔주는 것만으로 충분해 별도 마크업 없이 재사용한다.
+function MealKindToggle({ mealKind, onChange }) {
   return (
-    <Card style={{ padding: spacing.md }}>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {weekDates.map((d) => {
-          const key = toDateKey(d)
-          const active = key === selectedKey
-          const isToday = key === todayKey
-          return (
-            <button
-              key={key}
-              type="button"
-              className="tds-press"
-              onClick={() => onSelect(key)}
-              style={{
-                flex: 1,
-                padding: `${spacing.sm}px 0`,
-                borderRadius: radius.sm,
-                border: isToday && !active ? `1px solid ${colors.primary}` : 'none',
-                background: active ? colors.primary : 'transparent',
-                color: active ? '#fff' : colors.textStrong,
-                fontSize: font.size.xs,
-                fontWeight: 600,
-                cursor: 'pointer',
-                lineHeight: 1.5,
-              }}
-            >
-              {WEEKDAY_LABEL[d.getDay()]}
-              <br />
-              {d.getDate()}
-            </button>
-          )
-        })}
-      </div>
-    </Card>
+    <SegmentedControl
+      options={MEAL_KIND_OPTIONS}
+      value={mealKind}
+      onChange={onChange}
+      accentColor={colors.textStrong}
+      inactiveBg="transparent"
+      inactiveTextColor={colors.muted}
+      fontSize={12.5}
+      padding="9px 0"
+      style={{ background: colors.bg, borderRadius: radius.sm, padding: 4 }}
+    />
+  )
+}
+
+function WeekTabs({ weekDates, selectedKey, todayKey, onSelect }) {
+  const options = weekDates.map((d) => {
+    const key = toDateKey(d)
+    return {
+      key,
+      ring: key === todayKey,
+      label: (
+        <>
+          {WEEKDAY_LABEL[d.getDay()]}
+          <br />
+          {d.getDate()}
+        </>
+      ),
+    }
+  })
+  return (
+    <div style={{ background: colors.bg, borderRadius: radius.md, padding: '8px 6px' }}>
+      <SegmentedControl
+        options={options}
+        value={selectedKey}
+        onChange={onSelect}
+        gap={4}
+        padding={`${spacing.sm}px 0`}
+        fontSize={font.size.xs}
+        fontWeight={600}
+        lineHeight={1.5}
+        inactiveBg="transparent"
+        inactiveTextColor={colors.textStrong}
+      />
+    </div>
   )
 }
 
@@ -305,11 +327,54 @@ function NeisMealCard({ meal, schoolType }) {
   )
 }
 
+const MEAL_TIME_ORDER = ['breakfast', 'lunch', 'dinner']
+
+// 지도·달력 모바일 개편 3안 — 급식은 그날 나온 조식/중식/석식을 전부 세로로 쌓아 보여주던 것에서,
+// 필 3분할로 하나씩만 보여주는 방식으로 바꿨다(대학 학식은 여러 식당 슬롯을 한 화면에서 비교할
+// 일이 많아 기존처럼 전부 보여주되, 급식은 하루 최대 3끼라 하나씩 보는 쪽이 화면을 덜 차지한다).
+function MealTimePills({ value, onChange }) {
+  return (
+    <div style={{ display: 'flex', gap: 7, margin: `${spacing.md}px 0` }}>
+      {MEAL_TIME_ORDER.map((key) => {
+        const active = key === value
+        return (
+          <button
+            key={key}
+            type="button"
+            className="tds-press"
+            onClick={() => onChange(key)}
+            style={{
+              flex: 1,
+              border: 'none',
+              padding: '9px 0',
+              borderRadius: radius.pill,
+              cursor: 'pointer',
+              fontSize: 12.5,
+              fontWeight: 700,
+              background: active ? colors.primary : colors.bg,
+              color: active ? '#fff' : colors.muted,
+            }}
+          >
+            {MEAL_TYPE_LABEL[key]}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function K12MealSection({ school, weekDates, selectedKey, todayKey, onSelectDay }) {
   const schoolType = mapSchoolKindToType(school.kind)
   const [daysByKey, setDaysByKey] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [mealTime, setMealTime] = useState('breakfast')
+
+  // 날짜를 바꾸면 항상 조식부터 다시 본다(달력 탭이 날짜를 바꿀 때 상세 탭을 초기화하는 것과 같은
+  // 규칙) — 어제 골라둔 "석식"이 오늘 날짜에도 그대로 남아있으면 자연스럽지 않다.
+  useEffect(() => {
+    setMealTime('breakfast')
+  }, [selectedKey])
 
   useEffect(() => {
     let cancelled = false
@@ -341,6 +406,7 @@ function K12MealSection({ school, weekDates, selectedKey, todayKey, onSelectDay 
   }, [school.officeCode, school.code, weekDates])
 
   const selectedMeals = daysByKey?.[selectedKey] ?? []
+  const activeMeal = selectedMeals.find((m) => m.mealType === mealTime) ?? null
 
   return (
     <>
@@ -359,7 +425,20 @@ function K12MealSection({ school, weekDates, selectedKey, todayKey, onSelectDay 
           </p>
         </Card>
       )}
-      {!loading && !error && selectedMeals.map((meal) => <NeisMealCard key={meal.mealType} meal={meal} schoolType={schoolType} />)}
+      {!loading && !error && selectedMeals.length > 0 && (
+        <>
+          <MealTimePills value={mealTime} onChange={setMealTime} />
+          {activeMeal ? (
+            <NeisMealCard meal={activeMeal} schoolType={schoolType} />
+          ) : (
+            <Card>
+              <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.sm, textAlign: 'center' }}>
+                {MEAL_TYPE_LABEL[mealTime]}은 운영하지 않아요
+              </p>
+            </Card>
+          )}
+        </>
+      )}
     </>
   )
 }
@@ -372,36 +451,26 @@ function formatFallbackNotice(updatedAt) {
   return `${Number(m)}월 ${Number(d)}일 기준으로 확인된 식단이에요`
 }
 
+// 지도·달력 모바일 개편 3안 — 예전엔 5개 식당이 폭을 균등하게 나눠 갖는 세그먼트였지만, 시안은
+// 가로 스크롤 칩으로 바꿨다(fill=false로 각 칩이 내용만큼만 차지 + 바깥 div가 overflow-x 담당).
 function CnuBuildingSelector({ selected, onSelect }) {
   return (
-    <Card style={{ padding: spacing.md }}>
-      <div style={{ display: 'flex', gap: 4 }}>
-        {CNU_BUILDINGS.map((b) => {
-          const active = b.key === selected
-          return (
-            <button
-              key={b.key}
-              type="button"
-              className="tds-press"
-              onClick={() => onSelect(b.key)}
-              style={{
-                flex: 1,
-                padding: `${spacing.sm}px 2px`,
-                borderRadius: radius.sm,
-                border: 'none',
-                background: active ? colors.primary : colors.bg,
-                color: active ? '#fff' : colors.textStrong,
-                fontWeight: 700,
-                fontSize: font.size.xs,
-                cursor: 'pointer',
-              }}
-            >
-              {b.label}
-            </button>
-          )
-        })}
-      </div>
-    </Card>
+    <div className="tds-no-scrollbar" style={{ overflowX: 'auto' }}>
+      <SegmentedControl
+        options={CNU_BUILDINGS}
+        value={selected}
+        onChange={onSelect}
+        fill={false}
+        gap={7}
+        padding="8px 15px"
+        radius={radius.pill}
+        fontSize={12.5}
+        fontWeight={600}
+        inactiveBg={colors.bg}
+        inactiveTextColor={colors.textSub}
+        style={{ flexWrap: 'nowrap', width: 'max-content' }}
+      />
+    </div>
   )
 }
 
@@ -412,31 +481,19 @@ const TRACK_OPTIONS = [
 
 function TrackToggle({ track, onChange }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', gap: spacing.sm, margin: `0 0 ${spacing.sm}px` }}>
-      {TRACK_OPTIONS.map((opt) => {
-        const active = track === opt.key
-        return (
-          <button
-            key={opt.key}
-            type="button"
-            className="tds-press"
-            onClick={() => onChange(opt.key)}
-            style={{
-              padding: `4px ${spacing.md}px`,
-              borderRadius: radius.pill,
-              border: active ? 'none' : `1px solid ${colors.border}`,
-              background: active ? colors.primary : 'transparent',
-              color: active ? '#fff' : colors.textSub,
-              fontWeight: 600,
-              fontSize: font.size.xs,
-              cursor: 'pointer',
-            }}
-          >
-            {opt.label}
-          </button>
-        )
-      })}
-    </div>
+    <SegmentedControl
+      options={TRACK_OPTIONS}
+      value={track}
+      onChange={onChange}
+      fill={false}
+      radius={radius.pill}
+      padding="6px 14px"
+      fontSize={12}
+      fontWeight={700}
+      inactiveBg="transparent"
+      inactiveBorder={`1px solid ${colors.border}`}
+      style={{ justifyContent: 'center', margin: `0 0 ${spacing.sm}px` }}
+    />
   )
 }
 
@@ -604,7 +661,10 @@ function UnivMealSection({ univCode, weekDates, selectedKey, todayKey, onSelectD
   )
 }
 
-export default function CafeteriaPanel() {
+// onMealKindChange: 지금 보고 있는 쪽(k12/university)을 지도(MapPage)에 알린다 — 그 값으로 지도가
+// 학교 위치로 갈지 대학 학식당 전체를 담을지 정한다. 마운트 직후에도 한 번 알려야 탭에 들어오자마자
+// 지도가 알맞은 곳으로 움직인다(사용자가 토글을 건드릴 때까지 기다리면 안 된다).
+export default function CafeteriaPanel({ onMealKindChange }) {
   const { profile } = useUser()
   const school = profile?.school ?? null
 
@@ -617,6 +677,21 @@ export default function CafeteriaPanel() {
   // (UnivMealSection 안)과는 형제 컴포넌트라 같은 선택값을 공유하려면 여기 최상위로 끌어올려야 한다.
   const [building, setBuilding] = useState(() => getSelectedCnuBuilding())
 
+  // 급식/대학 학식 중 어느 쪽을 보고 있는지 — 기기에 저장된 마지막 선택을 우선하고, 저장된 게
+  // 없으면(첫 방문) 프로필의 학교 종류를 기본값으로 따른다. 사용자는 MealKindToggle로 언제든 직접
+  // 전환할 수 있다(급식/학식 둘 다 프로필에 학교가 없으면 NoSchoolCard로 유도).
+  const [mealKind, setMealKindState] = useState(() => getSelectedMealKind(defaultMealKindFor(school)))
+
+  // 마운트 직후와 전환 때마다 부모(지도)에 알린다.
+  useEffect(() => {
+    onMealKindChange?.(mealKind)
+  }, [mealKind, onMealKindChange])
+
+  function handleChangeMealKind(key) {
+    setMealKindState(key)
+    setSelectedMealKind(key)
+  }
+
   function handleSelectBuilding(key) {
     setBuilding(key)
     setSelectedCnuBuilding(key)
@@ -628,34 +703,42 @@ export default function CafeteriaPanel() {
     hasNavigatedThisVisit = false
   }, [])
 
-  if (!school) {
-    return <NoSchoolCard />
-  }
-
   return (
     <>
-      {school.type === 'k12' && (
-        <K12MealSection
-          school={school}
-          weekDates={weekDates}
-          selectedKey={selectedKey}
-          todayKey={todayKey}
-          onSelectDay={setSelectedKey}
-        />
-      )}
-      {school.type === 'university' && (
-        <UnivMealSection
-          univCode={school.code}
-          weekDates={weekDates}
-          selectedKey={selectedKey}
-          todayKey={todayKey}
-          onSelectDay={setSelectedKey}
-          building={building}
-          onSelectBuilding={handleSelectBuilding}
-        />
-      )}
+      <MealKindToggle mealKind={mealKind} onChange={handleChangeMealKind} />
+
+      {mealKind === 'k12' &&
+        (school?.type === 'k12' ? (
+          <K12MealSection
+            school={school}
+            weekDates={weekDates}
+            selectedKey={selectedKey}
+            todayKey={todayKey}
+            onSelectDay={setSelectedKey}
+          />
+        ) : (
+          <NoSchoolCard />
+        ))}
+
+      {mealKind === 'university' &&
+        (school?.type === 'university' ? (
+          <>
+            <UnivMealSection
+              univCode={school.code}
+              weekDates={weekDates}
+              selectedKey={selectedKey}
+              todayKey={todayKey}
+              onSelectDay={setSelectedKey}
+              building={building}
+              onSelectBuilding={handleSelectBuilding}
+            />
+            <CnuCafeteriaLocationCard selectedBuilding={building} />
+          </>
+        ) : (
+          <NoSchoolCard />
+        ))}
+
       <AllergyCodeSheet />
-      {school.type === 'university' && <CnuCafeteriaLocationCard selectedBuilding={building} />}
     </>
   )
 }

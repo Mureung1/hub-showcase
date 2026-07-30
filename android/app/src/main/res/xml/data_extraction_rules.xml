@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  targetSdk 31+ 백업 정책. AndroidManifest의 android:allowBackup="false"는 구글 드라이브 자동
+  백업(cloud-backup)만 끄고 **기기 간 직접 전송(D2D)은 그대로 일어난다** — 그래서 여기서 둘 다 끈다.
+
+  막으려는 것: WebView localStorage에 있는 Supabase 세션(JWT + refresh token)과 게스트 식단
+  데이터가 사용자 모르게 클라우드나 다른 기기로 복제되는 것.
+
+  기기를 옮길 때 데이터를 가져가는 방법은 MY 탭의 CSV 내보내기/가져오기다 — 무엇이 옮겨가는지
+  사용자가 보고 선택한다.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

@@ -16,8 +16,9 @@
 bin/
 gen/
 out/
-#  Uncomment the following line in case you need and you don't have the release build type files in your app
-# release/
+# Generate Signed Bundle / APK 마법사가 app-release.apk와 output-metadata.json을 여기에 낸다.
+# (gradlew assembleRelease는 app/build/outputs/apk/release/ 로 내므로 build/ 규칙에 이미 걸린다.)
+release/
 
 # Gradle files
 .gradle/
@@ -53,9 +54,10 @@ captures/
 .idea/navEditor.xml
 
 # Keystore files
-# Uncomment the following lines if you do not want to check your keystore files in.
-#*.jks
-#*.keystore
+# 릴리스 서명 키와 비밀번호는 절대 커밋하지 않는다. 템플릿은 keystore.properties.example.
+*.jks
+*.keystore
+keystore.properties
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild

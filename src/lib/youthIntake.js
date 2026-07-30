@@ -107,4 +107,5 @@ export function calcYouthRecommendedNutrients({ age, heightCm, weightKg, sex, ac
   }
 }
 
-export { YOUTH_FIBER_G, YOUTH_PROTEIN_G, YOUTH_SODIUM_MG }
+// YOUTH_SODIUM_MG는 이 파일 안에서만 쓴다(안정성 점검(Phase B) — 밖에서 쓰는 곳이 없어 export를 뗐다).
+export { YOUTH_FIBER_G, YOUTH_PROTEIN_G }

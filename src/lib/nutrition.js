@@ -97,6 +97,9 @@ export function scaleMealAnalysisByServings(analysis, servings) {
 export const NUTRITION_SOURCE = {
   DB: '식약처DB',
   DB_PROCESS: '식약처DB(가공)',
+  // 식약처 음식/가공식품 DB에 없는 창작·조합형 메뉴명을 보완하는 식품안전나라 "조리식품의 레시피
+  // DB"(COOKRCP01) 매칭. 같은 식약처 산하지만 별개 데이터셋이라 배지 문구를 분리한다.
+  RECIPE_DB: '레시피DB',
   OFFICIAL: '공식',
   LABEL: '라벨 추출',
   ESTIMATED: '추정',
@@ -120,12 +123,91 @@ export function clampEstimatedGrams(grams, foodName) {
   return Math.min(max, Math.max(min, n))
 }
 
-// 가공식품 DB의 1회 섭취참고량(servSize)이 있으면 그걸 우선 쓰고(포장 단위라 사진 추정보다 정확한 경우가 많다),
-// 없거나 파싱 안 되면 AI가 추정한 섭취량을 쓴다(foodName이 있으면 음식별 표준 1인분 범위로 보정).
-export function resolveConsumedGrams(match, estimatedGrams, foodName) {
+// 배식비율(portionRatio)로 인정할 범위. 0.3 미만/3.0 초과는 "한 사람이 한 끼에 먹는 양"의 배수로
+// 보기 어려워, 비율을 잘못 낸 것으로 보고 무시한다(절대 그램 추정으로 폴백).
+const PORTION_RATIO_MIN = 0.3
+const PORTION_RATIO_MAX = 3.0
+
+// 식판 칸을 얼마나 채웠는지(trayFillRatio)에 주는 가중치. AI의 portionRatio보다 **분산이 작은**
+// 신호다 — 칸 크기는 물리적으로 고정이라 "얼마나 찼나"는 눈으로 세기 쉬운 반면, "표준 1인분 대비
+// 몇 배냐"는 표준이 얼마인지를 먼저 알아야 답할 수 있다. 그래도 칸을 가득 채운 게 곧 표준 1인분은
+// 아니라서(눌러 담기·수북이) 단독으로 쓰지 않고 섞는다.
+const TRAY_FILL_WEIGHT = 0.4
+
+// 두 신호가 이 배수 이상 어긋나면 둘 중 하나가 틀린 것이다 — 섞은 값을 쓰되 호출부가 신뢰도를
+// 낮출 수 있게 알린다.
+export const PORTION_SIGNAL_CONFLICT_RATIO = 1.5
+
+function isUsableRatio(value) {
+  const n = Number(value)
+  return Number.isFinite(n) && n >= PORTION_RATIO_MIN && n <= PORTION_RATIO_MAX
+}
+
+// 식판 사진의 두 신호를 하나로 합친다. 반환: { ratio, conflicted } — ratio가 null이면 쓸 수 있는
+// 신호가 없다는 뜻(호출부가 절대 그램 추정으로 폴백).
+export function blendPortionRatio(portionRatio, trayFillRatio) {
+  const ai = isUsableRatio(portionRatio) ? Number(portionRatio) : null
+  // 칸을 가득 채운 상태(1.0)를 표준 1인분(비율 1.0)으로 본다 — 역할 표준 중량 자체가 "그 칸에
+  // 보통 담기는 양"으로 정해진 값이라 두 축의 기준점이 같다.
+  const fill = isUsableRatio(trayFillRatio) ? Number(trayFillRatio) : null
+
+  if (ai === null && fill === null) return { ratio: null, conflicted: false }
+  if (fill === null) return { ratio: ai, conflicted: false }
+  if (ai === null) return { ratio: fill, conflicted: false }
+
+  const conflicted = Math.max(ai, fill) / Math.min(ai, fill) >= PORTION_SIGNAL_CONFLICT_RATIO
+  return { ratio: (1 - TRAY_FILL_WEIGHT) * ai + TRAY_FILL_WEIGHT * fill, conflicted }
+}
+
+// 실제로 먹은 양이 몇 g인가 — 근거가 강한 순으로 고른다.
+//
+//  ① match.servSize — 포장에 표시된 1회 제공량. 추정이 아니라 사실이라 항상 이긴다.
+//  ② 표준 1인분 × 배식비율 — AI에게 "몇 g이냐"보다 "보통 1인분에 비해 얼마나 담겼냐"를 물은 값.
+//     사람도 사진만 보고 200g인지 400g인지는 잘 못 맞히지만 "보통보다 조금 많다"는 잘 맞힌다.
+//     그래서 **표준값에 근거가 있을 때만**(정량 사전·역할 표준·DB 제공량 — servingGramFounded)
+//     이 경로를 쓴다. 근거 없는 중립값(200g)에 비율을 곱하면 모르는 값끼리 곱하는 셈이라 오히려
+//     나빠진다.
+//  ③ AI의 절대 그램 추정 — 위 둘이 다 없을 때. 음식별 표준 1인분 범위로 보정해서 쓴다.
+//
+// options: { standardServingGram, portionRatio } — 둘 다 없으면 기존 동작(①→③) 그대로다.
+export function resolveConsumedGrams(match, estimatedGrams, foodName, { standardServingGram, portionRatio } = {}) {
   const servValue = match?.servSize?.value
   if (typeof servValue === 'number' && servValue > 0) return servValue
+
+  const standard = Number(standardServingGram)
+  if (standard > 0 && isUsableRatio(portionRatio)) {
+    return clampEstimatedGrams(standard * Number(portionRatio), foodName)
+  }
+
   return clampEstimatedGrams(estimatedGrams, foodName)
+}
+
+// PRD v3.0 §3 — Atwater 계수(탄4/단4/지9)로 역산한 칼로리가 기록된 calories와 20% 넘게 벌어지면
+// (DB 오기재, 편차가 큰 매칭, AI 추정 등) 탄단지를 calories 쪽에 맞춰 비례 보정한다. calories는
+// 대부분 DB/AI가 직접 제공하는 값이라 세 영양소 각각의 추정보다 신뢰도가 높다고 보고, 탄단지 사이의
+// 상대적 비율(예: 저탄고지 레시피의 비율)은 그대로 유지한 채 크기만 스케일한다 — 세 값을 각각 따로
+// 보정하면 이 비율 자체가 무너진다.
+const ATWATER_FACTORS = { carbs: 4, protein: 4, fat: 9 }
+const ATWATER_ERROR_THRESHOLD = 0.2
+
+export function applyAtwaterEnsemble(nutrients) {
+  const { calories, carbs, protein, fat } = nutrients ?? {}
+  if (!(calories > 0)) return nutrients
+  if (![carbs, protein, fat].every((v) => typeof v === 'number' && Number.isFinite(v) && v >= 0)) return nutrients
+
+  const atwaterCalories = carbs * ATWATER_FACTORS.carbs + protein * ATWATER_FACTORS.protein + fat * ATWATER_FACTORS.fat
+  if (!(atwaterCalories > 0)) return nutrients
+
+  const errorRatio = Math.abs(atwaterCalories - calories) / calories
+  if (errorRatio <= ATWATER_ERROR_THRESHOLD) return nutrients
+
+  const scale = calories / atwaterCalories
+  return {
+    ...nutrients,
+    carbs: Math.round(carbs * scale * 10) / 10,
+    protein: Math.round(protein * scale * 10) / 10,
+    fat: Math.round(fat * scale * 10) / 10,
+  }
 }
 
 // "표준 1인분" 현실 영양 범위 보정(범위 자체는 foodData.js 통합 테이블에). DB 매칭에 성공해도 그
@@ -141,12 +223,15 @@ const PLAUSIBILITY_OUTLIER_HIGH = 1.5
 
 // foodData의 현실 범위에 걸리는 음식이면, 실제 사용된 grams에 비례해 범위를 스케일한 뒤 그 범위를
 // 크게 벗어나는 영양소만 경계값으로 보정한다. 걸리지 않는 음식/영양소는 손대지 않고 그대로 둔다.
+// PRD v3.0 §3 — Atwater 앙상블 보정을 먼저 거쳐 탄단지-칼로리 물리적 정합성부터 맞춘 뒤, 그 결과에
+// foodData 표준범위 클램프를 적용한다(음식별 표준범위가 없는 항목도 Atwater 보정 자체는 받는다).
 export function clampToPlausibleNutrients(nutrients, foodName, grams) {
+  const balanced = applyAtwaterEnsemble(nutrients)
   const entry = getPlausibility(foodName)
-  if (!entry) return nutrients
+  if (!entry) return balanced
 
   const scale = entry.referenceGrams > 0 && Number(grams) > 0 ? Number(grams) / entry.referenceGrams : 1
-  const result = { ...nutrients }
+  const result = { ...balanced }
 
   for (const [key, [min, max]] of Object.entries(entry.ranges)) {
     const value = result[key]
@@ -229,7 +314,6 @@ export function formatExpectedIntake(expected) {
 // SQL 채점 공식은 여전히 nutritionScore.js와 반드시 동일하게 유지해야 한다(CLAUDE.md).
 export const DEFICIENCY_TARGET_KEYS = ['carbs', 'protein', 'fat', 'fiber']
 export const RECORD_ONLY_KEYS = ['calories', 'sodium']
-export const UPPER_LIMIT_KEYS = ['sodium']
 
 // 오늘 부족한 영양소 상위 max개. 단위가 제각각(kcal/g/mg)인 절대량 대신 충족률(actual/recommended)
 // 오름차순으로 정렬한다 — 절대량 비교는 스케일이 큰 칼로리·나트륨·탄수화물이 항상 상위를 독식해

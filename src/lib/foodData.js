@@ -57,7 +57,7 @@ export const FOOD_DATA = [
     referenceGrams: 450,
     plausible: { protein: [10, 22], carbs: [78, 120], calories: [500, 800] },
   },
-  { keywords: ['공기밥', '쌀밥', '흰밥'], portion: { min: 150, max: 300 } },
+  { keywords: ['공기밥', '쌀밥', '흰밥'], portion: { min: 150, max: 300 }, referenceGrams: 210 },
 
   // ── 면류 (짜장면·라면은 목표 출력 범위를 좁게 유지 — DB 레코드가 표준 1인분으로 환산 시
   //    과대해지는 값을 1.5배 허용치로 잡아 눌러야 하므로, 폭을 넓히면 그 보정이 풀린다.
@@ -106,7 +106,16 @@ export const FOOD_DATA = [
     referenceGrams: 550,
     plausible: { protein: [10, 24], carbs: [60, 100], calories: [380, 660], sodium: [1000, 2400] },
   },
-  { keywords: ['파스타', '스파게티'], portion: { min: 300, max: 600 } },
+  {
+    // 현실 범위가 없던 게 문제였다: 식약처 DB에 "파스타"라는 일반명 레코드가 없고 전부 특정 변형
+    // (냉파스타·산채쌀파스타 등 63~93kcal/100g의 니치 레시피)이라, 검증 범위가 없으면 그 변형이
+    // 그대로 채택된다(실측: 파스타 → 냉파스타 64kcal/100g). 수치는 DB의 파스타·스파게티 62종
+    // 15~85 백분위(122~233kcal/100g)를 400g 1인분으로 환산해 채웠다.
+    keywords: ['파스타', '스파게티'],
+    portion: { min: 300, max: 600 },
+    referenceGrams: 400,
+    plausible: { protein: [17, 32], carbs: [63, 107], fat: [8, 52], calories: [488, 932], sodium: [800, 1900] },
+  },
 
   // ── 국/탕/찌개 (넓은 '탕'/'국' 키워드보다 구체적인 탕수육/감자탕 등을 반드시 위에) ──
   { canonical: '김치찌개', keywords: ['김치찌개'] }, // 참치김치찌개 → 김치찌개, 수치는 '찌개'로 폴스루
@@ -180,7 +189,72 @@ export const FOOD_DATA = [
     referenceGrams: 200,
     plausible: { protein: [20, 40], fat: [8, 26], calories: [260, 520], sodium: [800, 1900] },
   },
-  { keywords: ['찜닭'], portion: { min: 300, max: 800 } },
+  // ── 갈비·수육류 ──
+  // 이 그룹이 통째로 비어 있던 게 "돼지갈비 73kcal" 사고의 직접 원인이었다: 표에 없으면
+  // referenceGrams가 없어 classifyMenuRole의 기본값(반찬 50g)으로 떨어지고, 현실범위 보정 대상도
+  // 아니라 아무도 못 잡는다. 수치는 손감각이 아니라 foodDB의 **외식 출처 레코드 평균**에서 역산했다
+  // (갈비구이 n=5 → 310kcal/100g, 갈비찜 n=6 → 155, 수육 n=5 → 164, 족발 n=1 → 220,
+  //  닭갈비 n=5 → 155). referenceGrams는 급식 트레이가 아니라 식당 1인분 기준이다.
+  { canonical: '갈비구이_돼지고기', keywords: ['돼지갈비'] }, // 수치는 아래 '갈비' 항목으로 폴스루
+  { canonical: '갈비구이_소고기', keywords: ['소갈비'] },
+  { canonical: '갈비찜_소고기', keywords: ['갈비찜'], portion: { min: 150, max: 500 }, referenceGrams: 250,
+    plausible: { protein: [24, 46], fat: [12, 30], calories: [290, 560], sodium: [600, 1600] } },
+  { canonical: '닭볶음', keywords: ['닭갈비'], portion: { min: 200, max: 600 }, referenceGrams: 300,
+    plausible: { protein: [22, 46], fat: [10, 32], carbs: [20, 50], calories: [350, 700], sodium: [900, 2200] } },
+  {
+    // 'LA갈비'·'양념갈비'·'왕갈비'·'생갈비'도 여기로 떨어진다(부분일치). '갈비탕'·'갈비찜'·'닭갈비'는
+    // 위/앞 항목이 더 뒤에서 끝나거나 더 길어서 먼저 걸린다 — findEntry의 머리명사 규칙.
+    keywords: ['갈비'],
+    portion: { min: 120, max: 400 },
+    referenceGrams: 200,
+    plausible: { protein: [30, 52], fat: [26, 56], calories: [460, 760], sodium: [450, 1400] },
+  },
+  {
+    canonical: '제육', // DB의 '제육(돼지고기 수육)' — 괄호는 정규화 때 떨어진다
+    keywords: ['수육', '보쌈'],
+    portion: { min: 120, max: 450 },
+    referenceGrams: 200,
+    plausible: { protein: [20, 40], fat: [12, 32], calories: [250, 520], sodium: [250, 1200] },
+  },
+  {
+    canonical: '족발',
+    keywords: ['족발'],
+    portion: { min: 120, max: 450 },
+    referenceGrams: 200,
+    plausible: { protein: [35, 66], fat: [16, 42], calories: [330, 660], sodium: [400, 1500] },
+  },
+  {
+    keywords: ['찜닭'],
+    portion: { min: 300, max: 800 },
+    referenceGrams: 350,
+    plausible: { protein: [26, 52], fat: [10, 34], calories: [330, 700], sodium: [900, 2400] },
+  },
+
+  // ── 생선·계란·나물 반찬 ──
+  // 조림만 canonical을 준다 — 구이와 조림은 조리법이 달라 DB 레코드도 따로 있다("간장고등어구이"를
+  // '고등어조림'으로 정규화해버리면 엉뚱한 레코드를 물어온다). 구이 쪽은 canonical 없이 두어
+  // 매처의 부분일치가 '고등어구이'를 직접 찾게 하고, 중량·현실범위 수치만 아래 항목에서 공유한다.
+  { canonical: '고등어조림', keywords: ['고등어조림', '삼치조림', '갈치조림', '생선조림'] },
+  {
+    keywords: ['고등어조림', '삼치조림', '갈치조림', '생선조림', '생선구이', '고등어구이', '삼치구이', '갈치구이'],
+    portion: { min: 80, max: 300 },
+    referenceGrams: 150,
+    plausible: { protein: [15, 35], fat: [8, 28], calories: [170, 420], sodium: [250, 1200] },
+  },
+  {
+    canonical: '달걀말이',
+    keywords: ['계란말이', '달걀말이'],
+    portion: { min: 60, max: 250 },
+    referenceGrams: 120,
+    plausible: { protein: [9, 20], fat: [8, 22], calories: [130, 300], sodium: [200, 800] },
+  },
+  {
+    canonical: '잡채',
+    keywords: ['잡채'],
+    portion: { min: 100, max: 350 },
+    referenceGrams: 200,
+    plausible: { protein: [5, 16], fat: [5, 20], carbs: [28, 60], calories: [230, 480], sodium: [350, 1300] },
+  },
   {
     canonical: '돈까스',
     keywords: ['돈까스', '돈가스'],
@@ -219,6 +293,55 @@ export const FOOD_DATA = [
   { canonical: '파전', keywords: ['파전'] }, // 수치는 아래 '부침개' 항목으로 폴스루
   { canonical: '김치전', keywords: ['김치전'] },
   { keywords: ['부침개', '파전', '김치전', '해물전', '빈대떡'], portion: { min: 120, max: 500 } },
+
+  // ── 일식·양식·죽 (외식 출처 레코드 평균에서 역산: 초밥 n=10, 햄버거 n=98, 피자 n=2438,
+  //    샌드위치 n=199, 샐러드 n=60) ──
+  {
+    keywords: ['초밥', '스시'],
+    portion: { min: 150, max: 450 },
+    referenceGrams: 250,
+    plausible: { protein: [12, 28], carbs: [50, 88], calories: [290, 560], sodium: [500, 1500] },
+  },
+  {
+    // 바로 '회'를 키워드로 쓰면 '죽순'처럼 음식이 아닌 글자 조합까지 걸리므로 실제 메뉴명만 나열한다.
+    keywords: ['생선회', '모둠회', '광어회', '연어회', '참치회', '육회', '물회'],
+    portion: { min: 100, max: 400 },
+    referenceGrams: 200,
+    plausible: { protein: [26, 56], fat: [2, 18], calories: [130, 380], sodium: [80, 600] },
+  },
+  {
+    canonical: '햄버거',
+    keywords: ['햄버거', '버거'],
+    portion: { min: 120, max: 400 },
+    referenceGrams: 220,
+    plausible: { protein: [16, 40], fat: [16, 42], carbs: [35, 72], calories: [400, 820], sodium: [650, 1700] },
+  },
+  {
+    canonical: '피자',
+    keywords: ['피자'],
+    portion: { min: 120, max: 500 },
+    referenceGrams: 250,
+    plausible: { protein: [20, 44], fat: [16, 44], carbs: [50, 96], calories: [420, 860], sodium: [800, 2000] },
+  },
+  {
+    keywords: ['샌드위치'],
+    portion: { min: 100, max: 350 },
+    referenceGrams: 200,
+    plausible: { protein: [10, 30], fat: [9, 32], carbs: [32, 70], calories: [270, 620], sodium: [450, 1400] },
+  },
+  {
+    // 드레싱에 따라 편차가 커서 범위를 일부러 넓게 잡았다(좁히면 정상적인 샐러드를 오탐한다).
+    keywords: ['샐러드'],
+    portion: { min: 100, max: 400 },
+    referenceGrams: 200,
+    plausible: { protein: [3, 26], fat: [3, 30], calories: [80, 460], sodium: [120, 900] },
+  },
+  {
+    keywords: ['전복죽', '호박죽', '야채죽', '채소죽', '소고기죽', '닭죽', '흰죽', '팥죽', '잣죽'],
+    portion: { min: 250, max: 600 },
+    referenceGrams: 400,
+    plausible: { protein: [6, 20], carbs: [30, 68], calories: [170, 420], sodium: [350, 1300] },
+  },
 
   // ── 넓은 키워드는 마지막에 (더 구체적인 항목이 위에서 먼저 걸리도록) ──
   {
@@ -272,6 +395,40 @@ export function getPortionRange(foodName) {
 export function getPlausibility(foodName) {
   const entry = findEntry(foodName, 'plausible')
   return entry ? { referenceGrams: entry.referenceGrams, ranges: entry.plausible } : null
+}
+
+// ── 프롬프트용 문자열 생성 ────────────────────────────────────────────────────
+// Gemini 프롬프트에도 "표준 1인분은 몇 g, 현실 범위는 얼마"라는 참고표가 필요한데, 예전엔 그걸
+// 프롬프트 안에 손으로 적어둬서 이 테이블과 조용히 어긋났다(실측: 김밥이 프롬프트엔 320~450kcal,
+// 여기엔 320~520kcal). 프롬프트가 이 테이블에서 문구를 생성하게 해 두 벌이 생기지 않게 한다.
+
+const NUTRIENT_LABEL = { calories: '열량', protein: '단백질', carbs: '탄수', fat: '지방', sodium: '나트륨', fiber: '식이섬유' }
+const NUTRIENT_UNIT = { calories: 'kcal', protein: 'g', carbs: 'g', fat: 'g', sodium: 'mg', fiber: 'g' }
+
+// "짜장면 약 650g, 비빔밥 약 500g, …" — 양 추정의 기준점으로 프롬프트에 넣는다.
+export function buildServingGramHints(names) {
+  return names
+    .map((name) => {
+      const grams = findEntry(name, 'referenceGrams')?.referenceGrams
+      return grams > 0 ? `${name} 약 ${grams}g` : null
+    })
+    .filter(Boolean)
+    .join(', ')
+}
+
+// "- 짜장면 1인분(약 650g): 열량 650~800kcal, 단백질 12~16g, …" 여러 줄.
+export function buildPlausibilityReferenceLines(names) {
+  return names
+    .map((name) => {
+      const entry = findEntry(name, 'plausible')
+      if (!entry) return null
+      const parts = Object.entries(entry.plausible).map(
+        ([key, [min, max]]) => `${NUTRIENT_LABEL[key] ?? key} ${min}~${max}${NUTRIENT_UNIT[key] ?? ''}`,
+      )
+      return `   - ${name} 1인분(약 ${entry.referenceGrams}g): ${parts.join(', ')}`
+    })
+    .filter(Boolean)
+    .join('\n')
 }
 
 // 변형·브랜드 이름 → 식약처 DB 표준 검색명. 매칭이 없거나 이미 표준명과 같으면 null을 반환한다

@@ -13,7 +13,7 @@ import {
   setMeals,
   updateMealRecord,
 } from './mealStore.js'
-import { get, set } from './storage.js'
+import { get, set, keysWithPrefix } from './storage.js'
 
 // 게스트는 로그인이 없어 사용자를 구분할 방법이 없으므로, 브라우저(기기) 하나당 로컬 데이터 버킷
 // 하나만 쓴다(여러 사람이 한 브라우저를 같이 쓰는 상황은 고려하지 않음 — 예전 데모/게스트 시절과 동일한
@@ -24,10 +24,6 @@ const GUEST_PROFILE_KEY = 'guestProfile'
 async function getSessionUserId() {
   const { data } = await supabase.auth.getSession()
   return data.session?.user?.id ?? null
-}
-
-export async function getMode() {
-  return (await getSessionUserId()) ? 'user' : 'guest'
 }
 
 // ---- profile ----
@@ -155,4 +151,106 @@ export function getGuestMealDates() {
 
 export function getGuestMealsForDate(date) {
   return getLocalMeals(GUEST_ID, date)
+}
+
+// ---- 레벨/XP/퀘스트/뱃지 (게이미피케이션 v2) ----
+// 위 함수들과 같은 규칙으로 모드를 자동 판단한다. 게스트는 storage.js(localStorage)에, 로그인은
+// db.js(Supabase, supabase/migrations/2026-07-29_gamification.sql 적용 후)에 저장한다.
+
+export async function getLevelState() {
+  const userId = await getSessionUserId()
+  if (!userId) return get('levelState', { totalXp: 0 })
+  return db.getLevelState()
+}
+
+// CSV 복원 전용 "덮어쓰기"(claimQuest의 증분과 다름 — 백업에 담긴 값을 그대로 심는다).
+export async function saveLevelState({ totalXp }) {
+  const userId = await getSessionUserId()
+  if (!userId) {
+    set('levelState', { totalXp })
+    return { totalXp }
+  }
+  return db.saveLevelState({ totalXp })
+}
+
+export async function getClaimedQuestIds(dateKey) {
+  const userId = await getSessionUserId()
+  if (!userId) return get(`questClaims:${dateKey}`, [])
+  return db.getClaimedQuestIds(dateKey)
+}
+
+// 이미 그 날짜에 수령한 퀘스트면 재지급하지 않는다(게스트는 브라우저 하나 = 탭 하나를 가정한 순차
+// 실행이라 안전 — 로그인 쪽은 db.js의 유니크 제약이 최종 방어선).
+export async function claimQuest({ dateKey, questId, xpAwarded }) {
+  const userId = await getSessionUserId()
+  if (!userId) {
+    const claimed = get(`questClaims:${dateKey}`, [])
+    if (claimed.includes(questId)) {
+      const { totalXp } = await getLevelState()
+      return { alreadyClaimed: true, totalXp }
+    }
+    set(`questClaims:${dateKey}`, [...claimed, questId])
+    // MY 탭 개편 — "오늘/이번 주 획득 XP" 합산용으로 퀘스트별 지급액도 같이 남긴다(questClaims:는
+    // quest_id 목록뿐이라 금액을 모른다). 기존 questClaims: 형식·이걸 읽는 모든 .includes(id) 소비처는
+    // 그대로 두고 순수 추가만 한다.
+    const claimedXp = get(`questClaimXp:${dateKey}`, {})
+    set(`questClaimXp:${dateKey}`, { ...claimedXp, [questId]: xpAwarded })
+    const { totalXp: currentXp } = await getLevelState()
+    const totalXp = currentXp + xpAwarded
+    await saveLevelState({ totalXp })
+    return { alreadyClaimed: false, totalXp }
+  }
+  return db.claimQuest(dateKey, questId, xpAwarded)
+}
+
+// MY 탭 개편(요약 카드 "오늘 획득 XP"/퀘스트 화면 "이번 주 획득 XP") — startDateKey~endDateKey(포함)
+// 사이에 지급된 XP 총합. 게스트는 questClaimXp: 접두 키를 날짜 범위로 걸러 합산, 로그인은 db.js가
+// quest_claims.xp_awarded를 직접 합산한다(새 SQL 불필요 — 기존 컬럼·RLS로 충분).
+export async function getXpEarnedInRange(startDateKey, endDateKey) {
+  const userId = await getSessionUserId()
+  if (!userId) {
+    let total = 0
+    for (const dateKey of keysWithPrefix('questClaimXp:')) {
+      if (dateKey < startDateKey || dateKey > endDateKey) continue
+      const claimedXp = get(`questClaimXp:${dateKey}`, {})
+      total += Object.values(claimedXp).reduce((sum, xp) => sum + xp, 0)
+    }
+    return total
+  }
+  return db.getXpEarnedInRange(startDateKey, endDateKey)
+}
+
+// 게스트: `questClaims:` 접두 키를 전부 순회해 집계한다(getAllMealsByDate와 같은 방식).
+export async function getQuestClaimStats() {
+  const userId = await getSessionUserId()
+  if (!userId) {
+    const countsByQuestId = {}
+    let totalCount = 0
+    for (const dateKey of keysWithPrefix('questClaims:')) {
+      for (const questId of get(`questClaims:${dateKey}`, [])) {
+        countsByQuestId[questId] = (countsByQuestId[questId] ?? 0) + 1
+        totalCount += 1
+      }
+    }
+    return { totalCount, countsByQuestId }
+  }
+  return db.getQuestClaimStats()
+}
+
+export async function getUnlockedBadgeIds() {
+  const userId = await getSessionUserId()
+  if (!userId) return get('badgeUnlocks', [])
+  return db.getUnlockedBadgeIds()
+}
+
+export async function unlockBadge(badgeId) {
+  const userId = await getSessionUserId()
+  if (!userId) {
+    const unlockedIds = get('badgeUnlocks', [])
+    if (unlockedIds.includes(badgeId)) return { alreadyUnlocked: true, unlockedIds }
+    const next = [...unlockedIds, badgeId]
+    set('badgeUnlocks', next)
+    return { alreadyUnlocked: false, unlockedIds: next }
+  }
+  return db.unlockBadge(badgeId)
 }

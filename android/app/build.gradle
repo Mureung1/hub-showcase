@@ -1,5 +1,25 @@
 apply plugin: 'com.android.application'
 
+// 릴리스 서명 정보는 android/keystore.properties에서 읽는다 — 그 파일과 *.jks는 커밋하지
+// 않는다(android/.gitignore). 이렇게 분리해 두면 Android Studio에서 빌드 변형을 release로
+// 두고 Build > Build APK(s)만 눌러도 서명된 APK가 나오고, 마법사에서 매번 keystore를
+// 고르지 않아도 된다.
+// ⚠️ Properties.load()를 쓰지 않는다. .properties 규격은 역슬래시를 이스케이프로 해석해서
+// 윈도우 절대경로 C:\Users\...\my.jks 가 C:Users...my.jks 로 뭉개진다(\U는 사라지고 \t는
+// 탭이 된다). 키스토어는 저장소 밖에 두는 게 맞으니 절대경로가 정상 사용 형태인데, 거기서
+// "Keystore file not found"가 나면 원인을 찾기 어렵다. 그래서 key=value만 그대로 읽는다.
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = [:]
+def hasKeystore = keystorePropsFile.exists()
+if (hasKeystore) {
+    keystorePropsFile.eachLine('UTF-8') { line ->
+        def t = line.trim()
+        if (t.isEmpty() || t.startsWith('#') || t.startsWith('!')) return
+        def i = t.indexOf('=')
+        if (i > 0) keystoreProps[t.substring(0, i).trim()] = t.substring(i + 1).trim()
+    }
+}
+
 android {
     namespace "com.mealyze.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -7,8 +27,13 @@ android {
         applicationId "com.mealyze.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
+        // ⚠️ 재배포할 때마다 versionCode를 반드시 올린다. 같은 값이면 기기가 업데이트로
+        // 인식하지 않아 "이미 설치된 앱과 충돌"로 설치가 거부된다(제거 후 재설치를 해야 하고,
+        // 그러면 게스트 모드 로컬 데이터가 날아간다).
+        // 다만 서버 URL 방식이라 **웹 변경만으로는 재배포가 필요 없다** — 네이티브 설정·권한·
+        // 아이콘·플러그인이 바뀔 때만 올리면 된다(capacitor.config.json 참고).
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,11 +41,49 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasKeystore) {
+            release {
+                // storeFile 경로는 android/ 기준 상대경로 또는 절대경로 둘 다 허용한다.
+                storeFile rootProject.file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasKeystore) {
+                signingConfig signingConfigs.release
+            }
+            // R8/난독화는 끈 채로 둔다(Capacitor 기본값). 이 앱의 자바 코드는 BridgeActivity
+            // 한 줄이 전부고 화면은 전부 원격 웹이라 줄일 코드가 없는데, Capacitor는 플러그인을
+            // 리플렉션으로 찾기 때문에 켜면 얻는 것 없이 런타임에 플러그인이 사라지는 사고만 난다.
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+// keystore.properties 없이 릴리스를 빌드하면 Gradle은 실패하지 않고 **서명 없는**
+// app-release-unsigned.apk를 뱉는다. 그건 기기에 설치조차 되지 않는데 빌드는 초록색이라
+// "빌드는 됐는데 왜 설치가 안 되지"로 만나게 된다 — 여기서 바로 끊는다.
+// Android Studio의 Generate Signed Bundle / APK 마법사는 keystore를 직접 주입하므로
+// (android.injected.signing.*) 그 경로는 막지 않는다.
+gradle.taskGraph.whenReady { graph ->
+    def injectedSigning = project.hasProperty('android.injected.signing.store.file')
+    def releaseAssemble = graph.allTasks.any { it.name in ['assembleRelease', 'bundleRelease'] }
+    if (releaseAssemble && !hasKeystore && !injectedSigning) {
+        // 메시지를 영문으로 두는 이유: Windows 터미널(CP949)에서 gradlew를 직접 돌리면
+        // Gradle이 내보낸 UTF-8 한글이 깨져서 정작 읽어야 할 때 안 읽힌다. 자세한 설명은
+        // android/keystore.properties.example 에 한글로 있다.
+        throw new GradleException(
+            'Missing android/keystore.properties -- release build would produce an ' +
+            'UNSIGNED apk that cannot be installed.\n' +
+            'Copy android/keystore.properties.example to android/keystore.properties ' +
+            'and fill it in (see that file for how to create the keystore).')
     }
 }
 

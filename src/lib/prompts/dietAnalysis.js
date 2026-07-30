@@ -12,6 +12,11 @@ const MIN_FINDINGS = 4
 const MAX_FINDINGS = 6
 const VALID_TYPES = new Set(['good', 'warn', 'tip'])
 
+// FR-6(Meal-Bot 챗봇)도 이 규칙을 그대로 재사용한다 — 어디까지나 습관 코칭이지 진단·치료가 아니라는
+// 전제는 이 앱이 AI로 영양 조언을 만드는 모든 자리에서 동일해야 한다.
+export const MEDICAL_LANGUAGE_RULE =
+  '"~병 위험이 있습니다", "치료가 필요합니다" 같은 질병 진단·치료 표현은 절대 쓰지 마세요. 어디까지나 습관 코칭입니다.'
+
 function formatStatLine(summary) {
   const parts = NUTRIENT_LABELS.map(({ key, label, unit }) => {
     const avg = summary.avgIntake?.[key]
@@ -53,8 +58,7 @@ export function buildDietAnalysisPrompt(summary, periodDays) {
 5. summary는 1문장으로 짧게, detail은 1~2문장 존댓말로.
 6. 위 [집계 요약]에 없는 날짜별 세부 기록이나 개인 식별 정보는 절대 언급하지 마세요 — 당신은 그
    정보를 모릅니다.
-7. "~병 위험이 있습니다", "치료가 필요합니다" 같은 질병 진단·치료 표현은 절대 쓰지 마세요. 어디까지나
-   습관 코칭입니다.
+7. ${MEDICAL_LANGUAGE_RULE}
 8. 마크다운 코드펜스나 설명 문장 없이 순수 JSON 텍스트만 반환하세요.`
 }
 

@@ -33,9 +33,15 @@ services:
         sync: false
       - key: FOODSAFETY_PROC_API_KEY
         sync: false
+      - key: FOODSAFETY_RECIPE_API_KEY # 조리식품 레시피DB(창작·조합형 급식 메뉴명 보완)
+        sync: false
+      - key: NEIS_API_KEY # 학교 급식 조회 — 없으면 급식 프라이어·공식 영양 앵커링이 조용히 꺼진다
+        sync: false
       - key: VITE_SUPABASE_URL
         sync: false
       - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY # 비밀번호 찾기(/api/auth/*) 전용. 없으면 그 라우트가 전부 500
         sync: false
       - key: APP_URL
         sync: false

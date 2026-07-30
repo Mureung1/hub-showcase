@@ -9,63 +9,30 @@ import DeficientNutrientAds from '../components/DeficientNutrientAds.jsx'
 import LeaderboardCard from '../components/LeaderboardCard.jsx'
 import MealTypeBadge from '../components/MealTypeBadge.jsx'
 import NationalComparisonCard from '../components/NationalComparisonCard.jsx'
+import NutritionStatusPanel from '../components/NutritionStatusPanel.jsx'
 import NutrientEditForm from '../components/NutrientEditForm.jsx'
 import { NutrientBars } from '../components/NutritionCard.jsx'
-import ProgressBarFill from '../components/ProgressBarFill.jsx'
 import SectionTitle from '../components/SectionTitle.jsx'
+import SegmentedControl from '../components/SegmentedControl.jsx'
 import Skeleton from '../components/Skeleton.jsx'
 import SourceBadge from '../components/SourceBadge.jsx'
+import TodayScoreSummary from '../components/TodayScoreSummary.jsx'
 import { useVisibleNutrients } from '../lib/cardSettings.js'
 import { applyManualNutrientEdit } from '../lib/mealEdit.js'
 import { isSetMeal, sumNutrients } from '../lib/mealStore.js'
-import { isLimitNutrient } from '../lib/nutrientCriteria.js'
-import { formatNutrient, formatNutrientOrDash, NUTRIENT_LABELS } from '../lib/nutrition.js'
+import { formatNutrientOrDash, NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { buildRelogNavState } from '../lib/relog.js'
 import { TABS } from '../lib/tabs.js'
 import { useDocumentTitle } from '../lib/useDocumentTitle.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
 
-// 나트륨은 "채워야 할 목표"가 아니라 "넘기면 안 되는 한도"라서 막대 색/문구를 반대로 다룬다.
-function IntakeBar({ label, unit, actual, recommended, isLimit }) {
-  const value = formatNutrient(actual)
-  const percent = recommended > 0 ? Math.min(100, Math.round((actual / recommended) * 100)) : 0
-  const remaining = formatNutrient(recommended - actual)
-  const over = remaining < 0
-
-  let barColor
-  let statusText
-  let statusColor
-
-  if (isLimit) {
-    barColor = over ? colors.danger : colors.satisfied
-    statusText = over ? `${-remaining}${unit} 줄여야 해요` : `한도까지 ${remaining}${unit} 남았어요`
-    // 막대 채우기(barColor)는 원래 톤을 유지하고, 텍스트(statusColor)만 대비가 확보된 톤을 쓴다.
-    statusColor = over ? colors.dangerText : colors.muted
-  } else if (over || remaining === 0) {
-    barColor = colors.satisfied
-    statusText = over ? `달성 · +${-remaining}${unit}` : '달성했어요'
-    statusColor = colors.satisfied
-  } else {
-    barColor = colors.deficient
-    statusText = `${remaining}${unit} 더 필요해요`
-    statusColor = colors.deficientText
-  }
-
-  return (
-    <div style={{ marginBottom: spacing.md }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: spacing.xs }}>
-        <span style={{ color: colors.textStrong, fontSize: font.size.sm, fontWeight: 600 }}>{label}</span>
-        <span style={{ color: colors.textSub, fontSize: font.size.xs }}>
-          {value} / {formatNutrient(recommended)} {unit}
-        </span>
-      </div>
-      <div style={{ height: 8, background: colors.track, borderRadius: radius.pill, overflow: 'hidden' }}>
-        <ProgressBarFill percent={percent} color={barColor} />
-      </div>
-      <p style={{ margin: `${spacing.xs}px 0 0`, fontSize: font.size.xs, fontWeight: 600, color: statusColor }}>{statusText}</p>
-    </div>
-  )
-}
+// 식단 탭 개편(리텐션 강화 v7) — 영양소/평균 비교/먹은 음식 3-way 탭. 예전엔 이 셋이 전부 항상
+// 보이는 별개 섹션으로 세로로 쌓여 있었다.
+const MEALS_DETAIL_TABS = [
+  { key: 'nutrients', label: '영양소' },
+  { key: 'average', label: '평균 비교' },
+  { key: 'meals', label: '먹은 음식' },
+]
 
 function TrashIcon() {
   return (
@@ -312,7 +279,6 @@ export default function MealsPage() {
   const recommended = effectiveRecommended
   const { showToast } = useToast()
   const navigate = useNavigate()
-  const visible = useVisibleNutrients()
   const [expandedIds, setExpandedIds] = useState(() => new Set())
   const [deletingId, setDeletingId] = useState(null)
   // 삭제 확인 대기 중인 끼니 — { id, title } | null. 클릭 즉시 지우지 않고 ConfirmDialog로 한 번 더
@@ -322,6 +288,7 @@ export default function MealsPage() {
   // 카드를 저장할 위험이 있다).
   const [editingId, setEditingId] = useState(null)
   const [savingEdit, setSavingEdit] = useState(false)
+  const [detailTab, setDetailTab] = useState('nutrients')
 
   function toggleDetail(mealRecordId) {
     setExpandedIds((prev) => {
@@ -373,28 +340,7 @@ export default function MealsPage() {
       {/* 화면 제목("식단")과 설명 줄은 두지 않는다 — 하단 탭바가 이미 현재 화면을 알려주므로
           중복이고, 그만큼 첫 카드를 위로 올려 한 화면에 담기는 정보를 늘린다. */}
       {recommended ? (
-        <Card>
-          <h2 style={{ fontSize: font.size.lg, margin: `0 0 ${spacing.lg}px` }}>오늘의 영양 섭취량</h2>
-          {NUTRIENT_LABELS.filter(({ key }) => visible[key]).map(({ key, label, unit }) => (
-            <IntakeBar
-              key={key}
-              label={label}
-              unit={unit}
-              actual={todayMealsTotal[key]}
-              recommended={recommended[key]}
-              isLimit={isLimitNutrient(key)}
-            />
-          ))}
-          {todayMeals.length > 0 && (
-            <Link
-              to="/result"
-              className="tds-press"
-              style={{ ...styles.linkButton, display: 'block', textAlign: 'center', marginTop: spacing.md }}
-            >
-              오늘의 영양 진단 보기
-            </Link>
-          )}
-        </Card>
+        <TodayScoreSummary todayTotal={todayMealsTotal} recommended={recommended} />
       ) : (
         <Card style={{ textAlign: 'center' }}>
           <p style={{ marginBottom: spacing.lg }}>신체정보가 없어 권장량을 계산할 수 없어요.</p>
@@ -408,60 +354,98 @@ export default function MealsPage() {
         </Card>
       )}
 
-      {/* PRD FR-3.1: 식단 요약 카드 "아래"에 놓는다(스크롤 최상단을 광고가 점유하지 않게). */}
+      {/* PRD FR-3.1: 식단 요약 카드 "아래"에 놓는다(스크롤 최상단을 광고가 점유하지 않게). 탭 안에
+          넣으면 노출이 줄어드므로 개편 후에도 항상 보이는 이 자리를 유지한다. */}
       <DeficientNutrientAds />
 
-      <LeaderboardCard />
+      {/* 식단 탭 개편 — 예전엔 "오늘의 영양 섭취량"(칼로리 포함 6개 막대) · "한국 평균과 비교" ·
+          "오늘 먹은 음식"이 전부 항상 보이는 별개 섹션으로 세로로 쌓여 있었다. 이제 세그먼트 탭
+          하나로 묶는다(칼로리는 위 TodayScoreSummary로 이미 옮겨서 "영양소" 탭엔 나머지 5개만 남는다). */}
+      <div style={{ marginBottom: spacing.md }}>
+        <SegmentedControl options={MEALS_DETAIL_TABS} value={detailTab} onChange={setDetailTab} />
+      </div>
 
-      <NationalComparisonCard />
+      {/* 달력 탭 날짜 상세의 "영양소" 탭과 **같은 컴포넌트**를 쓴다. 예전엔 두 탭이 같은 정보를 서로
+          다른 모양(이쪽은 굵은 막대 + "23g 더 필요해요", 저쪽은 얇은 막대 + "65% 부족")으로 그려서,
+          같은 앱 안에서 같은 데이터가 다르게 보였다. 컴포넌트를 공유하면 앞으로도 갈라지지 않는다.
+          칼로리는 위 TodayScoreSummary가 이미 보여주므로 여기선 뺀다. */}
+      {detailTab === 'nutrients' &&
+        (recommended ? (
+          <Card>
+            <NutritionStatusPanel recommended={recommended} total={todayMealsTotal} excludeKeys={['calories']} />
+            {todayMeals.length > 0 && (
+              <Link
+                to="/result"
+                className="tds-press"
+                style={{ ...styles.linkButton, display: 'block', textAlign: 'center', marginTop: spacing.md }}
+              >
+                오늘의 영양 진단 보기
+              </Link>
+            )}
+          </Card>
+        ) : (
+          <Card style={{ textAlign: 'center' }}>
+            <p style={{ margin: 0, color: colors.textSub, fontSize: font.size.sm }}>
+              신체정보를 입력하면 영양소별 섭취량을 볼 수 있어요.
+            </p>
+          </Card>
+        ))}
 
-      <SectionTitle>오늘 먹은 음식</SectionTitle>
+      {detailTab === 'average' && <NationalComparisonCard />}
 
-      {todayMealsLoading ? (
+      {detailTab === 'meals' && (
         <>
-          {[0, 1].map((i) => (
-            <Card key={i}>
-              <Skeleton height={18} width="50%" style={{ marginBottom: spacing.sm }} />
-              <Skeleton height={14} width="80%" />
+          <SectionTitle>오늘 먹은 음식</SectionTitle>
+
+          {todayMealsLoading ? (
+            <>
+              {[0, 1].map((i) => (
+                <Card key={i}>
+                  <Skeleton height={18} width="50%" style={{ marginBottom: spacing.sm }} />
+                  <Skeleton height={14} width="80%" />
+                </Card>
+              ))}
+            </>
+          ) : todayMealsError ? (
+            <Card style={{ textAlign: 'center' }}>
+              <p style={{ ...styles.errorText, margin: `0 0 ${spacing.md}px` }}>{todayMealsError}</p>
+              <AppButton variant="secondary" onClick={refetchTodayMeals}>
+                다시 시도
+              </AppButton>
             </Card>
-          ))}
+          ) : todayMeals.length === 0 ? (
+            <Card style={{ textAlign: 'center', padding: `${spacing.xxxl}px ${spacing.xl}px` }}>
+              <p style={{ color: colors.textStrong, fontWeight: 700, marginBottom: spacing.sm }}>아직 기록이 없어요</p>
+              <p style={{ color: colors.textSub, marginBottom: spacing.lg }}>홈에서 음식을 촬영해보세요.</p>
+              <Link
+                to="/analyze"
+                className="tds-press"
+                style={{ ...styles.buttonPrimary, display: 'flex', textDecoration: 'none' }}
+              >
+                음식 촬영하러 가기
+              </Link>
+            </Card>
+          ) : (
+            todayMeals.map((record) => (
+              <MealRecordCard
+                key={record.id}
+                record={record}
+                expanded={expandedIds.has(record.id)}
+                onToggleDetail={() => toggleDetail(record.id)}
+                onRemove={() => setPendingDelete({ id: record.id, title: recordTitle(record) })}
+                onRelog={() => navigate('/analyze', { state: buildRelogNavState(record) })}
+                isEditing={editingId === record.id}
+                onStartEdit={() => setEditingId(record.id)}
+                onCancelEdit={() => setEditingId(null)}
+                onSaveEdit={(nextNutrients) => handleSaveEdit(record, nextNutrients)}
+                savingEdit={savingEdit}
+              />
+            ))
+          )}
         </>
-      ) : todayMealsError ? (
-        <Card style={{ textAlign: 'center' }}>
-          <p style={{ ...styles.errorText, margin: `0 0 ${spacing.md}px` }}>{todayMealsError}</p>
-          <AppButton variant="secondary" onClick={refetchTodayMeals}>
-            다시 시도
-          </AppButton>
-        </Card>
-      ) : todayMeals.length === 0 ? (
-        <Card style={{ textAlign: 'center', padding: `${spacing.xxxl}px ${spacing.xl}px` }}>
-          <p style={{ color: colors.textStrong, fontWeight: 700, marginBottom: spacing.sm }}>아직 기록이 없어요</p>
-          <p style={{ color: colors.textSub, marginBottom: spacing.lg }}>홈에서 음식을 촬영해보세요.</p>
-          <Link
-            to="/analyze"
-            className="tds-press"
-            style={{ ...styles.buttonPrimary, display: 'flex', textDecoration: 'none' }}
-          >
-            음식 촬영하러 가기
-          </Link>
-        </Card>
-      ) : (
-        todayMeals.map((record) => (
-          <MealRecordCard
-            key={record.id}
-            record={record}
-            expanded={expandedIds.has(record.id)}
-            onToggleDetail={() => toggleDetail(record.id)}
-            onRemove={() => setPendingDelete({ id: record.id, title: recordTitle(record) })}
-            onRelog={() => navigate('/analyze', { state: buildRelogNavState(record) })}
-            isEditing={editingId === record.id}
-            onStartEdit={() => setEditingId(record.id)}
-            onCancelEdit={() => setEditingId(null)}
-            onSaveEdit={(nextNutrients) => handleSaveEdit(record, nextNutrients)}
-            savingEdit={savingEdit}
-          />
-        ))
       )}
+
+      <LeaderboardCard />
 
       {pendingDelete && (
         <ConfirmDialog

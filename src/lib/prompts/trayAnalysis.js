@@ -18,7 +18,9 @@ export function buildTrayAnalysisPrompt(trayItems) {
 [메뉴 목록]
 ${itemLines}
 
-각 항목마다 calories(kcal), protein(g), carbs(g), fat(g), sodium(mg), fiber(g) 여섯 값을 모두 추정하고, 전체 항목을 합산한 total도 함께 계산하세요. 과대추정하지 말고 한국 표준 식단 기준 현실적인 범위로 추정하세요.
+각 항목마다 calories(kcal), protein(g), carbs(g), fat(g), sodium(mg), fiber(g) 여섯 값을 모두 추정하고, 전체 항목을 합산한 total도 함께 계산하세요. 과대추정과 과소추정을 **모두** 피하고, 명시된 중량에 걸맞은 값을 내세요.
+
+이건 **급식 식판**입니다. 같은 이름의 식당 메뉴보다 기름·양념·당류를 적게 쓰고 1인분도 작습니다 — 외식 기준 수치를 그대로 가져오면 과대추정이 됩니다. 학교 급식 한 끼 총열량은 보통 600~900kcal, 단백질 20~35g, 지방 15~30g 범위입니다. 합산 결과가 이 범위를 크게 벗어나면 항목별로 다시 검토하세요.
 
 설명이나 마크다운 없이, 아래 형식과 정확히 일치하는 JSON만 반환하세요:
 {"items":[{"name":"메뉴명","weight":210,"calories":0,"protein":0,"carbs":0,"fat":0,"sodium":0,"fiber":0}],"total":{"calories":0,"protein":0,"carbs":0,"fat":0,"sodium":0,"fiber":0}}`

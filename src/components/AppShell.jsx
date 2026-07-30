@@ -1,10 +1,25 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import BottomTabBar from './BottomTabBar.jsx'
+import ChatBotSheet from './ChatBotSheet.jsx'
+import LevelUpPopup from './LevelUpPopup.jsx'
+import { useUser } from '../context/UserContext.jsx'
 import { navDirection } from '../lib/useTabTransition.js'
 import { colors, layout } from '../styles/theme.js'
 
-const TAB_BAR_CLEARANCE = 76 // 탭바(고정 위치)에 콘텐츠 마지막 줄이 가리지 않도록 확보하는 하단 여백
+// 탭바(고정 위치)에 콘텐츠 마지막 줄이 가리지 않도록 확보하는 하단 여백. export하는 이유: 지도 탭
+// (MapPage.jsx)이 화면 전체를 차지하는 지도+바텀시트 레이아웃으로 개편되면서, 탭바 바로 위까지
+// 정확히 차오르는 높이를 직접 계산해야 하는 유일한 페이지가 됐다 — 같은 상수를 이중 관리하지 않는다.
+//
+// safe-area를 더하는 이유: BottomTabBar 자신은 paddingBottom에 env(safe-area-inset-bottom)을 넣어
+// 제스처 내비게이션 바를 피하는데, 이 여백은 76px 고정이라 그만큼 모자랐다 — 그 기기에서 탭바가
+// 지도 바텀시트 하단(“두 곳 비교하기” 버튼)을 덮었다.
+export const TAB_BAR_CLEARANCE = 'calc(76px + env(safe-area-inset-bottom))'
+
+// 챗봇 런처(리텐션 강화 v4)를 띄울 탭 — MY(/profile)는 제외. AppShell은 이 4개 외에도 /login·
+// /signup·/forgot-password(hideTabBar)와 /·/result·404에도 재사용되므로, "/profile만 제외" 대신
+// "이 4개만 허용"하는 화이트리스트로 짜야 로그인/가입/404 화면에 새어나가지 않는다.
+const CHATBOT_PATHS = ['/analyze', '/meals', '/calendar', '/map']
 
 // 탭별 스크롤 위치를 기억해 되돌아왔을 때 복원한다(PRD v2.0 §4의 "탭 전환 시 각 탭의 스크롤 위치가
 // 유지되는지 확인하고, 깨진다면 유지되도록 처리"). 라우트가 통째로 언마운트/마운트되는 구조라
@@ -18,8 +33,8 @@ let lastPathname = null
 // 바뀔 때마다 탭바까지 다시 그려진다.
 export default function AppShell({ hideTabBar = false }) {
   const { pathname } = useLocation()
-  const pathRef = useRef(pathname)
-  pathRef.current = pathname
+  const { levelUpPopup, dismissLevelUpPopup } = useUser()
+  const showChatBot = CHATBOT_PATHS.some((p) => pathname.startsWith(p))
 
   // 슬라이드 방향을 <html data-nav-direction>에 반영한다. useTabTransition이 탭바 클릭 시 미리
   // 세팅하지만(View Transitions 스냅샷 전에 값이 있어야 하므로), 탭바를 거치지 않는 이동
@@ -31,13 +46,25 @@ export default function AppShell({ hideTabBar = false }) {
     lastPathname = pathname
   }, [pathname])
 
-  useEffect(() => {
+  // ⚠️ 저장 키는 **클로저의 pathname**이어야 한다. 예전엔 pathRef.current를 썼는데, 정리(cleanup)가
+  // 도는 시점에는 이미 새 경로로 리렌더된 뒤라 `pathRef.current`가 **새 경로**를 가리킨다 — 즉 떠나는
+  // 화면의 스크롤 위치가 들어오는 화면의 키에 저장되고, 바로 아래 복원이 그 값을 읽어 **새 화면이
+  // 맨 아래에서 열렸다.** MY 탭은 바로가기 그리드가 화면 맨 아래라 이 버그가 100% 재현됐다
+  // (퀘스트·리더보드·배지 도감… 전부 스크롤이 내려간 채로 열림).
+  // 이 이펙트에 붙은 정리는 언제나 "그 이펙트가 담당한 경로"의 것이므로 클로저 값이 정답이다.
+  //
+  // useLayoutEffect인 이유: 패시브 이펙트로 두면 정리가 **DOM 교체 뒤**에 돌아, 새 화면이 더 짧을 때
+  // 브라우저가 스크롤을 잘라내며 쏘는 scroll 이벤트를 떠나는 화면의 핸들러가 받아 엉뚱한 값을
+  // 저장한다. 레이아웃 이펙트는 DOM 교체 전에 정리되므로 그 창이 없다. 복원도 페인트 전에 끝나
+  // 화면이 한 번 깜빡였다가 올라가는 것도 사라진다.
+  useLayoutEffect(() => {
     // 이 화면에 들어올 때: 기억해둔 위치로 복원(처음 방문이면 맨 위).
     // View Transitions가 진행 중일 수 있어 즉시(behavior 기본값 auto)로 옮긴다 — 부드럽게 스크롤하면
     // 전환 애니메이션과 겹쳐 화면이 두 번 움직이는 것처럼 보인다.
+    // 리스너보다 **먼저** 복원한다 — 순서가 바뀌면 복원이 만든 scroll 이벤트를 자기 리스너가 받는다.
     window.scrollTo(0, scrollByPath.get(pathname) ?? 0)
 
-    const remember = () => scrollByPath.set(pathRef.current, window.scrollY)
+    const remember = () => scrollByPath.set(pathname, window.scrollY)
     // passive: 스크롤 성능에 영향을 주지 않게(이 핸들러는 preventDefault를 하지 않는다).
     window.addEventListener('scroll', remember, { passive: true })
     return () => {
@@ -63,6 +90,12 @@ export default function AppShell({ hideTabBar = false }) {
         <Outlet />
       </div>
       {!hideTabBar && <BottomTabBar />}
+      {/* 어느 탭에서 퀘스트를 클레임했든(홈의 runGamification, MY 탭 QuestBoard의 자동 클레임 등) 항상
+          같은 자리에서 레벨업 팝업이 뜨도록 레이아웃 라우트에 올려둔다 — Analyze.jsx 로컬 렌더에서 이동. */}
+      {levelUpPopup && <LevelUpPopup level={levelUpPopup.level} onDone={dismissLevelUpPopup} />}
+      {/* 챗봇도 같은 이유로 레이아웃 라우트에 올려 MY 탭을 제외한 4개 탭 어디서나 뜨게 한다(리텐션
+          강화 v4) — 예전엔 Analyze.jsx 안에서만 렌더됐다. */}
+      {showChatBot && <ChatBotSheet />}
     </div>
   )
 }

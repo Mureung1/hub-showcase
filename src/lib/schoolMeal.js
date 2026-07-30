@@ -27,7 +27,14 @@ export async function searchSchools(name, signal) {
 export async function getSchoolMeals({ officeCode, schoolCode, from, to }) {
   const params = new URLSearchParams({ officeCode, schoolCode, from, to })
   const res = await fetchWithTimeout(`/api/school-meal?${params.toString()}`)
-  const data = await res.json().catch(() => null)
+  // 헤더는 이미 받은(res.ok 확정) 뒤 본문을 읽는 도중 fetchWithTimeout의 내부 타임아웃이 발동하면
+  // AbortError가 나는데, 그걸 null로 삼켜버리면 "응답이 지연됨"이 "이 기간엔 급식이 없음"으로
+  // 둔갑해 화면이 빈 상태로 조용히 잘못 표시된다. searchSchools(위)와 달리 여기엔 취소를 기대하는
+  // 디바운스 호출부가 없으므로(모든 AbortError가 곧 타임아웃), 원본 대신 안내 문구로 던진다.
+  const data = await res.json().catch((err) => {
+    if (err.name === 'AbortError') throw new Error('응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.')
+    return null
+  })
 
   if (!res.ok) {
     throw new Error(data?.error || `급식 조회 요청 실패 (${res.status})`)
