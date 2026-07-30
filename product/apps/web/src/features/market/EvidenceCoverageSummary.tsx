@@ -29,12 +29,12 @@ function evidenceItems(analysis: MarketAnalysis): EvidenceItem[] {
           : `${period} 서울시 추정값 · 개별 점포 매출 아님`,
     },
     {
-      label: "길단위인구 추정치",
+      label: "유동인구",
       available: analysis.raw.total_flow !== null,
       detail:
         analysis.raw.total_flow === null
-          ? "선택 분기에 길단위인구 자료가 없습니다."
-          : `${period} 서울시 추정값 · 실시간 보행자 수 아님`,
+          ? "선택 분기에 유동인구 자료가 없습니다."
+          : `${period} 서울시 길단위인구 기반 추정치 · 실시간 보행자 수 아님`,
     },
   ];
 }
