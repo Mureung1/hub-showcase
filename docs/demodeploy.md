@@ -7,6 +7,9 @@
 - **api**: Render (always-on 웹서비스 — 서버리스 함수 아님. SSE 스트림을 오래 열어둬야 한다)
 - **DB·Auth**: 기존 Supabase 프로젝트 그대로
 
+> ⚠️ **api를 Vercel 같은 서버리스 플랫폼에 올리면 안 된다.** 함수 실행 시간 제한이 있는데, 이 파이프라인은 3사 생성 + Manager 판정 + FinalAnswer 생성으로 **한 요청이 60~180초** 걸린다(실측: Manager 37.9~145.5초, FinalAnswer 15~33초). 게다가 SSE 스트림을 15초 heartbeat로 계속 열어둔다. Render처럼 **컨테이너로 상주하는** 방식이어야 한다.
+> web은 정적 빌드라 Netlify·Vercel 어느 쪽이든 되지만, 이 문서는 Netlify 기준이다.
+
 ---
 
 ## 0. 배포 전 로컬 확인 (권장, 5분)
@@ -42,7 +45,19 @@ ls apps/web/dist/index.html apps/api/dist/server.js   # 둘 다 있어야 한다
 
 ### `/prompts` 배포 포함 여부
 
-- `/prompts/answer/{claude,openai,gemini}/v1.md`는 저장소에 커밋되어 있고 `.gitignore` 대상이 아니다 → **루트를 배포하면 자동 포함된다.**
+**현재 프롬프트 9종**이 저장소에 커밋되어 있고 `.gitignore` 대상이 아니다 → **루트를 배포하면 자동 포함된다.**
+
+```text
+prompts/answer/{claude,openai,gemini}/v1.md    3사 답변
+prompts/manager/classify/v1.md                 단계 3 쟁점 분류
+prompts/manager/leftover/v1.md                 단계 4 leftover·제목 중립화
+prompts/manager/compare/v1.md                  단계 6 충돌 판정
+prompts/manager/recheck/v1.md                  재검토
+prompts/manager/final/v1.md                    FinalAnswer
+prompts/manager/finalNote/v1.md                DecisionNote
+```
+
+**Root Directory를 `apps/api`로 잡으면 이 9개가 전부 빠져 생성·판정이 모두 실패한다.**
 - 별도 설정은 필요 없다. 다른 위치에 두고 싶을 때만 `ANSWER_PROMPTS_DIR`에 절대 경로를 지정한다.
 - 프롬프트는 런타임에 읽는 텍스트라 문구만 고치면 재빌드가 필요 없다. 단, 프로세스 내 캐시가 있어 **재배포(재기동)해야 반영**된다.
 
@@ -59,7 +74,11 @@ ls apps/web/dist/index.html apps/api/dist/server.js   # 둘 다 있어야 한다
 | `ANTHROPIC_API_KEY` | 앱 기본 Claude 키 |
 | `OPENAI_API_KEY` | 앱 기본 OpenAI 키 |
 | `GEMINI_API_KEY` | 앱 기본 Gemini 키 |
+| **`OPENROUTER_API_KEY`** | **Manager AI 키.** 없으면 서버가 기동하지 않는다. 선불 크레딧 필요 |
+| **`MANAGER_MODEL`** | **`qwen/qwen3.7-plus`** — SPEC-AI-002 §15.2에서 확정 |
 | `CLIENT_ORIGIN` | **Netlify 주소**(예: `https://<사이트>.netlify.app`). CORS 허용 출처 |
+
+> ⚠️ **`OPENROUTER_API_KEY`·`MANAGER_MODEL`은 required다.** 빠지면 기동 시 종료된다. Manager AI(쟁점 분류·충돌 판정·재검토)와 FinalAnswer 생성이 전부 이 키를 쓴다. 3사 키와 별개이며 **BYOK 대상이 아니다**(사용자 키를 쓰지 않고 앱 키만 사용).
 
 **선택(기본값 있음)**
 
@@ -72,6 +91,17 @@ ls apps/web/dist/index.html apps/api/dist/server.js   # 둘 다 있어야 한다
 | `CLAUDE_MODEL` | `claude-haiku-4-5` | 최소 티어 기본값 |
 | `OPENAI_MODEL` | `gpt-5-nano` | 최소 티어 기본값 |
 | `GEMINI_MODEL` | `gemini-3.5-flash-lite` | 최소 티어 기본값 |
+| `MANAGER_PROMPTS_DIR` | 저장소 루트 `/prompts/manager` | Manager 프롬프트 루트 |
+| `CLASSIFIER_PROMPT_VERSION` | `v1` | 단계 3·4 (쟁점 분류) |
+| `COMPARATOR_PROMPT_VERSION` | `v1` | 단계 6 (충돌 판정) |
+| `RECHECKER_PROMPT_VERSION` | `v1` | 재검토 |
+| `COMPOSER_PROMPT_VERSION` | `v1` | FinalAnswer·DecisionNote 생성 |
+| `MANAGER_CONFLICT_TYPES` | `main_answer` | 충돌로 볼 차이 유형(쉼표 구분). SPEC-AI-002 결정 6 |
+| `MANAGER_CONCURRENCY` | `3` | 단계 6 쟁점별 병렬 상한 |
+| `MANAGER_TIMEOUT_MS` | `45000` | 단계 3·4 타임아웃 |
+| `MANAGER_JUDGE_TIMEOUT_MS` | `120000` | 단계 6·재검토·FinalAnswer 타임아웃. SPEC-AI-002 §2.4 |
+| `MANAGER_JUDGE_REASONING_EFFORT` | `low` | 단계 6 추론 예산. §14.5가 꼬리 절단 효과로 확정 |
+| `CONTEXT_MAX_NOTES` | `5` | 다음 Question Context에 포함할 DecisionNote 수 상한 |
 
 - `PORT`는 Render가 주입하므로 **직접 설정하지 않는다**(서버가 `process.env.PORT`를 읽는다).
 - `SUPABASE_DB_URL`은 마이그레이션 적용 전용이라 **런타임 env에 넣지 않는다**.
