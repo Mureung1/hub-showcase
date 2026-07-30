@@ -23,9 +23,13 @@ function WorkspacePage() {
     isActiveChatBusy,
     mockValidationError,
     liveStatuses,
+    managerProgress,
+    serverBacked,
     submitQuestion,
     resolveAgenda,
     requestRecheck,
+    resolveAgendaOnServer,
+    requestRecheckOnServer,
     selectChat,
     startNewChat,
   } = useChatWorkspace();
@@ -122,6 +126,10 @@ function WorkspacePage() {
             onSubmitQuestion={handleSubmitQuestion}
             onResolveAgenda={resolveAgenda}
             onRequestRecheck={requestRecheck}
+            serverBacked={serverBacked}
+            onResolveAgendaOnServer={resolveAgendaOnServer}
+            onRequestRecheckOnServer={requestRecheckOnServer}
+            managerProgress={managerProgress}
           />
         }
         notes={
