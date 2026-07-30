@@ -1,5 +1,6 @@
 import type { Proposal } from "shared";
 import { checkGuardrails } from "./guardrails";
+import { discountKind } from "./promoSync";
 
 /**
  * 제안 품질 루브릭 — LLM 회귀(4-6)에서 날씨×업종 출력을 평가하는 기준.
@@ -7,6 +8,7 @@ import { checkGuardrails } from "./guardrails";
  * 가드레일(할인율·LMS·금칙어·창작상호)은 **발송 파이프라인이 실제로 강제**하는 안전 항목이라
  * checkGuardrails로 재사용한다. 그 위에 발송을 막지는 않지만 품질상 지켜야 하는 항목을 더한다:
  *  - 한국어 전용(한글이 아닌 문자는 전부 금지, 이모지·숫자·기호는 허용)
+ *  - 쿠폰은 금액권("N원 할인")으로만 — 정률(%)·무료 증정 금지
  *  - 손님 문구(title·copy)에 매출·진단 등 내부 정보 노출 금지
  *  - channels가 허용된 enum({instagram,x,dangol}) 안에 있음
  *
@@ -72,12 +74,36 @@ export function checkProposalQuality(proposal: Proposal, storeName?: string): Qu
     if (foreign.length > 0) violations.push(`비한국어 문자(${name}): ${foreign.join(" ")}`);
   }
 
-  // 3) 손님 문구에 내부 정보 노출 금지 (title·copy)
+  // 3) 쿠폰은 금액권만.
+  //
+  // 왜 형태를 강제하나: promo가 자유 문구라 "스콘 1개 무료" 같은 값이 들어오면
+  //  - maxDiscountPct·maxDiscountWon이 둘 다 0을 읽어 **상한(20%·3,000원)을 그냥 지나간다**
+  //    (실측 2026-07-30 "선물 / 스콘 1개 무료" — 원가에 상관없이 무제한 혜택이 저장됐다)
+  //  - FE parsePromo가 kind:"none"으로 떨어져 쿠폰 편집칸이 안 뜨고, 문구를 고쳐도
+  //    쿠폰에 반영되지 않는다. promoMismatch도 none이면 판정을 안 해 경고조차 없다.
+  //
+  // 정률(%)이 아니라 금액으로 통일하는 이유: 형태가 하나면 문구↔쿠폰 형태 불일치가
+  // 원천적으로 불가능하고, 3,000원 상한이 항상 읽힌다. 손님에게도 "2,000원 할인"이
+  // "15% 할인"보다 체감이 분명하다.
+  const promoKind = discountKind(proposal.promo.value);
+  if (promoKind !== "amount") {
+    const reason = promoKind === "rate" ? "정률(%)" : "금액 표기 없음";
+    violations.push(`쿠폰이 금액권이 아님(${reason}): ${proposal.promo.value}`);
+  }
+
+  // copy도 같이 본다. 쿠폰만 금액권으로 막고 문구에 "10% 할인"이 남으면 문자와 쿠폰이
+  // 서로 다른 혜택을 약속한다 — 사장님이 처음 지적한 그 증상이다.
+  // ("100% 아라비카"는 안 걸린다. RATE가 "% 할인"에만 앵커돼 있다.)
+  if (discountKind(proposal.copy) === "rate") {
+    violations.push(`문구에 정률(%) 할인 표기: ${proposal.copy.match(/\d+\s*%\s*할인/)?.[0] ?? ""}`);
+  }
+
+  // 4) 손님 문구에 내부 정보 노출 금지 (title·copy)
   const customerFacing = `${proposal.title} ${proposal.copy}`;
   const leaked = INTERNAL_WORDS.filter((w) => customerFacing.includes(w));
   if (leaked.length > 0) violations.push(`내부정보 노출: ${leaked.join(", ")}`);
 
-  // 4) 채널 enum
+  // 5) 채널 enum
   const badChannels = proposal.channels.filter((c) => !ALLOWED_CHANNELS.has(c));
   if (badChannels.length > 0) violations.push(`허용 안 된 채널: ${badChannels.join(", ")}`);
 

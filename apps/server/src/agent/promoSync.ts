@@ -21,6 +21,19 @@ import type { Proposal } from "shared";
 const RATE = /(\d+)\s*%(?=\s*할인)/g;
 const AMOUNT = /([\d,]+)\s*원(?=\s*(?:할인|쿠폰))/g;
 
+/** 혜택 형태. none = %도 원도 못 읽음(무료 증정·1+1 등). */
+export type DiscountKind = "rate" | "amount" | "none";
+
+/**
+ * 문구의 혜택 형태만 판별한다.
+ *
+ * 서버에서 형태를 보는 곳(quality.ts의 금액권 강제)이 자기 정규식을 새로 두지 않게 하려고
+ * 여기서 내보낸다 — 같은 규칙이 여러 벌 복사되면 반드시 어긋난다(2026-07-30 비한국어 검사 사례).
+ */
+export function discountKind(text: string): DiscountKind {
+  return readDiscount(text)?.kind ?? "none";
+}
+
 /** 문구에서 첫 할인 표기를 읽는다. 못 읽으면 null. */
 function readDiscount(text: string): { kind: "rate" | "amount"; raw: string } | null {
   const rate = [...text.matchAll(RATE)][0];

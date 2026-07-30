@@ -7,7 +7,7 @@
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:llm": "node --env-file=.env node_modules/vitest/vitest.mjs run src/agent/regression.test.ts",
+    "test:llm": "node --env-file=.env ../../node_modules/vitest/vitest.mjs run src/agent/regression.test.ts --disable-console-intercept",
     "db:seed": "tsx --env-file=.env src/db/seed.ts",
     "db:backfill": "tsx --env-file=.env src/db/backfill.ts",
     "db:repair-proposals": "tsx --env-file=.env src/db/repairProposals.ts"
