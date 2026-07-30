@@ -1,6 +1,7 @@
 import { Router } from "express"
 import { parseArticle } from "../services/articleParser.js"
 import { computeFastAnalysis, computeSlowAnalysis, saveTermsToVocabulary } from "../services/llmService.js"
+import { ensureArticle, saveFastAnalysis, saveSlowAnalysis } from "../services/articleStore.js"
 import { attachUser } from "../middleware/auth.js"
 
 const router = Router()
@@ -31,9 +32,18 @@ function validateParagraphs(paragraphs) {
 // terms/insight/marketSentiment까지 기다리지 않아 응답이 더 빠르다.
 router.post("/analyze", async (req, res) => {
   try {
-    const { paragraphs, title } = req.body
+    const { paragraphs, title, url } = req.body
     validateParagraphs(paragraphs)
+
+    // url이 있으면 기사 단위 캐시를 먼저 확인한다 — 같은 기사를 다시 열어도
+    // Claude를 재호출하지 않고 이전 분석 결과를 그대로 재사용한다.
+    const article = url ? await ensureArticle(title, url) : null
+    if (article?.fast_analysis) {
+      return res.json({ success: true, data: article.fast_analysis })
+    }
+
     const analysis = await computeFastAnalysis(paragraphs, title)
+    if (article) await saveFastAnalysis(article.id, analysis)
     res.json({ success: true, data: analysis })
   } catch (err) {
     res.status(500).json({ success: false, error: err.message })
@@ -48,7 +58,19 @@ router.post("/analyze/details", attachUser, async (req, res) => {
   try {
     const { paragraphs, title, url } = req.body
     validateParagraphs(paragraphs)
-    const analysis = await computeSlowAnalysis(paragraphs, title)
+
+    // fast lane과 동일하게 기사 단위 캐시를 먼저 확인한다. 캐시 히트여도
+    // saveTermsToVocabulary는 그대로 호출한다 — 단어장은 사용자별 데이터라
+    // 이 기사를 처음 읽는 사용자라면 여전히 적재돼야 하기 때문. 다만 이제
+    // terms 문자열이 기사당 고정값이라, 같은 사용자가 재방문해도
+    // appendVocabulary의 문자열 완전일치 dedup이 정확히 걸러낸다.
+    const article = url ? await ensureArticle(title, url) : null
+    let analysis = article?.slow_analysis ?? null
+    if (!analysis) {
+      analysis = await computeSlowAnalysis(paragraphs, title)
+      if (article) await saveSlowAnalysis(article.id, analysis)
+    }
+
     await saveTermsToVocabulary(analysis.terms, title, url, req.userId)
     res.json({ success: true, data: analysis })
   } catch (err) {

@@ -10,9 +10,26 @@ export async function ensureArticle(title, url) {
   const { data, error } = await supabase
     .from("articles")
     .upsert({ title, url }, { onConflict: "url" })
-    .select("id")
+    .select("id, fast_analysis, slow_analysis")
     .single()
 
   if (error) throw new Error(error.message)
   return data
+}
+
+// analyze(fast lane) 결과 캐시. 같은 url로 재분석 요청이 와도 Claude를 다시
+// 부르지 않고 이 값을 재사용한다(비용/지연 절감).
+export async function saveFastAnalysis(articleId, analysis) {
+  const supabase = getSupabase()
+  const { error } = await supabase.from("articles").update({ fast_analysis: analysis }).eq("id", articleId)
+  if (error) throw new Error(error.message)
+}
+
+// analyze/details(slow lane) 결과 캐시. terms 문자열이 기사당 고정값이
+// 되므로, appendVocabulary의 문자열 완전일치 dedup이 재방문 시에도 정확히
+// 걸러낼 수 있게 된다(LLM 비결정성으로 인한 단어장 중복 적재 방지).
+export async function saveSlowAnalysis(articleId, analysis) {
+  const supabase = getSupabase()
+  const { error } = await supabase.from("articles").update({ slow_analysis: analysis }).eq("id", articleId)
+  if (error) throw new Error(error.message)
 }
