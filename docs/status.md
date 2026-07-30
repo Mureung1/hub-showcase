@@ -479,16 +479,49 @@
     - **교락 가능성**: `provider.require_parameters: true`와 함께 `reasoning`을 넣으면 **그 파라미터를 지원하는 업스트림으로 라우팅이 제한**된다. 단계 3에서 low가 2.7배 느린 것이 effort 효과가 아니라 라우팅 변화일 수 있다. 이 측정으로는 분리 불가
   - **코드 변경**: A-1 계측만(승인 예외). `ManagerQualityMetrics.stanceSurvival`에 쟁점당 `{participants, survived}` 쌍을 기록 — §11-4는 stance 0개만 폐기하므로 **참여 3개 중 1개만 죽는 부분 손실이 어디에도 안 잡혔다**(`agendaDropRate` 0, `quoteRejectRate`도 원인이 `quotes: []`면 0). 비율로 뭉개지 않고 쌍 그대로 남긴다. 단계 6 경로 + `single_source`·fallback 경로 모두 기록. 측정용 초안 fixture `three-providers-drafts.json` 커밋(다음 비교 시 단계 3 재실행 불필요)
   - **검증**: 루트 typecheck·lint·build 통과. `--grounding-test` 12/12 + FP 프로브 10건 유지. 파이프라인에 `reasoning` 미적용 확인(하네스 삭제됨)
-- **T-019.4 진행 중 (2026-07-31)** — A~D 완료, E 절반. **F(브라우저 회귀)·G(실측)·H(AC 점검) 미수행.** 커밋 `6d72ced`(A~C) · `9e99cb7`(D) · `3fe7e98`(E 1/2)
-  - **A. 설정 적용 (§2.4·§15.3) — 완료**: `MANAGER_JUDGE_TIMEOUT_MS`(100000)·`MANAGER_JUDGE_REASONING_EFFORT`(low) 신설, **단계 6에만** 적용. 단계 3·4는 45초·무설정 유지(§15.3이 제외로 못박음). `buildRequestBody`에 `reasoning`, `callOpenRouter`에 호출별 타임아웃 인자
-  - **B. 부분 손실 fallback (§7.6·§11.2) — 완료**: `fillMissingStances`가 살아남은 stance < 참여 provider 수일 때 빠진 provider만 §7.6 형식으로 채운다. 재시도하지 않는다. **`stanceSurvival`은 보충 전 값을 기록한다** — 보충 후를 적으면 항상 참여 수와 같아져 부분 손실이 지표에서 사라진다. `stancesFilled` 신설. 결정론적 테스트 2건 추가(**14/14 통과**, LLM 0회)
-  - **C. 진행 이벤트 (§12.2) — 완료**: `agenda.progress`(`classify`·`leftover`·`finalize`·`judge` + `done`/`total`) 신설. 단계 4는 조건부이므로 실제 호출 분기 안에서만 알린다
-  - **D. 재검토 서버 (§10) — 완료**: `prompts/manager/recheck/v1.md`, `AgendaRechecker` 포트 + OpenRouter 어댑터 + registry, `pipeline/recheck.ts`(§11-8 인용 검증 — `sectionId`가 가리키는 섹션에서만 찾는다). PATCH에 `recheck`·`retry_recheck` 추가. §10.6 전이 그대로이며 호출 실패 시 `recheck_requested` 유지·기회 미소진. `disagreementType`·`stances` 불변, `revisedType` 별도 저장(§10.4·§10.5). `recheckRequest` 500자 절단은 Service에서(경계에서 거절하면 사용자가 쓴 글이 날아간다)
-  - **E. web 재배선 (§12.5) — 절반**
-    - **완료**: `applyAgendas`를 **Agenda 집합 갱신의 단일 지점**으로 만들고 마감 규칙(§12.1)을 거기 하나만 뒀다. 서버 경로에서 `buildMockAgendas` 완전 제거(`?scenario=` 경로에만 잔존 — AC11이 양쪽을 요구). `agenda.progress`·`created`·`judged`·`done` 소비, `judged`는 건별 즉시 반영. **SSE 종료 판정을 §12.2 규칙으로 교체**(`.done` 접미사로 판단 — 이름 하드코딩 없음). 스냅샷 없이 닫히면 GET 화해. `fetchAgendas`·`patchAgenda`(apiClient) + `loadAgendas`·`patchAgenda`(adapter). `resolveAgendaOnServer`·`requestRecheckOnServer` — **낙관적 갱신 없음**(서버가 §9.2대로 채우고 `accept` 내용은 서버가 원문에서 되읽으므로 미리 만들면 어긋난 값이 노트에 실린다)
-    - **미완**: UI 컴포넌트 배선 — ① `managerProgress`를 `ChatCenter`까지 내려 "분류 중 / 판정 N/M" 표시 ② `recheck_requested`에 **[다시 시도] 버튼** 추가(`ConflictResolveModal`) ③ `ConflictResolveModal`·`AnswerCard`가 `resolveAgendaOnServer`·`requestRecheckOnServer`를 실제로 호출하도록 연결(현재 훅에서 노출만 됨). **이것이 없으면 서버가 Agenda를 만들어도 사용자가 판단할 수 없다**
-  - **F·G·H 미수행**: 브라우저 회귀 9종, 실측 3회(분위수·타임아웃 발생·`stanceSurvival` 실발생률), AC1~AC12 점검. E 미완 상태라 실행해도 의미가 없다
-  - **검증(현재까지)**: 루트 typecheck·lint(web만, api 스크립트 없음)·build 통과. `--grounding-test` **14/14**. **실제 3사·Manager 호출은 하지 않았다** — 상한(3사 8회·Manager 100회) 미사용
-  - **ADR-005 의견**: `AgendaRechecker`를 **6번째 포트로 등재 권장**한다. §10.1이 재검토를 "판정"이 아니라 "사용자가 결정하도록 돕는 것"으로 규정했고 입력(1차 판정+사용자 요청)·출력(`response`+`citations`+`revisedType`)이 `ConflictComparator`와 겹치지 않는다. 같은 포트에 넣으면 한 인터페이스가 두 관심사로 갈라진다. 다만 ADR-005의 "이음새당 인터페이스 하나, 초기 구현 하나" 원칙은 그대로 지켜진다
-- 이후: T-019.4 잔여(E UI 배선 → F·G·H) → SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **T-019.4 진행 (2026-07-31)** — A~E 완료, F 부분, G n=1, H 미완. 커밋 `6d72ced`(A~C) · `9e99cb7`(D) · `3fe7e98`(E 1/2) · `4dae904`(E 2/2) · `6062c5a`(회귀 2건 수정)
+  - **A. 설정 (§2.4·§15.3)**: `MANAGER_JUDGE_TIMEOUT_MS`(100000)·`MANAGER_JUDGE_REASONING_EFFORT`(low)를 **단계 6에만**. 단계 3·4는 45초·무설정 유지
+  - **B. 부분 손실 fallback (§7.6·§11.2)**: `fillMissingStances`. `stanceSurvival`은 **보충 전** 값을 기록한다(보충 후를 적으면 손실이 지표에서 사라진다). `stancesFilled` 신설
+  - **C. 진행 이벤트 (§12.2)**: `agenda.progress` 신설. 단계 4는 조건부라 실제 호출 분기 안에서만 알린다
+  - **D. 재검토 (§10)**: 프롬프트·포트·어댑터·`pipeline/recheck.ts`(§11-8). PATCH `recheck`·`retry_recheck`. §10.6 전이, 실패 시 `recheck_requested` 유지·기회 미소진
+  - **E. web 재배선 (§12.5)**: `applyAgendas`를 **Agenda 갱신의 단일 지점**으로 두고 마감 규칙을 거기 하나만 뒀다. 서버 경로에서 `buildMockAgendas` 완전 제거(`?scenario=`에만 잔존). SSE 종료 판정을 `.done` 접미사 규칙으로 교체. `onAcceptStance`가 stance 전체를 넘겨 **서버에는 `sourceRef`만** 보낸다. 서버 경로는 **응답을 받은 뒤** 제거한다(낙관적 제거 시 409를 되돌려야 하고 사용자는 반영됐다고 믿는다)
+    - **`recheck_requested` 출구 추가**: 예전에는 `footer = null`이라 **호출 실패 시 스피너만 남고 나갈 버튼이 없었다.** [다시 시도]·[선택한 입장 채택]·[내 결정]·[내용 제외] 넷을 붙였다(결정 11)
+    - **`reanswered`에서 "이 결과로 결정" 제거 (§10.1)**: 재검토 답변은 판단 재료이지 답이 아니다. 그 버튼은 재검토 답변이 최종 답변에 들어간다고 읽히는데 실제로는 원문 섹션이 들어가 기대와 어긋난다. 3열에서 입장을 고르게 바꿔 원문이 들어가는 것이 당연해지게 했다
+    - **E-4 인용 표시**: "원문 근거 N건" + 인용문 + 출처(`Claude · rec-s2`). 0개면 "원문 인용 없음" 명시 — §10.1이 0개를 허용했으므로 표시가 없으면 근거 없는 것이 근거 있는 것처럼 읽힌다
+  - **⚠️ 브라우저 회귀에서 발견·수정한 회귀 2건** (둘 다 E에서 서버 경로를 새로 만들며 Mock 경로에만 있던 처리가 안 옮겨진 것)
+    1. **완료가 서버에 영속화되지 않았다** — `markQuestionCompleted`가 Mock 경로에만 있어 화면만 `completed`가 되고 DB는 `review_required`로 남았다. 새로고침하면 되돌아오고 미완료 1개 제약도 안 풀린다. §12.1대로 `applyAgendas`에서 호출하도록 고쳤다
+    2. **새로고침 시 Agenda가 복원되지 않았다** — 마운트 복원이 `loadSourceAnswers`만 부르고 `loadAgendas`를 부르지 않았다. §12.3의 GET·adapter는 이미 있었고 배선만 빠져 있었다
+  - **F. 브라우저 회귀 (테스트 계정, 실제 3사 + 실제 Manager, 3사 실행 1회/상한 8회)**
+
+    | # | 항목 | 결과 |
+    |---|---|---|
+    | 1 | 질문→3사→Manager→충돌 해소→FinalAnswer→노트→completed | ✅ 전 구간 |
+    | 2 | **진행 표시** | ✅ 3사 완료 후 "쟁점 분류 중…" → "쟁점 판정 중… 1/4". **70초 무음 구간 사라짐** |
+    | 3 | 판정 조기 표시 | ⚠️ 이벤트는 건별로 오지만 판정이 4건 중 3건이 60초 이후 몰려 육안으로는 거의 동시에 보였다. 배선은 정상 |
+    | 4 | 재검토 | ✅ `reanswered` · `disagreement_type` 보존 · `revised_type` null(1차 타당) · **citations 3건** · `user_accepted_after_recheck` + 실제 `sourceRef` |
+    | 5 | 재검토 실패 | ❌ **미수행** |
+    | 6 | 새로고침 복원 | ✅ 수정 후 Agenda 복원 확인. FinalAnswer·DecisionNote는 브라우저 Mock이라 복원 안 됨(SPEC-AI-003 범위, 알려진 한계) |
+    | 7 | 충돌 0건 | ❌ **미수행** (이번 질문은 충돌 1건이 나왔다) |
+    | 8 | 자동 통과 표기 | ✅ 완료 뷰가 **"공통 권장 사항 (3)"**(자동 통과)과 **"결정 사항 · 사용자 판단 우선 적용 (1)"**로 갈렸다 |
+    | 9 | `?scenario=` 4종 | ❌ **미수행** |
+
+  - **G. 실측 (n=1, 실사용 경로)** — ⚠️ **분위수 n=1이라 참고값이다**
+
+    | 항목 | 값 |
+    |---|---|
+    | 단계 6 쟁점당 | 17.5 · 63.6 · 103.0 · 115.1초 → **p50 83.3 · p90 110.7 · 최대 115.1** |
+    | 단계 6 출력 토큰 | 901 · 3447 · 5621 · 6321 |
+    | 단계 3 | 65.7초 (단계 4 미실행) |
+    | Manager 전체 | 약 181초 |
+    | **타임아웃 발생** | **0건** — 103.0초·115.1초 호출은 45초였다면 둘 다 타임아웃+재시도였다. §2.4 변경이 실효를 냈다 |
+    | `stanceSurvival` | 2/2 · 3/3 · 3/3 · 3/3 — **부분 손실 0건**, `stancesFilled` 0 |
+    | `empty_quotes` | **0** — T-019.3.1의 사건이 재현되지 않았다 |
+    | `agendaDropRate` | 0% |
+    | `quoteRejectRate` | 4.5% (임계 10% 미만) |
+    | `disagreementTypeDist` | `main_answer` 1/4 = 25% (임계 5% 상회) |
+
+    **`effort: low` 되돌림 판단은 불가하다.** p50 83.3초가 §14.5의 fixture p50 39.4초보다 나쁘지만 **입력이 다른 실제 질문 n=1**이라 통제된 비교가 아니다. 같은 fixture로 재봐야 판단할 수 있다
+  - **H. AC 점검 미완** (F가 부분 수행이라 AC10·AC11·AC12 일부를 닫을 수 없다)
+  - **검증**: 루트 typecheck·lint(web만)·build 통과. `--grounding-test` 14/14. 콘솔 오류 없음
+- 이후: T-019.4 잔여(F-5·7·9 · G 재측정 · H) → SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정
