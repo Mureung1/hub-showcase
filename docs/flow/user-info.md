@@ -8,7 +8,17 @@
 
 ### 1단계: 기본 조건
 
-- 재학 중인 학교입
+- 재학 중인 학교
+  - 강원대학교
+  - 경북대학교
+  - 경상국립대학교
+  - 부산대학교
+  - 서울대학교
+  - 전남대학교
+  - 전북대학교
+  - 제주대학교
+  - 충남대학교
+  - 충북대학교
 
 - 계약 유형
   - 월세
@@ -19,6 +29,7 @@
 
 ### 2단계: 예산
 
+- 월 주거 예산
 - 최대 보증금
 - 최대 월세
 - 최대 관리비
@@ -26,9 +37,11 @@
 
 금액 단위는 만 원으로 입력한다.
 
-### 3단계: 위치와 이동
+### 3단계: 통학과 이동
 
-- 선호 지역
+- 주당 등교 횟수
+- 귀가 시간
+  - 선택 입력으로 둔다.
 - 주요 이동 목적지
   - 학교
   - 직장
@@ -83,13 +96,16 @@ React state에 다음과 같은 형태로 보관한다.
 
 ```js
 {
-  residencePurpose: "",
+  school: "",
   contractType: "",
   moveInDate: "",
+  budget: "",
   maxDeposit: "",
   maxMonthlyRent: "",
   maxMaintenanceFee: "",
-  preferredAreas: [],
+  useTotalBudget: false,
+  commuteDaysPerWeek: "",
+  returnTime: "",
   destination: "",
   maxTravelTime: "",
   transportation: [],

@@ -1,10 +1,10 @@
-export async function analyzeListing({ listingInfo, userInfo }) {
+export async function analyzeListing(request) {
   const response = await fetch('/api/analyze-listing', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ listingInfo, userInfo }),
+    body: JSON.stringify(request),
   })
 
   const data = await response.json().catch(() => ({}))

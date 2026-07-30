@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>집토끼 에이전트 워크플로우</title>
+<style>
+  @page { size: A3 portrait; margin: 0; }
+  html, body { margin:0; padding:0; background:#f7f8fa; }
+  body { font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  .sheet { width:297mm; height:420mm; margin:0 auto; background:#f7f8fa; overflow:hidden; }
+  svg { width:100%; height:100%; display:block; }
+  @media print { html,body{background:white}.sheet{margin:0} }
+</style>
+</head>
+<body>
+<div class="sheet">
+<svg viewBox="0 0 990 1400" role="img" aria-labelledby="t d">
+  <title id="t">집토끼 에이전트 워크플로우</title>
+  <desc id="d">프로젝트 기준을 읽고 분석, 승인, 구현, 병렬 리뷰, 수정, 검증, 완료 보고로 이어지는 세로형 에이전트 워크플로우</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.04"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,8 L11,4 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowSoft" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,8 L11,4 z" fill="#a1a1aa"/>
+    </marker>
+  </defs>
+
+  <rect width="990" height="1400" fill="#f7f8fa"/>
+
+  <!-- Header -->
+  <text x="86" y="94" font-size="42" font-weight="900" fill="#27272a">집토끼 에이전트 워크플로우</text>
+
+  <!-- Project context rail -->
+  <text x="54" y="210" font-size="18" font-weight="900" letter-spacing="2" fill="#2563eb">PROJECT CONTEXT</text>
+  <g filter="url(#shadow)">
+    <rect x="52" y="230" width="886" height="114" rx="16" fill="#ffffff" stroke="#e4e4e7" stroke-width="2"/>
+    <rect x="80" y="257" width="190" height="58" rx="8" fill="#f7f8fa" stroke="#d4d4d8"/>
+    <text x="175" y="293" text-anchor="middle" font-size="23" font-weight="900" fill="#27272a">AGENTS.md</text>
+    <rect x="288" y="257" width="190" height="58" rx="8" fill="#f7f8fa" stroke="#d4d4d8"/>
+    <text x="383" y="293" text-anchor="middle" font-size="23" font-weight="900" fill="#27272a">WORKFLOW</text>
+    <rect x="496" y="257" width="190" height="58" rx="8" fill="#f7f8fa" stroke="#d4d4d8"/>
+    <text x="591" y="293" text-anchor="middle" font-size="23" font-weight="900" fill="#27272a">DOCS</text>
+    <rect x="704" y="257" width="204" height="58" rx="8" fill="#f7f8fa" stroke="#d4d4d8"/>
+    <text x="806" y="293" text-anchor="middle" font-size="23" font-weight="900" fill="#27272a">DESIGN SYSTEM</text>
+  </g>
+
+  <!-- Main start -->
+  <line x1="495" y1="344" x2="495" y2="388" stroke="#2563eb" stroke-width="6" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="170" y="398" width="650" height="106" rx="16" fill="#ffffff" stroke="#e4e4e7" stroke-width="2"/>
+    <circle cx="225" cy="451" r="30" fill="#2563eb"/>
+    <text x="225" y="461" text-anchor="middle" font-size="28" font-weight="900" fill="#ffffff">1</text>
+    <text x="278" y="460" font-size="34" font-weight="900" fill="#27272a">요청</text>
+    <text x="405" y="460" font-size="23" font-weight="700" fill="#71717a">목표 · 범위 · 제약</text>
+  </g>
+
+  <line x1="495" y1="504" x2="495" y2="552" stroke="#2563eb" stroke-width="6" marker-end="url(#arrow)"/>
+
+  <!-- Parallel analysis -->
+  <g filter="url(#shadow)">
+    <rect x="96" y="562" width="798" height="204" rx="16" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
+    <text x="495" y="607" text-anchor="middle" font-size="30" font-weight="900" fill="#27272a">2 · 계획 / 사전 검토</text>
+
+    <rect x="130" y="632" width="340" height="100" rx="12" fill="#ffffff" stroke="#d4d4d8" stroke-width="2"/>
+    <text x="300" y="674" text-anchor="middle" font-size="30" font-weight="900" fill="#27272a">PLANNER</text>
+    <text x="300" y="708" text-anchor="middle" font-size="20" font-weight="700" fill="#71717a">구조 · 변경 파일 · 계획</text>
+
+    <rect x="520" y="632" width="340" height="100" rx="12" fill="#ffffff" stroke="#d4d4d8" stroke-width="2"/>
+    <text x="690" y="674" text-anchor="middle" font-size="30" font-weight="900" fill="#27272a">UI REVIEWER</text>
+    <text x="690" y="708" text-anchor="middle" font-size="20" font-weight="700" fill="#71717a">UI 작업 시 사전 검토</text>
+  </g>
+
+  <line x1="495" y1="766" x2="495" y2="814" stroke="#2563eb" stroke-width="6" marker-end="url(#arrow)"/>
+
+  <!-- Plan and approval -->
+  <g filter="url(#shadow)">
+    <rect x="170" y="824" width="650" height="100" rx="16" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+    <circle cx="225" cy="874" r="30" fill="#d97706"/>
+    <text x="225" y="884" text-anchor="middle" font-size="28" font-weight="900" fill="#ffffff">3</text>
+    <text x="278" y="883" font-size="34" font-weight="900" fill="#27272a">계획 제시</text>
+    <text x="505" y="883" font-size="22" font-weight="700" fill="#71717a">사용자 승인 대기</text>
+  </g>
+
+  <line x1="495" y1="924" x2="495" y2="966" stroke="#2563eb" stroke-width="6" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <polygon points="495,976 635,1047 495,1118 355,1047" fill="#ffffff" stroke="#d97706" stroke-width="3"/>
+    <text x="495" y="1038" text-anchor="middle" font-size="31" font-weight="900" fill="#27272a">승인?</text>
+    <text x="495" y="1070" text-anchor="middle" font-size="19" font-weight="700" fill="#71717a">범위 확정</text>
+  </g>
+
+  <!-- revise loop -->
+  <path d="M355 1047 H110 V874 H162" fill="none" stroke="#a1a1aa" stroke-width="5" stroke-dasharray="10 9" marker-end="url(#arrowSoft)"/>
+  <rect x="112" y="945" width="86" height="34" rx="17" fill="#f7f8fa" stroke="#d4d4d8"/>
+  <text x="155" y="969" text-anchor="middle" font-size="18" font-weight="900" fill="#71717a">수정</text>
+
+  <!-- approved path -->
+  <line x1="495" y1="1118" x2="495" y2="1160" stroke="#2563eb" stroke-width="6" marker-end="url(#arrow)"/>
+
+  <!-- Implementation + reviews condensed -->
+  <g filter="url(#shadow)">
+    <rect x="92" y="1170" width="806" height="144" rx="16" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/>
+    <circle cx="148" cy="1242" r="32" fill="#16a34a"/>
+    <text x="148" y="1253" text-anchor="middle" font-size="29" font-weight="900" fill="#ffffff">4</text>
+    <text x="205" y="1236" font-size="34" font-weight="900" fill="#27272a">메인 구현</text>
+    <text x="205" y="1275" font-size="21" font-weight="800" fill="#71717a">코드는 메인 에이전트만 수정</text>
+
+    <rect x="585" y="1197" width="274" height="90" rx="12" fill="#ffffff" stroke="#d4d4d8" stroke-width="2"/>
+    <text x="722" y="1234" text-anchor="middle" font-size="24" font-weight="900" fill="#27272a">POST REVIEW</text>
+    <text x="722" y="1266" text-anchor="middle" font-size="18" font-weight="800" fill="#71717a">CODE + UI</text>
+  </g>
+
+</svg>
+</div>
+</body>
+</html>

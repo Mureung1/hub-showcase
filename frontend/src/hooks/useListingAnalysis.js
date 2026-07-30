@@ -1,22 +1,34 @@
 import { useCallback, useState } from 'react'
 import { analyzeListing } from '../utils/analysisApi'
+import {
+  createListingSummary,
+  createListingWarnings,
+  createUserSummary,
+  hasListingContent,
+} from '../utils/listingValidation'
 import { loadUserInfo } from '../utils/userInfoStorage'
 
 const defaultUserInfo = {
   school: '',
+  contractType: '',
+  moveInDate: '',
   budget: '',
+  maxDeposit: '',
+  maxMonthlyRent: '',
+  maxMaintenanceFee: '',
+  useTotalBudget: false,
   commuteDaysPerWeek: '',
   returnTime: '',
-  gender: '',
-  hasLivingAloneExperience: '',
-}
-
-function hasListingContent(fields, ocrText) {
-  return Boolean(ocrText.trim()) || Object.values(fields).some((value) => String(value).trim())
+  destination: '',
+  maxTravelTime: '',
+  transportation: [],
+  housingTypes: [],
+  priorities: [],
+  avoidConditions: [],
 }
 
 function hasRequiredUserInfo(userInfo) {
-  return Boolean(userInfo.school && userInfo.budget && userInfo.commuteDaysPerWeek && userInfo.returnTime)
+  return Boolean(userInfo.school && userInfo.contractType && userInfo.budget && userInfo.commuteDaysPerWeek)
 }
 
 export function createListingAnalysisRequest({ fields, imageName, imageType, ocrText }) {
@@ -38,6 +50,10 @@ export function createListingAnalysisRequest({ fields, imageName, imageType, ocr
   return {
     error: '',
     request: {
+      createdAt: new Date().toISOString(),
+      warnings: createListingWarnings(fields),
+      userSummary: createUserSummary(userInfo),
+      listingSummary: createListingSummary(fields),
       userInfo,
       listingInfo: {
         fields,

@@ -1,7 +1,8 @@
+import BasicConditionStep from '../components/user-info/BasicConditionStep'
 import BudgetStep from '../components/user-info/BudgetStep'
 import CommuteStep from '../components/user-info/CommuteStep'
+import HousingPreferenceStep from '../components/user-info/HousingPreferenceStep'
 import ReviewStep from '../components/user-info/ReviewStep'
-import SchoolStep from '../components/user-info/SchoolStep'
 import { useUserInfoForm } from '../hooks/useUserInfoForm'
 
 function UserInfoPage({ onComplete }) {
@@ -31,7 +32,7 @@ function UserInfoPage({ onComplete }) {
     <main className="user-info-page">
       <section className="user-info-shell" aria-labelledby="page-title">
         <header className="app-header">
-          <p className="brand-name">자취방 의사결정 도우미</p>
+          <p className="brand-name">집토끼</p>
           <h1 id="page-title">사용자 정보 입력</h1>
           <p className="page-description">
             처음 한 번만 입력하면 매물 분석에서 예산과 통학 환경을 함께 반영합니다.
@@ -51,15 +52,14 @@ function UserInfoPage({ onComplete }) {
             <p>{currentStep.description}</p>
           </div>
 
-          {stepIndex === 0 && <SchoolStep errors={errors} form={form} updateField={updateField} />}
+          {stepIndex === 0 && <BasicConditionStep errors={errors} form={form} updateField={updateField} />}
           {stepIndex === 1 && <BudgetStep errors={errors} form={form} updateField={updateField} />}
           {stepIndex === 2 && <CommuteStep errors={errors} form={form} updateField={updateField} />}
-          {stepIndex === 3 && (
+          {stepIndex === 3 && <HousingPreferenceStep form={form} updateField={updateField} />}
+          {stepIndex === 4 && (
             <ReviewStep
-              form={form}
               saved={saved}
               summaryItems={summaryItems}
-              updateField={updateField}
             />
           )}
 
@@ -73,7 +73,7 @@ function UserInfoPage({ onComplete }) {
               </button>
             ) : (
               <button className="primary-button" type="button" onClick={handleSaveUserInfo}>
-                저장하기
+                매물 입력으로 이동
               </button>
             )}
           </div>

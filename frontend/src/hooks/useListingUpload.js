@@ -112,7 +112,7 @@ export function useListingUpload() {
     const hasFieldValue = Object.values(fields).some((value) => String(value).trim())
     if (!ocrText && !hasFieldValue) {
       setError('저장할 OCR 결과나 매물 정보를 먼저 입력해주세요.')
-      return
+      return null
     }
 
     const data = saveListingInfoToStorage({
@@ -125,6 +125,7 @@ export function useListingUpload() {
     setSavedAt(data.savedAt)
     setSaved(true)
     setError('')
+    return data
   }
 
   return {
