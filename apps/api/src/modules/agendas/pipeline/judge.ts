@@ -125,6 +125,7 @@ export async function judgeDrafts(
     stage6DurationsMs: [],
     // 저장되는 지표 안에 둔다 — manager_meta 까지 도달해야 사후 진단이 된다.
     stancesDiscarded: { empty_output: 0, empty_quotes: 0, not_participant: 0, duplicate_provider: 0 },
+    stanceSurvival: [],
   };
 
   let quotesTotal = 0;
@@ -191,6 +192,12 @@ export async function judgeDrafts(
             (quality.stancesDiscarded[reason] ?? 0) + count;
         }
 
+        // A-1 — (참여 수, 생존 수). 0개면 폐기(아래), 참여 수보다 적으면 **부분 손실**이다.
+        quality.stanceSurvival.push({
+          participants: participants.length,
+          survived: grounded.stances.length,
+        });
+
         if (grounded.stances.length === 0) {
           // §11-4 — stance가 0개가 된 쟁점은 통째로 폐기한다.
           droppedAgendaIds.push(draft.id);
@@ -234,6 +241,14 @@ export async function judgeDrafts(
           judgeFailed: true,
         };
       }
+    }
+
+    if (judged.judgeFailed || draft.participantCount <= 1) {
+      // 코드가 만든 stance 경로도 같은 축으로 기록한다 — 쟁점 수가 맞아야 비율이 읽힌다.
+      quality.stanceSurvival.push({
+        participants: participants.length,
+        survived: judged.stances.length,
+      });
     }
 
     if (judged.stances.length === 0) {

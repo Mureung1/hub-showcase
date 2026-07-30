@@ -118,6 +118,17 @@ export interface ManagerQualityMetrics {
    * 지표는 저장되는 곳까지 도달해야 지표다 — 개발 스크립트에만 보이면 사후 진단이 안 된다.
    */
   stancesDiscarded: Record<string, number>;
+  /**
+   * 쟁점당 (참여 provider 수, 살아남은 stance 수). **부분 손실을 드러내는 유일한 값이다.**
+   *
+   * §11-4는 stance가 **0개**일 때만 쟁점을 폐기한다. 참여 3개인데 stance 1개만 죽으면
+   * 쟁점은 살아남고 3열 화면에 한 칸이 빈다 — **판정은 3사를 보고 내렸는데 근거는 2개만
+   * 남는다.** `agendaDropRate`는 이 경우를 0으로 세고 `quoteRejectRate`는 원인이
+   * `quotes: []`면 0이므로, 이 배열이 없으면 손실이 어디에도 기록되지 않는다.
+   *
+   * 비율로 뭉개지 않고 쌍 그대로 남긴다 — "3중 1 손실"과 "2중 1 손실"은 다른 사건이다.
+   */
+  stanceSurvival: { participants: number; survived: number }[];
 }
 
 /**

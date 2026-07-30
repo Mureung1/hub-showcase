@@ -75,6 +75,7 @@ function emptyQualityMetrics(): ManagerQualityMetrics {
     stage6OutputTokens: [],
     stage6DurationsMs: [],
     stancesDiscarded: {},
+    stanceSurvival: [],
   };
 }
 
