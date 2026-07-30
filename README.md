@@ -326,4 +326,4 @@ flowchart LR
 
 경북대학교 IT대학 컴퓨터학부 글로벌소프트웨어융합전공
 
-AI Agent Challenge 참가 프로젝트
+AI Agent Challenge 프로젝트
