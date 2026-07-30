@@ -111,45 +111,65 @@ describe("checkProposalQuality — 루브릭", () => {
     expect(r.violations.join()).toContain("채널");
   });
 
-  // 쿠폰은 금액권("N원 할인")으로만.
+  // 쿠폰은 "N% 할인"·"N원 할인" 두 형태로만.
   //
-  // 정률·무료 증정을 막는 이유는 취향이 아니라 상한 때문이다. "스콘 1개 무료"는 %도 원도
-  // 아니라서 maxDiscountPct·maxDiscountWon이 둘 다 0을 읽고 20%·3,000원 상한을 그냥
-  // 지나간다(실측 2026-07-30). 형태를 하나로 고정해야 상한이 항상 걸린다.
+  // 막는 이유는 취향이 아니라 상한이다. "스콘 1개 무료"는 %도 원도 아니라서
+  // maxDiscountPct·maxDiscountWon이 둘 다 0을 읽고 20%·3,000원 상한을 그냥 지나간다
+  // (실측 2026-07-30). 형태가 읽혀야 상한이 걸린다.
   it.each([
     ["무료 증정(실측 유출분)", "스콘 1개 무료"],
     ["1잔 무료", "아메리카노 1잔 무료"],
     ["증정", "케이크 한 조각 증정"],
     ["1+1", "1+1 이벤트"],
-    ["정률", "픽업 10% 할인"],
     ["반값", "반값 이벤트"],
-  ])("쿠폰이 금액권이 아니면 잡는다 — %s", (_name, value) => {
+    ["숫자 없는 문구", "오늘의 특별 혜택"],
+  ])("쿠폰 형태를 읽을 수 없으면 잡는다 — %s", (_name, value) => {
     const r = checkProposalQuality({ ...cleanProposal, promo: { type: "할인", value } });
     expect(r.ok).toBe(false);
-    expect(r.violations.join()).toContain("금액권이 아님");
+    expect(r.violations.join()).toContain("쿠폰 형태를 읽을 수 없음");
   });
 
   it.each([
-    ["원 할인", "픽업 1,000원 할인"],
+    ["정률", "픽업 10% 할인"],
+    ["정액", "픽업 1,000원 할인"],
     ["원 쿠폰", "2,000원 쿠폰"],
     ["말이 붙은 금액", "따뜻한 세트 2,000원 할인 (단골 전용)"],
-  ])("금액권은 통과한다 — %s", (_name, value) => {
+  ])("%·원 두 형태는 통과한다 — %s", (_name, value) => {
     expect(checkProposalQuality({ ...cleanProposal, promo: { type: "할인", value } }).ok).toBe(true);
   });
 
-  it("쿠폰이 금액권이어도 문구에 정률(%)이 남으면 잡는다", () => {
-    // 쿠폰만 막고 문구를 놔두면 문자와 쿠폰이 서로 다른 혜택을 약속한다.
-    const r = checkProposalQuality({ ...cleanProposal, copy: "오늘 픽업 10% 할인이에요" });
+  it("문구와 쿠폰의 혜택 형태가 다르면 잡는다", () => {
+    // syncPromoToCopy는 형태가 같을 때만 숫자를 맞춘다. 형태가 어긋나면 되쓸 자리가 없어
+    // 그대로 저장되고, 문자와 쿠폰이 서로 다른 혜택을 약속한다(사장님이 지적한 그 증상).
+    const r = checkProposalQuality({
+      ...cleanProposal,
+      copy: "오늘 픽업 주문 10% 할인이에요",
+      promo: { type: "할인", value: "2,000원 할인" },
+    });
     expect(r.ok).toBe(false);
-    expect(r.violations.join()).toContain("정률(%)");
+    expect(r.violations.join()).toContain("혜택 형태 불일치");
   });
 
-  it("할인이 아닌 %는 정률 표기로 오인하지 않는다", () => {
-    // 새 copy 검사의 RATE는 "% 할인"에만 앵커돼 있어야 한다. 넓게 잡으면 원두 배합비처럼
-    // 할인과 무관한 %가 위반으로 걸려 멀쩡한 제안이 폴백으로 떨어진다.
+  it("형태가 같으면 숫자가 달라도 형태 위반으로는 안 잡는다", () => {
+    // 숫자 불일치는 syncPromoToCopy가 copy 기준으로 맞추는 몫이라 여기서 재생성시키지 않는다.
+    const r = checkProposalQuality({
+      ...cleanProposal,
+      copy: "오늘 픽업 주문 10% 할인이에요",
+      promo: { type: "할인", value: "15% 할인" },
+    });
+    expect(r.violations.join()).not.toContain("형태 불일치");
+  });
+
+  it("할인이 아닌 %는 혜택 표기로 오인하지 않는다", () => {
+    // RATE는 "% 할인"에만 앵커돼 있어야 한다. 넓게 잡으면 원두 배합비처럼 할인과 무관한 %가
+    // 정률로 읽혀, 정액 쿠폰과 형태 불일치로 걸리고 멀쩡한 제안이 폴백으로 떨어진다.
     // (참고: "100% 아라비카"는 별개로 금칙어 "100%"와 넓은 maxDiscountPct에 걸린다 — 기존 동작이다.)
-    const r = checkProposalQuality({ ...cleanProposal, copy: "아라비카 15% 블렌딩 원두로 내려요 ☕" });
-    expect(r.violations.join()).not.toContain("정률(%)");
+    const r = checkProposalQuality({
+      ...cleanProposal,
+      copy: "아라비카 15% 블렌딩 원두로 내려요 ☕",
+      promo: { type: "할인", value: "2,000원 할인" },
+    });
+    expect(r.violations.join()).not.toContain("형태 불일치");
     expect(r.ok).toBe(true);
   });
 

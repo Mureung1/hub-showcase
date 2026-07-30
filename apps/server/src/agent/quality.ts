@@ -8,7 +8,7 @@ import { discountKind } from "./promoSync";
  * 가드레일(할인율·LMS·금칙어·창작상호)은 **발송 파이프라인이 실제로 강제**하는 안전 항목이라
  * checkGuardrails로 재사용한다. 그 위에 발송을 막지는 않지만 품질상 지켜야 하는 항목을 더한다:
  *  - 한국어 전용(한글이 아닌 문자는 전부 금지, 이모지·숫자·기호는 허용)
- *  - 쿠폰은 금액권("N원 할인")으로만 — 정률(%)·무료 증정 금지
+ *  - 쿠폰은 "N% 할인"·"N원 할인" 두 형태로만 (무료 증정·1+1 금지 — 상한이 안 읽힌다)
  *  - 손님 문구(title·copy)에 매출·진단 등 내부 정보 노출 금지
  *  - channels가 허용된 enum({instagram,x,dangol}) 안에 있음
  *
@@ -74,7 +74,7 @@ export function checkProposalQuality(proposal: Proposal, storeName?: string): Qu
     if (foreign.length > 0) violations.push(`비한국어 문자(${name}): ${foreign.join(" ")}`);
   }
 
-  // 3) 쿠폰은 금액권만.
+  // 3) 쿠폰은 "N% 할인" 또는 "N원 할인" 두 형태로만.
   //
   // 왜 형태를 강제하나: promo가 자유 문구라 "스콘 1개 무료" 같은 값이 들어오면
   //  - maxDiscountPct·maxDiscountWon이 둘 다 0을 읽어 **상한(20%·3,000원)을 그냥 지나간다**
@@ -82,20 +82,25 @@ export function checkProposalQuality(proposal: Proposal, storeName?: string): Qu
   //  - FE parsePromo가 kind:"none"으로 떨어져 쿠폰 편집칸이 안 뜨고, 문구를 고쳐도
   //    쿠폰에 반영되지 않는다. promoMismatch도 none이면 판정을 안 해 경고조차 없다.
   //
-  // 정률(%)이 아니라 금액으로 통일하는 이유: 형태가 하나면 문구↔쿠폰 형태 불일치가
-  // 원천적으로 불가능하고, 3,000원 상한이 항상 읽힌다. 손님에게도 "2,000원 할인"이
-  // "15% 할인"보다 체감이 분명하다.
+  // 정률까지 막고 금액권 하나로 좁혀 보기도 했지만 되돌렸다. 상한은 %·원 양쪽 다 이미
+  // 걸리고(가드레일), 모델은 자연스럽게 %를 쓴다(저장분 12건 중 11건). 형태가 있는 쪽을
+  // 막을 이유가 없다 — 막아야 할 건 형태가 없어서 상한이 안 읽히는 값뿐이다.
   const promoKind = discountKind(proposal.promo.value);
-  if (promoKind !== "amount") {
-    const reason = promoKind === "rate" ? "정률(%)" : "금액 표기 없음";
-    violations.push(`쿠폰이 금액권이 아님(${reason}): ${proposal.promo.value}`);
+  if (promoKind === "none") {
+    violations.push(
+      `쿠폰 형태를 읽을 수 없음(무료 증정·1+1 등은 상한이 안 걸린다): ${proposal.promo.value}`,
+    );
   }
 
-  // copy도 같이 본다. 쿠폰만 금액권으로 막고 문구에 "10% 할인"이 남으면 문자와 쿠폰이
-  // 서로 다른 혜택을 약속한다 — 사장님이 처음 지적한 그 증상이다.
-  // ("100% 아라비카"는 안 걸린다. RATE가 "% 할인"에만 앵커돼 있다.)
-  if (discountKind(proposal.copy) === "rate") {
-    violations.push(`문구에 정률(%) 할인 표기: ${proposal.copy.match(/\d+\s*%\s*할인/)?.[0] ?? ""}`);
+  // 문구와 쿠폰의 혜택 형태가 서로 다르면(문구는 %, 쿠폰은 원) 손님에게 다른 혜택을
+  // 약속하게 된다. syncPromoToCopy는 형태가 같을 때만 숫자를 맞추므로 여기서 걸러야 한다
+  // — 사장님이 처음 지적한 "문구 고쳐도 쿠폰이 안 따라온다"가 이 경우다.
+  const copyKind = discountKind(proposal.copy);
+  if (copyKind !== "none" && promoKind !== "none" && copyKind !== promoKind) {
+    violations.push(
+      `문구와 쿠폰의 혜택 형태 불일치: 문구=${copyKind === "rate" ? "정률(%)" : "정액(원)"}, ` +
+        `쿠폰=${promoKind === "rate" ? "정률(%)" : "정액(원)"}`,
+    );
   }
 
   // 4) 손님 문구에 내부 정보 노출 금지 (title·copy)

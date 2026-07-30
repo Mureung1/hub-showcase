@@ -70,22 +70,21 @@ describe("generateProposal", () => {
     expect(caller).toHaveBeenCalledOnce();
   });
 
-  it("copy와 promo의 할인액이 어긋나면 copy 기준으로 맞춰 저장한다 (재생성하지 않음)", async () => {
-    // 실측 회귀(2026-07-22 저장분)를 금액권 규칙에 맞춰 옮긴 것. 원본은 copy 15% / promo 21%였다.
-    // 스키마·형태는 멀쩡하니 통째로 버리지 않고 숫자만 맞춘다. 3,500원은 상한 초과라
+  it("copy와 promo의 할인율이 어긋나면 copy 기준으로 맞춰 저장한다 (재생성하지 않음)", async () => {
+    // 실측 회귀(2026-07-22 저장분): LLM이 copy엔 15%, promo엔 21%를 썼다.
+    // 스키마·형태는 멀쩡하니 통째로 버리지 않고 숫자만 맞춘다. 21%는 상한 초과라
     // 맞추지 않으면 가드레일에 걸려 멀쩡한 제안이 폴백으로 떨어진다.
-    // (정률끼리의 정렬 동작 자체는 promoSync.test.ts가 단위로 계속 검증한다.)
     const caller = vi.fn(async () =>
       JSON.stringify({
         title: "비 오는 날 픽업 할인",
-        copy: "☔ 오늘 픽업 주문 2,000원 할인해 드려요!",
-        promo: { type: "할인", value: "픽업 3,500원 할인" },
+        copy: "☔ 오늘 픽업 주문 15% 할인해 드려요!",
+        promo: { type: "할인", value: "픽업 21% 할인" },
         channels: ["dangol"],
       }),
     );
     const proposal = await generateProposal(ctx, { apiKey: "TEST", caller });
-    expect(proposal.promo.value).toBe("픽업 2,000원 할인");
-    expect(proposal.copy).toContain("2,000원 할인");
+    expect(proposal.promo.value).toBe("픽업 15% 할인");
+    expect(proposal.copy).toContain("15% 할인");
     expect(caller).toHaveBeenCalledOnce(); // 재생성 없음
   });
 
