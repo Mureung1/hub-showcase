@@ -162,6 +162,7 @@ export function Analysis({ symptoms, token, onNext, onAuthError }: AnalysisProps
       <button
         className="btn"
         type="button"
+        disabled={loading}
         onClick={() => onNext(recommendedIngredients.map((i) => i.id), supplements)}
       >
         다음

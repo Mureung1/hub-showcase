@@ -7,7 +7,7 @@ import { ApiError } from '../api/ApiError';
 interface OverlapProps {
   supplements: string[];
   token: string;
-  onNext: () => void;
+  onNext: (exceededIngredientNames: string[]) => void;
   onAuthError: () => void;
 }
 
@@ -103,7 +103,12 @@ export function Overlap({ supplements, token, onNext, onAuthError }: OverlapProp
         </div>
       ))}
 
-      <button className="btn" type="button" onClick={onNext}>
+      <button
+        className="btn"
+        type="button"
+        disabled={loading}
+        onClick={() => onNext(exceededResults.map((r) => r.ingredientName))}
+      >
         다음
       </button>
     </>
