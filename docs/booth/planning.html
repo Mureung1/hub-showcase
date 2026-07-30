@@ -175,14 +175,22 @@
       .step {
         flex: 1 1 0;
         border-radius: 2mm;
-        padding: 4mm 1.5mm;
+        padding: 3.2mm 1.5mm;
         text-align: center;
         font-size: 3.7mm;
         line-height: 1.25;
         font-weight: 700;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 1.4mm;
+      }
+      /* 사람 칸엔 사람, 에이전트 칸엔 로봇 — 멀리서도 누가 하는 일인지 바로 보인다 */
+      .step i {
+        font-style: normal;
+        font-size: 6mm;
+        line-height: 1;
       }
       /* 사람이 하는 칸 = 주황 / 에이전트가 하는 칸 = 회색 / 사람이 남는 한 칸 = 브랜드 블루 */
       .step-human {
@@ -495,11 +503,11 @@
             <div class="flow-row">
               <div class="flow-tag">AS-IS<span>사장님 혼자</span></div>
               <div class="steps">
-                <div class="step step-human">날씨 확인</div>
-                <div class="step step-human">전략 판단</div>
-                <div class="step step-human">문구 작성</div>
-                <div class="step step-human">채널 발송</div>
-                <div class="step step-human">효과 확인</div>
+                <div class="step step-human"><i>🧑</i>날씨 확인</div>
+                <div class="step step-human"><i>🧑</i>전략 판단</div>
+                <div class="step step-human"><i>🧑</i>문구 작성</div>
+                <div class="step step-human"><i>🧑</i>채널 발송</div>
+                <div class="step step-human"><i>🧑</i>효과 확인</div>
               </div>
             </div>
 
@@ -510,12 +518,12 @@
                 TO-BE<span>WeatherPilot</span>
               </div>
               <div class="steps">
-                <div class="step step-agent">날씨 분석</div>
-                <div class="step step-agent">매출 진단</div>
-                <div class="step step-agent">문구·쿠폰 생성</div>
-                <div class="step step-key">검토 · 승인</div>
-                <div class="step step-agent">발송</div>
-                <div class="step step-agent">효과 측정</div>
+                <div class="step step-agent"><i>🤖</i>날씨 분석</div>
+                <div class="step step-agent"><i>🤖</i>매출 진단</div>
+                <div class="step step-agent"><i>🤖</i>문구·쿠폰 생성</div>
+                <div class="step step-key"><i>🧑</i>검토 · 승인</div>
+                <div class="step step-agent"><i>🤖</i>발송</div>
+                <div class="step step-agent"><i>🤖</i>효과 측정</div>
               </div>
             </div>
 
