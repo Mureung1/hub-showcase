@@ -1,26 +1,37 @@
 import { Router } from "express";
 
 const router = Router();
-const REGION_KEYWORDS = {
-  seoul: ["서울"],
-  busan: ["부산"],
-  daegu: ["대구"],
-  incheon: ["인천", "영종구", "부평", "검단", "계양구", "연수구", "미추홀구"],
-  gwangju: ["광주", "광산구", "서구", "남구", "동구", "북구"],
-  daejeon: ["대전"],
-  ulsan: ["울산"],
-  sejong: ["세종"],
-  gyeonggi: ["경기", "수원", "성남", "고양", "용인", "부천", "안산", "안양", "남양주", "화성", "평택", "의정부", "시흥", "파주", "김포", "광명", "군포", "이천", "양주", "오산", "구리", "안성", "포천", "의왕", "하남", "여주", "동두천", "과천", "양평", "가평", "연천"],
-  gangwon: ["강원", "춘천", "원주", "강릉", "동해", "태백", "속초", "삼척", "홍천", "횡성", "영월", "평창", "정선", "철원", "화천", "양구", "인제", "고성", "양양"],
-  chungbuk: ["충북", "충청북도", "청주", "충주", "제천", "보은", "옥천", "영동", "증평", "진천", "괴산", "음성", "단양"],
-  chungnam: ["충남", "충청남도", "천안", "공주", "보령", "아산", "서산", "논산", "계룡", "당진", "금산", "부여", "서천", "청양", "홍성", "예산", "태안"],
-  jeonbuk: ["전북", "전라북도", "전주", "군산", "익산", "정읍", "남원", "김제", "완주", "진안", "무주", "장수", "임실", "순창", "고창", "부안"],
-  jeonnam: ["전남", "전라남도", "목포", "여수", "순천", "나주", "광양", "담양", "곡성", "구례", "고흥", "보성", "화순", "장흥", "강진", "해남", "영암", "무안", "함평", "영광", "장성", "완도", "진도", "신안"],
-  gyeongbuk: ["경북", "경상북도", "포항", "경주", "김천", "안동", "구미", "영주", "영천", "상주", "문경", "경산", "군위", "의성", "청송", "영양", "영덕", "청도", "고령", "성주", "칠곡", "예천", "봉화", "울진", "울릉"],
-  gyeongnam: ["경남", "경상남도", "창원", "진주", "통영", "사천", "김해", "밀양", "거제", "양산", "의령", "함안", "창녕", "남해", "하동", "산청", "함양", "거창", "합천"],
-  jeju: ["제주"],
+// item.zipCd(콤마로 나열된 5자리 행정구역코드)의 앞 2자리는 시/도를 가리킨다.
+// 전국 2,694건 데이터로 실제 매핑을 확인해서 만든 표 — 광주/전남은 "전남광주통합특별시"로
+// 행정구역이 합쳐져서 코드(12)를 공유한다. 강원(51)·전북(52)은 특별자치도 전환 이후의
+// 신규 코드다. 예전엔 제목·설명 텍스트에서 지명을 글자 매칭으로 찾았는데, "계양구" 안에
+// "양구"가 우연히 들어있거나 "민영주택" 안에 "영주"가 우연히 들어있는 식으로 오탐이 잦아서
+// 이 구조화된 코드 기반으로 바꿨다.
+const ZIP_PREFIX_TO_REGIONS = {
+  11: ["seoul"],
+  26: ["busan"],
+  27: ["daegu"],
+  28: ["incheon"],
+  12: ["gwangju", "jeonnam"],
+  30: ["daejeon"],
+  31: ["ulsan"],
+  36: ["sejong"],
+  41: ["gyeonggi"],
+  51: ["gangwon"],
+  43: ["chungbuk"],
+  44: ["chungnam"],
+  52: ["jeonbuk"],
+  47: ["gyeongbuk"],
+  48: ["gyeongnam"],
+  50: ["jeju"],
 };
 const EXCLUDE_KEYWORDS = ["신혼부부"];
+// 전국 대상 정책은 zipCd에 "특정 지역 없음"으로 표시되는 게 아니라, 전국 모든 시/군/구
+// 코드를 다 나열하는 방식이라 guessRegions가 그대로 받으면 17개 광역 지역이 전부 담긴
+// 배열이 나온다 — 그러면 어떤 지역으로 필터링해도 "지역 추천"이 붙어버린다 (2026-07-29
+// 확인, K-패스·청년주택드림청약통장 실제 데이터로 검증). 매칭된 지역이 전체 지역 수와
+// 같으면 전국 대상으로 보고 지역 제한 없음(undefined)으로 처리한다.
+const ALL_REGIONS = new Set(Object.values(ZIP_PREFIX_TO_REGIONS).flat());
 
 function isExcluded(text) {
   return EXCLUDE_KEYWORDS.some((k) => text.includes(k));
@@ -42,12 +53,15 @@ function parseDeadline(aplyYmd) {
   return `${end.slice(0, 4)}-${end.slice(4, 6)}-${end.slice(6, 8)}`;
 }
 
-function guessRegions(text) {
-  if (!text) return undefined;
-  const matched = Object.entries(REGION_KEYWORDS)
-    .filter(([, keywords]) => keywords.some((k) => text.includes(k)))
-    .map(([region]) => region);
-  return matched.length ? matched : undefined;
+function guessRegions(zipCd) {
+  if (!zipCd) return undefined;
+  const regions = new Set();
+  for (const code of zipCd.split(",")) {
+    const prefix = code.trim().slice(0, 2);
+    for (const region of ZIP_PREFIX_TO_REGIONS[prefix] || []) regions.add(region);
+  }
+  if (regions.size === 0 || regions.size === ALL_REGIONS.size) return undefined;
+  return [...regions];
 }
 function guessCategory(item) {
   const text = `${item.plcyNm} ${item.plcyExplnCn}`;
@@ -79,12 +93,67 @@ const ACTIVITY_INTEREST_KEYWORDS = {
   봉사: ["봉사", "나눔", "돌봄"],
   "홍보/서포터즈": ["서포터즈", "홍보", "기자단", "리포터", "브랜드참여단"],
   국제교류: ["국제", "해외", "글로벌", "교류"],
-  정책참여: ["정책", "참여단", "위원회", "네트워크", "특사단"],
+  정책: ["위원회", "협의체", "네트워크", "조정위"],
+  정책참여: ["정책", "참여단", "특사단"],
   "탐방/체험": ["탐방", "체험", "포럼"],
   "이공계/기술": ["이공계", "과학", "공학", "기술"],
 };
+// "정책참여" 태그가 붙는 mclsfNm(청년참여·정책인프라구축) 안에는 "청년정책조정위원회
+// 운영"처럼 진짜 위원회·협의체 성격인 것도 많이 섞여 있다(84건 중 19건). 제목에 이
+// 키워드가 있으면 "정책참여" 대신 "정책"으로 더 구체적으로 분류한다.
+const COMMITTEE_TITLE_KEYWORDS = ["위원회", "협의체", "네트워크", "조정위"];
+const POLICY_PARTICIPATION_MCLSF = new Set(["청년참여", "정책인프라구축"]);
 
-function guessInterest(categoryId, text) {
+// item.mclsfNm(정부가 직접 매긴 중분류, 예: "청년참여"·"취업"·"주택 및 거주지")을 관심분야로
+// 우선 매핑한다. 제목·설명 텍스트 키워드 매칭보다 훨씬 정확하다 — 예를 들어 "충남형 청년
+// 한달살이"는 설명에 "정책"이란 말이 아예 없는데도 키워드 매칭만으로는 "정책참여"로 잘못
+// 잡혔었다. internship은 mclsfNm이 "취업/창업" 같은 지원 단계만 구분하고 개발·마케팅
+// 같은 직무 분야 정보가 없어서 이 매핑을 안 쓰고 기존 키워드 매칭만 쓴다.
+const MCLSF_TO_LOCAL_INTEREST = {
+  취업: "취업",
+  재직자: "취업",
+  창업: "창업",
+  "주택 및 거주지": "주거",
+  "전월세 및 주거급여 지원": "주거",
+  기숙사: "주거",
+  "문화활동 및 생활지원": "문화",
+  문화활동: "문화",
+  예술인지원: "문화",
+  건강: "복지",
+  권익보호: "복지",
+  "취약계층 및 금융지원": "금융",
+  미래역량강화: "교육",
+  교육비지원: "교육",
+  "온·오프라인교육": "교육",
+  온라인교육: "교육",
+  청년참여: "정책",
+  정책인프라구축: "정책",
+};
+const MCLSF_TO_ACTIVITY_INTEREST = {
+  청년참여: "정책참여",
+  정책인프라구축: "정책참여",
+  청년국제교류: "국제교류",
+  권익보호: "정책참여",
+};
+
+function guessInterestFromMclsf(categoryId, mclsfNm, title) {
+  if (!mclsfNm) return undefined;
+  const map = categoryId === "activity" ? MCLSF_TO_ACTIVITY_INTEREST : categoryId === "local" ? MCLSF_TO_LOCAL_INTEREST : null;
+  if (!map) return undefined;
+  for (const part of mclsfNm.split(",")) {
+    const trimmed = part.trim();
+    const interest = map[trimmed];
+    if (!interest) continue;
+    if (POLICY_PARTICIPATION_MCLSF.has(trimmed) && COMMITTEE_TITLE_KEYWORDS.some((k) => title.includes(k))) return "정책";
+    return interest;
+  }
+  return undefined;
+}
+
+function guessInterest(categoryId, mclsfNm, title, text) {
+  const fromMclsf = guessInterestFromMclsf(categoryId, mclsfNm, title);
+  if (fromMclsf) return fromMclsf;
+
   const table =
     categoryId === "internship"
       ? INTERNSHIP_INTEREST_KEYWORDS
@@ -106,9 +175,9 @@ function toYouthListing(item) {
     categoryId,
     title: item.plcyNm,
     desc: item.plcyExplnCn,
-    interest: guessInterest(categoryId, text),
+    interest: guessInterest(categoryId, item.mclsfNm, item.plcyNm, text),
     sourceUrl: item.aplyUrlAddr || item.refUrlAddr1 || item.refUrlAddr2 || undefined,
-    eligibleRegions: guessRegions(text),
+    eligibleRegions: guessRegions(item.zipCd),
     dDay: deadlineDate ? daysUntil(deadlineDate) : 999, // 상시/미정은 마감 없는 것으로 취급
   };
 }
@@ -147,7 +216,12 @@ router.get("/", async (req, res) => {
     __forceActivity: true,
   }));
   const allItems = [...generalList, ...internshipItems, ...activityItems];
-  const uniqueItems = [...new Map(allItems.map((item) => [item.plcyNm, item])).values()];
+  // plcyNm(제목)으로 중복 제거하면, 서로 다른 정책(plcyNo)이 우연히 제목이 같을 때
+  // 하나가 사라지는 문제가 있었다 (2026-07-29 발견 — "서산시 청년의 날 행사 추진"이라는
+  // 이름의 서산시 전용 정책과 전국 대상 정책이 따로 있었는데, 제목 기준 중복 제거 때문에
+  // 전국 버전만 남아서 지역 필터링이 무의미해졌었음). 정책 고유번호(plcyNo)로 중복을 걸러야
+  // 진짜 같은 정책만 합쳐진다.
+  const uniqueItems = [...new Map(allItems.map((item) => [item.plcyNo, item])).values()];
 
   const listings = uniqueItems
     .filter((item) => !isExcluded(`${item.plcyNm} ${item.plcyExplnCn}`))

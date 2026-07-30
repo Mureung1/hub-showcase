@@ -1,0 +1,25 @@
+name: KOSAF 장학금 동기화
+
+on:
+  schedule:
+    - cron: "0 19 * * *" # 매일 04:00 KST (UTC 19:00)
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: install dependencies
+        working-directory: server
+        run: npm install
+      - name: sync kosaf scholarships
+        working-directory: server
+        run: npm run db:sync-kosaf
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          KOSAF_API_KEY: ${{ secrets.KOSAF_API_KEY }}

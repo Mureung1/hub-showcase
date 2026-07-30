@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
+import { formatDDay } from "../utils/dday";
 
 export default function PostDetail() {
   const { postId } = useParams();
@@ -25,7 +26,7 @@ export default function PostDetail() {
 
   const handleRegister = () => {
     if (!commentText.trim()) return;
-    addComment(post.id, { who: "나", text: commentText.trim() });
+    addComment(post.id, { text: commentText.trim() });
     setCommentText("");
   };
 
@@ -69,7 +70,7 @@ export default function PostDetail() {
       </p>
       <div className="detail-meta">
         <span className="cat">
-          {listing.title} · D-{post.dDay}
+          {listing.title} · {formatDDay(post.dDay)}
         </span>
       </div>
       <div className="board-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
@@ -104,9 +105,9 @@ export default function PostDetail() {
       </div>
       <p className="body-txt">{post.body}</p>
       <p className="comment-head">댓글 {post.comments.length}</p>
-      {post.comments.map((c) => (
+      {post.comments.map((c, i) => (
         <div className="comment" key={c.id}>
-          <div className="who">{c.who}</div>
+          <div className="who">익명{i + 1}</div>
           {editingCommentId === c.id ? (
             <>
               <textarea

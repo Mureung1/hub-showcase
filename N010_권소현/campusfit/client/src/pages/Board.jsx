@@ -1,4 +1,5 @@
 import { Link, useOutletContext, useParams } from "react-router-dom";
+import { formatDDay } from "../utils/dday";
 
 export default function Board() {
   const { listingId } = useParams();
@@ -75,7 +76,7 @@ export default function Board() {
             <Link className="post-card" to={`/board/post/${p.id}`} key={p.id}>
               <div className="top">
                 <span className="title">{p.title}</span>
-                <span className={p.dDay <= 7 ? "pill-alert" : "pill-neutral"}>D-{p.dDay}</span>
+                <span className={p.dDay <= 7 ? "pill-alert" : "pill-neutral"}>{formatDDay(p.dDay)}</span>
               </div>
               <p className="meta">
                 {!listing && (

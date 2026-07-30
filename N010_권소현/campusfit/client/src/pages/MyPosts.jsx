@@ -1,4 +1,5 @@
 import { Link, useOutletContext } from "react-router-dom";
+import { formatDDay } from "../utils/dday";
 
 export default function MyPosts() {
   const { myPosts, myComments, boardPosts, listings } = useOutletContext();
@@ -31,7 +32,7 @@ export default function MyPosts() {
                 </div>
                 <div className="desc">{p.meta}</div>
               </div>
-              <span className={p.dDay <= 7 ? "pill-alert" : "pill-neutral"}>D-{p.dDay}</span>
+              <span className={p.dDay <= 7 ? "pill-alert" : "pill-neutral"}>{formatDDay(p.dDay)}</span>
             </Link>
           );
         })}
