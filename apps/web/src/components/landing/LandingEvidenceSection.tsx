@@ -11,8 +11,8 @@ const evidenceTypeClass: Record<string, string> = {
 export function LandingEvidenceSection() {
   return (
     <section
-      className="bg-white"
-      id="features"
+      className="scroll-mt-[var(--header-height)] bg-white"
+      id="analysis-example"
       aria-labelledby="landing-evidence-title"
     >
       <div className="ptop-landing-container py-[84px]">

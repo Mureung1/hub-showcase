@@ -8,6 +8,7 @@ export function LandingFinalCta({ onEnterWorkspace }: LandingFinalCtaProps) {
   return (
     <section
       className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#F1F3F1_0%,#EAF6EF_42%,#DFF3E7_100%)] px-5 py-[20px] pb-[84px] text-center md:px-10"
+      id="pricing"
       aria-labelledby="landing-final-cta-title"
     >
       <div
@@ -39,9 +40,6 @@ export function LandingFinalCta({ onEnterWorkspace }: LandingFinalCtaProps) {
             →
           </span>
         </button>
-        <p className="m-0 text-xs font-semibold text-[#0b2a1c]/55">
-          읽기 권한만 요청합니다 · 프로젝트 분석은 작업실에서 시작됩니다
-        </p>
       </div>
     </section>
   );

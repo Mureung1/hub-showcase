@@ -13,7 +13,8 @@ export function LandingWorkroomSection({
 }: LandingWorkroomSectionProps) {
   return (
     <section
-      className="bg-ptop-landing-lavender"
+      className="scroll-mt-[var(--header-height)] bg-ptop-landing-lavender"
+      id="workspace"
       aria-labelledby="landing-workroom-title"
     >
       <div className="ptop-landing-container py-[84px] pb-[90px]">

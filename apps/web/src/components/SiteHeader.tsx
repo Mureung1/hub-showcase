@@ -66,15 +66,6 @@ export function SiteHeader({
           aria-label="주요 메뉴"
         >
           <a
-            href="#service"
-            onClick={(event) => {
-              event.preventDefault();
-              onHome();
-            }}
-          >
-            서비스 소개
-          </a>
-          <a
             href="#workspace"
             onClick={(event) => {
               event.preventDefault();
@@ -88,7 +79,7 @@ export function SiteHeader({
             type="button"
             onClick={onOpenAnalysis}
           >
-            프로젝트 분석
+            프로젝트 분석하기
           </button>
         </nav>
         <AuthButton />

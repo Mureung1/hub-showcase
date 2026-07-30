@@ -37,7 +37,7 @@ export function WorkspacePage({
   const [savedProjects, setSavedProjects] = useState<SavedPortfolioProject[]>(
     [],
   );
-  const [isPortfolioListExpanded, setIsPortfolioListExpanded] = useState(false);
+  const [isPortfolioListOpen, setIsPortfolioListOpen] = useState(false);
   const isDevelopmentPreview =
     import.meta.env.DEV &&
     new URLSearchParams(window.location.search).get("preview") === "workspace";
@@ -53,7 +53,7 @@ export function WorkspacePage({
   useEffect(() => {
     if (!user) {
       setSavedProjects([]);
-      setIsPortfolioListExpanded(false);
+      setIsPortfolioListOpen(false);
       return;
     }
 
@@ -151,57 +151,77 @@ export function WorkspacePage({
           </p>
         </div>
 
-        <aside
-          className="pointer-events-auto w-[348px] rounded-[22px] border border-white/70 bg-white/[0.92] p-4 text-[#17231e] shadow-[0_18px_45px_rgb(21_35_28/18%)] backdrop-blur-md max-[720px]:w-[min(270px,calc(100vw-32px))] max-[520px]:hidden"
-          aria-label="내 포트폴리오"
-        >
-          <div className="flex items-center justify-between px-1 pb-2">
-            <h2 className="text-base font-extrabold">내 포트폴리오 기록</h2>
-            <span className="text-xs font-bold text-[#87928d]">
-              {savedProjects.length}
-            </span>
-          </div>
-          <div className="flex flex-col gap-2">
-            {savedProjects.length > 0 ? (
-              (isPortfolioListExpanded
-                ? savedProjects
-                : savedProjects.slice(0, 2)
-              ).map((project) => (
-                <button
-                  key={project.id}
-                  className="flex min-h-[64px] flex-col items-start justify-center rounded-2xl border border-[#dbe3df] bg-white/80 px-4 text-left transition hover:border-[#46d394] hover:bg-[#effcf5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#159b67]"
-                  type="button"
-                  onClick={() => onOpenSavedProject(project)}
-                >
-                  <strong className="max-w-full truncate text-sm font-extrabold">
-                    {project.repositoryOwner}/{project.repositoryName}
-                  </strong>
-                  <span className="mt-1 text-xs font-medium text-[#8a9690]">
-                    {formatWorkspaceRepositoryDate(project.updatedAt)} ·
-                    포트폴리오 보기
-                  </span>
-                </button>
-              ))
-            ) : (
-              <p className="rounded-2xl bg-[#f3f7f5] px-4 py-5 text-center text-xs text-[#7d8a84]">
-                저장된 포트폴리오가 아직 없어요.
-              </p>
-            )}
-          </div>
-          {savedProjects.length > 2 && (
-            <button
-              className="mt-2 min-h-9 w-full rounded-xl bg-[#f3f7f5] text-xs font-bold text-[#718078] transition hover:bg-[#e5f5ec]"
-              type="button"
-              onClick={() =>
-                setIsPortfolioListExpanded((expanded) => !expanded)
-              }
+        <div className="pointer-events-auto flex flex-col items-end gap-3">
+          <button
+            className={`min-h-11 cursor-pointer rounded-l-2xl border border-r-0 px-4 text-sm font-extrabold shadow-[0_12px_28px_rgb(21_35_28/16%)] backdrop-blur-md transition-all duration-200 ease-out hover:-translate-x-1 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#159b67] ${isPortfolioListOpen ? "border-[#b4efd1] bg-[#e8fbf1] text-[#159b67]" : "border-white/80 bg-white/[0.92] text-[#17231e] hover:bg-white"}`}
+            type="button"
+            title="내 포트폴리오 기록"
+            aria-expanded={isPortfolioListOpen}
+            aria-controls="portfolio-history-panel"
+            aria-label={
+              isPortfolioListOpen
+                ? "내 포트폴리오 기록 닫기"
+                : "내 포트폴리오 기록 열기"
+            }
+            onClick={() => setIsPortfolioListOpen((open) => !open)}
+          >
+            기록 {savedProjects.length}
+            <span
+              className="ml-2 text-[#159b67] transition-transform duration-200"
+              aria-hidden="true"
             >
-              {isPortfolioListExpanded
-                ? "접기"
-                : `+${savedProjects.length - 2} 더보기`}
-            </button>
-          )}
-        </aside>
+              {isPortfolioListOpen ? "‹" : "›"}
+            </span>
+          </button>
+
+          <aside
+            className={`w-[320px] rounded-[22px] border border-white/70 bg-white/[0.92] p-4 text-[#17231e] shadow-[0_18px_45px_rgb(21_35_28/18%)] backdrop-blur-md transition-all duration-200 ease-out max-[720px]:w-[min(250px,calc(100vw-32px))] ${isPortfolioListOpen ? "visible translate-x-0 opacity-100" : "invisible pointer-events-none translate-x-4 opacity-0"}`}
+            id="portfolio-history-panel"
+            aria-label="내 포트폴리오 기록"
+            aria-hidden={!isPortfolioListOpen}
+          >
+            <div className="flex items-center justify-between px-1 pb-2">
+              <h2 className="text-base font-extrabold">내 포트폴리오 기록</h2>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-[#87928d]">
+                  {savedProjects.length}
+                </span>
+                <button
+                  className="cursor-pointer rounded-lg px-2 py-1 text-xs font-bold text-[#718078] transition hover:bg-[#f3f7f5] hover:text-[#17231e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#159b67]"
+                  type="button"
+                  aria-label="내 포트폴리오 기록 닫기"
+                  onClick={() => setIsPortfolioListOpen(false)}
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+            <div className="flex max-h-[min(60vh,520px)] flex-col gap-2 overflow-y-auto pr-1">
+              {savedProjects.length > 0 ? (
+                savedProjects.map((project) => (
+                  <button
+                    key={project.id}
+                    className="flex min-h-[64px] flex-col items-start justify-center rounded-2xl border border-[#dbe3df] bg-white/80 px-4 text-left transition hover:border-[#46d394] hover:bg-[#effcf5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#159b67]"
+                    type="button"
+                    onClick={() => onOpenSavedProject(project)}
+                  >
+                    <strong className="max-w-full truncate text-sm font-extrabold">
+                      {project.repositoryOwner}/{project.repositoryName}
+                    </strong>
+                    <span className="mt-1 text-xs font-medium text-[#8a9690]">
+                      {formatWorkspaceRepositoryDate(project.updatedAt)} ·
+                      포트폴리오 보기
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <p className="rounded-2xl bg-[#f3f7f5] px-4 py-5 text-center text-xs text-[#7d8a84]">
+                  저장된 포트폴리오가 아직 없어요.
+                </p>
+              )}
+            </div>
+          </aside>
+        </div>
       </div>
 
       <WorkspaceGame
