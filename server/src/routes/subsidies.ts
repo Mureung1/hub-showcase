@@ -15,9 +15,11 @@ subsidiesRouter.get('/', async (req, res) => {
   const sort: SortOption = sortSchema.parse(req.query.sort)
   const page = pageSchema.parse(req.query.page)
   const limit = limitSchema.parse(req.query.limit)
+  const requestStartedAt = performance.now()
   try {
     const { items, total, hasMore } = await findAll(sort, page, limit)
     res.json({ items, total, sort, page, limit, hasMore })
+    console.log(`[timing] GET /api/subsidies: full handler took ${(performance.now() - requestStartedAt).toFixed(1)}ms`)
   } catch (err) {
     console.error('[GET /api/subsidies] 실패:', err)
     res.status(500).json({ error: 'Failed to load subsidies' })

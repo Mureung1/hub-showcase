@@ -36,17 +36,21 @@ matchRouter.post('/', async (req, res) => {
   const sort: SortOption = parsed.data.sort ?? 'match'
   const page = parsed.data.page ?? DEFAULT_PAGE
   const limit = parsed.data.limit ?? DEFAULT_LIMIT
+  const requestStartedAt = performance.now()
   try {
     const { items, total, hasMore } = await match(profile, sort, page, limit)
 
+    const insertStartedAt = performance.now()
     try {
       await insertMatchRequest(profile, sort)
     } catch (err) {
       // 매칭 요청 저장은 best-effort — 여기서 실패해도 조회 응답은 정상 반환한다.
       console.error('[POST /api/match] 매칭 요청 저장 실패:', err)
     }
+    console.log(`[timing] POST /api/match: insertMatchRequest took ${(performance.now() - insertStartedAt).toFixed(1)}ms`)
 
     res.json({ items, total, sort, page, limit, hasMore })
+    console.log(`[timing] POST /api/match: full handler took ${(performance.now() - requestStartedAt).toFixed(1)}ms`)
   } catch (err) {
     console.error('[POST /api/match] 실패:', err)
     res.status(500).json({ error: 'Failed to match subsidies' })
