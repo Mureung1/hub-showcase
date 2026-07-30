@@ -3,7 +3,7 @@
   "title": "CV2PF — 기업·JD 맞춤 포트폴리오 생성기",
   "summary": "지원 기업과 채용 공고를 고르면 이력서의 실제 경험을 JD에 맞게 재구성하고, 완성 결과를 저장·조회하는 서비스입니다.",
   "githubUser": "dolphin1404(이규민)",
-  "demoUrl": "https://github.com/dolphin1404/NaverConnect_wm/tree/codex/week3-job-targeted-portfolio/cv-to-portfolio",
+  "demoUrl": "https://cv2pf-jd-portfolio.isuka-01.chatgpt.site",
   "demoVideoUrl": "https://drive.google.com/drive/folders/16-eF-KIwCGqVP6CNIYkyBcJ_vK95ei9E?usp=sharing",
   "thumbnail": "thumbnail.webp",
   "screenshots": [

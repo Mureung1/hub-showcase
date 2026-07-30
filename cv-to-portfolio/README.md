@@ -21,7 +21,7 @@ flowchart LR
     MOCK["선택적 메모리 Mock<br/>VITE_USE_MOCK_PORTFOLIOS=true"]
   end
 
-  subgraph S["Express API · :4000"]
+  subgraph S["API · Express(로컬) / Sites Worker(배포)"]
     AI_API["POST /api/generate<br/>입력 검증"]
     PORT_API["POST · GET /api/portfolios<br/>입력 검증 · DTO 매핑"]
   end
@@ -54,8 +54,9 @@ flowchart LR
   LIB -. "환경 변수로 실제 API 우회" .-> MOCK
 ```
 
-사용자는 React 화면에서 지원 기업·공고, CV와 디자인을 고릅니다. React는 Express에 생성을 요청하고,
-Express만 보관하는 API 키로 Anthropic에서 HTML을 받아옵니다. AI 요청이 실패하면 브라우저의
+사용자는 React 화면에서 지원 기업·공고, CV와 디자인을 고릅니다. React는 같은 `/api` 계약을
+사용하는 Express(로컬) 또는 Sites Worker(배포)에 생성을 요청합니다. 서버만 보관하는 API 키로
+Anthropic에서 HTML을 받아옵니다. AI 요청이 실패하면 브라우저의
 로컬 생성기가 대신 HTML을 만듭니다. 저장 버튼을 누르면 Express가 결과와 메타데이터를
 Supabase에 저장합니다. 목록에서는 가벼운 메타데이터만 받고, 항목을 열 때 UUID로 HTML을
 조회해 미리보기를 바꿉니다.
@@ -64,6 +65,7 @@ Supabase에 저장합니다. 목록에서는 가벼운 메타데이터만 받고
 
 ## 문서
 
+- 🚀 [배포 사이트](https://cv2pf-jd-portfolio.isuka-01.chatgpt.site) · [5분 데모 영상](https://drive.google.com/drive/folders/16-eF-KIwCGqVP6CNIYkyBcJ_vK95ei9E?usp=sharing) · [배포·검증·Agent 작업 기록](docs/deployment-and-video-submission-2026-07-30.md)
 - 🎯 [월요일 데모 핵심 흐름·완료 기준·실제 검증 결과](docs/monday-demo-core-flow-2026-07-27.md) · [Showcase](showcase/showcase.json)
 - 🎤 [10분 발표 PPT](docs/CV2PF_기업_JD_맞춤_발표.pptx) · [슬라이드 설계서](docs/ten-minute-presentation-outline-2026-07-24.md) · [발표 대본과 예상 Q&A](docs/ten-minute-presentation-script-2026-07-24.md)
 - 🏢 [기업·채용 공고 예시 5개와 선정 근거](docs/company-job-examples-2026-07-24.md)
