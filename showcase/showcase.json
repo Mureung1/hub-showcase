@@ -6,10 +6,9 @@
   "demoUrl": "https://letterandco.vercel.app",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
-    "screenshots/home.webp",
-    "screenshots/invite-compose.webp",
-    "screenshots/invite-share.webp",
-    "screenshots/participants-status.webp"
+    "screenshots/start-screen.webp",
+    "screenshots/invite-compose-v2.webp",
+    "screenshots/assign-roles.webp"
   ],
   "problem": "모임 시간·장소를 잡을 때 카톡방·설문 앱·메모가 여기저기 흩어져서, 누가 언제 되는지 한눈에 파악하기 어렵습니다.",
   "targetUsers": [
