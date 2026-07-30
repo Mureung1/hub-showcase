@@ -644,5 +644,21 @@
     ⚠️ 문구에 **"일치"·"합의"를 쓰지 않았다** — `single_source`만 있는 경우는 일치한 게 아니라 **비교 상대가 없었던 것**이라 거짓이 된다(domain-policy 5.3·§8.4의 "합의를 사실 판정이 아니라 비교 결과로만 표현한다").
     Badge `variant="neutral"`(회색)로 success와 시각적으로 구분했다.
   - **검증**: 루트 typecheck·lint(web만)·build 통과. 3사 호출 0회. 4갈래 + `?scenario=` 2종 브라우저 확인
+- **T-020.1 진행 (2026-07-31)** — SPEC-AI-003 서버 구간. **구현 완료, 실호출 검증 미수행.** 커밋 `ddb496d`·`d9f15f3`·`a9efc44` + 대체 노트 테스트
+  - **§4 모드 판정 (LLM 0회)**: `decideGenerationMode` — **판단 순서를 지킨다.** 전부 rejected가 먼저다. 순서를 뒤집으면 "단일 provider인데 전부 rejected"가 `single_source_fallback`으로 잘못 분류돼 부를 필요 없는 AI를 부른다. §5.3의 "정확히 하나"를 그대로(2개 이상은 `multi_source`). `excludedFromComparison`은 성공으로 세지 않는다
+  - **§2.1 트리거 — `composeIfSettled` 하나뿐이다**. `runManagerForQuestion`(충돌 0건, await + SSE)과 `applyUserDecision`(사용자 판단, fire-and-forget) 양쪽이 이것을 호출하며 **조건을 복사하지 않는다.** SPEC-AI-002에서 같은 계열 갇힘이 네 번 나온 원인이 매번 조건 분산이었다
+  - **§3 생성**: `FinalAnswerComposer` 포트(ADR-005 7번째) + OpenRouter 어댑터. `openRouterCall.ts` 재사용 — §2.4.1의 타임아웃 수정이 거기 있어 **새로 만들면 3초 설정에 156.5초 걸리던 함정에 다시 빠진다**. 출력 스키마는 `finalAnswer`가 앞(§3.2). `reasoning` 무설정으로 시작(§3.4)
+  - **§5.2 대체 노트**: AI가 두 번 실패해도 코드가 최소한을 만든다. ⚠️ **어느 항목에도 판단 주체를 표기하지 않는다** — 자동 통과에 "내 결정 반영"을 붙이던 T-019.6 결함의 재발 여지를 구조적으로 없앴다
+  - **§6 저장·전이**: `final_answers` → `decision_notes` → `completed` 순서. §5.4 재생성 금지는 **저장된 것에만**(명시적 요청 409, 트리거 경로는 조용히 null). `markCompleted`는 멱등 — T-020.1 시점에는 web 전이가 아직 살아 있어 둘 다 시도할 수 있다
+  - **§7 Context — Epic 5 완성**: 배선은 원래 있었지만 재료가 web Mock이라 DB에 없었다. 서버가 구성하도록 연결했고 상한 초과분은 `omittedNoteCount`로 기록한다(조용한 절단 금지)
+  - **§8 SSE**: `final_answer.progress`·`done`을 기존 스트림에 이어 발신. §8.1의 두 경로를 구분 — **PATCH는 생성을 기다리지 않는다**(30~60초라 HTTP 타임아웃 위험). PATCH 응답 계약은 바꾸지 않았다
+  - **검증 (LLM 0회)**: 루트 typecheck·lint(web만)·build 통과. `npm run final:compose -- --mode-test` **16/16**(모드 판정 6 + 확정 판정 5 + 대체 노트 5)
+    - ⚠️ 대체 노트 테스트에서 **내 fixture 때문에 한 번 실패**했다 — 쟁점 제목에 "자동 **합의** 항목"을 써서 정규식이 코드가 덧붙인 문구가 아니라 제목을 잡았다. 제목을 중립 단어로 바꿔 검사 대상을 바로잡았다
+  - **⚠️ 미수행 — 실호출 검증 전부**
+    - **H-2 실호출**: `multi_source`·`single_source_fallback` 실제 생성, 중복 409, DecisionNote 재시도 경로
+    - **H-3 psql**: UNIQUE 통과, `completed_at` 기록, `context_snapshot` 실데이터
+    - **H-4 실측**: 생성 지연 분위수, `completion_tokens`/`reasoning_tokens`, 타임아웃 건수, `generationModeDist`
+    - 예산(3사 2회 / 호출 30회)은 **전혀 쓰지 않았다**
+  - **T-020.2 잔여**: web 재배선(`buildMockFinalAnswer`·`buildMockDecisionNote` 제거, GET 폴링, **web의 기존 `completed` 전이 제거**)
 - 이후: 폐기 인용 차이 축적 후 §11.2 개정 판단 · G 통제 재측정(effort:low) · AC2(단계 3b) → SPEC-AI-003(FinalAnswer) → SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

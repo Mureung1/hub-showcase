@@ -12,6 +12,7 @@ import {
   isAgendaSetSettled,
   succeededProviders,
 } from "../pipeline/generationMode.js";
+import { buildFallbackNote } from "../pipeline/fallbackNote.js";
 
 /**
  * 개발 전용 검증 스크립트 (SPEC-AI-003 H-2).
@@ -231,9 +232,84 @@ function modeTest(): void {
   if (passed !== total) process.exitCode = 1;
 }
 
+// ---------------------------------------------------------------------------
+// §5.2 대체 노트 — 출력을 직접 주입한다(LLM 0회)
+// ---------------------------------------------------------------------------
+
+/**
+ * ⚠️ `?_PROMPT_VERSION=nonexistent` 주입으로는 이 경로를 못 탄다.
+ * 그건 **프롬프트 로드 실패**라 FinalAnswer 까지 같이 죽는다. §5.2가 요구하는 것은
+ * "FinalAnswer 는 성공했는데 decisionNote 만 빈 문자열" 같은 **파싱·검증 단계 실패**다.
+ * 그래서 대체 노트 생성 함수에 재료를 직접 넣어 검증한다.
+ */
+function fallbackNoteTest(): void {
+  console.log("\n=== §5.2 대체 DecisionNote (LLM 호출 0회) ===\n");
+
+  // ⚠️ 제목에 "합의"·"일치" 같은 검사 대상 단어를 넣지 않는다 — 그러면 정규식이 제목을
+  // 잡아 **코드가 덧붙인 문구인지 원래 제목인지 구분하지 못한다**. 검사하려는 것은
+  // "대체 노트가 판단 주체를 덧붙이는가"이지 특정 단어의 등장 여부가 아니다.
+  const agendas = [
+    agenda("passed", "auto_consensus", "배포 방식"),
+    agenda("passed", "auto_single_source", "모니터링 도구"),
+    agenda("passed", "user_accepted", "인증 방식"),
+    agenda("rejected", "user_rejected", "캐시 전략"),
+  ];
+  const note = buildFallbackNote({
+    questionMessage: "어떤 방식을 골라야 할까요?",
+    agendas,
+  });
+
+  console.log("--- 생성된 대체 노트 ---");
+  console.log(note);
+  console.log("------------------------\n");
+
+  const checks: { name: string; ok: boolean; why: string }[] = [
+    {
+      name: "질문이 첫 줄에 있다",
+      ok: note.startsWith("어떤 방식을 골라야 할까요?"),
+      why: "무엇에 대한 결정인지가 먼저 와야 한다",
+    },
+    {
+      name: "passed 3건이 결정 사항에 들어간다",
+      ok:
+        note.includes("배포 방식") &&
+        note.includes("모니터링 도구") &&
+        note.includes("인증 방식"),
+      why: "확정된 것이 빠지면 기록이 불완전하다",
+    },
+    {
+      name: "rejected 가 제외 항목으로 분리된다",
+      ok: note.includes("제외한 항목") && note.includes("캐시 전략"),
+      why: "제외한 것도 결정이다",
+    },
+    {
+      name: "⭐ 사용자 판단 문구가 없다 (§12.5)",
+      ok: !/내 결정 반영|사용자 판단|합의|일치/.test(note),
+      why:
+        "자동 통과 항목에 '내 결정 반영'을 붙이면 노트가 사실과 달라진다(T-019.6 결함). " +
+        "'합의'·'일치'도 single_source 에서 거짓이 된다",
+    },
+    {
+      name: "제외 항목의 내용이 본문에 없다",
+      ok: !note.includes("캐시 전략의 확정 내용"),
+      why: "사용자가 뺀 것을 다시 넣으면 안 된다",
+    },
+  ];
+
+  let passed = 0;
+  for (const c of checks) {
+    if (c.ok) passed += 1;
+    console.log(`${c.ok ? "✅ PASS" : "❌ FAIL"}  ${c.name}`);
+    if (!c.ok) console.log(`         이유: ${c.why}`);
+  }
+  console.log(`\n→ ${passed}/${checks.length} 통과`);
+  if (passed !== checks.length) process.exitCode = 1;
+}
+
 function main(): void {
   if (process.argv.includes("--mode-test")) {
     modeTest();
+    fallbackNoteTest();
     return;
   }
   console.log("사용법: npm run final:compose -- --mode-test");
