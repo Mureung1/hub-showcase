@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import ReportHypothesisCards, { type ReportHypothesis } from '../components/ReportHypothesisCards'
 import '../App.css'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 interface Project {
   id: string
@@ -29,10 +29,12 @@ function PrintPreviewPage() {
 
   useEffect(() => {
     if (!id) return
-    const url = new URL(`${API_BASE_URL}/api/projects/${id}/print`)
-    if (hypothesisIds) url.searchParams.set('hypothesis_ids', hypothesisIds)
+    const params = new URLSearchParams()
+    if (hypothesisIds) params.set('hypothesis_ids', hypothesisIds)
+    const query = params.toString()
+    const url = `${API_BASE_URL}/api/projects/${id}/print${query ? `?${query}` : ''}`
 
-    fetch(url.toString())
+    fetch(url)
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}))

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../App.css'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 export interface Hypothesis {
   id: string
@@ -70,7 +70,7 @@ function hasAnyError(errors: ValidationErrors): boolean {
 function InputPage() {
   const navigate = useNavigate()
   const [formState, setFormState] = useState<ProjectFormState>({
-    title: '새로운 PM 분석 프로젝트',
+    title: '',
     problem_definition: '',
     additional_notes: '',
     hypotheses: [{ id: 'init-1', cause: '', effect: '' }],
@@ -222,7 +222,7 @@ function InputPage() {
   return (
     <div className="app-shell">
       <header className="page-header">
-        <h1>가설 검증 인터뷰 분석 도구</h1>
+        <h1>크로스체크 - AI와 함께 인터뷰 분석</h1>
         <p>프로젝트 정보와 가설을 입력하고 분석을 시작하세요.</p>
       </header>
 
@@ -232,6 +232,7 @@ function InputPage() {
           <input
             id="title"
             className={`input${validationErrors.title ? ' has-error' : ''}`}
+            placeholder="예: 시니어 여가 생활 인터뷰, 불교박람회 참여자 만족도 인터뷰"
             value={formState.title}
             onChange={(e) => handleFieldChange('title', e.target.value)}
           />
@@ -240,6 +241,9 @@ function InputPage() {
 
         <div className="field">
           <label className="field-label" htmlFor="problem_definition">문제 정의</label>
+          <p className="field-hint">
+            어떤 상황에 놓인 사용자를 인터뷰하는지, 사용자는 어떤 맥락에서 어려움을 겪는지 구체적으로 작성합니다.
+          </p>
           <textarea
             id="problem_definition"
             className={`textarea${validationErrors.problem_definition ? ' has-error' : ''}`}
@@ -254,6 +258,11 @@ function InputPage() {
 
       <section className="card">
         <label className="field-label">가설 (원인 → 결과)</label>
+        <p className="field-hint">
+          "~하면, ---해진다"의 형식으로, 문제를 해결하기 위해 투입하는 노력(input)과 앞의 노력으로 변화할
+          지표(output)을 적습니다. 예) 원인: 홍보용 릴스에 제품 링크를 달아두면, 결과: 고객의 검색 부담을
+          줄여 매출이 상승할 것이다.
+        </p>
         {formState.hypotheses.map((h) => {
           const rowError = validationErrors.hypotheses?.[h.id]
           return (
@@ -344,6 +353,7 @@ function InputPage() {
       <section className="card">
         <div className="field">
           <label className="field-label" htmlFor="additional_notes">추가 컨텍스트</label>
+          <p className="field-hint">AI에게 전달하고 싶은 추가 맥락을 입력합니다.</p>
           <textarea
             id="additional_notes"
             className="textarea"
@@ -356,7 +366,7 @@ function InputPage() {
       <div className="submit-row" style={{ flexDirection: 'column', gap: 'var(--space-md)' }}>
         {submitError && <span className="error-text">{submitError}</span>}
         <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={isSubmitting}>
-          {isSubmitting ? '분석 중...' : '분석 시작'}
+          {isSubmitting ? '분석 중...' : 'AI 분석 시작'}
         </button>
         {isSubmitting && (
           <div className="progress-container">
@@ -366,16 +376,18 @@ function InputPage() {
         )}
       </div>
 
-      <section className="json-panel" style={{ marginTop: 'var(--space-lg)' }}>
-        <button
-          type="button"
-          className="json-panel-toggle"
-          onClick={() => setShowJson((prev) => !prev)}
-        >
-          {showJson ? '▼' : '▶'} 실시간 상태 (JSON)
-        </button>
-        {showJson && <pre>{JSON.stringify(formState, null, 2)}</pre>}
-      </section>
+      {import.meta.env.DEV && (
+        <section className="json-panel" style={{ marginTop: 'var(--space-lg)' }}>
+          <button
+            type="button"
+            className="json-panel-toggle"
+            onClick={() => setShowJson((prev) => !prev)}
+          >
+            {showJson ? '▼' : '▶'} 실시간 상태 (JSON)
+          </button>
+          {showJson && <pre>{JSON.stringify(formState, null, 2)}</pre>}
+        </section>
+      )}
     </div>
   )
 }

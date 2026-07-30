@@ -43,6 +43,14 @@
   margin-bottom: var(--space-sm);
 }
 
+/* 입력 항목 아래 보조 설명. page-header p와 같은 톤을 쓴다. */
+.field-hint {
+  margin-top: calc(-1 * var(--space-xs));
+  margin-bottom: var(--space-sm);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+}
+
 .input,
 .textarea {
   width: 100%;

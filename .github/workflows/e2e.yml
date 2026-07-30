@@ -1,0 +1,56 @@
+name: E2E test
+
+# 이 워크플로는 실제 Gemini 호출 1회 + 테스트용 Supabase 프로젝트 쓰기 1건을 발생시킨다
+# (PR마다 쿼터를 소모한다). 실행 전 아래 Secrets가 저장소 Settings > Secrets and
+# variables > Actions에 등록되어 있어야 한다 — 반드시 "테스트용" Supabase 프로젝트를
+# 쓴다. 운영 프로젝트 값을 넣으면 PR마다 실제 데이터가 쌓인다.
+#   TEST_SUPABASE_URL
+#   TEST_SUPABASE_SECRET_KEY
+#   GEMINI_API_KEY
+
+on:
+  # 실제 PR은 이 fork가 아니라 upstream(connect-AIAgentChallenge-26-1/hub)의
+  # 개인 브랜치(N089_박지은)를 대상으로 연다. pull_request 이벤트는 PR의 base 저장소
+  # (=upstream) 기준으로 처리되어 이 fork의 워크플로/Secrets를 타지 않으므로,
+  # 이 fork에 직접 push할 때(feature 브랜치 push 시점)를 트리거로 쓴다.
+  push:
+    branches: ['feature/**']
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      PORT: 3000
+      SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SECRET_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Run E2E tests
+        run: npm run e2e
+        working-directory: frontend
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7

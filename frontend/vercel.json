@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://interview-analyzing-tool.onrender.com/api/:path*"
+    }
+  ]
+}
