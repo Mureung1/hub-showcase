@@ -355,7 +355,7 @@ router.post('/:id/create-room', async (req, res) => {
 
   const { error } = await supabase
     .from('matching_requests')
-    .update({ group_id: groupId })
+    .update({ group_id: groupId, is_leader: true })
     .eq('id', id)
 
   if (error) {
@@ -581,7 +581,7 @@ router.post('/:id/leave', async (req, res) => {
 
   const { error } = await supabase
     .from('matching_requests')
-    .update({ group_id: null, status: 'open' })
+    .update({ group_id: null, status: 'open', is_leader: false })
     .eq('id', id)
 
   if (error) {
@@ -619,13 +619,19 @@ router.post('/:id/board', async (req, res) => {
     return res.status(404).json({ error: '요청을 찾을 수 없어요' })
   }
 
+  if (!target.is_leader) {
+    return res.status(403).json({ error: '그룹장만 탑승 확인을 할 수 있어요' })
+  }
+
   const boardedAt = new Date()
   const result = classifyBoarding(target.desired_time, new Date(target.created_at), boardedAt)
 
+  // 그룹장이 탑승을 확인하면 그룹 전체(매칭된 멤버 전원)에게 반영
   const { error: updateError } = await supabase
     .from('matching_requests')
     .update({ boarded_at: boardedAt.toISOString() })
-    .eq('id', id)
+    .eq('group_id', target.group_id)
+    .eq('status', 'matched')
 
   if (updateError) {
     return res.status(500).json({ error: updateError.message })
