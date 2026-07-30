@@ -27,8 +27,12 @@ export function InspectorFlow({
   if (flowState === "loading") {
     return (
       <section className="metric-section">
-        <div className="section-title"><span>시간대별 활동성</span></div>
-        <p className="metric-note" role="status">시간대별 유동인구를 불러오는 중입니다.</p>
+        <div className="section-title">
+          <span>시간대별 유동인구</span>
+        </div>
+        <p className="metric-note" role="status">
+          시간대별 유동인구를 불러오는 중입니다.
+        </p>
       </section>
     );
   }
@@ -36,8 +40,12 @@ export function InspectorFlow({
   if (flowState === "error") {
     return (
       <section className="metric-section">
-        <div className="section-title"><span>시간대별 활동성</span></div>
-        <p className="metric-note" role="alert">시간대별 유동인구를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</p>
+        <div className="section-title">
+          <span>시간대별 유동인구</span>
+        </div>
+        <p className="metric-note" role="alert">
+          시간대별 유동인구를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+        </p>
       </section>
     );
   }
@@ -45,7 +53,9 @@ export function InspectorFlow({
   if (flowState === "unavailable" || analysis === null) {
     return (
       <section className="metric-section">
-        <div className="section-title"><span>시간대별 활동성</span></div>
+        <div className="section-title">
+          <span>시간대별 유동인구</span>
+        </div>
         <p className="metric-note" role="status">
           선택한 분기에는 시간대별 유동인구 자료가 없습니다. 다른 분기를 선택하면 확인할 수 있습니다.
         </p>
@@ -60,7 +70,7 @@ export function InspectorFlow({
   return (
     <section className="metric-section">
       <div className="section-title">
-        <span>시간대별 활동성</span>
+        <span>시간대별 유동인구</span>
         <small>{market.demandLabels[activeHour] ?? "시간 구간 미확인"}</small>
       </div>
       <div className="hour-chart">
@@ -106,8 +116,9 @@ export function InspectorFlow({
         )}
       </div>
       <p className="metric-note">
-        시간 구간 길이가 서로 달라 막대 높이와 대표 수요는 시간당 평균으로 비교합니다. 원본 누적값은
-        함께 표시하며 변경하지 않습니다. 서울시 추정 길단위인구의 선택 분기 집계입니다.
+        시간 구간 길이가 서로 달라 막대 높이와 대표값은 시간당 평균으로 비교합니다. 서울시
+        길단위인구 기반 유동인구 추정치이며 실시간 보행자 수나 실제 이동 경로가 아닙니다. 원본
+        분기 누적값은 함께 표시합니다.
         {flowState === "partial" ? " 일부 시간대 자료는 아직 없습니다." : ""}
       </p>
     </section>
