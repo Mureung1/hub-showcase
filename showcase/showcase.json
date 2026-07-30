@@ -7,9 +7,11 @@
   "demoVideoUrl": "https://youtu.be/1XQzD72mFPg",
   "thumbnail": "thumbnail.jpg",
   "screenshots": [
-    "screenshots/mypage.png"
+    "screenshots/home.png",
+    "screenshots/pages.png",
+    "screenshots/detailpage.png"
   ],
-  "problem": "동네 공동구매는 모집 현황, 주문 진행, 픽업 정보가 채팅에 흩어져 참여자가 현재 상태를 파악하기 어렵고 방장의 관리 부담도 큽니다.",
+  "problem": "1인 가구의 공간·소비 한계와 기존 커뮤니티의 수동적인 공동구매 운영으로 인해 대량 구매의 비용 절감 효과를 제대로 활용하기 어렵다.",
   "targetUsers": [
     "동네 이웃과 함께 식료품·생활용품을 공동구매하고 싶은 사용자",
     "공동구매 글을 올리고 주문과 픽업을 관리하는 방장"
