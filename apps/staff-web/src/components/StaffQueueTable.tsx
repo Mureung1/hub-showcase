@@ -1,10 +1,9 @@
-import type { QueuePosition, WaitingStatus } from "@baro-jinryo/shared";
-import { formatPatientCounts, formatPositionRange } from "@baro-jinryo/shared";
+import type { QueuePatientSlot, QueuePosition, WaitingStatus } from "@baro-jinryo/shared";
 import { ArrowDown, ArrowUp, Megaphone, RotateCcw, UserCheck, UsersRound } from "lucide-react";
 import { statusLabels } from "../utils/queueLabels";
 
 interface StaffQueueTableProps {
-  rows: QueuePosition[];
+  rows: QueuePatientSlot[];
   activeRows: QueuePosition[];
   selectedId: string | undefined;
   onOpen: (waitingId: string) => void;
@@ -43,7 +42,6 @@ export function StaffQueueTable({
             <th>실제 환자 순서</th>
             <th>접수번호</th>
             <th>유형</th>
-            <th>가족 인원</th>
             <th>현재 상태</th>
             <th>등록 시각</th>
             <th>다음 동작</th>
@@ -53,18 +51,24 @@ export function StaffQueueTable({
           {rows.map((row) => (
             <tr
               className={selectedId === row.entry.id ? "is-selected" : ""}
-              key={row.entry.id}
+              key={`${row.entry.id}-${row.patientSlotNumber ?? "inactive"}`}
               onClick={() => onOpen(row.entry.id)}
             >
               <td>{row.teamNumber ? `${row.teamNumber}팀` : "-"}</td>
-              <td>{formatPositionRange(row)}</td>
-              <td><strong>{row.entry.ticketNumber}</strong></td>
+              <td>{row.position ? `${row.position}번째` : "-"}</td>
+              <td>
+                <strong>{row.entry.ticketNumber}</strong>
+                {row.patientSlotCount && row.patientSlotCount > 1 && (
+                  <small className="queue-slot-count">
+                    {row.patientSlotNumber}/{row.patientSlotCount}
+                  </small>
+                )}
+              </td>
               <td>
                 <span className={`source-label source-label--${row.entry.source}`}>
                   {row.entry.source === "remote" ? "원격" : "현장"}
                 </span>
               </td>
-              <td>{formatPatientCounts(row.entry)}</td>
               <td>
                 <span className={`waiting-state waiting-state--${row.entry.status}`}>
                   {statusLabels[row.entry.status]}
@@ -73,7 +77,7 @@ export function StaffQueueTable({
               <td>{row.entry.registeredAt}</td>
               <td>
                 <div className="row-actions">
-                  {row.entry.status === "entry_requested" && (
+                  {row.isFirstTeamSlot && row.entry.status === "entry_requested" && (
                     <button
                       type="button"
                       onClick={(event) => {
@@ -84,7 +88,7 @@ export function StaffQueueTable({
                       <UserCheck size={17} /> 도착 처리
                     </button>
                   )}
-                  {row.entry.status === "onsite_waiting" && (
+                  {row.isFirstTeamSlot && row.entry.status === "onsite_waiting" && (
                     <button
                       type="button"
                       onClick={(event) => {
@@ -95,7 +99,7 @@ export function StaffQueueTable({
                       <Megaphone size={17} /> 진료실 호출
                     </button>
                   )}
-                  {row.entry.status === "held" && (
+                  {row.isFirstTeamSlot && row.entry.status === "held" && (
                     <button
                       type="button"
                       onClick={(event) => {
@@ -106,7 +110,7 @@ export function StaffQueueTable({
                       <RotateCcw size={17} /> 대기열 복귀
                     </button>
                   )}
-                  {row.position !== null && (
+                  {row.isFirstTeamSlot && row.position !== null && (
                     <>
                       <button
                         type="button"

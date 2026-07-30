@@ -82,6 +82,16 @@ export interface QueuePosition {
   estimatedMinutes: number | null;
 }
 
+export interface QueuePatientSlot {
+  entry: MockQueueEntry;
+  teamNumber: number | null;
+  position: number | null;
+  estimatedMinutes: number | null;
+  patientSlotNumber: number | null;
+  patientSlotCount: number | null;
+  isFirstTeamSlot: boolean;
+}
+
 export interface MockPatientConfig {
   hospital: {
     id: string;
@@ -178,7 +188,7 @@ export function decideAutomaticNotification({
 
   if (source === "onsite") {
     return status === "onsite_waiting" &&
-      currentPosition <= entryThreshold &&
+      currentPosition - 1 <= entryThreshold &&
       onsiteNearTurnNotifiedAt === null
       ? { notificationType: "onsite_near_turn", dedupeKey: "onsite_near_turn" }
       : null;
@@ -254,6 +264,39 @@ export function calculateQueuePositions(
     activeTeamNumber += 1;
 
     return { entry, teamNumber: activeTeamNumber, position, positionEnd, estimatedMinutes };
+  });
+}
+
+export function expandQueuePositionsToPatientSlots(
+  positions: QueuePosition[],
+  averageMinutesPerPatient = AVERAGE_TREATMENT_MINUTES,
+): QueuePatientSlot[] {
+  return positions.flatMap((position) => {
+    if (position.position === null || position.positionEnd === null) {
+      const inactiveSlot: QueuePatientSlot = {
+        entry: position.entry,
+        teamNumber: position.teamNumber,
+        position: null,
+        estimatedMinutes: null,
+        patientSlotNumber: null,
+        patientSlotCount: null,
+        isFirstTeamSlot: true,
+      };
+      return [inactiveSlot];
+    }
+
+    return Array.from({ length: position.entry.patientCount }, (_, index): QueuePatientSlot => {
+      const patientPosition = position.position! + index;
+      return {
+        entry: position.entry,
+        teamNumber: position.teamNumber,
+        position: patientPosition,
+        estimatedMinutes: (patientPosition - 1) * averageMinutesPerPatient,
+        patientSlotNumber: index + 1,
+        patientSlotCount: position.entry.patientCount,
+        isFirstTeamSlot: index === 0,
+      };
+    });
   });
 }
 

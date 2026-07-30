@@ -9,7 +9,7 @@ import type {
   StaffNotificationHistoryItem,
   WaitingStatus,
 } from "@baro-jinryo/shared";
-import { calculateQueuePositions } from "@baro-jinryo/shared";
+import { calculateQueuePositions, expandQueuePositionsToPatientSlots } from "@baro-jinryo/shared";
 import {
   Building2,
   CircleX,
@@ -103,6 +103,10 @@ export function StaffQueuePage({
     [entries, settings.averageMinutesPerPatient],
   );
   const visibleRows = rows.filter(({ entry }) => !["called", "cancelled"].includes(entry.status));
+  const visiblePatientSlots = useMemo(
+    () => expandQueuePositionsToPatientSlots(visibleRows, settings.averageMinutesPerPatient),
+    [visibleRows, settings.averageMinutesPerPatient],
+  );
   const activeQueueRows = rows.filter(({ position }) => position !== null);
   const selected = rows.find(({ entry }) => entry.id === selectedId);
   const totalPatients = activeQueueRows.reduce((sum, { entry }) => sum + entry.patientCount, 0);
@@ -304,7 +308,7 @@ export function StaffQueuePage({
           </div>
         )}
         <StaffQueueTable
-          rows={visibleRows}
+          rows={visiblePatientSlots}
           activeRows={activeQueueRows}
           selectedId={selectedId}
           onOpen={setSelectedId}

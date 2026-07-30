@@ -3,7 +3,7 @@ import type {
   StaffNotificationHistoryItem,
   WaitingStatus,
 } from "@baro-jinryo/shared";
-import { formatPatientCounts, formatPositionRange } from "@baro-jinryo/shared";
+import { formatPositionRange } from "@baro-jinryo/shared";
 import { CircleX, PauseCircle, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -68,7 +68,6 @@ export function WaitingDetailPanel({
       <h2>{waiting.entry.ticketNumber}</h2>
       <dl>
         <div><dt>유형</dt><dd>{waiting.entry.source === "remote" ? "원격" : "현장"}</dd></div>
-        <div><dt>가족 인원</dt><dd>{formatPatientCounts(waiting.entry)}</dd></div>
         <div><dt>현재 상태</dt><dd>{statusLabels[waiting.entry.status]}</dd></div>
         <div><dt>대기 팀</dt><dd>{waiting.teamNumber ? `${waiting.teamNumber}팀` : "대기열 제외"}</dd></div>
         <div><dt>실제 환자 순서</dt><dd>{formatPositionRange(waiting)}</dd></div>
