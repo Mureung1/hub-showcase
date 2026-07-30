@@ -1,4 +1,5 @@
 import react from '@vitejs/plugin-react';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
@@ -9,8 +10,8 @@ export default defineConfig({
     minify: 'oxc',
     rollupOptions: {
       input: {
-        main: new URL('./index.html', import.meta.url).pathname,
-        guide: new URL('./guide/index.html', import.meta.url).pathname,
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        guide: fileURLToPath(new URL('./guide/index.html', import.meta.url)),
       },
     },
   },
