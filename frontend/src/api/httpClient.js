@@ -36,6 +36,7 @@ export const addFridgeItem = (payload) => request('POST', '/api/fridge', payload
 export const updateFridgeItem = (id, patch) => request('PATCH', `/api/fridge/${id}`, patch);
 export const deleteFridgeItem = (id) => request('DELETE', `/api/fridge/${id}`);
 export const getExpiryAlerts = () => request('GET', '/api/fridge/alerts');
+export const discardExpiredItems = () => request('POST', '/api/fridge/discard-expired');
 
 export const uploadReceipt = (file) => {
   const formData = new FormData();

@@ -59,6 +59,7 @@
 | `POST` | `/api/fridge` | 재고 아이템 수동 추가 (`ingredientId` 또는 `name` 중 하나 필수) |
 | `PATCH` | `/api/fridge/:id` | 재고 한 항목의 "구매 배치" 1건을 수정(`itemIndex`+`qtyAmount`/`qtyUnit`/`qtyLabel`/`expiryDate`) 또는 삭제(`deleteItemIndex`) — §5 참고 |
 | `DELETE` | `/api/fridge/:id` | 재료 하나(모든 구매 배치 포함)를 통째로 삭제 |
+| `POST` | `/api/fridge/discard-expired` | 유통기한이 지난(`expiry`가 `D+`) 구매 배치만 전부 폐기 → `{ discarded: [ingredientId] }`(배치 1건당 1개). 인덱스가 아니라 `dbId`로 지운다 — `fetchFridge`의 SELECT에 order가 없어 인덱스로 여러 건을 지우면 순서가 밀림 |
 | `GET` | `/api/ingredients` | 재료 마스터 목록 조회 — 재고 직접 추가·유통기한 확인 화면이 단위/카테고리 칩을 그리는 데 사용 |
 | `POST` | `/api/receipts` | 영수증 이미지 업로드(`multipart/form-data`, 필드명 `photo`) → OCR 인식 결과 반환. 사진이 없거나 OCR 크레덴셜 미설정 시 Mock 결과로 폴백 |
 | `POST` | `/api/receipts/:id/confirm` | 인식 결과(유통기한 보정 포함) 확정 → 냉장고에 일괄 반영 |

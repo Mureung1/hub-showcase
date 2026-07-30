@@ -37,8 +37,7 @@ export default function ExpiryCheck() {
     if (!receipt || !ingredients.length) return;
     receipt.items.filter((it) => it.matched && it.category === 'fresh').forEach((it) => {
       const id = it.matchedIngredientId;
-      const master = ingredientMap[id];
-      const defaultExp = calcExpiryDate(master, receipt.date.replace(/\./g, '-')) || getFallbackExpiry();
+      const defaultExp = calcExpiryDate(id, receipt.date.replace(/\./g, '-')) || getFallbackExpiry();
       if (!expiryOverrides[id]) setExpiryOverride(id, defaultExp);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -74,7 +73,7 @@ export default function ExpiryCheck() {
         {freshItems.map((it) => {
           const id = it.matchedIngredientId;
           const master = ingredientMap[id];
-          const isoDate = expiryOverrides[id] || calcExpiryDate(master, receipt.date.replace(/\./g, '-')) || getFallbackExpiry();
+          const isoDate = expiryOverrides[id] || calcExpiryDate(id, receipt.date.replace(/\./g, '-')) || getFallbackExpiry();
           const season = '여름'; // getSeason 로직을 써도 되지만 간략히
           const days = master?.avgShelfLifeDays?.summer;
           const note = days ? `자동 설정 · ${season} 기준 ${days}일` : '자동 설정';

@@ -8,6 +8,11 @@ router.get('/alerts', async (req, res) => {
   res.json(await store.getExpiryAlerts());
 });
 
+// 만료 재료를 통째로 버리는 동작이라 멱등하지 않다 — DELETE /:id와 경로가 겹치지 않게 POST로 둔다.
+router.post('/discard-expired', async (req, res) => {
+  res.json(await store.discardExpiredItems());
+});
+
 router.get('/', async (req, res) => {
   res.json(await store.getFridge());
 });
