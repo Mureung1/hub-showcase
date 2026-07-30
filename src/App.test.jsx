@@ -1,15 +1,28 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import App from './App'
 
 describe('App', () => {
-  it('renders the project intro heading on /', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('renders RoutineToday on / and shows its onboarding-guard text when there is no routine yet', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ hasRoutine: false }),
+      }),
+    )
+
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>,
     )
-    expect(screen.getByText(/그 순간을 처리하는 Agent\./)).toBeInTheDocument()
+
+    expect(await screen.findByText(/아직 루틴이 없습니다/)).toBeInTheDocument()
   })
 })

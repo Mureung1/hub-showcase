@@ -19,7 +19,8 @@ function buildInitialSetInputs(exercises) {
 }
 
 function SetInputRow({ setNumber, value, onChange }) {
-  const decrement = () => onChange({ ...value, reps: Math.max(0, Number(value.reps) - 1) })
+  const decrement = () =>
+    onChange({ ...value, reps: Math.max(0, Number(value.reps) - 1) })
   const increment = () => onChange({ ...value, reps: Number(value.reps) + 1 })
   const isSkipped = value.reps === 0
 
@@ -59,7 +60,9 @@ function SetInputRow({ setNumber, value, onChange }) {
         </button>
         <span className="text-text-secondary">회</span>
       </div>
-      {isSkipped && <span className="text-text-secondary">이 세트는 안 함</span>}
+      {isSkipped && (
+        <span className="text-text-secondary">이 세트는 안 함</span>
+      )}
     </div>
   )
 }
@@ -129,7 +132,9 @@ function SessionCard({
   onSkip,
 }) {
   const isCompleted = status === 'COMPLETED'
-  const [setInputs, setSetInputs] = useState(() => buildInitialSetInputs(exercises))
+  const [setInputs, setSetInputs] = useState(() =>
+    buildInitialSetInputs(exercises),
+  )
 
   const handleSetChange = (key, value) => {
     setSetInputs((prev) => ({ ...prev, [key]: value }))

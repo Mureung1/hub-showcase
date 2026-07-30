@@ -20,7 +20,16 @@
     "세트별 무게·반복수·완수 여부를 기록해 운동 이력을 누적 추적합니다."
   ],
   "featureTags": ["통증 재편성", "스킵 재배치", "온보딩 추천"],
-  "techStack": ["React", "Vite", "React Router", "Tailwind CSS", "Express", "Prisma", "PostgreSQL (Supabase)", "Vitest"],
+  "techStack": [
+    "React",
+    "Vite",
+    "React Router",
+    "Tailwind CSS",
+    "Express",
+    "Prisma",
+    "PostgreSQL (Supabase)",
+    "Vitest"
+  ],
   "techHighlights": [
     "통증 부위 필터링과 인접 세션 부위 중복 검증은 결정론적 코드가 담당하고, LLM은 그 안에서 대체 운동 선택과 근거 문구 생성만 담당합니다.",
     "Prisma + Supabase Postgres로 루틴·운동 기록·통증 리포트를 누적 저장해, 스킵 판단이 매주 스케줄 상태를 자동으로 참조합니다.",
@@ -30,12 +39,37 @@
   "agent": {
     "summary": "기획 문서 작성부터 기능 설계, TDD 구현, 버그 수정까지 Claude Code와 함께 설계서 승인 → 구현 → 검증 절차를 반복하며 개발했습니다.",
     "agentTools": [
-      { "type": "skill", "name": "design-first", "purpose": "새 기능을 코드부터 짜지 않고 완료기준·한계점·대안이 담긴 설계서를 먼저 작성해 검토받습니다." },
-      { "type": "skill", "name": "ask-before-deciding", "purpose": "라이브러리·데이터 출처처럼 여러 선택지가 있는 판단은 근거를 제시하고 사용자가 고르게 합니다." }
+      {
+        "type": "skill",
+        "name": "design-first",
+        "purpose": "새 기능을 코드부터 짜지 않고 완료기준·한계점·대안이 담긴 설계서를 먼저 작성해 검토받습니다."
+      },
+      {
+        "type": "skill",
+        "name": "ask-before-deciding",
+        "purpose": "라이브러리·데이터 출처처럼 여러 선택지가 있는 판단은 근거를 제시하고 사용자가 고르게 합니다."
+      }
     ],
     "workflows": [
-      { "name": "기능 개발 Workflow", "steps": ["문제 정의와 완료기준 정리", "설계서 작성(장단점·한계점·대안)", "사용자 검토·승인", "TDD로 구현", "실제 화면/DB로 검증"] },
-      { "name": "버그 수정 Workflow", "steps": ["에러 원인 설명", "회귀 테스트로 재발 방지 확인", "수정", "lint·test·build로 검증"] }
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "문제 정의와 완료기준 정리",
+          "설계서 작성(장단점·한계점·대안)",
+          "사용자 검토·승인",
+          "TDD로 구현",
+          "실제 화면/DB로 검증"
+        ]
+      },
+      {
+        "name": "버그 수정 Workflow",
+        "steps": [
+          "에러 원인 설명",
+          "회귀 테스트로 재발 방지 확인",
+          "수정",
+          "lint·test·build로 검증"
+        ]
+      }
     ]
   }
 }

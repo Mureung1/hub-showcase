@@ -17,16 +17,28 @@ describe('getDayArrangement', () => {
 
   it('실패 방지: PPL 7일 배치는 findArrangementViolation을 통과한다(인접 충돌 없음)', () => {
     const dayArrangement = getDayArrangement('PPL', 7)
-    const result = findArrangementViolation({ dayArrangement, splitType: 'PPL' })
+    const result = findArrangementViolation({
+      dayArrangement,
+      splitType: 'PPL',
+    })
     expect(result).toBe(null)
   })
 
   it('정상: PPL 5일·6일은 기존 순환 방식 그대로 동작한다', () => {
     expect(getDayArrangement('PPL', 5)).toEqual({
-      MON: 'Push', TUE: 'Pull', WED: 'Legs', THU: 'Push', FRI: 'Pull',
+      MON: 'Push',
+      TUE: 'Pull',
+      WED: 'Legs',
+      THU: 'Push',
+      FRI: 'Pull',
     })
     expect(getDayArrangement('PPL', 6)).toEqual({
-      MON: 'Push', TUE: 'Pull', WED: 'Legs', THU: 'Push', FRI: 'Pull', SAT: 'Legs',
+      MON: 'Push',
+      TUE: 'Pull',
+      WED: 'Legs',
+      THU: 'Push',
+      FRI: 'Pull',
+      SAT: 'Legs',
     })
   })
 })

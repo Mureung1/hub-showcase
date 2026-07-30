@@ -39,7 +39,9 @@ export function violatesAdjacentAreaRule({
 export function findArrangementViolation({ dayArrangement, splitType }) {
   const daysWithAreas = WEEK_ORDER.map((dayOfWeek) => {
     const dayType = dayArrangement[dayOfWeek]
-    const targetAreas = dayType ? (SPLIT_DAY_TYPES[splitType]?.[dayType] ?? []) : []
+    const targetAreas = dayType
+      ? (SPLIT_DAY_TYPES[splitType]?.[dayType] ?? [])
+      : []
     return { dayOfWeek, targetAreas }
   })
 
@@ -47,7 +49,13 @@ export function findArrangementViolation({ dayArrangement, splitType }) {
     const dayType = dayArrangement[dayOfWeek]
     if (!dayType) continue
     const areasToPlace = SPLIT_DAY_TYPES[splitType]?.[dayType] ?? []
-    if (violatesAdjacentAreaRule({ days: daysWithAreas, candidateDayOfWeek: dayOfWeek, areasToPlace })) {
+    if (
+      violatesAdjacentAreaRule({
+        days: daysWithAreas,
+        candidateDayOfWeek: dayOfWeek,
+        areasToPlace,
+      })
+    ) {
       return dayOfWeek
     }
   }

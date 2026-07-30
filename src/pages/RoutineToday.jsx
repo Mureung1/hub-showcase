@@ -13,7 +13,10 @@ function RoutineToday() {
 
   const postSessionAction = async (action, body = {}) => {
     setActionError(null)
-    const result = await postJson(`/api/sessions/${data.routineDayId}/${action}`, body)
+    const result = await postJson(
+      `/api/sessions/${data.routineDayId}/${action}`,
+      body,
+    )
     if (!result.ok) {
       setActionError(result.error)
       return
@@ -54,7 +57,9 @@ function RoutineToday() {
         <WeekStrip days={data.days} today={data.dayOfWeek} />
         <div className="mt-6">
           {actionError && (
-            <p className="mb-4 text-[13px] text-text-secondary">⚠ {actionError}</p>
+            <p className="mb-4 text-[13px] text-text-secondary">
+              ⚠ {actionError}
+            </p>
           )}
           {data.targetArea === null ? (
             <p className="text-text-secondary">오늘은 휴식일입니다.</p>

@@ -41,7 +41,9 @@ function RecordExerciseRow({ order, exercise }) {
     <div className="flex items-start gap-4 rounded-md px-4 py-[15px]">
       <span className="font-display w-5 text-[15px] text-muted">{order}</span>
       <div className="min-w-0 flex-1">
-        <div className="text-[15px] font-semibold text-text">{exercise.name}</div>
+        <div className="text-[15px] font-semibold text-text">
+          {exercise.name}
+        </div>
         <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[13px] tabular-nums text-text-secondary">
           {exercise.sets.map((set) => (
             <span key={set.setNumber}>
@@ -67,7 +69,11 @@ function RecordSessionCard({ session }) {
       </div>
       <div className="px-3 py-2.5">
         {session.exercises.map((exercise, i) => (
-          <RecordExerciseRow key={exercise.exerciseId} order={i + 1} exercise={exercise} />
+          <RecordExerciseRow
+            key={exercise.exerciseId}
+            order={i + 1}
+            exercise={exercise}
+          />
         ))}
       </div>
     </div>
@@ -101,7 +107,13 @@ function CalendarCell({ day, hasSession, isSelected, onClick }) {
   )
 }
 
-function Calendar({ sessionsByDate, selectedKey, onSelect, monthOffset, onMonthChange }) {
+function Calendar({
+  sessionsByDate,
+  selectedKey,
+  onSelect,
+  monthOffset,
+  onMonthChange,
+}) {
   const base = new Date()
   base.setDate(1)
   base.setMonth(base.getMonth() + monthOffset)

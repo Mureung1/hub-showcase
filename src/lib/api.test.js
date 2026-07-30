@@ -17,7 +17,10 @@ describe('postJson', () => {
 
     const result = await postJson('/api/onboarding', { daysPerWeek: 3 })
 
-    expect(result).toEqual({ ok: true, data: { success: true, daysPerWeek: 3 } })
+    expect(result).toEqual({
+      ok: true,
+      data: { success: true, daysPerWeek: 3 },
+    })
   })
 
   it('정상: POST 메서드와 JSON 헤더로, body를 문자열로 직렬화해서 보낸다', async () => {
@@ -84,13 +87,17 @@ describe('postJson', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: false,
-        json: () => Promise.resolve({ error: '이미 완료된 세션은 스킵할 수 없습니다.' }),
+        json: () =>
+          Promise.resolve({ error: '이미 완료된 세션은 스킵할 수 없습니다.' }),
       }),
     )
 
     const result = await postJson('/api/sessions/1/skip')
 
-    expect(result).toEqual({ ok: false, error: '이미 완료된 세션은 스킵할 수 없습니다.' })
+    expect(result).toEqual({
+      ok: false,
+      error: '이미 완료된 세션은 스킵할 수 없습니다.',
+    })
   })
 
   it('실패: 네트워크 자체가 끊겨 fetch가 reject되면 통일된 에러 문구로 {ok:false, error}를 반환한다', async () => {
@@ -98,7 +105,10 @@ describe('postJson', () => {
 
     const result = await postJson('/api/onboarding', { daysPerWeek: 3 })
 
-    expect(result).toEqual({ ok: false, error: '네트워크 오류가 발생했습니다.' })
+    expect(result).toEqual({
+      ok: false,
+      error: '네트워크 오류가 발생했습니다.',
+    })
   })
 
   it('실패: 서버 응답 본문이 JSON이 아니면(파싱 실패) 예외를 던지지 않고 {ok:false, error}로 통일한다', async () => {
@@ -106,13 +116,17 @@ describe('postJson', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: false,
-        json: () => Promise.reject(new SyntaxError('Unexpected token < in JSON')),
+        json: () =>
+          Promise.reject(new SyntaxError('Unexpected token < in JSON')),
       }),
     )
 
     const result = await postJson('/api/onboarding', { daysPerWeek: 3 })
 
-    expect(result).toEqual({ ok: false, error: '네트워크 오류가 발생했습니다.' })
+    expect(result).toEqual({
+      ok: false,
+      error: '네트워크 오류가 발생했습니다.',
+    })
   })
 })
 
@@ -128,7 +142,9 @@ describe('patchJson', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await patchJson('/api/routine/days/73', { targetArea: '상체' })
+    const result = await patchJson('/api/routine/days/73', {
+      targetArea: '상체',
+    })
 
     expect(fetchMock).toHaveBeenCalledWith('/api/routine/days/73', {
       method: 'PATCH',

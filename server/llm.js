@@ -6,11 +6,17 @@ const client = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null
 // 관절 필터링으로 걸러낸 대체 후보(candidates) 중 하나를 LLM이 "추천"으로 고른다.
 // 기획서 원칙대로 LLM은 "선택"만 한다 — 근거 문구는 코드가 템플릿으로 채운다.
 // 반환: 고른 운동 id(숫자), 또는 null(키 없음/호출 실패 → 호출부가 결정론적 폴백을 쓴다).
-export async function pickRecommendedExerciseId({ painBodyPart, originalName, candidates }) {
+export async function pickRecommendedExerciseId({
+  painBodyPart,
+  originalName,
+  candidates,
+}) {
   if (!client || candidates.length === 0) return null
 
   const candidateIds = candidates.map((c) => c.id)
-  const candidateList = candidates.map((c) => `- id ${c.id}: ${c.name}`).join('\n')
+  const candidateList = candidates
+    .map((c) => `- id ${c.id}: ${c.name}`)
+    .join('\n')
 
   try {
     const response = await client.messages.create({
@@ -46,7 +52,9 @@ export async function pickRecommendedExerciseId({ painBodyPart, originalName, ca
     const text = response.content.find((b) => b.type === 'text')?.text
     if (!text) return null
     const parsed = JSON.parse(text)
-    return candidateIds.includes(parsed.chosenExerciseId) ? parsed.chosenExerciseId : null
+    return candidateIds.includes(parsed.chosenExerciseId)
+      ? parsed.chosenExerciseId
+      : null
   } catch {
     // 네트워크 오류·키 문제 등 어떤 실패든 폴백으로 넘긴다 — 통증 보고 전체가 죽지 않게.
     return null
