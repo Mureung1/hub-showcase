@@ -582,5 +582,37 @@
     - **고정 안내 문구의 내용은 제품 문구 결정이라 임의로 만들지 않았다.** 3사 전멸용 `allProvidersFailedContent`와는 상황이 달라(원문은 멀쩡히 있고 비교만 실패) 그대로 쓸 수 없다
   - **env 원복 확인**: 주입은 전부 프로세스 환경변수로만 했고 `.env` 파일 미변경(`grep` 0건, `git status` 변경 없음). 정상 재기동 후 프로세스에 주입값 잔존 0건 확인
   - **예산**: 3사 질문 1회 / Manager 약 7회 (상한 3사 1 · Manager 20)
-- 이후: AC10 잔여 결함(Manager 완전 실패 시 고정 문구+completed) · G 통제 재측정(effort:low 판단) → SPEC-AI-003(FinalAnswer) → SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **T-019.5 완료 (2026-07-31)** — 폐기 인용 진단 기록 + Manager 완전 실패 처리. 커밋 `88b3324`·`8766ebd`
+  - **A. 폐기 인용의 차이 기록 (§14.2)** — **진단 불능을 영구히 없앴다**
+    - `RejectedQuote`에서 `quote` 전문을 빼고 `sectionId`·`diff`를 넣었다. 전문을 남기면 "거의 원문과 같은 문장"이 쌓일 뿐이고 진단 가치는 차이에 있다(§11.2)
+    - `describeDiff` — 편집 거리 라이브러리 없이, quote와 가장 길게 일치하는 원문 구간을 찾아 첫 불일치를 `"와→과 (idx 12)"`로 남긴다. 유사 구간이 없으면 `"원문에 유사 구간 없음"`으로 **실제 날조와 의역을 가른다**
+    - `other_provider`는 사유로 이미 드러나므로 차이 계산을 하지 않는다
+    - `manager_meta.metrics.rejectedQuotes`에 저장. **쟁점당 5건 상한**, 초과분은 `rejectedQuotesOmitted`로 함께 남긴다(조용한 절단 금지). §16.3 예외임을 주석에 명시
+    - 결정론적 테스트 4건 추가 — **18/18 통과**(LLM 0회): 조사 차이·마크다운 제거·실제 날조·타 provider
+  - **B. Manager 완전 실패 (AC10) — 구조를 바꿔 같은 계열을 끊었다**
+    - **서버는 수정 불필요**였다. 확인 결과 `agenda.created`는 안 보내고 **`agenda.done: []`은 보내며**, `markReviewRequired`가 `conflictCount > 0`일 때만 호출되므로 `review_required`로 가지 않는다
+    - ⚠️ **`applyAgendas`에서 `agendas.length > 0`을 마감 조건에서 뺐다.** 같은 계열 갇힘이 세 번 나왔고(T-019.1 충돌 0건 · T-019.4 Manager 완전 실패 · 이번), 원인은 매번 **마감 판단이 "무언가 있다"는 전제에 매달려** 있던 것이다. `every`는 빈 배열에서 true이므로 0건도 자연스럽게 마감이 된다
+    - 확정 시점(`final`)에만 0건을 완전 실패로 본다 — 진행 중인 빈 배열과 섞이면 정상 실행을 실패로 오판한다
+    - **세 경로가 같은 처리로 수렴한다**: `agenda.done: []` / GET 화해 / **새로고침 복원**. 마운트 복원은 `applyAgendas`를 아예 거치지 않아 경로 C가 구멍이었다
+  - **C-2. Manager 완전 실패 실증** (`CLASSIFIER_PROMPT_VERSION=nonexistent`, 3사 1회)
+
+    | 확인 | 결과 |
+    |---|---|
+    | Question 갇힘 | ❌ 갇히지 않음 — `processing → completed` |
+    | **DB 영속화** | ✅ `questions.status = completed` (psql 확인) |
+    | `lastError` | `"단계 3·4 모두 실패 — Manager 분류 불가"` |
+    | 고정 문구 | ✅ 화면·DecisionNote 양쪽 |
+    | **3열 원문** | ✅ "AI 별 답변 보기"로 Claude·ChatGPT·Gemini 전문 접근 |
+    | 쟁점 목록 | ✅ 없음 — 없는 판정을 만들지 않았다 |
+    | 새로고침 | ✅ (수정 후) 고정 문구·노트 유지 |
+
+    ⚠️ **경로 C가 처음엔 미달이었다.** 마운트 복원 조건에 `status !== "completed"` 가드를 뒀는데 Manager 완전 실패는 **이미 `completed`로 저장돼 있어** 그 가드에 걸렸다. 새로고침하면 고정 문구가 사라지고 아무 설명 없는 빈 카드가 됐다. 판단 기준을 상태가 아니라 **"복원할 FinalAnswer가 없는가"**로 바꿔 해결(`8766ebd`)
+  - **C-3. 40% 원인 데이터 — ⚠️ 이번 회차에서 재현되지 않았다** (정상 실행 1회)
+    - `quoteRejectRate` **0%** · `agendaDropRate` 0% · `rejectedQuotes` **빈 배열** · `stanceSurvival` 전부 완전 생존(1/1·3/3·1/1·3/3·3/3) · `stancesFilled` 0 · `judgeFailRate` 0
+    - **계열 분류표를 만들 표본이 없다.** 폐기가 0건이므로 §11.2 개정 판단의 근거가 아직 없다
+    - **관측 이력으로 본 추정**: 지금까지 8회 관측에서 폐기 1건 이상이 나온 회차는 6회(8.3% · 33.3% · 10.5% · 3.3% · 4.5% · 40%), 0건이 2회. 회당 발생률 약 70%, 발생 시 1~4건이므로 **회당 기대 1~2건**이다. 계열 분류에 필요한 5~10건을 모으려면 **5~7회 더 실행**하면 된다고 본다
+    - **다만 강제 재실행은 필요 없다.** 계측이 이제 상시 작동하므로 **앞으로의 모든 실행에서 자동 축적된다** — T-019.3.1·T-019.4처럼 "원인을 알려고 일부러 다시 돌리는" 일이 더는 없다. 이번 태스크의 1번 목적은 달성됐다
+  - **env 원복 확인**: 주입은 프로세스 환경변수로만, `.env` 미변경(`grep` 0건), 재기동 후 잔존 0건
+  - **검증**: 루트 typecheck·lint(web만)·build 통과. `--grounding-test` 18/18. 3사 질문 2회 / Manager 약 12회 (상한 3사 2 · Manager 20)
+- 이후: 폐기 인용 차이 축적 후 §11.2 개정 판단 · G 통제 재측정(effort:low) · AC2(단계 3b) → SPEC-AI-003(FinalAnswer) → SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정
