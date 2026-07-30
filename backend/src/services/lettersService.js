@@ -20,6 +20,13 @@ export function getLetterById(id, authorId) {
   return prisma.letter.findFirst({ where: { id, authorId } })
 }
 
+// 사이드바 "모음소에 쌓인 편지" 수. recipientId가 있는 편지(답장)는 특정 수신자에게 직접
+// 전달되는 것이라 모음소를 거치지 않으므로 제외한다 — 상태(isMatchable)나 위기 여부와
+// 무관하게, 모음소로 보내진 누적 총량을 센다.
+export function countPoolLetters() {
+  return prisma.letter.count({ where: { recipientId: null } })
+}
+
 // 오늘(자정 기준, 서버 로컬 타임존) 이미 쓴 편지가 있는지 확인한다 — 하루 1편 제한
 // (docs/plan.md 서비스 규칙: "하루에 한 번만 편지 작성 가능").
 export function hasLetterToday(authorId) {

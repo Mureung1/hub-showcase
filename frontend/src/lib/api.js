@@ -22,6 +22,11 @@ async function request(path, options) {
   return res.json()
 }
 
+// 사이드바 "모음소에 쌓인 편지" 수
+export function fetchLetterCount() {
+  return request('/api/letters/count')
+}
+
 // 편지 저장 (작성 → 발송 확정 시 호출)
 export function createLetter({ title, content, envelope }) {
   return request('/api/letters', {

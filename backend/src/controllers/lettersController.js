@@ -2,6 +2,7 @@
 // 검증은 zod 스키마로, 실제 DB 작업은 서비스 레이어로 위임한다.
 import { createLetterSchema, replyLetterSchema } from '../schemas/letterSchema.js'
 import {
+  countPoolLetters,
   createLetter,
   getLetterById,
   getThreadLetterForUser,
@@ -51,6 +52,15 @@ export async function postLetter(req, res, next) {
     }
 
     res.status(201).json(letter)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function getLetterCount(req, res, next) {
+  try {
+    const count = await countPoolLetters()
+    res.json({ count })
   } catch (err) {
     next(err)
   }
