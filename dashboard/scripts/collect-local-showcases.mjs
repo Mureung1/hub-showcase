@@ -94,6 +94,7 @@ function normalizeShowcase(input, branch) {
     githubUser: text(input.githubUser),
     demoUrl: text(input.demoUrl),
     demoVideoUrl: text(input.demoVideoUrl),
+    projectIntroUrl: text(input.projectIntroUrl),
     thumbnail: text(input.thumbnail),
     screenshots: textList(input.screenshots),
     agent: parsedAgent,
