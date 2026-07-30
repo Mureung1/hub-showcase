@@ -1,3 +1,13 @@
+---
+title: Civil Litigation AI Agent
+emoji: ⚖️
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
