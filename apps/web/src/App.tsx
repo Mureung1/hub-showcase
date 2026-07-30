@@ -249,9 +249,8 @@ export default function WeatherPilotV3() {
         .wp-ch:hover:not(.on){background:#F0F5FB;}
         textarea:focus,button:focus-visible{outline:3px solid rgba(74,144,226,.35);outline-offset:2px;}
         @keyframes wpFade{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
-        @keyframes wpPulse{0%,100%{opacity:1;}50%{opacity:.3;}}
         .wp-view{animation:wpFade .22s ease;}
-        @media (prefers-reduced-motion: reduce){.wp-view{animation:none;} .wp-btn{transition:none;} .wp-dot{animation:none;}}
+        @media (prefers-reduced-motion: reduce){.wp-view{animation:none;} .wp-btn{transition:none;}}
       `}</style>
 
       <div style={{ maxWidth: 440, margin: "0 auto", padding: "16px 16px 40px" }}>
@@ -751,8 +750,13 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
         <Card>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 14, fontWeight: 700 }}>🎟️ 쿠폰 사용 추적</span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: T.up, fontWeight: 700 }}>
-              <span className="wp-dot" style={{ width: 7, height: 7, borderRadius: 999, background: T.up, animation: "wpPulse 1.6s infinite" }} /> 실시간
+            {/* 이 배지는 "실시간"이었다. 화면은 1초 폴링으로 갱신되지만 값 자체는 쿠폰 코드
+                누적 집계라, 실시간 이벤트 추적을 하는 것처럼 읽히면 안 된다 — CLAUDE.md와
+                README·제출물 문서가 모두 "실시간이라 단정하지 말 것"으로 못박아 둔 지점이다.
+                점의 pulse도 함께 뺐다. 초록 점이 깜빡이는 건 LIVE 관용구라, 글자만 바꾸면
+                그림이 여전히 실시간을 주장한다. */}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: T.upText, fontWeight: 700 }}>
+              <span style={{ width: 7, height: 7, borderRadius: 999, background: T.up }} /> 쿠폰 코드 누적 집계
             </span>
           </div>
           <div style={{ height: 8, background: "#E9EFF6", borderRadius: 999, marginTop: 12, overflow: "hidden" }}>
