@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>AI 협업 워크플로우 시각화</title>
+<style>
+  :root{
+    --paper:#FBFAF7; --card:#fff; --ink:#211C2B; --soft:#6A6280; --line:#E9E4F0;
+    --human:#E08A2B; --human-bg:#FCF1DF; --human-line:#F3D9AE;
+    --ai:#6B5BE6; --ai-bg:#EDEAFC; --ai-line:#D6CFF7;
+    --skill:#6B5BE6; --skill-bg:#EDEAFC;
+    --agent:#12A594; --agent-bg:#DFF5F1;
+    --hook:#8A8397; --hook-bg:#EEEBF2;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{font-family:"Nunito","Apple SD Gothic Neo",-apple-system,"Segoe UI",sans-serif;
+    background:var(--paper); color:var(--ink); padding:44px 40px}
+  .head{margin-bottom:8px}
+  h1{font-size:2.2rem; letter-spacing:-.02em}
+  .sub{font-size:1.15rem; color:var(--soft); margin-top:8px; font-weight:600}
+  .sub b{color:var(--human)} .sub i{color:var(--ai); font-style:normal}
+
+  .legend{display:flex; gap:10px; margin:20px 0 26px; align-items:center; flex-wrap:wrap}
+  .lg{display:inline-flex; align-items:center; gap:7px; font-weight:800; font-size:.86rem; color:var(--soft)}
+  .dot{width:12px; height:12px; border-radius:4px}
+  .chip{font-weight:800; font-size:.8rem; padding:4px 10px; border-radius:999px; white-space:nowrap}
+  .chip.s{background:var(--skill-bg); color:var(--skill)}
+  .chip.a{background:var(--agent-bg); color:var(--agent)}
+  .chip.h{background:var(--hook-bg); color:var(--hook)}
+
+  /* 흐름 리본 */
+  .flow{display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap}
+  .fstep{background:var(--ink); color:#fff; font-weight:800; font-size:.95rem; padding:8px 16px; border-radius:999px}
+  .farr{color:var(--soft); font-size:1.3rem; font-weight:900}
+  .floop{color:var(--ai); font-weight:800; font-size:.85rem; margin-left:4px}
+
+  /* 매트릭스 */
+  .grid{display:grid; grid-template-columns:104px repeat(5,1fr); gap:12px}
+  .stage{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px 14px 12px; text-align:center}
+  .stage .no{display:inline-block; width:24px; height:24px; line-height:24px; border-radius:50%;
+    background:var(--ink); color:#fff; font-weight:800; font-size:.82rem; margin-bottom:6px}
+  .stage .nm{font-size:1.18rem; font-weight:800; margin-bottom:9px}
+  .stage .tools{display:flex; flex-direction:column; gap:5px; align-items:center}
+  .corner{display:flex; align-items:flex-end; justify-content:center; font-weight:800; color:var(--soft); font-size:.85rem; padding-bottom:12px}
+
+  .lane-label{display:flex; flex-direction:column; align-items:center; justify-content:center;
+    border-radius:16px; font-weight:900; font-size:1.05rem; padding:10px}
+  .lane-label .em{font-size:1.7rem; line-height:1}
+  .lane-human{background:var(--human-bg); color:var(--human); border:1px solid var(--human-line)}
+  .lane-ai{background:var(--ai-bg); color:var(--ai); border:1px solid var(--ai-line)}
+
+  .cell{border-radius:14px; padding:14px 15px; font-size:1rem; line-height:1.5; font-weight:600}
+  .cell.human{background:var(--human-bg); border:1px solid var(--human-line); color:#7a4a12}
+  .cell.ai{background:var(--ai-bg); border:1px solid var(--ai-line); color:#3f349b}
+
+  .foot{margin-top:26px; text-align:center; font-size:1.2rem; font-weight:800}
+  .foot .h{color:var(--human)} .foot .a{color:var(--ai)}
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>AI 협업 워크플로우</h1>
+    <div class="sub"><b>사람</b>은 무엇을·왜를 정하고, <i>AI</i>는 어떻게를 실행한다 · 5단계를 매일 반복</div>
+  </div>
+
+  <div class="legend">
+    <span class="lg"><span class="dot" style="background:var(--skill)"></span>Skill</span>
+    <span class="lg"><span class="dot" style="background:var(--agent)"></span>Agent</span>
+    <span class="lg"><span class="dot" style="background:var(--hook)"></span>Hook</span>
+    <span style="flex:1"></span>
+    <span class="lg"><span class="dot" style="background:var(--human)"></span>사람이 결정</span>
+    <span class="lg"><span class="dot" style="background:var(--ai)"></span>AI가 수행</span>
+  </div>
+
+  <div class="flow">
+    <span class="fstep">기획</span><span class="farr">→</span>
+    <span class="fstep">설계</span><span class="farr">→</span>
+    <span class="fstep">구현</span><span class="farr">→</span>
+    <span class="fstep">검증</span><span class="farr">→</span>
+    <span class="fstep">배포</span>
+    <span class="floop">↺ 다음 작업으로 반복</span>
+  </div>
+
+  <div class="grid">
+    <!-- 헤더 행 -->
+    <div class="corner">단계 →</div>
+    <div class="stage"><span class="no">1</span><div class="nm">기획</div><div class="tools"><span class="chip s">task-planner</span></div></div>
+    <div class="stage"><span class="no">2</span><div class="nm">설계</div><div class="tools"><span class="chip s">curation-design</span></div></div>
+    <div class="stage"><span class="no">3</span><div class="nm">구현</div><div class="tools"><span class="chip s">test-writer</span></div></div>
+    <div class="stage"><span class="no">4</span><div class="nm">검증</div><div class="tools"><span class="chip s">feature-verifier</span><span class="chip a">code-reviewer</span></div></div>
+    <div class="stage"><span class="no">5</span><div class="nm">배포</div><div class="tools"><span class="chip s">daily-publish</span><span class="chip s">security-check</span><span class="chip h">precommit 훅</span></div></div>
+
+    <!-- 사람 레인 -->
+    <div class="lane-label lane-human"><span class="em">🧑</span>사람</div>
+    <div class="cell human">문제·방향·우선순위 결정</div>
+    <div class="cell human">아키텍처 결정 (서버 없이 Supabase 직접, 키는 서버리스 함수에)</div>
+    <div class="cell human">방향 승인, 아니면 되돌림</div>
+    <div class="cell human">실제로 돌려 값까지 맞는지 최종 판단</div>
+    <div class="cell human">"올릴지" 결정 · 배포 승인</div>
+
+    <!-- AI 레인 -->
+    <div class="lane-label lane-ai"><span class="em">🤖</span>AI</div>
+    <div class="cell ai">하루 크기 작업으로 분해 · 완료기준 초안</div>
+    <div class="cell ai">설계안 · 구현 방식 제안</div>
+    <div class="cell ai">코드·테스트 작성 (순수 로직은 테스트 먼저)</div>
+    <div class="cell ai">구동·극단값 확인 · 코드 훑어 버그·비밀값 지적</div>
+    <div class="cell ai">커밋 쪼갬 · PR · 미러 · 위키 · 키 스캔</div>
+  </div>
+
+  <div class="foot"><span class="h">사람 = 무엇을·왜</span> &nbsp;·&nbsp; <span class="a">AI = 어떻게</span></div>
+</body>
+</html>
