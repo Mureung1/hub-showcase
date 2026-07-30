@@ -26,6 +26,8 @@
 | [tasks.md](tasks.md) | 우선순위가 표시된 전체 개발 Task 백로그 | 개발 Task 백로그 |
 | [github-project-guide.md](github-project-guide.md) | GitHub Issues/Projects 보드, 필드, 우선순위 표시 방식 | GitHub Project 운영 가이드 |
 | [status.md](status.md) | 완료, 검증, 다음 작업, 차단 요소 | 진행 상황 |
+| [handoff-2026-07-30.md](handoff-2026-07-30.md) | A/C/1/B/2/3 작업 줄기별 최신 상태와 새 Codex 계정 인수인계 프롬프트 | Codex 인수인계 |
+| [booth-a3-print-brief.md](booth-a3-print-brief.md) | 부스 전시용 A3 기획 주제 설명 자료와 AI Agent Workflow 자료 제작 브리프 | 부스 A3 인쇄물 브리프 |
 | [architecture-data-flow.md](architecture-data-flow.md) | React 화면, Hono API, Supabase DB, asset manifest의 데이터 흐름 구조도와 코드 스키마 | Architecture Data Flow |
 | [api-contracts.md](api-contracts.md) | Hono Quest Event API 요청/응답 계약 | API Contracts |
 | [db-schema.md](db-schema.md) | Supabase `quest_logs` 테이블 설계 | DB Schema |

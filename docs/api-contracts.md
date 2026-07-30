@@ -178,6 +178,9 @@ Routes:
 - `POST /api/manager/difficulty-evaluation`
 - `POST /api/manager/stat-evaluation`
 - `POST /api/manager/behavior-intent`
+- `POST /api/manager/goal-plan`
+- `POST /api/manager/plan-rebalance`
+- `POST /api/manager/quest-acceptance-preview`
 
 Prompt version:
 
@@ -187,7 +190,7 @@ Server env:
 
 - `OPENAI_API_KEY`: server-only secret. Never commit a real value.
 - `OPENAI_MODEL`: default `gpt-5-nano`.
-- `OPENAI_FALLBACK_MODEL`: default `gpt-5-mini`, reserved for later escalation.
+- `OPENAI_FALLBACK_MODEL`: default `gpt-5-mini`. Used for planning-heavy routes: `goalPlan`, `planRebalance`, and `questAcceptancePreview`.
 - `LLM_MANAGER_ENABLED`: set to `true` only in an environment where the server key is configured.
 - `LLM_MANAGER_MIN_INTERVAL_MS`: optional in-memory minimum interval per output kind. Default is `30000`.
 - `LLM_MANAGER_DAILY_LIMIT`: optional in-memory daily cap. Default is `80`.
@@ -303,6 +306,67 @@ Rules:
 - `difficulty` must be `easy`, `normal`, or `hard`; `hard` is reserved for challenge-sized work, long focus blocks, or concrete deliverables.
 - `rewardExp` must match the selected difficulty range: `easy=5..15`, `normal=16..35`, `hard=36..60`.
 - If the provider returns a copied broad goal title or an out-of-range reward, the server returns `INVALID_LLM_OUTPUT` rule fallback.
+
+### POST /api/manager/goal-plan
+
+Use this route after profile creation or goal change. It creates a bounded structured plan instead of a free-text coaching paragraph.
+
+Output includes:
+
+- `goalSummary`
+- `horizon`: `month` or `quarter`
+- `milestones`
+- `monthlyPlan`
+- `weeklyPlan`
+- `dailySeeds`
+- `risks`
+- `rebalancingPolicy`
+
+`dailySeeds` use the same quest limits as `questSuggestion`, plus `linkedMilestoneId`.
+
+Storage:
+
+- When Supabase is configured, the server stores the plan in `manager_goal_plans`.
+- If storage succeeds, response data includes `storedPlanId`.
+- Storage failure is swallowed so the UI flow still receives the plan response.
+
+### POST /api/manager/plan-rebalance
+
+Use this route after meaningful success/failure signals, not after every render. The request may include `activePlanId` and `activePlan`.
+
+Recommended call triggers:
+
+- one failed quest with a time shortage or too-hard reason
+- recovery completed
+- three consecutive successes
+- skipped-day recovery flow
+
+The response contains `planRebalance.rebalancedPlan`, a small `changes` list, and `nextQuest`. The full `rebalancedPlan` is for storage and future scheduling; UI should show only `nextQuest` plus a short recovery reason.
+
+`nextQuest` fields:
+
+- `title`
+- `type`: `time | quantity | action`
+- `amount`
+- `unit`
+- `difficulty`: `easy | normal | hard`
+- `deadline`
+- `rewardExp`: must match `easy=5..15`, `normal=16..35`, `hard=36..60`
+- `linkedMilestoneId`
+- `recoveryReason`
+
+When Supabase is configured, the server stores revisions in `manager_plan_revisions` and includes `storedRevisionId` when storage succeeds.
+
+### POST /api/manager/quest-acceptance-preview
+
+Use this route immediately before accepting an edited quest draft when the UI needs one server call to settle difficulty, EXP, and stat reward together.
+
+Rules:
+
+- `difficulty` must be `easy`, `normal`, or `hard`.
+- `rewardExp` must match `easy=5..15`, `normal=16..35`, `hard=36..60`.
+- `statEvaluation.difficulty` must match preview `difficulty`.
+- `statEvaluation.statBudget` must match `easy=3`, `normal=7`, `hard=15`.
 
 ### POST /api/manager/difficulty-evaluation
 

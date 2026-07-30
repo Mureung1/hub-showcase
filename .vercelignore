@@ -6,5 +6,5 @@
 .codex-ppt-build
 dist
 node_modules
-outputs/*.inspect.ndjson
+outputs
 public/assets/fx

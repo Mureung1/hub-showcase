@@ -1,6 +1,6 @@
 ﻿# 현재 진행 상황
 
-마지막 갱신: 2026-07-29
+마지막 갱신: 2026-07-30
 
 ## 완료
 
@@ -103,7 +103,7 @@
 - 2026-07-29 P1/P2 outside pet runtime 분리: 창 밖 Lumi의 field bounds, attachment position, rendered climbing position, direction/mirror 계산을 `src/domain/outsidePetRuntime.ts`로 이동하고 App은 상태 전이 effect와 렌더 연결만 유지
 - 2026-07-29 P1 quest flow policy 분리: quest status별 workflow window 결정, 완료 결과 success/recovery 구분, draft patch 시 unit/reward 재계산을 `src/domain/questFlowPolicy.ts`로 이동해 App의 quest 조건문과 reward 계산 책임을 축소
 - 2026-07-29 P1/P2 runtime hook 마무리: outside pet phase/timer/effect 묶음을 `useOutsidePetRuntime`으로 이동하고, quest 열기/수락/완료/실패/복구/edit handler 묶음을 `useQuestFlow`로 이동해 App은 상태 보관, 주요 hook 연결, 렌더 조립 중심으로 축소
-- 2026-07-29 창 겹침 시 매니저 행동 우선순위 정책 추가: Pixel TV는 기록노트/사다리/플랫폼과 공존하되 `pixel_tv_watching`이 outside interaction보다 우선하며, 퀘스트 실행 계열 창과 Pixel TV는 서로 열릴 때 자동으로 닫히도록 `windowCompatibilityPolicy`와 `managerRuntimePriority`를 추가. watching 전용 motion asset은 아직 없어 runtime에서는 `focused` motion으로 임시 표시
+- 2026-07-29 창 겹침 시 매니저 행동 우선순위 정책 추가: Pixel TV는 기록노트/사다리/플랫폼과 공존하되 `pixel_tv_watching`이 outside interaction보다 우선하며, 퀘스트 실행 계열 창과 Pixel TV는 서로 열릴 때 자동으로 닫히도록 `windowCompatibilityPolicy`와 `managerRuntimePriority`를 추가. 2026-07-30 이후 pink-manager stage-2는 watching 후보 sheet를 우선 사용하고, 없는 manager는 `focused` motion으로 fallback한다
 - 2026-07-29 시작 메뉴 flow 정정: `서비스 종료`는 `매니저 바꾸기`로 유지하고, `다시 시작`은 별도 버튼으로 복구해 profile/manager/log flow를 초기화한 뒤 설치 마법사부터 다시 진행하도록 정리. 사다리 오브젝트 창 기본 폭을 104px로 넓혀 아이콘 잘림을 완화
 - 2026-07-29 restart/server hydration 불일치 완화: `다시 시작` 시 lifecycle reset timestamp를 localStorage에 저장하고, 이후 desktop 서버 기록 hydration은 해당 시각 이후 로그만 반영하며 restart 이전 server-derived manager context가 새 로컬 manager 상태를 덮지 않도록 제한. 사다리 오브젝트 창 titlebar 텍스트는 숨겨 좁은 창에서 잘리지 않도록 정리
 - 2026-07-29 다시 시작 초기화 범위 보강: profile, manager level/exp, local logs, quest/status, opened/minimized/focused windows, window positions/sizes/measurements, Pixel TV mode/context menu, outside pet, blink, sync notice를 기본값으로 되돌리도록 정리
@@ -111,6 +111,11 @@
 - 2026-07-24 창 밖 `returning` phase 추가: Lumi가 free roam 이후 가까운 화면 끝으로 걸어가며 `hiding`을 연출하고 manager window 상태로 복귀할 수 있게 했으며, reduced-motion 설정은 behavior animation mapping에 반영
 - 2026-07-24 매니저 선택 flow 추가: 첫 실행 시 `Manager.exe 선택` 창에서 pink-manager/glass-frog/planaria를 고른 뒤 설치 마법사로 이어지고, 시작 메뉴의 `다시 시작`으로 profile/manager/log flow를 초기화해 다시 선택할 수 있음
 - 2026-07-27 핑크 매니저 baby Stage 1 idle-only 후보를 생성하고 manifest/review set에 연결: `public/assets/lumi/pink-manager-stage-1-production-candidates/pink-manager-stage-1-idle-sheet-v4.png`. Stage 1은 사다리 등 상호작용 motion을 잠그는 단계로 두고, idle 외 요청은 Stage 2 asset fallback을 사용한다
+- 2026-07-30 부스 전시용 A3 인쇄 자료 2종 생성: 프로젝트 결과물 포스터와 AI Agent Workflow 포스터를 A3 portrait PDF/PNG 및 편집 가능한 PPTX 원본으로 `outputs/`에 생성
+- 2026-07-30 A 세션 App flow 보강: fresh manager 기본 상태를 Lv.1/EXP 0/Stage 1로 분리하고, 다시 시작이 해당 상태를 사용하도록 수정. 사다리/평지 창은 바탕화면 아이콘으로 다시 열 수 있게 했고, manager panel은 버튼으로 상태/능력치 패널을 펼치도록 보강. manager 후보는 `src/data/managerCandidates.ts`로 분리해 B 세션 asset manifest 정리 후 선택창 후보 확장을 준비. 삭제된 pink-manager Stage 1 v4 참조는 현재 존재하는 v3 파일로 manifest/verifier/review set을 정렬
+- 2026-07-30 A 세션 manager panel 추가 보강: 사다리/평지 바탕화면 아이콘을 interaction object 원본(`ladder.png`, `base.png`)으로 연결하고, Manager Created 화면에서 Lumi를 더 왼쪽으로 배치. manager panel의 능력치 버튼은 대사 아래의 심볼 버튼으로 옮겼으며, 펼침 내용은 LLM/rule stat evaluation이 증가시키는 8종 스탯만 표시하도록 변경. `ManagerState.stats`와 stat delta 누적 흐름을 추가해 저장 직전 LLM 평가 결과가 manager 상태에 반영되도록 정리
+- 2026-07-30 A 재진입 Quest Draft 예상 보상 flow 구현: Quest draft는 기본적으로 `예상 보상 계산` 버튼을 표시하고, 사용자가 직접 누를 때만 `/api/manager/quest-acceptance-preview`를 호출하도록 연결. 계산 성공 후 같은 버튼이 `수락`으로 바뀌며, 수락 시 현재 draft snapshot이 계산 시점과 다르면 실행하지 않고 재계산 안내로 되돌린다. UI에는 difficulty/EXP/stat reward만 표시하고 preview reason은 완료 이벤트 metadata에만 기록
+- 2026-07-31 A Quest Draft 난이도 입력 정리: 개별 퀘스트 난이도는 사용자가 직접 고르는 값이 아니라 예상 보상 계산 결과로 확정되도록 Quest draft 창의 난이도 라디오를 제거. draft snapshot 비교도 제목/유형/분량/단위/제한 시간 같은 사용자 편집 필드 기준으로 정리
 
 ## 검증
 
@@ -184,11 +189,33 @@
 - 2026-07-29 hanging pet drag layer 검증 통과: `npm.cmd test -- src/data/windowPetPlacements.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 33 files / 155 tests
 - 2026-07-29 platform object pet layer 버그 수정: 평지 플랫폼 창이 focus/drag 상태에 따라 z-index가 바뀌는 동안 outside pet은 CSS 고정 `z-index: 18`을 써서 플랫폼 에셋 앞뒤로 번갈아 보이던 문제를 수정. platform/ladder에 붙은 outside pet은 해당 오브젝트 창의 실제 z-index보다 `+1`을 사용하도록 `resolveOutsidePetLayerZIndex`와 App 연결을 추가
 - 2026-07-29 platform object pet layer 검증 통과: `npm.cmd test -- src/domain/outsidePetRuntime.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 33 files / 157 tests
+- 2026-07-30 A 세션 App flow 보강 검증 통과: `npm.cmd test` 37 files / 170 tests, `npm.cmd run typecheck`
+- 2026-07-30 A 세션 manager panel/stat flow 추가 검증 통과: `npm.cmd test` 37 files / 172 tests, `npm.cmd run typecheck`
+- 2026-07-30 A 재진입 Quest Draft 예상 보상 flow 검증 통과: `npm.cmd test -- src/domain/questFlowPolicy.test.ts src/layers/storage/managerLlmApi.test.ts`, `npm.cmd test` 39 files / 202 tests, `npm.cmd run typecheck`
+- 2026-07-31 A Quest Draft 난이도 입력 정리 검증 통과: `npm.cmd test -- src/domain/questFlowPolicy.test.ts`, `npm.cmd test` 40 files / 214 tests, `npm.cmd run typecheck`
+- 2026-07-30 부스 A3 PDF 렌더 검수: Poppler로 `outputs/booth-project-result-a3.png`, `outputs/booth-ai-agent-workflow-a3.png`를 1754x2481 preview로 렌더링하고 텍스트 겹침, 잘림, 대비, source strip과 QR placeholder 위치를 눈검수
+- 2026-07-30 B Asset Runtime/Placement/Review Tool 진행: 선택창 runtime 후보는 `managerCandidates` 기준 `pink-manager`, `glass-frog`, `planaria`로 정리했고, review 후보는 `spriteReviewAssets`에서 canonical(`pink-manager-stage-2`, `glass-frog-stage-2`)과 production candidates(`pink-manager-stage-1`, `pink-manager-stage-2-watching`, glass frog/Costasiella/sea bunny/fried egg jellyfish candidates)를 분리해 유지
+- 2026-07-30 pink manager Stage 1 idle v5 후보 생성: `public/assets/lumi/pink-manager-stage-1-production-candidates/pink-manager-stage-1-idle-sheet-v5.png`를 추가하고 manifest Stage 1 idle이 새 후보를 가리키도록 변경. 귀를 제거하고 얼굴/몸체를 opaque pixel로 그려 배경색 비침 문제를 줄였으며, `public/assets/_review/pink-manager-stage-1-watching-candidates-contact.png`로 review contact를 분리
+- 2026-07-30 pink manager Stage 1 idle canonical 재정렬: `public/assets/lumi/pink-manager-stage-2/pink-manager-stage-2-idle-sheet.png`를 기준으로 작은 baby idle sheet를 `public/assets/lumi/pink-manager-stage-1/pink-manager-stage-1-idle-sheet.png`에 생성하고, manifest/verifier/review set이 canonical Stage 1 경로를 우선 보도록 변경. 기존 v5 production candidate는 비교 후보로 유지
+- 2026-07-30 pink manager watching 후보 생성 및 runtime 연결: `public/assets/lumi/pink-manager-stage-2-production-candidates/pink-manager-stage-2-watching-sheet-v1.png`를 추가하고, Pixel TV watching runtime은 pink-manager stage-2 watching이 있으면 해당 sheet를 사용하며 다른 manager는 기존 focused fallback을 유지하도록 연결
+- 2026-07-30 icon 적용 후보 정리: manager swap UI에는 `public/assets/icons/pet_swap_icon_64px.png`가 후보이고, settings window/icon은 현재 manifest의 `theme-settings-*-pixel-v2.png` canonical 경로를 유지한다. 대형 `settings.png`, `wired_earphones_icon_64px.png`는 후보/참조로만 두고 바로 desktop icon canonical로 승격하지 않음
+- 2026-07-30 B Asset Runtime/Placement/Review Tool 검증 통과: `npm.cmd test -- src/data/managerCandidates.test.ts src/data/assetManifest.test.ts src/data/spriteReviewAssets.test.ts`, `npm.cmd run verify:sprites`, `npm.cmd run typecheck`, `npm.cmd test` 38 files / 189 tests
+- 2026-07-30 B-4/B-5 icon 적용 정리: `pet-swap` desktop icon asset id를 추가해 시작 메뉴의 `매니저 바꾸기`가 `public/assets/icons/pet_swap_icon_64px.png`를 실제 아이콘으로 사용하도록 연결했고, settings window/icon은 `theme-settings` canonical 경로를 유지하도록 테스트로 고정
+- 2026-07-30 B-4/B-5 icon 적용 검증 통과: `npm.cmd test -- src/data/assetManifest.test.ts src/data/windowRegistry.test.ts`, `npm.cmd run typecheck`, `npm.cmd test` 38 files / 191 tests
+- 2026-07-30 B Asset Runtime 선택 후보 보강: `costasiella-kuroshimae`, `fried-egg-jellyfish`, `sea-bunny-slug` Stage 2 production candidate sheets를 정식 매니저 선택 후보로 runtime catalog와 setup 선택창에 연결. Costasiella/sea bunny의 `hanging`/`climbing`은 v2 sheet를 사용하고 나머지는 v1 sheet를 사용
+- 2026-07-30 Stage 1 window interaction 후보 제외 보강: 현재 pet/stage에 `hanging` 또는 `hiding` animation asset이 없으면 Quest/Recovery 창 edge interaction 후보에서 제외하도록 priority 입력에 asset support flag를 연결
+- 2026-07-30 C LLM Manager API 목표 쪼개기 고도화 진행: `goalPlan`, `planRebalance`, `questAcceptancePreview` output kind와 Hono route를 추가하고, 계획형 route는 `OPENAI_FALLBACK_MODEL` 기본값 `gpt-5-mini`를 사용하도록 분리. Supabase `manager_goal_plans`, `manager_plan_revisions` migration/store를 추가해 bounded plan output과 rebalance revision을 저장하도록 연결
+- 2026-07-30 C LLM rebalancing 계약 보강: `planRebalance` 응답에 화면 표시용 `nextQuest`와 `recoveryReason`을 필수 schema로 추가하고, Supabase revision 저장에 `next_quest_json`을 포함하도록 `002`/`003` migration과 store를 갱신. 설치 마법사 visible copy는 `퀘스트 크기` 대신 `진행 강도`로 정리하고 목표 입력 예시 placeholder를 추가
+- 2026-07-30 예상 보상/레벨 progression 보강: `/api/manager/quest-acceptance-preview` 호출 실패 시에도 클라이언트 rule fallback preview를 만들어 수락 flow가 막히지 않게 하고, 실패/재계산 UI 문구를 `⚠ 임시 계산`, `↻ 재계산 필요`처럼 짧은 상태 표시로 축소. manager progression은 30 EXP당 1레벨로 분리
+- 2026-07-30 C LLM Manager API 목표 쪼개기 검증 통과: `npm.cmd test -- server/lib/supabase.test.ts server/lib/managerLlmProvider.test.ts server/contracts/managerLlm.test.ts server/routes/managerLlm.test.ts src/layers/storage/managerLlmApi.test.ts`, `npm.cmd run typecheck`, `npm.cmd run typecheck:server`, `npm.cmd run build`
+- 2026-07-30 신규 매니저 선택 후보 검증: `npm.cmd test -- src/data/managerCandidates.test.ts src/data/assetManifest.test.ts`, `npm.cmd run typecheck` 통과. `npm.cmd run verify:sprites`는 신규 Stage 2 후보들은 통과했으나 `public/assets/lumi/pink-manager-stage-1/pink-manager-stage-1-idle-sheet.png`가 1536x1024 배경 포함 contact-style 이미지라 256x64 runtime sheet 규격 불일치로 실패
+- 2026-07-30 Stage 1 window interaction 후보 제외 검증 통과: `npm.cmd test -- src/domain/managerRuntimePriority.test.ts src/data/assetManifest.test.ts`, `npm.cmd run typecheck`
 - 로컬 skill 설치 확인: Superpowers, 하네스 workflow skills, `project-learning-agent`
 - React 화면은 정적 HTML 기준으로 큰 flow/state 차이는 줄였고, 남은 시각 차이는 사용자가 직접 화면을 보며 추가 점검 예정
 
 ## 다음 작업
 
+- 2026-07-30 인수인계 줄기 확정: 새 Codex 계정이나 병렬 세션에서는 `A: App Flow / Reset / Component Consistency`, `C: LLM Manager API`, `1: State Machine / Interaction`, `B: Asset Runtime / Placement / Review Tool`, `2: Sound / Game Feel`, `3: Pixel TV / World Theme`로 작업 범위를 나눈다. 상세 시작 프롬프트와 주의사항은 `docs/handoff-2026-07-30.md`에 둔다.
 - 최종 목표 1순위: `T-709`, `T-711`, `T-603` 개인화 AI 매니저 adapter와 Persona/제한 선택지 연결. TDD로 만든 `ManagerBehaviorIntent`, `ManagerBehaviorAdapter`, Pet Behavior State Machine을 `managerRuntimeState`와 React Lumi animation state에 연결했고, Manager LLM API v1은 Hono route와 rule fallback으로 1차 연결됐다. 남은 작업은 실제 server env key를 로컬/배포 환경에만 설정한 뒤 브라우저 Network에서 LLM enabled 경로를 수동 확인하는 것이다.
 - 최종 목표 2순위: `T-712`, `T-703`, `T-713` 성장/보상/사운드 기반. metadata/기록 노트/stage 선택/sound toggle 1차 연결은 완료했고, 브라우저 Network 수동 확인과 실제 cyber-purr 음원 제작/검수가 남았다.
 - 최종 목표 3순위: `T-721`, `T-724`, `T-725` Pixel TV 묶음. 현실 픽셀화 TV prototype, Single-plane Pepper projection mode, Pixel TV photo capture 설계를 하나의 TV 확장 flow로 정리한다.
@@ -203,6 +230,8 @@
 
 ## 차단 요소
 
+- `public/assets/fx/`에는 대형 사운드 에셋 삭제와 새 폴더가 미커밋 상태로 남아 있다. `2: Sound / Game Feel` 세션에서 선별/압축/외부 보관 전략을 정하기 전에는 stage하지 않는다.
+- `.codex-ppt-build/`와 `outputs/demo-video-brief.pptx.inspect.ndjson`는 PPT 생성 부산물이므로 기본적으로 커밋하지 않는다.
 - Supabase Key와 API Key는 저장소에 넣지 않아야 하며, `.env`에는 로컬 실제 값만 둬야 함
 - Manager LLM API는 `LLM_MANAGER_ENABLED=true`와 `OPENAI_API_KEY`가 server env에 있을 때만 실제 provider를 호출하며, key가 없거나 비활성화된 환경에서는 rule fallback으로 동작함
 - Supabase env가 없는 새 환경에서는 서버가 memory store로 fallback하므로 `/api/health`로 storage mode를 먼저 확인해야 함
