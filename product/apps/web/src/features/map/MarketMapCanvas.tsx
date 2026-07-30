@@ -1,4 +1,4 @@
-import type { GeoJSONSource } from "maplibre-gl";
+import type { GeoJSONSource, MapLayerMouseEvent } from "maplibre-gl";
 import { ChevronRight, MapPinned } from "lucide-react";
 import { lazy, Suspense, useMemo, useState, type RefObject } from "react";
 import Map, { Layer, Marker, Popup, type MapRef } from "react-map-gl/maplibre";
@@ -55,6 +55,46 @@ function readMapBounds(map: {
     east: bounds.getEast(),
     north: bounds.getNorth(),
   };
+}
+
+function handleStoreLayerClick(
+  event: MapLayerMouseEvent,
+  onSelectStore: (storeKey: string) => void,
+  onClearSelection: () => void,
+) {
+  const clusterFeature = event.features?.find(
+    (feature) => feature.layer.id === STORE_CLUSTER_CIRCLE_LAYER_ID,
+  );
+  if (clusterFeature?.geometry.type === "Point") {
+    const rawClusterId = clusterFeature.properties?.cluster_id;
+    const clusterId = typeof rawClusterId === "number" ? rawClusterId : Number(rawClusterId);
+    const source = event.target.getSource(STORE_POINT_SOURCE_ID) as GeoJSONSource | undefined;
+    if (source && Number.isFinite(clusterId)) {
+      const center = clusterFeature.geometry.coordinates as [number, number];
+      void source
+        .getClusterExpansionZoom(clusterId)
+        .then((zoom) => {
+          event.target.easeTo({
+            center,
+            zoom: Math.min(zoom, 17.5),
+            duration: 450,
+            essential: true,
+          });
+        })
+        .catch(() => undefined);
+    }
+    return;
+  }
+
+  const storeFeature = event.features?.find(
+    (feature) => feature.layer.id === STORE_POINT_HIT_LAYER_ID,
+  );
+  const storeKey = storeFeature?.properties?.storeKey;
+  if (typeof storeKey === "string") {
+    onSelectStore(storeKey);
+    return;
+  }
+  onClearSelection();
 }
 
 type MarketMapCanvasProps = {
@@ -456,44 +496,7 @@ export function MarketMapCanvas({
         }}
         onIdle={() => setMapReady(true)}
         onStyleData={(event) => hideExternalBuildingLayers(event.target)}
-        onClick={(event) => {
-          const clusterFeature = event.features?.find(
-            (feature) => feature.layer.id === STORE_CLUSTER_CIRCLE_LAYER_ID,
-          );
-          if (clusterFeature?.geometry.type === "Point") {
-            const rawClusterId = clusterFeature.properties?.cluster_id;
-            const clusterId =
-              typeof rawClusterId === "number" ? rawClusterId : Number(rawClusterId);
-            const source = event.target.getSource(STORE_POINT_SOURCE_ID) as
-              | GeoJSONSource
-              | undefined;
-            if (source && Number.isFinite(clusterId)) {
-              const center = clusterFeature.geometry.coordinates as [number, number];
-              void source
-                .getClusterExpansionZoom(clusterId)
-                .then((zoom) => {
-                  event.target.easeTo({
-                    center,
-                    zoom: Math.min(zoom, 17.5),
-                    duration: 450,
-                    essential: true,
-                  });
-                })
-                .catch(() => undefined);
-            }
-            return;
-          }
-
-          const storeFeature = event.features?.find(
-            (feature) => feature.layer.id === STORE_POINT_HIT_LAYER_ID,
-          );
-          const storeKey = storeFeature?.properties?.storeKey;
-          if (typeof storeKey === "string") {
-            onSelectStore(storeKey);
-            return;
-          }
-          onClearSelection();
-        }}
+        onClick={(event) => handleStoreLayerClick(event, onSelectStore, onClearSelection)}
         onMouseEnter={(event) => {
           event.target.getCanvas().style.cursor = "pointer";
         }}

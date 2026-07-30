@@ -90,18 +90,11 @@ function hoverFilter(featureId: string, selectedFeatureId: string): FilterSpecif
   ] as unknown as FilterSpecification;
 }
 
-export function StorePointLayers({
-  stores,
-  selected,
-  visible,
-  densityMode,
-  storefrontMode,
-}: StorePointLayersProps) {
-  const { current: mapRef } = useMap();
-  const data = useMemo(() => createStoreFeatureCollection(stores), [stores]);
-  const selectedFeatureId = selected ? storeFeatureIdentity(selected) : NO_SELECTED_STORE;
-  const hasFocusedStore = storefrontMode && selected !== null;
-
+function useStoreHover(
+  mapRef: ReturnType<typeof useMap>["current"],
+  visible: boolean,
+  selectedFeatureId: string,
+) {
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map || !visible) return;
@@ -133,6 +126,20 @@ export function StorePointLayers({
       canvas.style.cursor = "";
     };
   }, [mapRef, selectedFeatureId, visible]);
+}
+
+export function StorePointLayers({
+  stores,
+  selected,
+  visible,
+  densityMode,
+  storefrontMode,
+}: StorePointLayersProps) {
+  const { current: mapRef } = useMap();
+  const data = useMemo(() => createStoreFeatureCollection(stores), [stores]);
+  const selectedFeatureId = selected ? storeFeatureIdentity(selected) : NO_SELECTED_STORE;
+  const hasFocusedStore = storefrontMode && selected !== null;
+  useStoreHover(mapRef, visible, selectedFeatureId);
 
   if (!visible || stores.length === 0) return null;
 
