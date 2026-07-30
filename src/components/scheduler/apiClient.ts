@@ -1,6 +1,6 @@
 import { getAccessToken, refreshSession } from '../../auth/authClient'
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? 'http://localhost:4000' : '')
 
 export async function request<T>(path: string, init?: RequestInit, retryOn401 = true): Promise<T> {
   const token = getAccessToken()
