@@ -1,3 +1,14 @@
+---
+title: Civil Litigation Evolutionary AI Agent
+emoji: ⚖️
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
+
+
 # ⚖️ Civil Litigation Evolutionary AI Agent
 
 본 프로젝트는 **Hybrid-Perception** 및 **Self-Evolution** 루프를 탑재한 진화형 법률 AI 에이전트입니다. 단순한 정적 정보 검색을 넘어, 사용자의 상황을 실시간으로 구조화하고 법률 문서(내용증명, 소장 등)를 자동 생성하며, 피드백을 통해 스스로 판단력을 고도화합니다.
