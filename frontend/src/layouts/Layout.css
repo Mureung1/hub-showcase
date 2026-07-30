@@ -33,15 +33,6 @@
   gap: var(--space-inline-gap);
 }
 
-.gnb-account {
-  font-size: var(--font-size-caption);
-  color: var(--color-text-muted);
-  max-width: 116px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .gnb-nav-link {
   font-size: var(--font-size-caption);
   font-weight: 700;
@@ -94,10 +85,6 @@
   .gnb-login {
     font-size: 12px;
     padding: 4px 8px;
-  }
-
-  .gnb-account {
-    max-width: 64px;
   }
 }
 
