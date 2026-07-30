@@ -8,11 +8,11 @@
 
 ```css
 :root {
-  --color-bg: #FBFAF3;
+  --color-bg: #F5F6FA;
   --color-surface: #FFFFFF;
-  --color-surface-soft: #F1F5F9;
-  --color-border: #E2E8F0;
-  --color-border-strong: #CBD5E1;
+  --color-surface-soft: #F0F1F7;
+  --color-border: #E3E5EF;
+  --color-border-strong: #C9CDDD;
   --color-text-primary: #111827;
   --color-text-secondary: #64748B;
   --color-text-muted: #94A3B8;
@@ -31,8 +31,11 @@
 
   --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
   --shadow-float: 0 18px 50px rgba(15, 23, 42, 0.12);
-  --glass-surface: rgba(248, 246, 238, 0.92);
-  --glass-border: rgba(210, 202, 184, 0.80);
+  --color-topbar: #171A46;
+  --color-topbar-text: #FFFFFF;
+  --color-topbar-muted: #C9CCE3;
+  --glass-surface: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(211, 215, 229, 0.84);
   --glass-blur: 22px;
 
   --font-sans: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
@@ -56,8 +59,10 @@
 
 ## 구성 요소 규칙
 
-- `.top-bar`, `.floating-nav`: 글래스 배경, 테두리, 블러를 사용한다.
+- `.top-bar`: 짙은 인디고 배경과 흰색 워드마크를 사용해 앱의 전역 내비게이션을 본문과 분리한다.
+- `.floating-nav`: 반투명 흰색 글래스 배경, 테두리, 블러를 사용한다.
 - `.panel`, `.metric-card`, `.source-card`, `.roadmap-card`, `.job-select-card`, `.notice-card`, `.scope-switch`: 불투명 흰색 카드와 `--shadow-card`를 사용한다.
+- 직무 선택 미리보기와 통계 KPI는 인디고·블루·민트·앰버·로즈의 저채도 면색을 사용하고, 본문 카드와 표는 흰색을 유지한다.
 - `.metric-grid`: 지표 카드를 한 줄에 5개 배치하며, 변형 `.metric-grid--4`는 4개 열을 사용한다.
 - `.combination-grid`: 함께 요구되는 기술 조합 3개를 비교한다.
 - `.split-grid`: 필수 요구사항과 우대사항을 나란히 보여 준다.
