@@ -1,4 +1,6 @@
 div.insight-import-dialog[role='dialog'] {
+  width: min(960px, calc(100vw - var(--spacing-8)));
+  max-width: calc(100vw - var(--spacing-8));
   max-height: calc(100dvh - var(--spacing-8));
   color: var(--color-ink);
 }
