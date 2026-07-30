@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "title": "GNU 통합 수강신청 AI 네비게이터",
+  "summary": "경상국립대학교 편입생 및 재학생을 위한 맞춤형 수강 신청 시간표 모의 설계, 성적표 OCR 이미지 분석 및 AI 학점 자가진단 서비스입니다.",
+  "githubUser": "kms-2002(김민성)",
+  "demoUrl": "https://hub-ms02.vercel.app/",
+  "demoVideoUrl": "https://drive.google.com/drive/folders/1VfiAl05IA56WRRBB7z5cflz1psx1_la9?usp=drive_link",
+  "thumbnail": "thumbnail.png",
+  "screenshots": [
+    "screenshots/home.png"
+  ],
+  "problem": "편입생이나 다전공 수강생들의 경우, 각각 다르게 적용되는 복잡한 교양 및 전공 졸업 요건을 스스로 진단하기 매우 어렵고, 모의 수강신청 시간표 배정과 성적표 분석을 여러 시스템에서 분산 처리해야 하는 수고가 있습니다.",
+  "targetUsers": [
+    "경상국립대학교 편입생, 재학생, 다전공 신청생",
+    "맞춤형 수강 설계 및 잔여 학점 자가진단이 필요한 대학생"
+  ],
+  "features": [
+    "실시간 AI 학업 어드바이저 대화를 통해 남은 졸업 학점 및 교양/전필 요건 충족 여부를 대화식으로 지도하고 시간표를 자동 배정합니다.",
+    "성적표 캡처 이미지를 업로드하면 Tesseract.js OCR 엔진이 교과목명과 이수 학점을 자동으로 추출하여 누적 GPA를 계산하고 AI 재수강 전략을 제안합니다.",
+    "직접 성적 입력 및 수정 모달창(GradeEditModal) UI 및 실시간 재계산/SVG 그래프 갱신 기능과 자가진단 리포트 내보내기(TXT Export) 연동을 지원합니다."
+  ],
+  "featureTags": [
+    "학점 자가진단",
+    "AI 시간표 설계",
+    "성적표 OCR 분석",
+    "학적 연동"
+  ],
+  "techStack": [
+    "React",
+    "Vite",
+    "Express",
+    "Supabase",
+    "Jest"
+  ]
+}
