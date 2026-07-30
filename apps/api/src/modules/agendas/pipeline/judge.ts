@@ -12,7 +12,6 @@ import {
   buildCodeStances,
   groundStances,
   type RejectedQuote,
-  type StanceDiscardReason,
 } from "./grounding.js";
 import {
   finalizeAgenda,
@@ -96,7 +95,7 @@ export interface JudgeDraftsResult {
    * quote 검증 전에 통째로 버려진 stance의 사유별 합계.
    * `agendaDropRate`가 튀었는데 `quoteRejectRate`가 0%일 때 원인이 여기 있다.
    */
-  stancesDiscarded: Record<StanceDiscardReason, number>;
+  stancesDiscarded: Record<string, number>;
   /** 병렬 wall-clock(ms). 쟁점당 지연은 quality.stage6DurationsMs. */
   wallClockMs: number;
 }
@@ -124,6 +123,8 @@ export async function judgeDrafts(
     confidences: [],
     stage6OutputTokens: [],
     stage6DurationsMs: [],
+    // 저장되는 지표 안에 둔다 — manager_meta 까지 도달해야 사후 진단이 된다.
+    stancesDiscarded: { empty_output: 0, empty_quotes: 0, not_participant: 0, duplicate_provider: 0 },
   };
 
   let quotesTotal = 0;
@@ -132,11 +133,6 @@ export async function judgeDrafts(
   let judgeFailedCount = 0;
   const droppedAgendaIds: string[] = [];
   const rejectedQuotes: RejectedQuote[] = [];
-  const stancesDiscarded: Record<StanceDiscardReason, number> = {
-    empty_output: 0,
-    not_participant: 0,
-    duplicate_provider: 0,
-  };
 
   const startedAt = performance.now();
 
@@ -191,7 +187,8 @@ export async function judgeDrafts(
         quotesRejected += grounded.quotesRejected;
         rejectedQuotes.push(...grounded.rejected);
         for (const [reason, count] of Object.entries(grounded.stancesDiscarded)) {
-          stancesDiscarded[reason as StanceDiscardReason] += count;
+          quality.stancesDiscarded[reason] =
+            (quality.stancesDiscarded[reason] ?? 0) + count;
         }
 
         if (grounded.stances.length === 0) {
@@ -268,7 +265,7 @@ export async function judgeDrafts(
     droppedAgendaIds,
     quality,
     rejectedQuotes,
-    stancesDiscarded,
+    stancesDiscarded: quality.stancesDiscarded,
     wallClockMs: Math.round(performance.now() - startedAt),
   };
 }

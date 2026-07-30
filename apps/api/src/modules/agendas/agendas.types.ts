@@ -109,6 +109,15 @@ export interface ManagerQualityMetrics {
   stage6OutputTokens: number[];
   /** 단계 6 쟁점당 소요 시간(ms). 병렬 wall-clock은 stageDurationsMs.stage6. */
   stage6DurationsMs: number[];
+  /**
+   * quote 검증 전에 통째로 버려진 stance의 사유별 건수(§14.2).
+   *
+   * ⚠️ **여기 없으면 `agendaDropRate`가 튀어도 원인을 알 수 없다.** T-019.3.1에서
+   * `agendaDropRate` 25% · `quoteRejectRate` 0% 사건이 프로덕션 경로에서 재현됐으나,
+   * 이 필드가 `JudgeDraftsResult`에만 있고 저장 객체에 없어 진단값이 또 유실됐다.
+   * 지표는 저장되는 곳까지 도달해야 지표다 — 개발 스크립트에만 보이면 사후 진단이 안 된다.
+   */
+  stancesDiscarded: Record<string, number>;
 }
 
 /**

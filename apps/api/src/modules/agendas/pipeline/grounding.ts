@@ -74,9 +74,17 @@ export interface GroundingResult {
   stancesDiscarded: Record<StanceDiscardReason, number>;
 }
 
-/** stance가 quote 검증 전에 버려지는 사유 — 전부 LLM이 스키마를 어긴 경우다. */
+/**
+ * stance가 결과에 남지 않게 되는 사유.
+ *
+ * ⚠️ **전부 "스키마 위반"이 아니다.** `empty_quotes`는 오히려 **스키마가 허용하는** 경우다 —
+ * `CompareStanceSchema.quotes`와 LLM에 보내는 JSON Schema 모두 최소 개수를 요구하지 않는다.
+ * 이 구분을 흐린 주석("전부 LLM이 스키마를 어긴 경우다")이 실제로 이 사유를 빠뜨리게 만들었다.
+ * 스키마가 허용하는 경로일수록 관측이 더 필요하다 — 아무도 오류라고 알려주지 않기 때문이다.
+ */
 export type StanceDiscardReason =
   | "empty_output" // LLM이 stances를 아예 비워 보냈다
+  | "empty_quotes" // quotes가 빈 배열이라 검증에 도달하지도 못했다 — 스키마 허용, 지표 공백의 원인
   | "not_participant" // 이 쟁점에 참여하지 않은 provider의 입장을 만들어냈다(§16.2-3)
   | "duplicate_provider"; // 같은 provider를 두 번 냈다 — 인용은 합치고 건수만 센다(§8.7)
 
@@ -103,6 +111,7 @@ export function groundStances(
 
   const stancesDiscarded: Record<StanceDiscardReason, number> = {
     empty_output: output.stances.length === 0 ? 1 : 0,
+    empty_quotes: 0,
     not_participant: 0,
     duplicate_provider: 0,
   };
@@ -164,6 +173,12 @@ export function groundStances(
     }
 
     // §11-2: quotes가 0개가 되면 stance를 폐기한다.
+    //
+    // 여기 오는 두 경로를 갈라 센다. 폐기 결과는 같지만 원인이 정반대다.
+    //  - value.quotes 가 처음부터 빈 배열   → `empty_quotes`. quotesRejected 에 아무것도
+    //    안 잡히므로 이 카운터가 없으면 "quoteRejectRate 0%인데 쟁점이 폐기됨"이 된다
+    //  - 인용은 냈지만 전부 검증에서 떨어짐 → 이미 quotesRejected·rejected[] 에 잡혀 있다
+    if (value.quotes.length === 0) stancesDiscarded.empty_quotes += 1;
     if (kept.length === 0 || providerRefs.length === 0) continue;
 
     stances.push({

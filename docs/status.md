@@ -378,5 +378,36 @@
     - `agendaDropRate` 33.3% 1회의 근본 원인 미규명(`stancesDiscarded` 계측만 넣음, 재현 안 됨)
     - `main_answer` 0% 관측 2회 — §14.2 "충돌 과소 탐지 의심" 임계 해당. 판정 품질 축적 필요
     - `confidence` 표준편차 0.025~0.045(n=2·4) — §14.3의 0.05 미만이나 표본 부족, 20~30건 축적 후 재판정
+- **T-019.3.1 완료 (2026-07-30)** — Manager 품질 이상 진단. T-019.3에서 각 1회 관측되고 원인 미규명이던 `agendaDropRate` 33.3%·`quoteRejectRate` 33.3%를 규명했다. **Manager(OpenRouter) 호출 18회/상한 20** + 3사 API 각 1회
+  - **A. 쟁점 소멸 원인 = 확정. `quotes: []`(스키마가 허용하는 빈 인용 배열)**
+    - `AgendaStanceSchema`(저장 계약)는 `quotes.min(1)`인데 `CompareStanceSchema`(LLM 출력)와 LLM에 보내는 JSON Schema에는 **최소 개수 제약이 없다.** 모델이 `quotes: []` stance를 내는 것이 합법이다
+    - 그 stance는 `grounding.ts`에서 `for (const quote of value.quotes)` 루프가 0회 돌아 `quotesTotal`·`quotesRejected`에 **아무것도 더하지 않고** `kept.length === 0`으로 폐기된다 → **어느 지표에도 안 잡힘.** "`quoteRejectRate` 0%인데 쟁점 폐기" 조합이 정확히 이것
+    - **실증**: 프로덕션 경로 재실행에서 `agendaDropRate 25%` · `quoteRejectRate 0%` · **`empty_quotes: 3`**(호출 2회에 3건) — 드문 사고가 아니라 상시 발생
+    - **(a)/(b) 판별 = (a) 모델 실패.** 폐기된 "정책 작성 위치" 쟁점의 배정 섹션(`claude-s2`+`gemini-s1`)은 둘 다 "정책은 SQL 파일로 작성/관리"를 직접 말하고 있어 인용할 원문이 양쪽에 충분했다. 또 **같은 fixture·같은 seed의 다른 회차는 폐기 0건** — 동일 배정에서 결과가 갈렸으므로 단계 3 배정 문제가 아니다
+    - **A-3 배제**: `participantCount`·`sourceRefs`·judge의 `participants`가 모두 `finalizeDrafts`의 같은 `c.sections`에서 파생돼 구조적으로 어긋날 수 없다. `not_participant`·`providerRefs.length===0` 경로는 이번 사건과 무관(후자는 도달 불가 방어 코드)
+  - **B. 인용 폐기 원인 = 최소 의역. 날조가 아니다**
+    - 실관측 폐기 1건을 원문과 대조: 원문 `익명 사용자(anon)**와**…` → 모델 인용 `익명 사용자(anon)**과**…` — **조사 한 글자 차이, 내용 100% 동일**
+    - §11의 `normalized`는 공백만 정규화하므로 조사·어미 변형을 날조와 구분할 수 없다. **정당한 근거가 죽고, 인용이 0개가 되면 stance가 죽고, stance가 0개면 쟁점이 사라진다**
+    - **마크다운·유니코드 FP는 잠재 위험이나 이번 원인은 아니다**: 실 DB 140개 섹션에 `**`·둥근따옴표·en dash·말줄임표가 **전부 0건**(목록 시작 1건). 다만 프로브 10건 중 6건이 폐기됨 — 원문 형식이 바뀌면 즉시 현실화된다
+    - **저장 데이터 정합은 양호**: `c1e496e9`의 저장된 인용 17건 전부 자기 provider 원문에 실재(근거 없음 0건)
+  - **C. quotes ↔ 추론 토큰 상관 = 가설 미지지**
+    - n=5 실측 상관: 섹션 수 −0.556 · 섹션 원문 총 길이 −0.597 · quotes 총 길이 −0.438 · `comparisonNote` 길이 −0.522. **전부 음의 상관이고 n=5 유의 임계 r≈0.878 미만** → 입력 크기로 추론 토큰이 설명되지 않는다
+    - 따라서 **"인용 길이 상한"은 지연 완화책으로 근거가 없다.** reasoning 비중 73~92%, 처리량 49 t/s(§14.4의 53 t/s 재확인), 지연↔completion r=0.826
+  - **D. GET/PATCH 실호출 전부 통과** (dev 서버 + 테스트 계정 토큰)
+    - `GET` 200 · Agenda 5건 · **`stances` 정상 매핑**(Repository 우려 지점 해소) · `selectedSourceRef`가 §9.2대로
+    - `accept`→`passed`/`user_accepted`/실제 참조(서버가 원문 되읽음), `compose`→`passed`/`user_composed`/`NO_VALUE`, `reject`→`rejected`/`user_rejected`/`NO_VALUE`
+    - 무토큰 401 · 엉터리 토큰 401 · 미소유 Question·Chat 404 · 없는 agendaId 404 · `passed`에 PATCH 409(`INVALID_AGENDA_TRANSITION`) · 이 쟁점 근거 아닌 sourceRef 400
+    - **body 위조 `userId` 무시 확인**(소유자 `user_id` 불변). **3액션 각각 원상복구 후 `updated_at` 외 전 컬럼 일치 검증**, Question도 `review_required`로 복원
+  - **E. SSE 실 스트림 = 이벤트 순서·heartbeat 정상, 그러나 70초 공백 발견**
+    - 순서 정상: `source_answer.updated`×6 → `source_answer.done`(30.9s) → `agenda.created`(100.5s) → `agenda.judged`×3 → `agenda.done`(185.6s) → 닫힘. **15초 heartbeat가 Manager 구간에도 그대로 흐름**(12회)
+    - ⚠️ **`source_answer.done`(30.9s) ~ `agenda.created`(100.5s) 사이 69.7초 동안 Agenda 관련 이벤트가 하나도 없다.** 단계 1~5가 SSE 이벤트를 전혀 내지 않기 때문이다. §14.4가 잰 "첫 판정" 시각은 파이프라인 내부 기준이라 이 공백이 보이지 않았다 — **사용자 관점의 체감 지연은 heartbeat만 오는 70초 사각지대**
+    - `agenda.judged`는 흩어져 도착(100.8s ×2 즉시=single_source, 141.0s) — 조기 표시 자체는 작동
+  - **고친 것 (관측만, 승인 범위)**
+    - `stancesDiscarded`에 4번째 사유 `empty_quotes` 추가. 주석의 "전부 LLM이 스키마를 어긴 경우다"를 정정 — `empty_quotes`는 **스키마가 허용하는** 경우이며, 그 문구가 이번 누락의 원인이었다
+    - **`stancesDiscarded`를 `ManagerQualityMetrics`에 배선** — T-019.3에서 `JudgeDraftsResult`에만 넣어 `manager_meta`에 저장되지 않았고, 그 탓에 E 실행에서 폐기가 재현됐는데도 진단값이 또 유실됐다. 지표는 저장되는 곳까지 도달해야 지표다
+    - `--grounding-test`에 재현 케이스 4건(`empty_quotes` 귀속·`empty_output` 구분·오귀인 방지) + false positive 프로브 10건 추가. **LLM 0회로 12/12 통과**
+  - **고치지 않은 것 (설계 판단 필요)**: `minItems: 1` 추가 — (b) 해석에서 모델이 억지 인용을 하게 되고, 그때 나올 **"원문에 있지만 이 쟁점과 무관한 문장"은 grounding이 잡지 못해** 조용한 폐기보다 나쁠 수 있다. 정규화 규칙 완화(조사·어미·유니코드) — 날조 탐지력과 맞바꾸는 결정. 단계 1~5 구간 SSE 진행 이벤트 추가
+  - **남은 불확실성**: 원 33.3% 회차의 폐기 인용은 §16.3에 따라 저장되지 않아 **소급 복원 불가**(재실행 2회 모두 `quoteRejectRate` 0%였다). `empty_quotes`와 `empty_output` 중 원 사건이 어느 쪽이었는지는 당시 지표가 없어 확정 불가 — 다만 둘 다 "모델이 쓸 인용을 못 냈다"로 동일하고, 이제 양쪽이 구분돼 기록된다
+  - **검증 부산물**: 테스트 계정에 SSE 검증용 Chat `a986b4e7`·Question `f165d95d`(Agenda 3건)가 남아 있다. 지워도 무해하다. dev 서버(api:4000)는 계속 켜 둠
 - 이후: SPEC-AI-002 나머지(T-019.4: §12.5 web 재배선 + §10 재검토)~003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

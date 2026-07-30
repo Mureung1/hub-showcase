@@ -241,6 +241,54 @@ function fabricationCases(): void {
       check: (r) =>
         r.stances.length === 1 && r.stances[0]?.provider === "openai",
     },
+
+    // --- T-019.3.1 A-4 · 지표 공백 재현 -----------------------------------
+    // `quoteRejectRate` 0%인데 쟁점이 폐기되는 조합을 결정론적으로 재현한다.
+    // 이것이 T-019.3에서 관측된 agendaDropRate 33.3%의 유력 원인 경로다.
+    {
+      name: "⭐ quotes 빈 배열 1개 (스키마 허용) — empty_quotes 로 잡혀야",
+      output: make([
+        { provider: "claude", quotes: [], text: "인용을 못 뽑음" },
+        { provider: "openai", quotes: ["먼저 접근 주체를 정의하고"], text: "주체 먼저" },
+      ]),
+      expect: "quote 폐기 0인데 claude stance 소멸 → empty_quotes=1 로 관측",
+      check: (r) =>
+        r.quotesRejected === 0 &&
+        r.stances.length === 1 &&
+        r.stancesDiscarded.empty_quotes === 1,
+    },
+    {
+      name: "⭐ 전 stance quotes 빈 배열 → 쟁점 폐기 (quoteRejectRate 0%)",
+      output: make([
+        { provider: "claude", quotes: [], text: "빈 인용" },
+        { provider: "openai", quotes: [], text: "빈 인용" },
+      ]),
+      expect: "quotesTotal 0·폐기 0인데 stances 0개 → 쟁점 폐기. empty_quotes=2",
+      check: (r) =>
+        r.quotesTotal === 0 &&
+        r.quotesRejected === 0 &&
+        r.stances.length === 0 &&
+        r.stancesDiscarded.empty_quotes === 2,
+    },
+    {
+      name: "stances 자체가 빈 배열 → empty_output (empty_quotes 와 구분)",
+      output: make([]),
+      expect: "empty_output=1, empty_quotes=0 — 두 사유가 섞이지 않아야",
+      check: (r) =>
+        r.stances.length === 0 &&
+        r.stancesDiscarded.empty_output === 1 &&
+        r.stancesDiscarded.empty_quotes === 0,
+    },
+    {
+      name: "인용은 냈지만 전부 날조 → empty_quotes 가 아니어야 (오귀인 방지)",
+      output: make([
+        { provider: "claude", quotes: ["없는 문장 A"], text: "날조" },
+        { provider: "openai", quotes: ["먼저 접근 주체를 정의하고"], text: "주체 먼저" },
+      ]),
+      expect: "quotesRejected=1 로 이미 보이므로 empty_quotes=0",
+      check: (r) =>
+        r.quotesRejected === 1 && r.stancesDiscarded.empty_quotes === 0,
+    },
   ];
 
   console.log("=== AC5 · 근거 검증 날조 주입 테스트 (LLM 호출 0회) ===\n");
@@ -251,14 +299,142 @@ function fabricationCases(): void {
     if (ok) passed += 1;
     console.log(`${ok ? "✅ PASS" : "❌ FAIL"}  ${testCase.name}`);
     console.log(`         기대: ${testCase.expect}`);
+    const discarded = Object.entries(result.stancesDiscarded)
+      .filter(([, v]) => v > 0)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(" ");
     console.log(
       `         결과: stance ${result.stances.length}개 [${result.stances
         .map((s) => s.provider)
-        .join(", ")}] / quote ${result.quotesRejected}/${result.quotesTotal} 폐기`,
+        .join(", ")}] / quote ${result.quotesRejected}/${result.quotesTotal} 폐기` +
+        `${discarded ? ` / stance폐기 ${discarded}` : ""}`,
     );
   }
   console.log(`\n→ ${passed}/${cases.length} 통과`);
   if (passed !== cases.length) process.exitCode = 1;
+}
+
+// ---------------------------------------------------------------------------
+// T-019.3.1 B-2 — 정당한 인용이 폐기되는가 (false positive 탐색, LLM 0회)
+// ---------------------------------------------------------------------------
+
+/**
+ * §11의 `normalized`는 **공백만** 정규화한다. 원문에 마크다운 기호나 유니코드
+ * 변형이 있으면 **원문에서 그대로 잘라낸 정당한 인용**도 부분 문자열 매칭에 실패한다.
+ *
+ * 이 함수는 그 경계를 문자 종류별로 갈라 보여준다. 통과/실패 여부가 아니라
+ * **어느 문자 차이가 정당한 근거를 죽이는지**를 지목하는 것이 목적이다.
+ * 정규화 규칙은 고치지 않는다 — 설계 판단이 필요하다(사용자).
+ */
+function falsePositiveProbe(): void {
+  console.log("\n\n=== B-2 · 정당한 인용의 false positive 탐색 (LLM 호출 0회) ===\n");
+  console.log("원문에 실제로 있는 문장을 모델이 자연스럽게 다듬어 인용했을 때를 재현한다.\n");
+
+  const probes: { kind: string; content: string; quote: string; why: string }[] = [
+    {
+      // ⭐ T-019.3.1 B-1 에서 실제로 관측된 폐기 사례를 그대로 재현한다.
+      // three-providers fixture · openai-s3 · quoteRejectRate 8.3% 회차.
+      kind: "⭐조사 와→과 (실관측)",
+      content:
+        "익명 사용자(anon)와 인증 사용자(authenticated) 역할을 구분해 정책을 작성해야 의도치 않은 공개를 막을 수 있다. 역할별로 필요한 최소 권한만 여는 것을 기본으로 하라.",
+      quote:
+        "익명 사용자(anon)과 인증 사용자(authenticated) 역할을 구분해 정책을 작성해야 의도치 않은 공개를 막을 수 있다.",
+      why: "원문 '와' → 인용 '과'. 내용 동일, 한 글자 차이",
+    },
+    {
+      kind: "어미 변형",
+      content: "정책은 SQL 파일로 관리하되 역할별로 나눠 정의하는 것을 권장한다.",
+      quote: "정책은 SQL 파일로 관리하되 역할별로 나눠 정의하는 것을 권장합니다.",
+      why: "'권장한다' → '권장합니다'. 존댓말 변환",
+    },
+    {
+      kind: "마크다운 불릿",
+      content: "- 첫째, 정책은 SQL 파일로 관리한다.\n- 둘째, 이름에 목적을 담는다.",
+      quote: "첫째, 정책은 SQL 파일로 관리한다.",
+      why: "인용에서 선행 `- `를 뗐다",
+    },
+    {
+      kind: "강조 표기 **",
+      content: "**핵심은** RLS를 기본 ON으로 켜는 것이다.",
+      quote: "핵심은 RLS를 기본 ON으로 켜는 것이다.",
+      why: "인용에서 `**`를 뗐다",
+    },
+    {
+      kind: "번호 목록",
+      content: "1. service_role 키는 서버에서만 쓴다.",
+      quote: "service_role 키는 서버에서만 쓴다.",
+      why: "인용에서 `1. `을 뗐다",
+    },
+    {
+      kind: "곧은/둥근 따옴표",
+      content: '정책 이름은 "목적_역할" 형식을 권한다.',
+      quote: "정책 이름은 “목적_역할” 형식을 권한다.",
+      why: '원문 " → 인용 “ ” (유니코드 다름)',
+    },
+    {
+      kind: "하이픈/en dash",
+      content: "select-insert-update 를 나눠 정의한다.",
+      quote: "select–insert–update 를 나눠 정의한다.",
+      why: "원문 - → 인용 – (U+2013)",
+    },
+    {
+      kind: "말줄임표",
+      content: "정책이 없으면 접근할 수 없다... 안전한 출발점이다.",
+      quote: "정책이 없으면 접근할 수 없다… 안전한 출발점이다.",
+      why: "원문 ... → 인용 … (U+2026)",
+    },
+    {
+      kind: "문장 중간 줄바꿈 (대조군)",
+      content: "정책은 SQL 마이그레이션 파일로\n작성해 버전 관리한다.",
+      quote: "정책은 SQL 마이그레이션 파일로 작성해 버전 관리한다.",
+      why: "줄바꿈→공백. 공백 정규화가 처리해야 한다",
+    },
+    {
+      kind: "전각 공백 (대조군)",
+      content: "정책은　SQL 파일로 관리한다.",
+      quote: "정책은 SQL 파일로 관리한다.",
+      why: "U+3000 전각 공백 → 반각. \\s 가 잡는지",
+    },
+  ];
+
+  let fp = 0;
+  for (const p of probes) {
+    const refs: DraftSourceRef[] = [
+      {
+        provider: "claude",
+        sourceAnswerId: "aaaaaaaa-0000-4000-8000-000000000001",
+        sectionId: "claude-s1",
+        title: "테스트",
+        content: p.content,
+      },
+    ];
+    const result = groundStances(
+      {
+        comparisonNote: "(테스트)",
+        stances: [{ provider: "claude", quotes: [p.quote], text: "요약" }],
+        disagreementType: "main_answer",
+        confidence: 0.5,
+      },
+      refs,
+      ["claude"],
+    );
+    const kept = result.quotesRejected === 0;
+    if (!kept) fp += 1;
+    console.log(
+      `${kept ? "통과  " : "❌폐기"}  ${p.kind.padEnd(18)} ${p.why}`,
+    );
+    if (!kept) {
+      console.log(`          원문: ${JSON.stringify(p.content.slice(0, 60))}`);
+      console.log(`          인용: ${JSON.stringify(p.quote.slice(0, 60))}`);
+    }
+  }
+
+  console.log(
+    `\n→ ${probes.length}건 중 ${fp}건이 폐기됐다. **이들은 원문에 실재하는 내용이며 날조가 아니다.**`,
+  );
+  console.log(
+    "  폐기되면 그 stance의 인용이 줄고, 인용이 0개가 되면 stance가 죽고, stance가 0개면 쟁점이 사라진다(§11-4).",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -480,6 +656,7 @@ async function main(): Promise<void> {
 
   if (args.groundingTest) {
     fabricationCases();
+    falsePositiveProbe();
     return;
   }
 
