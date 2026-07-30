@@ -108,8 +108,14 @@ Claude Design, Google Stitch 등 AI 디자인 도구로 먼저 시도했으나 �
 | 중 | 스타일링 폴리싱 | 색감/트랜지션 다듬기 |
 | 하 | 배포 (선택) | Vercel/Netlify 간단 배포 |
 
+## 배포
+- FE(Vercel): https://hub-murex-mu.vercel.app
+- BE(Render): https://tidenote-api.onrender.com
+
 ## 문서 · Agent · Skill
-- [나만의 AI 워크플로우](./docs/workflow.md)
+- [나만의 AI 워크플로우](./docs/workflow.md) — 재사용 가능한 작업 레시피 + Agent 협업 구조도
+- [작업 기록 (오류·요청·검토·확인 과정)](./docs/work-log.md)
+- [데모 영상 대본](./docs/video-script.md)
 - [백로그 (우선순위·일정)](./docs/backlog.md)
 - [작업 체크리스트](./docs/checklist.md)
 - [계획 수립 Agent](./docs/agents/planning-agent.md)
