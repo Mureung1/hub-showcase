@@ -123,11 +123,62 @@ export function clampEstimatedGrams(grams, foodName) {
   return Math.min(max, Math.max(min, n))
 }
 
-// 가공식품 DB의 1회 섭취참고량(servSize)이 있으면 그걸 우선 쓰고(포장 단위라 사진 추정보다 정확한 경우가 많다),
-// 없거나 파싱 안 되면 AI가 추정한 섭취량을 쓴다(foodName이 있으면 음식별 표준 1인분 범위로 보정).
-export function resolveConsumedGrams(match, estimatedGrams, foodName) {
+// 배식비율(portionRatio)로 인정할 범위. 0.3 미만/3.0 초과는 "한 사람이 한 끼에 먹는 양"의 배수로
+// 보기 어려워, 비율을 잘못 낸 것으로 보고 무시한다(절대 그램 추정으로 폴백).
+const PORTION_RATIO_MIN = 0.3
+const PORTION_RATIO_MAX = 3.0
+
+// 식판 칸을 얼마나 채웠는지(trayFillRatio)에 주는 가중치. AI의 portionRatio보다 **분산이 작은**
+// 신호다 — 칸 크기는 물리적으로 고정이라 "얼마나 찼나"는 눈으로 세기 쉬운 반면, "표준 1인분 대비
+// 몇 배냐"는 표준이 얼마인지를 먼저 알아야 답할 수 있다. 그래도 칸을 가득 채운 게 곧 표준 1인분은
+// 아니라서(눌러 담기·수북이) 단독으로 쓰지 않고 섞는다.
+const TRAY_FILL_WEIGHT = 0.4
+
+// 두 신호가 이 배수 이상 어긋나면 둘 중 하나가 틀린 것이다 — 섞은 값을 쓰되 호출부가 신뢰도를
+// 낮출 수 있게 알린다.
+export const PORTION_SIGNAL_CONFLICT_RATIO = 1.5
+
+function isUsableRatio(value) {
+  const n = Number(value)
+  return Number.isFinite(n) && n >= PORTION_RATIO_MIN && n <= PORTION_RATIO_MAX
+}
+
+// 식판 사진의 두 신호를 하나로 합친다. 반환: { ratio, conflicted } — ratio가 null이면 쓸 수 있는
+// 신호가 없다는 뜻(호출부가 절대 그램 추정으로 폴백).
+export function blendPortionRatio(portionRatio, trayFillRatio) {
+  const ai = isUsableRatio(portionRatio) ? Number(portionRatio) : null
+  // 칸을 가득 채운 상태(1.0)를 표준 1인분(비율 1.0)으로 본다 — 역할 표준 중량 자체가 "그 칸에
+  // 보통 담기는 양"으로 정해진 값이라 두 축의 기준점이 같다.
+  const fill = isUsableRatio(trayFillRatio) ? Number(trayFillRatio) : null
+
+  if (ai === null && fill === null) return { ratio: null, conflicted: false }
+  if (fill === null) return { ratio: ai, conflicted: false }
+  if (ai === null) return { ratio: fill, conflicted: false }
+
+  const conflicted = Math.max(ai, fill) / Math.min(ai, fill) >= PORTION_SIGNAL_CONFLICT_RATIO
+  return { ratio: (1 - TRAY_FILL_WEIGHT) * ai + TRAY_FILL_WEIGHT * fill, conflicted }
+}
+
+// 실제로 먹은 양이 몇 g인가 — 근거가 강한 순으로 고른다.
+//
+//  ① match.servSize — 포장에 표시된 1회 제공량. 추정이 아니라 사실이라 항상 이긴다.
+//  ② 표준 1인분 × 배식비율 — AI에게 "몇 g이냐"보다 "보통 1인분에 비해 얼마나 담겼냐"를 물은 값.
+//     사람도 사진만 보고 200g인지 400g인지는 잘 못 맞히지만 "보통보다 조금 많다"는 잘 맞힌다.
+//     그래서 **표준값에 근거가 있을 때만**(정량 사전·역할 표준·DB 제공량 — servingGramFounded)
+//     이 경로를 쓴다. 근거 없는 중립값(200g)에 비율을 곱하면 모르는 값끼리 곱하는 셈이라 오히려
+//     나빠진다.
+//  ③ AI의 절대 그램 추정 — 위 둘이 다 없을 때. 음식별 표준 1인분 범위로 보정해서 쓴다.
+//
+// options: { standardServingGram, portionRatio } — 둘 다 없으면 기존 동작(①→③) 그대로다.
+export function resolveConsumedGrams(match, estimatedGrams, foodName, { standardServingGram, portionRatio } = {}) {
   const servValue = match?.servSize?.value
   if (typeof servValue === 'number' && servValue > 0) return servValue
+
+  const standard = Number(standardServingGram)
+  if (standard > 0 && isUsableRatio(portionRatio)) {
+    return clampEstimatedGrams(standard * Number(portionRatio), foodName)
+  }
+
   return clampEstimatedGrams(estimatedGrams, foodName)
 }
 

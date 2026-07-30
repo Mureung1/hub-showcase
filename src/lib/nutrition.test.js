@@ -4,6 +4,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   applyAtwaterEnsemble,
+  blendPortionRatio,
   buildDeficiencyRows,
   calcDayStatus,
   calcRecommendedNutrients,
@@ -12,6 +13,7 @@ import {
   DEFICIENCY_TARGET_KEYS,
   isSodiumExceeded,
   RECORD_ONLY_KEYS,
+  resolveConsumedGrams,
   scaleMealAnalysisByServings,
   SERVINGS_MAX,
   SERVINGS_MIN,
@@ -232,5 +234,73 @@ describe('calcRecommendedNutrients — 성인 회귀 가드(청소년 분기 추
     expect(calcRecommendedNutrients({ age: 19, heightCm: 172, weightKg: 68, sex: 'male', activity: 'moderate', conditions: [] })).toEqual(
       { calories: 2581, protein: 129, carbs: 323, fat: 86, fiber: 30, sodium: 2000 },
     )
+  })
+})
+
+// 사진 한 장으로 절대 그램(200g인지 400g인지)을 맞히는 건 사람도 어렵다. 반면 "보통 1인분보다
+// 많다/적다"는 잘 맞힌다. 그래서 표준 1인분에 근거가 있을 때는 그 상대 비율로 중량을 정한다.
+describe('resolveConsumedGrams — 배식비율 경로', () => {
+  const 돼지갈비 = '돼지갈비' // foodData referenceGrams 200g, portion 120~400g
+
+  it('포장에 표시된 1회 제공량이 있으면 그게 항상 이긴다 — 추정이 아니라 사실이다', () => {
+    const match = { servSize: { value: 137 } }
+    expect(resolveConsumedGrams(match, 300, 돼지갈비, { standardServingGram: 200, portionRatio: 1.5 })).toBe(137)
+  })
+
+  it('표준 1인분 × 비율로 중량을 정한다', () => {
+    expect(resolveConsumedGrams(null, 999, 돼지갈비, { standardServingGram: 200, portionRatio: 1.5 })).toBe(300)
+    expect(resolveConsumedGrams(null, 999, 돼지갈비, { standardServingGram: 200, portionRatio: 0.5 })).toBe(120) // portion 하한
+  })
+
+  it('표준 1인분에 근거가 없으면(null) AI의 절대 그램 추정을 쓴다', () => {
+    // 근거 없는 중립값에 비율을 곱하면 모르는 값끼리 곱하는 셈이라 오히려 나빠진다.
+    expect(resolveConsumedGrams(null, 250, 돼지갈비, { standardServingGram: null, portionRatio: 1.5 })).toBe(250)
+  })
+
+  it('비율이 없거나 범위를 벗어나면 절대 그램 추정으로 폴백한다', () => {
+    for (const ratio of [undefined, null, 0, 0.1, 5, NaN, 'x']) {
+      expect(resolveConsumedGrams(null, 250, 돼지갈비, { standardServingGram: 200, portionRatio: ratio })).toBe(250)
+    }
+  })
+
+  it('옵션을 아예 안 주면 기존 동작(포장 제공량 → 절대 그램)이 그대로다', () => {
+    expect(resolveConsumedGrams(null, 250, 돼지갈비)).toBe(250)
+    expect(resolveConsumedGrams({ servSize: { value: 137 } }, 250, 돼지갈비)).toBe(137)
+  })
+
+  it('비율로 나온 값도 음식별 1인분 범위로 보정된다 — 곱빼기는 통과, 비현실적 값은 차단', () => {
+    expect(resolveConsumedGrams(null, 0, 돼지갈비, { standardServingGram: 200, portionRatio: 3.0 })).toBe(400) // 상한 400
+  })
+})
+
+// 식판 사진은 신호가 둘이다: AI가 답한 "표준 대비 배수"(portionRatio)와 "칸을 얼마나 채웠나"
+// (trayFillRatio). 후자는 칸 크기가 물리적으로 고정이라 분산이 작지만, 가득 채운 게 곧 표준
+// 1인분은 아니라서(눌러 담기) 단독으로 쓰지 않고 섞는다.
+describe('blendPortionRatio', () => {
+  it('둘 다 있으면 섞는다 — 식판 쪽에 0.4 가중', () => {
+    expect(blendPortionRatio(1.0, 0.5).ratio).toBeCloseTo(0.8, 5)
+    expect(blendPortionRatio(1.5, 1.0).ratio).toBeCloseTo(1.3, 5)
+  })
+
+  it('한쪽만 있으면 그것을 그대로 쓴다', () => {
+    expect(blendPortionRatio(1.4, null)).toEqual({ ratio: 1.4, conflicted: false })
+    expect(blendPortionRatio(null, 0.6)).toEqual({ ratio: 0.6, conflicted: false })
+  })
+
+  it('둘 다 없거나 범위를 벗어나면 null — 호출부가 절대 그램 추정으로 폴백한다', () => {
+    expect(blendPortionRatio(null, null).ratio).toBeNull()
+    expect(blendPortionRatio(0.1, null).ratio).toBeNull() // 0.3 미만
+    expect(blendPortionRatio(9, null).ratio).toBeNull() // 3.0 초과
+    expect(blendPortionRatio('x', undefined).ratio).toBeNull()
+  })
+
+  it('두 신호가 1.5배 이상 어긋나면 conflicted로 알린다 — 둘 중 하나가 틀렸다는 뜻', () => {
+    expect(blendPortionRatio(1.5, 0.5).conflicted).toBe(true)
+    expect(blendPortionRatio(1.2, 1.0).conflicted).toBe(false)
+  })
+
+  it('섞은 비율이 그대로 섭취량 계산에 쓰인다', () => {
+    const { ratio } = blendPortionRatio(1.0, 0.5) // 0.8
+    expect(resolveConsumedGrams(null, 999, '돼지갈비', { standardServingGram: 200, portionRatio: ratio })).toBe(160)
   })
 })
