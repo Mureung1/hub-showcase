@@ -1,14 +1,21 @@
 import { useNavigate } from 'react-router-dom'
-import { colors, font, radius, spacing } from '../styles/theme.js'
+import { AwardIcon, BarChartIcon, DropletIcon, LightbulbIcon, PillIcon, SettingsIcon, TargetIcon, TrophyIcon } from './icons/index.jsx'
+import { colors, font, spacing } from '../styles/theme.js'
 
-// MY 탭 개편(1a/2a 시안) — 바로가기 4×2 그리드. 예전엔 원형 타일 + 이모지였다. 이제 정사각 타일
-// (radius 17) + 단순 도형 마크로 바뀌었다 — 시안이 지정한 정확한 배경/마크 색은 전부 이 앱의
-// 의미론적 토큰이 아니라 이 그리드 전용 장식색이라(예: 골드 배지색, 퍼플 퀴즈색) theme.js에 새
-// 토큰을 추가하지 않고 그대로 인라인했다(그린/블루/회색만 기존 토큰 재사용).
+// MY 탭 개편(1a/2a 시안) — 바로가기 4×2 그리드. 정사각 타일(radius 17) + 마크. 시안이 지정한
+// 정확한 배경/마크 색은 전부 이 앱의 의미론적 토큰이 아니라 이 그리드 전용 장식색이라(예: 골드
+// 배지색, 퍼플 퀴즈색) theme.js에 새 토큰을 추가하지 않고 그대로 인라인했다(그린/블루/회색만
+// 기존 토큰 재사용).
+//
+// 마크는 원래 border-radius/transform으로 만든 맨 div 도형이었는데(사각형·막대·도넛·마름모…),
+// 기능과의 연결이 안 읽혀서 각 기능의 은유를 가진 듀오톤 아이콘으로 바꿨다(icons/index.jsx).
+// 이모지로 되돌리지는 않는다 — docs/02-디자인.md가 이모지 장식을 금지하고, 이 그리드도 원래
+// 이모지였다가 의도적으로 걷어낸 이력이 있다. 아이콘 색은 currentColor라 Tile의 color 하나로
+// 채움·선 두 톤이 함께 따라간다.
 //
 // "영양제"는 화면 이동이 아니라 즉시 토글(+토스트)이다 — 다른 7개와 동작 방식 자체가 달라 path
 // 대신 onToggle을 받는다. 나머지 7개는 예전과 같은 경로로 이동한다.
-function Tile({ bg, children }) {
+function Tile({ bg, color, children }) {
   return (
     <div
       aria-hidden="true"
@@ -17,6 +24,7 @@ function Tile({ bg, children }) {
         height: 52,
         borderRadius: 17,
         background: bg,
+        color,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -59,8 +67,8 @@ export default function ShortcutGrid({ supplementTaken, onToggleSupplement }) {
       label: '퀘스트',
       onClick: () => navigate('/profile/quests'),
       tile: (
-        <Tile bg={colors.primarySurface}>
-          <div style={{ width: 20, height: 20, borderRadius: 6, background: colors.primary }} />
+        <Tile bg={colors.primarySurface} color={colors.primary}>
+          <TargetIcon />
         </Tile>
       ),
     },
@@ -69,12 +77,8 @@ export default function ShortcutGrid({ supplementTaken, onToggleSupplement }) {
       label: '리더보드',
       onClick: () => navigate('/profile/leaderboard'),
       tile: (
-        <Tile bg={colors.infoSurface}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3 }}>
-            {[10, 18, 14].map((h, i) => (
-              <div key={i} style={{ width: 5, height: h, borderRadius: 2, background: colors.info }} />
-            ))}
-          </div>
+        <Tile bg={colors.infoSurface} color={colors.info}>
+          <TrophyIcon />
         </Tile>
       ),
     },
@@ -83,8 +87,8 @@ export default function ShortcutGrid({ supplementTaken, onToggleSupplement }) {
       label: '배지 도감',
       onClick: () => navigate('/profile/badges'),
       tile: (
-        <Tile bg="#FFF5E6">
-          <div style={{ width: 20, height: 20, borderRadius: '50%', border: '4px solid #E8A33D', boxSizing: 'border-box' }} />
+        <Tile bg="#FFF5E6" color="#E8A33D">
+          <AwardIcon />
         </Tile>
       ),
     },
@@ -93,8 +97,8 @@ export default function ShortcutGrid({ supplementTaken, onToggleSupplement }) {
       label: '식단 퀴즈',
       onClick: () => navigate('/profile/quiz'),
       tile: (
-        <Tile bg="#F3F0FF">
-          <div style={{ width: 18, height: 18, background: '#7B61D9', borderRadius: 4, transform: 'rotate(45deg)' }} />
+        <Tile bg="#F3F0FF" color="#7B61D9">
+          <LightbulbIcon />
         </Tile>
       ),
     },
@@ -103,8 +107,8 @@ export default function ShortcutGrid({ supplementTaken, onToggleSupplement }) {
       label: '물 기록',
       onClick: () => navigate('/profile/water'),
       tile: (
-        <Tile bg="#E6F6FB">
-          <div style={{ width: 18, height: 18, background: '#1A9FC4', borderRadius: '50% 50% 50% 4px', transform: 'rotate(-45deg)' }} />
+        <Tile bg="#E6F6FB" color="#1A9FC4">
+          <DropletIcon />
         </Tile>
       ),
     },
@@ -112,9 +116,10 @@ export default function ShortcutGrid({ supplementTaken, onToggleSupplement }) {
       key: 'supplement',
       label: '영양제',
       onClick: onToggleSupplement,
+      // 유일하게 상태를 가진 타일 — 복용 체크 시 배경/아이콘 색이 반전된다(동작 자체를 바꾸지 말 것).
       tile: (
-        <Tile bg={supplementTaken ? colors.primary : colors.primarySurface}>
-          <div style={{ width: 22, height: 12, borderRadius: radius.pill, background: supplementTaken ? '#fff' : colors.primary }} />
+        <Tile bg={supplementTaken ? colors.primary : colors.primarySurface} color={supplementTaken ? '#fff' : colors.primary}>
+          <PillIcon />
         </Tile>
       ),
     },
@@ -123,8 +128,8 @@ export default function ShortcutGrid({ supplementTaken, onToggleSupplement }) {
       label: '권장 섭취량',
       onClick: () => navigate('/profile/recommended'),
       tile: (
-        <Tile bg={colors.bg}>
-          <div style={{ width: 20, height: 20, borderRadius: 5, border: '3px solid #6B7684', boxSizing: 'border-box' }} />
+        <Tile bg={colors.bg} color="#6B7684">
+          <BarChartIcon />
         </Tile>
       ),
     },
@@ -133,12 +138,8 @@ export default function ShortcutGrid({ supplementTaken, onToggleSupplement }) {
       label: '카드 항목',
       onClick: () => navigate('/profile/card-settings'),
       tile: (
-        <Tile bg={colors.bg}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
-            {['#6B7684', '#6B7684', '#6B7684', '#C4CBD3'].map((c, i) => (
-              <div key={i} style={{ width: 7, height: 7, borderRadius: 2, background: c }} />
-            ))}
-          </div>
+        <Tile bg={colors.bg} color="#6B7684">
+          <SettingsIcon />
         </Tile>
       ),
     },
