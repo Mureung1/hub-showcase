@@ -26,7 +26,7 @@ const analysisTopics: Array<{
   { value: "stores", label: "점포·개폐업", available: true },
   { value: "sales", label: "매출·소비", available: true },
   { value: "competition", label: "경쟁 현황", available: true },
-  { value: "flow", label: "길단위인구·시간대", available: true },
+  { value: "flow", label: "유동인구", available: true },
   { value: "population", label: "주거·직장인구", available: true },
   { value: "amenities", label: "주변 시설·접근성", available: false, reason: "데이터 연결 예정" },
 ];
@@ -84,7 +84,7 @@ function CategoryOptions({
         className={`category-option ${selected === name ? "is-selected" : ""}`}
         aria-label={name}
         aria-pressed={selected === name}
-        title={`${displayRank}위${marketStoreCount === undefined ? " · 상권 점포 수 확인 중" : ` · ${marketName} ${marketStoreCount.toLocaleString("ko-KR")}곳 · 2026.06 점포 위치 기준`}`}
+        title={`${displayRank}위${marketStoreCount === undefined ? " · 상권 점포 수 확인 중" : ` · ${marketName} ${marketStoreCount.toLocaleString("ko-KR")}곳 · 2026년 6월 원천 스냅샷 기준`}`}
         onClick={() => onChange(name)}
       >
         <span className="category-rank" aria-hidden="true">
@@ -194,7 +194,7 @@ export function MarketFilters({
 }: MarketFiltersProps) {
   const catalogLabel =
     catalogState === "ranked"
-      ? "점포 위치 2026.06"
+      ? "점포 스냅샷 2026.06"
       : catalogState === "connecting"
         ? "불러오는 중"
         : "기본 목록";
@@ -253,7 +253,8 @@ export function MarketFilters({
           </div>
         </div>
         <p className="filter-help">
-          점포 위치는 2026.06, 매출·길단위인구·개폐업은 선택한 분기 기준으로 보여줍니다.
+          지도 점포는 2026년 6월 원천 스냅샷, 매출·유동인구·개폐업은 선택한 분기
+          통계입니다. 점포 스냅샷은 실시간 영업 여부가 아닙니다.
         </p>
       </div>
       <div className="filter-group">
@@ -269,7 +270,7 @@ export function MarketFilters({
         </div>
         <div className={`catalog-status is-${catalogState}`} role="status">
           {catalogState === "ranked" &&
-            `${markets[marketKey].name} 안의 2026.06 점포 위치 수가 많은 순서입니다.`}
+            `${markets[marketKey].name} 안에서 2026년 6월 원천 스냅샷에 등록된 점포 수가 많은 순서입니다. 실시간 영업 여부와 다를 수 있습니다.`}
           {catalogState === "connecting" &&
             "선택한 업종을 유지한 채 현재 상권의 업종 순위를 불러오고 있습니다."}
           {catalogState === "bootstrap" &&
