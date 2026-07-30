@@ -4,7 +4,7 @@ const supabase = require('../services/supabase');
 const auth = require('../middleware/auth');
 const { searchNews } = require('../services/naver');
 const { fetchArticleBody } = require('../services/scraper');
-const { summarizeArticle, simplifyArticle, extractTerms } = require('../services/openai');
+const { summarizeArticle, simplifyArticle, extractTerms, expandSearchQuery } = require('../services/openai');
 
 const router = express.Router();
 
@@ -89,10 +89,38 @@ function hostnameOf(url) {
   }
 }
 
+// 키워드별 확장 검색어 캐시 — GET /api/articles가 호출될 때마다 매번 GPT를 부르면 비용이 커지니
+// 서버가 떠 있는 동안은 키워드당 한 번만 확장하고 재사용한다 (재시작하면 초기화됨, 임시 방편)
+const searchQueryCache = new Map();
+
+async function getSearchQueries(keywordName) {
+  if (searchQueryCache.has(keywordName)) return searchQueryCache.get(keywordName);
+
+  let queries;
+  try {
+    queries = await expandSearchQuery(keywordName);
+  } catch (err) {
+    queries = [keywordName]; // 확장 실패해도 기존 방식(원래 키워드로만 검색)으로는 동작해야 함
+  }
+
+  searchQueryCache.set(keywordName, queries);
+  return queries;
+}
+
 // 이 키워드로 네이버에서 최신 기사를 가져와 articles/article_keywords에 upsert한다
 // (content는 여기서 채우지 않음 — 목록엔 필요 없고, 상세 조회 시점에만 크롤링한다)
 async function ingestKeywordArticles(keywordId, keywordName) {
-  const items = await searchNews(keywordName, { display: 20, sort: 'date' });
+  const queries = await getSearchQueries(keywordName);
+  const results = await Promise.all(
+    queries.map((query) => searchNews(query, { display: 20, sort: 'date' }))
+  );
+
+  const seenUrls = new Set();
+  const items = results.flat().filter((item) => {
+    if (seenUrls.has(item.url)) return false;
+    seenUrls.add(item.url);
+    return true;
+  });
 
   const rows = items.map((item) => ({
     url: item.url,
