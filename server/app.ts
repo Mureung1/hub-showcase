@@ -1,7 +1,8 @@
 import { Hono } from "hono";
-import { registerManagerLlmRoutes, type ManagerLlmRuntime } from "./routes/managerLlm";
-import { registerQuestEventRoutes } from "./routes/questEvents";
-import type { QuestEventStore } from "./lib/questEventStore";
+import { registerManagerLlmRoutes, type ManagerLlmRuntime } from "./routes/managerLlm.js";
+import { registerQuestEventRoutes } from "./routes/questEvents.js";
+import type { QuestEventStore } from "./lib/questEventStore.js";
+import type { ManagerPlanStore } from "./lib/managerPlanStore.js";
 
 export type QuestEventStorageMode = "memory" | "supabase";
 
@@ -19,12 +20,13 @@ export function createApiApp(
   store: QuestEventStore,
   runtimeInfo: ApiRuntimeInfo = defaultRuntimeInfo,
   managerLlmRuntime: ManagerLlmRuntime = { enabled: false },
+  managerPlanStore?: ManagerPlanStore,
 ) {
   const app = new Hono();
 
   app.get("/api/health", (context) => context.json({ ok: true, api: "hono", ...runtimeInfo }));
   registerQuestEventRoutes(app, store);
-  registerManagerLlmRoutes(app, managerLlmRuntime);
+  registerManagerLlmRoutes(app, managerLlmRuntime, managerPlanStore);
 
   app.notFound((context) =>
     context.json({ ok: false, error: { code: "VALIDATION_ERROR", message: "Route not found." } }, 404),

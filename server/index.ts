@@ -1,9 +1,11 @@
-import { createApiApp } from "./app";
-import type { ApiRuntimeInfo } from "./app";
-import { createMemoryQuestEventStore } from "./lib/questEventStore";
-import type { QuestEventStore } from "./lib/questEventStore";
-import { createManagerLlmRuntimeFromEnv } from "./lib/managerLlmProvider";
-import { createSupabaseConfigFromEnv, createSupabaseQuestEventStore } from "./lib/supabase";
+import { createApiApp } from "./app.js";
+import type { ApiRuntimeInfo } from "./app.js";
+import type { ManagerPlanStore } from "./lib/managerPlanStore.js";
+import { createMemoryManagerPlanStore } from "./lib/managerPlanStore.js";
+import { createMemoryQuestEventStore } from "./lib/questEventStore.js";
+import type { QuestEventStore } from "./lib/questEventStore.js";
+import { createManagerLlmRuntimeFromEnv } from "./lib/managerLlmProvider.js";
+import { createSupabaseConfigFromEnv, createSupabaseManagerPlanStore, createSupabaseQuestEventStore } from "./lib/supabase.js";
 
 export interface ServerEnv {
   get(name: string): string | undefined;
@@ -14,12 +16,13 @@ export function createServer(env: ServerEnv) {
   const app = createApiApp(runtime.store, {
     storageMode: runtime.storageMode,
     supabaseConfigured: runtime.supabaseConfigured,
-  }, createManagerLlmRuntimeFromEnv((name) => env.get(name)?.trim()));
+  }, createManagerLlmRuntimeFromEnv((name) => env.get(name)?.trim()), runtime.managerPlanStore);
   return (request: Request) => app.fetch(request);
 }
 
 interface QuestEventStoreRuntime extends ApiRuntimeInfo {
   store: QuestEventStore;
+  managerPlanStore: ManagerPlanStore;
 }
 
 function createQuestEventStore(env: ServerEnv): QuestEventStoreRuntime {
@@ -27,8 +30,10 @@ function createQuestEventStore(env: ServerEnv): QuestEventStoreRuntime {
   const supabaseConfigured = Boolean(getSupabaseEnv("SUPABASE_URL") && getSupabaseEnv("SUPABASE_SERVICE_ROLE_KEY"));
 
   if (supabaseConfigured) {
+    const config = createSupabaseConfigFromEnv(getSupabaseEnv);
     return {
-      store: createSupabaseQuestEventStore(createSupabaseConfigFromEnv(getSupabaseEnv)),
+      store: createSupabaseQuestEventStore(config),
+      managerPlanStore: createSupabaseManagerPlanStore(config),
       storageMode: "supabase",
       supabaseConfigured,
     };
@@ -36,6 +41,7 @@ function createQuestEventStore(env: ServerEnv): QuestEventStoreRuntime {
 
   return {
     store: createMemoryQuestEventStore(),
+    managerPlanStore: createMemoryManagerPlanStore(),
     storageMode: "memory",
     supabaseConfigured,
   };

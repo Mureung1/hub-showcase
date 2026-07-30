@@ -1,10 +1,13 @@
-import { type ManagerBehaviorIntent } from "../../src/domain/managerBehaviorIntent";
-import { createRuleFallbackStatEvaluation } from "../../src/domain/statGrowth";
+import { type ManagerBehaviorIntent } from "../../src/domain/managerBehaviorIntent.js";
+import { createRuleFallbackStatEvaluation } from "../../src/domain/statGrowth.js";
 import type {
+  ManagerGoalPlan,
   ManagerLlmOutputFallback,
   ManagerLlmQuestInput,
   ManagerLlmRequest,
-} from "../contracts/managerLlm";
+  ManagerPlanRebalance,
+  ManagerQuestAcceptancePreview,
+} from "../contracts/managerLlm.js";
 
 export function createManagerLlmFallback(request: ManagerLlmRequest): ManagerLlmOutputFallback {
   const managerLine = createFallbackManagerLine(request);
@@ -12,17 +15,23 @@ export function createManagerLlmFallback(request: ManagerLlmRequest): ManagerLlm
     ...createFallbackQuestSuggestion(request),
     title: createFallbackQuestTitle(request),
   };
+  const difficultyEvaluation = createFallbackDifficultyEvaluation(request);
+  const statEvaluation = createRuleFallbackStatEvaluation({
+    questType: getFallbackGrowthQuestType(request),
+    eventType: getFallbackGrowthEventType(request),
+    difficulty: request.questState.currentQuest?.difficulty ?? difficultyEvaluation.difficulty,
+  });
+  const goalPlan = createFallbackGoalPlan(request);
 
   return {
     managerLine,
-    difficultyEvaluation: createFallbackDifficultyEvaluation(request),
+    difficultyEvaluation,
     behaviorIntent: createFallbackBehaviorIntent(request, managerLine),
-    statEvaluation: createRuleFallbackStatEvaluation({
-      questType: getFallbackGrowthQuestType(request),
-      eventType: getFallbackGrowthEventType(request),
-      difficulty: request.questState.currentQuest?.difficulty ?? "normal",
-    }),
+    statEvaluation,
     questSuggestion,
+    goalPlan,
+    planRebalance: createFallbackPlanRebalance(goalPlan, request),
+    questAcceptancePreview: createFallbackQuestAcceptancePreview(difficultyEvaluation, statEvaluation),
   };
 }
 
@@ -127,4 +136,87 @@ function getFallbackGrowthEventType(request: ManagerLlmRequest) {
   if (request.questState.status === "failed") return "quest_failed";
   if (request.questState.status === "recovery") return "recovery_completed";
   return "quest_completed";
+}
+
+function createFallbackGoalPlan(request: ManagerLlmRequest): ManagerGoalPlan {
+  const dailySeed = request.questState.currentQuest
+    ? { ...request.questState.currentQuest, linkedMilestoneId: "m1" }
+    : { ...createFallbackQuestSuggestion(request), title: createFallbackQuestTitle(request), linkedMilestoneId: "m1" };
+  const goalSummary = request.profile.goal.slice(0, 120);
+
+  return {
+    goalSummary,
+    horizon: "month",
+    milestones: [
+      {
+        id: "m1",
+        title: createFallbackMilestoneTitle(request),
+        targetWeek: 1,
+        successCriteria: ["Complete three small quests", "Review one result"],
+      },
+      {
+        id: "m2",
+        title: "Build a repeatable weekly rhythm",
+        targetWeek: 4,
+        successCriteria: ["Finish at least eight daily quests"],
+      },
+    ],
+    monthlyPlan: [{ monthIndex: 1, focus: goalSummary, milestoneIds: ["m1", "m2"] }],
+    weeklyPlan: [
+      { weekIndex: 1, focus: "Start with a small baseline", targetOutcome: "Complete three easy attempts", suggestedQuestThemes: [dailySeed.title] },
+      { weekIndex: 2, focus: "Repeat the strongest routine", targetOutcome: "Complete four normal attempts", suggestedQuestThemes: ["Review recent success"] },
+      { weekIndex: 3, focus: "Increase one variable", targetOutcome: "Try one harder quest", suggestedQuestThemes: ["Small challenge"] },
+      { weekIndex: 4, focus: "Consolidate and review", targetOutcome: "Summarize what worked", suggestedQuestThemes: ["Monthly review"] },
+    ],
+    dailySeeds: [dailySeed],
+    risks: ["time shortage", "too much difficulty too early"],
+    rebalancingPolicy: {
+      onSuccess: "Keep the next quest similar and increase only one small variable.",
+      onFailureTimeShortage: "Cut the amount by about half and keep the same milestone.",
+      onFailureTooHard: "Lower the difficulty and switch to a simpler action.",
+      onSkippedDays: "Restart with an easy daily seed.",
+    },
+  };
+}
+
+function createFallbackMilestoneTitle(request: ManagerLlmRequest): string {
+  if (request.profile.category === "exercise") return "Build a safe baseline routine";
+  if (request.profile.category === "study") return "Finish the first concept loop";
+  if (request.profile.category === "career") return "Create the first visible result";
+  if (request.profile.category === "hobby") return "Make the first small sample";
+  return "Complete the first repeatable routine";
+}
+
+function createFallbackPlanRebalance(goalPlan: ManagerGoalPlan, request: ManagerLlmRequest): ManagerPlanRebalance {
+  const failed = request.managerContext.lastQuestResult === "failed" || request.questState.status === "failed";
+  const nextQuest = goalPlan.dailySeeds[0] ?? { ...createFallbackQuestSuggestion(request), title: createFallbackQuestTitle(request), linkedMilestoneId: "m1" };
+  return {
+    rebalancedPlan: goalPlan,
+    changes: [
+      {
+        scope: "daily",
+        reason: failed ? "failure_time_shortage" : "success_streak",
+        before: request.questState.currentQuest?.title ?? request.profile.goal,
+        after: nextQuest.title,
+      },
+    ],
+    nextQuest: {
+      ...nextQuest,
+      recoveryReason: failed
+        ? "Recent failure detected; restart with a smaller next quest."
+        : "Continue the plan with the next concrete quest.",
+    },
+  };
+}
+
+function createFallbackQuestAcceptancePreview(
+  difficultyEvaluation: ReturnType<typeof createFallbackDifficultyEvaluation>,
+  statEvaluation: ReturnType<typeof createRuleFallbackStatEvaluation>,
+): ManagerQuestAcceptancePreview {
+  return {
+    difficulty: difficultyEvaluation.difficulty,
+    rewardExp: difficultyEvaluation.rewardExp,
+    statEvaluation,
+    reason: "rule_fallback quest acceptance preview",
+  };
 }

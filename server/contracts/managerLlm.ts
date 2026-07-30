@@ -1,16 +1,25 @@
-import { normalizeManagerBehaviorIntent, type ManagerBehaviorIntent } from "../../src/domain/managerBehaviorIntent";
-import { normalizeManagerStatEvaluation, type ManagerStatEvaluation } from "../../src/domain/statGrowth";
-import { createErrorResponse, type ApiErrorResponse, type ManagerContext, type QuestDifficulty, type QuestEventResult, type QuestEventType } from "./questEvents";
+import { normalizeManagerBehaviorIntent, type ManagerBehaviorIntent } from "../../src/domain/managerBehaviorIntent.js";
+import { normalizeManagerStatEvaluation, type ManagerStatEvaluation } from "../../src/domain/statGrowth.js";
+import { createErrorResponse, type ApiErrorResponse, type ManagerContext, type QuestDifficulty, type QuestEventResult, type QuestEventType } from "./questEvents.js";
 
 export const managerLlmPromptVersion = "manager-api-v1" as const;
 
-export type ManagerLlmOutputKind = "managerLine" | "questSuggestion" | "difficultyEvaluation" | "statEvaluation" | "behaviorIntent";
+export type ManagerLlmOutputKind =
+  | "managerLine"
+  | "questSuggestion"
+  | "difficultyEvaluation"
+  | "statEvaluation"
+  | "behaviorIntent"
+  | "goalPlan"
+  | "planRebalance"
+  | "questAcceptancePreview";
 export type ManagerLlmSource = "llm" | "rule_fallback";
 export type ManagerLlmFallbackReason =
   | "LLM_DISABLED"
   | "LLM_PROVIDER_ERROR"
   | "INVALID_LLM_OUTPUT"
-  | "RATE_LIMITED";
+  | "RATE_LIMITED"
+  | "CLIENT_THROTTLED";
 
 export interface ManagerLlmProfileInput {
   nickname: string;
@@ -45,6 +54,62 @@ export interface ManagerLlmDifficultyEvaluation {
   reason: string;
 }
 
+export interface ManagerLlmQuestSeed extends ManagerLlmQuestInput {
+  linkedMilestoneId: string;
+}
+
+export interface ManagerLlmRecoveryQuest extends ManagerLlmQuestSeed {
+  recoveryReason: string;
+}
+
+export interface ManagerGoalPlan {
+  goalSummary: string;
+  horizon: "month" | "quarter";
+  milestones: Array<{
+    id: string;
+    title: string;
+    targetWeek: number;
+    successCriteria: string[];
+  }>;
+  monthlyPlan: Array<{
+    monthIndex: number;
+    focus: string;
+    milestoneIds: string[];
+  }>;
+  weeklyPlan: Array<{
+    weekIndex: number;
+    focus: string;
+    targetOutcome: string;
+    suggestedQuestThemes: string[];
+  }>;
+  dailySeeds: ManagerLlmQuestSeed[];
+  risks: string[];
+  rebalancingPolicy: {
+    onSuccess: string;
+    onFailureTimeShortage: string;
+    onFailureTooHard: string;
+    onSkippedDays: string;
+  };
+}
+
+export interface ManagerPlanRebalance {
+  rebalancedPlan: ManagerGoalPlan;
+  changes: Array<{
+    scope: "daily" | "weekly" | "milestone";
+    reason: "success_streak" | "failure_time_shortage" | "failure_too_hard" | "skipped_days";
+    before: string;
+    after: string;
+  }>;
+  nextQuest: ManagerLlmRecoveryQuest;
+}
+
+export interface ManagerQuestAcceptancePreview {
+  difficulty: "easy" | "normal" | "hard";
+  rewardExp: number;
+  statEvaluation: ManagerStatEvaluation;
+  reason: string;
+}
+
 export const rewardExpRangeByDifficulty: Record<ManagerLlmDifficultyEvaluation["difficulty"], { min: number; max: number }> = {
   easy: { min: 5, max: 15 },
   normal: { min: 16, max: 35 },
@@ -74,6 +139,8 @@ export interface ManagerLlmRequest {
   persona: ManagerLlmPersonaInput;
   questState: ManagerLlmQuestStateInput;
   recentEvents: ManagerLlmRecentEventInput[];
+  activePlanId?: string | null;
+  activePlan?: ManagerGoalPlan;
 }
 
 export interface ManagerLlmOutputFallback {
@@ -82,6 +149,9 @@ export interface ManagerLlmOutputFallback {
   behaviorIntent: ManagerBehaviorIntent;
   statEvaluation: ManagerStatEvaluation;
   questSuggestion?: ManagerLlmQuestInput;
+  goalPlan?: ManagerGoalPlan;
+  planRebalance?: ManagerPlanRebalance;
+  questAcceptancePreview?: ManagerQuestAcceptancePreview;
 }
 
 export interface ManagerLlmOutputData {
@@ -90,9 +160,14 @@ export interface ManagerLlmOutputData {
   difficultyEvaluation?: ManagerLlmDifficultyEvaluation;
   statEvaluation?: ManagerStatEvaluation;
   behaviorIntent?: ManagerBehaviorIntent;
+  goalPlan?: ManagerGoalPlan;
+  planRebalance?: ManagerPlanRebalance;
+  questAcceptancePreview?: ManagerQuestAcceptancePreview;
   source: ManagerLlmSource;
   fallbackReason?: ManagerLlmFallbackReason;
   promptVersion: typeof managerLlmPromptVersion;
+  storedPlanId?: string;
+  storedRevisionId?: string;
 }
 
 export interface ManagerLlmResponse {
@@ -133,6 +208,8 @@ export function parseManagerLlmRequest(value: unknown): { ok: true; data: Manage
       persona,
       questState,
       recentEvents: value.recentEvents.slice(0, 10).flatMap(parseRecentEvent),
+      activePlanId: nullableBoundedString(value.activePlanId, 80),
+      activePlan: value.activePlan === undefined ? undefined : parseGoalPlan(value.activePlan) ?? undefined,
     },
   };
 }
@@ -162,6 +239,9 @@ export function createFallbackOutput(
   if (outputKind === "difficultyEvaluation") return { difficultyEvaluation: fallback.difficultyEvaluation, ...base };
   if (outputKind === "behaviorIntent") return { behaviorIntent: fallback.behaviorIntent, ...base };
   if (outputKind === "statEvaluation") return { statEvaluation: fallback.statEvaluation, ...base };
+  if (outputKind === "goalPlan") return { goalPlan: fallback.goalPlan, ...base };
+  if (outputKind === "planRebalance") return { planRebalance: fallback.planRebalance, ...base };
+  if (outputKind === "questAcceptancePreview") return { questAcceptancePreview: fallback.questAcceptancePreview, ...base };
   return { questSuggestion: fallback.questSuggestion, ...base };
 }
 
@@ -193,6 +273,21 @@ function getResolvedOutput(
     return normalized === fallback.statEvaluation ? null : { statEvaluation: normalized, ...base };
   }
 
+  if (outputKind === "goalPlan") {
+    const goalPlan = parseGoalPlan(rawOutput.goalPlan);
+    return goalPlan ? { goalPlan, ...base } : null;
+  }
+
+  if (outputKind === "planRebalance") {
+    const planRebalance = parsePlanRebalance(rawOutput.planRebalance);
+    return planRebalance ? { planRebalance, ...base } : null;
+  }
+
+  if (outputKind === "questAcceptancePreview") {
+    const questAcceptancePreview = parseQuestAcceptancePreview(rawOutput.questAcceptancePreview, fallback.questAcceptancePreview);
+    return questAcceptancePreview ? { questAcceptancePreview, ...base } : null;
+  }
+
   const questSuggestion = parseQuest(rawOutput.questSuggestion);
   return questSuggestion ? { questSuggestion, ...base } : null;
 }
@@ -213,6 +308,17 @@ function parseDifficultyEvaluation(value: unknown): ManagerLlmDifficultyEvaluati
   const reason = boundedString(value.reason, 240);
   if (!Number.isInteger(rewardExp) || !isRewardExpInDifficultyRange(value.difficulty, rewardExp) || !reason) return null;
   return { difficulty: value.difficulty, rewardExp, reason };
+}
+
+function parseQuestAcceptancePreview(value: unknown, fallback: ManagerQuestAcceptancePreview | undefined): ManagerQuestAcceptancePreview | null {
+  if (!isRecord(value) || !isDifficulty(value.difficulty)) return null;
+  const rewardExp = Number(value.rewardExp);
+  const reason = boundedString(value.reason, 240);
+  if (!Number.isInteger(rewardExp) || !isRewardExpInDifficultyRange(value.difficulty, rewardExp) || !reason || !fallback) return null;
+
+  const statEvaluation = normalizeManagerStatEvaluation(value.statEvaluation, fallback.statEvaluation);
+  if (statEvaluation === fallback.statEvaluation || statEvaluation.difficulty !== value.difficulty) return null;
+  return { difficulty: value.difficulty, rewardExp, statEvaluation, reason };
 }
 
 function isRewardExpInDifficultyRange(difficulty: ManagerLlmDifficultyEvaluation["difficulty"], rewardExp: number) {
@@ -306,6 +412,87 @@ function parseQuest(value: unknown): ManagerLlmQuestInput | null {
   };
 }
 
+function parseQuestSeed(value: unknown): ManagerLlmQuestSeed | null {
+  const quest = parseQuest(value);
+  if (!quest || !isRecord(value)) return null;
+  const linkedMilestoneId = boundedString(value.linkedMilestoneId, 40);
+  return linkedMilestoneId ? { ...quest, linkedMilestoneId } : null;
+}
+
+function parseGoalPlan(value: unknown): ManagerGoalPlan | null {
+  if (!isRecord(value) || !isPlanHorizon(value.horizon)) return null;
+  const goalSummary = boundedString(value.goalSummary, 160);
+  const milestones = parseArray(value.milestones, parseMilestone, 8);
+  const monthlyPlan = parseArray(value.monthlyPlan, parseMonthlyPlanItem, 4);
+  const weeklyPlan = parseArray(value.weeklyPlan, parseWeeklyPlanItem, 16);
+  const dailySeeds = parseArray(value.dailySeeds, parseQuestSeed, 14);
+  const risks = parseStringArray(value.risks, 6, 120);
+  const rebalancingPolicy = parseRebalancingPolicy(value.rebalancingPolicy);
+  if (!goalSummary || milestones.length === 0 || weeklyPlan.length === 0 || dailySeeds.length === 0 || !rebalancingPolicy) return null;
+  return { goalSummary, horizon: value.horizon, milestones, monthlyPlan, weeklyPlan, dailySeeds, risks, rebalancingPolicy };
+}
+
+function parsePlanRebalance(value: unknown): ManagerPlanRebalance | null {
+  if (!isRecord(value)) return null;
+  const rebalancedPlan = parseGoalPlan(value.rebalancedPlan);
+  const changes = parseArray(value.changes, parsePlanChange, 12);
+  const nextQuest = parseRecoveryQuest(value.nextQuest);
+  return rebalancedPlan && changes.length > 0 && nextQuest ? { rebalancedPlan, changes, nextQuest } : null;
+}
+
+function parseRecoveryQuest(value: unknown): ManagerLlmRecoveryQuest | null {
+  const questSeed = parseQuestSeed(value);
+  if (!questSeed || !isRecord(value)) return null;
+  const recoveryReason = boundedString(value.recoveryReason, 160);
+  return recoveryReason ? { ...questSeed, recoveryReason } : null;
+}
+
+function parseMilestone(value: unknown): ManagerGoalPlan["milestones"][number] | null {
+  if (!isRecord(value)) return null;
+  const id = boundedString(value.id, 40);
+  const title = boundedString(value.title, 80);
+  const targetWeek = Number(value.targetWeek);
+  const successCriteria = parseStringArray(value.successCriteria, 5, 120);
+  if (!id || !title || !Number.isInteger(targetWeek) || targetWeek < 1 || targetWeek > 52 || successCriteria.length === 0) return null;
+  return { id, title, targetWeek, successCriteria };
+}
+
+function parseMonthlyPlanItem(value: unknown): ManagerGoalPlan["monthlyPlan"][number] | null {
+  if (!isRecord(value)) return null;
+  const monthIndex = Number(value.monthIndex);
+  const focus = boundedString(value.focus, 120);
+  const milestoneIds = parseStringArray(value.milestoneIds, 8, 40);
+  if (!Number.isInteger(monthIndex) || monthIndex < 1 || monthIndex > 12 || !focus) return null;
+  return { monthIndex, focus, milestoneIds };
+}
+
+function parseWeeklyPlanItem(value: unknown): ManagerGoalPlan["weeklyPlan"][number] | null {
+  if (!isRecord(value)) return null;
+  const weekIndex = Number(value.weekIndex);
+  const focus = boundedString(value.focus, 120);
+  const targetOutcome = boundedString(value.targetOutcome, 120);
+  const suggestedQuestThemes = parseStringArray(value.suggestedQuestThemes, 8, 80);
+  if (!Number.isInteger(weekIndex) || weekIndex < 1 || weekIndex > 52 || !focus || !targetOutcome || suggestedQuestThemes.length === 0) return null;
+  return { weekIndex, focus, targetOutcome, suggestedQuestThemes };
+}
+
+function parseRebalancingPolicy(value: unknown): ManagerGoalPlan["rebalancingPolicy"] | null {
+  if (!isRecord(value)) return null;
+  const onSuccess = boundedString(value.onSuccess, 160);
+  const onFailureTimeShortage = boundedString(value.onFailureTimeShortage, 160);
+  const onFailureTooHard = boundedString(value.onFailureTooHard, 160);
+  const onSkippedDays = boundedString(value.onSkippedDays, 160);
+  if (!onSuccess || !onFailureTimeShortage || !onFailureTooHard || !onSkippedDays) return null;
+  return { onSuccess, onFailureTimeShortage, onFailureTooHard, onSkippedDays };
+}
+
+function parsePlanChange(value: unknown): ManagerPlanRebalance["changes"][number] | null {
+  if (!isRecord(value) || !isPlanChangeScope(value.scope) || !isPlanChangeReason(value.reason)) return null;
+  const before = boundedString(value.before, 160);
+  const after = boundedString(value.after, 160);
+  return before && after ? { scope: value.scope, reason: value.reason, before, after } : null;
+}
+
 function isQuestTitleTooCloseToGoal(title: string, goal: string): boolean {
   const normalizedTitle = normalizeComparableText(title);
   const normalizedGoal = normalizeComparableText(goal);
@@ -325,6 +512,22 @@ function boundedString(value: unknown, maxLength: number): string | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
   return trimmed.slice(0, maxLength);
+}
+
+function parseStringArray(value: unknown, maxItems: number, maxLength: number): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const parsed = boundedString(item, maxLength);
+    return parsed ? [parsed] : [];
+  }).slice(0, maxItems);
+}
+
+function parseArray<T>(value: unknown, parser: (item: unknown) => T | null, maxItems: number): T[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const parsed = parser(item);
+    return parsed ? [parsed] : [];
+  }).slice(0, maxItems);
 }
 
 function boundedManagerLine(value: unknown): string | null {
@@ -350,7 +553,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isOutputKind(value: unknown): value is ManagerLlmOutputKind {
-  return value === "managerLine" || value === "questSuggestion" || value === "difficultyEvaluation" || value === "statEvaluation" || value === "behaviorIntent";
+  return (
+    value === "managerLine" ||
+    value === "questSuggestion" ||
+    value === "difficultyEvaluation" ||
+    value === "statEvaluation" ||
+    value === "behaviorIntent" ||
+    value === "goalPlan" ||
+    value === "planRebalance" ||
+    value === "questAcceptancePreview"
+  );
 }
 
 function isManagerMood(value: unknown): value is ManagerContext["currentMood"] {
@@ -380,6 +592,18 @@ function isQuestType(value: unknown): value is ManagerLlmQuestInput["type"] {
 
 function isDifficulty(value: unknown): value is ManagerLlmQuestInput["difficulty"] {
   return value === "easy" || value === "normal" || value === "hard";
+}
+
+function isPlanHorizon(value: unknown): value is ManagerGoalPlan["horizon"] {
+  return value === "month" || value === "quarter";
+}
+
+function isPlanChangeScope(value: unknown): value is ManagerPlanRebalance["changes"][number]["scope"] {
+  return value === "daily" || value === "weekly" || value === "milestone";
+}
+
+function isPlanChangeReason(value: unknown): value is ManagerPlanRebalance["changes"][number]["reason"] {
+  return value === "success_streak" || value === "failure_time_shortage" || value === "failure_too_hard" || value === "skipped_days";
 }
 
 function isCategory(value: unknown): value is ManagerLlmProfileInput["category"] {

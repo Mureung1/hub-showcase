@@ -95,4 +95,39 @@ describe("manager LLM routes", () => {
       },
     });
   });
+
+  it("returns and stores a goal plan fallback when manager LLM is disabled", async () => {
+    const storedPlans: unknown[] = [];
+    const app = createApiApp(createMemoryQuestEventStore(), undefined, { enabled: false }, {
+      async saveGoalPlan(input) {
+        storedPlans.push(input);
+        return { id: "plan-1", createdAt: "2026-07-30T00:00:00.000Z" };
+      },
+      async savePlanRevision() {
+        throw new Error("not expected");
+      },
+    });
+    const body = { ...createRequestBody(), outputKind: "goalPlan" };
+
+    const response = await app.request("/api/manager/goal-plan", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toMatchObject({
+      ok: true,
+      data: {
+        source: "rule_fallback",
+        fallbackReason: "LLM_DISABLED",
+        goalPlan: {
+          horizon: "month",
+        },
+        storedPlanId: "plan-1",
+      },
+    });
+    expect(storedPlans).toHaveLength(1);
+  });
 });

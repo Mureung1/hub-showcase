@@ -1,5 +1,5 @@
-import { managerLlmPromptVersion, type ManagerLlmOutputKind, type ManagerLlmRequest } from "../contracts/managerLlm";
-import type { ManagerLlmProvider, ManagerLlmRateLimiter, ManagerLlmRuntime } from "../routes/managerLlm";
+import { managerLlmPromptVersion, type ManagerLlmOutputKind, type ManagerLlmRequest } from "../contracts/managerLlm.js";
+import type { ManagerLlmProvider, ManagerLlmRateLimiter, ManagerLlmRuntime } from "../routes/managerLlm.js";
 
 export const managerLlmEnvNames = {
   apiKey: "OPENAI_API_KEY",
@@ -57,7 +57,7 @@ export function createOpenAiManagerLlmProvider(
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: config.model,
+          model: selectModelForOutputKind(config, request.outputKind),
           messages: [
             {
               role: "system",
@@ -88,6 +88,13 @@ export function createOpenAiManagerLlmProvider(
       return parseOpenAiToolArguments(await response.json());
     },
   };
+}
+
+function selectModelForOutputKind(config: OpenAiManagerLlmConfig, outputKind: ManagerLlmOutputKind): string {
+  if (outputKind === "goalPlan" || outputKind === "planRebalance" || outputKind === "questAcceptancePreview") {
+    return config.fallbackModel;
+  }
+  return config.model;
 }
 
 export function createInMemoryManagerLlmRateLimiter(input: {
@@ -135,6 +142,36 @@ function createSystemPrompt(outputKind: ManagerLlmOutputKind): string {
 }
 
 function createOutputKindInstructions(outputKind: ManagerLlmOutputKind): string[] {
+  if (outputKind === "goalPlan") {
+    return [
+      "Create a monthly, weekly, daily, and milestone plan from the long-term goal.",
+      "Break broad goals like strength training or exam excellence into concrete milestones and small daily seeds.",
+      "Daily seeds must be immediately actionable, not copied from the long-term goal.",
+      "Keep plans realistic for profile.dailyMinutes and profile.questSize.",
+      "Reward policy: easy 5-15 EXP, normal 16-35 EXP, hard 36-60 EXP.",
+    ];
+  }
+
+  if (outputKind === "planRebalance") {
+    return [
+      "Rebalance the existing plan from recent success, failure, recovery, skipped-day, and failure reason signals.",
+      "Change only the smallest necessary daily, weekly, or milestone part.",
+      "For time shortage, reduce amount. For too hard, lower difficulty. For success streak, increase only one small variable.",
+      "Return nextQuest as the single concrete quest the user should see now, linked to the adjusted milestone.",
+      "The full rebalancedPlan is for storage and future scheduling; UI should show only nextQuest and a short recovery reason.",
+      "Reward policy: easy 5-15 EXP, normal 16-35 EXP, hard 36-60 EXP.",
+    ];
+  }
+
+  if (outputKind === "questAcceptancePreview") {
+    return [
+      "Evaluate the edited quest immediately before acceptance.",
+      "Return one consistent difficulty, rewardExp, and statEvaluation.",
+      "The statEvaluation difficulty and statBudget must match the selected difficulty.",
+      "Reward policy: easy 5-15 EXP, normal 16-35 EXP, hard 36-60 EXP.",
+    ];
+  }
+
   if (outputKind !== "questSuggestion") return [];
 
   return [
@@ -158,6 +195,8 @@ function toPromptInput(request: ManagerLlmRequest) {
     persona: request.persona,
     questState: request.questState,
     recentEvents: request.recentEvents.slice(0, 10),
+    activePlanId: request.activePlanId ?? null,
+    activePlan: request.activePlan,
   };
 }
 
@@ -281,6 +320,71 @@ function createOutputSchema(outputKind: ManagerLlmOutputKind) {
     };
   }
 
+  if (outputKind === "questAcceptancePreview") {
+    return {
+      type: "object",
+      additionalProperties: false,
+      required: ["questAcceptancePreview"],
+      properties: {
+        questAcceptancePreview: {
+          type: "object",
+          additionalProperties: false,
+          required: ["difficulty", "rewardExp", "statEvaluation", "reason"],
+          properties: {
+            difficulty: { type: "string", enum: ["easy", "normal", "hard"] },
+            rewardExp: { type: "integer", minimum: 5, maximum: 60, description: "Must match difficulty: easy 5-15, normal 16-35, hard 36-60." },
+            statEvaluation: createStatEvaluationObjectSchema(),
+            reason: { type: "string" },
+          },
+        },
+      },
+    };
+  }
+
+  if (outputKind === "goalPlan") {
+    return {
+      type: "object",
+      additionalProperties: false,
+      required: ["goalPlan"],
+      properties: {
+        goalPlan: createGoalPlanObjectSchema(),
+      },
+    };
+  }
+
+  if (outputKind === "planRebalance") {
+    return {
+      type: "object",
+      additionalProperties: false,
+      required: ["planRebalance"],
+      properties: {
+        planRebalance: {
+          type: "object",
+          additionalProperties: false,
+          required: ["rebalancedPlan", "changes", "nextQuest"],
+          properties: {
+            rebalancedPlan: createGoalPlanObjectSchema(),
+            changes: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                required: ["scope", "reason", "before", "after"],
+                properties: {
+                  scope: { type: "string", enum: ["daily", "weekly", "milestone"] },
+                  reason: { type: "string", enum: ["success_streak", "failure_time_shortage", "failure_too_hard", "skipped_days"] },
+                  before: { type: "string" },
+                  after: { type: "string" },
+                },
+              },
+            },
+            nextQuest: createRecoveryQuestObjectSchema(),
+          },
+        },
+      },
+    };
+  }
+
   return {
     type: "object",
     additionalProperties: false,
@@ -318,6 +422,138 @@ function createOutputSchema(outputKind: ManagerLlmOutputKind) {
             maximum: 60,
             description: "Must match difficulty: easy 5-15, normal 16-35, hard 36-60.",
           },
+        },
+      },
+    },
+  };
+}
+
+function createStatEvaluationObjectSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["difficulty", "statBudget", "primaryStats", "statDeltas", "reason"],
+    properties: {
+      difficulty: { type: "string", enum: ["easy", "normal", "hard"] },
+      statBudget: { type: "integer", enum: [3, 7, 15] },
+      primaryStats: {
+        type: "array",
+        items: { type: "string", enum: ["diligence", "persistence", "creativity", "knowledge", "strength", "agility", "stamina", "charm"] },
+      },
+      statDeltas: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["stat", "amount"],
+          properties: {
+            stat: { type: "string", enum: ["diligence", "persistence", "creativity", "knowledge", "strength", "agility", "stamina", "charm"] },
+            amount: { type: "integer", minimum: 1 },
+          },
+        },
+      },
+      reason: { type: "string" },
+    },
+  };
+}
+
+function createQuestSeedObjectSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["title", "type", "amount", "unit", "difficulty", "deadline", "rewardExp", "linkedMilestoneId"],
+    properties: {
+      title: { type: "string", description: "Concrete next action. Do not copy the long-term goal." },
+      type: { type: "string", enum: ["time", "quantity", "action"] },
+      amount: { type: "integer", minimum: 1 },
+      unit: { type: "string" },
+      difficulty: { type: "string", enum: ["easy", "normal", "hard"] },
+      deadline: { type: "string" },
+      rewardExp: { type: "integer", minimum: 5, maximum: 60 },
+      linkedMilestoneId: { type: "string" },
+    },
+  };
+}
+
+function createRecoveryQuestObjectSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["title", "type", "amount", "unit", "difficulty", "deadline", "rewardExp", "linkedMilestoneId", "recoveryReason"],
+    properties: {
+      title: { type: "string", description: "Concrete quest to show immediately. Do not copy the long-term goal." },
+      type: { type: "string", enum: ["time", "quantity", "action"] },
+      amount: { type: "integer", minimum: 1 },
+      unit: { type: "string" },
+      difficulty: { type: "string", enum: ["easy", "normal", "hard"] },
+      deadline: { type: "string" },
+      rewardExp: { type: "integer", minimum: 5, maximum: 60, description: "Must match difficulty: easy 5-15, normal 16-35, hard 36-60." },
+      linkedMilestoneId: { type: "string" },
+      recoveryReason: { type: "string", description: "Short reason for this immediate quest after success/failure/recovery signals." },
+    },
+  };
+}
+
+function createGoalPlanObjectSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["goalSummary", "horizon", "milestones", "monthlyPlan", "weeklyPlan", "dailySeeds", "risks", "rebalancingPolicy"],
+    properties: {
+      goalSummary: { type: "string" },
+      horizon: { type: "string", enum: ["month", "quarter"] },
+      milestones: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["id", "title", "targetWeek", "successCriteria"],
+          properties: {
+            id: { type: "string" },
+            title: { type: "string" },
+            targetWeek: { type: "integer", minimum: 1, maximum: 52 },
+            successCriteria: { type: "array", items: { type: "string" } },
+          },
+        },
+      },
+      monthlyPlan: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["monthIndex", "focus", "milestoneIds"],
+          properties: {
+            monthIndex: { type: "integer", minimum: 1, maximum: 12 },
+            focus: { type: "string" },
+            milestoneIds: { type: "array", items: { type: "string" } },
+          },
+        },
+      },
+      weeklyPlan: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["weekIndex", "focus", "targetOutcome", "suggestedQuestThemes"],
+          properties: {
+            weekIndex: { type: "integer", minimum: 1, maximum: 52 },
+            focus: { type: "string" },
+            targetOutcome: { type: "string" },
+            suggestedQuestThemes: { type: "array", items: { type: "string" } },
+          },
+        },
+      },
+      dailySeeds: { type: "array", items: createQuestSeedObjectSchema() },
+      risks: { type: "array", items: { type: "string" } },
+      rebalancingPolicy: {
+        type: "object",
+        additionalProperties: false,
+        required: ["onSuccess", "onFailureTimeShortage", "onFailureTooHard", "onSkippedDays"],
+        properties: {
+          onSuccess: { type: "string" },
+          onFailureTimeShortage: { type: "string" },
+          onFailureTooHard: { type: "string" },
+          onSkippedDays: { type: "string" },
         },
       },
     },

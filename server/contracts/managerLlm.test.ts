@@ -29,6 +29,87 @@ const fallback: ManagerLlmOutputFallback = {
     ],
     reason: "fallback stat evaluation",
   },
+  goalPlan: {
+    goalSummary: "Build a backend portfolio",
+    horizon: "month",
+    milestones: [{ id: "m1", title: "First portfolio draft", targetWeek: 1, successCriteria: ["Draft one project summary"] }],
+    monthlyPlan: [{ monthIndex: 1, focus: "Portfolio foundation", milestoneIds: ["m1"] }],
+    weeklyPlan: [{ weekIndex: 1, focus: "Draft", targetOutcome: "One summary", suggestedQuestThemes: ["portfolio writing"] }],
+    dailySeeds: [
+      {
+        title: "Draft one project bullet",
+        type: "quantity",
+        amount: 1,
+        unit: "bullet",
+        difficulty: "easy",
+        deadline: "today 23:59",
+        rewardExp: 8,
+        linkedMilestoneId: "m1",
+      },
+    ],
+    risks: ["time shortage"],
+    rebalancingPolicy: {
+      onSuccess: "increase one small step",
+      onFailureTimeShortage: "halve the amount",
+      onFailureTooHard: "lower difficulty",
+      onSkippedDays: "restart with easy seed",
+    },
+  },
+  planRebalance: {
+    rebalancedPlan: {
+      goalSummary: "Build a backend portfolio",
+      horizon: "month",
+      milestones: [{ id: "m1", title: "First portfolio draft", targetWeek: 1, successCriteria: ["Draft one project summary"] }],
+      monthlyPlan: [{ monthIndex: 1, focus: "Portfolio foundation", milestoneIds: ["m1"] }],
+      weeklyPlan: [{ weekIndex: 1, focus: "Draft", targetOutcome: "One summary", suggestedQuestThemes: ["portfolio writing"] }],
+      dailySeeds: [
+        {
+          title: "Draft one project bullet",
+          type: "quantity",
+          amount: 1,
+          unit: "bullet",
+          difficulty: "easy",
+          deadline: "today 23:59",
+          rewardExp: 8,
+          linkedMilestoneId: "m1",
+        },
+      ],
+      risks: ["time shortage"],
+      rebalancingPolicy: {
+        onSuccess: "increase one small step",
+        onFailureTimeShortage: "halve the amount",
+        onFailureTooHard: "lower difficulty",
+        onSkippedDays: "restart with easy seed",
+      },
+    },
+    changes: [{ scope: "daily", reason: "failure_time_shortage", before: "20 minutes", after: "10 minutes" }],
+    nextQuest: {
+      title: "Draft one project bullet",
+      type: "quantity",
+      amount: 1,
+      unit: "bullet",
+      difficulty: "easy",
+      deadline: "today 23:59",
+      rewardExp: 8,
+      linkedMilestoneId: "m1",
+      recoveryReason: "shorten after time shortage",
+    },
+  },
+  questAcceptancePreview: {
+    difficulty: "normal",
+    rewardExp: 20,
+    statEvaluation: {
+      difficulty: "normal",
+      statBudget: 7,
+      primaryStats: ["diligence"],
+      statDeltas: [
+        { stat: "diligence", amount: 5 },
+        { stat: "stamina", amount: 2 },
+      ],
+      reason: "fallback stat evaluation",
+    },
+    reason: "fallback acceptance preview",
+  },
 };
 
 describe("manager LLM contract", () => {
@@ -264,6 +345,126 @@ describe("manager LLM contract", () => {
         fallbackReason: "INVALID_LLM_OUTPUT",
         promptVersion: managerLlmPromptVersion,
       },
+    });
+  });
+
+  it("accepts a bounded monthly, weekly, daily, and milestone goal plan", () => {
+    expect(
+      resolveManagerLlmOutput({
+        outputKind: "goalPlan",
+        rawOutput: { goalPlan: fallback.goalPlan },
+        fallback,
+      }),
+    ).toEqual({
+      ok: true,
+      data: {
+        goalPlan: fallback.goalPlan,
+        source: "llm",
+        promptVersion: managerLlmPromptVersion,
+      },
+    });
+  });
+
+  it("accepts plan rebalancing only with a concrete next quest", () => {
+    const nextQuest = {
+      title: "Draft one smaller project bullet",
+      type: "quantity",
+      amount: 1,
+      unit: "bullet",
+      difficulty: "easy",
+      deadline: "today 23:59",
+      rewardExp: 8,
+      linkedMilestoneId: "m1",
+      recoveryReason: "shorten after time shortage",
+    };
+
+    expect(
+      resolveManagerLlmOutput({
+        outputKind: "planRebalance",
+        rawOutput: {
+          planRebalance: {
+            ...fallback.planRebalance,
+            nextQuest,
+          },
+        },
+        fallback,
+      }),
+    ).toEqual({
+      ok: true,
+      data: {
+        planRebalance: {
+          ...fallback.planRebalance,
+          nextQuest,
+        },
+        source: "llm",
+        promptVersion: managerLlmPromptVersion,
+      },
+    });
+  });
+
+  it("falls back when the rebalanced next quest reward does not match difficulty", () => {
+    const result = resolveManagerLlmOutput({
+      outputKind: "planRebalance",
+      rawOutput: {
+        planRebalance: {
+          ...fallback.planRebalance,
+          nextQuest: {
+            title: "Draft one smaller project bullet",
+            type: "quantity",
+            amount: 1,
+            unit: "bullet",
+            difficulty: "easy",
+            deadline: "today 23:59",
+            rewardExp: 40,
+            linkedMilestoneId: "m1",
+            recoveryReason: "shorten after time shortage",
+          },
+        },
+      },
+      fallback,
+    });
+
+    expect(result.data.source).toBe("rule_fallback");
+    expect(result.data.fallbackReason).toBe("INVALID_LLM_OUTPUT");
+  });
+
+  it("falls back when a plan daily seed has reward outside its difficulty range", () => {
+    const result = resolveManagerLlmOutput({
+      outputKind: "goalPlan",
+      rawOutput: {
+        goalPlan: {
+          ...fallback.goalPlan,
+          dailySeeds: [
+            {
+              title: "Draft one project bullet",
+              type: "quantity",
+              amount: 1,
+              unit: "bullet",
+              difficulty: "normal",
+              deadline: "today 23:59",
+              rewardExp: 50,
+              linkedMilestoneId: "m1",
+            },
+          ],
+        },
+      },
+      fallback,
+    });
+
+    expect(result.data.source).toBe("rule_fallback");
+    expect(result.data.fallbackReason).toBe("INVALID_LLM_OUTPUT");
+  });
+
+  it("accepts quest acceptance preview only when difficulty, exp, and stat budget agree", () => {
+    expect(
+      resolveManagerLlmOutput({
+        outputKind: "questAcceptancePreview",
+        rawOutput: { questAcceptancePreview: fallback.questAcceptancePreview },
+        fallback,
+      }).data,
+    ).toMatchObject({
+      questAcceptancePreview: fallback.questAcceptancePreview,
+      source: "llm",
     });
   });
 });

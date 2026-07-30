@@ -5,14 +5,14 @@ import {
   parseCreateQuestEventRequest,
   parseGetQuestEventsQuery,
   toQuestEventResponseItem,
-} from "../contracts/questEvents";
+} from "../contracts/questEvents.js";
 import type {
   ApiResponse,
   CreateQuestEventResponse,
   GetQuestEventsResponse,
   ManagerContextResponse,
-} from "../contracts/questEvents";
-import type { QuestEventStore } from "../lib/questEventStore";
+} from "../contracts/questEvents.js";
+import type { QuestEventStore } from "../lib/questEventStore.js";
 
 export function registerQuestEventRoutes(app: Hono, store: QuestEventStore) {
   app.post("/api/quest-events", async (context) => {
