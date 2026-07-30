@@ -11,6 +11,7 @@ import { normalizeLoginId, validatePassword } from '../src/lib/authId.js'
 import { resolveCnuWeekResult } from '../src/lib/cnuWeekFallback.js'
 import { findSecurityQuestion, normalizeSecurityAnswer, validateQuestionId, validateSecurityAnswer } from '../src/lib/securityQuestions.js'
 import { isSupportedUniversity } from '../src/lib/universities.js'
+import { SECURITY_HEADERS } from './securityHeaders.js'
 import { getSecurityQuestionByLoginId, registerSecurityQuestion, verifyAndResetPassword } from './auth/securityQuestionStore.js'
 import * as cnuUnivMealAdapter from './univMealAdapters/cnu.js'
 import { lookupFood, toFoodItemResponse } from './nutrition/foodLookup.js'
@@ -264,6 +265,14 @@ const app = express()
 // Render/Vercel 둘 다 리버스 프록시 한 홉을 거쳐 요청이 들어온다. 이걸 켜지 않으면
 // req.ip가 프록시 자신의 IP로 고정돼 아래 rate limiter가 모든 사용자를 한 버킷으로 묶어버린다.
 app.set('trust proxy', 1)
+
+// 보안 응답 헤더. 값과 그렇게 정한 이유는 server/securityHeaders.js에 있다 —
+// vercel.json의 headers 블록과 같은 값이어야 하고, securityHeaders.test.js가 그걸 강제한다.
+app.use((req, res, next) => {
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v)
+  next()
+})
+
 // 사진(base64)을 받는 /api/gemini만 큰 본문이 필요하다 — 나머지 라우트까지 15mb를 전부 허용하면
 // 이미지가 필요 없는 라우트(/api/fooddb 등)로도 대용량 POST를 보내 메모리를 낭비시키기 쉬워진다.
 // 8mb인 이유: 클라이언트(PhotoUpload.jsx의 resizeImageToBase64)가 업로드 즉시 1024px/quality 0.85로
