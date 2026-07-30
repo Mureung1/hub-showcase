@@ -105,11 +105,13 @@ const envSchema = z.object({
   /**
    * 단계 6(판정)·재검토 호출 타임아웃(ms) — **분류보다 길다**(§2.4, 2026-07-30 개정).
    *
-   * 45초로는 실측에서 **호출의 40~45%가 초과**해 재시도되어 지연이 오히려 배가됐다.
-   * p90이 65~66초이므로 100초로 둔다. **타임아웃을 올려 지연을 줄이는 역설**이며,
-   * 근거는 §14.5의 분위수 실측이다.
+   * 실측 분포가 p50 83초·p90 111초·최대 115초라 정상 응답을 자르지 않는 값이 필요하다.
+   * **120초는 잠정값이다** — F 회귀에서 fallback 비율(`judgeFailRate`)을 보고 조정한다.
+   *
+   * ⚠️ §2.4.2 — 이 타임아웃은 **재시도하지 않고** §2.5의 fallback stance로 직행한다.
+   * 그래서 이 값이 곧 쟁점당 지연의 상한이 된다.
    */
-  MANAGER_JUDGE_TIMEOUT_MS: z.coerce.number().int().positive().default(100000),
+  MANAGER_JUDGE_TIMEOUT_MS: z.coerce.number().int().positive().default(120000),
   /**
    * 단계 6에만 적용하는 OpenRouter `reasoning.effort`(§15.3). 빈 문자열이면 무설정.
    *

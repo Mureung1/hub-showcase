@@ -114,18 +114,46 @@ export function formatAgendas(
  * OpenRouter 호출 1회. 타임아웃·상태코드를 errorCode 5종으로 분류한다(§2.4).
  * 구조화 출력 거부는 비재시도(재시도해도 소용없다)로 명확히 드러낸다.
  */
+export interface CallOptions {
+  /** §2.4 — 단계별로 다르다. 미지정이면 분류 기준(45초). */
+  timeoutMs?: number;
+  /**
+   * §2.4.2 — 타임아웃을 재시도할 것인가. **단계 6·재검토는 false**다.
+   *
+   * 타임아웃은 "이 호출이 오래 걸린다"는 뜻이고 같은 입력·같은 모델로 다시 부르면
+   * 비슷하게 오래 걸린다. 기대값은 낮은데 지연은 확실히 배가된다. 대신 §2.5의
+   * fallback stance로 직행하면 사용자가 3열 원문으로 판단하므로 정보 손실이 없다.
+   */
+  retryOnTimeout?: boolean;
+}
+
 export async function callOpenRouter(
   body: OpenRouterRequestBody,
-  /** §2.4 — 단계별로 다르다. 미지정이면 분류 기준(45초). */
-  timeoutMs?: number,
+  options: CallOptions = {},
 ): Promise<{ content: string; outputTokens: number | null }> {
   const env = loadEnv();
+  const { timeoutMs, retryOnTimeout = true } = options;
   const controller = new AbortController();
   const timer = setTimeout(
     () => controller.abort(),
     timeoutMs ?? env.MANAGER_TIMEOUT_MS,
   );
 
+  const asTimeout = (): ManagerCallError =>
+    new ManagerCallError(
+      ERROR_CODES.PROVIDER_TIMEOUT,
+      retryOnTimeout,
+      "Manager가 제한 시간 안에 응답하지 않았습니다.",
+    );
+
+  /**
+   * ⚠️ **타이머를 여기서 해제하지 않는다** (§2.4.1).
+   *
+   * `fetch`는 응답 **헤더가 도착하면** resolve하고, 생성 시간 전부는 아래
+   * `response.text()`에 들어간다. 예전에는 `finally`로 여기서 타이머를 껐고,
+   * 그 결과 3초 타임아웃을 걸어도 156.5초 만에 정상 반환했다 — 생성 구간 전체가
+   * 무방비였다. 해제는 **본문을 다 읽은 뒤** 한 번만 한다.
+   */
   let response: Response;
   try {
     response = await fetch(OPENROUTER_URL, {
@@ -138,23 +166,30 @@ export async function callOpenRouter(
       signal: controller.signal,
     });
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      throw new ManagerCallError(
-        ERROR_CODES.PROVIDER_TIMEOUT,
-        true,
-        "Manager가 제한 시간 안에 응답하지 않았습니다.",
-      );
-    }
+    clearTimeout(timer);
+    if (error instanceof Error && error.name === "AbortError") throw asTimeout();
     throw new ManagerCallError(
       ERROR_CODES.NETWORK_ERROR,
       true,
       "Manager 호출 중 네트워크 오류가 발생했습니다.",
     );
+  }
+
+  let text: string;
+  try {
+    // 여기가 실제 생성 구간이다. abort되면 AbortError가 여기서 난다.
+    text = await response.text();
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") throw asTimeout();
+    throw new ManagerCallError(
+      ERROR_CODES.NETWORK_ERROR,
+      true,
+      "Manager 응답을 읽는 중 오류가 발생했습니다.",
+    );
   } finally {
     clearTimeout(timer);
   }
 
-  const text = await response.text();
   let parsed: z.infer<typeof OpenRouterResponseSchema>;
   try {
     parsed = OpenRouterResponseSchema.parse(JSON.parse(text));

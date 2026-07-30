@@ -105,10 +105,11 @@ export function createOpenRouterRechecker(): AgendaRechecker {
         reasoningEffort: env.MANAGER_JUDGE_REASONING_EFFORT,
       });
       return withOneRetry(async () => {
-        const { content, outputTokens } = await callOpenRouter(
-          body,
-          env.MANAGER_JUDGE_TIMEOUT_MS,
-        );
+        // §2.4.2 — 단계 6과 같은 이유로 타임아웃은 재시도하지 않는다.
+        const { content, outputTokens } = await callOpenRouter(body, {
+          timeoutMs: env.MANAGER_JUDGE_TIMEOUT_MS,
+          retryOnTimeout: false,
+        });
         return {
           output: parseOutput(content, AgendaRecheckResultSchema, "재검토"),
           outputTokens,

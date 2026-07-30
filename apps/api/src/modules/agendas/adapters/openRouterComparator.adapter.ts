@@ -117,11 +117,13 @@ export function createOpenRouterComparator(): ConflictComparator {
         reasoningEffort: env.MANAGER_JUDGE_REASONING_EFFORT,
       });
       return withOneRetry(async () => {
-        // §2.4 — 판정은 100초. 45초로는 40~45%가 초과해 재시도되어 지연이 배가됐다.
-        const { content, outputTokens } = await callOpenRouter(
-          body,
-          env.MANAGER_JUDGE_TIMEOUT_MS,
-        );
+        // §2.4 — 판정은 120초. §2.4.2 — **타임아웃은 재시도하지 않는다.**
+        // 같은 입력·같은 모델로 다시 불러도 비슷하게 오래 걸리므로 기대값이 낮고,
+        // 대신 §2.5의 fallback stance로 가면 사용자가 3열 원문으로 판단해 손실이 없다.
+        const { content, outputTokens } = await callOpenRouter(body, {
+          timeoutMs: env.MANAGER_JUDGE_TIMEOUT_MS,
+          retryOnTimeout: false,
+        });
         return {
           output: parseOutput(content, CompareOutputSchema, "단계 6"),
           outputTokens,
