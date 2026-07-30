@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { shouldUseServerApi } from '../../../app/icuApiMode'
 
 export type LearningRunState = 'idle' | 'failed' | 'passed'
 
@@ -64,6 +65,7 @@ type LearningProgressState = {
 }
 
 const storageKey = 'icu.learningProgress'
+const serverMode = shouldUseServerApi()
 
 function createMissionProgress(
   missionId: string,
@@ -129,7 +131,7 @@ function readStoredProgress(): Record<string, LearningMissionProgress> {
 }
 
 function persistProgress(missions: Record<string, LearningMissionProgress>) {
-  if (typeof window === 'undefined') {
+  if (serverMode || typeof window === 'undefined') {
     return
   }
 
@@ -137,7 +139,7 @@ function persistProgress(missions: Record<string, LearningMissionProgress>) {
 }
 
 export const useLearningProgressStore = create<LearningProgressState>((set, get) => ({
-  missions: readStoredProgress(),
+  missions: serverMode ? {} : readStoredProgress(),
   getMissionProgress: (missionId) => get().missions[missionId],
   hydrateMissionProgress: (missions) => {
     const nextMissions = normalizeMissions(missions)
@@ -166,6 +168,10 @@ export const useLearningProgressStore = create<LearningProgressState>((set, get)
   }) => {
     set((state) => {
       const current = state.missions[missionId]
+      const nextCompletedAt =
+        completedAt !== undefined ? completedAt : current?.completedAt ?? null
+      const nextLastTestResult =
+        lastTestResult !== undefined ? lastTestResult : current?.lastTestResult ?? null
       const nextMissions = {
         ...state.missions,
         [missionId]: createMissionProgress(missionId, {
@@ -173,9 +179,9 @@ export const useLearningProgressStore = create<LearningProgressState>((set, get)
           runState,
           runAttemptCount,
           activeStepOffset,
-          completedAt: completedAt ?? current?.completedAt ?? null,
+          completedAt: nextCompletedAt,
           activityLog,
-          lastTestResult: lastTestResult ?? current?.lastTestResult ?? null,
+          lastTestResult: nextLastTestResult,
         }),
       }
 
@@ -211,8 +217,9 @@ export const useLearningProgressStore = create<LearningProgressState>((set, get)
           runState: 'idle',
           runAttemptCount: 0,
           activeStepOffset,
-          completedAt: new Date().toISOString(),
+          completedAt: null,
           activityLog,
+          lastTestResult: null,
         }),
       }
 
@@ -231,7 +238,7 @@ export const useLearningProgressStore = create<LearningProgressState>((set, get)
     })
   },
   resetAllProgress: () => {
-    if (typeof window !== 'undefined') {
+    if (!serverMode && typeof window !== 'undefined') {
       window.localStorage.removeItem(storageKey)
     }
 

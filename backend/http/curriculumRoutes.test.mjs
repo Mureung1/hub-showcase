@@ -70,7 +70,7 @@ describe('curriculum routes', () => {
       status: 200,
       body: {
         plan: {
-          id: 'backend-curriculum-plan',
+          id: expect.stringMatching(/^backend-\d+-[a-z0-9]+$/),
           goal: 'I want to learn backend development',
           todayMission: { fileName: 'main.py' },
           steps: [{ id: 'be-01-01' }],
@@ -149,7 +149,7 @@ describe('curriculum routes', () => {
     expect(recommendResult).toMatchObject({ status: 200 })
     expect(generatedCurriculumRepository.getLatest()).toMatchObject({
       goal: 'Learn Express APIs',
-      plan: { id: 'backend-curriculum-plan' },
+      plan: { id: expect.stringMatching(/^backend-\d+-[a-z0-9]+$/) },
     })
 
     const getResult = await handleCurriculumApiRequest({
@@ -163,7 +163,7 @@ describe('curriculum routes', () => {
       body: {
         generatedCurriculum: {
           goal: 'Learn Express APIs',
-          plan: { id: 'backend-curriculum-plan' },
+          plan: { id: expect.stringMatching(/^backend-\d+-[a-z0-9]+$/) },
         },
       },
     })

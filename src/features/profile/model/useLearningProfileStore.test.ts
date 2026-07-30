@@ -18,7 +18,8 @@ function createLocalStorage(initialEntries: Record<string, string> = {}) {
   } as Storage
 }
 
-async function importStore(localStorage: Storage) {
+async function importStore(localStorage: Storage, mode: 'mock' | 'server' = 'mock') {
+  vi.stubEnv('VITE_ICU_API_MODE', mode)
   vi.stubGlobal('window', { localStorage })
   const module = await import('./useLearningProfileStore')
 
@@ -37,6 +38,7 @@ describe('useLearningProfileStore', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
   })
 
   it('restores a saved profile from localStorage', async () => {
@@ -50,7 +52,7 @@ describe('useLearningProfileStore', () => {
     const localStorage = createLocalStorage()
     const useLearningProfileStore = await importStore(localStorage)
 
-    useLearningProfileStore.getState().saveProfile(savedProfile)
+    await useLearningProfileStore.getState().saveProfile(savedProfile)
 
     expect(localStorage.setItem).toHaveBeenCalledWith(storageKey, JSON.stringify(savedProfile))
     expect(useLearningProfileStore.getState().profile).toEqual(savedProfile)
@@ -60,9 +62,66 @@ describe('useLearningProfileStore', () => {
     const localStorage = createLocalStorage({ [storageKey]: JSON.stringify(savedProfile) })
     const useLearningProfileStore = await importStore(localStorage)
 
-    useLearningProfileStore.getState().resetProfile()
+    await useLearningProfileStore.getState().resetProfile()
 
     expect(localStorage.removeItem).toHaveBeenCalledWith(storageKey)
     expect(useLearningProfileStore.getState().profile).toBeNull()
   })
+
+  it('does not hydrate user data from localStorage in server mode', async () => {
+    const localStorage = createLocalStorage({ [storageKey]: JSON.stringify(savedProfile) })
+    const useLearningProfileStore = await importStore(localStorage, 'server')
+
+    expect(useLearningProfileStore.getState().profile).toBeNull()
+    expect(localStorage.getItem).not.toHaveBeenCalled()
+  })
+
+  it('loads and saves only server-confirmed profiles in server mode', async () => {
+    const localStorage = createLocalStorage()
+    const useLearningProfileStore = await importStore(localStorage, 'server')
+    const loadedProfile = { ...savedProfile, displayName: '서버 사용자' }
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(response({ profile: loadedProfile }))
+      .mockResolvedValueOnce(response({ profile: savedProfile })) as unknown as typeof fetch
+
+    await useLearningProfileStore.getState().loadProfile(fetchImpl)
+    expect(useLearningProfileStore.getState()).toMatchObject({
+      profile: loadedProfile,
+      status: 'ready',
+      error: null,
+    })
+
+    await useLearningProfileStore.getState().saveProfile(savedProfile, fetchImpl)
+    expect(useLearningProfileStore.getState()).toMatchObject({
+      profile: savedProfile,
+      status: 'ready',
+      error: null,
+    })
+    expect(localStorage.setItem).not.toHaveBeenCalled()
+  })
+
+  it('keeps the current profile and exposes an error when server saving fails', async () => {
+    const localStorage = createLocalStorage()
+    const useLearningProfileStore = await importStore(localStorage, 'server')
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(response({ profile: savedProfile }))
+      .mockResolvedValueOnce(response({}, false, 503)) as unknown as typeof fetch
+
+    await useLearningProfileStore.getState().loadProfile(fetchImpl)
+    await expect(
+      useLearningProfileStore.getState().saveProfile({ ...savedProfile, displayName: '변경' }, fetchImpl),
+    ).rejects.toThrow('Profile request failed (503)')
+
+    expect(useLearningProfileStore.getState()).toMatchObject({
+      profile: savedProfile,
+      status: 'error',
+    })
+    expect(localStorage.setItem).not.toHaveBeenCalled()
+  })
 })
+
+function response(body: unknown, ok = true, status = 200) {
+  return { ok, status, json: async () => body }
+}

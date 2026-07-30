@@ -4,18 +4,18 @@
 
 오답노트는 ICU에서 사용자가 틀린 명령, 실습 실패, 헷갈린 개념을 저장하고 다시 풀 수 있게 하는 학습 회고 기능입니다. Git Lab은 첫 연결 대상일 뿐이며, 이후 Learning Workspace, 알고리즘 실습, API 실습 같은 다른 학습 모듈도 같은 방식으로 오답을 남기고 원래 레슨으로 돌아갈 수 있어야 합니다.
 
-React mock 단계에서는 실제 DB, RAG, Notion 연동 없이 브라우저 localStorage에 저장합니다. 목표는 학습 흐름을 `실패 -> 기록 -> 전체보기 -> 출처 레슨 다시 풀기 -> 해결 처리`까지 끊기지 않게 만드는 것입니다.
+기본 server mode에서는 Express API와 configured repository를 사용합니다. mock mode에서만 브라우저 localStorage를 fallback으로 사용합니다. 목표는 학습 흐름을 `실패 -> 기록 -> 전체보기 -> 출처 레슨 다시 풀기 -> 해결 처리`까지 끊기지 않게 만드는 것입니다.
 
 - 라우트: `/mistake-notes`, `/mistake-notes/new` (수동 작성)
 - Navigator 메뉴명: `오답노트`
-- 저장 키: `icu.mistakeNotes`
+- mock mode 저장 키: `icu.mistakeNotes`
 
 ## 주요 사용자 액션
 
 - 오답 저장: 학습 모듈에서 실패한 명령어, 코드 실행 실패, 퀴즈 오답을 오답노트에 자동/수동 추가합니다.
 - 수동 오답 작성: `/mistake-notes/new` 페이지에서 출처 학습 모듈, 레슨 정보, 실패 명령, 실패 이유, 수정 힌트를 직접 작성합니다.
 - 오답 확인: 전체 오답, 미해결 오답, 해결한 오답을 확인합니다.
-- 오답 상세 보기: 목록의 오답 항목(행)을 클릭하여 모달 대화상자로 전체 내용(실패 명령, 원인, 정답 해설)을 상세 확인합니다.
+- 오답 상세 보기·수정: 목록의 오답 항목(행)을 클릭하여 모달에서 전체 내용을 확인하고, 자동 저장·수동 작성 여부와 관계없이 바로 수정합니다.
 - 다시 풀기: 오답이 발생한 출처 학습 모듈과 레슨으로 돌아갑니다.
 - 해결 처리: 다시 풀고 이해한 오답을 해결 상태로 바꿉니다.
 - 다시 열기: 해결 처리한 오답을 미해결 상태로 되돌립니다.
@@ -80,13 +80,13 @@ React mock 단계에서는 실제 DB, RAG, Notion 연동 없이 브라우저 loc
 - 행 내부의 버튼(`다시 풀기`, `해결`, `삭제`) 클릭 시에는 `e.stopPropagation()`으로 모달 오픈을 방지합니다.
 - 모달 구성:
   - **헤더**: 출처 배지, 레슨 ID 배지, 해결 상태 배지, 레슨 제목 (`lessonTitle`), 닫기(`×`) 버튼.
-  - **본문**:
-    - 실패 명령어 / 실행 내용 (다크 테마 모나스페이스 코드 블록)
-    - 실패 이유 / 원인 (텍스트 카드)
-    - 수정 힌트 / 정답 해설 (하늘색 강조 텍스트 카드)
-    - 메타 데이터 (저장 일시, 최근 복습 일시)
-  - **푸터 액션**: `다시 풀기` (출처 레슨 이동), `해결로 표시`/`미해결로 되돌리기`, `삭제` (확인 후 삭제), `닫기`
-- 접근성: `role="dialog"`, `aria-modal="true"`, `ESC` 키 입력 및 배경 클릭 시 닫기 처리.
+  - **본문**: 수동 작성 페이지와 같은 순서로 출처, 레슨 이름·ID, 실패 내용, 실패 이유, 수정 힌트를 표시하고 저장·복습 메타 데이터를 별도로 표시합니다.
+  - **읽기 푸터**: `다시 풀기`, `수정`, `해결로 표시`/`미해결로 되돌리기`, `삭제`, `닫기`
+  - **편집 푸터**: `취소`, `저장`
+- `수정`을 누르면 `source`, `lessonTitle`, `lessonId`, `command`, `reason`, `correction`이 같은 모달 안에서 입력 필드로 전환됩니다.
+- `취소`는 서버 요청 없이 원본 값을 복구합니다. 저장 실패 시에는 draft와 편집 모드를 유지해 재시도할 수 있게 합니다.
+- `id`, `createdAt`, `reviewedAt`, `status`는 내용 수정으로 바뀌지 않습니다. 수정된 source·lessonId는 저장 응답 이후 다시 풀기 경로에 즉시 반영됩니다.
+- 접근성: `role="dialog"`, `aria-modal="true"`, `ESC` 키 입력 및 배경 클릭 시 닫기 처리. 저장 중에는 중복 요청과 입력 유실을 막기 위해 닫기·ESC·배경 클릭을 비활성화합니다.
 
 ### 수동 오답 작성 페이지 (`/mistake-notes/new`)
 
@@ -98,7 +98,6 @@ React mock 단계에서는 실제 DB, RAG, Notion 연동 없이 브라우저 loc
   - **오답 내용**: 실패 명령/코드, 실패 이유, 수정 힌트
   - **중복 경고**: 출처·레슨·명령·이유가 동일한 미해결 오답 존재 시 안내 메시지 표시
   - **저장 처리**: 로컬 store 등록 후 backend API (`POST /api/mistake-notes`) 연동
-
 
 ## 표시 데이터
 
@@ -168,20 +167,18 @@ Git Lab 터미널은 실패 로그에서 오답노트 자동 기록 여부를 �
 Today Hub의 `복습과 오답` 카드에는 오답노트 store의 최근 오답을 우선 표시합니다.
 
 - 저장된 오답이 있으면 최신 미해결 오답을 최대 3개 보여줍니다.
-- 저장된 오답이 없으면 기존 mock `recentMistakes`를 fallback으로 보여줍니다.
+- server mode에서는 API로 불러온 오답을 표시하고, mock mode에서만 정적 `recentMistakes`를 fallback으로 사용합니다.
 - Today Hub 카드의 `전체보기` 링크는 `/mistake-notes`로 이동합니다.
 - 각 오답 항목은 상세 화면 없이 오답노트 전체 화면에서 다시 풀기 액션을 제공합니다.
 
 ## 저장 방식
 
-React mock 단계에서는 Zustand store와 localStorage를 사용합니다.
+Zustand store는 화면 상호작용 상태를 소유합니다. 저장 방식은 실행 mode에 따라 달라집니다.
 
 - store 이름: `useMistakeNoteStore`
-- 저장 키: `icu.mistakeNotes`
-- 저장 형태: `{ notes: MistakeNote[] }`
-- 깨진 JSON 또는 형식이 맞지 않는 값은 빈 목록으로 복구합니다.
-
-Electron/SQLite 단계에서는 같은 필드를 유지하되 저장소만 로컬 DB로 교체합니다.
+- server mode: Core API 응답으로 hydrate/upsert
+- repository mode: in-memory, SQLite, Supabase
+- mock mode: `icu.mistakeNotes` localStorage fallback
 
 ## 구현 우선순위
 
@@ -222,7 +219,7 @@ Electron/SQLite 단계에서는 같은 필드를 유지하되 저장소만 로�
 - AI 자동 해설 생성
 - RAG 기반 개인화 복습 추천
 - Notion 동기화
-- Electron/SQLite 저장
+- Electron packaging
 - 전체 학습 트랙별 통합 오답 분석
 - 코드 실행 실패 자동 수집
 
@@ -233,7 +230,10 @@ Implemented in this task:
 - Server routes: `backend/http/mistakeNoteRoutes.mjs`
 - Application service: `backend/modules/mistake-notes/application/mistakeNoteService.mjs`
 - Domain rules: `backend/modules/mistake-notes/domain/mistakeNote.mjs`
-- In-memory adapter: `backend/modules/mistake-notes/adapters/inMemoryMistakeNoteRepository.mjs`
+- Repository adapters:
+  - `backend/modules/mistake-notes/adapters/inMemoryMistakeNoteRepository.mjs`
+  - `backend/modules/mistake-notes/adapters/sqliteMistakeNoteRepository.mjs`
+  - `backend/modules/mistake-notes/adapters/supabaseMistakeNoteRepository.mjs`
 - Frontend client adapter: `src/features/mistake-notes/api/mistakeNoteClient.ts`
 
 Supported routes:
@@ -246,4 +246,11 @@ DELETE /api/mistake-notes/:noteId
 DELETE /api/mistake-notes
 ```
 
-The React store still owns mock-screen interaction state. The API adapter gives the same feature a server boundary so the storage can later move from in-memory data to SQLite/Supabase/PostgreSQL without changing the page-level flow first.
+`PATCH /api/mistake-notes/:noteId`는 두 요청 형태를 지원합니다.
+
+- 상태 변경: `{ "status": "open" | "resolved" }`
+- 내용 수정: `source`, `lessonId`, `lessonTitle`, `command`, `reason`, `correction` 여섯 필드를 모두 포함한 JSON
+
+내용 수정은 기존 note를 조회한 뒤 여섯 필드만 정규화해 저장하므로 식별자와 생성·복습 시각, 해결 상태를 보존합니다. 필드 검증 실패는 `400 invalid_mistake_note`, 없는 note는 `404 mistake_note_not_found`입니다. 서버 모드의 React 화면은 성공 응답으로 받은 note만 store에 upsert하고, 실패하면 기존 note와 편집 draft를 유지합니다.
+
+The React store owns screen interaction state. In server mode, API success responses hydrate or upsert the store while the selected repository owns persistence.

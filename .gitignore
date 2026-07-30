@@ -1,10 +1,14 @@
 node_modules/
 dist/
 dist-preview/
+coverage/
+.vitest/
+.vercel/
+*.tsbuildinfo
 *.local
 vite-dev.log
 vite-dev.err
-vite-dev.pid
+*.pid
 .icu/
 *.sqlite
 *.sqlite-journal
@@ -17,17 +21,16 @@ __MACOSX/
 
 # Local temporary design references
 .tmp-devchat-design-ref/
-
-# Keep only webfont files that are referenced by the app
-src/components/fonts/**/OTF/
-src/components/fonts/**/TTF/
-src/components/fonts/**/eot/
-src/components/fonts/**/woff/
-src/components/fonts/**/Web/index.html
+/.tmp-*
 
 # Generated documentation assets
 docs/**/*.png
 docs/**/*.svg
+
+# Local planning and issue notes
+docs/issues/
+docs/superpowers/plans/
+docs/superpowers/specs/
 
 # Local environment secrets
 .env
@@ -38,3 +41,9 @@ src/.env.*
 !src/.env.example
 
 .worktrees/
+.claude/
+
+# Project-specific Codex agent instructions are local-only.
+.codex/agents/
+
+*.log

@@ -92,7 +92,7 @@ describe('generated curriculum plan domain', () => {
         tracks,
       }),
     ).toMatchObject({
-      id: 'backend-curriculum-plan',
+      id: expect.stringMatching(/^backend-\d+-[a-z0-9]+$/),
       goal: '백엔드 개발자가 되고 싶어',
       title: '백엔드 시작하기',
       estimatedDuration: '3주 로드맵',

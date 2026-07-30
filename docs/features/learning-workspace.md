@@ -23,12 +23,12 @@ Fallback 규칙:
 
 ## mode별 화면 동작
 
-| mode | 기본 파일 | 오른쪽 패널 | 실행 언어 | v1 실행 방식 |
-| --- | --- | --- | --- | --- |
-| `react` | `App.jsx` / `app.tsx` | `Preview` | `jsx` 또는 `tsx` | 별도 origin의 Preview 앱에서 React 화면을 실제 렌더링 |
-| `linux` | `ops-checklist.sh` | `Terminal` | `shell` | 주요 shell 명령을 mock terminal log로 표시 |
-| `docker` | `Dockerfile` | `Build Log` | `dockerfile` | Dockerfile 필수 instruction을 mock build log로 검증 |
-| `python` | `main.py` / `solution.py` | `Output` | `python` | print/FastAPI/function 신호를 mock output으로 표시 |
+| mode     | 기본 파일                 | 오른쪽 패널 | 실행 언어        | v1 실행 방식                                          |
+| -------- | ------------------------- | ----------- | ---------------- | ----------------------------------------------------- |
+| `react`  | `App.jsx` / `app.tsx`     | `Preview`   | `jsx` 또는 `tsx` | 별도 origin의 Preview 앱에서 React 화면을 실제 렌더링 |
+| `linux`  | `ops-checklist.sh`        | `Terminal`  | `shell`          | 주요 shell 명령을 mock terminal log로 표시            |
+| `docker` | `Dockerfile`              | `Build Log` | `dockerfile`     | Dockerfile 필수 instruction을 mock build log로 검증   |
+| `python` | `main.py` / `solution.py` | `Output`    | `python`         | print/FastAPI/function 신호를 mock output으로 표시    |
 
 React가 아닌 mode에서는 “화면 미리보기 없음”을 보여주지 않습니다. 실행 전에는 각 mode에 맞는 대기 문구를 보여주고, 실행 후에는 Console 영역에 로그를 표시합니다.
 
@@ -55,6 +55,14 @@ type GeneratedCurriculumPlan = {
   sources: CurriculumSource[]
 }
 ```
+
+`GeneratedCurriculumPlan.steps`는 여러 주에 걸친 커리큘럼 모듈 목록입니다. Workspace는 이 모듈 전체를 하루에 완료할 단계로 사용하지 않습니다. 현재 `todayMission`을 다음 세 세션 단계로 변환합니다.
+
+1. 현재 모듈의 핵심 개념 확인
+2. 오늘 미션 실습
+3. 실행 결과 확인과 정리
+
+세 단계는 하나의 generated mission id와 `activeStepOffset`을 공유합니다.
 
 ## 코드 실행 API
 
@@ -93,13 +101,30 @@ type CodeRunResult = {
 구현 기준:
 
 - React 화면은 `src/features/learning-workspace/api/codeRunnerClient.ts`를 통해 API를 호출합니다.
-- Express route handler는 `backend/http/codeRunRoutes.mjs`에 둡니다.
+- Judge route handler는 `backend/http/codeRunRoutes.mjs`에 두고 `backend/http/judgeServer.mjs`가 별도 프로세스로 제공합니다.
 - 실행 로직은 `backend/modules/code-runner/codeRunner.mjs`에 둡니다.
 - JSX/TSX는 백엔드에서 CommonJS Preview 번들로 변환하며 React 런타임과 CSS import만 허용합니다.
 - Preview 앱은 기본적으로 `http://127.0.0.1:5174/preview.html`에서 실행해 메인 앱과 origin을 분리합니다.
 - 부모와 Preview 앱은 `requestId`가 포함된 `postMessage` 계약을 사용하고 origin, source, payload를 검증합니다.
 - React 실행은 Preview 앱이 `icu:preview-rendered`를 응답한 뒤에만 통과로 기록합니다.
-- v1 runner는 로컬 학습 피드백용 mock 실행기입니다. 보안 격리, 실제 파일 시스템, Docker daemon, Python process 실행은 Judge Service 단계에서 강화합니다.
+- 현재 Judge는 JavaScript/JSX/TSX 학습 피드백과 React Preview bundle을 지원합니다. shell, Dockerfile, Python mode의 결과는 아직 학습용 신호 검증입니다. 프로세스·파일시스템·컨테이너 격리와 실제 비-JavaScript 실행은 후속 단계에서 강화합니다.
+
+## Tutor API
+
+```http
+POST /api/tutor/ask
+```
+
+Workspace는 현재 미션, 코드, 실행 결과, 대화 이력을 Core API에 전달합니다. 서버가 Gemini provider를 호출하며 frontend는 provider secret을 읽지 않습니다. 요청 실패 시 기존 대화와 입력을 유지하고 다시 시도할 수 있는 오류 상태를 표시합니다.
+
+## 서버 진행 상태
+
+- 진입 시 generated curriculum과 mission progress를 API에서 불러옵니다.
+- 실행 결과, 시도 수, active step, 완료 시각, 활동 로그를 mission progress API에 저장합니다.
+- 중간 단계 이동은 `completedAt`을 저장하지 않으며, 최종 단계에서 `오늘 미션 완료`를 선택한 경우에만 완료 시각을 저장합니다.
+- 편집 중인 파일은 `missionId + activeStepOffset` 단위의 브라우저 draft로 함께 보존해 같은 기기에서 `이어하기`로 복원합니다.
+- 시스템 연결 실패는 학습 실패 시도에 포함하지 않습니다.
+- mock mode에서만 localStorage progress fallback을 사용합니다.
 
 ## 진행 상태
 
@@ -113,12 +138,14 @@ type CodeRunResult = {
 
 새 실행을 시작하면 이전 API 요청과 Preview 요청을 취소합니다. 늦게 도착한 응답은 현재 상태와 진도 기록을 변경하지 않습니다. 컴파일·렌더링·timeout은 학습 실패로 기록하지만 서버 연결 같은 시스템 오류는 시도 횟수에 포함하지 않습니다.
 
+실행 성공은 곧바로 학습 완료를 의미하지 않습니다. generated mission은 starter code에서 실제 변경이 있고 실행까지 성공해야 다음 단계로 이동할 수 있습니다. 현재 v1 검증은 코드 변경과 실행 성공을 확인하며, AI가 생성한 단계별 machine-readable acceptance check 검증은 후속 범위입니다.
+
 ## 후속 범위
 
-- 실제 격리 실행을 담당하는 Judge Service
-- AI 코드 리뷰 API
-- RAG 기반 튜터 응답 생성
-- 사용자별 DB 저장 강화
+- Judge의 프로세스·파일시스템·컨테이너 격리
+- 실제 shell, Docker, Python runner
+- Tutor의 full RAG retrieval과 코드 리뷰 강화
+- 인증 기반 사용자별 DB 분리
 - Electron IPC 연결과 desktop packaging
 
 ## 화면 구성 기준

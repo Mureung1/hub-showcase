@@ -3,13 +3,7 @@
   width: 100%;
   min-height: 100vh;
   overflow: hidden;
-  /* background:
-    radial-gradient(circle at 7% 16%, rgb(255 138 28 / 62%), transparent 30%),
-    radial-gradient(circle at 39% 0%, rgb(243 184 216 / 42%), transparent 30%),
-    radial-gradient(circle at 58% 8%, rgb(53 200 244 / 54%), transparent 34%),
-    radial-gradient(circle at 91% 4%, rgb(7 0 61 / 72%), transparent 36%),
-    linear-gradient(115deg, #fff2d9 0%, #eef9ff 42%, #d8f4ff 66%, #c4dbff 100%); */
-  background: transparent;
+  background: var(--icu-page-background);
   color: #102346;
 }
 
@@ -32,22 +26,32 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   color: #102346;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 800;
   font-family: 'Cloudsofa_namgim-Regular', sans-serif;
 }
 
 .brandMark {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 1px solid rgb(7 0 61 / 24%);
+  position: relative;
+  display: block;
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 1px solid rgb(7 0 61 / 14%);
   border-radius: 8px;
-  background: rgb(255 255 255 / 62%);
-  color: #07003d;
+  background: rgb(255 255 255 / 72%);
+}
+
+.brandMark img {
+  position: absolute;
+  top: -10px;
+  left: -12px;
+  width: 84px;
+  height: 84px;
+  max-width: none;
 }
 
 .controls {
@@ -120,8 +124,13 @@
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 .description {

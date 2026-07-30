@@ -1,3 +1,4 @@
+import { apiUrl } from '../../../app/apiUrl'
 import type { LearningMissionProgress, LearningRunState, LearningTestResult } from '../model/useLearningProgressStore'
 
 export type LearningProgressResponse = {
@@ -25,7 +26,7 @@ export function missionProgressEndpoint(missionId: string) {
 }
 
 export async function getTodayProgress(fetchImpl: typeof fetch = fetch): Promise<LearningProgressResponse> {
-  const response = await fetchImpl(todayProgressEndpoint)
+  const response = await fetchImpl(apiUrl(todayProgressEndpoint))
   if (!response.ok) throw new Error(`Today progress request failed (${response.status})`)
 
   return (await response.json()) as LearningProgressResponse
@@ -36,7 +37,7 @@ export async function saveMissionProgress(
   request: SaveLearningProgressRequest,
   fetchImpl: typeof fetch = fetch,
 ): Promise<SaveLearningProgressResponse> {
-  const response = await fetchImpl(missionProgressEndpoint(missionId), {
+  const response = await fetchImpl(apiUrl(missionProgressEndpoint(missionId)), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(request),
@@ -47,11 +48,11 @@ export async function saveMissionProgress(
 }
 
 export async function deleteMissionProgress(missionId: string, fetchImpl: typeof fetch = fetch) {
-  const response = await fetchImpl(missionProgressEndpoint(missionId), { method: 'DELETE' })
+  const response = await fetchImpl(apiUrl(missionProgressEndpoint(missionId)), { method: 'DELETE' })
   if (!response.ok) throw new Error(`Delete mission progress failed (${response.status})`)
 }
 
 export async function resetAllLearningProgress(fetchImpl: typeof fetch = fetch) {
-  const response = await fetchImpl(allProgressEndpoint, { method: 'DELETE' })
+  const response = await fetchImpl(apiUrl(allProgressEndpoint), { method: 'DELETE' })
   if (!response.ok) throw new Error(`Reset learning progress failed (${response.status})`)
 }

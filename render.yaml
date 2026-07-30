@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: icu-core-api
+    runtime: docker
+    branch: work
+    region: singapore
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerCommand: npm run start:api
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: ICU_REPOSITORY_MODE
+        value: supabase
+      - key: ICU_ALLOWED_ORIGIN
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-flash-latest
+
+  - type: web
+    name: icu-judge
+    runtime: docker
+    branch: work
+    region: singapore
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerCommand: npm run start:judge
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: ICU_ALLOWED_ORIGIN
+        sync: false

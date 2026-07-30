@@ -18,11 +18,17 @@ ICU는 초급·중급 개발자가 오늘 학습할 내용을 정하고, 커리�
 
 - 생산성 도구처럼 차분한 표면과 명확한 정보 계층을 사용합니다.
 - 편집기와 터미널은 두 테마 모두 어두운 표면을 사용합니다.
+<!-- Previous brand color direction kept for audit:
 - 주요 행동, 선택, focus에는 cyan과 deep blue를 사용합니다.
 - orange는 완료, 환영, 중요한 강조에 제한적으로 사용합니다.
+-->
+- 현재 브랜드 화면은 흰색 네비게이터와 흰색 카드 표면을 유지하고, 콘텐츠 배경은 #e8f1fa에서 #d7e8fb로 이어지는 더 진한 blue-gray gradient를 사용합니다.
+- 첫 화면의 따뜻한 진입감은 좌상단 warm tone #ffecd2로 제한하고, 주요 CTA와 선택 상태는 명확한 blue 계열을 우선합니다.
+- 카드 경계는 #d5deea, 현재/활성 행은 #e8f2ff를 기본으로 사용해 정보 대비를 확보합니다.
 - Git Lab의 commit node와 성공 상태에는 green을 사용할 수 있습니다.
 - 반경은 `8px` 이하를 기본으로 하고 카드 중첩과 장식용 gradient를 피합니다.
 - 앱 전역 폰트를 우선하고 UI fallback은 system sans, 코드는 monospace를 사용합니다.
+- 사이드바 로고(`AppShell`의 `.brand`, "ICU / I CODE U")는 예외적으로 `Cloudsofa_namgim-Regular`를 사용하고, 그 외 모든 화면은 전역 폰트 `LINE Seed KR`을 사용합니다.
 
 ## Design Tokens
 
@@ -44,15 +50,45 @@ ICU는 초급·중급 개발자가 오늘 학습할 내용을 정하고, 커리�
   --color-dark-text-muted: #94a3b8;
   --color-dark-border: #25364d;
 
-  --color-brand-orange: #ff8a1c;
-  --color-brand-pink: #f3b8d8;
-  --color-brand-cyan: #35c8f4;
-  --color-brand-blue: #07003d;
-  --color-brand-navy: #112b5f;
+  /*
+   * Previous Workday-inspired brand accents kept for audit:
+   * --color-brand-orange: #ff8a1c;
+   * --color-brand-pink: #f3b8d8;
+   * --color-brand-cyan: #35c8f4;
+   * --color-brand-blue: #07003d;
+   * --color-brand-navy: #112b5f;
+   */
+  --color-brand-page-bg: #e8f1fa;
+  --color-brand-page-bg-deep: #d7e8fb;
+  --color-brand-page-bg-warm: #ffecd2;
+  --color-brand-surface: #ffffff;
+  --color-brand-surface-subtle: #f8fbff;
+  --color-brand-border: #d5deea;
+  --color-brand-active-row: #e8f2ff;
+  --color-brand-primary: #0057d9;
+  --color-brand-primary-strong: #003b8f;
+  --color-brand-accent-cyan: #35bdf4;
+  --color-brand-accent-orange: #ff8a1c;
   --color-editor-bg: #151a24;
   --color-editor-text: #dbe4ef;
+
+  --icu-page-padding: 28px 30px 34px;
+  --icu-page-padding-inline: 30px;
+  --icu-page-section-gap: 22px;
+  --icu-page-title-size: 28px;
+  --icu-section-radius: 8px;
 }
 ```
+
+## Page Layout
+
+- 커리큘럼 보관함을 일반 앱 화면의 레이아웃 기준으로 사용합니다.
+- 데스크톱 일반 화면은 `28px 30px 34px`의 바깥 여백, `22px`의 주요 섹션 간격, `28px`의 페이지 제목, `8px`의 기본 섹션 반경을 공유합니다.
+- Today Hub, 커리큘럼 생성, 오답노트 목록·작성 화면은 이 기준을 직접 사용합니다.
+- Workspace와 Git Lab은 IDE·실습 화면의 내부 밀도와 세로 구조를 유지하되 좌우 콘텐츠 기준선은 `30px`로 맞춥니다.
+- 프로필 설정처럼 화면 전체가 하나의 편집 양식인 전용 작업면은 자체 내부 구성을 유지합니다.
+- 온보딩 화면은 진입 경험을 위한 별도 구성을 유지하며 공통 페이지 레이아웃 적용 대상에서 제외합니다.
+- 모바일에서는 각 화면의 기존 반응형 여백과 정보 우선순위를 유지합니다.
 
 ## Korean Copy
 

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   deleteMissionProgress,
   getTodayProgress,
@@ -8,11 +8,14 @@ import {
 } from './learningProgressClient'
 
 describe('learningProgressClient', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
   it('fetches today progress', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8787')
     const fetchImpl = vi.fn(async () => ({ ok: true, json: async () => ({ missions: {} }) })) as unknown as typeof fetch
 
     await expect(getTodayProgress(fetchImpl)).resolves.toEqual({ missions: {} })
-    expect(fetchImpl).toHaveBeenCalledWith('/api/progress/today')
+    expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8787/api/progress/today')
   })
 
   it('saves mission progress', async () => {

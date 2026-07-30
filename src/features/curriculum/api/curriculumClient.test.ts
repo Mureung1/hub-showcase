@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createFallbackCurriculumPlan,
   curriculumRecommendationEndpoint,
@@ -7,10 +7,15 @@ import {
 } from './curriculumClient'
 
 describe('curriculumClient', () => {
-  it('returns a mock curriculum recommendation by default', async () => {
-    const result = await recommendCurriculum({ goal: 'I want to learn backend development' })
+  afterEach(() => vi.unstubAllEnvs())
 
-    expect(result.plan.id).toBe('backend-curriculum-plan')
+  it('returns a mock curriculum recommendation only in explicit mock mode', async () => {
+    const result = await recommendCurriculum(
+      { goal: 'I want to learn backend development' },
+      { mode: 'mock' },
+    )
+
+    expect(result.plan.id).toMatch(/^backend-\d+-[a-z0-9]+$/)
     expect(result.plan.todayMission.fileName).toBe('main.py')
   })
 
@@ -20,13 +25,15 @@ describe('curriculumClient', () => {
     )
   })
 
-  it('resolves explicit server mode and defaults to mock mode', () => {
+  it('resolves explicit mock mode and defaults to server mode', () => {
     expect(resolveCurriculumRecommendationMode('server')).toBe('server')
     expect(resolveCurriculumRecommendationMode('mock')).toBe('mock')
-    expect(resolveCurriculumRecommendationMode(undefined)).toBe('mock')
+    expect(resolveCurriculumRecommendationMode(undefined)).toBe('server')
+    expect(resolveCurriculumRecommendationMode('unexpected')).toBe('server')
   })
 
   it('posts to the server recommendation endpoint in server mode', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:8787/')
     const plan = createFallbackCurriculumPlan('I want to build a FastAPI server')
     const fetchImpl = vi.fn(async () => ({
       ok: true,
@@ -39,7 +46,7 @@ describe('curriculumClient', () => {
         { mode: 'server', fetchImpl },
       ),
     ).resolves.toEqual({ plan })
-    expect(fetchImpl).toHaveBeenCalledWith(curriculumRecommendationEndpoint, {
+    expect(fetchImpl).toHaveBeenCalledWith(`http://localhost:8787${curriculumRecommendationEndpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ goal: 'I want to build a FastAPI server' }),

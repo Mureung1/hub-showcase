@@ -99,6 +99,7 @@ export function WorkspaceEditorPanel({
               fontSize: 13,
               fontFamily: "'SFMono-Regular', Consolas, monospace",
               scrollBeyondLastLine: false,
+              scrollbar: { alwaysConsumeMouseWheel: false },
               padding: { top: 16, bottom: 16 },
             }}
           />

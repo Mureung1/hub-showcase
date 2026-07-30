@@ -4,12 +4,17 @@ import { shouldUseServerApi } from '../../app/icuApiMode'
 import {
   deleteCurriculumHistoryItemApi,
   getCurriculumHistory,
+  saveGeneratedCurriculumApi,
 } from './api/curriculumClient'
 import { CurriculumDetailModal } from './components/CurriculumDetailModal'
 import {
   useGeneratedCurriculumStore,
   type GeneratedCurriculumSnapshot,
 } from './model/useGeneratedCurriculumStore'
+import {
+  createGeneratedMissionId,
+  createWorkspaceMissionHref,
+} from '../learning-workspace/workspaceInteraction'
 import styles from './CurriculumHistoryPage.module.css'
 
 export function CurriculumHistoryPage() {
@@ -17,6 +22,9 @@ export function CurriculumHistoryPage() {
   const activeCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
   const history = useGeneratedCurriculumStore((state) => state.history)
   const hydrateHistory = useGeneratedCurriculumStore((state) => state.hydrateHistory)
+  const hydrateGeneratedCurriculum = useGeneratedCurriculumStore(
+    (state) => state.hydrateGeneratedCurriculum,
+  )
   const activateCurriculumSnapshot = useGeneratedCurriculumStore(
     (state) => state.activateCurriculumSnapshot,
   )
@@ -25,6 +33,7 @@ export function CurriculumHistoryPage() {
   )
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [serverError, setServerError] = useState('')
   const [detailState, setDetailState] = useState<{
     snapshot: GeneratedCurriculumSnapshot
     rect: DOMRect | null
@@ -36,12 +45,12 @@ export function CurriculumHistoryPage() {
     if (shouldUseServerApi()) {
       void getCurriculumHistory({ mode: 'server' })
         .then(({ curriculums }) => {
-          if (!cancelled && curriculums.length > 0) {
+          if (!cancelled) {
             hydrateHistory(curriculums)
           }
         })
         .catch(() => {
-          // Keep local store fallback
+          if (!cancelled) setServerError('커리큘럼 이력을 불러오지 못했습니다. 다시 열어 주세요.')
         })
     }
 
@@ -79,24 +88,51 @@ export function CurriculumHistoryPage() {
     return duplicates
   }, [history])
 
-  function handleActivate(snapshot: GeneratedCurriculumSnapshot) {
+  async function handleActivate(snapshot: GeneratedCurriculumSnapshot) {
     const targetId = snapshot.id || `${snapshot.goal}-curriculum-plan`
-    activateCurriculumSnapshot(targetId)
-    void navigate('/today')
-  }
+    const workspaceHref = createWorkspaceMissionHref(createGeneratedMissionId(snapshot.plan.id))
+    const isAlreadyActive = activeCurriculum?.id === targetId
+    setServerError('')
 
-  function handleDelete(snapshot: GeneratedCurriculumSnapshot) {
-    const targetId = snapshot.id || `${snapshot.goal}-curriculum-plan`
-    deleteCurriculumSnapshot(targetId)
+    try {
+      if (isAlreadyActive) {
+        navigate(workspaceHref)
+        return
+      }
 
-    if (shouldUseServerApi()) {
-      void deleteCurriculumHistoryItemApi(targetId, { mode: 'server' }).catch(() => {})
+      if (shouldUseServerApi()) {
+        const { generatedCurriculum } = await saveGeneratedCurriculumApi(
+          { ...snapshot, id: targetId, updatedAt: new Date().toISOString() },
+          { mode: 'server' },
+        )
+        hydrateGeneratedCurriculum(generatedCurriculum)
+      } else {
+        activateCurriculumSnapshot(targetId)
+      }
+      navigate(workspaceHref)
+    } catch {
+      setServerError('선택한 커리큘럼을 활성화하지 못했습니다. 다시 시도해 주세요.')
     }
   }
 
-  function handleCleanDuplicates() {
+  async function handleDelete(snapshot: GeneratedCurriculumSnapshot) {
+    const targetId = snapshot.id || `${snapshot.goal}-curriculum-plan`
+    setServerError('')
+
+    try {
+      if (shouldUseServerApi()) {
+        await deleteCurriculumHistoryItemApi(targetId, { mode: 'server' })
+      }
+      deleteCurriculumSnapshot(targetId)
+    } catch {
+      setServerError('커리큘럼을 삭제하지 못했습니다. 다시 시도해 주세요.')
+    }
+  }
+
+  async function handleCleanDuplicates() {
     const seenGoals = new Set<string>()
     const cleaned: GeneratedCurriculumSnapshot[] = []
+    const duplicateIds: string[] = []
 
     for (const item of history) {
       const normalizedGoal = item.goal.trim().toLowerCase()
@@ -105,16 +141,22 @@ export function CurriculumHistoryPage() {
         cleaned.push(item)
       } else {
         const idToDelete = item.id || `${item.goal}-curriculum-plan`
-        if (shouldUseServerApi()) {
-          void deleteCurriculumHistoryItemApi(idToDelete, { mode: 'server' }).catch(() => {})
-        }
+        if (shouldUseServerApi()) duplicateIds.push(idToDelete)
       }
     }
 
-    hydrateHistory(cleaned)
+    try {
+      await Promise.all(
+        duplicateIds.map((id) => deleteCurriculumHistoryItemApi(id, { mode: 'server' })),
+      )
+      hydrateHistory(cleaned)
+    } catch {
+      setServerError('중복 커리큘럼을 정리하지 못했습니다. 다시 시도해 주세요.')
+    }
   }
 
-  const activeId = activeCurriculum?.id || (activeCurriculum ? `${activeCurriculum.goal}-curriculum-plan` : '')
+  const activeId =
+    activeCurriculum?.id || (activeCurriculum ? `${activeCurriculum.goal}-curriculum-plan` : '')
 
   return (
     <div className={styles.page}>
@@ -138,6 +180,12 @@ export function CurriculumHistoryPage() {
           </Link>
         </div>
       </header>
+
+      {serverError ? (
+        <p className={styles.errorMessage} role="alert">
+          {serverError}
+        </p>
+      ) : null}
 
       <div className={styles.filterRow}>
         <input
@@ -195,17 +243,18 @@ export function CurriculumHistoryPage() {
 
                 <div className={styles.missionBox}>
                   <strong>오늘 미션: {item.plan.todayMission.title}</strong>
-                  <span>{item.plan.todayMission.detail} ({item.plan.todayMission.durationMinutes}분)</span>
+                  <span>
+                    {item.plan.todayMission.detail} ({item.plan.todayMission.durationMinutes}분)
+                  </span>
                 </div>
 
                 <div className={styles.cardActions}>
                   <button
                     type="button"
                     className={styles.activateButton}
-                    disabled={isActive}
                     onClick={() => handleActivate(item)}
                   >
-                    {isActive ? '학습 진행 중' : '이어서 학습하기'}
+                    이어서 학습하기
                   </button>
                   <button
                     type="button"
@@ -242,8 +291,7 @@ export function CurriculumHistoryPage() {
           onClose={() => setDetailState(null)}
           onActivate={handleActivate}
           isActive={
-            (detailState.snapshot.id ||
-              `${detailState.snapshot.goal}-curriculum-plan`) === activeId
+            (detailState.snapshot.id || `${detailState.snapshot.goal}-curriculum-plan`) === activeId
           }
         />
       )}

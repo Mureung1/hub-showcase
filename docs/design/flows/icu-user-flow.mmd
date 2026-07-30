@@ -1,60 +1,61 @@
 flowchart LR
     start(["ICU 실행"])
+    intro["Intro\n제품 진입"]
+    profile["Profile Setup\n목표 / 트랙 / 시간 / 수준"]
     hub["Today Learning Hub\n오늘 할 일 확인"]
     choose{"사용자 선택"}
 
     goal[/"학습 목표 입력"/]
     curriculum["AI 커리큘럼 제안"]
+    history["커리큘럼 보관함\n상세 / 활성화 / 삭제"]
     moduleEntry["학습 모듈 진입\n오늘 큐 / 학습 목록 / 오답 다시 풀기"]
 
-    workspace["Learning Workspace IDE\nReact / Python / FastAPI"]
+    workspace["Learning Workspace IDE\nTutor / Editor / Preview"]
+    judge["Judge API\n코드 실행"]
     gitlab["Git Lab\nGit 명령 시뮬레이터"]
-    futureModules["추가 학습 모듈\n알고리즘 / API / 프로젝트"]
-
     attempt["실습 / 퀴즈 / 명령 실행"]
     result{"통과했나요?"}
-    feedback["피드백 / 코드 리뷰\n다음 단계 추천"]
+    feedback["피드백 / 다음 단계"]
     saveMistake["오답노트에 추가\n실패 내용 저장"]
 
     review["복습과 오답 요약\n최근 미해결 오답"]
-    notes["오답노트 목록\n전체보기 / 필터 / 상태 관리"]
+    notes["오답노트 목록\n상세 / 수정 / 상태 관리"]
     retry["출처 레슨으로 다시 풀기\nsource + lessonId"]
 
-    progress[("localStorage\n학습 진행률 / 오답")]
-    futureStore[["향후 Supabase\n프로필 / 진행률 / 오답 동기화"]]
+    coreApi[("Core API\n프로필 / 커리큘럼 / 진도 / 오답 / Git Lab / Tutor")]
+    repository[["Repository adapter\nin-memory / SQLite / Supabase"]]
 
-    start --> hub
+    start --> intro --> profile --> hub
     hub --> choose
     choose -->|"새 목표"| goal
+    choose -->|"보관함"| history
     choose -->|"이어서 학습"| moduleEntry
     choose -->|"오답 전체보기"| notes
 
-    goal --> curriculum
-    curriculum --> moduleEntry
-
+    goal --> curriculum --> moduleEntry
+    history --> moduleEntry
     moduleEntry --> workspace
     moduleEntry --> gitlab
-    moduleEntry -. "후속 확장" .-> futureModules
 
+    workspace --> judge --> result
     workspace --> attempt
     gitlab --> attempt
-    futureModules --> attempt
-
     attempt --> result
     result -->|"예"| feedback
     result -->|"아니요"| saveMistake
 
-    feedback --> progress
+    feedback --> coreApi
     feedback --> review
-    saveMistake --> progress
+    saveMistake --> coreApi
     saveMistake --> notes
-
     review -->|"전체보기"| notes
-    notes -->|"다시 풀기"| retry
-    retry --> moduleEntry
+    notes -->|"다시 풀기"| retry --> moduleEntry
 
-    progress -. "현재 mock persistence" .-> hub
-    progress -. "나중에 이전" .-> futureStore
+    profile --> coreApi
+    curriculum --> coreApi
+    history --> coreApi
+    coreApi --> repository
+    repository --> hub
 
     classDef entry fill:#ffffff,stroke:#d3dce8,color:#172033
     classDef hub fill:#e7f8fe,stroke:#35c8f4,color:#112b5f
@@ -64,10 +65,10 @@ flowchart LR
     classDef mistake fill:#fdf2f8,stroke:#f3b8d8,color:#172033
     classDef store fill:#f8fafc,stroke:#64748b,color:#172033
 
-    class start,choose entry
+    class start,intro,profile,choose entry
     class hub hub
-    class goal,curriculum,moduleEntry primary
-    class workspace,gitlab,futureModules,attempt,result,feedback module
+    class goal,curriculum,history,moduleEntry primary
+    class workspace,judge,gitlab,attempt,result,feedback module
     class review review
     class notes,retry,saveMistake mistake
-    class progress,futureStore store
+    class coreApi,repository store

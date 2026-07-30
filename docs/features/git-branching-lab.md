@@ -118,9 +118,7 @@ type GitEngineState = {
   files: Record<string, { content: string; status: GitFileStatus }>
   commits: Array<{ id: string; parents: string[]; message?: string }>
   branches: Array<{ name: string; commitId: string | null }>
-  head:
-    | { type: 'branch'; branchName: string }
-    | { type: 'detached'; commitId: string | null }
+  head: { type: 'branch'; branchName: string } | { type: 'detached'; commitId: string | null }
   nextCommitIndex: number
 }
 ```
@@ -376,18 +374,18 @@ Git Lab의 다음 목표는 단순한 브랜치 레벨 게임이 아니라 `prog
 
 ## 추가 및 변경 요약
 
-| 영역 | 현재 구현 | 추가/변경 방향 |
-| --- | --- | --- |
-| 학습 구조 | Pro Git 기반 모듈/레벨 데이터를 좌측 커리큘럼으로 노출하고, `configState`, `repoState`, `fileStatus`, `resetState`, `graph` 목표를 playable로 변환 | 남은 Pro Git 항목을 엔진 검증 가능한 goal type으로 점진 전환 |
-| 설명 방식 | 목표, 힌트, 개념 요약, Pro Git 근거, 허용 명령, 명령 흐름 시각 가이드 표시 | 설명 -> 시각화 -> 명령 입력 -> 변화 설명 -> 목표 비교 흐름 강화 |
-| 상태 모델 | commit, branch, HEAD, file status, index 기준 commit, working tree 기준 commit | tag, remote, reflog, conflict 상태 추가 |
-| 그래프 | commit/branch/HEAD/merge parent 중심 | tag, remote branch, rewritten commit, reflog timeline 표시 추가 |
-| 파일 상태 | working tree, index, repository, diff/restore/reset 흐름 표시 | 실제 파일 편집 UI와 더 자세한 diff viewer 추가 |
-| merge | fast-forward와 merge commit 흐름 구분 | conflict 발생/해결 레슨 추가 |
-| reset | `HEAD^`, `HEAD~1`, soft/mixed/hard reset, resetState 목표 검증 구현 | reflog와 복구 흐름 추가 |
-| rebase | 없음 | commit rewrite 시각화와 안전 가이드 추가 |
-| tag/remote | 없음 | `tag`, `remote -v`, `fetch`, `pull`, `push` mock remote state 추가 |
-| 오답노트 | 실패한 Git 명령 자동 저장, 중복 미해결 오답 방지, `/mistake-notes` 이동 링크 제공 | Review Agent가 오답 기록을 바탕으로 복습 우선순위 추천 |
+| 영역       | 현재 구현                                                                                                                                          | 추가/변경 방향                                                     |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| 학습 구조  | Pro Git 기반 모듈/레벨 데이터를 좌측 커리큘럼으로 노출하고, `configState`, `repoState`, `fileStatus`, `resetState`, `graph` 목표를 playable로 변환 | 남은 Pro Git 항목을 엔진 검증 가능한 goal type으로 점진 전환       |
+| 설명 방식  | 목표, 힌트, 개념 요약, Pro Git 근거, 허용 명령, 명령 흐름 시각 가이드 표시                                                                         | 설명 -> 시각화 -> 명령 입력 -> 변화 설명 -> 목표 비교 흐름 강화    |
+| 상태 모델  | commit, branch, HEAD, file status, index 기준 commit, working tree 기준 commit                                                                     | tag, remote, reflog, conflict 상태 추가                            |
+| 그래프     | commit/branch/HEAD/merge parent 중심                                                                                                               | tag, remote branch, rewritten commit, reflog timeline 표시 추가    |
+| 파일 상태  | working tree, index, repository, diff/restore/reset 흐름 표시                                                                                      | 실제 파일 편집 UI와 더 자세한 diff viewer 추가                     |
+| merge      | fast-forward와 merge commit 흐름 구분                                                                                                              | conflict 발생/해결 레슨 추가                                       |
+| reset      | `HEAD^`, `HEAD~1`, soft/mixed/hard reset, resetState 목표 검증 구현                                                                                | reflog와 복구 흐름 추가                                            |
+| rebase     | 없음                                                                                                                                               | commit rewrite 시각화와 안전 가이드 추가                           |
+| tag/remote | 없음                                                                                                                                               | `tag`, `remote -v`, `fetch`, `pull`, `push` mock remote state 추가 |
+| 오답노트   | 실패한 Git 명령 자동 저장, 중복 미해결 오답 방지, `/mistake-notes` 이동 링크 제공                                                                  | Review Agent가 오답 기록을 바탕으로 복습 우선순위 추천             |
 
 ## Pro Git 학습 커리큘럼
 
@@ -648,7 +646,7 @@ Git Lab v1은 고정 커리큘럼과 deterministic 시뮬레이터를 먼저 완
 - stash, rerere, bisect, submodule
 - hooks, packfile, transfer protocol 상세
 - GitHub 조직 관리, 서버 운영, 인증/권한 설정
-- Electron, Monaco, backend
+- Electron desktop packaging과 실제 Git CLI 연동
 - RAG 연동은 영구 제외가 아니라 v1 Git 시뮬레이터 이후 AI 개인화 추천과 Tutor 단계에서 도입합니다.
 
 ## Backend Attempt API Boundary
@@ -658,7 +656,14 @@ Implemented in this task:
 - Server routes: `backend/http/gitLabAttemptRoutes.mjs`
 - Application service: `backend/modules/git-lab/application/gitLabAttemptService.mjs`
 - Domain rules: `backend/modules/git-lab/domain/gitLabAttempt.mjs`
-- In-memory adapter: `backend/modules/git-lab/adapters/inMemoryGitLabAttemptRepository.mjs`
+- Repository adapters:
+  - `backend/modules/git-lab/adapters/inMemoryGitLabAttemptRepository.mjs`
+  - `backend/modules/git-lab/adapters/sqliteGitLabAttemptRepository.mjs`
+  - `backend/modules/git-lab/adapters/supabaseGitLabAttemptRepository.mjs`
+- Attempt recorders:
+  - `backend/modules/git-lab/adapters/inMemoryGitLabAttemptRecorder.mjs`
+  - `backend/modules/git-lab/adapters/sqliteGitLabAttemptRecorder.mjs`
+  - `backend/modules/git-lab/adapters/supabaseGitLabAttemptRecorder.mjs`
 - Frontend client adapter: `src/features/git-lab/api/gitLabAttemptClient.ts`
 
 Supported routes:

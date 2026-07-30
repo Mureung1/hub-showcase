@@ -2,13 +2,10 @@
   min-height: 100vh;
   display: grid;
   align-content: start;
-  gap: 22px;
-  padding: 28px 30px 34px;
+  gap: var(--icu-page-section-gap);
+  padding: var(--icu-page-padding);
   color: #102346;
-  background:
-    radial-gradient(circle at 0% 0%, rgb(255 138 28 / 12%), transparent 28%),
-    radial-gradient(circle at 100% 0%, rgb(53 200 244 / 18%), transparent 34%),
-    linear-gradient(135deg, rgb(255 255 255 / 68%) 0%, rgb(238 249 255 / 72%) 52%, rgb(216 244 255 / 58%) 100%);
+  background: var(--icu-page-background);
 }
 
 .header {
@@ -21,7 +18,7 @@
 .header h1 {
   margin: 0;
   color: #102346;
-  font-size: 30px;
+  font-size: var(--icu-page-title-size);
   line-height: 1.15;
   letter-spacing: 0;
 }

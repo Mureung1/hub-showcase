@@ -2,12 +2,7 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  background:
-    radial-gradient(circle at 5% 10%, rgb(255 138 28 / 44%), transparent 28%),
-    radial-gradient(circle at 38% 0%, rgb(243 184 216 / 34%), transparent 30%),
-    radial-gradient(circle at 70% 8%, rgb(53 200 244 / 42%), transparent 32%),
-    radial-gradient(circle at 100% 0%, rgb(7 0 61 / 62%), transparent 34%),
-    linear-gradient(115deg, #fff2d9 0%, #eef9ff 42%, #d8f4ff 66%, #c4dbff 100%);
+  background: var(--icu-page-background);
 }
 
 .navigator {
@@ -80,17 +75,56 @@
   }
 
   .navigator {
+    position: sticky;
+    top: 0;
+    z-index: 50;
     min-height: auto;
+    align-items: center;
     flex-direction: row;
-    justify-content: space-between;
-    gap: 20px;
+    gap: 14px;
     border-right: 0;
     border-bottom: 1px solid rgb(179 196 220 / 58%);
-    padding: 20px;
+    padding: 10px 14px;
+    box-shadow: 0 8px 24px rgb(17 43 95 / 8%);
+  }
+
+  .content {
+    overflow: visible;
+  }
+
+  .brand {
+    flex: 0 0 auto;
+  }
+
+  .brand span {
+    font-size: 24px;
+    letter-spacing: 3px;
+  }
+
+  .brand small {
+    display: none;
   }
 
   .navList {
-    width: 100%;
-    grid-auto-flow: row;
+    min-width: 0;
+    display: flex;
+    flex: 1 1 auto;
+    gap: 4px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .navList::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navList a {
+    min-height: 44px;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    padding: 10px 12px;
+    white-space: nowrap;
   }
 }

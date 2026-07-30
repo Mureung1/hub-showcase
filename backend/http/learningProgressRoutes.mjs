@@ -6,6 +6,7 @@ import {
   saveMissionProgress,
 } from '../modules/learning-progress/application/learningProgressService.mjs'
 import { createCorsHeaders, parseJsonBody } from '../shared/http.mjs'
+import { isRepositoryUnavailableError } from '../shared/repositoryError.mjs'
 
 export async function handleLearningProgressApiRequest({ method, url, bodyText, progressRepository }) {
   const pathname = new URL(url ?? '/', 'http://localhost').pathname
@@ -17,13 +18,13 @@ export async function handleLearningProgressApiRequest({ method, url, bodyText, 
   if (pathname === '/api/progress/today') {
     if (method !== 'GET') return methodNotAllowed('GET, OPTIONS')
 
-    return { status: 200, body: getTodayProgress({ repository: progressRepository }), headers: createCorsHeaders() }
+    return { status: 200, body: await getTodayProgress({ repository: progressRepository }), headers: createCorsHeaders() }
   }
 
   if (pathname === '/api/progress') {
     if (method !== 'DELETE') return methodNotAllowed('DELETE, OPTIONS')
 
-    resetAllLearningProgress({ repository: progressRepository })
+    await resetAllLearningProgress({ repository: progressRepository })
 
     return { status: 200, body: { missions: {} }, headers: createCorsHeaders() }
   }
@@ -44,10 +45,12 @@ export async function handleLearningProgressApiRequest({ method, url, bodyText, 
     }
 
     try {
-      const progress = saveMissionProgress({ missionId, input: parsedBody.value, repository: progressRepository })
+      const progress = await saveMissionProgress({ missionId, input: parsedBody.value, repository: progressRepository })
 
       return { status: 200, body: { progress }, headers: createCorsHeaders() }
-    } catch {
+    } catch (error) {
+      if (isRepositoryUnavailableError(error)) throw error
+
       return {
         status: 400,
         body: { error: 'invalid_mission_progress', message: '학습 진행 정보를 확인해주세요.' },
@@ -58,10 +61,12 @@ export async function handleLearningProgressApiRequest({ method, url, bodyText, 
 
   if (method === 'DELETE') {
     try {
-      resetMissionProgress({ missionId, repository: progressRepository })
+      await resetMissionProgress({ missionId, repository: progressRepository })
 
       return { status: 200, body: { missionId }, headers: createCorsHeaders() }
-    } catch {
+    } catch (error) {
+      if (isRepositoryUnavailableError(error)) throw error
+
       return {
         status: 400,
         body: { error: 'invalid_mission_id', message: '미션 ID를 확인해주세요.' },

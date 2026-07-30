@@ -3,7 +3,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('../components/fonts/Cloudsofa_namgim-Regular.ttf') format('truetype');
+  src: url('./fonts/Cloudsofa_namgim-Regular.ttf') format('truetype');
 }
 
 @font-face {
@@ -11,7 +11,7 @@
   font-style: normal;
   font-weight: 300;
   font-display: swap;
-  src: url('../components/fonts/LINE_SeedKR_2023.09.06/Web/woff2/LINESeedKR-Th.woff2')
+  src: url('./fonts/LINESeedKR-Th.woff2')
     format('woff2');
 }
 
@@ -20,7 +20,7 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('../components/fonts/LINE_SeedKR_2023.09.06/Web/woff2/LINESeedKR-Rg.woff2')
+  src: url('./fonts/LINESeedKR-Rg.woff2')
     format('woff2');
 }
 
@@ -29,10 +29,19 @@
   font-style: normal;
   font-weight: 700 900;
   font-display: swap;
-  src: url('../components/fonts/LINE_SeedKR_2023.09.06/Web/woff2/LINESeedKR-Bd.woff2')
+  src: url('./fonts/LINESeedKR-Bd.woff2')
     format('woff2');
 }
 :root {
+  --icu-page-background:
+    linear-gradient(161deg, #fff5e8 0%, transparent 24%),
+    linear-gradient(160deg, #ffffff 0%, #c0deff 100%);
+  --icu-page-padding: 28px 30px 34px;
+  --icu-page-padding-inline: 30px;
+  --icu-page-section-gap: 22px;
+  --icu-page-title-size: 28px;
+  --icu-section-radius: 8px;
+
   font-family:
     'LINE Seed KR',
     Inter,
@@ -43,7 +52,7 @@
     'Segoe UI',
     sans-serif;
   color: #172033;
-  background: #0a0a0f;
+  background: var(--icu-page-background);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -59,6 +68,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
+  background: var(--icu-page-background);
 }
 
 button,

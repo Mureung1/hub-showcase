@@ -2,6 +2,7 @@ import levelsData from '../../git-lab/levels/gitLabLevels.json'
 import { createPlayableLevels } from '../../git-lab/levels/gitLabCurriculumAdapter'
 import type { MistakeNote } from '../../mistake-notes/model/useMistakeNoteStore'
 import type { LearningTestResult } from '../../learning-progress/model/useLearningProgressStore'
+import type { GitLabAttempt } from '../../git-lab/api/gitLabAttemptClient'
 
 export type TrackStatus = 'in_progress' | 'completed' | 'not_started' | 'unavailable'
 
@@ -21,10 +22,15 @@ export function formatTestResultLabel(result: LearningTestResult | null | undefi
   return `${result.passed} / ${result.total}`
 }
 
-export function getGitLabTrackProgress(): { clearedCount: number; totalCount: number; percent: number } {
+export function getGitLabTrackProgress(
+  attempts?: GitLabAttempt[],
+): { clearedCount: number; totalCount: number; percent: number } {
   const playableLevelIds = new Set(createPlayableLevels(levelsData).map((level) => level.id))
   const totalCount = playableLevelIds.size
-  const clearedCount = readClearedGitLabLevelIds().filter((id) => playableLevelIds.has(id)).length
+  const clearedLevelIds = attempts
+    ? [...new Set(attempts.filter((attempt) => attempt.result === 'passed').map((attempt) => attempt.lessonId))]
+    : readClearedGitLabLevelIds()
+  const clearedCount = clearedLevelIds.filter((id) => playableLevelIds.has(id)).length
   const percent = totalCount > 0 ? Math.round((clearedCount / totalCount) * 100) : 0
 
   return { clearedCount, totalCount, percent }

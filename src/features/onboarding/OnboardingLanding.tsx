@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { Link } from 'react-router'
+import icuBrandLogo from './assets/icu-brand.png'
 import styles from './OnboardingLanding.module.css'
 
 type OnboardingField = {
@@ -94,8 +95,10 @@ export function OnboardingLanding() {
     <section className={styles.section} aria-labelledby="onboarding-title">
       <div className={styles.shell}>
         <div className={styles.topBar}>
-          <div className={styles.brand} aria-label="ICU I CODE U">
-            <span className={styles.brandMark}>ICU</span>
+          <div className={styles.brand} data-size="large" aria-label="ICU I CODE U">
+            <span className={styles.brandMark} aria-hidden="true">
+              <img src={icuBrandLogo} alt="" />
+            </span>
             <span>I CODE U</span>
           </div>
 
@@ -123,7 +126,10 @@ export function OnboardingLanding() {
           <div className={styles.copy}>
             <p className={styles.eyebrow}>AI Coding Tutor Desktop</p>
             <h1 className={styles.title} id="onboarding-title">
-              {typedText}<span className={styles.cursor} aria-hidden="true">|</span>
+              {typedText}
+              <span className={styles.cursor} aria-hidden="true">
+                |
+              </span>
             </h1>
             <p className={styles.description}>
               목표를 정하면 ICU가 오늘 학습, 실습, 복습 순서를 이어서 잡아드립니다. 학습을 시작하면

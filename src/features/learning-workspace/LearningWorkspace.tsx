@@ -1,34 +1,52 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useNavigate, useSearchParams } from 'react-router'
 import { shouldUseServerApi } from '../../app/icuApiMode'
-import { createFallbackCurriculumPlan } from '../curriculum/api/curriculumClient'
+import {
+  createFallbackCurriculumPlan,
+  getGeneratedCurriculum,
+} from '../curriculum/api/curriculumClient'
 import type { GeneratedCurriculumPlan } from '../curriculum/model/curriculumGenerator'
 import {
   resolveGeneratedCurriculumPlan,
   useGeneratedCurriculumStore,
 } from '../curriculum/model/useGeneratedCurriculumStore'
-import { saveMissionProgress } from '../learning-progress/api/learningProgressClient'
+import {
+  getTodayProgress,
+  saveMissionProgress,
+  type SaveLearningProgressRequest,
+} from '../learning-progress/api/learningProgressClient'
 import { executeCode, type ReactPreviewBundle } from './api/codeRunnerClient'
+import { askTutor } from './api/tutorClient'
 import {
   PreviewCancelledError,
   PreviewRenderError,
   PreviewTimeoutError,
 } from './previewRequestCoordinator'
 import { useReactPreviewBridge } from './useReactPreviewBridge'
-import { WorkspaceCurriculumPanel } from './components/WorkspaceCurriculumPanel'
 import { WorkspaceEditorPanel } from './components/WorkspaceEditorPanel'
 import { WorkspaceGuidePanel } from './components/WorkspaceGuidePanel'
-import { WorkspaceHeader } from './components/WorkspaceHeader'
+import { WorkspaceSummaryBar } from './components/WorkspaceSummaryBar'
 import { WorkspaceResultsPanel } from './components/WorkspaceResultsPanel'
 import {
   useLearningProgressStore,
   type LearningActivityItem,
   type LearningRunState,
+  type LearningTestResult,
 } from '../learning-progress/model/useLearningProgressStore'
 import { useLearningProfileStore } from '../profile/model/useLearningProfileStore'
+import { createMistakeNote as createMistakeNoteApi } from '../mistake-notes/api/mistakeNoteClient'
+import { useMistakeNoteStore } from '../mistake-notes/model/useMistakeNoteStore'
+import {
+  buildTutorMistakeNoteInput,
+  hasCompletedTutorExchange,
+  type TutorMessage,
+} from './tutorConversation'
+import { loadWorkspaceServerState } from './loadWorkspaceServerState'
+import { saveWorkspaceProgress } from './saveWorkspaceProgress'
+import { hasWorkspaceCodeChange, loadWorkspaceDraft, saveWorkspaceDraft } from './workspaceDraft'
 import styles from './LearningWorkspace.module.css'
 import {
-  generatedMissionId,
+  createGeneratedMissionId,
   getInitialStepOffset,
   getResultMessage,
   isFinalStep,
@@ -41,7 +59,6 @@ import {
   createSteps,
   createTestCases,
   createWorkspaceEditorFiles,
-  createWorkspaceModeLabel,
   defaultCareerGoal,
   getExecutionLanguage,
   getExecutionPanelModel,
@@ -59,12 +76,53 @@ type LearningWorkspaceViewProps = {
   mission: WorkspaceMission
 }
 
+type WorkspaceMobileTab = 'tutor' | 'code' | 'results'
+
+const workspaceMobileTabs: Array<{ id: WorkspaceMobileTab; label: string }> = [
+  { id: 'tutor', label: '튜터' },
+  { id: 'code', label: '코드' },
+  { id: 'results', label: '결과' },
+]
+
 export default function LearningWorkspace() {
   const [searchParams] = useSearchParams()
-  const { profile } = useLearningProfileStore()
+  const navigate = useNavigate()
+  const serverMode = shouldUseServerApi()
+  const { profile, loadProfile } = useLearningProfileStore()
   const generatedCurriculum = useGeneratedCurriculumStore((state) => state.generatedCurriculum)
+  const hydrateGeneratedCurriculum = useGeneratedCurriculumStore(
+    (state) => state.hydrateGeneratedCurriculum,
+  )
+  const hydrateMissionProgress = useLearningProgressStore((state) => state.hydrateMissionProgress)
+  const [loadStatus, setLoadStatus] = useState<'loading' | 'ready' | 'error'>(
+    serverMode ? 'loading' : 'ready',
+  )
+  const [reloadKey, setReloadKey] = useState(0)
+
+  useEffect(() => {
+    if (!serverMode) return
+
+    let cancelled = false
+    void loadWorkspaceServerState({
+      loadProfile,
+      loadCurriculum: getGeneratedCurriculum,
+      loadProgress: getTodayProgress,
+      hydrateCurriculum: hydrateGeneratedCurriculum,
+      hydrateProgress: hydrateMissionProgress,
+    })
+      .then(() => {
+        if (!cancelled) setLoadStatus('ready')
+      })
+      .catch(() => {
+        if (!cancelled) setLoadStatus('error')
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [hydrateGeneratedCurriculum, hydrateMissionProgress, loadProfile, reloadKey, serverMode])
+
   const profileGoal = profile?.learningGoal ?? defaultCareerGoal
-  const selectedMissionId = searchParams.get('mission') ?? generatedMissionId
   const fallbackGeneratedPlan = useMemo(
     () => createFallbackCurriculumPlan(profileGoal),
     [profileGoal],
@@ -73,11 +131,52 @@ export default function LearningWorkspace() {
     () => resolveGeneratedCurriculumPlan(generatedCurriculum, fallbackGeneratedPlan),
     [fallbackGeneratedPlan, generatedCurriculum],
   )
+  const selectedMissionId =
+    searchParams.get('mission') ?? createGeneratedMissionId(generatedPlan.id)
   const planKey = generatedCurriculum?.generatedAt ?? profileGoal
   const mission = useMemo(
     () => resolveWorkspaceMission(selectedMissionId, generatedPlan),
     [generatedPlan, selectedMissionId],
   )
+
+  if (loadStatus === 'loading') {
+    return (
+      <section className={styles.persistenceBanner} role="status">
+        <strong>학습 정보를 불러오는 중입니다.</strong>
+        <span>저장된 커리큘럼과 진행 상태를 확인하고 있어요.</span>
+      </section>
+    )
+  }
+
+  if (loadStatus === 'error') {
+    return (
+      <section className={styles.persistenceBanner} data-status="error" role="alert">
+        <strong>학습 정보를 불러오지 못했습니다.</strong>
+        <span>서버 연결을 확인한 뒤 다시 시도해 주세요.</span>
+        <button
+          type="button"
+          onClick={() => {
+            setLoadStatus('loading')
+            setReloadKey((current) => current + 1)
+          }}
+        >
+          다시 불러오기
+        </button>
+      </section>
+    )
+  }
+
+  if (serverMode && !generatedCurriculum) {
+    return (
+      <section className={styles.persistenceBanner} role="status">
+        <strong>아직 생성된 커리큘럼이 없습니다.</strong>
+        <span>학습 목표를 설정하면 오늘 미션을 시작할 수 있어요.</span>
+        <button type="button" onClick={() => navigate('/today/goal')}>
+          학습 목표 설정하기
+        </button>
+      </section>
+    )
+  }
 
   return (
     <LearningWorkspaceView
@@ -99,14 +198,13 @@ function LearningWorkspaceView({
   const recordMissionActivity = useLearningProgressStore((state) => state.recordMissionActivity)
   const advanceMissionStep = useLearningProgressStore((state) => state.advanceMissionStep)
   const upsertMissionProgress = useLearningProgressStore((state) => state.upsertMissionProgress)
+  const addMistakeNote = useMistakeNoteStore((state) => state.addMistakeNote)
   const [runState, setRunState] = useState<RunState>(savedProgress?.runState ?? 'idle')
   const [runAttemptCount, setRunAttemptCount] = useState(savedProgress?.runAttemptCount ?? 0)
-  const [hintVisible, setHintVisible] = useState(false)
-  const [reviewVisible, setReviewVisible] = useState(false)
   const [missionCompleted, setMissionCompleted] = useState(() => {
     const initialStepOffset = savedProgress?.activeStepOffset ?? getInitialStepOffset(mission.id)
     const initialTotalSteps = Math.max(
-      mission.id === generatedMissionId ? generatedPlan.steps.length : 4,
+      createSteps(generatedPlan, mission.id, initialStepOffset).length,
       1,
     )
 
@@ -118,7 +216,19 @@ function LearningWorkspaceView({
   const [activityLog, setActivityLog] = useState<LearningActivityItem[]>(
     savedProgress?.activityLog.length ? savedProgress.activityLog : initialActivityItems,
   )
+  const [tutorMessages, setTutorMessages] = useState<TutorMessage[]>([])
+  const [tutorQuestion, setTutorQuestion] = useState('')
+  const [isAskingTutor, setIsAskingTutor] = useState(false)
+  const [mobileTab, setMobileTab] = useState<WorkspaceMobileTab>('code')
+  const [persistenceStatus, setPersistenceStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>(
+    'idle',
+  )
+  const [pendingProgress, setPendingProgress] = useState<{
+    missionId: string
+    request: SaveLearningProgressRequest
+  } | null>(null)
   const runAbortControllerRef = useRef<AbortController | null>(null)
+  const tutorAbortControllerRef = useRef<AbortController | null>(null)
   const curriculumSteps = useMemo(
     () => createSteps(generatedPlan, mission.id, activeStepOffset),
     [activeStepOffset, generatedPlan, mission.id],
@@ -138,30 +248,19 @@ function LearningWorkspaceView({
     () => createActiveMissionPresentation(mission, activeGeneratedStep),
     [activeGeneratedStep, mission],
   )
-  const testCases = useMemo(() => createTestCases(mission, runState), [mission, runState])
-  const passedCount = testCases.filter((item) => item.state === 'passed').length
-  const failedCount = testCases.filter((item) => item.state === 'failed').length
-  const pendingCount = testCases.length - passedCount - failedCount
-  const canAdvance = runState === 'passed' && !missionCompleted
-  const resultMessage = missionCompleted
-    ? '오늘 미션을 완료했습니다. Today Hub에서 다음 학습을 확인하세요.'
-    : getResultMessage(runState, passedCount, failedCount, testCases.length)
-  const nextStepButtonLabel = missionCompleted
-    ? '완료됨'
-    : finalStep
-      ? '오늘 미션 완료'
-      : '다음 단계'
   const planSummaryItems = [
     { label: '학습 목표', value: generatedPlan.goal },
     { label: '추천 트랙', value: generatedPlan.focusRole || generatedPlan.title },
     { label: '예상 기간', value: generatedPlan.estimatedDuration },
   ]
 
-  const [editorFiles, setEditorFiles] = useState<WorkspaceEditorFile[]>(() =>
-    createWorkspaceEditorFiles(activeMission),
+  const initialEditorFiles = createWorkspaceEditorFiles(activeMission)
+  const initialDraft = loadWorkspaceDraft(mission.id, activeStepOffset)
+  const [editorFiles, setEditorFiles] = useState<WorkspaceEditorFile[]>(
+    () => initialDraft?.files ?? initialEditorFiles,
   )
   const [activeFilePath, setActiveFilePath] = useState(
-    () => createWorkspaceEditorFiles(activeMission)[0]?.path ?? '',
+    () => initialDraft?.activeFilePath ?? initialEditorFiles[0]?.path ?? '',
   )
   const [runPreview, setRunPreview] = useState(() => createInitialRunPreviewState())
   const { cancelPreview, iframeRef, previewUrl, renderPreview } = useReactPreviewBridge()
@@ -173,6 +272,30 @@ function LearningWorkspaceView({
   const code = activeFile?.value ?? ''
   const runnableCode = runnableFile?.value ?? code
   const cssCode = editorFiles.find((file) => file.name.toLowerCase().endsWith('.css'))?.value ?? ''
+  const currentInitialFiles = useMemo(
+    () => createWorkspaceEditorFiles(activeMission),
+    [activeMission],
+  )
+  const hasCodeChange = useMemo(
+    () => hasWorkspaceCodeChange(editorFiles, currentInitialFiles),
+    [currentInitialFiles, editorFiles],
+  )
+  const testCases = useMemo(
+    () => createTestCases(mission, runState, hasCodeChange),
+    [hasCodeChange, mission, runState],
+  )
+  const passedCount = testCases.filter((item) => item.state === 'passed').length
+  const failedCount = testCases.filter((item) => item.state === 'failed').length
+  const pendingCount = testCases.length - passedCount - failedCount
+  const canAdvance = runState === 'passed' && hasCodeChange && !missionCompleted
+  const resultMessage = missionCompleted
+    ? '오늘 미션을 완료했습니다. Today Hub에서 다음 학습을 확인하세요.'
+    : getResultMessage(runState, passedCount, failedCount, testCases.length)
+  const nextStepButtonLabel = missionCompleted
+    ? '완료됨'
+    : finalStep
+      ? '오늘 미션 완료'
+      : '다음 단계'
 
   function updateActiveFile(value: string) {
     if (!activeFile) {
@@ -208,13 +331,6 @@ function LearningWorkspaceView({
     [activeMission.fileName, activeMission.mode, runnableFile?.name],
   )
 
-  const runtimeSummaryItems = [
-    { label: '실행 모드', value: createWorkspaceModeLabel(activeMission.mode) },
-    { label: '실행 파일', value: runnableFile?.name ?? activeMission.fileName },
-    { label: '미션 ID', value: activeMission.id },
-    { label: '계획 출처', value: hasSavedGeneratedPlan ? '저장된 커리큘럼' : '기본 학습 계획' },
-  ]
-
   const consoleLines =
     runPreview.logs.length > 0
       ? runPreview.logs
@@ -223,8 +339,20 @@ function LearningWorkspaceView({
         : ['출력 없이 실행이 끝났습니다.']
 
   useEffect(() => {
+    const saveTimer = window.setTimeout(() => {
+      saveWorkspaceDraft(mission.id, activeStepOffset, editorFiles, activeFilePath)
+    }, 200)
+
+    return () => {
+      window.clearTimeout(saveTimer)
+      saveWorkspaceDraft(mission.id, activeStepOffset, editorFiles, activeFilePath)
+    }
+  }, [activeFilePath, activeStepOffset, editorFiles, mission.id])
+
+  useEffect(() => {
     return () => {
       runAbortControllerRef.current?.abort()
+      tutorAbortControllerRef.current?.abort()
       cancelPreview()
     }
   }, [cancelPreview])
@@ -249,19 +377,88 @@ function LearningWorkspaceView({
     return nextLog
   }
 
-  function recordServerSyncFailure(missionId: string, stepOffset: number) {
-    setActivityLog((currentLog) => {
-      const nextLog = prependActivity(
-        currentLog,
-        createActivity(
-          '서버 동기화 실패',
-          '로컬 진행 기록은 저장했습니다. 백엔드를 실행한 뒤 다시 시도하세요.',
-        ),
-      )
-      recordMissionActivity({ missionId, activeStepOffset: stepOffset, activityLog: nextLog })
+  async function handleSubmitTutorQuestion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
 
-      return nextLog
+    const question = tutorQuestion.trim()
+    if (!question || isAskingTutor) {
+      return
+    }
+
+    const history = tutorMessages.filter(
+      (message): message is TutorMessage & { role: 'user' | 'tutor' } => message.role !== 'error',
+    )
+
+    tutorAbortControllerRef.current?.abort()
+    const controller = new AbortController()
+    tutorAbortControllerRef.current = controller
+
+    setMobileTab('tutor')
+    setTutorMessages((current) => [...current, { role: 'user', text: question }])
+    setTutorQuestion('')
+    setIsAskingTutor(true)
+
+    try {
+      const { answer } = await askTutor(
+        {
+          question,
+          code,
+          fileName: activeMission.fileName,
+          missionTitle: activeMission.title,
+          missionDetail: activeMission.detail,
+          history,
+        },
+        fetch,
+        { signal: controller.signal },
+      )
+      if (controller.signal.aborted) {
+        return
+      }
+      setTutorMessages((current) => [...current, { role: 'tutor', text: answer }])
+    } catch (error) {
+      if (
+        controller.signal.aborted ||
+        (error instanceof DOMException && error.name === 'AbortError')
+      ) {
+        return
+      }
+      setTutorMessages((current) => [
+        ...current,
+        { role: 'error', text: '답변을 받지 못했습니다. 잠시 후 다시 시도해주세요.' },
+      ])
+    } finally {
+      if (tutorAbortControllerRef.current === controller) {
+        setIsAskingTutor(false)
+        tutorAbortControllerRef.current = null
+      }
+    }
+  }
+
+  function maybeSaveTutorConversation() {
+    if (!hasCompletedTutorExchange(tutorMessages)) {
+      return
+    }
+
+    const shouldSave = window.confirm('오늘 대화를 저장할까요?')
+    if (!shouldSave) {
+      return
+    }
+
+    const input = buildTutorMistakeNoteInput({
+      lessonId: activeMission.id,
+      lessonTitle: activeMission.title,
+      messages: tutorMessages,
     })
+
+    addMistakeNote(input)
+
+    if (shouldUseServerApi()) {
+      void createMistakeNoteApi(input).catch(() => {
+        // 로컬 저장은 완료됨. 백엔드 복구 후 서버에 반영됩니다.
+      })
+    }
+
+    setTutorMessages([])
   }
 
   function syncMissionProgressToServer(input: {
@@ -277,16 +474,39 @@ function LearningWorkspaceView({
       return
     }
 
-    void saveMissionProgress(input.missionId, {
+    const request: SaveLearningProgressRequest = {
       runState: input.runState,
       runAttemptCount: input.runAttemptCount,
       activeStepOffset: input.activeStepOffset,
-      completedAt: input.completedAt,
+      completedAt:
+        input.completedAt !== undefined ? input.completedAt : (savedProgress?.completedAt ?? null),
       activityLog: input.activityLog,
-      lastTestResult: input.lastTestResult,
+      lastTestResult:
+        input.lastTestResult !== undefined
+          ? input.lastTestResult
+          : (savedProgress?.lastTestResult ?? null),
+    }
+    setPendingProgress({ missionId: input.missionId, request })
+    setPersistenceStatus('saving')
+
+    void saveWorkspaceProgress(input.missionId, request, {
+      save: saveMissionProgress,
+      upsert: upsertMissionProgress,
     })
-      .then(({ progress }) => upsertMissionProgress(progress))
-      .catch(() => recordServerSyncFailure(input.missionId, input.activeStepOffset))
+      .then(() => {
+        setPendingProgress(null)
+        setPersistenceStatus('saved')
+      })
+      .catch(() => setPersistenceStatus('error'))
+  }
+
+  function retryPendingProgress() {
+    if (!pendingProgress) return
+
+    syncMissionProgressToServer({
+      missionId: pendingProgress.missionId,
+      ...pendingProgress.request,
+    })
   }
 
   async function handleRun() {
@@ -298,6 +518,7 @@ function LearningWorkspaceView({
     const initialState: RunState = usesReactPreview ? 'compiling' : 'running'
     runAbortControllerRef.current = abortController
 
+    setMobileTab('code')
     setRunState(initialState)
     setRunPreview({
       status: initialState,
@@ -306,7 +527,6 @@ function LearningWorkspaceView({
       ],
     })
     setMissionCompleted(false)
-    setReviewVisible(false)
     const runLog = addActivity(
       '테스트 실행',
       `${activeMission.fileName} 기준으로 백엔드에 코드를 전송하여 실행합니다.`,
@@ -358,8 +578,9 @@ function LearningWorkspaceView({
       })
       setRunAttemptCount(nextAttemptCount)
       setActivityLog(resultLog)
+      setMobileTab('results')
 
-      const nextTestCases = createTestCases(mission, nextState)
+      const nextTestCases = createTestCases(mission, nextState, hasCodeChange)
       const testResult = {
         passed: nextTestCases.filter((item) => item.state === 'passed').length,
         total: nextTestCases.length,
@@ -371,6 +592,7 @@ function LearningWorkspaceView({
         runState: nextState,
         runAttemptCount: nextAttemptCount,
         activeStepOffset,
+        completedAt: null,
         activityLog: resultLog,
         lastTestResult: testResult,
       })
@@ -379,6 +601,7 @@ function LearningWorkspaceView({
         runState: nextState,
         runAttemptCount: nextAttemptCount,
         activeStepOffset,
+        completedAt: null,
         activityLog: resultLog,
         lastTestResult: testResult,
       })
@@ -402,6 +625,7 @@ function LearningWorkspaceView({
         preview: latestPreview,
       })
       setRunState(nextState)
+      setMobileTab('results')
 
       const resultLog = prependActivity(
         runLog,
@@ -419,7 +643,7 @@ function LearningWorkspaceView({
       if (learnerFailure) {
         const nextAttemptCount = runAttemptCount + 1
         setRunAttemptCount(nextAttemptCount)
-        const nextTestCases = createTestCases(mission, 'failed')
+        const nextTestCases = createTestCases(mission, 'failed', hasCodeChange)
         const testResult = {
           passed: nextTestCases.filter((item) => item.state === 'passed').length,
           total: nextTestCases.length,
@@ -430,6 +654,7 @@ function LearningWorkspaceView({
           runState: 'failed',
           runAttemptCount: nextAttemptCount,
           activeStepOffset,
+          completedAt: null,
           activityLog: resultLog,
           lastTestResult: testResult,
         })
@@ -438,6 +663,7 @@ function LearningWorkspaceView({
           runState: 'failed',
           runAttemptCount: nextAttemptCount,
           activeStepOffset,
+          completedAt: null,
           activityLog: resultLog,
           lastTestResult: testResult,
         })
@@ -450,7 +676,14 @@ function LearningWorkspaceView({
   }
 
   function handleShowHint() {
-    setHintVisible(true)
+    setMobileTab('tutor')
+    setTutorMessages((current) => [
+      ...current,
+      {
+        role: 'tutor',
+        text: `먼저 바뀌는 지점을 찾아보세요. ${activeMission.hint}`,
+      },
+    ])
     const nextLog = addActivity(
       '힌트 확인',
       `${activeMission.title} 단계의 접근 방향을 확인했습니다.`,
@@ -470,7 +703,12 @@ function LearningWorkspaceView({
   }
 
   function handleShowReview() {
-    setReviewVisible(true)
+    setMobileTab('tutor')
+    const reviewText =
+      runState === 'passed'
+        ? '코드 리뷰: 좋은 흐름입니다. 필수 요구사항을 만족했습니다. 다음에는 상태가 바뀌는 이유를 짧은 주석이나 설명으로 정리해보세요.'
+        : '코드 리뷰: 아직 확인할 실패 항목이 있습니다. 실패한 케이스의 실제 결과를 먼저 보고, 예상과 달라진 값을 표시한 뒤 다시 실행하세요.'
+    setTutorMessages((current) => [...current, { role: 'tutor', text: reviewText }])
     const nextLog = addActivity(
       '코드 리뷰 요청',
       runState === 'passed'
@@ -496,6 +734,8 @@ function LearningWorkspaceView({
       return
     }
 
+    maybeSaveTutorConversation()
+
     if (finalStep) {
       const completedAt = new Date().toISOString()
       const nextLog = addActivity(
@@ -503,8 +743,6 @@ function LearningWorkspaceView({
         '생성 커리큘럼의 오늘 학습 단계를 모두 마쳤습니다.',
       )
       setMissionCompleted(true)
-      setHintVisible(false)
-      setReviewVisible(false)
       recordRunResult({
         missionId: mission.id,
         runState: 'passed',
@@ -528,14 +766,19 @@ function LearningWorkspaceView({
     const nextGeneratedStep = resolveActiveGeneratedStep(generatedPlan, nextStepOffset)
     const nextMission = createActiveMissionPresentation(mission, nextGeneratedStep)
     const nextFiles = createWorkspaceEditorFiles(nextMission)
+    const nextDraft = loadWorkspaceDraft(mission.id, nextStepOffset)
     const nextLog = addActivity('다음 단계', '현재 단계를 완료하고 다음 학습 단계로 이동했습니다.')
+    tutorAbortControllerRef.current?.abort()
+    tutorAbortControllerRef.current = null
+    setTutorMessages([])
+    setTutorQuestion('')
+    setIsAskingTutor(false)
     setActiveStepOffset(nextStepOffset)
     setRunState('idle')
+    setMobileTab('code')
     setRunAttemptCount(0)
-    setHintVisible(false)
-    setReviewVisible(false)
-    setEditorFiles(nextFiles)
-    setActiveFilePath(nextFiles[0]?.path ?? '')
+    setEditorFiles(nextDraft?.files ?? nextFiles)
+    setActiveFilePath(nextDraft?.activeFilePath ?? nextFiles[0]?.path ?? '')
     setRunPreview(createInitialRunPreviewState())
     cancelPreview()
     advanceMissionStep({
@@ -548,7 +791,9 @@ function LearningWorkspaceView({
       runState: 'idle',
       runAttemptCount: 0,
       activeStepOffset: nextStepOffset,
+      completedAt: null,
       activityLog: nextLog,
+      lastTestResult: null,
     })
   }
 
@@ -566,73 +811,117 @@ function LearningWorkspaceView({
 
   return (
     <section className={styles.page} aria-labelledby="workspace-title">
-      <WorkspaceHeader
-        mission={activeMission}
-        executionPanelTitle={executionPanel.title}
-        runtimeStatus={runPreview.status}
-        runtimeSummaryItems={runtimeSummaryItems}
-        progressPercent={progressPercent}
-        passedCount={passedCount}
-        testCaseCount={testCases.length}
-        isRunning={isRunning}
-        runState={runState}
-        missionCompleted={missionCompleted}
-        failedCount={failedCount}
-      />
-
-      <div className={styles.workspaceGrid}>
-        <WorkspaceCurriculumPanel
+      <div className={styles.workspaceHeader} data-workspace-region="header">
+        <WorkspaceSummaryBar
           missionTitle={activeMission.title}
+          missionTrackTitle={activeMission.trackTitle}
           missionFileName={activeMission.fileName}
+          progressPercent={progressPercent}
           curriculumSteps={curriculumSteps}
           currentStepIndex={currentStepIndex}
-          totalSteps={totalSteps}
-          progressPercent={progressPercent}
           hasSavedGeneratedPlan={hasSavedGeneratedPlan}
           planTitle={generatedPlan.title}
           planSummary={generatedPlan.summary}
           planSummaryItems={planSummaryItems}
-          missionCompleted={missionCompleted}
+          guideTitle={activeMission.guideTitle}
+          guideDetail={activeMission.guideDetail}
+          practiceDetail={activeMission.practiceDetail}
+          criteria={activeMission.criteria}
         />
 
-        <WorkspaceGuidePanel
-          mission={activeMission}
-          hintVisible={hintVisible}
-          reviewVisible={reviewVisible}
-          runState={runState}
-        />
+        {persistenceStatus !== 'idle' ? (
+          <div className={styles.persistenceBanner} data-status={persistenceStatus} role="status">
+            <span>
+              {persistenceStatus === 'saving' ? '학습 진행 상태를 저장하는 중입니다.' : null}
+              {persistenceStatus === 'saved' ? '학습 진행 상태가 서버에 저장되었습니다.' : null}
+              {persistenceStatus === 'error'
+                ? '실행 결과는 유지했지만 진행 상태를 저장하지 못했습니다.'
+                : null}
+            </span>
+            {persistenceStatus === 'error' ? (
+              <button type="button" onClick={retryPendingProgress}>
+                저장 다시 시도
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
 
-        <WorkspaceEditorPanel
-          mission={activeMission}
-          editorFiles={editorFiles}
-          activeFile={activeFile}
-          isRunning={isRunning}
-          runState={runState}
-          executionPanel={executionPanel}
-          runPreview={runPreview}
-          consoleLines={consoleLines}
-          iframeRef={iframeRef}
-          previewUrl={previewUrl}
-          runButtonRef={runButtonRef}
-          onSelectFile={setActiveFilePath}
-          onRun={handleRun}
-          onChangeActiveFile={updateActiveFile}
-          onResetActiveFile={resetActiveFile}
+      <div className={styles.mobileWorkspaceTabs} role="tablist" aria-label="학습 작업 영역">
+        {workspaceMobileTabs.map((tab) => (
+          <button
+            type="button"
+            role="tab"
+            aria-controls={`workspace-mobile-panel-${tab.id}`}
+            aria-selected={mobileTab === tab.id}
+            className={styles.mobileWorkspaceTab}
+            data-active={mobileTab === tab.id}
+            key={tab.id}
+            onClick={() => setMobileTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className={styles.workspaceGrid}>
+        <div
+          className={styles.workspacePanelSlot}
+          data-mobile-active={mobileTab === 'tutor'}
+          id="workspace-mobile-panel-tutor"
+        >
+          <WorkspaceGuidePanel
+            tutorMessages={tutorMessages}
+            tutorQuestion={tutorQuestion}
+            isAskingTutor={isAskingTutor}
+            onTutorQuestionChange={setTutorQuestion}
+            onSubmitTutorQuestion={handleSubmitTutorQuestion}
+          />
+        </div>
+
+        <div
+          className={styles.workspacePanelSlot}
+          data-mobile-active={mobileTab === 'code'}
+          id="workspace-mobile-panel-code"
+        >
+          <WorkspaceEditorPanel
+            mission={activeMission}
+            editorFiles={editorFiles}
+            activeFile={activeFile}
+            isRunning={isRunning}
+            runState={runState}
+            executionPanel={executionPanel}
+            runPreview={runPreview}
+            consoleLines={consoleLines}
+            iframeRef={iframeRef}
+            previewUrl={previewUrl}
+            runButtonRef={runButtonRef}
+            onSelectFile={setActiveFilePath}
+            onRun={handleRun}
+            onChangeActiveFile={updateActiveFile}
+            onResetActiveFile={resetActiveFile}
+          />
+        </div>
+      </div>
+      <div
+        className={styles.resultsPanelSlot}
+        data-mobile-active={mobileTab === 'results'}
+        id="workspace-mobile-panel-results"
+      >
+        <WorkspaceResultsPanel
+          activityLog={activityLog}
+          canAdvance={canAdvance}
+          failedCount={failedCount}
+          nextStepButtonLabel={nextStepButtonLabel}
+          onAdvanceStep={handleAdvanceStep}
+          onShowHint={handleShowHint}
+          onShowReview={handleShowReview}
+          passedCount={passedCount}
+          pendingCount={pendingCount}
+          resultMessage={resultMessage}
+          testCases={testCases}
         />
       </div>
-      <WorkspaceResultsPanel
-        activityLog={activityLog}
-        canAdvance={canAdvance}
-        failedCount={failedCount}
-        nextStepButtonLabel={nextStepButtonLabel}
-        onAdvanceStep={handleAdvanceStep}
-        onShowHint={handleShowHint}
-        onShowReview={handleShowReview}
-        passedCount={passedCount}
-        pendingCount={pendingCount}
-        resultMessage={resultMessage}
-        testCases={testCases}
-      />
     </section>
   )
 }

@@ -2,357 +2,207 @@
 
 ## 결론
 
-ICU는 다음 조합으로 설계합니다.
+ICU는 다음 원칙을 사용합니다.
 
-- Modular Monolith: 기능별 모듈을 한 저장소와 한 제품 서버 안에서 관리합니다.
-- Vertical Slice: 화면과 기능 흐름 기준으로 코드를 묶습니다.
-- Lightweight Hexagonal Architecture: LLM, DB, 파일, 외부 연동은 adapter로 분리합니다.
-- REST API: React와 Node backend 사이의 통신 contract를 명확히 합니다.
-- 가벼운 DDD: `curriculum`, `mistake-notes`, `learning-progress`, `git-lab`, `profile`, `agent` 같은 도메인 경계를 이름과 폴더 구조에 반영합니다.
+- Modular Monolith: 기능별 모듈을 한 저장소에서 관리
+- Vertical Slice: 화면과 사용자 흐름 단위로 frontend 기능 구성
+- Lightweight Hexagonal Architecture: LLM, DB, 실행기, 파일을 adapter로 분리
+- REST API: React, Core API, Judge 사이의 contract 명시
+- 가벼운 DDD: `profile`, `curriculum`, `learning-progress`, `mistake-notes`, `git-lab`, `code-runner` 경계 유지
 
-Clean Architecture, REST API, DDD를 모두 풀스펙으로 적용하지 않습니다. 지금 단계에서는 의존성 방향과 모듈 경계를 지키는 정도로 시작하고, DB, 인증, queue, RAG가 붙을 때 필요한 만큼 강화합니다.
+모든 계층을 풀스펙으로 만들지 않고 외부 의존성 교체와 데이터 손실 방지에 필요한 만큼만 분리합니다.
 
-## 전체 레이어
+## 런타임 구조
 
-```txt
-User
-  -> React Screen
-  -> Feature Hook / Store / Client Adapter
-  -> REST API
-  -> Node Backend Route
-  -> Application Use Case
-  -> Domain Rule
-  -> Port
-  -> Adapter
-  -> LLM / JSON Data / DB / External API
+```text
+React App (5173)
+  ├─ Core API (8787)
+  │    ├─ application / domain
+  │    ├─ Gemini provider
+  │    └─ repository adapter
+  │         ├─ in-memory
+  │         ├─ SQLite
+  │         └─ Supabase
+  ├─ Judge API (8790)
+  │    └─ JavaScript/JSX runner
+  └─ Preview Runtime (5174)
+       └─ isolated React preview
 ```
 
-의존성 방향은 바깥에서 안쪽으로 흐릅니다. 화면과 route는 얇게 유지하고, 실제 판단과 변환은 use case와 domain에 둡니다. Gemini, Vertex AI, Notion, DB, 파일 접근은 adapter에 둡니다.
+Frontend는 provider secret이나 Supabase secret key를 읽지 않습니다.
 
-## 추천 폴더 구조
+## Frontend
 
-```txt
+```text
 src/
-  app/
-    App.tsx
-    AppShell.tsx
-  pages/
+  app/                       router, AppShell, API URL
+  pages/                     route-level intro
   features/
+    profile/
     today-learning/
+    curriculum/
     learning-workspace/
+    learning-progress/
     mistake-notes/
     git-lab/
-    profile/
-  components/
-  data/
-  stores/
-  styles/
-  types/
+  components/                shared UI
+  styles/                    global reset, typography, tokens
+```
 
+### 상태 관리
+
+- Zustand는 화면 상태, 선택 상태, optimistic state를 관리합니다.
+- 기본 server mode에서는 API 응답으로 store를 hydrate합니다.
+- mock mode에서만 localStorage snapshot을 fallback으로 사용합니다.
+- 생성 커리큘럼, 진도, 오답은 각 feature store가 소유하지만 server contract를 공유합니다.
+
+### 주요 화면 연결
+
+| 화면               | Route                 | 서버 연결                                      |
+| ------------------ | --------------------- | ---------------------------------------------- |
+| Intro              | `/`                   | 없음                                           |
+| Profile            | `/profile`            | Core profile API                               |
+| Today Hub          | `/today`              | profile, curriculum, progress, notes, attempts |
+| Curriculum Goal    | `/today/goal`         | curriculum recommend/generated                 |
+| Curriculum History | `/curriculum/history` | curriculum history/generated                   |
+| Workspace          | `/workspace`          | curriculum, progress, tutor, Judge             |
+| Mistake Notes      | `/mistake-notes`      | mistake notes                                  |
+| Add Mistake Note   | `/mistake-notes/new`  | mistake notes                                  |
+| Git Lab            | `/git-lab`            | attempts, mistake notes                        |
+
+## Backend
+
+```text
 backend/
   http/
-    server.mjs
-    routes/
+    server.mjs               Core API
+    judgeServer.mjs          Judge API
+    *Routes.mjs
   modules/
+    profile/
     curriculum/
-      application/
-      domain/
-      ports/
-      adapters/
-    mistake-notes/
-      application/
-      domain/
-      ports/
-      adapters/
     learning-progress/
-      application/
-      domain/
-      ports/
-      adapters/
-    agent/
-      application/
-      ports/
-      adapters/
+    mistake-notes/
+    git-lab/
+    code-runner/
+    knowledge/
   shared/
     env.mjs
     http.mjs
-    errors.mjs
-    validation.mjs
+    sqliteDatabase.mjs
+    supabaseClient.mjs
+    repositoryError.mjs
 ```
 
-현재는 `backend/http`와 `backend/modules/curriculum` 구조로 시작했습니다. 이후 API가 늘어나도 같은 route -> use case -> domain/adapter 흐름을 유지합니다.
+일반적인 요청 흐름:
 
-## 화면 아키텍처
-
-### 1. Onboarding / Profile Setup
-
-역할:
-
-- 학습 목표, 관심 트랙, 하루 학습 시간, 수준을 입력합니다.
-- 첫 커리큘럼 생성의 기본 goal과 preference를 만듭니다.
-
-현재 위치:
-
-- 화면: `src/features/profile/ProfileSetup.tsx`
-- 상태: `src/features/profile/model/useLearningProfileStore.ts`
-- 타입: `src/features/profile/model/profileTypes.ts`
-
-향후 연결:
-
-```txt
-ProfileSetup
-  -> profile store
-  -> POST /api/profile
-  -> backend/modules/profile/application/saveProfile
+```text
+HTTP route
+  → application service
+  → domain validation
+  → repository/provider adapter
 ```
 
-### 2. Today Learning Hub
+Route는 request parsing, status, response mapping을 담당하고 저장·검증 규칙은 application/domain에 둡니다.
 
-역할:
+## Core API
 
-- 앱의 첫 학습 화면입니다.
-- 오늘 할 일, 현재 미션, 커리큘럼 생성, 복습/오답 요약을 보여줍니다.
-- 사용자가 학습을 시작할지, 커리큘럼을 다시 만들지, 오답을 복습할지 결정합니다.
+```text
+GET    /api/health
 
-현재 위치:
+GET    /api/profile
+PUT    /api/profile
+DELETE /api/profile
 
-- 화면: `src/features/today-learning/TodayLearningHub.tsx`
-- mock data: `src/features/today-learning/data/todayLearning.ts`
-- 커리큘럼 client: `src/features/curriculum/api/curriculumClient.ts`
-- 생성 커리큘럼 snapshot: `src/features/curriculum/model/useGeneratedCurriculumStore.ts`
-- 진행 상태: `src/features/learning-progress/model/useLearningProgressStore.ts`
-- 오답 상태: `src/features/mistake-notes/model/useMistakeNoteStore.ts`
-
-API 연결:
-
-```txt
-TodayLearningHub
-  -> recommendCurriculum({ goal })
-  -> POST /api/curriculum/recommend
-  -> backend curriculum use case
-  -> Gemini provider + curriculum JSON catalog
-  -> GeneratedCurriculumPlan
-  -> icu.generatedCurriculum store
-```
-
-UI 원칙:
-
-- 사용자가 다음에 누를 행동이 명확해야 합니다.
-- 긴 설명보다 현재 목표, 오늘 미션, 이어 학습하기, 전체보기 같은 구체적 액션을 우선합니다.
-- 커리큘럼 생성 실패 시 초보자가 이해할 수 있는 짧은 한국어 오류를 보여줍니다.
-
-### 3. Learning Workspace IDE
-
-역할:
-
-- 실제 학습이 진행되는 IDE형 화면입니다.
-- 커리큘럼 단계, AI 튜터 설명, 코드 작성, 실행 결과, 다음 단계 이동을 한 흐름으로 묶습니다.
-
-현재 위치:
-
-- 화면: `src/features/learning-workspace/LearningWorkspace.tsx`
-- 상호작용 로직: `src/features/learning-workspace/workspaceInteraction.ts`
-- 진행 상태: `src/features/learning-progress/model/useLearningProgressStore.ts`
-- 생성 커리큘럼 참조: `src/features/curriculum/model/useGeneratedCurriculumStore.ts`
-
-향후 API 연결:
-
-```txt
-LearningWorkspace
-  -> POST /api/code/run
-  -> backend/modules/code-runner/application/runCode
-
-LearningWorkspace
-  -> POST /api/code/review
-  -> backend/modules/agent/application/requestCodeFeedback
-
-LearningWorkspace
-  -> POST /api/progress/missions/:missionId
-  -> backend/modules/learning-progress/application/saveMissionProgress
-```
-
-UI 원칙:
-
-- 편집기는 학습 세션 안에서만 중심이 됩니다.
-- 실패 상태는 테스트 실패, 이유, 힌트, 다시 실행을 같이 보여줍니다.
-- 성공 상태는 다음 단계와 코드 리뷰 요청을 명확히 보여줍니다.
-
-### 4. Mistake Notes
-
-역할:
-
-- 실패한 명령, 테스트, 개념을 모아 다시 풀 수 있게 합니다.
-- Today Hub의 요약형 카드에서 전체 리스트형 화면으로 진입합니다.
-
-현재 위치:
-
-- 화면: `src/features/mistake-notes/MistakeNotesPage.tsx`, `src/features/mistake-notes/AddMistakeNotePage.tsx`
-- 컴포넌트: `src/features/mistake-notes/components/MistakeNoteDetailModal.tsx`
-- route helper: `src/features/mistake-notes/mistakeNoteRoutes.ts`
-- 상태: `src/features/mistake-notes/model/useMistakeNoteStore.ts`
-
-향후 API 연결:
-
-```txt
-MistakeNotesPage
-  -> GET /api/mistake-notes
-  -> POST /api/mistake-notes
-  -> PATCH /api/mistake-notes/:noteId
-  -> backend/modules/mistake-notes/application/*
-```
-
-UI 원칙:
-
-- 대시보드형은 Today Hub에서 최근/중요 항목만 보여줍니다.
-- 리스트형은 검색, 필터, 상태 변경, 다시 풀기 진입에 집중합니다.
-- 긴 오답 내용은 리스트 행 전체를 키우기보다 상세 영역 또는 내부 스크롤로 처리합니다.
-
-### 5. Git Branching Lab
-
-역할:
-
-- Pro Git 기반 Git 명령 학습을 시각적 commit graph와 터미널로 제공합니다.
-- 실패한 명령은 오답노트로 연결됩니다.
-
-현재 위치:
-
-- 화면/컴포넌트: `src/features/git-lab/`
-- 레벨 데이터: `src/features/git-lab/levels/`
-- layout 계산: `src/features/git-lab/layout/`
-- 오답 저장: `src/features/mistake-notes/model/useMistakeNoteStore.ts`
-
-향후 API 연결:
-
-```txt
-GitLab
-  -> POST /api/git-lab/attempts
-  -> backend/modules/git-lab/application/recordAttempt
-
-GitLab failure
-  -> POST /api/mistake-notes
-  -> backend/modules/mistake-notes/application/createMistakeNote
-```
-
-UI 원칙:
-
-- 터미널은 어둡게, 그래프와 목표 패널은 읽기 쉽게 유지합니다.
-- goal/current graph 차이를 색만으로 설명하지 않고 텍스트 피드백도 같이 제공합니다.
-- 학습자가 현재 명령, 결과, 다음 시도를 놓치지 않게 합니다.
-
-## 백엔드 모듈 경계
-
-### curriculum
-
-책임:
-
-- 사용자 목표를 커리큘럼 catalog와 매칭합니다.
-- LLM 추천 결과를 검증합니다.
-- React 화면 contract인 `GeneratedCurriculumPlan`으로 변환합니다.
-
-현재 구현:
-
-- `backend/modules/curriculum`
-- `backend/http/server.mjs`
-
-다음 목표 구조:
-
-```txt
-backend/modules/curriculum/
-  application/recommendCurriculum.mjs
-  domain/generatedCurriculumPlan.mjs
-  ports/curriculumCatalogRepository.mjs
-  ports/curriculumRecommendationProvider.mjs
-  adapters/jsonCurriculumCatalogRepository.mjs
-  adapters/geminiCurriculumRecommendationProvider.mjs
-```
-
-### mistake-notes
-
-책임:
-
-- 실패 항목 생성, 상태 변경, 다시 풀기 진입 정보를 관리합니다.
-- Git Lab, Workspace, Quiz 실패를 공통 오답 모델로 모읍니다.
-
-### learning-progress
-
-책임:
-
-- mission별 실행 결과, 완료 상태, 최근 활동, mastery score를 관리합니다.
-- Today Hub와 Workspace가 같은 진행 상태를 보게 합니다.
-
-### agent
-
-책임:
-
-- Gemini, Vertex AI, OpenAI 같은 provider 차이를 숨깁니다.
-- prompt version, response schema, retry, 비용 로그, 응답 검증을 관리합니다.
-
-초기에는 curriculum agent 하나로 시작하고, 이후 Review Agent, Code Feedback Agent, RAG Answer Agent로 확장합니다.
-
-## REST API 초안
-
-Implemented now:
-
-```txt
 POST   /api/curriculum/recommend
 GET    /api/curriculum/generated
 POST   /api/curriculum/generated
 DELETE /api/curriculum/generated
+DELETE /api/curriculum/generated/:id
+GET    /api/curriculum/history
+
 GET    /api/progress/today
 POST   /api/progress/missions/:missionId
 DELETE /api/progress/missions/:missionId
 DELETE /api/progress
+
 GET    /api/mistake-notes
 POST   /api/mistake-notes
 PATCH  /api/mistake-notes/:noteId
 DELETE /api/mistake-notes/:noteId
 DELETE /api/mistake-notes
+
 GET    /api/git-lab/attempts
 POST   /api/git-lab/attempts
 DELETE /api/git-lab/attempts
-POST   /api/code/run
+
+POST   /api/tutor/ask
 ```
 
-Planned later:
+## Judge API
 
-```txt
-POST /api/code/review
-GET  /api/git-lab/levels
+```text
+GET  /api/health
+POST /api/code/run
 ```
 
-API route는 HTTP status, request parsing, response mapping만 담당합니다. 비즈니스 판단은 application use case로 넘깁니다.
+코드 실행을 Core API와 별도 프로세스로 분리해 장애와 배포 경계를 나눕니다. 현재 runner는 JavaScript/JSX 학습 피드백용이며 강한 sandbox 격리는 후속 범위입니다.
 
-## 상태 관리 기준
+## Repository Modes
 
-현재 React mock 단계:
+동일한 application contract 아래에서 `ICU_REPOSITORY_MODE`로 adapter를 선택합니다.
 
-- `localStorage + Zustand`가 임시 persistence입니다.
-- `icu.generatedCurriculum`, `icu.learningProgress`, `icu.mistakeNotes` snapshot을 사용합니다.
-- 화면 검증과 UX 흐름 안정화가 목적입니다.
+| Mode        | 용도               | 영속성                |
+| ----------- | ------------------ | --------------------- |
+| `in-memory` | 테스트·일회성 실행 | 서버 재시작 시 초기화 |
+| `sqlite`    | 로컬·오프라인      | `.icu/icu.sqlite`     |
+| `supabase`  | 배포 환경          | Supabase PostgreSQL   |
 
-Node backend 단계:
+저장 대상:
 
-- Zustand는 화면 상태와 optimistic UI에 집중합니다.
-- 서버가 사용자별 profile, progress, mistake notes, generated curriculum을 저장합니다.
-- React client adapter는 mock/server mode를 유지해 개발 중 fallback이 가능하게 합니다.
+- learner profile
+- generated curriculum snapshots
+- mission progress
+- mistake notes
+- Git Lab attempts
 
-Electron 단계:
+인증과 사용자별 row 분리는 아직 후속 과제입니다.
 
-- Renderer는 화면만 담당합니다.
-- Main Process 또는 Node backend가 LLM 호출, 로컬 DB, 코드 실행, 파일 접근을 담당합니다.
-- 같은 use case와 agent core를 재사용합니다.
+## Provider와 지식 데이터
 
-## 적용 순서
+- Curriculum과 Tutor는 서버의 Gemini provider를 사용합니다.
+- API key는 `GEMINI_API_KEY`에서만 읽습니다.
+- 커리큘럼 catalog는 `shared/curriculum/*.json`을 사용합니다.
+- 공식 문서 chunk는 `data/*.jsonl`에서 로드합니다.
+- full embedding/vector retrieval은 아직 구현하지 않습니다.
 
-1. 현재 `backend/http/server.mjs`와 `backend/modules/curriculum`을 유지하며 `/api/curriculum/recommend`를 안정화합니다.
-2. API가 2개 이상으로 늘어날 때 `backend/http`와 `backend/modules/curriculum`으로 한 번 더 분리합니다.
-3. 오답노트와 학습 진행을 backend module로 옮깁니다.
-4. 코드 실행 API가 필요해지는 시점에 backend shared error/validation/http helper를 만듭니다.
-5. RAG, embedding, 문서 chunking이 커질 때 Python worker 또는 별도 Agent Service를 검토합니다.
+## 배포 경계
+
+```text
+Vercel App ───────→ Render Core API ───────→ Supabase
+     │
+     ├────────────→ Render Judge API
+     │
+     └─ postMessage ↔ Vercel Preview Runtime
+```
+
+- Render 서비스는 `work` 브랜치를 기준으로 구성합니다.
+- GitHub Actions 검증 통과 후 Vercel 두 프로젝트와 Render deploy hook을 실행합니다.
+- `ICU_ALLOWED_ORIGIN`으로 API 접근 origin을 제한합니다.
+- App과 Preview Runtime은 `VITE_ICU_APP_ORIGINS`와 postMessage 검증을 사용합니다.
+
+## 후속 강화
+
+- Supabase Auth와 사용자별 데이터 분리
+- Gemini timeout, retry, observability
+- Judge 프로세스·파일시스템·컨테이너 격리
+- Python 등 추가 언어 runner
+- Electron Main Process와 IPC
+- full RAG와 Notion adapter
 
 ## 선택하지 않는 것
 
-- 지금 당장 Microservices로 쪼개지 않습니다.
-- DDD entity, aggregate, repository interface를 모든 파일에 강제로 만들지 않습니다.
-- Express, Electron, Monaco, RAG, Notion API는 필요한 기능 단계가 오기 전까지 추가하지 않습니다.
-- React 화면에서 provider API key를 읽지 않습니다.
+- 지금 Microservices로 세분화하지 않습니다.
+- 모든 파일에 DDD entity와 repository interface를 강제하지 않습니다.
+- React에서 provider API key나 Supabase secret key를 읽지 않습니다.
+- Core API에 코드 실행을 다시 합치지 않습니다.

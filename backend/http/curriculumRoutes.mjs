@@ -1,6 +1,7 @@
 import { URL } from 'node:url'
 import { recommendCurriculum } from '../modules/curriculum/application/recommendCurriculum.mjs'
 import { createCorsHeaders, parseJsonBody } from '../shared/http.mjs'
+import { isRepositoryUnavailableError } from '../shared/repositoryError.mjs'
 
 export const curriculumRecommendationPath = '/api/curriculum/recommend'
 export const generatedCurriculumPath = '/api/curriculum/generated'
@@ -26,7 +27,7 @@ export async function handleCurriculumApiRequest({
 
   if (pathname === curriculumHistoryPath) {
     if (method === 'GET') {
-      const curriculums = generatedCurriculumRepository?.list() ?? []
+      const curriculums = await generatedCurriculumRepository?.list() ?? []
 
       return { status: 200, body: { curriculums }, headers: createCorsHeaders() }
     }
@@ -42,7 +43,7 @@ export async function handleCurriculumApiRequest({
     const id = pathname.slice('/api/curriculum/generated/'.length).trim()
 
     if (method === 'DELETE' && id) {
-      const deleted = generatedCurriculumRepository?.delete(id) ?? false
+      const deleted = await generatedCurriculumRepository?.delete(id) ?? false
 
       return { status: 200, body: { ok: true, deleted }, headers: createCorsHeaders() }
     }
@@ -50,7 +51,7 @@ export async function handleCurriculumApiRequest({
 
   if (pathname === generatedCurriculumPath) {
     if (method === 'GET') {
-      const generatedCurriculum = generatedCurriculumRepository?.getLatest() ?? null
+      const generatedCurriculum = await generatedCurriculumRepository?.getLatest() ?? null
 
       return { status: 200, body: { generatedCurriculum }, headers: createCorsHeaders() }
     }
@@ -66,13 +67,13 @@ export async function handleCurriculumApiRequest({
         }
       }
 
-      const snapshot = generatedCurriculumRepository?.save(parsedBody.value) ?? null
+      const snapshot = await generatedCurriculumRepository?.save(parsedBody.value) ?? null
 
       return { status: 200, body: { generatedCurriculum: snapshot }, headers: createCorsHeaders() }
     }
 
     if (method === 'DELETE') {
-      generatedCurriculumRepository?.reset()
+      await generatedCurriculumRepository?.reset()
 
       return { status: 200, body: { ok: true }, headers: createCorsHeaders() }
     }
@@ -131,7 +132,7 @@ export async function handleCurriculumApiRequest({
     })
 
     if (generatedCurriculumRepository) {
-      generatedCurriculumRepository.save({
+      await generatedCurriculumRepository.save({
         id: plan.id,
         goal,
         plan,
@@ -142,6 +143,8 @@ export async function handleCurriculumApiRequest({
 
     return { status: 200, body: { plan }, headers: createCorsHeaders() }
   } catch (error) {
+    if (isRepositoryUnavailableError(error)) throw error
+
     logger.error(error instanceof Error ? error.message : error)
     const message = error instanceof Error ? error.message : ''
     const status = message.includes('GEMINI_API_KEY') ? 500 : 502

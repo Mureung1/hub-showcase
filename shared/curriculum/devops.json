@@ -37,6 +37,15 @@
           "resources": [
             { "label": "Pro Git Book", "url": "https://git-scm.com/book/ko/v2", "type": "official-doc" }
           ]
+        },
+        {
+          "moduleId": "do-01-04",
+          "title": "환경 설정과 시크릿 관리 기초",
+          "topics": ["환경 변수 관리", "dotenv 패턴", "민감 정보 분리 기본"],
+          "practiceIdeas": [".env 파일로 환경별(dev/prod) 설정을 분리해보기"],
+          "resources": [
+            { "label": "The Twelve-Factor App", "url": "https://12factor.net/ko/config", "type": "official-doc" }
+          ]
         }
       ]
     },
@@ -72,6 +81,15 @@
           "practiceIdeas": ["간단한 서버 리소스를 IaC 도구로 정의해보기"],
           "resources": [
             { "label": "Terraform 공식 문서", "url": "https://developer.hashicorp.com/terraform/docs", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "do-02-04",
+          "title": "패키지와 의존성 관리",
+          "topics": ["패키지 매니저 락파일", "의존성 취약점 점검", "빌드 캐시 활용"],
+          "practiceIdeas": ["CI 파이프라인에 의존성 캐시를 적용해 빌드 시간 단축"],
+          "resources": [
+            { "label": "npm 공식 문서", "url": "https://docs.npmjs.com/", "type": "official-doc" }
           ]
         }
       ]
@@ -110,6 +128,15 @@
           "resources": [
             { "label": "Terraform 모듈 가이드", "url": "https://developer.hashicorp.com/terraform/language/modules", "type": "official-doc" }
           ]
+        },
+        {
+          "moduleId": "do-03-04",
+          "title": "서비스 디스커버리와 트래픽 관리",
+          "topics": ["서비스 디스커버리 개념", "로드밸런싱 전략", "트래픽 분할(카나리 배포)"],
+          "practiceIdeas": ["쿠버네티스 Service로 간단한 서비스 디스커버리 구성"],
+          "resources": [
+            { "label": "Kubernetes 공식 문서 - Service", "url": "https://kubernetes.io/ko/docs/concepts/services-networking/service/", "type": "official-doc" }
+          ]
         }
       ]
     },
@@ -146,6 +173,15 @@
           "practiceIdeas": ["카나리 배포 시나리오를 파이프라인에 반영"],
           "resources": [
             { "label": "OWASP DevSecOps 가이드", "url": "https://owasp.org/www-project-devsecops-guideline/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "do-04-04",
+          "title": "재해 복구와 백업",
+          "topics": ["백업 전략", "복구 시간/시점 목표(RTO/RPO)", "장애 복구 훈련"],
+          "practiceIdeas": ["가상의 장애 시나리오로 백업/복구 훈련(리허설) 진행"],
+          "resources": [
+            { "label": "AWS 백업 및 복구 문서", "url": "https://docs.aws.amazon.com/whitepapers/latest/disaster-recovery-workloads-on-aws/disaster-recovery-options-in-the-cloud.html", "type": "official-doc" }
           ]
         }
       ]

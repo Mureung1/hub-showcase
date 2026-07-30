@@ -37,6 +37,15 @@
           "resources": [
             { "label": "MDN CORS 문서", "url": "https://developer.mozilla.org/ko/docs/Web/HTTP/CORS", "type": "official-doc" }
           ]
+        },
+        {
+          "moduleId": "fs-01-04",
+          "title": "개발 환경 세팅",
+          "topics": ["모노레포 vs 멀티레포", "패키지 매니저 워크스페이스", "개발 스크립트 자동화"],
+          "practiceIdeas": ["프론트/백을 한 저장소에서 동시에 실행하는 개발 스크립트 구성"],
+          "resources": [
+            { "label": "npm workspaces 공식 문서", "url": "https://docs.npmjs.com/cli/v10/using-npm/workspaces", "type": "official-doc" }
+          ]
         }
       ]
     },
@@ -72,6 +81,15 @@
           "practiceIdeas": ["TypeScript 인터페이스를 프론트/백에서 공유하는 구조 실험"],
           "resources": [
             { "label": "TypeScript 공식 핸드북", "url": "https://www.typescriptlang.org/docs/handbook/intro.html", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "fs-02-04",
+          "title": "에러 처리 통합",
+          "topics": ["프론트/백 에러 응답 규격 통일", "전역 에러 바운더리", "사용자 친화적 에러 메시지"],
+          "practiceIdeas": ["백엔드 에러 코드를 프론트에서 일관되게 매핑해 표시"],
+          "resources": [
+            { "label": "React 공식 문서 - Error Boundaries", "url": "https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary", "type": "official-doc" }
           ]
         }
       ]
@@ -109,6 +127,15 @@
           "resources": [
             { "label": "OWASP Top 10", "url": "https://owasp.org/www-project-top-ten/", "type": "official-doc" }
           ]
+        },
+        {
+          "moduleId": "fs-03-04",
+          "title": "성능과 사용자 경험",
+          "topics": ["로딩 상태 설계", "데이터 페칭 전략(캐싱/재검증)", "낙관적 UI"],
+          "practiceIdeas": ["목록 페이지에 캐싱 전략과 스켈레톤 로딩 적용"],
+          "resources": [
+            { "label": "TanStack Query 공식 문서", "url": "https://tanstack.com/query/latest/docs/framework/react/overview", "type": "official-doc" }
+          ]
         }
       ]
     },
@@ -144,6 +171,15 @@
           "practiceIdeas": ["에러 트래킹 도구를 연동해 실제 에러 로그 확인"],
           "resources": [
             { "label": "Sentry 공식 문서", "url": "https://docs.sentry.io/", "type": "official-doc" }
+          ]
+        },
+        {
+          "moduleId": "fs-04-04",
+          "title": "도메인과 인프라 관리",
+          "topics": ["도메인/DNS 연결", "HTTPS 인증서 발급", "정적/동적 리소스 분리 배포"],
+          "practiceIdeas": ["커스텀 도메인에 HTTPS 인증서를 적용해 서비스 배포"],
+          "resources": [
+            { "label": "Let's Encrypt 공식 문서", "url": "https://letsencrypt.org/docs/", "type": "official-doc" }
           ]
         }
       ]

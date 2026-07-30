@@ -1,3 +1,4 @@
+import * as Collapsible from '@radix-ui/react-collapsible'
 import type { LearningActivityItem } from '../../learning-progress/model/useLearningProgressStore'
 import type { TestCase, TestState } from '../workspaceInteraction'
 import styles from '../LearningWorkspace.module.css'
@@ -50,26 +51,33 @@ export function WorkspaceResultsPanel({
           </div>
         </div>
 
-        <div className={styles.testTable} role="table" aria-label="테스트 케이스">
-          <div role="row">
-            <span role="columnheader">케이스</span>
-            <span role="columnheader">입력</span>
-            <span role="columnheader">예상</span>
-            <span role="columnheader">실제</span>
-            <span role="columnheader">결과</span>
-          </div>
-          {testCases.map((testCase) => (
-            <div role="row" key={testCase.id}>
-              <span role="cell">{testCase.id}</span>
-              <span role="cell">{testCase.input}</span>
-              <span role="cell">{testCase.expected}</span>
-              <span role="cell">{testCase.actual}</span>
-              <span role="cell" data-state={testCase.state}>
-                {testStateLabel(testCase.state)}
-              </span>
+        <Collapsible.Root defaultOpen={false}>
+          <Collapsible.Trigger className={styles.planToggleTrigger}>
+            테스트 케이스 보기
+          </Collapsible.Trigger>
+          <Collapsible.Content>
+            <div className={styles.testTable} role="table" aria-label="테스트 케이스">
+              <div role="row">
+                <span role="columnheader">케이스</span>
+                <span role="columnheader">입력</span>
+                <span role="columnheader">예상</span>
+                <span role="columnheader">실제</span>
+                <span role="columnheader">결과</span>
+              </div>
+              {testCases.map((testCase) => (
+                <div role="row" key={testCase.id}>
+                  <span role="cell">{testCase.id}</span>
+                  <span role="cell">{testCase.input}</span>
+                  <span role="cell">{testCase.expected}</span>
+                  <span role="cell">{testCase.actual}</span>
+                  <span role="cell" data-state={testCase.state}>
+                    {testStateLabel(testCase.state)}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </Collapsible.Content>
+        </Collapsible.Root>
       </div>
 
       <aside className={styles.helpPanel} aria-label="도움말과 활동 기록">
@@ -91,18 +99,24 @@ export function WorkspaceResultsPanel({
           </button>
         </section>
         <section>
-          <h3>활동 기록</h3>
-          <ol>
-            {activityLog.map((item) => (
-              <li key={item.id}>
-                <time>{item.time}</time>
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.detail}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
+          <Collapsible.Root defaultOpen={false}>
+            <Collapsible.Trigger className={styles.planToggleTrigger}>
+              활동 기록 보기
+            </Collapsible.Trigger>
+            <Collapsible.Content>
+              <ol>
+                {activityLog.map((item) => (
+                  <li key={item.id}>
+                    <time>{item.time}</time>
+                    <div>
+                      <strong>{item.title}</strong>
+                      <p>{item.detail}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </Collapsible.Content>
+          </Collapsible.Root>
         </section>
       </aside>
     </section>

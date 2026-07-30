@@ -1,5 +1,31 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import { describe, expect, it } from 'vitest'
 import { runJavaScriptCode } from './codeRunner.mjs'
+
+describe('JavaScript runner limits', () => {
+  it('caps log count and truncates oversized entries', async () => {
+    const result = await runJavaScriptCode(`
+      for (let index = 0; index < 250; index += 1) console.log('line-' + index)
+      console.log('x'.repeat(2_100))
+    `)
+
+    expect(result.success).toBe(true)
+    expect(result.logs).toHaveLength(200)
+
+    const longEntryResult = await runJavaScriptCode(`console.log('x'.repeat(2_100))`)
+    expect(longEntryResult.logs[0]).toHaveLength(2_014)
+    expect(longEntryResult.logs[0].endsWith('...(truncated)')).toBe(true)
+  })
+
+  it('clears intervals created by learner code after execution', async () => {
+    const result = await runJavaScriptCode(`setInterval(() => console.log('late'), 0)`)
+
+    await delay(20)
+
+    expect(result.success).toBe(true)
+    expect(result.logs).toEqual([])
+  })
+})
 
 describe('React preview compiler', () => {
   it('transforms a JSX default export into a CommonJS preview bundle', async () => {

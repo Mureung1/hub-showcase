@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router'
+import { useEffect } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router'
 import { ResizableNavigator } from '../components/navigation'
 import styles from './AppShell.module.css'
 
@@ -14,6 +15,12 @@ const navItems = [
 ]
 
 export function AppShell() {
+  const location = useLocation()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 })
+  }, [location.pathname, location.search])
+
   return (
     <div className={styles.shell}>
       <ResizableNavigator
@@ -33,7 +40,10 @@ export function AppShell() {
           {navItems.map((item) => (
             <NavLink
               className={({ isActive }) => (isActive ? styles.activeNavItem : undefined)}
-              end={item.to === '/'}
+              end={
+                item.to === '/' ||
+                navItems.some((other) => other.to !== item.to && other.to.startsWith(`${item.to}/`))
+              }
               key={item.to}
               to={item.to}
             >

@@ -1,0 +1,179 @@
+.fields {
+  display: grid;
+  gap: 20px;
+}
+
+.card {
+  display: grid;
+  gap: 18px;
+  border: 1px solid rgb(196 210 229 / 74%);
+  border-radius: 10px;
+  padding: 24px 26px;
+  background: rgb(255 255 255 / 88%);
+  box-shadow: 0 4px 16px rgb(17 43 95 / 6%);
+}
+
+.cardTitle {
+  margin: 0;
+  color: #26344d;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.sourceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.sourceOption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  border: 1.5px solid #d3dce8;
+  border-radius: 10px;
+  padding: 10px 14px;
+  background: #f8fbff;
+  cursor: pointer;
+  text-align: center;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease,
+    transform 120ms ease;
+}
+
+.sourceOption:hover {
+  border-color: #35c8f4;
+  background: #eaf9fc;
+  transform: translateY(-1px);
+}
+
+.sourceSelected {
+  border-color: #07003d;
+  background: #07003d;
+  box-shadow: 0 6px 18px rgb(7 0 61 / 18%);
+  transform: translateY(-2px);
+}
+
+.sourceSelected .sourceLabel {
+  color: #fff;
+}
+
+.sourceLabel {
+  color: #26344d;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.35;
+  pointer-events: none;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.fieldGroup {
+  display: grid;
+  gap: 7px;
+}
+
+.fieldGroup label {
+  color: #26344d;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.4;
+}
+
+.required {
+  color: #c24c00;
+}
+
+.hint {
+  color: #8898b0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fieldGroup input,
+.fieldGroup textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #cfd9e8;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #f8fbff;
+  color: #102346;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.55;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease;
+}
+
+.fieldGroup input:focus,
+.fieldGroup textarea:focus {
+  border-color: #35c8f4;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgb(53 200 244 / 18%);
+  outline: none;
+}
+
+.fieldGroup textarea {
+  resize: vertical;
+}
+
+.mono {
+  font-family: 'SFMono-Regular', Consolas, 'Courier New', monospace !important;
+  font-size: 13px !important;
+}
+
+.fields[data-mode='read'] .sourceOption {
+  cursor: default;
+}
+
+.fields[data-mode='read'] .sourceOption:hover {
+  border-color: #d3dce8;
+  background: #f8fbff;
+  transform: none;
+}
+
+.fields[data-mode='read'] .sourceSelected,
+.fields[data-mode='read'] .sourceSelected:hover {
+  border-color: #07003d;
+  background: #07003d;
+}
+
+.fields[data-mode='read'] input,
+.fields[data-mode='read'] textarea {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #1e293b;
+  cursor: default;
+}
+
+.fields[data-mode='read'] textarea {
+  resize: none;
+}
+
+@media (max-width: 860px) {
+  .card {
+    padding: 18px 16px;
+  }
+}

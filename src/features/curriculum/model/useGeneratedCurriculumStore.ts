@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { shouldUseServerApi } from '../../../app/icuApiMode'
 import type {
   CurriculumSource,
   GeneratedCurriculumPlan,
@@ -30,6 +31,7 @@ type GeneratedCurriculumStore = {
 const storageKey = 'icu.generatedCurriculum'
 const historyStorageKey = 'icu.generatedCurriculumHistory'
 const defaultMissionMinutes = 30
+const serverMode = shouldUseServerApi()
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value))
@@ -197,7 +199,7 @@ function readStoredHistory(): GeneratedCurriculumSnapshot[] {
 }
 
 function persistGeneratedCurriculum(snapshot: GeneratedCurriculumSnapshot) {
-  if (typeof window === 'undefined') {
+  if (serverMode || typeof window === 'undefined') {
     return
   }
 
@@ -205,7 +207,7 @@ function persistGeneratedCurriculum(snapshot: GeneratedCurriculumSnapshot) {
 }
 
 function persistHistory(history: GeneratedCurriculumSnapshot[]) {
-  if (typeof window === 'undefined') {
+  if (serverMode || typeof window === 'undefined') {
     return
   }
 
@@ -219,15 +221,15 @@ export function resolveGeneratedCurriculumPlan(
   return snapshot?.plan ?? fallbackPlan
 }
 
-const initialHistory = readStoredHistory()
+const initialHistory = serverMode ? [] : readStoredHistory()
 
 export const useGeneratedCurriculumStore = create<GeneratedCurriculumStore>((set, get) => ({
-  generatedCurriculum: readStoredGeneratedCurriculum(),
+  generatedCurriculum: serverMode ? null : readStoredGeneratedCurriculum(),
   history: initialHistory,
   hydrateGeneratedCurriculum: (snapshot) => {
     if (snapshot) {
       persistGeneratedCurriculum(snapshot)
-    } else if (typeof window !== 'undefined') {
+    } else if (!serverMode && typeof window !== 'undefined') {
       window.localStorage.removeItem(storageKey)
     }
 
@@ -264,7 +266,7 @@ export const useGeneratedCurriculumStore = create<GeneratedCurriculumStore>((set
       nextActive = nextHistory[0] ?? null
       if (nextActive) {
         persistGeneratedCurriculum(nextActive)
-      } else if (typeof window !== 'undefined') {
+      } else if (!serverMode && typeof window !== 'undefined') {
         window.localStorage.removeItem(storageKey)
       }
     }
@@ -272,7 +274,7 @@ export const useGeneratedCurriculumStore = create<GeneratedCurriculumStore>((set
     set({ history: nextHistory, generatedCurriculum: nextActive })
   },
   resetGeneratedCurriculum: () => {
-    if (typeof window !== 'undefined') {
+    if (!serverMode && typeof window !== 'undefined') {
       window.localStorage.removeItem(storageKey)
       window.localStorage.removeItem(historyStorageKey)
     }

@@ -1,150 +1,199 @@
 # ICU Backend
 
-This folder contains server-side code for ICU. The frontend must not call Gemini, Vertex AI, OpenAI, or other model providers directly from the browser.
+ICU의 서버는 학습 데이터와 AI 호출을 담당하는 **Core API**와 코드 실행을 담당하는 **Judge API**로 분리됩니다. 브라우저는 Gemini나 다른 모델 provider를 직접 호출하지 않습니다.
 
-## Local API Server
+## 서버 실행
+
+Core API:
 
 ```bash
-npm run server:curriculum
+npm run start:api
 ```
 
-The Express server entrypoint is `backend/http/server.mjs`. It listens on `http://127.0.0.1:8787` by default.
+기본 주소는 `http://127.0.0.1:8787`입니다.
 
-## Implemented APIs
+Judge API:
 
-The current backend uses Express with in-memory repositories by default. These APIs are the local boundary for React screens before Electron and RAG are introduced. Code execution already goes through this backend boundary, with the current runner kept intentionally minimal for local learning feedback.
+```bash
+npm run start:judge
+```
+
+기본 주소는 `http://127.0.0.1:8790`입니다.
+
+전체 로컬 개발 환경:
+
+```bash
+npm run dev:server
+```
+
+이 명령은 Core API, Judge API, Vite App, Preview Runtime 네 프로세스를 실행합니다.
+
+## Core API
 
 ```http
+GET    /api/health
+
+GET    /api/profile
+PUT    /api/profile
+DELETE /api/profile
+
 POST   /api/curriculum/recommend
 GET    /api/curriculum/generated
 POST   /api/curriculum/generated
 DELETE /api/curriculum/generated
 DELETE /api/curriculum/generated/:id
 GET    /api/curriculum/history
+
 GET    /api/progress/today
 POST   /api/progress/missions/:missionId
 DELETE /api/progress/missions/:missionId
 DELETE /api/progress
+
 GET    /api/mistake-notes
 POST   /api/mistake-notes
 PATCH  /api/mistake-notes/:noteId
 DELETE /api/mistake-notes/:noteId
 DELETE /api/mistake-notes
+
 GET    /api/git-lab/attempts
 POST   /api/git-lab/attempts
 DELETE /api/git-lab/attempts
-POST   /api/code/run
+
+POST   /api/tutor/ask
 ```
 
-## Curriculum Agent API
+Core API entrypoint는 `backend/http/server.mjs`입니다.
+
+### Curriculum Agent
 
 ```http
 POST /api/curriculum/recommend
 Content-Type: application/json
 ```
 
-Request:
+최초 생성:
 
 ```json
 { "goal": "백엔드 개발자가 되고 싶어" }
 ```
 
-The response returns a `GeneratedCurriculumPlan`-compatible `plan` for the React Today Hub and Workspace. Recommended plans are saved through the configured generated-curriculum repository.
+후속 요청은 기존 계획과 추가 지시를 함께 전달합니다.
 
-Generated curriculum snapshots can also be read, saved, cleared, or deleted individually through `/api/curriculum/generated`, while `/api/curriculum/history` returns the saved curriculum list used by the curriculum history screen.
+```json
+{
+  "goal": "백엔드 개발자가 되고 싶어",
+  "previousPlan": {},
+  "followUpInstruction": "3주 과정으로 조정해줘"
+}
+```
 
-## Code Runner API
+응답의 `plan`은 Today Hub와 Workspace가 사용하는 `GeneratedCurriculumPlan` 계약을 따르며 설정된 repository에 snapshot으로 저장됩니다.
+
+### Tutor
 
 ```http
-POST /api/code/run
+POST /api/tutor/ask
 Content-Type: application/json
 ```
 
-Request:
+Workspace의 현재 미션, 코드, 실행 결과, 이전 대화를 서버의 Gemini provider로 전달합니다. Provider secret은 서버 환경 변수에서만 읽습니다.
+
+## Judge API
+
+```http
+GET  /api/health
+POST /api/code/run
+```
 
 ```json
 { "language": "javascript", "code": "console.log('hello ICU')" }
 ```
 
-Response:
+현재 runner는 JavaScript/JSX 학습 피드백에 필요한 실행 경계를 제공합니다. Core API는 `/api/code/run`을 노출하지 않습니다. 프로세스·파일시스템·컨테이너 수준의 강한 격리는 후속 과제입니다.
 
-```json
-{ "success": true, "logs": ["hello ICU"], "result": null }
-```
+## Repository Modes
 
-The current runner supports JavaScript/JSX snippets through Node's `vm` module. It is suitable for local learning feedback only; process isolation, filesystem isolation, and stronger limits belong to the Judge Service phase.
+`ICU_REPOSITORY_MODE`로 Core API의 저장 방식을 선택합니다.
 
-## Module Boundaries
-
-- `backend/modules/curriculum`: matches a user goal to curriculum data and model output, then stores generated curriculum snapshots through the configured repository.
-- `backend/modules/learning-progress`: stores mission run state, attempt count, active step, completion time, and activity log.
-- `backend/modules/mistake-notes`: stores reusable mistake records from Git Lab, Workspace, algorithm, and API practice flows.
-- `backend/modules/git-lab`: records Git command attempts and can create a linked mistake note for failed attempts.
-- `backend/modules/code-runner`: runs JavaScript/JSX snippets for Workspace learning feedback through `/api/code/run`.
-- `backend/modules/knowledge`: loads official-doc JSONL chunks from `data` for agent/RAG grounding.
-
-## Local Environment
-
-Keep real secrets in `.env` or the deployment secret store. Do not expose provider keys through `VITE_*` variables.
+### in-memory
 
 ```env
-GEMINI_API_KEY=
-GEMINI_MODEL=gemini-flash-latest
-CURRICULUM_AGENT_PORT=8787
+ICU_REPOSITORY_MODE=in-memory
 ```
 
-To make the Vite dev app call this backend, set:
+테스트와 일회성 실행용 기본 adapter입니다. 서버 재시작 시 데이터가 사라집니다.
 
-```env
-VITE_CURRICULUM_RECOMMENDATION_MODE=server
-VITE_ICU_API_MODE=server
-```
-
-Without those flags, the React app keeps using mock curriculum generation and localStorage-backed screen state.
-
-Keep `GEMINI_API_KEY` server-side only in `.env`. Do not create a `VITE_*` API key.
-
-## Full Local Dev Mode
-
-Use this when you want the React app to call the local backend API while developing the product screens.
-
-```bash
-npm run dev:server
-```
-
-This starts both processes:
-
-- `npm run server:curriculum`: Express backend on `http://127.0.0.1:8787`
-- `npm run dev`: Vite frontend, with `/api` proxied to the backend
-
-`dev:server` defaults these frontend flags to server mode unless you already set them yourself:
-
-```env
-VITE_ICU_API_MODE=server
-VITE_CURRICULUM_RECOMMENDATION_MODE=server
-```
-
-Quick QA path:
-
-1. Run `npm run dev:server`.
-2. Open the Vite URL shown in the terminal.
-3. Go to Today Hub and generate a curriculum from a Docker or backend learning goal.
-4. Confirm the generated plan is saved, then open Workspace and check that the same plan is used.
-5. Edit JavaScript in the Monaco editor and run it through `/api/code/run`.
-
-## SQLite Persistence Mode
-
-Use SQLite when backend state should survive server restarts during local development or desktop-app preparation.
+### SQLite
 
 ```env
 ICU_REPOSITORY_MODE=sqlite
 ICU_SQLITE_PATH=.icu/icu.sqlite
 ```
 
-Then run:
+다음을 로컬 파일에 저장합니다.
 
-```bash
-npm run server:curriculum
+- learner profile
+- generated curriculum
+- learning progress
+- mistake notes
+- Git Lab attempts
+
+### Supabase
+
+```env
+ICU_REPOSITORY_MODE=supabase
+SUPABASE_URL=
+SUPABASE_SECRET_KEY=
 ```
 
-The default mode still uses in-memory repositories. SQLite mode persists learning progress, mistake notes, Git Lab attempts, and generated curriculums. Today Hub and Workspace use the generated-curriculum APIs to restore the latest plan, browse curriculum history, resume a saved plan, and delete saved plans.
+배포 환경에서 같은 application/domain 계약을 Supabase adapter로 구현합니다. `SUPABASE_SECRET_KEY`는 절대 `VITE_*` 변수로 노출하지 않습니다.
+
+## 환경 변수
+
+```env
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-flash-latest
+CURRICULUM_AGENT_PORT=8787
+JUDGE_PORT=8790
+ICU_ALLOWED_ORIGIN=
+```
+
+Frontend:
+
+```env
+VITE_CURRICULUM_RECOMMENDATION_MODE=server
+VITE_ICU_API_MODE=server
+VITE_API_BASE_URL=
+VITE_CODE_RUNNER_BASE_URL=
+```
+
+`server` mode가 기본 동작입니다. API 없이 화면 fallback을 확인할 때만 `mock` mode를 명시적으로 선택합니다.
+
+## 모듈 경계
+
+- `backend/modules/profile`: 학습 프로필
+- `backend/modules/curriculum`: 추천 생성과 snapshot 보관
+- `backend/modules/learning-progress`: 미션 실행·완료 상태
+- `backend/modules/mistake-notes`: 오답 기록과 복습 상태
+- `backend/modules/git-lab`: Git 명령 시도와 연결 오답
+- `backend/modules/code-runner`: Judge의 JavaScript/JSX 실행
+- `backend/modules/knowledge`: agent/RAG grounding용 JSONL 지식
+
+각 기능은 application/domain 계약을 유지하면서 in-memory, SQLite, Supabase adapter를 교체합니다.
+
+## 빠른 검증
+
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run build
+```
+
+로컬 확인 흐름:
+
+1. `npm run dev:server`
+2. `/profile`에서 학습 프로필 저장
+3. `/today/goal`에서 커리큘럼 생성
+4. `/workspace`에서 코드 실행과 Tutor 질의
+5. `/mistake-notes`와 `/git-lab`의 저장 상태 확인

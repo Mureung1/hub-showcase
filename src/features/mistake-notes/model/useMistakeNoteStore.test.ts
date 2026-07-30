@@ -18,7 +18,8 @@ function createLocalStorage(initialEntries: Record<string, string> = {}) {
   } as Storage
 }
 
-async function importStore(localStorage: Storage) {
+async function importStore(localStorage: Storage, mode: 'mock' | 'server' = 'mock') {
+  vi.stubEnv('VITE_ICU_API_MODE', mode)
   vi.stubGlobal('window', { localStorage })
   const module = await import('./useMistakeNoteStore')
 
@@ -42,6 +43,7 @@ describe('useMistakeNoteStore', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
   })
 
   it('restores mistake notes from localStorage', async () => {
@@ -76,7 +78,6 @@ describe('useMistakeNoteStore', () => {
     expect(useMistakeNoteStore.getState().notes).toEqual([workspaceMistake])
   })
 
-
   it('hydrates mistake notes from a server response', async () => {
     const localStorage = createLocalStorage()
     const useMistakeNoteStore = await importStore(localStorage)
@@ -90,6 +91,20 @@ describe('useMistakeNoteStore', () => {
     )
   })
 
+  it('ignores and does not persist local mistake notes in server mode', async () => {
+    const localStorage = createLocalStorage({
+      [storageKey]: JSON.stringify({ notes: [savedMistake] }),
+    })
+    const useMistakeNoteStore = await importStore(localStorage, 'server')
+
+    expect(useMistakeNoteStore.getState().notes).toEqual([])
+    expect(localStorage.getItem).not.toHaveBeenCalled()
+
+    useMistakeNoteStore.getState().hydrateMistakeNotes([savedMistake])
+    expect(useMistakeNoteStore.getState().notes).toEqual([savedMistake])
+    expect(localStorage.setItem).not.toHaveBeenCalled()
+  })
+
   it('upserts a mistake note from a server response', async () => {
     const localStorage = createLocalStorage()
     const useMistakeNoteStore = await importStore(localStorage)
@@ -97,6 +112,37 @@ describe('useMistakeNoteStore', () => {
     expect(useMistakeNoteStore.getState().upsertMistakeNote(savedMistake)).toEqual(savedMistake)
     expect(useMistakeNoteStore.getState().notes).toEqual([savedMistake])
   })
+
+  it('updates editable content while preserving note metadata', async () => {
+    const localStorage = createLocalStorage({
+      [storageKey]: JSON.stringify({
+        notes: [{ ...savedMistake, status: 'resolved', reviewedAt: '2026-07-16T10:00:00.000Z' }],
+      }),
+    })
+    const useMistakeNoteStore = await importStore(localStorage)
+    const current = useMistakeNoteStore.getState().notes[0]
+
+    useMistakeNoteStore.getState().upsertMistakeNote({
+      ...current,
+      source: 'workspace',
+      lessonId: 'mission-2',
+      lessonTitle: '수정한 레슨',
+      command: 'npm test',
+      reason: '수정한 이유',
+      correction: '수정한 힌트',
+    })
+
+    expect(useMistakeNoteStore.getState().notes[0]).toEqual({
+      ...current,
+      source: 'workspace',
+      lessonId: 'mission-2',
+      lessonTitle: '수정한 레슨',
+      command: 'npm test',
+      reason: '수정한 이유',
+      correction: '수정한 힌트',
+    })
+  })
+
   it('adds and persists a new mistake note', async () => {
     const localStorage = createLocalStorage()
     const useMistakeNoteStore = await importStore(localStorage)
@@ -112,10 +158,7 @@ describe('useMistakeNoteStore', () => {
 
     expect(note.status).toBe('open')
     expect(useMistakeNoteStore.getState().notes).toHaveLength(1)
-    expect(localStorage.setItem).toHaveBeenCalledWith(
-      storageKey,
-      JSON.stringify({ notes: [note] }),
-    )
+    expect(localStorage.setItem).toHaveBeenCalledWith(storageKey, JSON.stringify({ notes: [note] }))
   })
 
   it('does not add duplicate open mistakes', async () => {

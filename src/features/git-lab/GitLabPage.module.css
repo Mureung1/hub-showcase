@@ -6,14 +6,9 @@
   grid-template-rows: auto minmax(0, 1fr);
   gap: 18px;
   overflow: hidden;
-  padding: 20px 24px 28px;
+  padding: 20px var(--icu-page-padding-inline) 28px;
   color: #102346;
-  background:
-    radial-gradient(circle at 7% 16%, rgb(255 138 28 / 62%), transparent 30%),
-    radial-gradient(circle at 39% 0%, rgb(243 184 216 / 42%), transparent 30%),
-    radial-gradient(circle at 58% 8%, rgb(53 200 244 / 54%), transparent 34%),
-    radial-gradient(circle at 91% 4%, rgb(7 0 61 / 72%), transparent 36%),
-    linear-gradient(115deg, #fff2d9 0%, #eef9ff 42%, #d8f4ff 66%, #c4dbff 100%);
+  background: var(--icu-page-background);
 }
 
 .levelBar {
@@ -62,7 +57,9 @@
   color: #ffffff;
   cursor: pointer;
   font-weight: 850;
-  transition: background 160ms ease, transform 140ms ease;
+  transition:
+    background 160ms ease,
+    transform 140ms ease;
 }
 
 .toggleButton:hover,
@@ -147,7 +144,9 @@
   cursor: pointer;
   font-size: 12px;
   font-weight: 800;
-  transition: border-color 140ms ease, color 140ms ease;
+  transition:
+    border-color 140ms ease,
+    color 140ms ease;
 }
 
 .foldButton:hover {
@@ -192,7 +191,7 @@
 .lessonButton {
   width: 100%;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 4px 8px;
   border: 1px solid rgb(179 196 220 / 64%);
   border-radius: 8px;
@@ -220,15 +219,24 @@
 }
 
 .clearedCheckTag {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: center;
+  justify-self: end;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgb(13 138 67 / 10%);
   color: #0d8a43;
   font-size: 11px;
   font-weight: 850;
+  white-space: nowrap;
 }
 
-.lessonButton span {
+.lessonId {
+  grid-column: 1;
   grid-row: span 2;
   display: inline-grid;
   min-width: 34px;
@@ -242,6 +250,8 @@
 }
 
 .lessonButton strong {
+  grid-column: 2;
+  grid-row: 1;
   overflow-wrap: anywhere;
   font-size: 12px;
   line-height: 1.35;
@@ -249,6 +259,8 @@
 }
 
 .lessonButton small {
+  grid-column: 2;
+  grid-row: 2;
   color: #62708a;
   font-size: 11px;
   line-height: 1.35;
@@ -263,11 +275,10 @@
   grid-template-rows: minmax(0, 1fr);
   gap: 20px;
   overflow: hidden;
-  transition: grid-template-columns 240ms ease;
 }
 
 .labMainNoGoal {
-  grid-template-columns: minmax(340px, 1fr) minmax(420px, 1.25fr);
+  grid-template-columns: minmax(340px, 1fr) minmax(420px, 1.25fr) minmax(0px, 0fr);
 }
 
 .terminalSlot,
@@ -279,10 +290,12 @@
 
 .terminalSlot {
   grid-row: 1;
+  grid-column: 1;
 }
 
 .goalSlot {
   grid-row: 1;
+  grid-column: 3;
 }
 
 .terminalSlot > section,
@@ -294,6 +307,8 @@
 
 .graphPanel {
   min-width: 0;
+  grid-row: 1;
+  grid-column: 2;
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 

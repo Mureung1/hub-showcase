@@ -1,10 +1,11 @@
 .page {
   min-width: 0;
   display: grid;
-  gap: 22px;
+  gap: var(--icu-page-section-gap);
   align-content: start;
-  padding: 28px 30px 34px;
+  padding: var(--icu-page-padding);
   color: #111827;
+  background: var(--icu-page-background);
 }
 
 .header {
@@ -18,7 +19,7 @@
 }
 
 .header h1 {
-  font-size: 28px;
+  font-size: var(--icu-page-title-size);
   font-weight: 900;
   margin: 0 0 4px 0;
   color: #07003d;
@@ -72,6 +73,17 @@
   padding: 12px 16px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+}
+
+.errorMessage {
+  margin: 0;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #fff7f7;
+  color: #9f1239;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .searchInput {
