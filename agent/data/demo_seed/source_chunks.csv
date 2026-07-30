@@ -2934,37 +2934,37 @@ Terraform으로 게임 서버 인프라를 코드화해 본 경험
 빌드·배포 자동화 도구를 개선해 본 경험
 대규모 동시 접속 상황의 부하 시험 경험",36,ds_demo_v1
 chunk_demo_mobile_01_1,snap_demo_mobile_01,주요업무,0,"서비스 안드로이드 앱의 신규 기능을 개발하고 운영합니다.
-기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.
+기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.
 백엔드 팀과 API 규격을 함께 정하고 연동합니다.","{""source_id"": ""src_demo_mobile_01"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","카카오 · job_posting · 주요업무
 서비스 안드로이드 앱의 신규 기능을 개발하고 운영합니다.
-기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.
+기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.
 백엔드 팀과 API 규격을 함께 정하고 연동합니다.",47,ds_demo_v1
-chunk_demo_mobile_01_2,snap_demo_mobile_01,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+chunk_demo_mobile_01_2,snap_demo_mobile_01,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분
-Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
+Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
 앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_01"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","카카오 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분
-Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
-앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분",69,ds_demo_v1
+Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
+앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분",68,ds_demo_v1
 chunk_demo_mobile_01_3,snap_demo_mobile_01,우대사항,2,"월간 사용자 수백만 규모의 앱을 운영해 본 경험
 앱 렌더링 성능이나 메모리 사용량을 측정하고 개선해 본 경험
-CI 로 앱 빌드와 배포를 자동화해 본 경험","{""source_id"": ""src_demo_mobile_01"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","카카오 · job_posting · 우대사항
+CI로 앱 빌드와 배포를 자동화해 본 경험","{""source_id"": ""src_demo_mobile_01"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","카카오 · job_posting · 우대사항
 월간 사용자 수백만 규모의 앱을 운영해 본 경험
 앱 렌더링 성능이나 메모리 사용량을 측정하고 개선해 본 경험
-CI 로 앱 빌드와 배포를 자동화해 본 경험",39,ds_demo_v1
+CI로 앱 빌드와 배포를 자동화해 본 경험",39,ds_demo_v1
 chunk_demo_mobile_02_1,snap_demo_mobile_02,주요업무,0,"금융 서비스 iOS 앱의 결제·인증 화면을 개발하고 운영합니다.
-SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
-결제 승인 API 를 연동하고 실패 흐름을 설계합니다.","{""source_id"": ""src_demo_mobile_02"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","비바리퍼블리카 · job_posting · 주요업무
+SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
+결제 승인 API를 연동하고 실패 흐름을 설계합니다.","{""source_id"": ""src_demo_mobile_02"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","비바리퍼블리카 · job_posting · 주요업무
 금융 서비스 iOS 앱의 결제·인증 화면을 개발하고 운영합니다.
-SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
-결제 승인 API 를 연동하고 실패 흐름을 설계합니다.",48,ds_demo_v1
-chunk_demo_mobile_02_2,snap_demo_mobile_02,자격요건,1,"Swift 로 iOS 앱을 개발한 경험이 있으신 분
+SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
+결제 승인 API를 연동하고 실패 흐름을 설계합니다.",47,ds_demo_v1
+chunk_demo_mobile_02_2,snap_demo_mobile_02,자격요건,1,"Swift로 iOS 앱을 개발한 경험이 있으신 분
 화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분
-URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_02"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","비바리퍼블리카 · job_posting · 자격요건
-Swift 로 iOS 앱을 개발한 경험이 있으신 분
+URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_02"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","비바리퍼블리카 · job_posting · 자격요건
+Swift로 iOS 앱을 개발한 경험이 있으신 분
 화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분
-URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분",54,ds_demo_v1
+URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분",53,ds_demo_v1
 chunk_demo_mobile_02_3,snap_demo_mobile_02,우대사항,2,"결제 승인 지연과 재시도를 직접 설계해 본 경험
 민감 정보 저장과 인증 흐름을 다뤄 본 경험
 앱을 스토어에 배포하고 심사 반려에 대응해 본 경험","{""source_id"": ""src_demo_mobile_02"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","비바리퍼블리카 · job_posting · 우대사항
@@ -2972,15 +2972,15 @@ chunk_demo_mobile_02_3,snap_demo_mobile_02,우대사항,2,"결제 승인 지연�
 민감 정보 저장과 인증 흐름을 다뤄 본 경험
 앱을 스토어에 배포하고 심사 반려에 대응해 본 경험",37,ds_demo_v1
 chunk_demo_mobile_03_1,snap_demo_mobile_03,주요업무,0,"중고거래 앱의 새 기능을 기획 단계부터 함께 만들고 배포합니다.
-서버 API 를 연동해 목록·상세 화면을 구현합니다.","{""source_id"": ""src_demo_mobile_03"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","주식회사 당근마켓 · job_posting · 주요업무
+서버 API를 연동해 목록·상세 화면을 구현합니다.","{""source_id"": ""src_demo_mobile_03"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","주식회사 당근마켓 · job_posting · 주요업무
 중고거래 앱의 새 기능을 기획 단계부터 함께 만들고 배포합니다.
-서버 API 를 연동해 목록·상세 화면을 구현합니다.",30,ds_demo_v1
-chunk_demo_mobile_03_2,snap_demo_mobile_03,자격요건,1,"Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분
-REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
+서버 API를 연동해 목록·상세 화면을 구현합니다.",30,ds_demo_v1
+chunk_demo_mobile_03_2,snap_demo_mobile_03,자격요건,1,"Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분
+REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
 작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_03"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","주식회사 당근마켓 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분
-REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
-작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분",48,ds_demo_v1
+Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분
+REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
+작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분",47,ds_demo_v1
 chunk_demo_mobile_03_3,snap_demo_mobile_03,우대사항,2,"화면과 로직을 분리하는 구조를 고민해 본 경험
 본인이 만든 앱을 스토어에 출시해 본 경험
 사용자 피드백을 받아 앱을 고쳐 본 경험","{""source_id"": ""src_demo_mobile_03"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","주식회사 당근마켓 · job_posting · 우대사항
@@ -2991,49 +2991,49 @@ chunk_demo_mobile_04_1,snap_demo_mobile_04,주요업무,0,"모바일 게임 런�
 안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.","{""source_id"": ""src_demo_mobile_04"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","엔씨소프트 · job_posting · 주요업무
 모바일 게임 런처와 커뮤니티 앱의 클라이언트를 개발합니다.
 안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.",32,ds_demo_v1
-chunk_demo_mobile_04_2,snap_demo_mobile_04,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
+chunk_demo_mobile_04_2,snap_demo_mobile_04,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
 여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_04"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","엔씨소프트 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
+Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
 여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분",35,ds_demo_v1
-chunk_demo_mobile_04_3,snap_demo_mobile_04,우대사항,2,"Swift 로 iOS 앱을 함께 개발해 본 경험
+chunk_demo_mobile_04_3,snap_demo_mobile_04,우대사항,2,"Swift로 iOS 앱을 함께 개발해 본 경험
 게임 클라이언트와 앱을 연동해 본 경험","{""source_id"": ""src_demo_mobile_04"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","엔씨소프트 · job_posting · 우대사항
-Swift 로 iOS 앱을 함께 개발해 본 경험
+Swift로 iOS 앱을 함께 개발해 본 경험
 게임 클라이언트와 앱을 연동해 본 경험",22,ds_demo_v1
-chunk_demo_mobile_05_1,snap_demo_mobile_05,주요업무,0,"기업 고객이 앱에 붙이는 채팅 SDK 의 iOS 버전을 개발합니다.
+chunk_demo_mobile_05_1,snap_demo_mobile_05,주요업무,0,"기업 고객이 앱에 붙이는 채팅 SDK의 iOS 버전을 개발합니다.
 공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.","{""source_id"": ""src_demo_mobile_05"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","센드버드 · job_posting · 주요업무
-기업 고객이 앱에 붙이는 채팅 SDK 의 iOS 버전을 개발합니다.
+기업 고객이 앱에 붙이는 채팅 SDK의 iOS 버전을 개발합니다.
 공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.",32,ds_demo_v1
-chunk_demo_mobile_05_2,snap_demo_mobile_05,자격요건,1,"Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
+chunk_demo_mobile_05_2,snap_demo_mobile_05,자격요건,1,"Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
 네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분
 SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분
-공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_05"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","센드버드 · job_posting · 자격요건
-Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
+공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_05"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","센드버드 · job_posting · 자격요건
+Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
 네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분
 SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분
-공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분",62,ds_demo_v1
-chunk_demo_mobile_05_3,snap_demo_mobile_05,우대사항,2,"여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험
+공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분",61,ds_demo_v1
+chunk_demo_mobile_05_3,snap_demo_mobile_05,우대사항,2,"여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험
 실시간 통신 프로토콜을 다뤄 본 경험","{""source_id"": ""src_demo_mobile_05"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","센드버드 · job_posting · 우대사항
-여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험
-실시간 통신 프로토콜을 다뤄 본 경험",25,ds_demo_v1
+여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험
+실시간 통신 프로토콜을 다뤄 본 경험",24,ds_demo_v1
 chunk_demo_mobile_06_1,snap_demo_mobile_06,주요업무,0,"글로벌 메신저 안드로이드 앱의 기능을 개발하고 운영합니다.
 다국어와 기기 호환을 고려해 화면을 구현합니다.","{""source_id"": ""src_demo_mobile_06"", ""source_type"": ""job_posting"", ""publisher"": ""라인플러스"", ""company_id"": ""co_lineplus"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","라인플러스 · job_posting · 주요업무
 글로벌 메신저 안드로이드 앱의 기능을 개발하고 운영합니다.
 다국어와 기기 호환을 고려해 화면을 구현합니다.",27,ds_demo_v1
-chunk_demo_mobile_06_2,snap_demo_mobile_06,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
-Android SDK 와 화면 생명주기를 이해하고 계신 분","{""source_id"": ""src_demo_mobile_06"", ""source_type"": ""job_posting"", ""publisher"": ""라인플러스"", ""company_id"": ""co_lineplus"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","라인플러스 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
-Android SDK 와 화면 생명주기를 이해하고 계신 분",30,ds_demo_v1
+chunk_demo_mobile_06_2,snap_demo_mobile_06,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
+Android SDK와 화면 생명주기를 이해하고 계신 분","{""source_id"": ""src_demo_mobile_06"", ""source_type"": ""job_posting"", ""publisher"": ""라인플러스"", ""company_id"": ""co_lineplus"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","라인플러스 · job_posting · 자격요건
+Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
+Android SDK와 화면 생명주기를 이해하고 계신 분",29,ds_demo_v1
 chunk_demo_mobile_06_3,snap_demo_mobile_06,우대사항,2,"MVVM 등 아키텍처 패턴을 적용해 본 경험
 앱을 스토어에 배포해 본 경험","{""source_id"": ""src_demo_mobile_06"", ""source_type"": ""job_posting"", ""publisher"": ""라인플러스"", ""company_id"": ""co_lineplus"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","라인플러스 · job_posting · 우대사항
 MVVM 등 아키텍처 패턴을 적용해 본 경험
 앱을 스토어에 배포해 본 경험",19,ds_demo_v1
 chunk_demo_mobile_07_1,snap_demo_mobile_07,주요업무,0,"뱅킹 iOS 앱의 계좌·이체 화면을 개발합니다.
-서버 API 를 연동해 거래 흐름을 구현합니다.","{""source_id"": ""src_demo_mobile_07"", ""source_type"": ""job_posting"", ""publisher"": ""카카오뱅크"", ""company_id"": ""co_kakaobank"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","카카오뱅크 · job_posting · 주요업무
+서버 API를 연동해 거래 흐름을 구현합니다.","{""source_id"": ""src_demo_mobile_07"", ""source_type"": ""job_posting"", ""publisher"": ""카카오뱅크"", ""company_id"": ""co_kakaobank"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","카카오뱅크 · job_posting · 주요업무
 뱅킹 iOS 앱의 계좌·이체 화면을 개발합니다.
-서버 API 를 연동해 거래 흐름을 구현합니다.",25,ds_demo_v1
-chunk_demo_mobile_07_2,snap_demo_mobile_07,자격요건,1,"Swift 로 iOS 앱을 개발한 경험이 있으신 분
+서버 API를 연동해 거래 흐름을 구현합니다.",24,ds_demo_v1
+chunk_demo_mobile_07_2,snap_demo_mobile_07,자격요건,1,"Swift로 iOS 앱을 개발한 경험이 있으신 분
 REST API 연동 경험이 있으신 분","{""source_id"": ""src_demo_mobile_07"", ""source_type"": ""job_posting"", ""publisher"": ""카카오뱅크"", ""company_id"": ""co_kakaobank"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","카카오뱅크 · job_posting · 자격요건
-Swift 로 iOS 앱을 개발한 경험이 있으신 분
+Swift로 iOS 앱을 개발한 경험이 있으신 분
 REST API 연동 경험이 있으신 분",23,ds_demo_v1
 chunk_demo_mobile_07_3,snap_demo_mobile_07,우대사항,2,"금융 도메인 앱을 개발해 본 경험
 테스트 코드를 작성해 본 경험","{""source_id"": ""src_demo_mobile_07"", ""source_type"": ""job_posting"", ""publisher"": ""카카오뱅크"", ""company_id"": ""co_kakaobank"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","카카오뱅크 · job_posting · 우대사항
@@ -3043,88 +3043,88 @@ chunk_demo_mobile_08_1,snap_demo_mobile_08,주요업무,0,"고객사의 사내 �
 설계와 개발 절차를 문서로 남깁니다.","{""source_id"": ""src_demo_mobile_08"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","삼성에스디에스 · job_posting · 주요업무
 고객사의 사내 업무용 모바일 앱을 개발합니다.
 설계와 개발 절차를 문서로 남깁니다.",21,ds_demo_v1
-chunk_demo_mobile_08_2,snap_demo_mobile_08,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+chunk_demo_mobile_08_2,snap_demo_mobile_08,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분
-사내 서버 API 를 연동해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_08"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","삼성에스디에스 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+사내 서버 API를 연동해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_08"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","삼성에스디에스 · job_posting · 자격요건
+Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분
-사내 서버 API 를 연동해 본 경험이 있으신 분",42,ds_demo_v1
+사내 서버 API를 연동해 본 경험이 있으신 분",41,ds_demo_v1
 chunk_demo_mobile_08_3,snap_demo_mobile_08,우대사항,2,앱 배포와 사내 스토어 운영을 경험해 보신 분,"{""source_id"": ""src_demo_mobile_08"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","삼성에스디에스 · job_posting · 우대사항
 앱 배포와 사내 스토어 운영을 경험해 보신 분",12,ds_demo_v1
 chunk_demo_mobile_09_1,snap_demo_mobile_09,주요업무,0,"인테리어 커머스 앱의 상품·주문 화면을 개발합니다.
 안드로이드 앱의 배포와 버전을 관리합니다.","{""source_id"": ""src_demo_mobile_09"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 버킷플레이스"", ""company_id"": ""co_bucketplace"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","주식회사 버킷플레이스 · job_posting · 주요업무
 인테리어 커머스 앱의 상품·주문 화면을 개발합니다.
 안드로이드 앱의 배포와 버전을 관리합니다.",24,ds_demo_v1
-chunk_demo_mobile_09_2,snap_demo_mobile_09,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+chunk_demo_mobile_09_2,snap_demo_mobile_09,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 서버 API 연동과 비동기 처리에 익숙하신 분","{""source_id"": ""src_demo_mobile_09"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 버킷플레이스"", ""company_id"": ""co_bucketplace"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","주식회사 버킷플레이스 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
-서버 API 연동과 비동기 처리에 익숙하신 분",27,ds_demo_v1
-chunk_demo_mobile_09_3,snap_demo_mobile_09,우대사항,2,Swift 로 iOS 앱을 함께 개발해 본 경험,"{""source_id"": ""src_demo_mobile_09"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 버킷플레이스"", ""company_id"": ""co_bucketplace"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","주식회사 버킷플레이스 · job_posting · 우대사항
-Swift 로 iOS 앱을 함께 개발해 본 경험",12,ds_demo_v1
+Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
+서버 API 연동과 비동기 처리에 익숙하신 분",26,ds_demo_v1
+chunk_demo_mobile_09_3,snap_demo_mobile_09,우대사항,2,Swift로 iOS 앱을 함께 개발해 본 경험,"{""source_id"": ""src_demo_mobile_09"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 버킷플레이스"", ""company_id"": ""co_bucketplace"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","주식회사 버킷플레이스 · job_posting · 우대사항
+Swift로 iOS 앱을 함께 개발해 본 경험",12,ds_demo_v1
 chunk_demo_mobile_10_1,snap_demo_mobile_10,주요업무,0,"서비스 안드로이드 앱의 신규 기능을 개발하고 운영합니다.
-기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.
+기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.
 백엔드 팀과 API 규격을 함께 정하고 연동합니다.","{""source_id"": ""src_demo_mobile_10"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","카카오 · job_posting · 주요업무
 서비스 안드로이드 앱의 신규 기능을 개발하고 운영합니다.
-기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.
+기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.
 백엔드 팀과 API 규격을 함께 정하고 연동합니다.",47,ds_demo_v1
-chunk_demo_mobile_10_2,snap_demo_mobile_10,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+chunk_demo_mobile_10_2,snap_demo_mobile_10,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분
-Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
+Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
 앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_10"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","카카오 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분
-Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
-앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분",69,ds_demo_v1
+Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
+앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분",68,ds_demo_v1
 chunk_demo_mobile_10_3,snap_demo_mobile_10,우대사항,2,"월간 사용자 수백만 규모의 앱을 운영해 본 경험
 앱 렌더링 성능이나 메모리 사용량을 측정하고 개선해 본 경험
-CI 로 앱 빌드와 배포를 자동화해 본 경험","{""source_id"": ""src_demo_mobile_10"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","카카오 · job_posting · 우대사항
+CI로 앱 빌드와 배포를 자동화해 본 경험","{""source_id"": ""src_demo_mobile_10"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","카카오 · job_posting · 우대사항
 월간 사용자 수백만 규모의 앱을 운영해 본 경험
 앱 렌더링 성능이나 메모리 사용량을 측정하고 개선해 본 경험
-CI 로 앱 빌드와 배포를 자동화해 본 경험",39,ds_demo_v1
+CI로 앱 빌드와 배포를 자동화해 본 경험",39,ds_demo_v1
 chunk_demo_mobile_11_1,snap_demo_mobile_11,주요업무,0,"중고거래 앱의 새 기능을 기획 단계부터 함께 만들고 배포합니다.
-서버 API 를 연동해 목록·상세 화면을 구현합니다.","{""source_id"": ""src_demo_mobile_11"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","주식회사 당근마켓 · job_posting · 주요업무
+서버 API를 연동해 목록·상세 화면을 구현합니다.","{""source_id"": ""src_demo_mobile_11"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","주식회사 당근마켓 · job_posting · 주요업무
 중고거래 앱의 새 기능을 기획 단계부터 함께 만들고 배포합니다.
-서버 API 를 연동해 목록·상세 화면을 구현합니다.",30,ds_demo_v1
-chunk_demo_mobile_11_2,snap_demo_mobile_11,자격요건,1,"Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분
-REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
+서버 API를 연동해 목록·상세 화면을 구현합니다.",30,ds_demo_v1
+chunk_demo_mobile_11_2,snap_demo_mobile_11,자격요건,1,"Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분
+REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
 작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_11"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","주식회사 당근마켓 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분
-REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
-작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분",48,ds_demo_v1
+Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분
+REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
+작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분",47,ds_demo_v1
 chunk_demo_mobile_11_3,snap_demo_mobile_11,우대사항,2,"화면과 로직을 분리하는 구조를 고민해 본 경험
 본인이 만든 앱을 스토어에 출시해 본 경험
 사용자 피드백을 받아 앱을 고쳐 본 경험","{""source_id"": ""src_demo_mobile_11"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","주식회사 당근마켓 · job_posting · 우대사항
 화면과 로직을 분리하는 구조를 고민해 본 경험
 본인이 만든 앱을 스토어에 출시해 본 경험
 사용자 피드백을 받아 앱을 고쳐 본 경험",33,ds_demo_v1
-chunk_demo_mobile_12_1,snap_demo_mobile_12,주요업무,0,"기업 고객이 앱에 붙이는 채팅 SDK 의 iOS 버전을 개발합니다.
+chunk_demo_mobile_12_1,snap_demo_mobile_12,주요업무,0,"기업 고객이 앱에 붙이는 채팅 SDK의 iOS 버전을 개발합니다.
 공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.","{""source_id"": ""src_demo_mobile_12"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","센드버드 · job_posting · 주요업무
-기업 고객이 앱에 붙이는 채팅 SDK 의 iOS 버전을 개발합니다.
+기업 고객이 앱에 붙이는 채팅 SDK의 iOS 버전을 개발합니다.
 공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.",32,ds_demo_v1
-chunk_demo_mobile_12_2,snap_demo_mobile_12,자격요건,1,"Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
+chunk_demo_mobile_12_2,snap_demo_mobile_12,자격요건,1,"Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
 네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분
 SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분
-공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_12"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","센드버드 · job_posting · 자격요건
-Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
+공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_12"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","센드버드 · job_posting · 자격요건
+Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
 네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분
 SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분
-공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분",62,ds_demo_v1
-chunk_demo_mobile_12_3,snap_demo_mobile_12,우대사항,2,"여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험
+공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분",61,ds_demo_v1
+chunk_demo_mobile_12_3,snap_demo_mobile_12,우대사항,2,"여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험
 실시간 통신 프로토콜을 다뤄 본 경험","{""source_id"": ""src_demo_mobile_12"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","센드버드 · job_posting · 우대사항
-여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험
-실시간 통신 프로토콜을 다뤄 본 경험",25,ds_demo_v1
+여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험
+실시간 통신 프로토콜을 다뤄 본 경험",24,ds_demo_v1
 chunk_demo_mobile_13_1,snap_demo_mobile_13,주요업무,0,"금융 서비스 iOS 앱의 결제·인증 화면을 개발하고 운영합니다.
-SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
-결제 승인 API 를 연동하고 실패 흐름을 설계합니다.","{""source_id"": ""src_demo_mobile_13"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","비바리퍼블리카 · job_posting · 주요업무
+SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
+결제 승인 API를 연동하고 실패 흐름을 설계합니다.","{""source_id"": ""src_demo_mobile_13"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","비바리퍼블리카 · job_posting · 주요업무
 금융 서비스 iOS 앱의 결제·인증 화면을 개발하고 운영합니다.
-SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
-결제 승인 API 를 연동하고 실패 흐름을 설계합니다.",48,ds_demo_v1
-chunk_demo_mobile_13_2,snap_demo_mobile_13,자격요건,1,"Swift 로 iOS 앱을 개발한 경험이 있으신 분
+SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
+결제 승인 API를 연동하고 실패 흐름을 설계합니다.",47,ds_demo_v1
+chunk_demo_mobile_13_2,snap_demo_mobile_13,자격요건,1,"Swift로 iOS 앱을 개발한 경험이 있으신 분
 화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분
-URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_13"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","비바리퍼블리카 · job_posting · 자격요건
-Swift 로 iOS 앱을 개발한 경험이 있으신 분
+URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_13"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","비바리퍼블리카 · job_posting · 자격요건
+Swift로 iOS 앱을 개발한 경험이 있으신 분
 화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분
-URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분",54,ds_demo_v1
+URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분",53,ds_demo_v1
 chunk_demo_mobile_13_3,snap_demo_mobile_13,우대사항,2,"결제 승인 지연과 재시도를 직접 설계해 본 경험
 민감 정보 저장과 인증 흐름을 다뤄 본 경험
 앱을 스토어에 배포하고 심사 반려에 대응해 본 경험","{""source_id"": ""src_demo_mobile_13"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","비바리퍼블리카 · job_posting · 우대사항
@@ -3135,56 +3135,56 @@ chunk_demo_mobile_14_1,snap_demo_mobile_14,주요업무,0,"고객사의 사내 �
 설계와 개발 절차를 문서로 남깁니다.","{""source_id"": ""src_demo_mobile_14"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","삼성에스디에스 · job_posting · 주요업무
 고객사의 사내 업무용 모바일 앱을 개발합니다.
 설계와 개발 절차를 문서로 남깁니다.",21,ds_demo_v1
-chunk_demo_mobile_14_2,snap_demo_mobile_14,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+chunk_demo_mobile_14_2,snap_demo_mobile_14,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분
-사내 서버 API 를 연동해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_14"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","삼성에스디에스 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+사내 서버 API를 연동해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_14"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","삼성에스디에스 · job_posting · 자격요건
+Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분
-사내 서버 API 를 연동해 본 경험이 있으신 분",42,ds_demo_v1
+사내 서버 API를 연동해 본 경험이 있으신 분",41,ds_demo_v1
 chunk_demo_mobile_14_3,snap_demo_mobile_14,우대사항,2,앱 배포와 사내 스토어 운영을 경험해 보신 분,"{""source_id"": ""src_demo_mobile_14"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","삼성에스디에스 · job_posting · 우대사항
 앱 배포와 사내 스토어 운영을 경험해 보신 분",12,ds_demo_v1
 chunk_demo_mobile_15_1,snap_demo_mobile_15,주요업무,0,"모바일 게임 런처와 커뮤니티 앱의 클라이언트를 개발합니다.
 안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.","{""source_id"": ""src_demo_mobile_15"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","엔씨소프트 · job_posting · 주요업무
 모바일 게임 런처와 커뮤니티 앱의 클라이언트를 개발합니다.
 안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.",32,ds_demo_v1
-chunk_demo_mobile_15_2,snap_demo_mobile_15,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
+chunk_demo_mobile_15_2,snap_demo_mobile_15,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
 여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_15"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","엔씨소프트 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
+Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
 여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분",35,ds_demo_v1
-chunk_demo_mobile_15_3,snap_demo_mobile_15,우대사항,2,"Swift 로 iOS 앱을 함께 개발해 본 경험
+chunk_demo_mobile_15_3,snap_demo_mobile_15,우대사항,2,"Swift로 iOS 앱을 함께 개발해 본 경험
 게임 클라이언트와 앱을 연동해 본 경험","{""source_id"": ""src_demo_mobile_15"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","엔씨소프트 · job_posting · 우대사항
-Swift 로 iOS 앱을 함께 개발해 본 경험
+Swift로 iOS 앱을 함께 개발해 본 경험
 게임 클라이언트와 앱을 연동해 본 경험",22,ds_demo_v1
 chunk_demo_mobile_16_1,snap_demo_mobile_16,주요업무,0,"서비스 안드로이드 앱의 신규 기능을 개발하고 운영합니다.
-기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.
+기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.
 백엔드 팀과 API 규격을 함께 정하고 연동합니다.","{""source_id"": ""src_demo_mobile_16"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","카카오 · job_posting · 주요업무
 서비스 안드로이드 앱의 신규 기능을 개발하고 운영합니다.
-기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.
+기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.
 백엔드 팀과 API 규격을 함께 정하고 연동합니다.",47,ds_demo_v1
-chunk_demo_mobile_16_2,snap_demo_mobile_16,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+chunk_demo_mobile_16_2,snap_demo_mobile_16,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분
-Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
+Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
 앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_16"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","카카오 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분
-Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
-앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분",69,ds_demo_v1
+Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
+앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분",68,ds_demo_v1
 chunk_demo_mobile_16_3,snap_demo_mobile_16,우대사항,2,"월간 사용자 수백만 규모의 앱을 운영해 본 경험
 앱 렌더링 성능이나 메모리 사용량을 측정하고 개선해 본 경험
-CI 로 앱 빌드와 배포를 자동화해 본 경험","{""source_id"": ""src_demo_mobile_16"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","카카오 · job_posting · 우대사항
+CI로 앱 빌드와 배포를 자동화해 본 경험","{""source_id"": ""src_demo_mobile_16"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","카카오 · job_posting · 우대사항
 월간 사용자 수백만 규모의 앱을 운영해 본 경험
 앱 렌더링 성능이나 메모리 사용량을 측정하고 개선해 본 경험
-CI 로 앱 빌드와 배포를 자동화해 본 경험",39,ds_demo_v1
+CI로 앱 빌드와 배포를 자동화해 본 경험",39,ds_demo_v1
 chunk_demo_mobile_17_1,snap_demo_mobile_17,주요업무,0,"중고거래 앱의 새 기능을 기획 단계부터 함께 만들고 배포합니다.
-서버 API 를 연동해 목록·상세 화면을 구현합니다.","{""source_id"": ""src_demo_mobile_17"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","주식회사 당근마켓 · job_posting · 주요업무
+서버 API를 연동해 목록·상세 화면을 구현합니다.","{""source_id"": ""src_demo_mobile_17"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","주식회사 당근마켓 · job_posting · 주요업무
 중고거래 앱의 새 기능을 기획 단계부터 함께 만들고 배포합니다.
-서버 API 를 연동해 목록·상세 화면을 구현합니다.",30,ds_demo_v1
-chunk_demo_mobile_17_2,snap_demo_mobile_17,자격요건,1,"Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분
-REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
+서버 API를 연동해 목록·상세 화면을 구현합니다.",30,ds_demo_v1
+chunk_demo_mobile_17_2,snap_demo_mobile_17,자격요건,1,"Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분
+REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
 작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_17"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","주식회사 당근마켓 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분
-REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
-작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분",48,ds_demo_v1
+Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분
+REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
+작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분",47,ds_demo_v1
 chunk_demo_mobile_17_3,snap_demo_mobile_17,우대사항,2,"화면과 로직을 분리하는 구조를 고민해 본 경험
 본인이 만든 앱을 스토어에 출시해 본 경험
 사용자 피드백을 받아 앱을 고쳐 본 경험","{""source_id"": ""src_demo_mobile_17"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","주식회사 당근마켓 · job_posting · 우대사항
@@ -3192,167 +3192,167 @@ chunk_demo_mobile_17_3,snap_demo_mobile_17,우대사항,2,"화면과 로직을 �
 본인이 만든 앱을 스토어에 출시해 본 경험
 사용자 피드백을 받아 앱을 고쳐 본 경험",33,ds_demo_v1
 chunk_demo_mobile_18_1,snap_demo_mobile_18,주요업무,0,"금융 서비스 iOS 앱의 결제·인증 화면을 개발하고 운영합니다.
-SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
-결제 승인 API 를 연동하고 실패 흐름을 설계합니다.","{""source_id"": ""src_demo_mobile_18"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","비바리퍼블리카 · job_posting · 주요업무
+SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
+결제 승인 API를 연동하고 실패 흐름을 설계합니다.","{""source_id"": ""src_demo_mobile_18"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","비바리퍼블리카 · job_posting · 주요업무
 금융 서비스 iOS 앱의 결제·인증 화면을 개발하고 운영합니다.
-SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
-결제 승인 API 를 연동하고 실패 흐름을 설계합니다.",48,ds_demo_v1
-chunk_demo_mobile_18_2,snap_demo_mobile_18,자격요건,1,"Swift 로 iOS 앱을 개발한 경험이 있으신 분
+SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
+결제 승인 API를 연동하고 실패 흐름을 설계합니다.",47,ds_demo_v1
+chunk_demo_mobile_18_2,snap_demo_mobile_18,자격요건,1,"Swift로 iOS 앱을 개발한 경험이 있으신 분
 화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분
-URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_18"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","비바리퍼블리카 · job_posting · 자격요건
-Swift 로 iOS 앱을 개발한 경험이 있으신 분
+URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_18"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","비바리퍼블리카 · job_posting · 자격요건
+Swift로 iOS 앱을 개발한 경험이 있으신 분
 화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분
-URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분",54,ds_demo_v1
+URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분",53,ds_demo_v1
 chunk_demo_mobile_18_3,snap_demo_mobile_18,우대사항,2,"결제 승인 지연과 재시도를 직접 설계해 본 경험
 민감 정보 저장과 인증 흐름을 다뤄 본 경험
 앱을 스토어에 배포하고 심사 반려에 대응해 본 경험","{""source_id"": ""src_demo_mobile_18"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","비바리퍼블리카 · job_posting · 우대사항
 결제 승인 지연과 재시도를 직접 설계해 본 경험
 민감 정보 저장과 인증 흐름을 다뤄 본 경험
 앱을 스토어에 배포하고 심사 반려에 대응해 본 경험",37,ds_demo_v1
-chunk_demo_mobile_19_1,snap_demo_mobile_19,주요업무,0,"기업 고객이 앱에 붙이는 채팅 SDK 의 iOS 버전을 개발합니다.
+chunk_demo_mobile_19_1,snap_demo_mobile_19,주요업무,0,"기업 고객이 앱에 붙이는 채팅 SDK의 iOS 버전을 개발합니다.
 공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.","{""source_id"": ""src_demo_mobile_19"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","센드버드 · job_posting · 주요업무
-기업 고객이 앱에 붙이는 채팅 SDK 의 iOS 버전을 개발합니다.
+기업 고객이 앱에 붙이는 채팅 SDK의 iOS 버전을 개발합니다.
 공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.",32,ds_demo_v1
-chunk_demo_mobile_19_2,snap_demo_mobile_19,자격요건,1,"Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
+chunk_demo_mobile_19_2,snap_demo_mobile_19,자격요건,1,"Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
 네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분
 SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분
-공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_19"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","센드버드 · job_posting · 자격요건
-Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
+공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_19"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","센드버드 · job_posting · 자격요건
+Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
 네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분
 SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분
-공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분",62,ds_demo_v1
-chunk_demo_mobile_19_3,snap_demo_mobile_19,우대사항,2,"여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험
+공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분",61,ds_demo_v1
+chunk_demo_mobile_19_3,snap_demo_mobile_19,우대사항,2,"여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험
 실시간 통신 프로토콜을 다뤄 본 경험","{""source_id"": ""src_demo_mobile_19"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","센드버드 · job_posting · 우대사항
-여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험
-실시간 통신 프로토콜을 다뤄 본 경험",25,ds_demo_v1
-chunk_demo_mobile_20_1,snap_demo_mobile_20,주요업무,0,"기업 고객이 앱에 붙이는 채팅 SDK 의 iOS 버전을 개발합니다.
+여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험
+실시간 통신 프로토콜을 다뤄 본 경험",24,ds_demo_v1
+chunk_demo_mobile_20_1,snap_demo_mobile_20,주요업무,0,"기업 고객이 앱에 붙이는 채팅 SDK의 iOS 버전을 개발합니다.
 공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.","{""source_id"": ""src_demo_mobile_20"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","센드버드 · job_posting · 주요업무
-기업 고객이 앱에 붙이는 채팅 SDK 의 iOS 버전을 개발합니다.
+기업 고객이 앱에 붙이는 채팅 SDK의 iOS 버전을 개발합니다.
 공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.",32,ds_demo_v1
-chunk_demo_mobile_20_2,snap_demo_mobile_20,자격요건,1,"Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
+chunk_demo_mobile_20_2,snap_demo_mobile_20,자격요건,1,"Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
 네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분
 SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분
-공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_20"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","센드버드 · job_posting · 자격요건
-Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
+공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_20"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","센드버드 · job_posting · 자격요건
+Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
 네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분
 SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분
-공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분",62,ds_demo_v1
-chunk_demo_mobile_20_3,snap_demo_mobile_20,우대사항,2,"여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험
+공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분",61,ds_demo_v1
+chunk_demo_mobile_20_3,snap_demo_mobile_20,우대사항,2,"여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험
 실시간 통신 프로토콜을 다뤄 본 경험","{""source_id"": ""src_demo_mobile_20"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","센드버드 · job_posting · 우대사항
-여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험
-실시간 통신 프로토콜을 다뤄 본 경험",25,ds_demo_v1
+여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험
+실시간 통신 프로토콜을 다뤄 본 경험",24,ds_demo_v1
 chunk_demo_mobile_21_1,snap_demo_mobile_21,주요업무,0,"고객사의 사내 업무용 모바일 앱을 개발합니다.
 설계와 개발 절차를 문서로 남깁니다.","{""source_id"": ""src_demo_mobile_21"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","삼성에스디에스 · job_posting · 주요업무
 고객사의 사내 업무용 모바일 앱을 개발합니다.
 설계와 개발 절차를 문서로 남깁니다.",21,ds_demo_v1
-chunk_demo_mobile_21_2,snap_demo_mobile_21,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+chunk_demo_mobile_21_2,snap_demo_mobile_21,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분
-사내 서버 API 를 연동해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_21"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","삼성에스디에스 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+사내 서버 API를 연동해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_21"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","삼성에스디에스 · job_posting · 자격요건
+Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분
-사내 서버 API 를 연동해 본 경험이 있으신 분",42,ds_demo_v1
+사내 서버 API를 연동해 본 경험이 있으신 분",41,ds_demo_v1
 chunk_demo_mobile_21_3,snap_demo_mobile_21,우대사항,2,앱 배포와 사내 스토어 운영을 경험해 보신 분,"{""source_id"": ""src_demo_mobile_21"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","삼성에스디에스 · job_posting · 우대사항
 앱 배포와 사내 스토어 운영을 경험해 보신 분",12,ds_demo_v1
 chunk_demo_mobile_22_1,snap_demo_mobile_22,주요업무,0,"고객사의 사내 업무용 모바일 앱을 개발합니다.
 설계와 개발 절차를 문서로 남깁니다.","{""source_id"": ""src_demo_mobile_22"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","삼성에스디에스 · job_posting · 주요업무
 고객사의 사내 업무용 모바일 앱을 개발합니다.
 설계와 개발 절차를 문서로 남깁니다.",21,ds_demo_v1
-chunk_demo_mobile_22_2,snap_demo_mobile_22,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+chunk_demo_mobile_22_2,snap_demo_mobile_22,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분
-사내 서버 API 를 연동해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_22"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","삼성에스디에스 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+사내 서버 API를 연동해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_22"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","삼성에스디에스 · job_posting · 자격요건
+Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분
-사내 서버 API 를 연동해 본 경험이 있으신 분",42,ds_demo_v1
+사내 서버 API를 연동해 본 경험이 있으신 분",41,ds_demo_v1
 chunk_demo_mobile_22_3,snap_demo_mobile_22,우대사항,2,앱 배포와 사내 스토어 운영을 경험해 보신 분,"{""source_id"": ""src_demo_mobile_22"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","삼성에스디에스 · job_posting · 우대사항
 앱 배포와 사내 스토어 운영을 경험해 보신 분",12,ds_demo_v1
 chunk_demo_mobile_23_1,snap_demo_mobile_23,주요업무,0,"모바일 게임 런처와 커뮤니티 앱의 클라이언트를 개발합니다.
 안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.","{""source_id"": ""src_demo_mobile_23"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","엔씨소프트 · job_posting · 주요업무
 모바일 게임 런처와 커뮤니티 앱의 클라이언트를 개발합니다.
 안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.",32,ds_demo_v1
-chunk_demo_mobile_23_2,snap_demo_mobile_23,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
+chunk_demo_mobile_23_2,snap_demo_mobile_23,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
 여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_23"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","엔씨소프트 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
+Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
 여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분",35,ds_demo_v1
-chunk_demo_mobile_23_3,snap_demo_mobile_23,우대사항,2,"Swift 로 iOS 앱을 함께 개발해 본 경험
+chunk_demo_mobile_23_3,snap_demo_mobile_23,우대사항,2,"Swift로 iOS 앱을 함께 개발해 본 경험
 게임 클라이언트와 앱을 연동해 본 경험","{""source_id"": ""src_demo_mobile_23"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","엔씨소프트 · job_posting · 우대사항
-Swift 로 iOS 앱을 함께 개발해 본 경험
+Swift로 iOS 앱을 함께 개발해 본 경험
 게임 클라이언트와 앱을 연동해 본 경험",22,ds_demo_v1
 chunk_demo_mobile_24_1,snap_demo_mobile_24,주요업무,0,"모바일 게임 런처와 커뮤니티 앱의 클라이언트를 개발합니다.
 안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.","{""source_id"": ""src_demo_mobile_24"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","엔씨소프트 · job_posting · 주요업무
 모바일 게임 런처와 커뮤니티 앱의 클라이언트를 개발합니다.
 안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.",32,ds_demo_v1
-chunk_demo_mobile_24_2,snap_demo_mobile_24,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
+chunk_demo_mobile_24_2,snap_demo_mobile_24,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
 여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_24"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","엔씨소프트 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
+Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
 여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분",35,ds_demo_v1
-chunk_demo_mobile_24_3,snap_demo_mobile_24,우대사항,2,"Swift 로 iOS 앱을 함께 개발해 본 경험
+chunk_demo_mobile_24_3,snap_demo_mobile_24,우대사항,2,"Swift로 iOS 앱을 함께 개발해 본 경험
 게임 클라이언트와 앱을 연동해 본 경험","{""source_id"": ""src_demo_mobile_24"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","엔씨소프트 · job_posting · 우대사항
-Swift 로 iOS 앱을 함께 개발해 본 경험
+Swift로 iOS 앱을 함께 개발해 본 경험
 게임 클라이언트와 앱을 연동해 본 경험",22,ds_demo_v1
 chunk_demo_mobile_25_1,snap_demo_mobile_25,주요업무,0,"서비스 안드로이드 앱의 신규 기능을 개발하고 운영합니다.
-기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.
+기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.
 백엔드 팀과 API 규격을 함께 정하고 연동합니다.","{""source_id"": ""src_demo_mobile_25"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","카카오 · job_posting · 주요업무
 서비스 안드로이드 앱의 신규 기능을 개발하고 운영합니다.
-기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.
+기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.
 백엔드 팀과 API 규격을 함께 정하고 연동합니다.",47,ds_demo_v1
-chunk_demo_mobile_25_2,snap_demo_mobile_25,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+chunk_demo_mobile_25_2,snap_demo_mobile_25,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분
-Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
+Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
 앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_25"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","카카오 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분
-Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
-앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분",69,ds_demo_v1
+Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분
+앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분",68,ds_demo_v1
 chunk_demo_mobile_25_3,snap_demo_mobile_25,우대사항,2,"월간 사용자 수백만 규모의 앱을 운영해 본 경험
 앱 렌더링 성능이나 메모리 사용량을 측정하고 개선해 본 경험
-CI 로 앱 빌드와 배포를 자동화해 본 경험","{""source_id"": ""src_demo_mobile_25"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","카카오 · job_posting · 우대사항
+CI로 앱 빌드와 배포를 자동화해 본 경험","{""source_id"": ""src_demo_mobile_25"", ""source_type"": ""job_posting"", ""publisher"": ""카카오"", ""company_id"": ""co_kakao"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","카카오 · job_posting · 우대사항
 월간 사용자 수백만 규모의 앱을 운영해 본 경험
 앱 렌더링 성능이나 메모리 사용량을 측정하고 개선해 본 경험
-CI 로 앱 빌드와 배포를 자동화해 본 경험",39,ds_demo_v1
+CI로 앱 빌드와 배포를 자동화해 본 경험",39,ds_demo_v1
 chunk_demo_mobile_26_1,snap_demo_mobile_26,주요업무,0,"중고거래 앱의 새 기능을 기획 단계부터 함께 만들고 배포합니다.
-서버 API 를 연동해 목록·상세 화면을 구현합니다.","{""source_id"": ""src_demo_mobile_26"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","주식회사 당근마켓 · job_posting · 주요업무
+서버 API를 연동해 목록·상세 화면을 구현합니다.","{""source_id"": ""src_demo_mobile_26"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","주식회사 당근마켓 · job_posting · 주요업무
 중고거래 앱의 새 기능을 기획 단계부터 함께 만들고 배포합니다.
-서버 API 를 연동해 목록·상세 화면을 구현합니다.",30,ds_demo_v1
-chunk_demo_mobile_26_2,snap_demo_mobile_26,자격요건,1,"Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분
-REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
+서버 API를 연동해 목록·상세 화면을 구현합니다.",30,ds_demo_v1
+chunk_demo_mobile_26_2,snap_demo_mobile_26,자격요건,1,"Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분
+REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
 작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_26"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","주식회사 당근마켓 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분
-REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
-작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분",48,ds_demo_v1
+Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분
+REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분
+작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분",47,ds_demo_v1
 chunk_demo_mobile_26_3,snap_demo_mobile_26,우대사항,2,"화면과 로직을 분리하는 구조를 고민해 본 경험
 본인이 만든 앱을 스토어에 출시해 본 경험
 사용자 피드백을 받아 앱을 고쳐 본 경험","{""source_id"": ""src_demo_mobile_26"", ""source_type"": ""job_posting"", ""publisher"": ""주식회사 당근마켓"", ""company_id"": ""co_daangn"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","주식회사 당근마켓 · job_posting · 우대사항
 화면과 로직을 분리하는 구조를 고민해 본 경험
 본인이 만든 앱을 스토어에 출시해 본 경험
 사용자 피드백을 받아 앱을 고쳐 본 경험",33,ds_demo_v1
-chunk_demo_mobile_27_1,snap_demo_mobile_27,주요업무,0,"기업 고객이 앱에 붙이는 채팅 SDK 의 iOS 버전을 개발합니다.
+chunk_demo_mobile_27_1,snap_demo_mobile_27,주요업무,0,"기업 고객이 앱에 붙이는 채팅 SDK의 iOS 버전을 개발합니다.
 공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.","{""source_id"": ""src_demo_mobile_27"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","센드버드 · job_posting · 주요업무
-기업 고객이 앱에 붙이는 채팅 SDK 의 iOS 버전을 개발합니다.
+기업 고객이 앱에 붙이는 채팅 SDK의 iOS 버전을 개발합니다.
 공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.",32,ds_demo_v1
-chunk_demo_mobile_27_2,snap_demo_mobile_27,자격요건,1,"Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
+chunk_demo_mobile_27_2,snap_demo_mobile_27,자격요건,1,"Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
 네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분
 SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분
-공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_27"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","센드버드 · job_posting · 자격요건
-Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
+공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_27"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","센드버드 · job_posting · 자격요건
+Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분
 네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분
 SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분
-공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분",62,ds_demo_v1
-chunk_demo_mobile_27_3,snap_demo_mobile_27,우대사항,2,"여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험
+공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분",61,ds_demo_v1
+chunk_demo_mobile_27_3,snap_demo_mobile_27,우대사항,2,"여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험
 실시간 통신 프로토콜을 다뤄 본 경험","{""source_id"": ""src_demo_mobile_27"", ""source_type"": ""job_posting"", ""publisher"": ""센드버드"", ""company_id"": ""co_sendbird"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","센드버드 · job_posting · 우대사항
-여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험
-실시간 통신 프로토콜을 다뤄 본 경험",25,ds_demo_v1
+여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험
+실시간 통신 프로토콜을 다뤄 본 경험",24,ds_demo_v1
 chunk_demo_mobile_28_1,snap_demo_mobile_28,주요업무,0,"금융 서비스 iOS 앱의 결제·인증 화면을 개발하고 운영합니다.
-SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
-결제 승인 API 를 연동하고 실패 흐름을 설계합니다.","{""source_id"": ""src_demo_mobile_28"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","비바리퍼블리카 · job_posting · 주요업무
+SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
+결제 승인 API를 연동하고 실패 흐름을 설계합니다.","{""source_id"": ""src_demo_mobile_28"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","비바리퍼블리카 · job_posting · 주요업무
 금융 서비스 iOS 앱의 결제·인증 화면을 개발하고 운영합니다.
-SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
-결제 승인 API 를 연동하고 실패 흐름을 설계합니다.",48,ds_demo_v1
-chunk_demo_mobile_28_2,snap_demo_mobile_28,자격요건,1,"Swift 로 iOS 앱을 개발한 경험이 있으신 분
+SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.
+결제 승인 API를 연동하고 실패 흐름을 설계합니다.",47,ds_demo_v1
+chunk_demo_mobile_28_2,snap_demo_mobile_28,자격요건,1,"Swift로 iOS 앱을 개발한 경험이 있으신 분
 화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분
-URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_28"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","비바리퍼블리카 · job_posting · 자격요건
-Swift 로 iOS 앱을 개발한 경험이 있으신 분
+URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_28"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","비바리퍼블리카 · job_posting · 자격요건
+Swift로 iOS 앱을 개발한 경험이 있으신 분
 화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분
-URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분",54,ds_demo_v1
+URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분",53,ds_demo_v1
 chunk_demo_mobile_28_3,snap_demo_mobile_28,우대사항,2,"결제 승인 지연과 재시도를 직접 설계해 본 경험
 민감 정보 저장과 인증 흐름을 다뤄 본 경험
 앱을 스토어에 배포하고 심사 반려에 대응해 본 경험","{""source_id"": ""src_demo_mobile_28"", ""source_type"": ""job_posting"", ""publisher"": ""비바리퍼블리카"", ""company_id"": ""co_viva"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","비바리퍼블리카 · job_posting · 우대사항
@@ -3363,25 +3363,25 @@ chunk_demo_mobile_29_1,snap_demo_mobile_29,주요업무,0,"고객사의 사내 �
 설계와 개발 절차를 문서로 남깁니다.","{""source_id"": ""src_demo_mobile_29"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","삼성에스디에스 · job_posting · 주요업무
 고객사의 사내 업무용 모바일 앱을 개발합니다.
 설계와 개발 절차를 문서로 남깁니다.",21,ds_demo_v1
-chunk_demo_mobile_29_2,snap_demo_mobile_29,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+chunk_demo_mobile_29_2,snap_demo_mobile_29,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분
-사내 서버 API 를 연동해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_29"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","삼성에스디에스 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분
+사내 서버 API를 연동해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_29"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","삼성에스디에스 · job_posting · 자격요건
+Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분
 화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분
-사내 서버 API 를 연동해 본 경험이 있으신 분",42,ds_demo_v1
+사내 서버 API를 연동해 본 경험이 있으신 분",41,ds_demo_v1
 chunk_demo_mobile_29_3,snap_demo_mobile_29,우대사항,2,앱 배포와 사내 스토어 운영을 경험해 보신 분,"{""source_id"": ""src_demo_mobile_29"", ""source_type"": ""job_posting"", ""publisher"": ""삼성에스디에스"", ""company_id"": ""co_samsungsds"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","삼성에스디에스 · job_posting · 우대사항
 앱 배포와 사내 스토어 운영을 경험해 보신 분",12,ds_demo_v1
 chunk_demo_mobile_30_1,snap_demo_mobile_30,주요업무,0,"모바일 게임 런처와 커뮤니티 앱의 클라이언트를 개발합니다.
 안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.","{""source_id"": ""src_demo_mobile_30"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""주요업무""}","엔씨소프트 · job_posting · 주요업무
 모바일 게임 런처와 커뮤니티 앱의 클라이언트를 개발합니다.
 안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.",32,ds_demo_v1
-chunk_demo_mobile_30_2,snap_demo_mobile_30,자격요건,1,"Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
+chunk_demo_mobile_30_2,snap_demo_mobile_30,자격요건,1,"Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
 여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분","{""source_id"": ""src_demo_mobile_30"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""자격요건""}","엔씨소프트 · job_posting · 자격요건
-Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
+Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분
 여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분",35,ds_demo_v1
-chunk_demo_mobile_30_3,snap_demo_mobile_30,우대사항,2,"Swift 로 iOS 앱을 함께 개발해 본 경험
+chunk_demo_mobile_30_3,snap_demo_mobile_30,우대사항,2,"Swift로 iOS 앱을 함께 개발해 본 경험
 게임 클라이언트와 앱을 연동해 본 경험","{""source_id"": ""src_demo_mobile_30"", ""source_type"": ""job_posting"", ""publisher"": ""엔씨소프트"", ""company_id"": ""co_ncsoft"", ""job_role_ids"": [""mobile""], ""section"": ""우대사항""}","엔씨소프트 · job_posting · 우대사항
-Swift 로 iOS 앱을 함께 개발해 본 경험
+Swift로 iOS 앱을 함께 개발해 본 경험
 게임 클라이언트와 앱을 연동해 본 경험",22,ds_demo_v1
 chunk_demo_security_01_1,snap_demo_security_01,주요업무,0,"자사 제품과 고객사 웹 서비스의 보안 취약점 진단을 수행합니다.
 진단 결과 보고서를 작성하고 개발 조직에 조치 방안을 전달합니다.
@@ -4003,10 +4003,10 @@ C++ 기반 클라이언트 개발 경험이 있으신 분","{""source_id"": ""sr
 C++ 기반 클라이언트 개발 경험이 있으신 분",24,ds_demo_v1
 chunk_demo_game_client_11_1,snap_demo_game_client_11,주요업무,0,"Unity 와 C# 로 채용 캠페인용 미니게임을 구현합니다.
 다양한 단말에서 안정적인 프레임을 유지하도록 리소스를 조정합니다.
-게임 진행 상태를 서비스 API 와 동기화합니다.","{""source_id"": ""src_demo_game_client_11"", ""source_type"": ""job_posting"", ""publisher"": ""원티드랩"", ""company_id"": ""co_wantedlab"", ""job_role_ids"": [""game_client""], ""section"": ""주요업무""}","원티드랩 · job_posting · 주요업무
+게임 진행 상태를 서비스 API와 동기화합니다.","{""source_id"": ""src_demo_game_client_11"", ""source_type"": ""job_posting"", ""publisher"": ""원티드랩"", ""company_id"": ""co_wantedlab"", ""job_role_ids"": [""game_client""], ""section"": ""주요업무""}","원티드랩 · job_posting · 주요업무
 Unity 와 C# 로 채용 캠페인용 미니게임을 구현합니다.
 다양한 단말에서 안정적인 프레임을 유지하도록 리소스를 조정합니다.
-게임 진행 상태를 서비스 API 와 동기화합니다.",45,ds_demo_v1
+게임 진행 상태를 서비스 API와 동기화합니다.",45,ds_demo_v1
 chunk_demo_game_client_11_2,snap_demo_game_client_11,자격요건,1,"Unity 로 플레이 가능한 프로젝트를 완성해 본 분
 충돌과 보간에 필요한 게임 수학의 기초를 이해하는 분","{""source_id"": ""src_demo_game_client_11"", ""source_type"": ""job_posting"", ""publisher"": ""원티드랩"", ""company_id"": ""co_wantedlab"", ""job_role_ids"": [""game_client""], ""section"": ""자격요건""}","원티드랩 · job_posting · 자격요건
 Unity 로 플레이 가능한 프로젝트를 완성해 본 분

@@ -1729,11 +1729,14 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
     interpretations: list[dict[str, Any]] = []
     baseline_notes: list[dict[str, Any]] = []
     signal_notes: list[dict[str, Any]] = []
+    contextual_rows: list[tuple[dict[str, Any], str]] = []
     mark_n = base_n = note_n = 0
     for section, lines in posting["sections"]:
         rows = []
         for line in lines:
             row = {"text": line[0], "mark_n": None, "note_n": None, "base_n": None, "base_ref": None}
+            if line[1] is not None:
+                contextual_rows.append((row, line[1]))
             ann = line[3]
             if ann is not None:
                 if ann[0] == "base":
@@ -1754,14 +1757,72 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
                     signal_notes.append({"n": note_n, "title": ann[1], "body": ann[2]})
             rows.append(row)
         raw_sections.append({"section": section, "lines": rows})
+
+    mentioned = list(dict.fromkeys(slug for _row, slug in contextual_rows))
+    primary = mentioned[0]
+    secondary = mentioned[1] if len(mentioned) > 1 else primary
+    company_context = CLUSTERS[posting["cluster"]]
+    if not baseline_notes:
+        row, slug = next(
+            ((candidate, slug) for candidate, slug in contextual_rows
+             if slug in {item[0] for item in BASELINE_ITEMS}),
+            contextual_rows[0],
+        )
+        base_n = 1
+        row["base_n"], row["base_ref"] = base_n, DIM_INFO[slug]["label"]
+        baseline_notes.append({
+            "n": base_n,
+            "base_ref": DIM_INFO[slug]["label"],
+            "body": (
+                f"{DIM_INFO[slug]['label']}: 이 공고에서 자격요건으로 확인하는 프론트엔드 직무 공통 기대치입니다. "
+                "README에 컴포넌트 위치와 확인할 화면 경로를 함께 적어 실제 동작을 찾을 수 있게 준비합니다."
+            ),
+        })
+    if not interpretations:
+        row, slug = contextual_rows[min(1, len(contextual_rows) - 1)]
+        mark_n = 1
+        row["mark_n"] = mark_n
+        interpretations.append({
+            "n": mark_n,
+            "title": f"{DIM_INFO[slug]['label']} — 화면 동작까지 확인",
+            "body": (
+                f"{posting['company']}의 {posting['title']} 공고에서는 라이브러리 사용 경험보다 "
+                f"{DIM_INFO[slug]['label']} 적용 전후의 화면 동작과 예외 상태를 함께 설명해야 합니다."
+            ),
+            "confidence": "medium",
+            "ratio": f"{company_context} 공고 맥락",
+            "sources": [{"type": "posting", "url": posting_url(posting["nn"])}],
+        })
+    if not signal_notes:
+        row, slug = contextual_rows[min(2, len(contextual_rows) - 1)]
+        note_n = 1
+        row["note_n"] = note_n
+        signal_notes.append({
+            "n": note_n,
+            "title": f"{company_context} 특징 — {DIM_INFO[slug]['label']}",
+            "body": (
+                f"이 공고는 {posting['title']} 업무 범위에 {DIM_INFO[slug]['label']}까지 포함합니다. "
+                "지원할 때는 해당 화면 경로와 재현 절차, 점검 결과를 한 묶음으로 제시합니다."
+            ),
+        })
+
+    summary_body = posting["summary"] or (
+        f"{posting['company']}의 {posting['title']} 공고는 {DIM_INFO[primary]['label']}와 "
+        f"{DIM_INFO[secondary]['label']}를 함께 확인합니다. 화면 경로, 예외 상태, 점검 결과를 "
+        f"연결해 보여 주는 것이 {company_context} 지원의 핵심입니다."
+    )
+    summary_ratio = posting["summary_ratio"] or (
+        f"요구 역량 {len(mentioned)}개 · {company_context} 공고"
+    )
     return {
         "posting_id": posting_id(posting["nn"]),
         "company": posting["company"],
         "title": posting["title"],
         "summary": {
             "n": None, "title": "종합 해석 — 이 공고가 찾는 사람",
-            "body": posting["summary"], "confidence": "high",
-            "ratio": posting["summary_ratio"],
+            "body": summary_body,
+            "confidence": "high" if posting["summary"] else "medium",
+            "ratio": summary_ratio,
             "sources": [{"type": "posting", "url": posting_url(posting["nn"])}],
         },
         "raw_sections": raw_sections,
@@ -1910,16 +1971,20 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         "highlights": [
             {
                 "title": "화면 하나를 끝까지 끌고 간 흔적",
-                "body": f"{label} 기준에서도 토이 프로젝트를 여러 개 벌이는 것보다 화면 하나를 배포까지 끌고 간 기록이 강합니다. 주소가 있는 결과물이 첫 문장이 되어야 합니다.",
-                "tips": ["README 1절: 무엇을 만들었고 어디서 볼 수 있는가",
-                         "화면 캡처보다 배포 주소와 커밋 이력이 먼저입니다"],
+                "body": f"{label}에서는 토이 프로젝트를 여러 개 벌이는 것보다 화면 하나를 배포까지 끌고 간 기록이 강합니다. 주소가 있는 결과물이 첫 문장이 되어야 합니다.",
+                "tips": [
+                    "README 첫 절에 배포 URL, 핵심 화면 경로, 실행 명령을 적기",
+                    "새 환경에서 실행 명령으로 화면이 열리고 핵심 흐름이 끝까지 동작하면 완료로 판단하기",
+                ],
                 "linked_item_ids": [CONCEPT_INFO["spa-project"]["concept_id"]],
             },
             {
                 "title": "보이지 않는 품질이 희소합니다",
                 "body": "예쁜 화면은 흔합니다. 로딩과 에러 화면, 키보드 이동, 리렌더링 비용처럼 눈에 잘 안 보이는 것을 다룬 기록이 신입 포트폴리오에서 드뭅니다.",
-                "tips": ["로딩·빈 상태·에러 화면을 함께 캡처하세요",
-                         "성능이나 접근성 점검 결과 한 장을 붙이세요"],
+                "tips": [
+                    "src의 상태 처리 위치와 로딩·빈 상태·오류 재현 절차를 README에 연결하기",
+                    "Lighthouse 또는 접근성 검사 전후 값을 같은 조건으로 비교해 한 장에 기록하기",
+                ],
                 "linked_item_ids": [
                     CONCEPT_INFO["state-design"]["concept_id"],
                     CONCEPT_INFO["perf-budget"]["concept_id"],
@@ -1958,28 +2023,28 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "성능 검증",
             "question": "그 화면에서 느린 지점을 어떻게 찾았나요?",
             "followups": ["무엇을 바꿨고 얼마나 좋아졌나요?", "다시 느려지면 무엇부터 보겠어요?"],
-            "point": "도구 이름보다 측정 → 원인 → 변경 → 재측정의 순서를 말할 수 있으면 꼬리질문이 두렵지 않습니다.",
+            "point": "측정 지표를 고른 이유 → 병목 판단 → 변경 → 같은 조건의 재측정 결과 순서로 답합니다. 꼬리질문에는 다른 개선안을 선택하지 않은 이유를 비교합니다.",
             "linked_item_ids": [CONCEPT_INFO["perf-budget"]["concept_id"]],
         },
         {
             "kicker": "설계 검증",
             "question": "어떤 상태를 전역으로 두고 어떤 것을 컴포넌트 안에 두었나요?",
             "followups": ["그 경계를 다시 정한다면 무엇을 바꾸겠어요?", "서버 데이터는 어디서 캐싱했나요?"],
-            "point": "정답이 있는 질문이 아닙니다. 기준을 세우고 그 기준을 지켰다는 이야기가 답입니다.",
+            "point": "공유 범위와 갱신 주기를 판단 기준으로 제시하고, 선택한 상태 위치가 렌더링과 유지보수에 준 결과를 설명합니다. 꼬리질문에는 경계를 바꿀 조건을 답합니다.",
             "linked_item_ids": [CONCEPT_INFO["state-design"]["concept_id"]],
         },
         {
             "kicker": "기본기 검증",
             "question": "이 컴포넌트를 왜 이렇게 나눴나요?",
-            "followups": ["다른 화면에서 재사용할 때 무엇이 걸렸나요?"],
-            "point": "기준선 항목은 깊이보다 근거를 봅니다. 재사용을 염두에 뒀다는 한 문장이 필요합니다.",
+            "followups": ["다른 화면에서 재사용할 때 무엇이 걸렸나요?", "나누기 전후 수정 범위는 어떻게 달라졌나요?"],
+            "point": "변경 이유 → 컴포넌트 경계 기준 → 재사용한 화면 → 수정 범위가 줄어든 결과 순서로 답합니다. 꼬리질문에는 분리하지 않은 부분의 이유도 포함합니다.",
             "linked_item_ids": [CONCEPT_INFO["css-system"]["concept_id"]],
         },
         {
             "kicker": "태도 검증 · 자소서 연동",
             "question": "자소서에 쓴 협업 갈등, 상대방은 어떻게 기억할까요?",
-            "followups": ["같은 상황이 다시 오면 무엇을 다르게 하겠어요?"],
-            "point": "자소서 소재는 반드시 면접에서 재검증됩니다. 사실 관계를 스스로 꼬리질문해 보세요.",
+            "followups": ["같은 상황이 다시 오면 무엇을 다르게 하겠어요?", "합의한 선택이 재작업 결과에 어떤 변화를 만들었나요?"],
+            "point": "시안과 구현의 차이 → 판단 기준 → 합의한 선택 → 재작업 결과 순서로 답합니다. 꼬리질문에는 상대 의견에서 받아들인 부분을 포함합니다.",
             "linked_item_ids": [CONCEPT_INFO["collab-story"]["concept_id"]],
         },
     ]
@@ -1997,16 +2062,16 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "배포 URL + 컴포넌트 구조 설명 + 도메인 타입 정의", "기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
      ("컴포넌트 설계", "타입 정의", "배포")),
     (2, "STEP 02 · 2주", 2, "vhigh", "보이지 않는 상태 채우기",
-     "로딩·빈 상태·에러·재시도 화면을 만들고 상태 흐름도를 그리세요. 성공 경로만 있는 결과물은 변별력이 없습니다.",
-     "상태 흐름도 + 로딩·에러 화면 캡처 + 처리 코드", "실패 경로를 다룬 기록이 신입 포트폴리오에서 가장 희소합니다.",
+     "로딩·빈 상태·에러·재시도 화면을 만들고 상태 흐름도를 그리세요. 공통 스타일 규칙과 컴포넌트 경계도 같은 문서에 표시해 여러 상태에서 일관되게 적용되는지 확인합니다.",
+     "상태 흐름도 + 로딩·에러 화면 캡처 + 처리 코드 + 공통 컴포넌트·스타일 규칙 문서", "실패 경로를 다룬 기록이 신입 포트폴리오에서 가장 희소합니다.",
      ("상태 설계", "에러 화면", "흐름도")),
     (3, "STEP 03 · 2주", 2, "high", "측정하고 하나를 개선하기",
      "성능 지표와 접근성 점검을 한 번씩 돌리고 그 중 하나를 골라 개선 전후를 기록하세요.",
      "측정 리포트 + 개선 전후 비교 + 점검 체크리스트", "규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
      ("성능 측정", "접근성 점검", "지표 비교")),
     (4, "STEP 04 · 2주", 2, "mid", "기업군에 맞춰 마무리하기",
-     "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
-     "편차 항목 산출물 + 기업군 맞춤 소개 순서", "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+     "지원 기업군의 편차 항목을 채우고 배포 뒤 피드백과 개선 결과를 정리하세요. 디자이너·기획과 합의한 기록을 연결한 뒤 README와 자소서의 소개 순서를 다시 배치합니다.",
+     "편차 항목 산출물 + 배포 후 개선 기록 + 협업 합의 기록 + 기업군 맞춤 소개 순서", "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
      ("편차 보강", "소개 순서", "문서 정리")),
 )
 
@@ -2057,10 +2122,21 @@ def roadmap_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
     step_of: dict[str, str] = {}
     for i, (n, phase, weeks, priority, title, body, deliverable, reason, tags) in enumerate(ROADMAP_STEPS):
         slugs = list(STEP_FILLS[i])
+        added_dev: str | None = None
         if n <= len(devs):
             dev_slug = devs[n - 1]
             if dev_slug not in slugs:
                 slugs.insert(0, dev_slug)
+                added_dev = dev_slug
+        if added_dev:
+            dev_info = CONCEPT_INFO[added_dev]
+            body = f"{body} 기업군 편차인 {dev_info['title']} 작업도 이 단계의 결과물에 연결합니다."
+            deliverable = f"{deliverable} + {dev_info['evidence_needed']}"
+        step_text = f"{title} {body} {deliverable}"
+        missing_titles = [CONCEPT_INFO[slug]["title"] for slug in slugs
+                          if CONCEPT_INFO[slug]["title"] not in step_text]
+        if missing_titles:
+            body = f"{body} 채워짐 항목 가운데 {', '.join(missing_titles)}도 이 단계에서 완료합니다."
         for slug in slugs:
             step_of.setdefault(slug, f"STEP {n:02d}")
         steps.append({

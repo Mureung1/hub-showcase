@@ -1084,167 +1084,167 @@ mention_devops_30_4,pv_demo_devops_30,snap_demo_devops_30,chunk_demo_devops_30_2
 mention_devops_30_5,pv_demo_devops_30,snap_demo_devops_30,chunk_demo_devops_30_2,지표·경보 체계를 직접 설계하고 온콜을 운영해 본 경험,68,98,필수,자격요건,0.92000,run_demo_devops_stats,ds_demo_v1
 mention_devops_30_6,pv_demo_devops_30,snap_demo_devops_30,chunk_demo_devops_30_3,Terraform으로 게임 서버 인프라를 코드화해 본 경험,0,32,우대,우대사항,0.92000,run_demo_devops_stats,ds_demo_v1
 mention_devops_30_7,pv_demo_devops_30,snap_demo_devops_30,chunk_demo_devops_30_3,빌드·배포 자동화 도구를 개선해 본 경험,33,55,우대,우대사항,0.92000,run_demo_devops_stats,ds_demo_v1
-mention_mobile_01_1,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_1,기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.,32,74,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_01_2,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_1,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,75,103,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_01_3,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,0,32,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_01_4,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_2,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,33,65,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_01_5,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_2,Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,66,117,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_01_6,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_2,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,118,150,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_01_1,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_1,기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.,32,73,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_01_2,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_1,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,74,102,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_01_3,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,0,31,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_01_4,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_2,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,32,64,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_01_5,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_2,Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,65,115,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_01_6,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_2,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,116,148,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_01_7,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_3,월간 사용자 수백만 규모의 앱을 운영해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_01_8,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_3,CI 로 앱 빌드와 배포를 자동화해 본 경험,61,85,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_02_1,pv_demo_mobile_02,snap_demo_mobile_02,chunk_demo_mobile_02_1,SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,36,74,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_02_2,pv_demo_mobile_02,snap_demo_mobile_02,chunk_demo_mobile_02_1,결제 승인 API 를 연동하고 실패 흐름을 설계합니다.,75,105,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_02_3,pv_demo_mobile_02,snap_demo_mobile_02,chunk_demo_mobile_02_2,Swift 로 iOS 앱을 개발한 경험이 있으신 분,0,28,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_02_4,pv_demo_mobile_02,snap_demo_mobile_02,chunk_demo_mobile_02_2,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,29,66,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_02_5,pv_demo_mobile_02,snap_demo_mobile_02,chunk_demo_mobile_02_2,URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분,67,117,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_01_8,pv_demo_mobile_01,snap_demo_mobile_01,chunk_demo_mobile_01_3,CI로 앱 빌드와 배포를 자동화해 본 경험,61,84,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_02_1,pv_demo_mobile_02,snap_demo_mobile_02,chunk_demo_mobile_02_1,SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,36,73,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_02_2,pv_demo_mobile_02,snap_demo_mobile_02,chunk_demo_mobile_02_1,결제 승인 API를 연동하고 실패 흐름을 설계합니다.,74,103,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_02_3,pv_demo_mobile_02,snap_demo_mobile_02,chunk_demo_mobile_02_2,Swift로 iOS 앱을 개발한 경험이 있으신 분,0,27,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_02_4,pv_demo_mobile_02,snap_demo_mobile_02,chunk_demo_mobile_02_2,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,28,65,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_02_5,pv_demo_mobile_02,snap_demo_mobile_02,chunk_demo_mobile_02_2,URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분,66,115,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_02_6,pv_demo_mobile_02,snap_demo_mobile_02,chunk_demo_mobile_02_3,결제 승인 지연과 재시도를 직접 설계해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_02_7,pv_demo_mobile_02,snap_demo_mobile_02,chunk_demo_mobile_02_3,앱을 스토어에 배포하고 심사 반려에 대응해 본 경험,52,80,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_03_1,pv_demo_mobile_03,snap_demo_mobile_03,chunk_demo_mobile_03_1,서버 API 를 연동해 목록·상세 화면을 구현합니다.,36,65,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_03_2,pv_demo_mobile_03,snap_demo_mobile_03,chunk_demo_mobile_03_2,Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분,0,34,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_03_3,pv_demo_mobile_03,snap_demo_mobile_03,chunk_demo_mobile_03_2,REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,35,73,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_03_1,pv_demo_mobile_03,snap_demo_mobile_03,chunk_demo_mobile_03_1,서버 API를 연동해 목록·상세 화면을 구현합니다.,36,64,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_03_2,pv_demo_mobile_03,snap_demo_mobile_03,chunk_demo_mobile_03_2,Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분,0,33,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_03_3,pv_demo_mobile_03,snap_demo_mobile_03,chunk_demo_mobile_03_2,REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,34,71,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_03_4,pv_demo_mobile_03,snap_demo_mobile_03,chunk_demo_mobile_03_3,화면과 로직을 분리하는 구조를 고민해 본 경험,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_04_1,pv_demo_mobile_04,snap_demo_mobile_04,chunk_demo_mobile_04_1,안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.,33,69,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_04_2,pv_demo_mobile_04,snap_demo_mobile_04,chunk_demo_mobile_04_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,0,36,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_04_3,pv_demo_mobile_04,snap_demo_mobile_04,chunk_demo_mobile_04_2,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,37,77,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_04_4,pv_demo_mobile_04,snap_demo_mobile_04,chunk_demo_mobile_04_3,Swift 로 iOS 앱을 함께 개발해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_05_1,pv_demo_mobile_05,snap_demo_mobile_05,chunk_demo_mobile_05_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,38,70,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_05_2,pv_demo_mobile_05,snap_demo_mobile_05,chunk_demo_mobile_05_2,Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,0,37,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_05_3,pv_demo_mobile_05,snap_demo_mobile_05,chunk_demo_mobile_05_2,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,38,70,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_05_4,pv_demo_mobile_05,snap_demo_mobile_05,chunk_demo_mobile_05_2,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,71,102,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_05_5,pv_demo_mobile_05,snap_demo_mobile_05,chunk_demo_mobile_05_2,공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분,103,135,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_05_6,pv_demo_mobile_05,snap_demo_mobile_05,chunk_demo_mobile_05_3,여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험,0,32,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_06_1,pv_demo_mobile_06,snap_demo_mobile_06,chunk_demo_mobile_06_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,0,32,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_04_2,pv_demo_mobile_04,snap_demo_mobile_04,chunk_demo_mobile_04_2,Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,0,35,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_04_3,pv_demo_mobile_04,snap_demo_mobile_04,chunk_demo_mobile_04_2,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,36,76,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_04_4,pv_demo_mobile_04,snap_demo_mobile_04,chunk_demo_mobile_04_3,Swift로 iOS 앱을 함께 개발해 본 경험,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_05_1,pv_demo_mobile_05,snap_demo_mobile_05,chunk_demo_mobile_05_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,37,69,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_05_2,pv_demo_mobile_05,snap_demo_mobile_05,chunk_demo_mobile_05_2,Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,0,36,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_05_3,pv_demo_mobile_05,snap_demo_mobile_05,chunk_demo_mobile_05_2,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,37,69,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_05_4,pv_demo_mobile_05,snap_demo_mobile_05,chunk_demo_mobile_05_2,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,70,101,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_05_5,pv_demo_mobile_05,snap_demo_mobile_05,chunk_demo_mobile_05_2,공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분,102,133,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_05_6,pv_demo_mobile_05,snap_demo_mobile_05,chunk_demo_mobile_05_3,여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험,0,31,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_06_1,pv_demo_mobile_06,snap_demo_mobile_06,chunk_demo_mobile_06_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,0,31,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_06_2,pv_demo_mobile_06,snap_demo_mobile_06,chunk_demo_mobile_06_3,MVVM 등 아키텍처 패턴을 적용해 본 경험,0,24,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_06_3,pv_demo_mobile_06,snap_demo_mobile_06,chunk_demo_mobile_06_3,앱을 스토어에 배포해 본 경험,25,41,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_07_1,pv_demo_mobile_07,snap_demo_mobile_07,chunk_demo_mobile_07_1,서버 API 를 연동해 거래 흐름을 구현합니다.,27,53,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_07_2,pv_demo_mobile_07,snap_demo_mobile_07,chunk_demo_mobile_07_2,Swift 로 iOS 앱을 개발한 경험이 있으신 분,0,28,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_07_3,pv_demo_mobile_07,snap_demo_mobile_07,chunk_demo_mobile_07_2,REST API 연동 경험이 있으신 분,29,50,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_07_1,pv_demo_mobile_07,snap_demo_mobile_07,chunk_demo_mobile_07_1,서버 API를 연동해 거래 흐름을 구현합니다.,27,52,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_07_2,pv_demo_mobile_07,snap_demo_mobile_07,chunk_demo_mobile_07_2,Swift로 iOS 앱을 개발한 경험이 있으신 분,0,27,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_07_3,pv_demo_mobile_07,snap_demo_mobile_07,chunk_demo_mobile_07_2,REST API 연동 경험이 있으신 분,28,49,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_08_1,pv_demo_mobile_08,snap_demo_mobile_08,chunk_demo_mobile_08_1,설계와 개발 절차를 문서로 남깁니다.,26,46,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_08_2,pv_demo_mobile_08,snap_demo_mobile_08,chunk_demo_mobile_08_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,0,32,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_08_3,pv_demo_mobile_08,snap_demo_mobile_08,chunk_demo_mobile_08_2,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,33,64,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_08_4,pv_demo_mobile_08,snap_demo_mobile_08,chunk_demo_mobile_08_2,사내 서버 API 를 연동해 본 경험이 있으신 분,65,92,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_08_2,pv_demo_mobile_08,snap_demo_mobile_08,chunk_demo_mobile_08_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,0,31,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_08_3,pv_demo_mobile_08,snap_demo_mobile_08,chunk_demo_mobile_08_2,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,32,63,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_08_4,pv_demo_mobile_08,snap_demo_mobile_08,chunk_demo_mobile_08_2,사내 서버 API를 연동해 본 경험이 있으신 분,64,90,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_08_5,pv_demo_mobile_08,snap_demo_mobile_08,chunk_demo_mobile_08_3,앱 배포와 사내 스토어 운영을 경험해 보신 분,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_09_1,pv_demo_mobile_09,snap_demo_mobile_09,chunk_demo_mobile_09_1,안드로이드 앱의 배포와 버전을 관리합니다.,29,52,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_09_2,pv_demo_mobile_09,snap_demo_mobile_09,chunk_demo_mobile_09_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,0,32,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_09_3,pv_demo_mobile_09,snap_demo_mobile_09,chunk_demo_mobile_09_2,서버 API 연동과 비동기 처리에 익숙하신 분,33,58,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_09_4,pv_demo_mobile_09,snap_demo_mobile_09,chunk_demo_mobile_09_3,Swift 로 iOS 앱을 함께 개발해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_10_1,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_1,기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.,32,74,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_10_2,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_1,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,75,103,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_10_3,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,0,32,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_10_4,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_2,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,33,65,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_10_5,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_2,Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,66,117,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_10_6,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_2,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,118,150,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_09_2,pv_demo_mobile_09,snap_demo_mobile_09,chunk_demo_mobile_09_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,0,31,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_09_3,pv_demo_mobile_09,snap_demo_mobile_09,chunk_demo_mobile_09_2,서버 API 연동과 비동기 처리에 익숙하신 분,32,57,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_09_4,pv_demo_mobile_09,snap_demo_mobile_09,chunk_demo_mobile_09_3,Swift로 iOS 앱을 함께 개발해 본 경험,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_10_1,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_1,기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.,32,73,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_10_2,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_1,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,74,102,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_10_3,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,0,31,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_10_4,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_2,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,32,64,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_10_5,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_2,Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,65,115,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_10_6,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_2,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,116,148,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_10_7,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_3,월간 사용자 수백만 규모의 앱을 운영해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_10_8,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_3,CI 로 앱 빌드와 배포를 자동화해 본 경험,61,85,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_11_1,pv_demo_mobile_11,snap_demo_mobile_11,chunk_demo_mobile_11_1,서버 API 를 연동해 목록·상세 화면을 구현합니다.,36,65,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_11_2,pv_demo_mobile_11,snap_demo_mobile_11,chunk_demo_mobile_11_2,Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분,0,34,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_11_3,pv_demo_mobile_11,snap_demo_mobile_11,chunk_demo_mobile_11_2,REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,35,73,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_10_8,pv_demo_mobile_10,snap_demo_mobile_10,chunk_demo_mobile_10_3,CI로 앱 빌드와 배포를 자동화해 본 경험,61,84,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_11_1,pv_demo_mobile_11,snap_demo_mobile_11,chunk_demo_mobile_11_1,서버 API를 연동해 목록·상세 화면을 구현합니다.,36,64,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_11_2,pv_demo_mobile_11,snap_demo_mobile_11,chunk_demo_mobile_11_2,Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분,0,33,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_11_3,pv_demo_mobile_11,snap_demo_mobile_11,chunk_demo_mobile_11_2,REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,34,71,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_11_4,pv_demo_mobile_11,snap_demo_mobile_11,chunk_demo_mobile_11_3,화면과 로직을 분리하는 구조를 고민해 본 경험,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_12_1,pv_demo_mobile_12,snap_demo_mobile_12,chunk_demo_mobile_12_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,38,70,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_12_2,pv_demo_mobile_12,snap_demo_mobile_12,chunk_demo_mobile_12_2,Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,0,37,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_12_3,pv_demo_mobile_12,snap_demo_mobile_12,chunk_demo_mobile_12_2,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,38,70,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_12_4,pv_demo_mobile_12,snap_demo_mobile_12,chunk_demo_mobile_12_2,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,71,102,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_12_5,pv_demo_mobile_12,snap_demo_mobile_12,chunk_demo_mobile_12_2,공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분,103,135,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_12_6,pv_demo_mobile_12,snap_demo_mobile_12,chunk_demo_mobile_12_3,여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험,0,32,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_13_1,pv_demo_mobile_13,snap_demo_mobile_13,chunk_demo_mobile_13_1,SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,36,74,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_13_2,pv_demo_mobile_13,snap_demo_mobile_13,chunk_demo_mobile_13_1,결제 승인 API 를 연동하고 실패 흐름을 설계합니다.,75,105,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_13_3,pv_demo_mobile_13,snap_demo_mobile_13,chunk_demo_mobile_13_2,Swift 로 iOS 앱을 개발한 경험이 있으신 분,0,28,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_13_4,pv_demo_mobile_13,snap_demo_mobile_13,chunk_demo_mobile_13_2,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,29,66,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_13_5,pv_demo_mobile_13,snap_demo_mobile_13,chunk_demo_mobile_13_2,URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분,67,117,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_12_1,pv_demo_mobile_12,snap_demo_mobile_12,chunk_demo_mobile_12_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,37,69,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_12_2,pv_demo_mobile_12,snap_demo_mobile_12,chunk_demo_mobile_12_2,Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,0,36,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_12_3,pv_demo_mobile_12,snap_demo_mobile_12,chunk_demo_mobile_12_2,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,37,69,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_12_4,pv_demo_mobile_12,snap_demo_mobile_12,chunk_demo_mobile_12_2,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,70,101,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_12_5,pv_demo_mobile_12,snap_demo_mobile_12,chunk_demo_mobile_12_2,공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분,102,133,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_12_6,pv_demo_mobile_12,snap_demo_mobile_12,chunk_demo_mobile_12_3,여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험,0,31,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_13_1,pv_demo_mobile_13,snap_demo_mobile_13,chunk_demo_mobile_13_1,SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,36,73,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_13_2,pv_demo_mobile_13,snap_demo_mobile_13,chunk_demo_mobile_13_1,결제 승인 API를 연동하고 실패 흐름을 설계합니다.,74,103,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_13_3,pv_demo_mobile_13,snap_demo_mobile_13,chunk_demo_mobile_13_2,Swift로 iOS 앱을 개발한 경험이 있으신 분,0,27,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_13_4,pv_demo_mobile_13,snap_demo_mobile_13,chunk_demo_mobile_13_2,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,28,65,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_13_5,pv_demo_mobile_13,snap_demo_mobile_13,chunk_demo_mobile_13_2,URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분,66,115,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_13_6,pv_demo_mobile_13,snap_demo_mobile_13,chunk_demo_mobile_13_3,결제 승인 지연과 재시도를 직접 설계해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_13_7,pv_demo_mobile_13,snap_demo_mobile_13,chunk_demo_mobile_13_3,앱을 스토어에 배포하고 심사 반려에 대응해 본 경험,52,80,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_14_1,pv_demo_mobile_14,snap_demo_mobile_14,chunk_demo_mobile_14_1,설계와 개발 절차를 문서로 남깁니다.,26,46,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_14_2,pv_demo_mobile_14,snap_demo_mobile_14,chunk_demo_mobile_14_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,0,32,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_14_3,pv_demo_mobile_14,snap_demo_mobile_14,chunk_demo_mobile_14_2,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,33,64,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_14_4,pv_demo_mobile_14,snap_demo_mobile_14,chunk_demo_mobile_14_2,사내 서버 API 를 연동해 본 경험이 있으신 분,65,92,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_14_2,pv_demo_mobile_14,snap_demo_mobile_14,chunk_demo_mobile_14_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,0,31,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_14_3,pv_demo_mobile_14,snap_demo_mobile_14,chunk_demo_mobile_14_2,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,32,63,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_14_4,pv_demo_mobile_14,snap_demo_mobile_14,chunk_demo_mobile_14_2,사내 서버 API를 연동해 본 경험이 있으신 분,64,90,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_14_5,pv_demo_mobile_14,snap_demo_mobile_14,chunk_demo_mobile_14_3,앱 배포와 사내 스토어 운영을 경험해 보신 분,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_15_1,pv_demo_mobile_15,snap_demo_mobile_15,chunk_demo_mobile_15_1,안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.,33,69,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_15_2,pv_demo_mobile_15,snap_demo_mobile_15,chunk_demo_mobile_15_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,0,36,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_15_3,pv_demo_mobile_15,snap_demo_mobile_15,chunk_demo_mobile_15_2,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,37,77,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_15_4,pv_demo_mobile_15,snap_demo_mobile_15,chunk_demo_mobile_15_3,Swift 로 iOS 앱을 함께 개발해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_16_1,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_1,기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.,32,74,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_16_2,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_1,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,75,103,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_16_3,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,0,32,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_16_4,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_2,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,33,65,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_16_5,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_2,Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,66,117,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_16_6,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_2,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,118,150,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_15_2,pv_demo_mobile_15,snap_demo_mobile_15,chunk_demo_mobile_15_2,Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,0,35,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_15_3,pv_demo_mobile_15,snap_demo_mobile_15,chunk_demo_mobile_15_2,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,36,76,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_15_4,pv_demo_mobile_15,snap_demo_mobile_15,chunk_demo_mobile_15_3,Swift로 iOS 앱을 함께 개발해 본 경험,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_16_1,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_1,기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.,32,73,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_16_2,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_1,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,74,102,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_16_3,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,0,31,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_16_4,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_2,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,32,64,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_16_5,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_2,Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,65,115,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_16_6,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_2,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,116,148,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_16_7,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_3,월간 사용자 수백만 규모의 앱을 운영해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_16_8,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_3,CI 로 앱 빌드와 배포를 자동화해 본 경험,61,85,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_17_1,pv_demo_mobile_17,snap_demo_mobile_17,chunk_demo_mobile_17_1,서버 API 를 연동해 목록·상세 화면을 구현합니다.,36,65,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_17_2,pv_demo_mobile_17,snap_demo_mobile_17,chunk_demo_mobile_17_2,Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분,0,34,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_17_3,pv_demo_mobile_17,snap_demo_mobile_17,chunk_demo_mobile_17_2,REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,35,73,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_16_8,pv_demo_mobile_16,snap_demo_mobile_16,chunk_demo_mobile_16_3,CI로 앱 빌드와 배포를 자동화해 본 경험,61,84,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_17_1,pv_demo_mobile_17,snap_demo_mobile_17,chunk_demo_mobile_17_1,서버 API를 연동해 목록·상세 화면을 구현합니다.,36,64,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_17_2,pv_demo_mobile_17,snap_demo_mobile_17,chunk_demo_mobile_17_2,Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분,0,33,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_17_3,pv_demo_mobile_17,snap_demo_mobile_17,chunk_demo_mobile_17_2,REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,34,71,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_17_4,pv_demo_mobile_17,snap_demo_mobile_17,chunk_demo_mobile_17_3,화면과 로직을 분리하는 구조를 고민해 본 경험,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_18_1,pv_demo_mobile_18,snap_demo_mobile_18,chunk_demo_mobile_18_1,SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,36,74,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_18_2,pv_demo_mobile_18,snap_demo_mobile_18,chunk_demo_mobile_18_1,결제 승인 API 를 연동하고 실패 흐름을 설계합니다.,75,105,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_18_3,pv_demo_mobile_18,snap_demo_mobile_18,chunk_demo_mobile_18_2,Swift 로 iOS 앱을 개발한 경험이 있으신 분,0,28,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_18_4,pv_demo_mobile_18,snap_demo_mobile_18,chunk_demo_mobile_18_2,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,29,66,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_18_5,pv_demo_mobile_18,snap_demo_mobile_18,chunk_demo_mobile_18_2,URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분,67,117,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_18_1,pv_demo_mobile_18,snap_demo_mobile_18,chunk_demo_mobile_18_1,SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,36,73,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_18_2,pv_demo_mobile_18,snap_demo_mobile_18,chunk_demo_mobile_18_1,결제 승인 API를 연동하고 실패 흐름을 설계합니다.,74,103,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_18_3,pv_demo_mobile_18,snap_demo_mobile_18,chunk_demo_mobile_18_2,Swift로 iOS 앱을 개발한 경험이 있으신 분,0,27,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_18_4,pv_demo_mobile_18,snap_demo_mobile_18,chunk_demo_mobile_18_2,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,28,65,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_18_5,pv_demo_mobile_18,snap_demo_mobile_18,chunk_demo_mobile_18_2,URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분,66,115,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_18_6,pv_demo_mobile_18,snap_demo_mobile_18,chunk_demo_mobile_18_3,결제 승인 지연과 재시도를 직접 설계해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_18_7,pv_demo_mobile_18,snap_demo_mobile_18,chunk_demo_mobile_18_3,앱을 스토어에 배포하고 심사 반려에 대응해 본 경험,52,80,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_19_1,pv_demo_mobile_19,snap_demo_mobile_19,chunk_demo_mobile_19_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,38,70,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_19_2,pv_demo_mobile_19,snap_demo_mobile_19,chunk_demo_mobile_19_2,Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,0,37,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_19_3,pv_demo_mobile_19,snap_demo_mobile_19,chunk_demo_mobile_19_2,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,38,70,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_19_4,pv_demo_mobile_19,snap_demo_mobile_19,chunk_demo_mobile_19_2,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,71,102,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_19_5,pv_demo_mobile_19,snap_demo_mobile_19,chunk_demo_mobile_19_2,공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분,103,135,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_19_6,pv_demo_mobile_19,snap_demo_mobile_19,chunk_demo_mobile_19_3,여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험,0,32,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_20_1,pv_demo_mobile_20,snap_demo_mobile_20,chunk_demo_mobile_20_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,38,70,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_20_2,pv_demo_mobile_20,snap_demo_mobile_20,chunk_demo_mobile_20_2,Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,0,37,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_20_3,pv_demo_mobile_20,snap_demo_mobile_20,chunk_demo_mobile_20_2,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,38,70,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_20_4,pv_demo_mobile_20,snap_demo_mobile_20,chunk_demo_mobile_20_2,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,71,102,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_20_5,pv_demo_mobile_20,snap_demo_mobile_20,chunk_demo_mobile_20_2,공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분,103,135,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_20_6,pv_demo_mobile_20,snap_demo_mobile_20,chunk_demo_mobile_20_3,여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험,0,32,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_19_1,pv_demo_mobile_19,snap_demo_mobile_19,chunk_demo_mobile_19_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,37,69,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_19_2,pv_demo_mobile_19,snap_demo_mobile_19,chunk_demo_mobile_19_2,Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,0,36,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_19_3,pv_demo_mobile_19,snap_demo_mobile_19,chunk_demo_mobile_19_2,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,37,69,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_19_4,pv_demo_mobile_19,snap_demo_mobile_19,chunk_demo_mobile_19_2,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,70,101,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_19_5,pv_demo_mobile_19,snap_demo_mobile_19,chunk_demo_mobile_19_2,공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분,102,133,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_19_6,pv_demo_mobile_19,snap_demo_mobile_19,chunk_demo_mobile_19_3,여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험,0,31,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_20_1,pv_demo_mobile_20,snap_demo_mobile_20,chunk_demo_mobile_20_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,37,69,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_20_2,pv_demo_mobile_20,snap_demo_mobile_20,chunk_demo_mobile_20_2,Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,0,36,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_20_3,pv_demo_mobile_20,snap_demo_mobile_20,chunk_demo_mobile_20_2,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,37,69,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_20_4,pv_demo_mobile_20,snap_demo_mobile_20,chunk_demo_mobile_20_2,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,70,101,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_20_5,pv_demo_mobile_20,snap_demo_mobile_20,chunk_demo_mobile_20_2,공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분,102,133,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_20_6,pv_demo_mobile_20,snap_demo_mobile_20,chunk_demo_mobile_20_3,여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험,0,31,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_21_1,pv_demo_mobile_21,snap_demo_mobile_21,chunk_demo_mobile_21_1,설계와 개발 절차를 문서로 남깁니다.,26,46,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_21_2,pv_demo_mobile_21,snap_demo_mobile_21,chunk_demo_mobile_21_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,0,32,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_21_3,pv_demo_mobile_21,snap_demo_mobile_21,chunk_demo_mobile_21_2,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,33,64,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_21_4,pv_demo_mobile_21,snap_demo_mobile_21,chunk_demo_mobile_21_2,사내 서버 API 를 연동해 본 경험이 있으신 분,65,92,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_21_2,pv_demo_mobile_21,snap_demo_mobile_21,chunk_demo_mobile_21_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,0,31,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_21_3,pv_demo_mobile_21,snap_demo_mobile_21,chunk_demo_mobile_21_2,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,32,63,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_21_4,pv_demo_mobile_21,snap_demo_mobile_21,chunk_demo_mobile_21_2,사내 서버 API를 연동해 본 경험이 있으신 분,64,90,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_21_5,pv_demo_mobile_21,snap_demo_mobile_21,chunk_demo_mobile_21_3,앱 배포와 사내 스토어 운영을 경험해 보신 분,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_22_1,pv_demo_mobile_22,snap_demo_mobile_22,chunk_demo_mobile_22_1,설계와 개발 절차를 문서로 남깁니다.,26,46,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_22_2,pv_demo_mobile_22,snap_demo_mobile_22,chunk_demo_mobile_22_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,0,32,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_22_3,pv_demo_mobile_22,snap_demo_mobile_22,chunk_demo_mobile_22_2,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,33,64,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_22_4,pv_demo_mobile_22,snap_demo_mobile_22,chunk_demo_mobile_22_2,사내 서버 API 를 연동해 본 경험이 있으신 분,65,92,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_22_2,pv_demo_mobile_22,snap_demo_mobile_22,chunk_demo_mobile_22_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,0,31,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_22_3,pv_demo_mobile_22,snap_demo_mobile_22,chunk_demo_mobile_22_2,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,32,63,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_22_4,pv_demo_mobile_22,snap_demo_mobile_22,chunk_demo_mobile_22_2,사내 서버 API를 연동해 본 경험이 있으신 분,64,90,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_22_5,pv_demo_mobile_22,snap_demo_mobile_22,chunk_demo_mobile_22_3,앱 배포와 사내 스토어 운영을 경험해 보신 분,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_23_1,pv_demo_mobile_23,snap_demo_mobile_23,chunk_demo_mobile_23_1,안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.,33,69,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_23_2,pv_demo_mobile_23,snap_demo_mobile_23,chunk_demo_mobile_23_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,0,36,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_23_3,pv_demo_mobile_23,snap_demo_mobile_23,chunk_demo_mobile_23_2,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,37,77,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_23_4,pv_demo_mobile_23,snap_demo_mobile_23,chunk_demo_mobile_23_3,Swift 로 iOS 앱을 함께 개발해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_23_2,pv_demo_mobile_23,snap_demo_mobile_23,chunk_demo_mobile_23_2,Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,0,35,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_23_3,pv_demo_mobile_23,snap_demo_mobile_23,chunk_demo_mobile_23_2,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,36,76,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_23_4,pv_demo_mobile_23,snap_demo_mobile_23,chunk_demo_mobile_23_3,Swift로 iOS 앱을 함께 개발해 본 경험,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_24_1,pv_demo_mobile_24,snap_demo_mobile_24,chunk_demo_mobile_24_1,안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.,33,69,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_24_2,pv_demo_mobile_24,snap_demo_mobile_24,chunk_demo_mobile_24_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,0,36,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_24_3,pv_demo_mobile_24,snap_demo_mobile_24,chunk_demo_mobile_24_2,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,37,77,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_24_4,pv_demo_mobile_24,snap_demo_mobile_24,chunk_demo_mobile_24_3,Swift 로 iOS 앱을 함께 개발해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_25_1,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_1,기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.,32,74,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_25_2,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_1,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,75,103,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_25_3,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,0,32,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_25_4,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_2,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,33,65,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_25_5,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_2,Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,66,117,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_25_6,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_2,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,118,150,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_24_2,pv_demo_mobile_24,snap_demo_mobile_24,chunk_demo_mobile_24_2,Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,0,35,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_24_3,pv_demo_mobile_24,snap_demo_mobile_24,chunk_demo_mobile_24_2,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,36,76,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_24_4,pv_demo_mobile_24,snap_demo_mobile_24,chunk_demo_mobile_24_3,Swift로 iOS 앱을 함께 개발해 본 경험,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_25_1,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_1,기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.,32,73,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_25_2,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_1,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,74,102,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_25_3,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,0,31,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_25_4,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_2,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,32,64,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_25_5,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_2,Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,65,115,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_25_6,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_2,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,116,148,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_25_7,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_3,월간 사용자 수백만 규모의 앱을 운영해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_25_8,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_3,CI 로 앱 빌드와 배포를 자동화해 본 경험,61,85,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_26_1,pv_demo_mobile_26,snap_demo_mobile_26,chunk_demo_mobile_26_1,서버 API 를 연동해 목록·상세 화면을 구현합니다.,36,65,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_26_2,pv_demo_mobile_26,snap_demo_mobile_26,chunk_demo_mobile_26_2,Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분,0,34,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_26_3,pv_demo_mobile_26,snap_demo_mobile_26,chunk_demo_mobile_26_2,REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,35,73,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_25_8,pv_demo_mobile_25,snap_demo_mobile_25,chunk_demo_mobile_25_3,CI로 앱 빌드와 배포를 자동화해 본 경험,61,84,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_26_1,pv_demo_mobile_26,snap_demo_mobile_26,chunk_demo_mobile_26_1,서버 API를 연동해 목록·상세 화면을 구현합니다.,36,64,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_26_2,pv_demo_mobile_26,snap_demo_mobile_26,chunk_demo_mobile_26_2,Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분,0,33,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_26_3,pv_demo_mobile_26,snap_demo_mobile_26,chunk_demo_mobile_26_2,REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,34,71,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_26_4,pv_demo_mobile_26,snap_demo_mobile_26,chunk_demo_mobile_26_3,화면과 로직을 분리하는 구조를 고민해 본 경험,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_27_1,pv_demo_mobile_27,snap_demo_mobile_27,chunk_demo_mobile_27_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,38,70,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_27_2,pv_demo_mobile_27,snap_demo_mobile_27,chunk_demo_mobile_27_2,Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,0,37,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_27_3,pv_demo_mobile_27,snap_demo_mobile_27,chunk_demo_mobile_27_2,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,38,70,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_27_4,pv_demo_mobile_27,snap_demo_mobile_27,chunk_demo_mobile_27_2,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,71,102,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_27_5,pv_demo_mobile_27,snap_demo_mobile_27,chunk_demo_mobile_27_2,공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분,103,135,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_27_6,pv_demo_mobile_27,snap_demo_mobile_27,chunk_demo_mobile_27_3,여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험,0,32,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_28_1,pv_demo_mobile_28,snap_demo_mobile_28,chunk_demo_mobile_28_1,SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,36,74,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_28_2,pv_demo_mobile_28,snap_demo_mobile_28,chunk_demo_mobile_28_1,결제 승인 API 를 연동하고 실패 흐름을 설계합니다.,75,105,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_28_3,pv_demo_mobile_28,snap_demo_mobile_28,chunk_demo_mobile_28_2,Swift 로 iOS 앱을 개발한 경험이 있으신 분,0,28,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_28_4,pv_demo_mobile_28,snap_demo_mobile_28,chunk_demo_mobile_28_2,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,29,66,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_28_5,pv_demo_mobile_28,snap_demo_mobile_28,chunk_demo_mobile_28_2,URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분,67,117,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_27_1,pv_demo_mobile_27,snap_demo_mobile_27,chunk_demo_mobile_27_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,37,69,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_27_2,pv_demo_mobile_27,snap_demo_mobile_27,chunk_demo_mobile_27_2,Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,0,36,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_27_3,pv_demo_mobile_27,snap_demo_mobile_27,chunk_demo_mobile_27_2,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,37,69,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_27_4,pv_demo_mobile_27,snap_demo_mobile_27,chunk_demo_mobile_27_2,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,70,101,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_27_5,pv_demo_mobile_27,snap_demo_mobile_27,chunk_demo_mobile_27_2,공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분,102,133,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_27_6,pv_demo_mobile_27,snap_demo_mobile_27,chunk_demo_mobile_27_3,여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험,0,31,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_28_1,pv_demo_mobile_28,snap_demo_mobile_28,chunk_demo_mobile_28_1,SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,36,73,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_28_2,pv_demo_mobile_28,snap_demo_mobile_28,chunk_demo_mobile_28_1,결제 승인 API를 연동하고 실패 흐름을 설계합니다.,74,103,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_28_3,pv_demo_mobile_28,snap_demo_mobile_28,chunk_demo_mobile_28_2,Swift로 iOS 앱을 개발한 경험이 있으신 분,0,27,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_28_4,pv_demo_mobile_28,snap_demo_mobile_28,chunk_demo_mobile_28_2,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,28,65,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_28_5,pv_demo_mobile_28,snap_demo_mobile_28,chunk_demo_mobile_28_2,URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분,66,115,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_28_6,pv_demo_mobile_28,snap_demo_mobile_28,chunk_demo_mobile_28_3,결제 승인 지연과 재시도를 직접 설계해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_28_7,pv_demo_mobile_28,snap_demo_mobile_28,chunk_demo_mobile_28_3,앱을 스토어에 배포하고 심사 반려에 대응해 본 경험,52,80,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_29_1,pv_demo_mobile_29,snap_demo_mobile_29,chunk_demo_mobile_29_1,설계와 개발 절차를 문서로 남깁니다.,26,46,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_29_2,pv_demo_mobile_29,snap_demo_mobile_29,chunk_demo_mobile_29_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,0,32,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_29_3,pv_demo_mobile_29,snap_demo_mobile_29,chunk_demo_mobile_29_2,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,33,64,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_29_4,pv_demo_mobile_29,snap_demo_mobile_29,chunk_demo_mobile_29_2,사내 서버 API 를 연동해 본 경험이 있으신 분,65,92,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_29_2,pv_demo_mobile_29,snap_demo_mobile_29,chunk_demo_mobile_29_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,0,31,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_29_3,pv_demo_mobile_29,snap_demo_mobile_29,chunk_demo_mobile_29_2,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,32,63,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_29_4,pv_demo_mobile_29,snap_demo_mobile_29,chunk_demo_mobile_29_2,사내 서버 API를 연동해 본 경험이 있으신 분,64,90,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_29_5,pv_demo_mobile_29,snap_demo_mobile_29,chunk_demo_mobile_29_3,앱 배포와 사내 스토어 운영을 경험해 보신 분,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_mobile_30_1,pv_demo_mobile_30,snap_demo_mobile_30,chunk_demo_mobile_30_1,안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.,33,69,담당업무,주요업무,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_30_2,pv_demo_mobile_30,snap_demo_mobile_30,chunk_demo_mobile_30_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,0,36,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_30_3,pv_demo_mobile_30,snap_demo_mobile_30,chunk_demo_mobile_30_2,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,37,77,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
-mention_mobile_30_4,pv_demo_mobile_30,snap_demo_mobile_30,chunk_demo_mobile_30_3,Swift 로 iOS 앱을 함께 개발해 본 경험,0,26,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_30_2,pv_demo_mobile_30,snap_demo_mobile_30,chunk_demo_mobile_30_2,Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,0,35,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_30_3,pv_demo_mobile_30,snap_demo_mobile_30,chunk_demo_mobile_30_2,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,36,76,필수,자격요건,0.92000,run_demo_mobile_stats,ds_demo_v1
+mention_mobile_30_4,pv_demo_mobile_30,snap_demo_mobile_30,chunk_demo_mobile_30_3,Swift로 iOS 앱을 함께 개발해 본 경험,0,25,우대,우대사항,0.92000,run_demo_mobile_stats,ds_demo_v1
 mention_security_01_1,pv_demo_security_01,snap_demo_security_01,chunk_demo_security_01_1,자사 제품과 고객사 웹 서비스의 보안 취약점 진단을 수행합니다.,0,35,담당업무,주요업무,0.92000,run_demo_security_stats,ds_demo_v1
 mention_security_01_2,pv_demo_security_01,snap_demo_security_01,chunk_demo_security_01_2,웹 애플리케이션 취약점 점검 경험이 있으신 분,0,25,필수,자격요건,0.92000,run_demo_security_stats,ds_demo_v1
 mention_security_01_3,pv_demo_security_01,snap_demo_security_01,chunk_demo_security_01_2,리눅스와 네트워크 기본 지식을 갖추신 분,26,48,필수,자격요건,0.92000,run_demo_security_stats,ds_demo_v1
@@ -1495,7 +1495,7 @@ mention_game_client_10_6,pv_demo_game_client_10,snap_demo_game_client_10,chunk_d
 mention_game_client_10_7,pv_demo_game_client_10,snap_demo_game_client_10,chunk_demo_game_client_10_3,C++ 기반 클라이언트 개발 경험이 있으신 분,26,51,우대,우대사항,0.92000,run_demo_game_client_stats,ds_demo_v1
 mention_game_client_11_1,pv_demo_game_client_11,snap_demo_game_client_11,chunk_demo_game_client_11_1,Unity 와 C# 로 채용 캠페인용 미니게임을 구현합니다.,0,33,담당업무,주요업무,0.92000,run_demo_game_client_stats,ds_demo_v1
 mention_game_client_11_2,pv_demo_game_client_11,snap_demo_game_client_11,chunk_demo_game_client_11_1,다양한 단말에서 안정적인 프레임을 유지하도록 리소스를 조정합니다.,34,70,담당업무,주요업무,0.92000,run_demo_game_client_stats,ds_demo_v1
-mention_game_client_11_3,pv_demo_game_client_11,snap_demo_game_client_11,chunk_demo_game_client_11_1,게임 진행 상태를 서비스 API 와 동기화합니다.,71,98,담당업무,주요업무,0.92000,run_demo_game_client_stats,ds_demo_v1
+mention_game_client_11_3,pv_demo_game_client_11,snap_demo_game_client_11,chunk_demo_game_client_11_1,게임 진행 상태를 서비스 API와 동기화합니다.,71,97,담당업무,주요업무,0.92000,run_demo_game_client_stats,ds_demo_v1
 mention_game_client_11_4,pv_demo_game_client_11,snap_demo_game_client_11,chunk_demo_game_client_11_2,Unity 로 플레이 가능한 프로젝트를 완성해 본 분,0,29,필수,자격요건,0.92000,run_demo_game_client_stats,ds_demo_v1
 mention_game_client_11_5,pv_demo_game_client_11,snap_demo_game_client_11,chunk_demo_game_client_11_2,충돌과 보간에 필요한 게임 수학의 기초를 이해하는 분,30,59,필수,자격요건,0.92000,run_demo_game_client_stats,ds_demo_v1
 mention_game_client_11_6,pv_demo_game_client_11,snap_demo_game_client_11,chunk_demo_game_client_11_3,프로파일러를 사용해 렌더링 병목을 확인해 본 분,0,26,우대,우대사항,0.92000,run_demo_game_client_stats,ds_demo_v1

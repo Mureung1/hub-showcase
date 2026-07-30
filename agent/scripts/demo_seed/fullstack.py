@@ -71,7 +71,7 @@ DIMENSIONS: list[dict[str, Any]] = [
         "kind": "technology",
         "label": "Node.js·TypeScript 서버 구현",
         "internal": "server_runtime_node_typescript",
-        "definition": "Node.js 런타임과 TypeScript 로 서버 로직을 작성하고 타입으로 계약을 지키는 능력.",
+        "definition": "Node.js 런타임과 TypeScript로 서버 로직을 작성하고 타입으로 계약을 지키는 능력.",
         "aliases": ["Node.js", "TypeScript", "NestJS", "Express"],
     },
     {
@@ -80,7 +80,7 @@ DIMENSIONS: list[dict[str, Any]] = [
         "kind": "technology",
         "label": "React 화면 구현",
         "internal": "client_ui_react",
-        "definition": "React 로 화면을 구성하고 상태와 데이터 흐름을 다루는 능력.",
+        "definition": "React로 화면을 구성하고 상태와 데이터 흐름을 다루는 능력.",
         "aliases": ["React", "Next.js", "프론트엔드 화면", "컴포넌트"],
     },
     {
@@ -1430,7 +1430,7 @@ CLUSTER_SPEC: dict[str, dict[str, Any]] = {
             {"item_id": "api-contract", "topic": "외부 연동", "baseline": "API 설계와 화면 연동",
              "deviation": "남이 읽고 붙일 수 있는 문서까지",
              "evidence_line": "REST API 문서를 작성하고 외부 연동을 도와 보신 분",
-             "explanation": "고객사 개발자가 API 를 직접 씁니다. 문서가 곧 제품의 일부라서 작성 경험을 우대가 아니라 업무로 적습니다.",
+             "explanation": "고객사 개발자가 API를 직접 씁니다. 문서가 곧 제품의 일부라서 작성 경험을 우대가 아니라 업무로 적습니다.",
              "confidence": "mid", "ratio": "같은 직군 80%", "related_stat": "#items"},
             {"item_id": "error-ux", "topic": "안정성", "baseline": "실패 처리와 사용자 피드백",
              "deviation": "테스트로 회귀를 막는 습관",
@@ -1511,7 +1511,7 @@ SIGNAL_NOTES: dict[str, tuple[str, str]] = {
     "작은 팀에서 제품을 빠르게 만들어 본 경험이 있으신 분":
         ("속도는 태도로 읽힌다", "완성도보다 회전 속도를 봅니다. 2주 안에 만들어 배포한 기록이 있으면 이 문장을 그대로 채웁니다."),
     "상품 노출 화면과 백오피스 API를 함께 개발합니다.":
-        ("함께 개발한다 = 계약을 스스로 정한다", "화면과 API 를 같은 사람이 만드는 조직에서는 응답 형태를 정하는 판단까지 지원자 몫입니다."),
+        ("함께 개발한다 = 계약을 스스로 정한다", "화면과 API를 같은 사람이 만드는 조직에서는 응답 형태를 정하는 판단까지 지원자 몫입니다."),
     "지표를 보고 개선 순서를 정해 보신 분":
         ("무엇을 먼저 고칠지 묻는 문장", "기능을 만드는 능력이 아니라 순서를 정하는 근거를 봅니다. 숫자를 보고 정했다는 한 줄이 필요합니다."),
     "고객사 상담 도구의 화면과 서버 기능을 함께 개발합니다.":
@@ -1533,7 +1533,7 @@ POSTING_SUMMARY: dict[str, tuple[str, str, str]] = {
            "기준선 항목은 대체로 공통 기대치 그대로입니다. 차이는 결정과 배포를 스스로 했는지, 그리고 그 주기를 짧게 유지했는지에 있습니다.",
            "편차 3건 · 기준선 일치 4건"),
     "02": ("만들 줄 아는 사람보다 재 보고 줄여 본 사람",
-           "화면과 API 를 함께 만드는 것은 전제이고, 응답 속도와 배포 자동화가 이 공고의 실질 변별점입니다.",
+           "화면과 API를 함께 만드는 것은 전제이고, 응답 속도와 배포 자동화가 이 공고의 실질 변별점입니다.",
            "편차 3건 · 기준선 일치 4건"),
     "03": ("여러 고객사 환경에서 흔들리지 않는 기능",
            "기능 완성은 기준선이고, 환경이 달라도 같게 동작하도록 나눈 구조와 문서·테스트가 추가 요구입니다.",
@@ -1587,6 +1587,7 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
     dev_by_line = {d["evidence_line"]: i + 1 for i, d in enumerate(devs)}
 
     sections, interpretations, baseline_notes, signal_notes = [], [], [], []
+    contextual_rows: list[tuple[dict[str, Any], str]] = []
     base_n = note_n = 0
     used_base: set[str] = set()
     for section in SECTION_ORDER:
@@ -1606,7 +1607,7 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
                 baseline_notes.append({
                     "n": base_n,
                     "base_ref": base_item["title"],
-                    "body": f"{base_item['title']} 은 풀스택 공통 기대치입니다. 최근 1년 공고의 "
+                    "body": f"{base_item['title']}: 풀스택 직무 공통 기대치입니다. 최근 1년 공고의 "
                             f"{base_item['freq_pct']}%에 나타나고 그중 {base_item['required_ratio']}%가 필수로 적었습니다. "
                             f"이 공고도 같은 수준이므로 여기서 점수를 벌기보다 빠뜨리지 않는 것이 중요합니다.",
                 })
@@ -1615,6 +1616,8 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
                 line["note_n"] = note_n
                 title, body = SIGNAL_NOTES[text]
                 signal_notes.append({"n": note_n, "title": title, "body": body})
+            if dim_key is None and text not in dev_by_line:
+                contextual_rows.append((line, text))
             lines.append(line)
         sections.append({"section": section, "lines": lines})
 
@@ -1630,14 +1633,36 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
             "sources": [{"type": "posting", "url": source_url(posting)}],
         })
 
-    title, body, ratio = POSTING_SUMMARY.get(
-        posting["nn"],
-        (
-            f"{COMPANY_DISPLAY[posting['company']]}의 전체 흐름을 잇는 개발자",
-            "화면·API·데이터·배포를 함께 다루는 풀스택 기준선 위에서 이 공고의 제품 맥락과 운영 책임을 확인합니다.",
-            f"편차 3건 · 기준선 일치 {len(POSTING_DIMS[posting['nn']])}건",
-        ),
-    )
+    if not signal_notes:
+        line, source_text = contextual_rows[0]
+        note_n = 1
+        line["note_n"] = note_n
+        if posting["out_of_role_tags"]:
+            feature = SCOPE_EXPANSION_LABELS[posting["out_of_role_tags"][0]][0]
+        elif posting["reality_tags"]:
+            feature = REALITY_LABELS[posting["reality_tags"][0]]
+        else:
+            feature = AXIS_LABELS[posting["axis_mentions"][0]]
+        signal_notes.append({
+            "n": note_n,
+            "title": f"{CLUSTER_DISPLAY[cluster]} 특징 — {feature}",
+            "body": (
+                f"{COMPANY_DISPLAY[posting['company']]}의 {posting['title']} 공고는 '{source_text}'라는 업무를 통해 "
+                f"{feature}까지 담당 범위에 포함합니다. 포트폴리오에서는 관련 화면·API 위치와 실행 결과를 함께 연결합니다."
+            ),
+        })
+
+    if posting["nn"] in POSTING_SUMMARY:
+        title, body, ratio = POSTING_SUMMARY[posting["nn"]]
+    else:
+        dims = [DIM_BY_KEY[key]["label"] for key in POSTING_DIMS[posting["nn"]]]
+        primary, secondary = dims[0], dims[1] if len(dims) > 1 else dims[0]
+        title = f"{COMPANY_DISPLAY[posting['company']]}의 전체 흐름을 잇는 개발자"
+        body = (
+            f"{posting['title']} 공고는 {primary}와 {secondary}를 한 기능 안에서 연결하고, "
+            f"{CLUSTER_DISPLAY[cluster]} 환경의 배포·운영 결과까지 확인합니다."
+        )
+        ratio = f"편차 3건 · 기준선 일치 {len(dims)}건"
     return {
         "posting_id": posting_id(posting["nn"]),
         "company": COMPANY_DISPLAY[posting["company"]],
@@ -1804,29 +1829,35 @@ def strategy_payload(cluster: str | None) -> dict[str, Any]:
         extra = CLUSTER_SPEC[cluster]["extra_concept"]
         label = CLUSTER_DISPLAY[cluster]
         highlights = [
-            {"title": f"{CONCEPTS[extra]['title']} 을 결과물의 주인공으로",
+            {"title": f"{CONCEPTS[extra]['title']} 중심으로 결과물 구성",
              "body": f"{label} 공고가 기준선 위에 얹는 요구는 {dev['deviation']} 입니다. "
-                     f"완성한 기능 하나에 이 주제를 얹고 README 첫 절에서 먼저 말하세요.",
-             "tips": [f"근거 문장: \"{dev['evidence_line']}\"", "선택한 이유를 두 줄로 남기면 면접에서 그대로 쓰입니다"],
+                      f"완성한 기능 하나에 이 주제를 적용하고 README 첫 절에서 구현 위치와 완료 기준을 먼저 말하세요.",
+             "tips": [
+                 f"근거 문장과 연결된 코드 경로를 README에 표시: \"{dev['evidence_line']}\"",
+                 "재현 명령으로 같은 결과가 나오고 기대 조건을 통과하면 완료로 기록하기",
+             ],
              "linked_item_ids": [concept_id(extra)]},
             {"title": "배포 주소와 실패 화면을 같이 보여주기",
              "body": "동작하는 화면 캡처보다 '서버가 죽으면 이 화면은 어떻게 되는가'를 보여주는 기록이 희소합니다. "
-                     "배포 URL 과 오류 상황 처리 한 쌍이면 기준선 두 항목이 동시에 증명됩니다.",
-             "tips": ["배포 URL 은 최상단에", "의도적으로 API 를 끊고 화면 반응을 캡처한 실험 1건"],
+                      "배포 URL과 오류 상황 처리 한 쌍이면 직무 공통 기대치 두 항목을 동시에 확인할 수 있습니다.",
+             "tips": [
+                 "README 최상단에 배포 URL과 핵심 화면 경로를 함께 적기",
+                 "API 연결을 끊는 재현 절차, 기대 오류 화면, 복구 뒤 정상 화면을 한 묶음으로 기록하기",
+             ],
              "linked_item_ids": [concept_id("deploy-pipeline"), concept_id("error-ux")]},
         ]
         essay = [
-            {"kind": "deviation", "title": f"{dev['topic']} 을 고민한 과정으로 쓰기",
-             "body": f"{label} 지원에서는 기술 나열보다 {dev['topic']} 을 대하는 태도가 먼저 읽힙니다. "
-                     f"{dev['deviation']} 에 해당하는 경험을 과정 중심으로 쓰세요.",
+            {"kind": "deviation", "title": f"{dev['topic']} 고민 과정을 중심으로 쓰기",
+             "body": f"{label} 지원에서는 기술 나열보다 {dev['topic']}에 대한 판단이 먼저 읽힙니다. "
+                     f"{dev['deviation']}에 해당하는 경험을 과정 중심으로 쓰세요.",
              "narrative": {"problem": f"{dev['baseline']} 수준에서 부딪힌 문제",
                            "solve": "원인 확인 → 방법 선택 → 적용과 검증",
-                           "growth": f"{dev['topic']} 을 기능이 아니라 책임으로 보게 된 관점"},
-             "sample_sentence": f"\"{dev['deviation']} 이 필요하다는 것을 문제를 겪고 나서야 알았습니다.\"",
+                            "growth": f"{dev['topic']}을 기능이 아니라 책임으로 보게 된 관점"},
+             "sample_sentence": f"\"{dev['deviation']}의 필요성을 문제를 겪고 나서야 알았습니다.\"",
              "tips": ["숫자가 있으면 한 문장으로", "실패한 시도를 지우지 마세요"],
              "linked_item_ids": [concept_id(extra)]},
             {"kind": "narrative_polish", "title": "협업 서사 — 지원 기업군에 맞춰 각도 조정",
-             "body": f"같은 경험이라도 {label} 에서는 {CLUSTER_SPEC[cluster]['intro_steps'][0]} 쪽으로 방점을 옮기세요. "
+              "body": f"같은 경험이라도 {label}에서는 {CLUSTER_SPEC[cluster]['intro_steps'][0]} 쪽으로 방점을 옮기세요. "
                      "사실 관계는 고정하고 배움의 방향만 바꿉니다.",
              "narrative": None, "sample_sentence": None,
              "tips": ["사실은 고정, 강조점만 이동", "결과 수치가 있으면 한 줄로"],
@@ -1837,10 +1868,13 @@ def strategy_payload(cluster: str | None) -> dict[str, Any]:
             linked = DEV_TO_CONCEPT.get(d["item_id"], d["item_id"])
             interview.append({
                 "kicker": f"편차 {i} 직격 · {d['topic']}",
-                "question": f"{d['deviation']} 에 해당하는 경험이 있나요?",
+                "question": f"{d['deviation']}에 해당하는 경험이 있나요?",
                 "followups": [f"기준선({d['baseline']})과 비교하면 무엇이 달랐나요?",
                               "다시 한다면 무엇을 다르게 하겠어요?"],
-                "point": d["explanation"],
+                "point": (
+                    f"{d['explanation']} 답변은 선택한 이유 → 판단 기준 → 적용 결과 순서로 구성하고, "
+                    "꼬리질문에는 직무 공통 기대치와 달라진 점과 다시 선택할 조건을 설명합니다."
+                ),
                 "linked_item_ids": [concept_id(linked if linked in CONCEPTS else extra)],
             })
         intro_orders = [o for o in INTRO_ORDERS if o["cluster"] == CLUSTER_DISPLAY[cluster]]
@@ -1848,11 +1882,17 @@ def strategy_payload(cluster: str | None) -> dict[str, Any]:
         highlights = [
             {"title": "기능 하나를 끝까지 — 화면·서버·배포",
              "body": "풀스택 공고 전부가 화면과 서버를 함께 요구합니다. 얕게 여러 개보다 하나를 배포 주소까지 끌고 간 결과물이 강합니다.",
-             "tips": ["README 첫 줄에 배포 URL", "기능 흐름을 그림 한 장으로"],
+             "tips": [
+                 "README 첫 줄에 배포 URL과 핵심 기능 경로를 적고 화면·API 코드 위치를 연결하기",
+                 "새 환경에서 실행 명령으로 기능 흐름이 끝까지 완료되면 합격 기준으로 기록하기",
+             ],
              "linked_item_ids": [concept_id("e2e-feature"), concept_id("deploy-pipeline")]},
             {"title": "화면과 서버가 같은 타입을 쓴다는 증거",
              "body": "TypeScript 요구가 100%입니다. 요청·응답 타입을 한곳에서 정의해 양쪽이 함께 쓰는 구조를 보여주면 계약 감각이 바로 읽힙니다.",
-             "tips": ["타입 정의 위치를 한 문장으로 설명", "타입이 막아 준 버그 한 사례"],
+             "tips": [
+                 "공유 타입 파일 위치와 양쪽 import 경로를 README에 연결하기",
+                 "타입 변경 전후 오류를 같은 명령으로 재현하고 빌드가 실패를 막으면 완료로 기록하기",
+             ],
              "linked_item_ids": [concept_id("api-contract"), concept_id("ts-type-study")]},
         ]
         essay = [
@@ -1873,15 +1913,15 @@ def strategy_payload(cluster: str | None) -> dict[str, Any]:
         interview = [
             {"kicker": "기준선 검증", "question": "이 기능의 API 응답 형태는 왜 그렇게 정했나요?",
              "followups": ["화면이 바뀌면 응답도 바꿔야 하나요?", "오류는 어떤 형태로 돌려주나요?"],
-             "point": "계약을 스스로 정해 본 사람만 답할 수 있는 질문입니다. 이유 한 문장이면 충분합니다.",
+              "point": "화면 요구 → 응답 구조의 선택 이유 → 타입·테스트로 확인한 결과 순서로 답합니다. 꼬리질문에는 화면 변경 시 계약을 유지하거나 바꿀 판단 기준을 제시합니다.",
              "linked_item_ids": [concept_id("api-contract")]},
             {"kicker": "배포 검증", "question": "배포는 어떻게 하고 있고, 잘못되면 어떻게 되돌리나요?",
              "followups": ["환경 변수는 어디에 두나요?", "배포 후 정상 여부는 무엇으로 확인하나요?"],
-             "point": "필수율이 0%에서 75%로 오른 항목입니다. 되돌리는 방법까지 말하면 준비된 사람으로 읽힙니다.",
+              "point": "배포 방식을 고른 이유 → 정상 확인 기준 → 실패 시 되돌린 결과 순서로 답합니다. 꼬리질문에는 환경 변수를 분리한 판단과 복구 시간을 제시합니다.",
              "linked_item_ids": [concept_id("deploy-pipeline")]},
             {"kicker": "기본기 검증", "question": "이 화면을 열면 요청이 어디를 거쳐 무엇을 돌려주나요?",
-             "followups": ["느리다면 어디부터 보겠어요?"],
-             "point": "화면과 서버를 모두 맡는 직무라 경계 지식이 곧 실력 신호입니다.",
+              "followups": ["느리다면 어디부터 보겠어요?", "그 지점을 먼저 확인하는 판단 기준은 무엇인가요?"],
+              "point": "브라우저 → API → 데이터베이스 흐름을 설명하고, 첫 측정 지점을 고른 이유와 확인 결과를 연결합니다.",
              "linked_item_ids": [concept_id("web-fundamentals")]},
         ]
         intro_orders = INTRO_ORDERS
@@ -1947,7 +1987,7 @@ def roadmap_steps(cluster: str | None) -> list[dict[str, Any]]:
         {"n": 3, "phase": "STEP 03 · 2주", "weeks": 2, "priority": "high",
          "title": "배포하고 되돌리기",
          "body": "컨테이너로 빌드해 클라우드에 올리고, 잘못 올렸을 때 되돌리는 절차까지 한 번 밟아 보세요. "
-                 "배포 URL 이 생기는 순간 포트폴리오의 설득력이 달라집니다.",
+                 "배포 URL이 생기는 순간 포트폴리오의 설득력이 달라집니다.",
          "deliverable": "배포 URL + 배포 설정 파일 + 되돌리기 절차 메모",
          "fills": [("deploy-pipeline", "normal")],
          "reason_title": "왜 세 번째인가요?",
@@ -1959,7 +1999,7 @@ def roadmap_steps(cluster: str | None) -> list[dict[str, Any]]:
         steps.append({
             "n": 4, "phase": "STEP 04 · 2주", "weeks": 2, "priority": "high",
             "title": f"{label} 편차 채우기 — {CONCEPTS[extra]['title']}",
-            "body": f"{dev['deviation']} 에 해당하는 작업을 완성한 결과물에 덧붙이세요. "
+            "body": f"{dev['deviation']}에 해당하는 작업을 완성한 결과물에 덧붙이세요. "
                     f"근거 문장은 \"{dev['evidence_line']}\" 입니다.",
             "deliverable": CONCEPTS[extra]["evidence_needed"],
             "fills": [(extra, "dev")],
@@ -1978,6 +2018,15 @@ def roadmap_steps(cluster: str | None) -> list[dict[str, Any]]:
             "reason": "결과물이 있어야 정리할 것이 생깁니다. 기업군을 좁히면 이 단계가 편차 대응으로 바뀝니다.",
             "tags": ["협업 기록", "소개 순서", "마무리"],
         })
+    for step in steps:
+        step_text = f"{step['title']} {step['body']} {step['deliverable']}"
+        missing_titles = [CONCEPTS[slug]["title"] for slug, _kind in step["fills"]
+                          if CONCEPTS[slug]["title"] not in step_text]
+        if missing_titles:
+            step["body"] = (
+                f"{step['body']} 채워짐 항목 가운데 {', '.join(missing_titles)}도 "
+                "이 단계에서 완료합니다."
+            )
     return steps
 
 

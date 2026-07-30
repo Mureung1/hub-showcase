@@ -1,4 +1,4 @@
-"""최종 30건 데모 시드 CSV의 전환 수용 기준."""
+"""최종 30건 데모 시드 CSV의 완전성과 콘텐츠 품질 기준."""
 
 from __future__ import annotations
 
@@ -91,3 +91,51 @@ def test_small_cluster_statistics_are_marked_low_confidence() -> None:
     ]
     assert cluster_facts
     assert {row["sample_status"] for row in cluster_facts} == {"low_confidence"}
+
+
+def test_all_postings_have_summary_and_three_interpretation_types() -> None:
+    """270개 공고 모두 요약과 직무 공통 기대치·숨은 의미·회사 특징을 제공한다."""
+    posting_outputs = [
+        row
+        for row in _rows("analysis_outputs")
+        if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+    ]
+    assert len(posting_outputs) == 270
+
+    summaries_by_job: dict[str, list[str]] = defaultdict(list)
+    for row in posting_outputs:
+        posting = json.loads(row["payload"])["posting"]
+        summary = posting["summary"]
+        assert summary["title"].strip(), row["output_id"]
+        assert summary["body"].strip(), row["output_id"]
+        for field in ("baseline_notes", "interpretations", "signal_notes"):
+            assert posting[field], (row["output_id"], field)
+        if summary.get("confidence") == "high":
+            assert all(
+                posting[field]
+                for field in ("baseline_notes", "interpretations", "signal_notes")
+            )
+        summaries_by_job[row["job_role_id"]].append(summary["body"].strip())
+
+    for job, summaries in summaries_by_job.items():
+        assert len(summaries) == 30, job
+        assert len(set(summaries)) == 30, job
+
+
+def test_final_content_passes_language_action_and_roadmap_checks() -> None:
+    """조사, 행동 기준, 면접 꼬리질문, 채워짐 연결을 최종 CSV에서도 고정한다."""
+    outputs = _rows("analysis_outputs")
+    for job in build_seed.JOB_PARTS:
+        tables = {
+            "analysis_outputs": [
+                {
+                    "output_id": row["output_id"],
+                    "output_type": row["output_type"],
+                    "scope_level": row["scope_level"],
+                    "payload": json.loads(row["payload"]),
+                }
+                for row in outputs
+                if row["job_role_id"] == job
+            ]
+        }
+        assert build_seed.check_content_quality(job, tables) == []

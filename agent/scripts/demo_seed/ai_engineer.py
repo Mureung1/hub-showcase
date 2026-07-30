@@ -6,8 +6,8 @@
 `dataset_versions` 는 A1(backend) 만 만든다. `ds_demo_v1` 는 아홉 직무가 함께 쓰는 한
 행이므로 여기서 다시 만들면 적재에서 중복 키가 된다.
 
-CONTRACT 10.5 의 `allowed_uses` 예시값(`baseline`·`evidence`)은 `0001_initial_schema.sql`
-의 `allowed_uses_known` CHECK 가 허용하지 않는다. A1 과 같은 값으로 담는다.
+CONTRACT 10.5의 `allowed_uses` 예시값(`baseline`·`evidence`)은 `0001_initial_schema.sql`
+의 `allowed_uses_known` CHECK가 허용하지 않는다. A1과 같은 값으로 담는다.
 
 최근 1년 공고 5건이 기업군 6종을 다 덮지 못한다. 덮지 못한 기업군의 최근 지표 행은
 만들지 않고 `cluster_axes.rows` 에서도 뺀다. 산출물 4종은 기업군 6종 전부에 만든다.
@@ -66,7 +66,7 @@ CLUSTER_ORDER = (
     "game",
 )
 
-# 지표 family 와 정책 버전의 대응. 정책 행은 `0002_seed_reference.sql` 이 넣는다.
+# 지표 family와 정책 버전의 대응. 정책 행은 `0002_seed_reference.sql`이 넣는다.
 METRIC_POLICY: dict[str, str] = {
     "posting_prevalence": "mp_v1_prevalence",
     "requiredness_ratio": "mp_v1_requiredness",
@@ -81,7 +81,7 @@ METRIC_FAMILIES = tuple(METRIC_POLICY)
 DEPTHS = ("foundation", "application", "tradeoff")
 DEPTH_RANK = {"foundation": 1, "application": 2, "tradeoff": 3}
 
-# 스냅샷 출처 계층 A 의 허용 용도. 스키마 CHECK 가 허용하는 값만 담는다.
+# 스냅샷 출처 계층 A의 허용 용도. 스키마 CHECK가 허용하는 값만 담는다.
 ALLOWED_USES = (
     "statistics",
     "interpretation_context",
@@ -114,7 +114,7 @@ DIMENSIONS: tuple[tuple[str, str, str, str, tuple[str, ...], bool], ...] = (
         "python",
         "technology",
         "Python 구현력",
-        "데이터 처리와 학습·추론 코드를 Python 으로 직접 작성하는 요구.",
+        "데이터 처리와 학습·추론 코드를 Python으로 직접 작성하는 요구.",
         ("Python", "파이썬", "Python 3"),
         False,
     ),
@@ -122,7 +122,7 @@ DIMENSIONS: tuple[tuple[str, str, str, str, tuple[str, ...], bool], ...] = (
         "dl-framework",
         "technology",
         "딥러닝 프레임워크",
-        "PyTorch·TensorFlow 로 모델을 정의하고 학습·평가 루프를 다루는 요구.",
+        "PyTorch·TensorFlow로 모델을 정의하고 학습·평가 루프를 다루는 요구.",
         ("PyTorch", "파이토치", "TensorFlow", "딥러닝 프레임워크"),
         False,
     ),
@@ -146,7 +146,7 @@ DIMENSIONS: tuple[tuple[str, str, str, str, tuple[str, ...], bool], ...] = (
         "model-serving",
         "tooling",
         "모델 서빙·배포",
-        "학습한 모델을 추론 서버와 API 로 배포하고 지연·비용을 관리하는 요구.",
+        "학습한 모델을 추론 서버와 API로 배포하고 지연·비용을 관리하는 요구.",
         ("모델 서빙", "추론 서버", "TorchServe", "Triton"),
         True,
     ),
@@ -171,7 +171,7 @@ def dim_id(slug: str) -> str:
     return DIM_INFO[slug]["dimension_id"]
 
 
-# 관련 관계. relation_type 은 dst 가 src 에 대해 갖는 위치다.
+# 관련 관계. relation_type은 dst가 src에 대해 갖는 위치다.
 DIMENSION_RELATIONS: tuple[tuple[str, str, str], ...] = (
     ("python", "dl-framework", "related"),
     ("python", "data-prep", "related"),
@@ -223,7 +223,7 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 
 # ============================================================ 3. 채용공고 15건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
-# 주석은 상세 해석이 필요한 공고에 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
+# 주석은 상세 해석이 필요한 공고에 붙는다. 해석 payload의 세 종류 번호가 여기서 나온다.
 #   ("base", 기준선 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
@@ -1065,7 +1065,7 @@ class FactBuilder:
         computed = value
         if computed is None and numerator is not None and denominator:
             computed = round(numerator / denominator, 6)
-        # CONTRACT 10.3 — overall 은 analysis_ready, 기업군은 표본이 작아 low_confidence.
+        # CONTRACT 10.3 — overall은 analysis_ready, 기업군은 표본이 작아 low_confidence.
         status = "analysis_ready" if scope_level == "overall" else "low_confidence"
         uncertainty = None
         if measure in WILSON_MEASURES[family] and denominator and numerator is not None:
@@ -1161,7 +1161,7 @@ def build_statistics_facts() -> FactBuilder:
                     period=period, numerator=boundary, denominator=total, sample_size=total,
                 )
 
-                # --- entry_label_advanced_signal_rate (대상군 축이 entry_junior 로 고정)
+                # --- entry_label_advanced_signal_rate (대상군 축이 entry_junior로 고정)
                 if segment == SEGMENT_ENTRY:
                     advanced = sum(
                         1 for dims in dim_sets.values()
@@ -1281,7 +1281,7 @@ COMBOS: tuple[tuple[str, str, str, str, tuple[str, ...]], ...] = (
      "한 데이터셋으로 학습과 평가를 끝까지 돌려 본 수준",
      ("python", "dl-framework", "data-prep")),
     ("serving", "기본 스택 + 모델 서빙",
-     "학습으로 끝내지 않고 호출 가능한 API 로 감싸 본 경험을 묻는 조합입니다.",
+     "학습으로 끝내지 않고 호출 가능한 API로 감싸 본 경험을 묻는 조합입니다.",
      "모델을 엔드포인트로 배포해 본 수준",
      ("python", "dl-framework", "model-serving")),
     ("llm", "LLM 응용 + 데이터 전처리",
@@ -1297,7 +1297,7 @@ COMBOS: tuple[tuple[str, str, str, str, tuple[str, ...]], ...] = (
 REALITY_TAGS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     ("end_to_end", "학습부터 서빙까지 이어 본 경험", ("dl-framework", "model-serving")),
     ("data_handling", "데이터를 직접 다듬어 본 경험", ("data-prep",)),
-    ("llm_product", "LLM 을 제품 기능으로 붙여 본 경험", ("llm-app",)),
+    ("llm_product", "LLM을 제품 기능으로 붙여 본 경험", ("llm-app",)),
 )
 
 CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
@@ -1515,7 +1515,7 @@ def build_statistics_payload() -> dict[str, Any]:
             reality.append({"tag": tag, "label": label, "pct": value})
     reality.sort(key=lambda row: -row["pct"])
 
-    # --- cluster_axes (표본 확보를 위해 recent 와 prev 전체 기간을 합산한다)
+    # --- cluster_axes (표본 확보를 위해 recent와 prev 전체 기간을 합산한다)
     axes_rows = []
     for cluster_id in CLUSTER_ORDER:
         members = [p for p in POSTINGS if p["cluster"] == cluster_id]
@@ -1671,7 +1671,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
          "mid", "#items", "dl-training"),
     ),
     "startup": (
-        ("llm-app", "LLM 응용", "API 를 호출해 본 경험", "검색과 프롬프트를 조합해 하나를 완성한 수준까지",
+        ("llm-app", "LLM 응용", "API를 호출해 본 경험", "검색과 프롬프트를 조합해 하나를 완성한 수준까지",
          '자격요건의 "LLM 프롬프트와 RAG 구조를 이해하고 구현" 문장',
          "다른 기업군에서 우대이던 항목이 필수 자리에 있습니다. 호출 경험이 아니라 완성한 파이프라인 하나가 필요합니다.",
          "high", "#items", "rag-quality"),
@@ -1685,7 +1685,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
          "mid", "#items", "dl-training"),
     ),
     "b2b_saas": (
-        ("model-serving", "서빙", "모델을 감싸 본 경험", "고객이 호출하는 API 의 안정성까지",
+        ("model-serving", "서빙", "모델을 감싸 본 경험", "고객이 호출하는 API의 안정성까지",
          '자격요건의 "모델을 추론 서버로 배포하고 API로 제공" 문장',
          "우대이던 서빙이 필수 요건입니다. 남이 돈을 내고 쓰는 API 라 실패 응답과 안정성이 모델 성능만큼 중요해집니다.",
          "high", "#items", "serving-api"),
@@ -1775,11 +1775,13 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
     interpretations: list[dict[str, Any]] = []
     baseline_notes: list[dict[str, Any]] = []
     signal_notes: list[dict[str, Any]] = []
+    annotation_candidates: list[tuple[dict[str, Any], tuple[Any, ...], str]] = []
     mark_n = base_n = note_n = 0
     for section, lines in posting["sections"]:
         rows = []
         for line in lines:
             row = {"text": line[0], "mark_n": None, "note_n": None, "base_n": None, "base_ref": None}
+            annotation_candidates.append((row, line, section))
             ann = line[3]
             if ann is not None:
                 if ann[0] == "base":
@@ -1800,14 +1802,59 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
                     signal_notes.append({"n": note_n, "title": ann[1], "body": ann[2]})
             rows.append(row)
         raw_sections.append({"section": section, "lines": rows})
+
+    dimensions = list(dict.fromkeys(
+        line[1] for _row, line, _section in annotation_candidates if line[1] in DIM_INFO
+    ))
+    dimension_labels = [DIM_INFO[slug]["label"] for slug in dimensions[:2]]
+    focus = "·".join(dimension_labels) if dimension_labels else "모델 구현과 검증"
+
+    if not baseline_notes:
+        row, line, _section = annotation_candidates[0]
+        base_n = 1
+        row["base_n"], row["base_ref"] = base_n, "직무 공통 기대치"
+        baseline_notes.append({
+            "n": base_n, "base_ref": "직무 공통 기대치",
+            "body": f"{posting['title']}의 ‘{line[0]}’ 문장에서 확인하는 핵심은 {focus}입니다. 이를 실제 과제로 수행할 수 있어야 합니다.",
+        })
+    if not interpretations:
+        row, line, section = annotation_candidates[min(1, len(annotation_candidates) - 1)]
+        mark_n = 1
+        row["mark_n"] = mark_n
+        interpretations.append({
+            "n": mark_n, "title": f"{section}에서 확인할 실행 경험",
+            "body": f"{posting['title']}의 ‘{line[0]}’ 문장은 도구 이름보다 실행 조건과 판단 기준을 묻습니다. {focus} 관련 경험을 입력, 선택, 결과 순서로 설명할 수 있어야 합니다.",
+            "confidence": "medium", "ratio": "공고 문맥 기반 해석",
+            "sources": [{"type": "posting", "url": posting_url(posting["nn"])}],
+        })
+    if not signal_notes:
+        row, line, _section = annotation_candidates[min(2, len(annotation_candidates) - 1)]
+        note_n = 1
+        row["note_n"] = note_n
+        signal_notes.append({
+            "n": note_n, "title": f"{posting['company']}가 따로 확인하는 지점",
+            "body": f"{posting['title']}에서 ‘{line[0]}’ 문장을 별도로 적은 만큼, 지원 자료에는 선택 이유와 결과를 한 사례로 연결하세요. 사례의 중심 주제는 {focus}입니다.",
+        })
+
+    summary_body = posting["summary"].strip()
+    if not summary_body:
+        summary_variants = (
+            f"{posting['company']}의 {posting['title']} 공고에서 핵심 요구는 {focus}입니다. 이를 직접 실행하고 결과까지 설명해야 하며, 지원 자료에서는 입력, 선택 기준, 확인한 결과를 한 흐름으로 보여주는 것이 중요합니다.",
+            f"{posting['title']}에서 중심이 되는 요구는 {focus}입니다. 구현 기록에 실험 조건과 비교 결과를 함께 남겨야 공고가 확인하려는 실행 깊이가 드러납니다.",
+            f"{posting['title']}의 핵심 요구는 {focus}입니다. 단순 사용 경험이 아니라 재현 가능한 작업으로 제시하고, README에서 문제, 선택 이유, 결과를 순서대로 확인할 수 있게 구성하세요.",
+        )
+        summary_body = summary_variants[(int(posting["nn"]) - 1) % len(summary_variants)]
+    summary_ratio = posting["summary_ratio"].strip() or (
+        f"직무 공통 기대치 {len(baseline_notes)}건 · 숨은 의미 {len(interpretations)}건 · 회사 특징 {len(signal_notes)}건"
+    )
     return {
         "posting_id": posting_id(posting["nn"]),
         "company": posting["company"],
         "title": posting["title"],
         "summary": {
             "n": None, "title": "종합 해석 — 이 공고가 찾는 사람",
-            "body": posting["summary"], "confidence": "high",
-            "ratio": posting["summary_ratio"],
+            "body": summary_body, "confidence": "high",
+            "ratio": summary_ratio,
             "sources": [{"type": "posting", "url": posting_url(posting["nn"])}],
         },
         "raw_sections": raw_sections,
@@ -1951,8 +1998,8 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         "highlights": [
             {
                 "title": "점수표를 포트폴리오의 주인공으로",
-                "body": f"{label} 기준에서도 모델을 여러 개 돌린 기록보다 무엇이 얼마나 좋아졌는지 보여주는 표 하나가 강합니다. README 첫 절에 평가 세트와 버전별 점수를 두세요.",
-                "tips": ["문항은 실제 데이터에서 뽑고 정답 근거를 함께 기록", "바꾸기 전후 점수를 한 표에 나란히"],
+                "body": f"{label}에서 모델을 여러 개 돌린 기록보다 무엇이 얼마나 좋아졌는지 보여주는 표 하나가 강합니다. README 첫 절에 평가 세트와 버전별 점수를 두세요.",
+                "tips": ["README 첫 절에 평가 데이터 위치와 실행 명령을 적기", "같은 평가 세트의 변경 전후 점수를 한 표에 두고 목표 지표가 개선되면 완료로 표시"],
                 "linked_item_ids": [
                     CONCEPT_INFO["eval-harness"]["concept_id"],
                     CONCEPT_INFO["dl-training"]["concept_id"],
@@ -1961,7 +2008,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             {
                 "title": "노트북 밖으로 꺼낸 흔적",
                 "body": "학습 코드만 있는 저장소가 대다수입니다. 호출 가능한 엔드포인트와 요청·응답 예시가 있으면 서빙을 묻는 문장 전체가 준비됩니다.",
-                "tips": ["엔드포인트 하나와 요청 예시 한 장", "요청당 지연 시간을 재 본 기록 한 줄"],
+                "tips": ["README에 엔드포인트 주소, 실행 명령, 요청·응답 예시를 함께 배치", "동일 입력 100회 기준 지연 시간을 변경 전후로 비교하고 목표 범위를 만족하면 완료로 표시"],
                 "linked_item_ids": [
                     CONCEPT_INFO["serving-api"]["concept_id"],
                     CONCEPT_INFO["infra-cost"]["concept_id"],
@@ -1999,7 +2046,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "평가 검증",
             "question": "그 모델이 좋아졌다는 것을 어떻게 확인했나요?",
             "followups": ["평가 세트의 문항은 어떻게 뽑았나요?", "점수는 올랐는데 체감이 나빠진 경우는 없었나요?"],
-            "point": "지표의 한계까지 함께 말하면 기준선 위로 올라섭니다. 정답 암기가 아니라 내 실험의 기준을 설명하세요.",
+            "point": "지표를 고른 이유, 다른 지표를 제외한 판단, 변경 전후 결과를 차례로 답하세요. 체감 품질과 수치가 어긋난 사례까지 말하면 평가 기준의 한계를 이해했는지 확인할 수 있습니다.",
             "linked_item_ids": [
                 CONCEPT_INFO["eval-harness"]["concept_id"],
                 CONCEPT_INFO["ml-basics"]["concept_id"],
@@ -2009,14 +2056,14 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "데이터 검증",
             "question": "학습 데이터를 어떻게 만들었나요?",
             "followups": ["잘못된 라벨은 어떻게 찾았나요?", "데이터가 열 배로 늘면 어디가 먼저 막히나요?"],
-            "point": "정리된 데이터셋을 받아 쓴 경험만 있으면 답이 짧아집니다. 직접 만든 과정이 있어야 이야기가 이어집니다.",
+            "point": "수집 기준과 라벨 규칙을 선택한 이유, 오류 표본을 찾은 방법, 수정 후 지표 변화를 답하세요. 꼬리질문에는 데이터가 늘 때 먼저 바꿀 병목과 그 판단 근거를 연결합니다.",
             "linked_item_ids": [CONCEPT_INFO["python-data"]["concept_id"]],
         },
         {
             "kicker": "서빙 검증",
             "question": "학습한 모델을 어떻게 호출 가능하게 만들었나요?",
             "followups": ["요청 하나에 얼마나 걸리나요?", "모델이 죽으면 어떤 응답이 나가나요?"],
-            "point": "배포 경험이 있으면 이 질문 전체를 제가 해봤는데요로 시작할 수 있습니다.",
+            "point": "API 구조를 선택한 이유와 실패 응답 기준, 측정한 지연 시간을 함께 답하세요. 모델 장애를 재현했을 때의 응답과 복구 결과까지 제시하면 완료입니다.",
             "linked_item_ids": [
                 CONCEPT_INFO["serving-api"]["concept_id"],
                 CONCEPT_INFO["infra-cost"]["concept_id"],
@@ -2026,7 +2073,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "태도 검증 · 자소서 연동",
             "question": "실험 결과를 다른 직군에 어떻게 설명했나요?",
             "followups": ["상대가 이해하지 못한 부분은 무엇이었나요?"],
-            "point": "자소서 소재는 반드시 면접에서 재검증됩니다. 사실 관계를 스스로 꼬리질문해 보세요.",
+            "point": "설명 자료의 대상을 어떻게 판단했고 어떤 표현을 덜어냈는지, 피드백 뒤 결론이 어떻게 바뀌었는지를 답하세요. 자소서의 주장과 실제 문서 결과가 일치해야 합니다.",
             "linked_item_ids": [CONCEPT_INFO["git-collab"]["concept_id"]],
         },
     ]
@@ -2049,15 +2096,15 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "지표로 말하는 능력이 신입 지원자 사이에서 가장 희소한 항목입니다.",
      ("평가 세트", "점수 비교", "실험 기록")),
     (3, "STEP 03 · 2주", 2, "high", "노트북 밖으로 꺼내 호출 가능하게 만들기",
-     "학습한 모델을 API 로 감싸 배포하고 요청당 지연 시간과 자원 사용량을 재 두세요.",
+     "학습한 모델을 API로 감싸 배포하고 요청당 지연 시간과 자원 사용량을 재 두세요.",
      "배포된 엔드포인트 + 요청·응답 예시 + 지연·비용 측정 표",
      "직무 외 요구 가운데 서빙·인프라가 가장 자주 나타납니다.",
      ("서빙 API", "지연 측정", "비용 감각")),
-    (4, "STEP 04 · 2주", 2, "mid", "기업군에 맞춰 마무리하기",
-     "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
-     "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+    (4, "STEP 04 · 2주", 2, "mid", "RAG 품질과 협업 문서를 기업군에 맞춰 마무리하기",
+     "검색 실패 사례를 모아 RAG 품질을 한 차례 개선하고, 재현 명령과 협업 규칙을 README에 적으세요. 지원 기업군의 편차 항목이 있으면 같은 문서의 첫 번째 사례로 배치합니다.",
+     "검색 실패 사례·변경 전후 품질 비교표 + 실행 명령·협업 규칙이 있는 README + 편차 항목 산출물",
      "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
-     ("편차 보강", "소개 순서", "문서 정리")),
+     ("RAG 품질", "협업 규칙", "편차 보강")),
 )
 
 STEP_FILLS: tuple[tuple[str, ...], ...] = (
@@ -2172,7 +2219,7 @@ WIKI: dict[str, dict[str, Any]] = {
     "serving-ops": {
         "why": "직무 외 요구 가운데 서빙·인프라가 가장 자주 나타나고, 일부 기업군은 자격요건에 둡니다.",
         "depth": {"foundation": "모델을 함수로 감싸 호출해 본다",
-                  "application": "API 로 배포하고 요청당 지연을 잰다",
+                  "application": "API로 배포하고 요청당 지연을 잰다",
                   "tradeoff": "품질 저하를 감지하고 재학습·재배포 주기를 설계한다"},
         "prereq": ["HTTP 요청과 응답의 기본", "컨테이너로 실행하는 법"],
         "misconceptions": ["배포는 인프라 팀의 일이라는 생각", "정확도가 높으면 서비스가 된다는 생각"],
@@ -2181,7 +2228,7 @@ WIKI: dict[str, dict[str, Any]] = {
     },
     "llm-application": {
         "why": "LLM 응용 요구가 1년 사이 우대에서 자격요건으로 올라오는 흐름이 뚜렷하고, 스타트업 기업군은 이미 필수로 둡니다.",
-        "depth": {"foundation": "API 를 호출해 기능 하나를 만든다",
+        "depth": {"foundation": "API를 호출해 기능 하나를 만든다",
                   "application": "문서를 색인하고 검색 결과로 답을 만든다",
                   "tradeoff": "검색 단계와 프롬프트를 나눠 품질 저하의 원인을 가른다"},
         "prereq": ["임베딩과 유사도의 의미", "문서 분할과 색인의 기본"],
@@ -2207,7 +2254,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     """테이블명 → 행 목록. 데이터베이스에 접속하지 않는다."""
     t: dict[str, list[dict[str, Any]]] = {}
 
-    # `dataset_versions` 는 A1(backend) 이 만든다. 여기서 만들지 않는다.
+    # `dataset_versions`는 A1(backend)이 만든다. 여기서 만들지 않는다.
 
     # --- 2~7 출처와 공고
     sources, snapshots, observations, assessments = [], [], [], []
@@ -2830,7 +2877,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
             "support_id": paths[0]["path_id"], "relation": "supports", "weight": "0.50000",
         })
     t["analysis_claims"] = claims
-    # 같은 (claim, support_type, support_id, relation) 이 겹치면 기본키가 부딪힌다.
+    # 같은 (claim, support_type, support_id, relation)이 겹치면 기본키가 부딪힌다.
     seen_evidence: set[tuple[str, str, str, str]] = set()
     unique_evidence = []
     for row in claim_evidence:
@@ -2919,7 +2966,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     t["roadmap_item_fills"] = fills
     t["study_tracks"] = tracks
 
-    # --- 42 검증 결과 (검사 1~4 pass, 5~7 은 판정자가 없어 not_applicable)
+    # --- 42 검증 결과 (검사 1~4 pass, 5~7은 판정자가 없어 not_applicable)
     checks = (
         ("schema_validator", "A0", "pass", "info", None),
         ("source_policy_validator", "A0", "pass", "info", None),
@@ -2974,7 +3021,7 @@ PAYLOAD_KEYS: dict[str, tuple[str, ...]] = {
     ),
 }
 
-# 마이그레이션과 A1 이 넣는 기준 데이터. 조각 밖의 외래키는 이 목록 안에 있어야 한다.
+# 마이그레이션과 A1이 넣는 기준 데이터. 조각 밖의 외래키는 이 목록 안에 있어야 한다.
 BASE_JOB_ROLES = frozenset({JOB_ROLE_ID})
 BASE_PERIODS = frozenset(PERIODS)
 BASE_CLUSTERS = frozenset(CLUSTERS)
@@ -3069,7 +3116,7 @@ def check_foreign_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
         "job_role_id": BASE_JOB_ROLES,
         "period_id": BASE_PERIODS,
         "company_id": BASE_COMPANIES,
-        # `ds_demo_v1` 행은 A1 이 만든다. 조각 안에 없어도 적재 시점에는 있다.
+        # `ds_demo_v1` 행은 A1이 만든다. 조각 안에 없어도 적재 시점에는 있다.
         "dataset_version": BASE_DATASET_VERSIONS,
         "source_id": ids("sources", "source_id"),
         "snapshot_id": ids("source_snapshots", "snapshot_id"),
@@ -3095,7 +3142,7 @@ def check_foreign_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
         "metric_policy_version": BASE_METRIC_POLICIES,
         "cluster_id": BASE_CLUSTERS,
     }
-    # (테이블, 컬럼, 참조 대상 키). NULL 은 통과한다.
+    # (테이블, 컬럼, 참조 대상 키). NULL은 통과한다.
     refs: tuple[tuple[str, str, str], ...] = (
         ("sources", "company_id", "company_id"),
         ("source_snapshots", "source_id", "source_id"),
@@ -3231,7 +3278,7 @@ def check_foreign_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
 
 
 def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
-    """검사 4 — payload 가 CONTRACT 5장의 키를 전부 갖는가."""
+    """검사 4 — payload가 CONTRACT 5장의 키를 전부 갖는가."""
     problems: list[str] = []
     counts = Counter(
         (row["output_type"], row["scope_level"]) for row in tables["analysis_outputs"]
@@ -3271,11 +3318,11 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
                 for k in kpi_keys if k not in payload["kpi"]
             )
             if len(payload["cluster_axes"]["axes"]) != 5:
-                problems.append(f"{row['output_id']}: cluster_axes.axes 가 5개가 아니다")
+                problems.append(f"{row['output_id']}: cluster_axes.axes가 5개가 아니다")
             recent_labels = {CLUSTERS[c] for c in RECENT_CLUSTERS}
             rows_labels = {r["cluster"] for r in payload["cluster_axes"]["rows"]}
             if rows_labels != recent_labels:
-                problems.append(f"{row['output_id']}: cluster_axes.rows 가 최근 기업군과 다르다")
+                problems.append(f"{row['output_id']}: cluster_axes.rows가 최근 기업군과 다르다")
         if row["output_type"] == "interpretation":
             for key in ("level", "cluster_tag", "posting_id"):
                 if key not in payload["scope"]:
@@ -3298,7 +3345,7 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
 
 
 def check_concepts(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
-    """검사 5 — 체크 개념 식별자와 payload 의 item_id 가 맞는가."""
+    """검사 5 — 체크 개념 식별자와 payload의 item_id가 맞는가."""
     problems: list[str] = []
     concepts = {row["concept_id"] for row in tables["checklist_concepts"]}
     items: dict[tuple[str, str], set[str]] = {}
