@@ -1952,6 +1952,7 @@ select:focus-visible {
 
 .ingredient-labels {
   display: flex;
+  min-height: 49px;
   flex-wrap: wrap;
   align-content: flex-start;
   gap: 6px;
@@ -1980,7 +1981,8 @@ select:focus-visible {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: auto;
+  padding-top: 14px;
 }
 
 .ingredient-tile-actions button {

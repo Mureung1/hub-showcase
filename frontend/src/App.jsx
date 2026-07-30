@@ -552,7 +552,13 @@ function IngredientTile({ ingredient, onEdit, onAction }) {
 
   return <article className={`ingredient-tile ${expiration.status}`}>
     <div className="tile-top"><span className="ingredient-emoji" aria-hidden="true">{ingredient.icon}</span><div className="tile-primary"><div className="tile-title-row"><h3>{ingredient.name}</h3><strong className="quantity-text">{formatIngredientQuantity(ingredient)}</strong></div><div className={`expiration-line ${expiration.status}`}><span className="dday-badge">{expiration.badge}</span><strong>{expiration.label}</strong></div><span className="storage-info">{storageLabels[ingredient.storage]} 보관</span></div></div>
-    {ingredientTags.length > 0 && <div className="ingredient-labels" aria-label="재료 태그">{ingredientTags.map((tag) => <span className="tag-label" key={tag}>{INGREDIENT_TAG_LABELS[tag]}</span>)}</div>}
+    <div
+      className={`ingredient-labels${ingredientTags.length === 0 ? " is-empty" : ""}`}
+      aria-label={ingredientTags.length > 0 ? "재료 태그" : undefined}
+      aria-hidden={ingredientTags.length === 0 ? "true" : undefined}
+    >
+      {ingredientTags.map((tag) => <span className="tag-label" key={tag}>{INGREDIENT_TAG_LABELS[tag]}</span>)}
+    </div>
     <div className="ingredient-tile-actions">
       <button type="button" onClick={() => onEdit(ingredient)}>재료 수정</button>
       <button className="used-action" type="button" onClick={() => onAction("used", ingredient)}>모두 사용</button>
