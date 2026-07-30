@@ -7,8 +7,7 @@ test('히트맵 경계값을 퍼센트로 분류한다', () => {
   assert.deepEqual(getHeatmapLevel(0), { label: '약', tone: 1 })
   assert.deepEqual(getHeatmapLevel(20), { label: '약', tone: 1 })
   assert.deepEqual(getHeatmapLevel(21), { label: '중', tone: 2 })
-  assert.deepEqual(getHeatmapLevel(79), { label: '중', tone: 2 })
-  assert.deepEqual(getHeatmapLevel(80), { label: '강', tone: 3 })
+  assert.deepEqual(getHeatmapLevel(99), { label: '중', tone: 2 })
   assert.deepEqual(getHeatmapLevel(100), { label: '강', tone: 3 })
 })
 

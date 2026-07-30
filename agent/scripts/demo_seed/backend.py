@@ -1505,7 +1505,7 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 def axis_level(value: int | None) -> str:
     if value is None:
         return "—"
-    if value >= 80:
+    if value >= 100:
         return "강"
     if value >= 21:
         return "중"
@@ -2009,12 +2009,23 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
     primary = mentioned[0]
     secondary = mentioned[1] if len(mentioned) > 1 else primary
     company_context = CLUSTERS[posting["cluster"]]
+
+    def take_unmarked(preferred_slugs: set[str] | None = None) -> tuple[dict[str, Any], str]:
+        candidates = [
+            (candidate, slug)
+            for candidate, slug in contextual_rows
+            if all(candidate[key] is None for key in ("mark_n", "base_n", "note_n"))
+        ]
+        if preferred_slugs:
+            preferred = [item for item in candidates if item[1] in preferred_slugs]
+            if preferred:
+                return preferred[0]
+        if not candidates:
+            raise ValueError(f"{posting['nn']} 공고에 주석을 붙일 빈 문장이 없다")
+        return candidates[0]
+
     if not baseline_notes:
-        row, slug = next(
-            ((candidate, slug) for candidate, slug in contextual_rows
-             if slug in {item[0] for item in BASELINE_ITEMS}),
-            contextual_rows[0],
-        )
+        row, slug = take_unmarked({item[0] for item in BASELINE_ITEMS})
         base_n = 1
         row["base_n"], row["base_ref"] = base_n, DIM_INFO[slug]["label"]
         baseline_notes.append({
@@ -2026,7 +2037,7 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
             ),
         })
     if not interpretations:
-        row, slug = contextual_rows[min(1, len(contextual_rows) - 1)]
+        row, slug = take_unmarked()
         mark_n = 1
         row["mark_n"] = mark_n
         interpretations.append({
@@ -2041,7 +2052,7 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
             "sources": [{"type": "posting", "url": posting_url(posting["nn"])}],
         })
     if not signal_notes:
-        row, slug = contextual_rows[min(2, len(contextual_rows) - 1)]
+        row, slug = take_unmarked()
         note_n = 1
         row["note_n"] = note_n
         signal_notes.append({

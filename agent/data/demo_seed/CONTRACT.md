@@ -197,7 +197,7 @@ Express 의 폴백 규칙(posting 범위 요청을 그 공고가 속한 기업�
 라벨은 payload 안에 함께 담으므로 서버 코드에 상수를 두지 않는다 (B13 이 상수 표를 제거한다).
 
 `cluster_axes.rows[].cluster` 는 기업군 **표시명**(`company_clusters.display_name`)을 쓴다.
-`cells[].level` 은 `강`(80~100) · `중`(21~79) · `약`(0~20)이며, `—`는
+`cells[].level` 은 `강`(100) · `중`(21~99) · `약`(0~20)이며, `—`는
 `pct` 가 null인 결측값에만 쓴다.
 
 ### B. `interpretation` payload

@@ -1144,7 +1144,7 @@ def promoted_dims() -> list[str]:
 def axis_level(value: int | None) -> str:
     if value is None:
         return "—"
-    if value >= 80:
+    if value >= 100:
         return "강"
     if value >= 21:
         return "중"
@@ -1375,6 +1375,14 @@ DIM_TO_BASELINE = {
     "cloud": "deploy-pipeline",
 }
 
+DEVIATION_TO_DIM = {
+    "deploy-pipeline": "cloud",
+    "api-contract": "rest_api",
+    "e2e-feature": "react_ui",
+    "rdb-schema": "rdb",
+    "error-ux": "rest_api",
+}
+
 CLUSTER_SPEC: dict[str, dict[str, Any]] = {
     "bigtech_platform": {
         "extra_concept": "perf-tuning",
@@ -1584,19 +1592,86 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
     """원문에 세 종류 주석 번호를 단다. 번호는 실제 줄에만 붙는다."""
     cluster = posting["cluster"]
     devs = CLUSTER_SPEC[cluster]["deviations"]
-    dev_by_line = {d["evidence_line"]: i + 1 for i, d in enumerate(devs)}
+
+    source_lines = [
+        (section, index, text, dim_key)
+        for section in SECTION_ORDER
+        for index, (text, dim_key, _depth) in enumerate(posting["sections"][section])
+    ]
+    available = {(section, index) for section, index, _text, _dim in source_lines}
+    dev_by_key: dict[tuple[str, int], tuple[int, dict[str, Any]]] = {}
+    for number, dev in enumerate(devs, start=1):
+        target_dim = DEVIATION_TO_DIM.get(dev["item_id"])
+        ordered = sorted(
+            (line for line in source_lines if (line[0], line[1]) in available),
+            key=lambda line: (
+                line[2] != dev["evidence_line"],
+                line[3] != target_dim,
+                line[3] is not None,
+                SECTION_ORDER.index(line[0]),
+                line[1],
+            ),
+        )
+        candidate = next(
+            (
+                line for line in ordered
+                if len(available) > 2
+                and any(
+                    other[3] is not None
+                    for other in source_lines
+                    if (other[0], other[1]) in available - {(line[0], line[1])}
+                )
+            ),
+            ordered[0],
+        )
+        key = (candidate[0], candidate[1])
+        dev_by_key[key] = (number, dev)
+        available.remove(key)
+
+    baseline_key = next(
+        (
+            (section, index)
+            for section, index, _text, dim_key in source_lines
+            if (section, index) in available and dim_key is not None
+        ),
+        None,
+    )
+    if baseline_key is None:
+        raise ValueError(f"{posting['nn']} 공고에 직무 공통 기대치를 표시할 문장이 없다")
+    signal_key = next(
+        (
+            (section, index)
+            for section, index, _text, _dim_key in source_lines
+            if (section, index) in available and (section, index) != baseline_key
+        ),
+        None,
+    )
+    if signal_key is None:
+        raise ValueError(f"{posting['nn']} 공고에 숨은 의미를 표시할 문장이 없다")
 
     sections, interpretations, baseline_notes, signal_notes = [], [], [], []
-    contextual_rows: list[tuple[dict[str, Any], str]] = []
     base_n = note_n = 0
     used_base: set[str] = set()
     for section in SECTION_ORDER:
         lines = []
-        for text, dim_key, _depth in posting["sections"][section]:
+        for index, (text, dim_key, _depth) in enumerate(posting["sections"][section]):
+            key = (section, index)
             line: dict[str, Any] = {"text": text, "mark_n": None, "note_n": None,
                                     "base_n": None, "base_ref": None}
-            if text in dev_by_line:
-                line["mark_n"] = dev_by_line[text]
+            if key in dev_by_key:
+                line["mark_n"] = dev_by_key[key][0]
+            elif key == signal_key:
+                note_n += 1
+                line["note_n"] = note_n
+                if text in SIGNAL_NOTES:
+                    title, body = SIGNAL_NOTES[text]
+                else:
+                    title = f"{COMPANY_DISPLAY[posting['company']]}가 따로 확인하는 지점"
+                    body = (
+                        f"'{text}' 문장은 {CLUSTER_DISPLAY[cluster]} 환경에서 맡게 될 범위를 보여 줍니다. "
+                        "포트폴리오에서는 관련 구현 위치와 실행 결과를 함께 연결합니다."
+                    )
+                signal_notes.append({"n": note_n, "title": title, "body": body})
             elif dim_key is not None:
                 base_item = BASELINE_BY_ID[DIM_TO_BASELINE[dim_key]]
                 base_n += 1
@@ -1616,14 +1691,10 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
                 line["note_n"] = note_n
                 title, body = SIGNAL_NOTES[text]
                 signal_notes.append({"n": note_n, "title": title, "body": body})
-            if dim_key is None and text not in dev_by_line:
-                contextual_rows.append((line, text))
             lines.append(line)
         sections.append({"section": section, "lines": lines})
 
     for i, dev in enumerate(devs, start=1):
-        if dev["evidence_line"] not in dev_by_line:
-            continue
         interpretations.append({
             "n": i,
             "title": f"{dev['topic']} — {dev['deviation']}",
@@ -1631,25 +1702,6 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
             "confidence": dev["confidence"],
             "ratio": dev["ratio"],
             "sources": [{"type": "posting", "url": source_url(posting)}],
-        })
-
-    if not signal_notes:
-        line, source_text = contextual_rows[0]
-        note_n = 1
-        line["note_n"] = note_n
-        if posting["out_of_role_tags"]:
-            feature = SCOPE_EXPANSION_LABELS[posting["out_of_role_tags"][0]][0]
-        elif posting["reality_tags"]:
-            feature = REALITY_LABELS[posting["reality_tags"][0]]
-        else:
-            feature = AXIS_LABELS[posting["axis_mentions"][0]]
-        signal_notes.append({
-            "n": note_n,
-            "title": f"{CLUSTER_DISPLAY[cluster]} 특징 — {feature}",
-            "body": (
-                f"{COMPANY_DISPLAY[posting['company']]}의 {posting['title']} 공고는 '{source_text}'라는 업무를 통해 "
-                f"{feature}까지 담당 범위에 포함합니다. 포트폴리오에서는 관련 화면·API 위치와 실행 결과를 함께 연결합니다."
-            ),
         })
 
     if posting["nn"] in POSTING_SUMMARY:

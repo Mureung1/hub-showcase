@@ -53,6 +53,6 @@ export function getHeatmapLevel(pct) {
   const value = Number(pct)
   if (!Number.isFinite(value)) return null
   if (value <= 20) return { label: '약', tone: 1 }
-  if (value < 80) return { label: '중', tone: 2 }
+  if (value < 100) return { label: '중', tone: 2 }
   return { label: '강', tone: 3 }
 }

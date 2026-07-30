@@ -28,7 +28,7 @@ function pct(n, d) {
 function heatmapLevel(value) {
   if (value === null) return '—'
   if (value <= 20) return '약'
-  if (value < 80) return '중'
+  if (value < 100) return '중'
   return '강'
 }
 

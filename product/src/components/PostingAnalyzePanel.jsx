@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { apiUrl } from '../data/api'
+import { getPostingLinePresentation } from '../data/postingAnnotations'
 import { normalizeUserFacingCopy } from '../data/userFacingCopy'
 import './posting-analyze.css'
 
@@ -39,18 +40,28 @@ export function PostingInterpretation({ posting, footer }) {
         {(posting.raw_sections || []).map((sec) => (
           <div key={sec.section}>
             <h5>{sec.section}</h5>
-            {sec.lines.map((line, i) => (
-              <div className="raw-line" key={i}>
-                <p>
-                  ·{' '}
-                  {line.mark_n && <mark className="mark--dev">{line.text}<sup>{line.mark_n}</sup></mark>}
-                  {line.note_n && <mark className="mark--signal">{line.text}<sup>{line.note_n}</sup></mark>}
-                  {line.base_n && <>{line.text}<sup className="sup-base">{line.base_n}</sup></>}
-                  {!line.mark_n && !line.note_n && !line.base_n && line.text}
-                  {line.base_ref && <span className="raw-base">직무 공통 · {line.base_ref}</span>}
-                </p>
-              </div>
-            ))}
+            {sec.lines.map((line, i) => {
+              const presentation = getPostingLinePresentation(line, annTab)
+              const annotatedText = (
+                <>
+                  {line.text}
+                  {presentation.annotations.map((annotation) => (
+                    <sup className={annotation.supClass} key={annotation.type}>{annotation.number}</sup>
+                  ))}
+                </>
+              )
+              return (
+                <div className="raw-line" key={i}>
+                  <p>
+                    ·{' '}
+                    {presentation.markClass
+                      ? <mark className={presentation.markClass}>{annotatedText}</mark>
+                      : annotatedText}
+                    {line.base_ref && <span className="raw-base">직무 공통 · {line.base_ref}</span>}
+                  </p>
+                </div>
+              )
+            })}
           </div>
         ))}
       </div>
