@@ -16,8 +16,9 @@
 bin/
 gen/
 out/
-#  Uncomment the following line in case you need and you don't have the release build type files in your app
-# release/
+# Generate Signed Bundle / APK 마법사가 app-release.apk와 output-metadata.json을 여기에 낸다.
+# (gradlew assembleRelease는 app/build/outputs/apk/release/ 로 내므로 build/ 규칙에 이미 걸린다.)
+release/
 
 # Gradle files
 .gradle/
