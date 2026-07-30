@@ -88,7 +88,20 @@ export function AnswerCard({
       agenda.resolutionReason !== "auto_single_source",
   );
   const unresolved = conflictAgendas.filter(isAgendaUnresolved);
-  const isAllResolved = unresolved.length === 0;
+  /**
+   * **해결한 충돌이 있어야 "해결 완료"다** (T-019.6).
+   *
+   * 예전에는 `unresolved.length === 0` 만 봤는데, 빈 배열도 참이라 **"해결할 게 없었다"가
+   * "해결을 완료했다"로 뒤집혔다.** 두 경우가 여기로 떨어졌다.
+   *  - Manager 완전 실패(§2.5): 쟁점 0건인데 "✓ 충돌 해결 완료" — 바로 옆 고정 문구는
+   *    "비교 결과를 만들지 못했습니다"라고 말해 서로 모순이었다
+   *  - 충돌 0건 자동 통과(§12.1): 전부 자동 통과라 사용자가 해결한 것이 없다
+   *
+   * 상태(`completed`)로 분기하지 않는다 — 확인할 것은 "해결한 충돌이 있었는가"이지
+   * "완료 상태인가"가 아니다. 두 경우가 이 조건 하나로 함께 처리된다.
+   */
+  const hadConflicts = conflictAgendas.length > 0;
+  const isAllResolved = hadConflicts && unresolved.length === 0;
   // 재시도까지 실패해 비교에서 제외된 Provider (Step 10-3: 카드 상단 고정 배너, 토스트 아님)
   const excludedAnswers = question.sourceAnswers.filter(
     (answer) => answer.excludedFromComparison,
@@ -107,7 +120,8 @@ export function AnswerCard({
       ))}
       <div className="answer-card-top">
         <div className="answer-card-title">
-          {isAllResolved ? (
+          {/* 판단할 충돌이 없었으면 배지도 (0/0) 카운터도 띄우지 않는다 — 둘 다 사실이 아니다. */}
+          {!hadConflicts ? null : isAllResolved ? (
             <Badge variant="success" label="✓ 충돌 해결 완료" />
           ) : (
             <>
@@ -128,7 +142,12 @@ export function AnswerCard({
         />
       </div>
 
-      {!isAllResolved && (
+      {/*
+        ⚠️ `!isAllResolved` 를 쓰지 않는다. `isAllResolved` 가 "충돌이 있었고 전부
+        해결됨"으로 좁아졌으므로, 그 부정에는 **충돌이 애초에 없던 경우**가 섞여
+        빈 목록과 함께 "각 충돌을 해결하면…" 이 뜬다. 여기서 볼 것은 미해소 건수뿐이다.
+      */}
+      {unresolved.length > 0 && (
         <>
           <Text type="supporting" color="secondary" as="p">
             각 충돌을 해결하면 아래에 최종 답변이 작성됩니다
