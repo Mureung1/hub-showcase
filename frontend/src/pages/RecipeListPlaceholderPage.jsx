@@ -365,13 +365,13 @@ function RecipeListPlaceholderPage() {
 
         <div className="grid min-h-0 min-w-0 grid-cols-2 drop-shadow-[0_3px_3px_rgb(44_35_20/0.23)] max-[1100px]:grid-cols-1 max-[700px]:block max-[700px]:h-full">
           <section
-            className={`min-w-0 overflow-hidden rounded-l-[3px] bg-[#f8f5eb] bg-[radial-gradient(circle_at_30%_40%,rgb(255_255_255/85%),transparent_60%)] shadow-[inset_-12px_0_23px_-20px_#4f3a20] min-[1101px]:shadow-[inset_-12px_0_23px_-20px_#4f3a20,-3px_0_0_#f1ece1,-6px_0_0_#d8cfbd] max-[700px]:h-full
+            className={`relative min-w-0 overflow-hidden rounded-l-[3px] bg-[#f8f5eb] bg-[radial-gradient(circle_at_30%_40%,rgb(255_255_255/85%),transparent_60%)] shadow-[inset_-12px_0_23px_-20px_#4f3a20] min-[1101px]:shadow-[inset_-12px_0_23px_-20px_#4f3a20,-3px_0_0_#f1ece1,-6px_0_0_#d8cfbd] max-[700px]:h-full
     max-[700px]:rounded-[5px] ${isShowingRightPage ? "max-[1100px]:hidden" : "max-[700px]:block"
               }`}
             inert={isCookingMode || undefined}
             aria-hidden={isCookingMode || undefined}
           >
-            <div className="relative h-full overflow-y-auto p-[50px_46px_120px_36px] max-[700px]:p-[25px_22px_84px] short-screen:p-[30px_34px_92px]">
+            <div className="h-full overflow-y-auto p-[50px_46px_120px_36px] max-[700px]:p-[25px_22px_84px] short-screen:p-[30px_34px_92px]">
               <header>
                 <h1 className="mb-3.25 text-[31px] font-semibold tracking-[0.09em] max-[700px]:mb-2 max-[700px]:text-[25px] short-screen:mb-2 short-screen:text-[26px]">
                   {user?.displayName ?? "나"}의 레시피북
@@ -446,16 +446,16 @@ function RecipeListPlaceholderPage() {
                   })}
                 </div>
               ) : null}
-              {!isAddingRecipe ? (
-                <button
-                  type="button"
-                  className="absolute bottom-7.5 left-1/2 h-13.5 -translate-x-1/2 whitespace-nowrap rounded-[9px] border border-[#061c16] bg-[#15332a] bg-[url(/design-assets/cookbook/leather-texture-tile.png)] bg-center bg-size-[220px] px-7.25 text-[#f3e1b4] max-[700px]:bottom-4.5 max-[700px]:h-11.5 short-screen:bottom-5.5 short-screen:h-11.75"
-                  onClick={handleOpenRecipeInput}
-                >
-                  새 레시피 기록
-                </button>
-              ) : null}
             </div>
+            {!isAddingRecipe ? (
+              <button
+                type="button"
+                className="absolute bottom-7.5 left-1/2 h-13.5 -translate-x-1/2 whitespace-nowrap rounded-[9px] border border-[#061c16] bg-[#15332a] bg-[url(/design-assets/cookbook/leather-texture-tile.png)] bg-center bg-size-[220px] px-7.25 text-[#f3e1b4] max-[700px]:bottom-4.5 max-[700px]:h-11.5 short-screen:bottom-5.5 short-screen:h-11.75"
+                onClick={handleOpenRecipeInput}
+              >
+                새 레시피 기록
+              </button>
+            ) : null}
           </section>
 
           <section
