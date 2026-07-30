@@ -203,4 +203,18 @@ describe('gitLabCurriculumAdapter', () => {
       C3: expect.any(String),
     })
   })
+
+  it('unlocks all previously locked lessons (remote/tag/conflict/revision/stash/bisect)', () => {
+    const modules = createCurriculumNavigation(levelsData as never)
+    const previouslyLockedIds = ['1-6', '1-7', '2-6', '2-7', '3-1', '3-2', '3-4', '3-5', '3-12']
+    const items = modules.flatMap((module) => module.items)
+
+    for (const id of previouslyLockedIds) {
+      const item = items.find((candidate) => candidate.id === id)
+      expect(item?.status, `lesson ${id} should be playable`).toBe('playable')
+    }
+
+    const stillLocked = items.filter((item) => item.status === 'locked')
+    expect(stillLocked).toEqual([])
+  })
 })
