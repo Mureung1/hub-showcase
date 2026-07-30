@@ -58,16 +58,45 @@ describe("checkProposalQuality — 루브릭", () => {
     expect(checkProposalQuality(cleanProposal, "김사장 카페").ok).toBe(true);
   });
 
-  it("한자·일본어·영어가 섞이면 비한국어로 잡는다", () => {
-    const han = checkProposalQuality({ ...cleanProposal, copy: "오늘 特別 할인" });
-    expect(han.ok).toBe(false);
-    expect(han.violations.join()).toContain("비한국어");
+  // 한국어 검사는 "금지 목록"이 아니라 "한글만 허용" 규칙이다.
+  //
+  // 예전 테스트는 한자·일본어·영어 3종만 확인했다 — 구현의 금지 목록을 그대로 베낀 셈이라
+  // 목록에 없는 언어는 검증할 수 없었고, 실제로 러시아어가 통과해 저장됐다(2026-07-30).
+  // 그래서 스크립트를 넓게 깔아 "한글 아닌 문자는 무엇이든 잡힌다"를 규칙으로 검증한다.
+  it.each([
+    ["실제 유출 문구(러시아어)", "오늘 주문하시면 스콘 1개 бесплат로 드립니다! 🥐"],
+    ["키릴", "бесплат 혜택"],
+    ["그리스", "Ελληνικά 혜택"],
+    ["아랍", "مجاني 혜택"],
+    ["태국", "ไทย 할인"],
+    ["히브리", "שלום 혜택"],
+    ["데바나가리", "मुफ़्त 혜택"],
+    ["반각 가나", "ﾊﾛｰ 혜택"],
+    ["한자", "오늘 特別 할인"],
+    ["일본어", "こんにちは 혜택"],
+    ["영어", "Today special sale"],
+  ])("한글이 아닌 문자가 섞이면 잡는다 — %s", (_name, copy) => {
+    const r = checkProposalQuality({ ...cleanProposal, copy });
+    expect(r.ok).toBe(false);
+    expect(r.violations.join()).toContain("비한국어");
+  });
 
-    const jp = checkProposalQuality({ ...cleanProposal, title: "こんにちは 혜택" });
-    expect(jp.ok).toBe(false);
+  // 오탐 방지. 여기가 깨지면 멀쩡한 제안이 조용히 템플릿 폴백으로 떨어진다.
+  it.each([
+    ["이모지·퍼센트", "☔ 비 오는 오늘, 픽업 주문 10% 할인이에요 🎉"],
+    // ☕️는 U+2615 + U+FE0F(변이선택자, 카테고리 Mn)다. 규칙에 \p{M}을 넣으면 여기서 오탐난다.
+    ["변이선택자 이모지·온도", "기온 28℃ 🥐☕️ 오늘도 활짝 웃으세요"],
+    ["금액·문장부호", "3,000원 할인! (광고) — 무료수신거부 가능"],
+    ["자모 단독", "ㅋㅋㅋ 좋아요 ㅠㅠ"],
+    ["폴백 문구(비)", "☔ 비 오는 오늘, 김사장 카페에서 따뜻하게 픽업 어떠세요?\n미리 주문하고 편하게 받아가세요 🏃"],
+    ["폴백 문구(맑음)", "오늘 김사장 카페에서 특별한 혜택을 준비했어요.\n지나는 길에 편하게 들러주세요 ☕"],
+  ])("정상 한국어 문구는 통과한다 — %s", (_name, copy) => {
+    expect(checkProposalQuality({ ...cleanProposal, copy }).ok).toBe(true);
+  });
 
-    const en = checkProposalQuality({ ...cleanProposal, copy: "Today special sale" });
-    expect(en.ok).toBe(false);
+  it("위반 메시지에 걸린 문자를 담아 무엇이 문제인지 보여준다", () => {
+    const r = checkProposalQuality({ ...cleanProposal, copy: "스콘 1개 бесплат로" });
+    expect(r.violations.join()).toContain("비한국어 문자(copy): б е с п л а т");
   });
 
   it("손님 문구에 매출·진단 등 내부 정보가 노출되면 잡는다", () => {

@@ -146,6 +146,36 @@ describe("generateProposal", () => {
     expect(c).toHaveBeenCalledTimes(2);
   });
 
+  it("copy에 러시아어가 섞이면 재생성한다 (실측 회귀: 2026-07-30 유출분)", async () => {
+    // 옛 검사는 한자·가나·라틴만 보는 금지 목록이라 키릴이 그대로 통과해 저장됐다.
+    let calls = 0;
+    const ru = JSON.stringify({
+      title: "흐린 날 커피 한잔",
+      copy: "흐린 오늘, 김사장 카페에서 따뜻한 커피 한잔 어떠세요? ☕️ 오늘 주문하시면 스콘 1개 бесплат로 드립니다! 🥐",
+      promo: { type: "할인", value: "10% 할인" },
+      channels: ["dangol"],
+    });
+    const c = vi.fn(async () => (calls++ === 0 ? ru : valid));
+    const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    expect(proposal.title).toBe("정상 제안");
+    expect(c).toHaveBeenCalledTimes(2);
+  });
+
+  it("재생성까지 러시아어면 한국어 템플릿으로 폴백한다", async () => {
+    // 사용자 요구("다른 언어가 포함되면 폴백")가 끝까지 지켜지는지 — 2회 모두 오염된 경우.
+    const ru = JSON.stringify({
+      title: "무료 스콘",
+      copy: "스콘 1개 бесплат로 드립니다!",
+      promo: { type: "할인", value: "10% 할인" },
+      channels: ["dangol"],
+    });
+    const c = vi.fn(async () => ru);
+    const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    expect(c).toHaveBeenCalledTimes(2);
+    expect(proposal.copy).not.toContain("бесплат");
+    expect(checkProposalQuality(proposal, ctx.store.name).ok).toBe(true);
+  });
+
   it("허용 안 된 채널이면 재생성한다", async () => {
     let calls = 0;
     const bad = JSON.stringify({
