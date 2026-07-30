@@ -2,6 +2,10 @@ import type { OnboardingProfile } from '@hub/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SubsidyRow } from './mappers.js'
 
+// 이슈 #109: loadAll()에 TTL 캐시가 생겨 모듈 스코프에 결과가 남는다.
+// 테스트마다 state.rows를 바꿔가며 match()를 호출하므로, 매 테스트 전 캐시를 비워
+// 이전 테스트의 mock 응답이 재사용되지 않도록 한다.
+
 const state = vi.hoisted(() => ({ rows: [] as SubsidyRow[], single: null as SubsidyRow | null }))
 
 vi.mock('./supabase.js', () => ({
@@ -20,7 +24,11 @@ vi.mock('./supabase.js', () => ({
   },
 }))
 
-import { findById, match } from './subsidies-repo.js'
+import { __resetLoadAllCacheForTests, findById, match } from './subsidies-repo.js'
+
+beforeEach(() => {
+  __resetLoadAllCacheForTests()
+})
 
 function makeRow(overrides: Partial<SubsidyRow>): SubsidyRow {
   return {
