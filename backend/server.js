@@ -862,6 +862,73 @@ app.post('/api/rooms/:id/confirm', async (req, res) => {
   res.json({ success: true, room });
 });
 
+// 8. Manner Feedback (like) — after a promise, members can like each other once
+app.post('/api/rooms/:id/feedback', async (req, res) => {
+  const { id } = req.params;
+  const { from, to } = req.body;
+
+  if (!from || !to || from === to) {
+    return res.status(400).json({ success: false, error: 'from/to are required and must differ' });
+  }
+
+  const room = await loadRoom(id);
+  if (!room) {
+    return res.status(404).json({ success: false, error: 'Room not found' });
+  }
+
+  room.feedbacks = room.feedbacks || [];
+  if (room.feedbacks.some(f => f.from === from && f.to === to)) {
+    return res.json({ success: false, error: 'already_liked' });
+  }
+  room.feedbacks.push({ from, to });
+
+  // Receiver +0.5°C, giver +0.3°C (따뜻한 피드백 보너스)
+  let giverTemperature = null;
+  let receiverTemperature = null;
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      await Room.findOneAndUpdate({ roomId: id }, { $push: { feedbacks: { from, to } } });
+      const receiver = await User.findOneAndUpdate(
+        { name: to },
+        { $inc: { temperature: 0.5 } },
+        { new: true }
+      );
+      const giver = await User.findOneAndUpdate(
+        { name: from },
+        { $inc: { temperature: 0.3 } },
+        { new: true }
+      );
+      if (receiver) receiverTemperature = Math.min(100, Number(receiver.temperature.toFixed(1)));
+      if (giver) giverTemperature = Math.min(100, Number(giver.temperature.toFixed(1)));
+      console.log(`💖 Feedback saved: ${from} → ${to} in room ${id}`);
+    } catch (err) {
+      console.warn('⚠️ MongoDB feedback save failed, recorded in memory only.', err.message);
+    }
+  }
+
+  res.json({ success: true, giverTemperature, receiverTemperature });
+});
+
+// 9. Get a user's manner temperature
+app.get('/api/users/temperature', async (req, res) => {
+  const { name } = req.query;
+  if (!name) {
+    return res.status(400).json({ success: false, error: 'name query param is required' });
+  }
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const userObj = await User.findOne({ name });
+      if (userObj && typeof userObj.temperature === 'number') {
+        return res.json({ success: true, temperature: Math.min(100, Number(userObj.temperature.toFixed(1))) });
+      }
+    } catch (err) {
+      console.warn('⚠️ MongoDB temperature lookup failed:', err.message);
+    }
+  }
+  res.json({ success: true, temperature: null });
+});
+
 // Start Server
 if (require.main === module) {
   app.listen(PORT, () => {
