@@ -554,11 +554,11 @@ export function useChatWorkspace() {
             const managerRan = (answersByQuestion.get(question.id) ?? []).some(
               (answer) => answer.status === "succeeded",
             );
-            if (
-              restored.length === 0 &&
-              managerRan &&
-              question.status !== "completed"
-            ) {
+            // ⚠️ `status !== "completed"` 로 막으면 안 된다 — Manager 완전 실패는 이미
+            // completed 로 저장돼 있어 그 가드에 걸리고, 새로고침 시 고정 문구가 사라져
+            // **아무 설명도 없는 빈 카드**가 된다. 판단 기준은 상태가 아니라 "복원할
+            // FinalAnswer 가 없는가"다.
+            if (restored.length === 0 && managerRan) {
               applyAgendas(chat.id, question.id, [], { final: true });
             }
           }
@@ -1097,7 +1097,12 @@ export function useChatWorkspace() {
           ...chat,
           questions: chat.questions.map((question) => {
             if (question.id !== questionId) return question;
-            if (question.status === "completed") return question;
+            // completed 라도 **FinalAnswer 가 없으면** 아직 복원할 것이 남았다.
+            // FinalAnswer·DecisionNote 는 브라우저 Mock 이라 서버에서 돌아오지 않으므로,
+            // 새로고침 직후에는 `completed + finalAnswer null` 조합이 정상적으로 생긴다.
+            if (question.status === "completed" && question.finalAnswer !== null) {
+              return question;
+            }
 
             const agendas =
               typeof next === "function" ? next(question.agendas) : next;
