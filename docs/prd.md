@@ -147,7 +147,7 @@ create index reviews_user_created_idx on reviews (user_id, created_at desc);  --
 
 **입력 경로**: Discord 슬래시 커맨드 `/알림 [자연어]` → Edge Function `discord-interactions`.
 
-**모델**: `gemini-2.5-flash`, **Structured Outputs**(JSON 스키마 강제).
+**모델**: `gemini-flash-latest`(env `GEMINI_MODEL`로 고정 가능), **Structured Outputs**(JSON 스키마 강제).
 
 **출력 스키마**:
 ```json
@@ -228,7 +228,7 @@ create index reviews_user_created_idx on reviews (user_id, created_at desc);  --
 - **금지**: 미래 매매 지시("사라/팔아라/기다려라"), 종목·시장 가치평가("고평가다/오를 것"), 수익률 기반 잘잘못 판정, `~하세요` 명령형.
 - **허용**: 과거 사실 서술, 반복 행동 패턴 지적, 계획-실행 갭 서술, 스스로 돌아보게 하는 질문형 마무리.
 
-**모델**: `gemini-2.5-flash`, **function calling 루프**(무거운 프레임워크 없이).
+**모델**: `gemini-flash-latest`(env `GEMINI_MODEL`로 고정 가능), **function calling 루프**(무거운 프레임워크 없이).
 
 **도구 계약**:
 | 도구 | 입력 | 출력 | 데이터원 |
