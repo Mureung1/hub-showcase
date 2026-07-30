@@ -5,13 +5,16 @@
 > Monorepo 시작 가이드: [../docs/README.md](../docs/README.md)  
 > 백엔드 · API · 암호화: [../backend/README.md](../backend/README.md)
 
-## 현재 진행도 (2026-07)
+## 현재 진행도 (2026-07-30)
 
 ### 회원 모드 `/user`
 
 | 기능 | 상태 | 비고 |
 |------|------|------|
-| 랜딩 · 로그인 · 회원가입 | ✅ | Supabase Auth (이메일 + Google OAuth) |
+| 랜딩 · 로그인 · 회원가입 | ✅ | Supabase Auth — Google OAuth + 이메일/비밀번호 |
+| 비밀번호 찾기 · 재설정 | ✅ | `/forgot-password`, `/reset-password` (Supabase 메일 링크) |
+| 계정 설정 | ✅ | `/user/account` — 연결된 로그인 수단 표시, 비밀번호 추가/변경 |
+| Auth UX | ✅ | 한글 오류 메시지, 중복 가입(이미 등록된 이메일) 안내 |
 | `/user` 보호 라우트 | ✅ | `ProtectedRoute` — 미로그인 시 `/login` |
 | 홈 | ✅ API | 강좌·추천 헬스장·오늘 식단 요약 |
 | 강좌 목록·상세 | ✅ API | `GET /courses`, mock 보조 필드 병합 |
@@ -21,6 +24,7 @@
 | **상담 신청** | ✅ API | `POST /consult-requests` → Supabase (PII 암호화) |
 | 내 상담 목록 | ✅ API | `GET /consult-requests/me` — 로그인 후 조회 |
 | 식단 타임라인 | ✅ API | 업로드 · CRUD · Gemini AI 2초 폴링 |
+| 모바일 WebView UI | ✅ | Safe Area 토큰 — 헤더·하단 네비·지도·식단 CTA 겹침 방지 |
 | AI 루틴 추천 | 🟡 선택 | 로컬 Ollama (`/ollama` 프록시) |
 
 ### 트레이너 모드 `/trainer`
@@ -37,7 +41,7 @@
 | Supabase Auth (`useAuth`) | ✅ |
 | API 클라이언트 (`services/api.ts`) | ✅ Bearer 토큰 자동 첨부 |
 | Dev proxy `/api` → `:5001` | ✅ |
-| Vitest 단위 테스트 | 🟡 | `date`, `signal`, `todayMealSummary` |
+| Vitest 단위 테스트 | 🟡 | `date`, `signal`, `todayMealSummary`, `authHelpers` |
 | Vercel 배포 | ✅ | https://hub-tan-pi.vercel.app |
 
 **범례:** ✅ 동작 · 🟡 부분/Mock · ❌ 미구현
@@ -57,7 +61,7 @@
 | **백엔드 API** | Render | https://fitcheck-server-wvj4.onrender.com |
 | **로컬 개발** | Vite dev | http://localhost:5173 — `/api` → `localhost:5001` |
 
-Vercel OAuth: `VITE_SITE_URL` = 배포 도메인, Supabase Redirect URL에 `/auth/callback` 등록.
+Vercel OAuth: `VITE_SITE_URL` = 배포 도메인. Supabase Redirect URL에 `/auth/callback`, `/reset-password` 등록.
 
 ---
 
@@ -66,7 +70,10 @@ Vercel OAuth: `VITE_SITE_URL` = 배포 도메인, Supabase Redirect URL에 `/aut
 | 경로 | 설명 |
 |------|------|
 | `src/pages/user` | 회원 모드 화면 |
-| `src/pages/auth` | 로그인 · 회원가입 · OAuth 콜백 |
+| `src/pages/auth` | 로그인 · 회원가입 · 비밀번호 찾기/재설정 · OAuth 콜백 |
+| `src/pages/user/AccountPage` | 계정 설정 (로그인 수단 · 비밀번호) |
+| `src/styles/safe-area.css` | WebView·모바일 Safari Safe Area 토큰 |
+| `src/utils/authHelpers.ts` | Auth 오류·중복 가입·provider 라벨 |
 | `src/pages/trainer` | 트레이너 대시보드 |
 | `src/features` | 강좌 / 식단 / 지도 / 상담 |
 | `src/services` | API (`gymsApi`, `coursesApi`, `consultRequestsApi`, `mealsApi`) |
@@ -97,9 +104,15 @@ http://localhost:5173
 | 경로 | 설명 |
 |------|------|
 | `/` | 랜딩 |
-| `/login` | 로그인 |
+| `/login` | 로그인 (Google · 이메일) |
+| `/signup` | 회원가입 |
+| `/forgot-password` | 비밀번호 재설정 메일 요청 |
+| `/reset-password` | Supabase 메일 링크 진입 — 새 비밀번호 설정 |
 | `/user` | 회원 홈 (로그인 필요) |
+| `/user/courses` | 강좌 목록 |
+| `/user/meals` | 식단 타임라인 |
 | `/user/map` | 지도 · 상담 신청 |
+| `/user/account` | 계정 설정 |
 | `/trainer` | 트레이너 대시보드 |
 
 로컬 개발 시 백엔드(`localhost:5001`)가 함께 실행 중이어야 API 기능이 동작합니다.

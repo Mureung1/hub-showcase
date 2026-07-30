@@ -8,6 +8,18 @@
 
 사용자에게는 비용 부담 없는 비대면 운동/식단 가이드를 제공하고, 정체기나 전문 관리가 필요할 때 위치 기반 시스템으로 주변 골목 헬스장·개인 트레이너와 연결합니다. 피트니스 소상공인의 신규 회원 유치를 돕는 상생형 O2O 모델을 지향합니다.
 
+**Live Demo:** [https://hub-tan-pi.vercel.app/](https://hub-tan-pi.vercel.app/) · **Demo Video:** [시연 영상 보기](https://photos.icloud.com/shared/album/06fPpKuI6vX9GBLu8DrCRgNHA)
+
+---
+
+## 📋 Project Overview
+
+서비스 소개 · 시스템 아키텍처 · 3대 핵심 기능 · 기술 챌린지를 한눈에 볼 수 있는 프로젝트 포스터입니다.
+
+<p align="center">
+  <img src="./docs/project-overview.png" alt="FitCheck 프로젝트 개요 — 서비스 소개, React/Vite/Express/Supabase 아키텍처, AI 식단·헬스장 매칭 기능, AI 지연·추천 로직·PII 암호화 챌린지" width="100%" />
+</p>
+
 ---
 
 ## 💡 Project Background & Problem
@@ -54,8 +66,6 @@
 
 ## 🖼 Screenshots
 
-**Live Demo:** [https://hub-tan-pi.vercel.app/](https://hub-tan-pi.vercel.app/) · **Demo Video:** [시연 영상 보기](https://photos.icloud.com/shared/album/06fPpKuI6vX9GBLu8DrCRgNHA)
-
 비대면 셀프 케어 → AI 식단 → 로컬 헬스장 매칭 → O2O 상담까지의 사용자 여정입니다.
 
 | | |
@@ -75,10 +85,26 @@
 
 | 영역 | 기술 |
 |------|------|
-| Frontend | React (Vite) / TypeScript |
+| Frontend | React (Vite) / TypeScript — [Vercel](https://hub-tan-pi.vercel.app/) |
 | Mobile | React Native (Expo WebView) |
-| Backend | Node.js (Express) / TypeScript |
-| Database | Supabase (Postgres) |
+| Backend | Node.js (Express) / TypeScript — [Render](https://fitcheck-server-wvj4.onrender.com) |
+| Database | Supabase (Postgres · Auth · Storage) |
+| AI | Google Gemini Vision (식단 분석) |
+| Map | Naver Map · Search API (헬스장 매칭) |
+
+---
+
+## 🤖 AI Agent Workflow
+
+아이디어 수립부터 프롬프트 설계·실행, 기능 구현·테스트까지 **Cursor Agent**와 반복 협업한 개발 흐름입니다.
+
+<p align="center">
+  <img src="./docs/ai-agent-workflow.png" alt="AI Agent Workflow — 개발자 → 요구사항 분석 → 프롬프트 설계/검토/실행 → 기능 구현 → 테스트 및 FitCheck 적용" width="100%" />
+</p>
+
+1. **아이디어 · 요구사항 분석** — 문제 정의와 MVP 범위 확정  
+2. **프롬프트 설계 · 검토 · 실행** — Agent에게 API·UI·테스트 초안 요청  
+3. **기능 구현 · 테스트 · 적용** — 실행·검증 후 FitCheck에 반영  
 
 ---
 
@@ -114,6 +140,7 @@
 ```
 hub/
 ├── README.md                 ← 이 파일 (프로젝트 소개)
+├── docs/                     ← 프로젝트 포스터 · AI 워크플로우
 ├── showcase/                 ← 쇼케이스 메타·스크린샷
 └── fitcheck-project/
     ├── README.md             ← 개발 가이드 (시작하기)

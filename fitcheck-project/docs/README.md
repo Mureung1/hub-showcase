@@ -2,16 +2,17 @@
 
 피트니스 입문자와 골목 헬스장(소상공인)을 잇는 스마트 피트니스 플랫폼입니다.
 
-## 현재 진행도 (2026-07)
+## 현재 진행도 (2026-07-30)
 
-회원 경로(MVP)는 **백엔드 ↔ 프론트 연동 완료**, 트레이너 모드는 **로컬 Mock** 단계입니다.
+회원 경로(MVP)는 **백엔드 ↔ 프론트 연동 완료**, **Vercel·Render 프로덕션 배포**까지 동작합니다.  
+트레이너 모드는 **로컬 Mock** 단계입니다.
 
 | 영역 | 상태 | 요약 |
 |------|------|------|
 | **Backend API** | ✅ MVP | 강좌·헬스장·상담(PII)·식단(AI)·매칭 점수 — [backend/docs/README.md](../backend/docs/README.md) |
-| **Frontend 회원 `/user`** | ✅ | Auth, 홈·강좌·지도·상담·식단 API 연동 — [frontend-web/README.md](../frontend-web/README.md) |
+| **Frontend 회원 `/user`** | ✅ | Google + 이메일 이중 로그인, 비밀번호 재설정·계정 설정, 홈·강좌·지도·상담·식단 API 연동 — [frontend-web/README.md](../frontend-web/README.md) |
 | **Frontend 트레이너 `/trainer`** | 🟡 Mock | localStorage 기반, 백엔드 미연동 |
-| **Mobile App** | 🟡 WebView | frontend-web 래퍼 — [mobile-app/README.md](../mobile-app/README.md) |
+| **Mobile App** | ✅ WebView | Safe Area 연동 + frontend-web 래퍼 — [mobile-app/README.md](../mobile-app/README.md) |
 
 **범례:** ✅ 동작 · 🟡 부분/Mock · ❌ 미구현
 
@@ -41,7 +42,8 @@ fitcheck-project/
 
 ### frontend-web 내부
 
-- `src/pages/user/` — 회원 모드 (모바일 비율)
+- `src/pages/user/` — 회원 모드 (모바일 비율, Safe Area 대응)
+- `src/pages/auth/` — 로그인 · 회원가입 · 비밀번호 찾기/재설정 · OAuth
 - `src/pages/trainer/` — 트레이너 대시보드
 - `src/features/` — 강좌 / 식단 / 지도 / 상담 등
 - `src/services/` — API 클라이언트 (`api.ts`, `gymsApi.ts`, `consultRequestsApi.ts`)
@@ -60,7 +62,7 @@ flowchart TB
   end
 
   subgraph Server["서버 (Backend)"]
-    API["Express API<br/>localhost:5001<br/>JWT 검증 · PII 암호화"]
+    API["Express API<br/>Render · localhost:5001<br/>JWT 검증 · PII 암호화"]
   end
 
   subgraph Supabase["Supabase"]
@@ -198,6 +200,8 @@ npm start
 | backend | **Render** | https://fitcheck-server-wvj4.onrender.com |
 
 Vercel 환경 변수: `VITE_API_BASE_URL=https://fitcheck-server-wvj4.onrender.com`, `VITE_SUPABASE_*`, `VITE_SITE_URL`, `VITE_NAVER_MAP_CLIENT_ID`
+
+Supabase Redirect URLs: `/auth/callback`, `/reset-password` (로컬·배포 도메인 모두 등록)
 
 ## 요구 사항
 
