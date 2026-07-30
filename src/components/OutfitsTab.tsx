@@ -187,6 +187,33 @@ export default function OutfitsTab({ closet, savedStyles, isLoggedIn, onSaveOutf
     return `${weather} 날씨와 ${destination} 장소, ${situation} 상황을 다시 분석했습니다.\n직전 코디와 다른 아이템을 중심으로 새 조합을 구성했습니다.\n이번 추천 아이템: ${names || "선택 가능한 아이템이 없습니다."}\n재추천 완료: ${new Date().toLocaleTimeString("ko-KR")}`;
   };
 
+  const buildLocalStylistNote = (
+    items: SavedOutfit["items"],
+    note: unknown,
+    retry = false
+  ) => {
+    if (typeof note === "string") {
+      const normalized = note
+        .replace(/```(?:json|markdown)?/gi, "")
+        .replace(/```/g, "")
+        .replace(/\r\n?/g, "\n")
+        .split("\n")
+        .map((line) => line.replace(/^\s*(?:>\s*)?(?:SYSTEM|RESULT|STATUS)\s*:\s*/i, "").trim())
+        .filter(Boolean)
+        .join("\n")
+        .trim();
+      if (normalized.length >= 20) return normalized.slice(0, 1200);
+    }
+
+    if (retry) return buildRetryStylistNote(items);
+
+    const names = [items.top, items.bottom, items.shoes, items.accessories]
+      .filter((item): item is ClothingItem => !!item)
+      .map((item) => item.name)
+      .join(", ");
+    return `${weather} 날씨와 ${destination} 장소, ${situation} 일정에 어울리도록 골랐습니다.\n${names || "선택 가능한 아이템"}을 중심으로 편안하면서도 자연스러운 조합을 구성했습니다.\n색감과 실루엣의 균형을 맞춰 일상에서 부담 없이 활용하기 좋은 코디입니다.`;
+  };
+
   const getClientHardExcludedIds = (instruction: string, items: ClothingItem[]) => {
     const normalized = instruction.toLowerCase();
     const excludesBlack =
@@ -351,7 +378,7 @@ export default function OutfitsTab({ closet, savedStyles, isLoggedIn, onSaveOutf
           destination: destination as DestinationType,
           situation: situation as SituationType,
           items: selectedItems,
-          stylistNote: data.stylistNote || (isRetry ? buildRetryStylistNote(selectedItems) : "> SYSTEM: New outfit compiled successfully."),
+          stylistNote: buildLocalStylistNote(selectedItems, data.stylistNote, isRetry),
           savedAt: new Date().toISOString()
         };
       } else {
@@ -399,7 +426,7 @@ export default function OutfitsTab({ closet, savedStyles, isLoggedIn, onSaveOutf
           destination: destination as DestinationType,
           situation: situation as SituationType,
           items: selectedItems,
-          stylistNote: data.stylistNote || (isRetry ? buildRetryStylistNote(selectedItems) : "> SYSTEM: Core compiled successfully."),
+          stylistNote: buildLocalStylistNote(selectedItems, data.stylistNote, isRetry),
           savedAt: new Date().toISOString()
         };
       }
@@ -447,9 +474,7 @@ export default function OutfitsTab({ closet, savedStyles, isLoggedIn, onSaveOutf
           destination: destination as DestinationType,
           situation: situation as SituationType,
           items: selectedItems,
-          stylistNote: isRetry
-            ? buildRetryStylistNote(selectedItems)
-            : "> SYSTEM: 서버 응답이 지연되어 로컬 카탈로그에서 보유 상품을 제외한 새 조합을 추천했습니다.",
+          stylistNote: buildLocalStylistNote(selectedItems, undefined, isRetry),
           savedAt: new Date().toISOString(),
         });
         setLoadingStep(100);
@@ -480,9 +505,7 @@ export default function OutfitsTab({ closet, savedStyles, isLoggedIn, onSaveOutf
           destination: destination as DestinationType,
           situation: situation as SituationType,
           items: selectedItems,
-          stylistNote: isRetry
-            ? buildRetryStylistNote(selectedItems)
-            : "> SYSTEM: 로그인 옷장 데이터를 안전하게 불러와 로컬 추천을 완료했습니다. 서버 연결이 복구되면 AI 스타일 노트가 다시 제공됩니다.",
+          stylistNote: buildLocalStylistNote(selectedItems, undefined, isRetry),
           savedAt: new Date().toISOString(),
         });
         setLoadingStep(100);

@@ -52,6 +52,22 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs = GEMINI_TIMEOUT_MS): Pro
   ]);
 }
 
+function normalizeStylistNote(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+
+  const normalized = value
+    .replace(/```(?:json|markdown)?/gi, "")
+    .replace(/```/g, "")
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/^\s*(?:>\s*)?(?:SYSTEM|RESULT|STATUS)\s*:\s*/i, "").trim())
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+
+  return normalized.length >= 20 ? normalized.slice(0, 1200) : fallback;
+}
+
 app.use(express.json());
 
 // Allow a separately deployed frontend to reach the API configured by VITE_API_URL.
@@ -259,7 +275,10 @@ function buildCatalogOutfit(
     bottom: safePick("bottom", ids.bottomId),
     shoes: safePick("shoes", ids.shoesId),
     accessories: safePick("accessories", ids.accessoriesId),
-    stylistNote,
+    stylistNote: normalizeStylistNote(
+      stylistNote,
+      "선택한 날씨와 장소, 상황에 잘 어울리는 조합으로 골랐습니다.\n상의와 하의의 색감이 자연스럽게 이어지도록 구성했습니다.\n신발과 액세서리는 전체 인상을 해치지 않는 아이템으로 더했습니다."
+    ),
     source,
   };
 }
@@ -366,7 +385,10 @@ stylistNote는 사용자의 수정 요청을 어떻게 반영했는지 포함하
         return res.json({
           ...buildCatalogOutfit(
             forcedIds,
-            parsed.stylistNote || "자체 상품 카탈로그에서 조건에 맞는 새로운 코디를 선택했습니다.",
+            normalizeStylistNote(
+              parsed.stylistNote,
+              `${weather} 날씨와 ${destination} 장소, ${situation} 상황에 어울리는 새 코디를 골랐습니다.\n상의와 하의의 색감 및 실루엣이 자연스럽게 이어지도록 구성했습니다.\n신발과 액세서리까지 전체 분위기에 맞춰 균형 있게 매치했습니다.`
+            ),
             "gemini-local-catalog",
             catalogExcludeItemIds
           ), excludedItemIds: hardExcludedCatalogIds
@@ -460,12 +482,22 @@ ${closetDescription}
           return fallbackPool.length > 0 ? fallbackPool[Math.floor(Math.random() * fallbackPool.length)].id : "";
         };
 
-        return res.json({
-          ...parsedResult,
+        const selectedIds = {
           topId: forceDifferentClosetId("top", parsedResult.topId),
           bottomId: forceDifferentClosetId("bottom", parsedResult.bottomId),
           shoesId: forceDifferentClosetId("shoes", parsedResult.shoesId),
           accessoriesId: forceDifferentClosetId("accessories", parsedResult.accessoriesId),
+        };
+        const selectedNames = Object.values(selectedIds)
+          .map((id) => closet.find((item) => item.id === id)?.name)
+          .filter(Boolean)
+          .join(", ");
+        const fallbackNote = `${weather} 날씨와 ${destination} 장소, ${situation} 상황을 함께 고려했습니다.\n${selectedNames || "옷장에 있는 아이템"}을 중심으로 실제로 입기 편한 조합을 골랐습니다.\n색감과 실루엣이 자연스럽게 이어지도록 구성해 활용하기 좋은 코디입니다.`;
+
+        return res.json({
+          ...parsedResult,
+          ...selectedIds,
+          stylistNote: normalizeStylistNote(parsedResult.stylistNote, fallbackNote),
           excludedItemIds: hardExcludedClosetIds,
           source: "gemini-3.1-flash-lite-forced-different",
         });
