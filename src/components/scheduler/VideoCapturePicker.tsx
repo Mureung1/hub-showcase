@@ -13,6 +13,18 @@ type VideoCapturePickerProps = {
 
 const MAX_DURATION_SECONDS = 5
 
+const CANDIDATE_MIME_TYPES = [
+  'video/webm;codecs=vp9,opus',
+  'video/webm;codecs=vp8,opus',
+  'video/webm',
+  'video/mp4',
+]
+
+function getSupportedMimeType() {
+  if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return undefined
+  return CANDIDATE_MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type))
+}
+
 export function VideoCapturePicker({ onVideoReady }: VideoCapturePickerProps) {
   const [stream, setStream] = useState<MediaStream | null>(null)
   const videoPreviewRef = useRef<HTMLVideoElement>(null)
@@ -41,17 +53,25 @@ export function VideoCapturePicker({ onVideoReady }: VideoCapturePickerProps) {
     if (!stream) return
 
     chunksRef.current = []
-    const recorder = new MediaRecorder(stream)
+    const mimeType = getSupportedMimeType()
+    const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) chunksRef.current.push(event.data)
     }
     recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: 'video/webm' })
+      const contentType = recorder.mimeType || 'video/webm'
+      const blob = new Blob(chunksRef.current, { type: contentType })
       const url = URL.createObjectURL(blob)
       const probe = document.createElement('video')
       probe.preload = 'metadata'
+      const finish = (durationSeconds: number) => {
+        onVideoReady(blob, { url, contentType, durationSeconds })
+      }
       probe.onloadedmetadata = () => {
-        onVideoReady(blob, { url, contentType: 'video/webm', durationSeconds: Math.max(1, Math.round(probe.duration)) })
+        finish(Math.max(1, Math.round(probe.duration)))
+      }
+      probe.onerror = () => {
+        finish(MAX_DURATION_SECONDS)
       }
       probe.src = url
       stream.getTracks().forEach((track) => track.stop())
