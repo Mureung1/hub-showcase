@@ -1,0 +1,28 @@
+.service-intro {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  text-align: left;
+}
+
+.service-intro__name {
+  text-align: center;
+}
+
+.service-intro__tagline {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.service-intro__block {
+  margin-top: 24px;
+}
+
+.service-intro__features {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.service-intro__features li {
+  margin-bottom: 4px;
+}
