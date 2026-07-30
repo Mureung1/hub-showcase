@@ -42,6 +42,7 @@ npm run build        # 프론트 프로덕션 빌드
 npm run build:server # server/를 tsc로 dist/에 빌드 (api/index.js가 이 결과물을 import)
 npm run lint         # oxlint 실행
 npm run preview      # 로컬에서 프로덕션 빌드 미리보기
+npm run test:e2e     # Playwright E2E (e2e/**/*.spec.ts, dev:all을 자동 기동)
 ```
 
 Express 앱은 `server/`에 있다(`npm install`을 루트에서 실행하면 `workspaces`로 함께 설치됨). `api/index.js`는 Vercel 서버리스 진입점으로 `server/dist/app.js`를 그대로 감싸서 노출하며, `vercel.json`의 rewrite로 `/api/*` 요청이 전부 이 함수로 간다. 로컬 개발 중에는 `vite.config.js`의 `server.proxy`가 `/api`를 `http://localhost:3001`(Express dev 서버)로 넘겨주므로, 프론트 코드는 로컬/배포 구분 없이 항상 `/api`로만 호출하면 된다.

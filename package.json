@@ -21,7 +21,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:server": "npm run test --workspace server",
-    "test:all": "npm run test && npm run test:server"
+    "test:all": "npm run test && npm run test:server",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "date-fns": "^4.4.0",
