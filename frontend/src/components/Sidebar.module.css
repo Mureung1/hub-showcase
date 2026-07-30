@@ -39,6 +39,23 @@
   font-weight: 700;
   font-size: 36px;
   color: var(--color-primary-teal);
+  font-variant-numeric: tabular-nums;
+}
+
+.digitSlot {
+  display: inline-block;
+  overflow: hidden;
+  height: 1em;
+  line-height: 1em;
+  vertical-align: bottom;
+}
+
+.digit {
+  display: inline-block;
+}
+
+.digitStatic {
+  display: inline-block;
 }
 
 .poolUnit {
@@ -77,6 +94,15 @@
   font-size: 14px;
   cursor: pointer;
   text-align: left;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.menuItem:hover {
+  background: var(--color-cream);
+}
+
+.menuItem:active {
+  transform: scale(0.97);
 }
 
 .menuItemActive {

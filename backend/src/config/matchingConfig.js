@@ -53,7 +53,9 @@ export const CACHE_TTL_DAYS = envNumber('CACHE_TTL_DAYS', 7)
 // 개발·시연 중엔 .env에서 SOURCE_READY_DELAY_HOURS=0으로 두면 편지를 보내자마자 바로
 // 매칭이 가능해진다(24시간 기다릴 필요 없음). 배포 전엔 반드시 24로 되돌려야 한다.
 export const SOURCE_READY_DELAY_HOURS = envNumber('SOURCE_READY_DELAY_HOURS', 24)
-export const REPLY_DELIVERY_HOURS = 8 // 답장 기능(T9) 구현 전까지는 메타데이터로만 존재
+// 답장을 보내고 몇 시간 뒤에 상대방에게 실제로 전달(보임)되는지. 개발·시연 중엔
+// SOURCE_READY_DELAY_HOURS처럼 .env에서 0으로 낮춰 즉시 전달되게 테스트할 수 있다.
+export const REPLY_DELIVERY_HOURS = envNumber('REPLY_DELIVERY_HOURS', 8)
 
 // --- 사용자별 레이트리밋 ---
 export const RECOMMENDATION_PER_HOUR = 10

@@ -12,6 +12,15 @@
   cursor: pointer;
 }
 
+.clickable:hover {
+  transform: translateY(-4px);
+  filter: drop-shadow(0 6px 14px rgba(27, 28, 26, 0.08)) drop-shadow(0 10px 20px rgba(27, 28, 26, 0.1));
+}
+
+.clickable:active {
+  transform: translateY(-1px) scale(0.97);
+}
+
 .selected {
   transform: translateY(-8px);
 }

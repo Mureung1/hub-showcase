@@ -35,14 +35,14 @@ export async function getMatch(req, res, next) {
 
 export async function patchMatch(req, res, next) {
   try {
-    const { status } = matchStatusUpdateSchema.parse(req.body)
+    const { status, feedback_reason, feedback_text } = matchStatusUpdateSchema.parse(req.body)
 
     const owned = await findMatchOwnedByUser(req.params.id, req.userId)
     if (!owned) {
       return res.status(404).json({ error: '매칭을 찾을 수 없어요.' })
     }
 
-    const updated = await setStatus(req.params.id, status)
+    const updated = await setStatus(req.params.id, status, { reason: feedback_reason, text: feedback_text })
     res.json(serializeMatch(updated))
   } catch (err) {
     next(err)

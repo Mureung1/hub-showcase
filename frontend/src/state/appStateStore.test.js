@@ -48,7 +48,7 @@ test('START_WAITING은 편지 관련 필드를 비우고 24h 대기를 시작한
     title: '제목',
     envelope: 'basic',
     showArrived: true,
-    tab: 'received', // 편지와 무관한 필드는 그대로 유지되는지 확인
+    tab: 'linked', // 편지와 무관한 필드는 그대로 유지되는지 확인
   }
   const next = reducer(state, { type: 'START_WAITING' })
   expect(next.letter).toBe('')
@@ -57,7 +57,7 @@ test('START_WAITING은 편지 관련 필드를 비우고 24h 대기를 시작한
   expect(next.showArrived).toBe(false)
   expect(next.phase).toBe('waiting')
   expect(next.waitSecs).toBe(initialState.waitSecs)
-  expect(next.tab).toBe('received')
+  expect(next.tab).toBe('linked')
 })
 
 test('RESET_AFTER_SEND는 답장/피드백 상태까지 포함해 작성 화면을 초기화한다', () => {
@@ -73,6 +73,8 @@ test('RESET_AFTER_SEND는 답장/피드백 상태까지 포함해 작성 화면�
     tab: 'linked', // 무관한 필드 유지 확인
     currentLetterId: 'letter-1',
     recommendation: { has_match: true },
+    replyTargetMatchId: 'm1',
+    replyTargetLetterId: 'l1',
   }
   const next = reducer(state, { type: 'RESET_AFTER_SEND' })
   expect(next.letter).toBe('')
@@ -86,6 +88,47 @@ test('RESET_AFTER_SEND는 답장/피드백 상태까지 포함해 작성 화면�
   expect(next.tab).toBe('linked')
   expect(next.currentLetterId).toBe(null)
   expect(next.recommendation).toBe(null)
+  expect(next.replyTargetMatchId).toBe(null)
+  expect(next.replyTargetLetterId).toBe(null)
+})
+
+test('RESTORE_PENDING_MATCH는 opened를 true로 만들고 phase를 arrived로, 추천 데이터를 복원한다', () => {
+  const recommendation = { has_match: true, match_id: 'm1', matched_letter: { body: '본문' }, reason: '사유' }
+  const next = reducer(initialState, { type: 'RESTORE_PENDING_MATCH', value: recommendation })
+  expect(next.opened).toBe(true)
+  expect(next.phase).toBe('arrived')
+  expect(next.recommendation).toBe(recommendation)
+})
+
+test('RESTORE_WAITING은 phase를 waiting으로, currentLetterId/waitSecs를 서버 기준 값으로 복원한다', () => {
+  const next = reducer(initialState, { type: 'RESTORE_WAITING', currentLetterId: 'letter-1', waitSecs: 3600 })
+  expect(next.phase).toBe('waiting')
+  expect(next.currentLetterId).toBe('letter-1')
+  expect(next.waitSecs).toBe(3600)
+})
+
+test('START_REPLY는 matchId를 채우고 letterId는 비워 서로 배타적으로 유지한다', () => {
+  const state = { ...initialState, replyTargetLetterId: 'l1' }
+  const next = reducer(state, { type: 'START_REPLY', matchId: 'm1' })
+  expect(next.replying).toBe(true)
+  expect(next.replyTargetMatchId).toBe('m1')
+  expect(next.replyTargetLetterId).toBe(null)
+})
+
+test('START_REPLY_THREAD는 letterId를 채우고 matchId는 비워 서로 배타적으로 유지한다', () => {
+  const state = { ...initialState, replyTargetMatchId: 'm1' }
+  const next = reducer(state, { type: 'START_REPLY_THREAD', letterId: 'l1' })
+  expect(next.replying).toBe(true)
+  expect(next.replyTargetLetterId).toBe('l1')
+  expect(next.replyTargetMatchId).toBe(null)
+})
+
+test('CANCEL_REPLY는 두 답장 대상 필드를 모두 비운다', () => {
+  const state = { ...initialState, replying: true, replyTargetMatchId: 'm1', replyTargetLetterId: 'l1' }
+  const next = reducer(state, { type: 'CANCEL_REPLY' })
+  expect(next.replying).toBe(false)
+  expect(next.replyTargetMatchId).toBe(null)
+  expect(next.replyTargetLetterId).toBe(null)
 })
 
 test('정의되지 않은 액션 타입이면 state를 그대로 반환한다', () => {

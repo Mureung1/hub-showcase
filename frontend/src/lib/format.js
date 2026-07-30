@@ -1,6 +1,5 @@
 // 프로토타입에서 추출된 고정 표기값 (extracted-source.md §4, §5)
 export const SERIAL_NO = 'BR-2024-0512'
-export const POOL_COUNT = '1,428'
 export const WAIT_SECS_INITIAL = 24 * 60 * 60 // 24시간
 
 /** 초 단위 카운트다운을 HH:MM:SS 로 표기 (prototype fmt()) */

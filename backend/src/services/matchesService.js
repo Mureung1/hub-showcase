@@ -2,7 +2,7 @@
 // 매칭된 편지(matchedLetter)를 읽을 때는 항상 select로 authorId를 제외해서,
 // "응답에 작성자를 역추적할 수 있는 정보가 나가면 안 된다"는 원칙을 쿼리 단계부터 강제한다.
 import { prisma } from '../lib/prisma.js'
-import { CACHE_TTL_DAYS } from '../config/matchingConfig.js'
+import { CACHE_TTL_DAYS, REPLY_DELIVERY_HOURS } from '../config/matchingConfig.js'
 
 const MATCHED_LETTER_SELECT = { id: true, content: true, createdAt: true, isMatchable: true }
 
@@ -107,10 +107,15 @@ export async function listMatchesForAuthor(authorId) {
   })
 }
 
-export async function setStatus(matchId, status) {
+export async function setStatus(matchId, status, feedback = {}) {
   return prisma.match.update({
     where: { id: matchId },
-    data: { status, ...(status === 'opened' ? { openedAt: new Date() } : {}) },
+    data: {
+      status,
+      ...(status === 'opened' ? { openedAt: new Date() } : {}),
+      ...(feedback.reason !== undefined ? { feedbackReason: feedback.reason } : {}),
+      ...(feedback.text !== undefined ? { feedbackText: feedback.text } : {}),
+    },
     include: { matchedLetter: { select: MATCHED_LETTER_SELECT } },
   })
 }
@@ -127,6 +132,18 @@ export async function dismissActive(sourceLetterId) {
 export async function findUnresolvedMatchForAuthor(authorId) {
   return prisma.match.findFirst({
     where: { status: { in: ['recommended', 'opened'] }, sourceLetter: { authorId } },
+  })
+}
+
+// 이 편지(sourceLetter)가 이미 최종 결정(답장 또는 스쳐 가기)이 난 적 있는지 확인한다.
+// 'dismissed'는 "다른 편지 보기"(refresh) 중간 상태로도 쓰이지만, 그 경우엔 항상 새로 생성된
+// recommended/opened 매칭이 뒤따르므로 — 여기 도달하는 시점엔(활성 매칭이 없는 시점) dismissed가
+// 있다면 그건 항상 "최종적으로 스쳐 감"을 의미한다. 이 확인이 없으면 이미 끝난 편지를
+// getOrCreateRecommendation이 계속 새로 매칭해버린다(새로고침 복원 로직에서 실제로 발견된 버그).
+export async function findResolvedMatchForSource(sourceLetterId) {
+  return prisma.match.findFirst({
+    where: { sourceLetterId, status: { in: ['replied', 'dismissed'] } },
+    select: { id: true },
   })
 }
 
@@ -164,6 +181,7 @@ export async function replyToMatch({ matchId, userId, title, content }) {
         content,
         envelope: 'basic',
         isMatchable: false,
+        deliverAt: new Date(Date.now() + REPLY_DELIVERY_HOURS * 60 * 60 * 1000),
       },
     })
     return { reply }

@@ -50,6 +50,8 @@ model Letter {
   threadId    String? // 스레드 식별자. 매칭이 성사된 Match.id를 그대로 재사용한다.
   replyToId   String? // 자기참조 — 어느 편지에 대한 답장인지 (답장 편지에만 채워짐)
   recipientId String? // 이 편지가 향하는 사람 (답장 편지에만 채워짐 — 모음소행 일반 편지는 null)
+  deliverAt   DateTime? // 답장이 상대에게 실제로 보이는 시각(createdAt + 8h, 답장 편지에만 채워짐).
+  // 그 전엔 수신자 조회에서 제외되고(존재 자체가 안 보임), 작성자 본인에게는 "보내는 중"으로 계속 보인다.
 
   replyTo Letter?  @relation("LetterReply", fields: [replyToId], references: [id])
   replies Letter[] @relation("LetterReply")
@@ -70,6 +72,8 @@ model Match {
   matchedLetterId    String
   reason             String // Claude가 생성한 매칭 이유
   status             String    @default("recommended") // recommended | opened | replied | expired | dismissed
+  feedbackReason     String? // 스쳐 가기 시 고른 사유 칩 (3가지 프리셋 중 하나)
+  feedbackText       String? // 스쳐 가기 시 직접 쓴 자유 텍스트 (프리셋과 배타적)
   candidateCount     Int? // 1단계 후보 수 (디버깅/튜닝용)
   candidateSnapshot  Json? // 1단계 후보 id·점수 스냅샷 (튜닝용)
   matchPromptVersion String?
