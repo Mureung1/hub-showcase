@@ -1,4 +1,4 @@
-import type { ExpressionSpecification } from "maplibre-gl";
+import type { ExpressionSpecification, FilterSpecification } from "maplibre-gl";
 import { useMemo } from "react";
 import { Layer, Source } from "react-map-gl/maplibre";
 
@@ -45,7 +45,7 @@ const STORE_COLOR_EXPRESSION: ExpressionSpecification = [
 
 const NO_SELECTED_STORE = "__localtwin-no-selected-store__";
 const STORE_ICON_MIN_ZOOM = 15.25;
-const UNCLUSTERED_STORE_FILTER: ExpressionSpecification = ["!", ["has", "point_count"]];
+const UNCLUSTERED_STORE_FILTER: FilterSpecification = ["!", ["has", "point_count"]];
 
 const CLUSTER_COLOR_EXPRESSION: ExpressionSpecification = [
   "step",
