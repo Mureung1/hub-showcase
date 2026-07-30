@@ -63,7 +63,9 @@ Codex는 분류 결과를 검토하고 사용자에게 전체 GAP 목록을 제�
 - 일반 시나리오 구조와 인게임 스크립트는 각각 기존 Scenario Improvement,
   `CW-*`·`NR-*` 규칙을 우선한다.
 - 창작 규칙이 없으면 `blocked_missing_creative_rule`, 요청 범위가 다르면
-  `blocked_creative_rule_mismatch`로 두고 대안을 만들지 않는다.
+  `blocked_creative_rule_mismatch`로 두고 대안을 만들지 않는다. 규칙 누락은
+  메인 Codex가 planning-only 설정 설계로 즉시 라우팅하며, 기존 규칙 불일치는
+  사용자가 개정을 요청하기 전에는 자동 변경하지 않는다.
 
 ## Output
 

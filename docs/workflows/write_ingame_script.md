@@ -27,7 +27,7 @@ Approval Queue 저장을 담당한다.
 
 이 창작 권한만으로 집필을 시작하지 않는다. 해당 프로젝트의 인게임 스크립트
 창작 규칙이 active 상태여야 하며, 없으면
-`docs/workflows/project_creative_agent_setup.md`의 Plan mode 설정을 먼저
+`docs/workflows/project_creative_agent_setup.md`의 planning-only 설정 설계를 먼저
 완료한다. 규칙의 검수 정책은 `independent_always`다.
 
 ## Source Order

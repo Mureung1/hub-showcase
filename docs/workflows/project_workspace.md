@@ -55,7 +55,7 @@ workspace/projects/<project_slug>/
     `game_overview`의 Document Map에 연결한다.
 12. 새 프로젝트에는 `agents/`나 창작 규칙을 만들지 않는다. 사용자가 실제
     창작 기능을 요청하고 `docs/workflows/project_creative_agent_setup.md`의
-    Plan mode 설정과 명시적 구현 요청을 완료했을 때만 첫 `agents/` 구조를
+    planning-only 설정 설계와 명시적 구현 요청을 완료했을 때만 첫 `agents/` 구조를
     만든다.
 
 ## Project README Role

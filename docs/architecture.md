@@ -46,8 +46,9 @@ Approval Queue에 `pending` 항목을 저장한다.
 
 창작 agent type은 저장소 공용 실행 역할이다. 프로젝트별 창작 정체성은
 `workspace/projects/<project_slug>/agents/rules/`의 독립 분야별 규칙으로
-저장하고, Task Packet이 정확한 규칙 ID·버전·SHA-256을 공용 실행 역할에
-전달한다. 프로젝트 규칙마다 별도 custom agent 설정을 만들지 않는다.
+저장하고, Task Packet이 규칙 기준(`active_current | archived_snapshot`)과
+정확한 규칙 ID·경로·버전·SHA-256을 공용 실행 역할에 전달한다. 프로젝트
+규칙마다 별도 custom agent 설정을 만들지 않는다.
 
 에이전트 동작 테스트는 `docs/workflows/behavior_testing.md`의 출처 게이트를
 먼저 통과한다. 합성 입력은 등록 프로젝트 밖의 전용 픽스처를 `/tmp`에 복사해
@@ -155,11 +156,21 @@ GAP을 분류하고, 사용자가 명시적으로 허가한 설계 공백에만 
 Approval Queue 저장, 승인 판단, 원본 재확인과 적용은 메인 Codex에만 있다.
 
 프로젝트 창작 규칙이 없으면 창작 호출 전에
-`blocked_missing_creative_rule`로 중단하고 planning-only 설정 workflow를
-사용한다. 기존 규칙이 요청과 맞지 않으면
+`blocked_missing_creative_rule`로 창작 실행을 중단하고 현재 대화에서
+planning-only 설정 workflow를 자동으로 수행한다. 메인 Codex는 필요한
+항목의 용도를 설명하고 최소 확정 근거로 완성된 권장안을 제시하며, 사용자가
+답하지 않은 항목은 공개한 보수적 기본값으로 채운다. 기존 규칙이 요청과 맞지
+않으면
 `blocked_creative_rule_mismatch`로 중단하며 사용자가 개정을 요청하기 전에는
-자동 수정하지 않는다. 생성·선택·반영 사이의 규칙 버전 또는 SHA-256 변경은
-`needs_creative_rule_reconfirmation`이다.
+자동 수정하지 않는다. 색인은 canonical role, `exact | subtree` 대상 경로와
+허용 작업으로 active 규칙 하나를 선택하며 범위가 겹치면 무결성 검증에서
+실패한다.
+
+과거 창작·검수 결과는 생성 당시 규칙 ID·버전·SHA-256과 상태를 유지한다.
+active 규칙 변경만으로 자동 재검수하거나 무효화하지 않고, 새 창작·수정은
+현재 active 규칙을 사용한다. Packet이 지목한 active 파일 또는 archive
+snapshot 자체가 전달한 버전·SHA-256과 다를 때만
+`blocked_creative_rule_integrity`로 중단한다.
 
 Task Packet에 프로젝트, Phase·작업 종류, 범위, 필수 근거, 사용자 사실·선택,
 권한 경계, 금지사항 또는 기대 출력이 빠졌으면 전문 agent는
@@ -191,7 +202,7 @@ Codex는 다음 작업을 승인 없이 수행할 수 있다.
 - 명시적으로 허가된 기획 창작 대안 작성
 - 승인 큐 항목 작성
 - 충돌/영향도 분석
-- Plan mode에서 합의된 프로젝트 창작 규칙을 사용자의 명시적 구현 요청으로
+- planning-only 설정 설계에서 합의된 프로젝트 창작 규칙을 사용자의 명시적 구현 요청으로
   생성·개정. 이 규칙은 행동 설정이며 같은 요청으로 확정 design 문서를
   변경하지 않는다.
 
@@ -299,7 +310,9 @@ active 일반 시나리오 창작 규칙을 적용한 뒤 `scenario_reviewer`가
 - 선택된 개선 권고가 원본 재확인과 갱신된 `pending` 승인을 거치는가
 - 기획 GAP이 유형별로 분류되고 명시적 허가 전에는 창작 대안이 생성되지 않는가
 - 선택된 기획 창작만 `CP-*`로 Draft에 포함되고 선택 후 다시 `pending`을 거치는가
-- 창작 작업에 정확한 프로젝트 규칙 ID·버전·SHA-256과 검수 계약이 전달되었는가
-- 규칙 없음·불일치·변경 상태에서 창작 결과가 생성되지 않았는가
+- 창작 작업에 규칙 기준과 정확한 프로젝트 규칙 ID·경로·버전·SHA-256,
+  검수 계약이 전달되었는가
+- 규칙 없음·적용 범위 불일치·참조 무결성 불일치 상태에서 창작 결과가
+  생성되지 않았는가
 - `user_fact`는 `TBD`, 검증 전 수치는 `provisional`과 검증 조건을 유지하는가
 - 모든 검색·승인·결정·버전 기록이 같은 프로젝트 ID와 루트를 사용하는가

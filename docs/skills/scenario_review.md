@@ -29,8 +29,9 @@ Outcome 개선을 대신하지 않는다. 이 범위는 `Scenario Improvement Re
   작성·변경은 `scenario_designer`, 검토 전용 요청은 `scenario_reviewer`에
   위임한다. 작성 결과의 독립 검수를 확인한 뒤에만 사용자에게 제시하거나
   Approval Queue에 저장한다.
-- 메인 Codex는 작성 전에 정확한 프로젝트 창작 규칙 ID·경로·버전·SHA-256을
-  Task Packet에 기록하고 결과와 재검수까지 같은 규칙인지 확인한다.
+- 메인 Codex는 작성 전에 프로젝트 창작 규칙 기준과 정확한
+  ID·경로·버전·SHA-256을 Task Packet에 기록하고 결과와 재검수까지 같은
+  규칙인지 확인한다.
 - `scenario_designer`: 프로젝트별 Scenario Designer's Brief를 구성하고 원안
   기반 Draft, GAP 목록과 분리된 `Scenario Improvement Review`를 작성한다.
 - `scenario_reviewer`: 작성자의 요약에 의존하지 않고 원본을 직접 읽어 출처
@@ -110,8 +111,12 @@ Outcome 개선을 대신하지 않는다. 이 범위는 `Scenario Improvement Re
    독립 검수한다.
 8. `authorial_reconsideration`은 자동 수정 지시가 아니며, 채택하려면 기존과
    같은 Scenario Improvement 선택·재확인 절차를 거친다.
-9. 작성·선택·재검수 사이에 프로젝트 창작 규칙 버전이나 SHA-256이 바뀌면
-   `needs_creative_rule_reconfirmation`으로 중단한다.
+9. 작성 뒤 active 프로젝트 창작 규칙이 바뀌어도 기존 Draft와 검수 결과는
+   생성 당시 규칙 ID·버전·SHA-256과 상태를 유지한다. 선택·승인·기계적
+   적용은 계속할 수 있으며, 새 수정·선택 반영은 현재 active 규칙을 사용한다.
+   현재 규칙 재검수는 사용자가 명시적으로 요청할 때만 read-only로 수행한다.
+   Packet이 지목한 규칙 파일 자체가 기록과 다르면
+   `blocked_creative_rule_integrity`로 중단한다.
 
 ## Selection And Approval
 

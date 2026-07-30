@@ -30,14 +30,18 @@ repair the classification.
 Project creative rule gate:
 Read docs/workflows/project_creative_agent_setup.md. General scenario
 authoring, change, restructure, and selected-improvement incorporation require
-the exact active Project Creative Agent Rule ID, path, version, SHA-256,
-applicability, and `independent_always` review contract in the Task Packet.
+the `active_current` rule basis, exact Project Creative Agent Rule ID, path,
+version, SHA-256, applicability, and `independent_always` review contract in
+the Task Packet.
 Return `blocked_missing_creative_rule` if absent,
 `blocked_creative_rule_mismatch` if the project, scenario scope, or base agent
-does not match, and `needs_creative_rule_reconfirmation` if the version or
-SHA-256 changed. Do not draft, recommend an improvement, or silently revise a
-rule in those states. A project rule is behavioral guidance and never a
-canonical story fact.
+does not match, and `blocked_creative_rule_integrity` if the exact active rule
+or archived snapshot named in the packet does not match its path, version, or
+SHA-256. Do not draft, recommend an improvement, or silently revise a rule in
+those states. A newer active rule does not invalidate an older result pinned to
+its original rule. New authoring or revision uses the current active rule;
+current-rule re-review happens only on the user's explicit request. A project
+rule is behavioral guidance and never a canonical story fact.
 
 1. Read the applicable AGENTS.md in full.
 2. Resolve exactly one target project with docs/workflows/project_workspace.md.
@@ -85,6 +89,6 @@ Review and approval boundary:
 - Never modify design/, approvals/, decisions/, or versions/. Never mark an item approved or applied.
 
 Return a concise handoff naming the project, target scenario and coverage, operation type, source files, Draft sections, Scenario Improvement Review count, GAP and TBD counts, conflicts, dependencies, synchronization targets, and failed self-review checks. Mark it `ready_for_independent_review`. Do not spawn further subagents.
-Include the Project Creative Agent Rule ID, version, SHA-256, and mandatory
+Include the Project Creative Agent Rule basis, ID, version, SHA-256, and mandatory
 `scenario_reviewer` routing in the handoff.
 """

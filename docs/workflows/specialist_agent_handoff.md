@@ -27,8 +27,9 @@
 9. 임의 창작 금지, `TBD`, 의존성과 충돌 처리 조건
 10. 입력 산출물 또는 이전 handoff와 기대 출력 형식
 11. 반환 후 메인 검토와 독립 검수 조건
-12. 창작 규칙이 필요한 작업이면 프로젝트 창작 에이전트 ID, 규칙 경로·버전·
-    SHA-256, 적용 범위와 검수 계약
+12. 창작 규칙이 필요한 작업이면 프로젝트 창작 에이전트 ID, 규칙 기준
+    `active_current | archived_snapshot`, 규칙 경로·버전·SHA-256, 적용 범위와
+    검수 계약
 
 메인 Codex는 현재 사용자 요청과 작업에 영향을 주는 이전 사용자 발화를
 Task Packet과 대조한다. 파일에 아직 기록되지 않은 사용자 사실, 선택,
@@ -133,9 +134,11 @@ message: <완성된 Specialist Task Packet>
 - 창작 규칙이 필요한 작업에는 정확한 규칙 ID, 경로, 버전, SHA-256, 적용
   범위와 검수 정책이 있어야 한다. 누락되면
   `blocked_missing_creative_rule`, 범위가 다르면
-  `blocked_creative_rule_mismatch`, 전달 후 규칙 버전·해시가 바뀌면
-  `needs_creative_rule_reconfirmation`을 반환하고 Draft·대안·검수 판정을
-  만들지 않는다.
+  `blocked_creative_rule_mismatch`, Packet이 지목한 active 규칙 또는 archive
+  snapshot의 실제 버전·SHA-256이 전달값과 다르면
+  `blocked_creative_rule_integrity`를 반환하고 Draft·대안·검수 판정을
+  만들지 않는다. 현재 active 규칙이 과거 결과의 pinned version보다
+  새롭다는 사실만으로는 차단하지 않는다.
 
 ## Main-Agent Return Check
 
@@ -150,8 +153,9 @@ message: <완성된 Specialist Task Packet>
 5. 필요한 자체 검수와 독립 검수 상태가 명확하다.
 6. `blocked_missing_handoff`, `blocked_test_provenance`, 필수 수정 또는
    미해결 충돌이 남지 않았다.
-7. 창작 작업이면 프로젝트 창작 규칙의 ID·버전·SHA-256과 적용 범위가
-   일치하고 규칙에 지정된 독립 검수가 완료되었다.
+7. 창작 작업이면 프로젝트 창작 규칙 기준, ID·경로·버전·SHA-256과 적용
+   범위가 Packet이 지목한 active 규칙 또는 archive snapshot과 일치하고
+   규칙에 지정된 독립 검수가 완료되었다.
 
 하나라도 실패하면 결과를 확정 사실처럼 제시하거나 `pending`으로 저장하거나
 적용하지 않는다. 메인 Codex가 Task Packet을 보완해 같은 전문 agent에
@@ -167,5 +171,5 @@ message: <완성된 Specialist Task Packet>
 - 전달한 사실·입력의 출처 유형과 테스트 픽스처 표시
 - 전달한 권한과 명시적으로 부여하지 않은 권한
 - 직접 확인한 근거 파일
-- 적용한 프로젝트 창작 에이전트 규칙 ID·경로·버전·SHA-256과 검수 정책
+- 적용한 프로젝트 창작 에이전트 규칙 기준·ID·경로·버전·SHA-256과 검수 정책
 - 반환 판정과 메인 Codex의 대조 결과

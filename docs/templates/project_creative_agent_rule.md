@@ -12,6 +12,10 @@
 - 버전: `1`
 - 분야: `<creative_domain>`
 - canonical document role: `game_overview | world_setting | scenario | system | content | ui | technical`
+- 경로 선택자: `exact | subtree`
+- 대상 경로: `<project-relative POSIX path>`
+- 허용 작업: `<author, revise, restructure, generate_options,
+  incorporate_selection 중 쉼표로 구분한 허용값>`
 - 기본 agent_type: `design_creative_planner | scenario_designer | scenario_writer`
 - 검수 정책: `self_and_main | independent_high_risk | independent_always`
 
@@ -21,6 +25,14 @@
 - 포함 범위:
 - 제외 범위:
 - 중단 조건:
+
+## Authoring Procedure
+
+- 입력 확인:
+- 출처 충돌·GAP 처리:
+- Draft·대안 작성 순서:
+- 검수·수정 반복:
+- 완료 조건:
 
 ## Creative Direction
 
@@ -63,9 +75,17 @@
 ## Rule Mismatch And Replanning
 
 - 범위 불일치 상태: `blocked_creative_rule_mismatch`
-- 규칙 변경 감지 상태: `needs_creative_rule_reconfirmation`
+- 규칙 참조 무결성 상태: `blocked_creative_rule_integrity`
+- 과거 결과 처리: `pinned_rule_grandfathered`
+- 자동 재검수: `금지`
+- 현재 규칙 재검수 조건: `사용자의 명시적 재검수 요청`
 - 자동 개정: `금지`
 - 개정 조건: `사용자의 명시적 규칙 작성·개정 요청`
+
+이전 규칙 결과는 당시 규칙 ID·버전·SHA-256과 검수 상태를 유지한다. active
+규칙 변경만으로 자동 재검수하거나 무효화하지 않는다. 새 생성·수정·선택 반영은
+현재 active 규칙을 사용하고, 현재 규칙 재검수는 사용자가 명시적으로 요청할
+때만 read-only로 수행한다.
 
 ## Change History
 

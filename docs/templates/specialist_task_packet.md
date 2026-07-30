@@ -6,7 +6,7 @@
 ## Routing
 
 - 대상 agent: `scenario_designer | scenario_writer | scenario_reviewer |
-  design_creative_planner`
+  design_creative_planner | design_creative_reviewer`
 - 작업 Phase·종류:
 - 프로젝트 ID:
 - 프로젝트 루트:
@@ -19,6 +19,7 @@
 - 규칙 미사용 이유: `해당 없음 | classify | 검색·요약 | 검토 전용 | 비창작 구조화 | 기계적 적용`
 - 프로젝트 창작 에이전트 ID:
 - 규칙 경로:
+- 규칙 기준: `active_current | archived_snapshot | 해당 없음`
 - 규칙 버전:
 - 규칙 SHA-256:
 - 규칙 적용 범위:
@@ -70,6 +71,7 @@
 - 필수 근거 파일:
 - 허가된 제안 자료:
 - 입력 Draft·handoff·Review Report:
+- 입력 결과가 최초 사용한 규칙 ID·버전·SHA-256:
 - 출처 우선순위:
 - 금지된 자료:
 

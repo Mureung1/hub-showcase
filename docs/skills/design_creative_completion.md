@@ -9,7 +9,7 @@ UI와 기술 기획 초안의 누락 정보를 분류하고, 사용자가 명시
 Approval Queue 저장을 통제한다.
 
 대안 생성과 선택 반영은
-`docs/workflows/project_creative_agent_setup.md`에서 Plan mode와 사용자의 구현
+`docs/workflows/project_creative_agent_setup.md`에서 planning-only 설정 설계와 사용자의 구현
 요청을 거쳐 생성된 해당 분야의 active 프로젝트 창작 규칙을 추가로 요구한다.
 `classify` Phase에는 규칙이 필요하지 않다.
 
@@ -147,10 +147,11 @@ Markdown 각주를 직접 붙인다. 각주에는 AI 기획 창작임을 밝히�
 
 ## Selection And Approval
 
-1. 사용자가 대안을 선택하면 메인 Codex가 관련 원본과 프로젝트 창작 규칙의
-   버전·SHA-256을 다시 확인하고 정확한 선택 결과를
-   `incorporate_selection` Phase로 전달한다. 규칙이 바뀌었으면
-   `needs_creative_rule_reconfirmation`으로 중단한다.
+1. 사용자가 과거 대안을 선택해도 해당 대안은 생성 당시 규칙 ID·버전·SHA-256
+   기록을 유지한다. 선택 자체는 active 규칙 변경만으로 차단하지 않는다.
+   선택안을 Draft에 반영하는 `incorporate_selection`은 새 창작 단계이므로
+   현재 active 규칙과 관련 원본을 사용하고, 과거 대안의 pinned 규칙 정보를
+   입력 provenance로 함께 전달한다.
 2. 대상, 목적과 핵심 범위가 같으면 기존 승인 항목을 개정하고 선택 이력을
    Decision History에 추가한 뒤 `pending`으로 둔다.
 3. 핵심 범위나 canonical owner가 달라지면 기존 항목을 보존하고 연결된 새

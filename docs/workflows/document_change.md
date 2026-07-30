@@ -55,8 +55,8 @@
 메인 Codex는 서브에이전트에 위임하기 전에 프로젝트, branch, canonical owner,
 요청 범위, 제외 범위, 근거 파일과 사용자에게 받은 창작 허가·선택을 명시한
 작업 패키지를 만든다. 서브에이전트는 작업 패키지 범위를 스스로 넓히지 않는다.
-창작 규칙이 필요한 작업에는 프로젝트 창작 에이전트 ID, 규칙 경로·버전·
-SHA-256, 적용 범위와 검수 정책도 포함한다.
+창작 규칙이 필요한 작업에는 프로젝트 창작 에이전트 ID, 규칙 기준, 규칙
+경로·버전·SHA-256, 적용 범위와 검수 정책도 포함한다.
 
 ### General Scenario Pipeline
 
@@ -99,14 +99,18 @@ SHA-256, 적용 범위와 검수 정책도 포함한다.
 2. 메인 Codex가 분류를 검토해 전체 GAP을 사용자에게 제시한다.
 3. `generate_options` 전에 해당 분야의 프로젝트 창작 규칙을 확인한다.
    규칙이 없으면 `blocked_missing_creative_rule`, 범위가 맞지 않으면
-   `blocked_creative_rule_mismatch`로 중단한다.
+   `blocked_creative_rule_mismatch`로 창작 실행을 중단한다. 누락된 규칙은
+   `docs/workflows/project_creative_agent_setup.md`의 planning-only 설정
+   설계로 즉시 라우팅하고, 불일치 규칙은 사용자가 개정을 요청하기 전에는
+   자동 변경하지 않는다.
 4. 사용자가 허가한 정확한 `creative_fillable` GAP ID만
    `generate_options` Phase에 전달한다.
 5. 규칙의 검수 정책이 `independent_always`이거나 high-risk 결과에
    `independent_high_risk`이면 `design_creative_reviewer`가 같은 규칙과
    원본을 직접 읽어 검수한다.
-6. 사용자가 대안을 선택하면 원본과 같은 규칙 버전·SHA-256을 재확인한 뒤 정확한 선택 결과만
-   `incorporate_selection` Phase에 전달한다.
+6. 사용자가 과거 대안을 선택하면 생성 당시 규칙 ID·버전·SHA-256은 입력
+   provenance로 보존한다. 선택안을 반영하는 `incorporate_selection`은 새
+   창작 단계이므로 현재 active 규칙과 원본으로 정확한 선택 결과만 전달한다.
 7. 메인 Codex가 CP 각주, 대안 보존, 의존성, 수치 검증과 승인 경계를 확인한
    뒤에만 `pending` 승인 항목을 저장한다.
 

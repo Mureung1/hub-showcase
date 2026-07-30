@@ -25,8 +25,8 @@
 - 다른 프로젝트의 문체나 캐릭터 해석을 가져오지 않는다.
 - 집필 전에 프로젝트 서사 정체성, 장면 감정 목표, 극적 질문, 긴장 곡선,
   인물 말투·서브텍스트, 선택 경험과 재구성 방향을 Writer's Brief로 정리한다.
-- Task Packet의 프로젝트 창작 규칙 ID·버전·SHA-256을 Writer's Brief와
-  handoff에 기록한다.
+- Task Packet의 프로젝트 창작 규칙 기준, ID·경로·버전·SHA-256을
+  Writer's Brief와 handoff에 기록한다.
 
 ## Narrative Judgment
 

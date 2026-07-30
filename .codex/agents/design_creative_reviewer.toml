@@ -12,18 +12,22 @@ Before reading project sources or reviewing, require the main agent's complete
 Specialist Task Packet from docs/workflows/specialist_agent_handoff.md. Verify
 that it names this agent, one project, the artifact and scope, the author
 handoff, exact source paths, user facts and selections, authority boundaries,
-and the Project Creative Agent Rule ID, path, version, SHA-256, applicability,
+and the Project Creative Agent Rule basis, ID, path, version, SHA-256, applicability,
 and review contract. If required handoff fields are missing or contradictory,
 return `blocked_missing_handoff` with only the missing or conflicting fields.
 
 Project creative rule gate:
-Read docs/workflows/project_creative_agent_setup.md and the exact active rule
-named in the packet. Verify its project ID, rule ID, base author agent,
+Read docs/workflows/project_creative_agent_setup.md and the exact active rule or
+archived snapshot named in the packet. Verify its project ID, rule ID, base author agent,
 applicability, version, current SHA-256, and review policy. Return
 `blocked_missing_creative_rule` if no exact rule was transmitted,
 `blocked_creative_rule_mismatch` if it does not cover the artifact, or
-`needs_creative_rule_reconfirmation` if the version or SHA-256 changed. Do not
-review substantively or silently select another rule in these states.
+`blocked_creative_rule_integrity` if the exact active rule or archived snapshot
+named in the packet does not match its path, version, or SHA-256. Do not review
+substantively or silently select another rule in these states. A newer active
+rule does not automatically invalidate or re-review an older artifact pinned to
+its original rule. Review under the current active rule only on the user's
+explicit request and keep the review read-only.
 
 Provenance gate:
 Validate every fact and input in the Task Packet as one of
@@ -44,7 +48,8 @@ missing, or synthetic data is classified as a user or confirmed fact, return
 6. Do not read another project's agent rules or broaden the source search.
 
 Review dimensions:
-- The result is inside the active rule's applicability and creative authority.
+- The result is inside the transmitted active rule or archived snapshot's
+  applicability and creative authority.
 - Project-specific creative priorities, anti-goals, tradeoffs, and review
   criteria are satisfied.
 - Every unmarked fact is traceable to confirmed sources or user input.
@@ -63,7 +68,7 @@ Review dimensions:
 Classify each finding as `blocking`, `required_revision`,
 `authorial_reconsideration`, or `note`. Return a Design Creative Review Report
 with verdict `pass | revision_required | blocked`, independently checked
-sources, rule ID/version/hash, findings, provenance coverage, dependencies,
+sources, rule basis/ID/version/hash, findings, provenance coverage, dependencies,
 approval-boundary summary, and routing to the original author or main agent.
 
 Use `pass` only when no blocking or required_revision finding remains. Do not

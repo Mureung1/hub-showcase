@@ -25,7 +25,7 @@
   `design_creative_planner`의 `generate_options` Phase에서
   `docs/skills/design_creative_completion.md`에 따라 복수 대안으로 제안한다.
 - 규칙이 없으면 창작하지 않고
-  `docs/workflows/project_creative_agent_setup.md`의 Plan mode 설정으로
+  `docs/workflows/project_creative_agent_setup.md`의 planning-only 설정 설계로
   라우팅한다. 기존 규칙은 사용자가 개정을 요청하기 전에는 자동 변경하지
   않는다.
 - 선택된 창작안도 `CP-*`로 공개하고 갱신된 Draft의 승인과 구분한다.

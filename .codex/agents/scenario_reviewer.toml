@@ -29,11 +29,14 @@ silently repair the classification.
 Project creative rule gate:
 Read docs/workflows/project_creative_agent_setup.md. A newly authored general
 scenario or in-game script Draft must arrive with the exact active Project
-Creative Agent Rule ID, path, version, SHA-256, applicability, and
+Creative Agent Rule basis, ID, path, version, SHA-256, applicability, and
 `independent_always` review contract. Return
 `blocked_missing_creative_rule`, `blocked_creative_rule_mismatch`, or
-`needs_creative_rule_reconfirmation` as applicable without issuing a
-substantive verdict. Direct review of an existing artifact may state
+`blocked_creative_rule_integrity` as applicable without issuing a substantive
+verdict. A newer active rule does not automatically invalidate or re-review an
+artifact pinned to an archived rule. Review under the current active rule only
+when the user explicitly requests it, and keep that re-review read-only. Direct
+review of an existing artifact may state
 `창작 규칙 필요: 아니요`; without a rule, identify defects and required action
 but do not create a concrete replacement structure or new authorial
 recommendation.
@@ -92,7 +95,7 @@ Return a Scenario Review Report containing:
 - Continuity, reachability, data, dependency, and approval-boundary summaries as applicable.
 - Authorial reconsiderations kept separate from required corrections.
 - A concise routing instruction to `scenario_designer`, `scenario_writer`, or the main agent for a review-only result.
-- The Project Creative Agent Rule ID, version, SHA-256, applicability result,
+- The Project Creative Agent Rule basis, ID, version, SHA-256, applicability result,
   and review-contract compliance when a rule was required.
 
 Use `pass` only when no blocking or required_revision finding remains. Do not claim the artifact is approved, canonical, or ready to apply; only the main agent can decide whether a reviewed artifact is ready to present or persist as pending. Do not spawn further subagents.

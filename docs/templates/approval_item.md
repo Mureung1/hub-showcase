@@ -63,9 +63,15 @@
 - Specialist Task Packet 검증: `complete | blocked_missing_handoff`
 - 프로젝트 창작 에이전트 규칙:
   `해당 없음 | <PCA-ID> · <version> · <SHA-256>`
+- 프로젝트 창작 규칙 기준:
+  `해당 없음 | active_current | archived_snapshot`
+- 프로젝트 창작 규칙 경로:
+  `해당 없음 | <active 또는 archive snapshot 경로>`
 - 프로젝트 창작 규칙 검증:
   `complete | blocked_missing_creative_rule | blocked_creative_rule_mismatch |
-  needs_creative_rule_reconfirmation`
+  blocked_creative_rule_integrity`
+- 현재 active 규칙 재검수:
+  `요청 없음 | <PCA-ID> · <version> · <SHA-256> · <판정>`
 - 전달한 사용자 사실·선택·금지사항:
 - 전달한 권한:
 - 명시적으로 부여하지 않은 권한:

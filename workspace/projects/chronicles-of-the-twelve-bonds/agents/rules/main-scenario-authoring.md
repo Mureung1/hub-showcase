@@ -1,0 +1,108 @@
+# Project Creative Agent Rule
+
+## Metadata
+
+- 프로젝트 창작 에이전트 ID: `PCA-chronicles-of-the-twelve-bonds-main-scenario-authoring`
+- 프로젝트 ID: `chronicles-of-the-twelve-bonds`
+- 규칙 슬러그: `main-scenario-authoring`
+- 상태: `active`
+- 버전: `3`
+- 분야: `main_scenario_structure`
+- canonical document role: `scenario`
+- 경로 선택자: `exact`
+- 대상 경로: `design/narrative/main_scenario.md`
+- 허용 작업: `author, revise, restructure, incorporate_selection`
+- 기본 agent_type: `scenario_designer`
+- 검수 정책: `independent_always`
+
+## Applicability
+
+- 적용 요청: `design/narrative/main_scenario.md`의 신규 섹션 작성, 수정, 재구성 및 사용자가 선택한 Scenario Improvement 반영
+- 포함 범위: 프롤로그, 사흉 추적, 최종전과 엔딩의 사건 인과, Scene 경계, 선택·분기·합류, Outcome, 정보 공개, 복선·회수, 인물 동기, 긴장과 감정 흐름
+- 제외 범위: 플레이어 노출 인게임 대본, 사이드 퀘스트와 독립 시나리오, 세계관·시스템·콘텐츠·UI·기술 canonical 사실의 직접 변경, 실제 에셋·데이터 ID와 제작 계약 확정
+- 중단 조건: 요청이 대상 메인 시나리오 문서 밖으로 확장되거나, 확정 원본끼리 충돌하거나, 다른 canonical owner의 선행 변경 없이는 안전한 Draft를 만들 수 없거나, Task Packet이 지목한 규칙 경로·버전·SHA-256이 실제 active 규칙 또는 archive snapshot과 일치하지 않는 경우
+
+## Authoring Procedure
+
+- 입력 확인: 메인 Codex가 전달한 현재 사용자 요청·권한과 아래 다섯 필수 근거 파일의 정확한 경로를 확인하고, 요청에 실제로 필요한 조건부 자료만 Specialist Task Packet에서 추가한다.
+- 출처 충돌·GAP 처리: 사용자 지시와 확정 원본의 사실·제안 경계를 출처별로 정리하고, 원본 충돌은 임의 해결하지 않으며 누락은 `user_fact`, `dependency`, `creative_fillable` 또는 `TBD`로 분리한다.
+- Draft·대안 작성 순서: 사건·Scene·선택·분기·Outcome·정보 공개·동기의 출처와 연속성을 먼저 정리한 뒤 원본 충실 Draft를 작성하고, 더 강한 구조는 Draft에 섞지 않은 `Scenario Improvement Review`로 별도 제시한다.
+- 검수·수정 반복: 완성된 Draft와 분리 개선안을 Task Packet이 지목한 같은 규칙 기준 및 원본과 함께 `scenario_reviewer`에게 전달하고, `blocking` 또는 `required_revision`이 남으면 원래 `scenario_designer`가 수정한 뒤 재검수한다.
+- 완료 조건: 필수 검수 finding이 모두 해소되고 모든 비제안 사실·Scene·분기·Outcome이 확정 근거, 사용자 입력 또는 명시적 `TBD`로 추적되며, 메인 Codex가 승인 경계를 보존한 read-only handoff를 수령한 상태
+
+## Creative Direction
+
+- 창작 목표: 사흉의 이상 현상을 추리하고 십이지신과 인연을 맺으며 축적한 정보와 선택이 최종 정체 분기와 결말을 바꾸는 일관된 메인 시나리오를 설계한다.
+- 기대 플레이 경험: 고정 선택지만으로도 약 2시간 안에 핵심 여정을 완주하면서, 단서를 해석하고 관계를 쌓고 선택 이력이 후속 반응과 엔딩에 남는 경험을 제공한다.
+- 우선 원칙: 확정 정사와 사건 인과, 공정한 단서·복선과 정보 공개, 십이지신과의 인연, 이해 가능한 선택 결과, 관리 가능한 분기와 플레이 시간 순으로 판단한다.
+- 허용하는 판단: Scene 순서·경계, 분기와 합류, Outcome, 동기, 복선과 회수, 선택 결과의 후속 반응을 더 강한 구조로 재구성해 별도 Scenario Improvement Review로 적극 제안할 수 있다.
+- 핵심 tradeoff: 추리의 공정성과 정체 은폐, 선택의 체감 차이와 분기 제작 비용, 인물 감정의 깊이와 약 2시간의 진행 속도, 자연어 자유도와 고정 선택지 완주 가능성을 함께 유지한다.
+- 금지 요소: 고양이 정체와 목적의 조기 확정·노출, 근거 없는 동양 판타지 설정, 선택 전 플레이어 행동·대사 확정, 차이 없는 선택지의 반복, 관리 불가능한 분기 증식, 확정 세계관·시스템 결과의 무단 변경
+
+## Sources
+
+- 필수 근거 파일: 아래 다섯 확정 문서를 메인 시나리오 창작의 기본 근거로 사용한다.
+  - `workspace/projects/chronicles-of-the-twelve-bonds/project_brief.md`
+  - `workspace/projects/chronicles-of-the-twelve-bonds/design/game/game_design_overview.md`
+  - `workspace/projects/chronicles-of-the-twelve-bonds/design/narrative/main_scenario.md`
+  - `workspace/projects/chronicles-of-the-twelve-bonds/design/world/world_setting.md`
+  - `workspace/projects/chronicles-of-the-twelve-bonds/design/systems/core_gameplay_systems.md`
+- 출처 우선순위: 현재 사용자 지시, 대상 메인 시나리오, 확정 세계관, 확정 시스템, 게임 개요, Project Brief 순이며 충돌은 임의 해결하지 않는다.
+- 규칙이 소유하지 않는 canonical facts: 세계관 정사, 인물·세력·장소 설정, 시스템 규칙과 수치, 구체 콘텐츠 배치, UI·기술 계약, 기존 사건과 승인된 Outcome
+- 금지된 자료: `docs/dev-log/`, 다른 프로젝트의 창작 규칙과 자료, 사용자가 현재 작업의 제안 입력으로 지정하지 않은 Approval Queue·Temporary Ideas·검토 에셋
+
+작업별 콘텐츠·UI·기술 문서, 기존 인게임 스크립트와 승인된 콘티·에셋은
+현재 요청의 사건 연속성이나 구현 계약에 실제로 필요할 때만 Specialist Task
+Packet에 정확한 경로와 출처 유형을 기록해 추가한다.
+
+## Authority Boundary
+
+- 허용된 제안 범위: 대상 메인 시나리오 안의 사건 구조, Scene, 선택, 분기, 합류, Outcome, 정보 공개, 복선, 인물 동기와 감정 흐름에 대한 원본 기반 Draft 및 분리된 개선 권고
+- 임의 창작 금지: 확정되지 않은 세계관 정사, 시스템·판정 규칙, 밸런스 수치, 실제 지역·콘텐츠·에셋·데이터 ID, 제작 예산·일정·계약을 사실처럼 만들지 않는다.
+- 반드시 `TBD`로 둘 항목: 장면별 판정값과 계산식, 미확정 지역·단서·콘텐츠, 고양이가 정수를 모으는 구체 목적과 핵심 서사, 실제 에셋·데이터 ID, 확인되지 않은 제작 사실
+- 별도 승인 제안으로 분리할 항목: 세계관 정사나 시스템 규칙 변경, 다른 canonical owner의 책임 변경, 상위 사건 구조와 함께 여러 문서를 원자적으로 동기화해야 하는 restructure
+
+## Output And Provenance
+
+- 기대 산출물: 프로젝트별 Scenario Designer's Brief, 원본 기반 Draft, 전체 GAP·TBD 목록, 분리된 Scenario Improvement Review, 충돌·의존성과 승인 후 동기화 대상
+- provenance 체계: `Scenario Improvement Review`
+- 대안·Draft 처리: 원본보다 강한 구조를 적극 검토하되 선택되지 않은 권고는 Draft에 섞지 않는다. 사용자가 선택한 권고도 원본 재확인, Draft 개정, 독립 재검수와 명시적 승인 전에는 canon으로 취급하지 않는다.
+- 수치 검증 조건: 플레이 시간이나 분기 규모의 추정은 근거와 가정을 공개하고, 실제 플레이테스트 지표와 재조정 조건 없이 확정값으로 제안하지 않는다.
+
+일반 시나리오 구조에는 `CP-*`, `CW-*`, `NR-*`를 중복 사용하지 않는다.
+
+## Review Contract
+
+- 적용 검수 정책: `independent_always`
+- reviewer: `scenario_reviewer`
+- 필수 검수 항목: 출처 충실도, 사건 인과와 동기, 추리 단서의 공정성, 정보 공개 시점, 선택 의미와 분기 비용, Scene 도달성과 합류, Outcome·상태 연속성, 약 2시간 목표와 고정 선택지 완주 가능성, canonical owner 의존성, Scenario Improvement 분리와 승인 경계
+- 통과 기준: `blocking`과 `required_revision`이 없고 모든 비제안 사실이 확정 원본 또는 사용자 입력으로 추적되며, 선택되지 않은 개선안이 Draft 밖에 있고, 모든 Scene·분기·Outcome이 도달 가능한 종료 또는 명시적 `TBD`를 가진다.
+- 필수 수정 routing: 메인 Codex가 `blocking` 또는 `required_revision`을 원래 `scenario_designer`에 반환하고 같은 규칙 기준과 원본으로 수정한 결과를 `scenario_reviewer`에게 재검수한다.
+
+## Rule Mismatch And Replanning
+
+- 범위 불일치 상태: `blocked_creative_rule_mismatch`
+- 규칙 참조 무결성 상태: `blocked_creative_rule_integrity`
+- 과거 결과 처리: `pinned_rule_grandfathered`
+- 자동 재검수: `금지`
+- 현재 규칙 재검수 조건: `사용자의 명시적 재검수 요청`
+- 자동 개정: `금지`
+- 개정 조건: `사용자의 명시적 규칙 작성·개정 요청`
+
+이전 규칙으로 생성·검수된 결과는 당시 PCA ID·버전·SHA-256과 상태를 유지해
+선택·승인·기계적 적용을 계속할 수 있다. active PCA가 바뀌었다는 이유만으로
+자동 재검수하거나 무효화하지 않는다. 기존 결과를 새로 수정하거나 선택안을
+Draft에 반영하는 창작 단계는 현재 active PCA를 사용해 새 결과로 기록한다.
+사용자가 현재 규칙 재검수를 명시하면 read-only 재검수 결과만 추가하며 기존
+원문을 자동 개정하지 않는다.
+
+대상과 일치하는 활성 규칙이 둘 이상이면 규칙을 임의 선택하지 않고
+`blocked_creative_rule_mismatch`로 중단해 범위 정리를 요청한다.
+
+## Change History
+
+| 버전 | 날짜 | 사용자 요청 | 변경 이유 |
+|---|---|---|---|
+| 1 | 2026-07-30 | 십이인연록 프로젝트 메인 시나리오 작성을 위한 PCA 파일 작성 | 메인 시나리오 전용 창작 방향, 출처, 권한과 독립 검수 계약을 프로젝트별로 고정 |
+| 2 | 2026-07-30 | 자동 PCA 설정 설계 절차 구현과 기존 십이인연록 PCA v2 보강 | 입력 확인부터 원본 충실 Draft, 분리 개선안, 독립 검수와 완료까지의 작성 절차를 명문화 |
+| 3 | 2026-07-31 | PCA 계약·라우팅·버전 운용 문제 순차 해결 | exact 경로·작업 기반 routing과 과거 결과 고정·규칙 참조 무결성 정책을 추가 |

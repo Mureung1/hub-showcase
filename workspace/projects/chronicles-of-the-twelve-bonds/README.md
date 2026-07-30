@@ -15,7 +15,7 @@
 | 장르 | 동양 판타지 1인 AI 게임 마스터 TRPG |
 | 플랫폼·엔진 | PC · Unity |
 | 현재 초점 | 혼돈 튜토리얼 이후 남부 권역의 궁기 여정 설계 |
-| 마지막 동기화 | 2026-07-27 |
+| 마지막 동기화 | 2026-07-30 |
 
 ## Current Focus
 
@@ -44,6 +44,7 @@
 - [Approval Queue](approvals/approval_queue.md): 검토·승인 대기 변경안
 - [Decision Log](decisions/decision_log.md): 승인·거부·보류 결정 기록
 - [Version History](versions/version_history.md): 확정 문서 적용 이력
+- [Project Creative Agents](agents/README.md): 프로젝트별 창작 행동 규칙 색인
 
 ## Reading Guide
 

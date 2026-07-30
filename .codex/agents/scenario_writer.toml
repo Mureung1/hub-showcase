@@ -29,14 +29,19 @@ silently repair the classification.
 
 Project creative rule gate:
 Read docs/workflows/project_creative_agent_setup.md. In-game script authoring
-and change require the exact active Project Creative Agent Rule ID, path,
-version, SHA-256, applicability, and `independent_always` review contract in
-the Task Packet. Return `blocked_missing_creative_rule` if absent,
+and change require the `active_current` rule basis, exact Project Creative
+Agent Rule ID, path, version, SHA-256, applicability, and
+`independent_always` review contract in the Task Packet. Return
+`blocked_missing_creative_rule` if absent,
 `blocked_creative_rule_mismatch` if the project, script scope, or base agent
-does not match, and `needs_creative_rule_reconfirmation` if the version or
-SHA-256 changed. Do not build a Writer's Brief, draft, or silently revise a
-rule in those states. Treat the rule as behavioral guidance, never as
-confirmed world, scenario, or system fact.
+does not match, and `blocked_creative_rule_integrity` if the exact active rule
+or archived snapshot named in the packet does not match its path, version, or
+SHA-256. Do not build a Writer's Brief, draft, or silently revise a rule in
+those states. A newer active rule does not invalidate an older result pinned to
+its original rule. New writing or revision uses the current active rule;
+current-rule re-review happens only on the user's explicit request. Treat the
+rule as behavioral guidance, never as confirmed world, scenario, or system
+fact.
 
 1. Read the applicable AGENTS.md in full.
 2. Resolve exactly one target project with docs/workflows/project_workspace.md.
@@ -98,6 +103,6 @@ Review and approval boundary:
 - Never modify design/, approvals/, decisions/, or versions/. Never mark an item approved or applied yourself.
 
 Return a concise handoff naming the project, target scenario and coverage, Writer's Brief summary, source files and approved style references, proposed approval item and future paths, scene count, NR count, CW footnote count, unresolved TBDs, high-risk dependencies, conflicts, and failed self-review checks. Mark it `ready_for_independent_review`; do not claim that independent review or main-agent approval checks have passed. Do not spawn further subagents.
-Include the Project Creative Agent Rule ID, version, SHA-256, and mandatory
+Include the Project Creative Agent Rule basis, ID, version, SHA-256, and mandatory
 `scenario_reviewer` routing in the handoff.
 """
