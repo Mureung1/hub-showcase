@@ -58,6 +58,9 @@ export async function fetchKstartupAnnouncements(
   return items.filter((item) => item.rcrt_prgs_yn === 'Y')
 }
 
+/** connect 이후 응답이 멈춰도(fetch 기본 동작은 무한 대기) withRetry가 재시도할 수 있도록 상한을 둔다 */
+const REQUEST_TIMEOUT_MS = 15_000
+
 async function fetchKstartupAnnouncementsOnce({
   page,
   perPage,
@@ -67,7 +70,7 @@ async function fetchKstartupAnnouncementsOnce({
   url.searchParams.set('perPage', String(perPage))
   url.searchParams.set('rcrt_prgs_yn', 'Y')
 
-  const res = await fetch(url)
+  const res = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
   if (!res.ok) {
     const message = `K-Startup API 호출 실패: ${res.status} ${res.statusText}`
     if (res.status >= 400 && res.status < 500) {
