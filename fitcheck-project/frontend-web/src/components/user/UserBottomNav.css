@@ -4,14 +4,16 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: var(--bottom-nav-height);
+  min-height: var(--bottom-nav-height);
+  height: calc(var(--bottom-nav-height) + var(--safe-bottom));
   background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--border);
   z-index: 100;
   padding: 0 0.5rem;
-  padding-bottom: var(--safe-bottom, env(safe-area-inset-bottom, 0));
+  padding-bottom: var(--safe-bottom);
+  box-sizing: border-box;
 }
 
 .user-bottom-nav-item {
