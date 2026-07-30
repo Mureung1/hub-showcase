@@ -5,7 +5,7 @@
   "githubUser": "baejh3333(배정현)",
   "demoUrl": "https://fridge-recipe-app-gl2n.onrender.com/",
   "videoUrl": "",
-  "sourceUrl": "https://github.com/baejh3333-del/hub",
+  "sourceUrl": "https://github.com/baejh3333-del/fridge-recipe-app",
   "intro": "intro.md",
   "introSlides": "intro-slides.pptx",
   "links": [
@@ -24,8 +24,8 @@
     {
       "type": "source",
       "label": "소스 코드",
-      "url": "https://github.com/baejh3333-del/hub",
-      "note": "일자별 브랜치(day3~day19)와 final 브랜치로 진행 과정을 남겼습니다."
+      "url": "https://github.com/baejh3333-del/fridge-recipe-app",
+      "note": "공개 저장소입니다. 일자별 진행 과정(day3~day19 브랜치)은 챌린지 제출용 fork인 baejh3333-del/hub에 있습니다."
     },
     {
       "type": "intro",
