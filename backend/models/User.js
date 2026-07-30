@@ -20,6 +20,10 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  temperature: {
+    type: Number,
+    default: 36.5
+  },
   createdAt: {
     type: Date,
     default: Date.now

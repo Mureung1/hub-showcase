@@ -14,7 +14,8 @@ import {
   Bell,
   Sparkles,
   Search,
-  Loader2
+  Loader2,
+  Heart
 } from 'lucide-react';
 import { auth } from './firebase';
 import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
@@ -60,13 +61,6 @@ interface ConfirmedPromise {
   members: Member[];
 }
 
-const MOCK_RESTAURANTS: Restaurant[] = [
-  { id: 'r1', name: '청춘 돼지불백', category: '한식/고기', rating: 4.8, distance: '정문 도보 3분', menu: '돼지불백 정식', emoji: '🥩' },
-  { id: 'r2', name: '미도리 스시', category: '일식/회', rating: 4.9, distance: '서문 도보 5분', menu: '모듬초밥 10p', emoji: '🍣' },
-  { id: 'r3', name: '롤링 파스타', category: '양식/파스타', rating: 4.6, distance: '동문 도보 4분', menu: '매운 크림 파스타', emoji: '🍝' },
-  { id: 'r4', name: '소림 마라탕', category: '중식/마라탕', rating: 4.7, distance: '정문 도보 2분', menu: '마라탕 & 꿔바로우', emoji: '🍜' },
-  { id: 'r5', name: '카페 아늑', category: '디저트/카페', rating: 4.5, distance: '서문 도보 1분', menu: '아인슈페너 & 와플', emoji: '☕' }
-];
 
 interface PublicRoom {
   id: string;
@@ -157,6 +151,7 @@ export default function App() {
 
   // --- Manner Temperature State ---
   const [temperature, setTemperature] = useState(36.5);
+  const [sentLikes, setSentLikes] = useState<Record<string, boolean>>({});
 
   // --- Public Rooms (same university / major) ---
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
@@ -181,7 +176,7 @@ export default function App() {
   const [sortOption, setSortOption] = useState('comment');
   const [userLocation, setUserLocation] = useState('');
   const [userCoords, setUserCoords] = useState<{lat: number, lng: number} | null>(null);
-  const [searchedRestList, setSearchedRestList] = useState<Restaurant[]>(MOCK_RESTAURANTS);
+  const [searchedRestList, setSearchedRestList] = useState<Restaurant[]>([]);
   const [isSearchingRest, setIsSearchingRest] = useState(false);
   const [aiRecommendation, setAiRecommendation] = useState('');
   const [aiRecommendedMenu, setAiRecommendedMenu] = useState('');
@@ -206,6 +201,21 @@ export default function App() {
     const savedTemp = localStorage.getItem(`itda_temp_${email}`);
     if (savedTemp) setTemperature(Number(savedTemp));
 
+    const savedLikes = localStorage.getItem(`itda_likes_${email}`);
+    if (savedLikes) {
+      try { setSentLikes(JSON.parse(savedLikes)); } catch { /* ignore corrupted data */ }
+    }
+
+    // 서버에 저장된 매너 온도가 있으면 동기화 (다른 사용자의 좋아요 반영)
+    fetchWithTimeout(`${API_BASE}/api/users/temperature?name=${encodeURIComponent(email.split('@')[0])}`, {}, 10000)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && typeof data.temperature === 'number') {
+          setTemperature(data.temperature);
+        }
+      })
+      .catch(() => { /* 서버 미응답 시 로컬 값 유지 */ });
+
     const saved = localStorage.getItem(`itda_profile_${email}`);
     if (saved) {
       try {
@@ -228,6 +238,12 @@ export default function App() {
       localStorage.setItem(`itda_temp_${verifiedEmail}`, String(temperature));
     }
   }, [temperature, verifiedEmail]);
+
+  useEffect(() => {
+    if (verifiedEmail) {
+      localStorage.setItem(`itda_likes_${verifiedEmail}`, JSON.stringify(sentLikes));
+    }
+  }, [sentLikes, verifiedEmail]);
 
   // --- Google Redirect Result Handler ---
   useEffect(() => {
@@ -352,14 +368,13 @@ export default function App() {
       if (data.success && data.items) {
         setSearchedRestList(data.items);
       } else {
-        setSearchedRestList(MOCK_RESTAURANTS);
+        setSearchedRestList([]);
+        showToastMsg('⚠️ 검색 결과가 없습니다.');
       }
     } catch (err) {
-      console.error('Search API error, falling back to mocks.', err);
-      const filtered = MOCK_RESTAURANTS.filter(r => 
-        !keyword || r.name.includes(keyword) || r.category.includes(keyword) || r.menu.includes(keyword)
-      );
-      setSearchedRestList(filtered);
+      console.error('Search API error:', err);
+      setSearchedRestList([]);
+      showToastMsg('⚠️ 맛집 검색에 실패했습니다. 서버 연결을 확인해주세요.');
     } finally {
       setIsSearchingRest(false);
     }
@@ -554,9 +569,8 @@ export default function App() {
         throw new Error('Sync failed');
       }
     } catch (err) {
-      setHostSchedule({ '수-3': true, '목-4': true, '월-2': true });
-      setIsGoogleSynced(true);
-      showToastMsg('📅 구글 캘린더 연동 완료! (Mock 데이터)');
+      console.error(err);
+      showToastMsg('⚠️ 구글 캘린더 연동에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsSyncing(false);
     }
@@ -587,9 +601,8 @@ export default function App() {
         throw new Error('Sync failed');
       }
     } catch (err) {
-      setHostSchedule({ '월-3': true, '수-3': true, '금-3': true });
-      setIsIcalSynced(true);
-      showToastMsg('📅 애플 캘린더 연동 완료! (Mock 데이터)');
+      console.error(err);
+      showToastMsg('⚠️ 애플 캘린더 연동에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsSyncing(false);
     }
@@ -620,9 +633,8 @@ export default function App() {
         throw new Error('Sync failed');
       }
     } catch (err) {
-      setHostSchedule({ '화-3': true, '수-3': true, '목-3': true });
-      setIsEverytimeSynced(true);
-      showToastMsg('⏱️ 에브리타임 동기화 완료! (Mock 데이터)');
+      console.error(err);
+      showToastMsg('⚠️ 에브리타임 동기화에 실패했습니다. URL을 확인해주세요.');
     } finally {
       setIsSyncing(false);
     }
@@ -651,6 +663,42 @@ export default function App() {
   const handleCancelPromise = (id: string) => {
     setConfirmedPromises(prev => prev.filter(p => p.id !== id));
     showToastMsg('🗑️ 밥약 약속이 취소되었습니다.');
+  };
+
+  // 밥약 멤버에게 매너 좋아요 보내기 (1인당 1회)
+  const handleSendLike = async (roomId: string, toName: string) => {
+    const myName = verifiedEmail ? verifiedEmail.split('@')[0] : '호스트';
+    const likeKey = `${roomId}:${toName}`;
+    if (sentLikes[likeKey]) {
+      showToastMsg('💡 이미 좋아요를 보낸 멤버입니다!');
+      return;
+    }
+    try {
+      const response = await fetchWithTimeout(`${API_BASE}/api/rooms/${roomId}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from: myName, to: toName })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setSentLikes(prev => ({ ...prev, [likeKey]: true }));
+        // 따뜻한 피드백 보너스: 서버 값이 있으면 서버 기준, 없으면 로컬 +0.3
+        if (typeof data.giverTemperature === 'number') {
+          setTemperature(data.giverTemperature);
+        } else {
+          setTemperature(prev => Math.min(100, Number((prev + 0.3).toFixed(1))));
+        }
+        showToastMsg(`💖 ${toName.split(' ')[0]}님에게 좋아요를 보냈어요! 매너 온도 +0.3°C`);
+      } else if (data.error === 'already_liked') {
+        setSentLikes(prev => ({ ...prev, [likeKey]: true }));
+        showToastMsg('💡 이미 좋아요를 보낸 멤버입니다!');
+      } else {
+        showToastMsg('⚠️ 좋아요 전송에 실패했습니다.');
+      }
+    } catch (err) {
+      console.error(err);
+      showToastMsg('⚠️ 좋아요 전송에 실패했습니다. 서버 연결을 확인해주세요.');
+    }
   };
 
   // Fetch public rooms for my university / major
@@ -702,10 +750,8 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
-      // Fallback
-      setRoomSimulatingId('room-mock-123');
       setIsCreatingRoom(false);
-      showToastMsg('🎉 밥약 대기방 개설 완료! (Mock Mode)');
+      showToastMsg('⚠️ 방 개설에 실패했습니다. 서버 연결을 확인해주세요.');
     }
   };
 
@@ -732,8 +778,7 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
-      showToastMsg('🙋 밥약 방 참여 완료! (Mock Mode)');
-      setJoinedMembers(prev => [...prev, { name: joinName, major: joinMajor, role: 'participant', schedule: hostSchedule }]);
+      showToastMsg('⚠️ 방 참여에 실패했습니다. 서버 연결을 확인해주세요.');
     }
   };
 
@@ -741,42 +786,6 @@ export default function App() {
     setRoomSimulatingId(roomId);
     setSelectedRest(null);
     setSelectedRecommendedTime('');
-  };
-
-  const simulateFriendJoin = () => {
-    if (joinedMembers.length >= 3) {
-      showToastMsg('💡 이미 3명의 참여자가 모두 모였습니다!');
-      return;
-    }
-    const friends: Member[] = [
-      {
-        name: '박진우 (시디과)',
-        major: '시각디자인과 22학번',
-        role: '참여자',
-        schedule: { '수-3': true, '수-4': true, '화-1': true, '목-4': true, '금-6': true }
-      }
-    ];
-    // POST request to simulate addition
-    fetch(`${API_BASE}/api/rooms/${roomSimulatingId}/join`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: friends[0].name,
-        major: friends[0].major,
-        schedule: friends[0].schedule
-      })
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setJoinedMembers(data.room.members);
-          showToastMsg(`👥 ${friends[0].name}님이 합류했습니다!`);
-        }
-      })
-      .catch(() => {
-        setJoinedMembers(prev => [...prev, friends[0]]);
-        showToastMsg(`👥 ${friends[0].name}님이 합류했습니다! (Mock Mode)`);
-      });
   };
 
   const getOverlappingSlots = () => {
@@ -825,18 +834,7 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
-      const newPromise: ConfirmedPromise = {
-        id: roomSimulatingId || 'mock-id',
-        title: roomTitle,
-        time: selectedRecommendedTime,
-        restaurant: selectedRest,
-        members: joinedMembers
-      };
-      setConfirmedPromises(prev => [...prev, newPromise]);
-      showToastMsg('🤝 완벽합니다! 잇다 약속이 확정되었습니다. (Mock Mode)');
-      setRoomSimulatingId(null);
-      setIsCreatingRoom(false);
-      setActiveTab('home');
+      showToastMsg('⚠️ 약속 확정에 실패했습니다. 서버 연결을 확인해주세요.');
     }
   };
 
@@ -1167,6 +1165,41 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* Manner Like: send a 👍 to each member you ate with */}
+            {(() => {
+              const myName = verifiedEmail ? verifiedEmail.split('@')[0] : '호스트';
+              const others = confirmedPromises[0].members.filter(m => m.name !== myName);
+              if (others.length === 0) return null;
+              return (
+                <div className="pt-3 border-t border-white/20 space-y-2 relative z-10">
+                  <p className="text-[9px] font-extrabold text-white/80 flex items-center">
+                    <Heart className="w-3 h-3 mr-1" />
+                    함께한 멤버에게 매너 좋아요 보내기
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {others.map((member, idx) => {
+                      const liked = sentLikes[`${confirmedPromises[0].id}:${member.name}`];
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleSendLike(confirmedPromises[0].id, member.name)}
+                          disabled={liked}
+                          className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold border transition flex items-center space-x-1 ${
+                            liked
+                              ? 'bg-white/10 text-white/50 border-white/10'
+                              : 'bg-white/20 text-white border-white/30 active:bg-white/30'
+                          }`}
+                        >
+                          <span>{liked ? '💖' : '👍'}</span>
+                          <span>{member.name.split(' ')[0]}{liked ? ' 완료' : ''}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
@@ -1470,23 +1503,6 @@ export default function App() {
           첫 가입 온도는 36.5°C 입니다. 성사된 밥약 시간 준수, 따뜻한 피드백을 통해 매너 온도를 올려보세요!
         </p>
 
-        <div className="pt-2 flex justify-between items-center border-t border-slate-200/50">
-          <span className="text-[9px] text-slate-400 font-bold">[테스트용] 매너 피드백 시뮬레이션:</span>
-          <div className="flex space-x-1">
-            <button 
-              onClick={() => setTemperature(prev => Math.min(100, Number((prev + 1.2).toFixed(1))))}
-              className="px-2 py-0.5 bg-orange-100 text-orange-600 rounded text-[9px] font-bold"
-            >
-              + 칭찬받기
-            </button>
-            <button 
-              onClick={() => setTemperature(prev => Math.max(0, Number((prev - 2.5).toFixed(1))))}
-              className="px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-[9px] font-bold"
-            >
-              - 지각/불참
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* 2. Notification Configuration */}
@@ -1787,15 +1803,6 @@ export default function App() {
                   ))}
                 </div>
               </div>
-
-              {/* Simulator Button */}
-              <button 
-                onClick={simulateFriendJoin}
-                className="w-full py-2 bg-slate-900 text-white text-[10px] font-extrabold rounded-xl hover:bg-slate-800 transition flex items-center justify-center space-x-1"
-              >
-                <Users className="w-3.5 h-3.5 text-orange-400" />
-                <span>[시뮬레이터] 다른 가상 친구 입장시키기 (인원 추가)</span>
-              </button>
 
               {/* Overlapping Slots */}
               <div className="space-y-2">

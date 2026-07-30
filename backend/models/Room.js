@@ -67,6 +67,12 @@ const RoomSchema = new mongoose.Schema({
     menu: String,
     emoji: String
   },
+  feedbacks: [
+    {
+      from: String,
+      to: String
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now
