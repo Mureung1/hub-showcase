@@ -460,7 +460,10 @@ generation_mode = single_source_fallback
 DecisionNote는 Question의 최종 결론을 요약한 결정 기록이다.
 
 - Question당 정확히 하나를 저장한다.
-- MVP에서는 FinalAnswer 확정 직후 Manager AI가 FinalAnswer를 근거로 요약을 자동 생성해 저장한다.
+- MVP에서는 Manager AI가 FinalAnswer를 **근거로** 요약을 자동 생성해 저장한다.
+
+> **개정 (2026-07-31, SPEC-AI-003 결정 2)**: 초판은 "FinalAnswer 확정 **직후**"였다. SPEC-AI-003이 FinalAnswer와 DecisionNote를 **한 번의 AI 호출**로 받기로 하면서 "직후"를 완화한다. "**근거로**"는 그대로 지켜진다 — 출력 스키마에서 `finalAnswer`가 앞에 오므로 모델은 자기가 방금 쓴 글을 요약한다. 오히려 별도 호출보다 일관성이 높다.
+> 근거: 충돌 0건 경로에서는 사용자 판단 없이 대기가 이어지므로 호출 1회를 아끼는 것이 체감에 직접 작용한다.
 - 모든 Agenda가 `rejected`인 경우에는 고정 문구 FinalAnswer를 그대로 DecisionNote로 저장하고 Question을 완료 처리한다.
 - 사용자 편집·수정·삭제 기능은 MVP에서 제공하지 않는다.
 - 사용자 입력 기반 작성·수정 기능은 후속 버전에서 추가한다.
@@ -497,6 +500,9 @@ MVP에서는 Chat 삭제와 보관 기능을 제공하지 않는다.
 2. SourceAnswer는 실패 시 한 번만 재시도한다. 재시도 후에도 실패하면 비교에서 제외하고 성공한 SourceAnswer만으로 처리를 계속한다.
 3. Question은 FinalAnswer와 DecisionNote가 모두 생성되어야 `completed`가 된다.
 4. 다음 Question Context는 직전 Question의 FinalAnswer와 그보다 이전 Question들의 DecisionNote로 구성한다.
+   - DecisionNote는 **최근 N개까지만** 포함한다(기본 5, 설정값). 컨텍스트가 무한히 자라면 3사 호출 입력이 비대해진다.
+   - 상한에 걸려 생략된 건수를 `questions.context_snapshot`에 기록한다. **조용히 자르지 않는다.**
+   - 구성 규칙이 바뀌면 `context_version`을 올린다. (SPEC-AI-003 §7)
 5. Chat 삭제 기능은 제공하지 않는다.
 6. FinalAnswer는 Question당 한 번만 생성하며 재생성을 허용하지 않는다.
 7. `conflicted`와 `reanswered` 상태에서 사용자는 채택 내용을 직접 입력할 수 있다. 직접 입력한 내용은 `selected_content`에 저장하고 Agenda를 `passed`로 변경한다.
