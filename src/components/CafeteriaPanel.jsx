@@ -15,10 +15,10 @@ import { MILAIZE_ALLERGENS } from '../lib/allergyRules.js'
 import { CNU1_EXTERNAL_LINK, CNU_BUILDINGS, getSelectedCnuBuilding, setSelectedCnuBuilding } from '../lib/cnuBuildings.js'
 import { buildDaySlots, isDayEmpty } from '../lib/cnuDayView.js'
 import { openExternalLink } from '../lib/externalLink.js'
+import { defaultMealKindFor, getSelectedMealKind, setSelectedMealKind } from '../lib/mealKind.js'
 import { NUTRITION_SOURCE } from '../lib/nutrition.js'
 import { requestPrecisionAnalysis } from '../lib/precisionAnalysis.js'
 import { getSchoolMeals } from '../lib/schoolMeal.js'
-import { get, set } from '../lib/storage.js'
 import { getUnivWeek } from '../lib/univMeal.js'
 import { toDateKey } from '../lib/records.js'
 import { colors, font, radius, spacing, styles } from '../styles/theme.js'
@@ -246,18 +246,6 @@ const MEAL_KIND_OPTIONS = [
   { key: 'university', label: '대학 학식' },
   { key: 'k12', label: '급식' },
 ]
-
-// 급식/대학 학식 토글도 건물 선택(cnuBuildings.js)과 같은 이유로 기기(localStorage)에 저장한다 —
-// 상단 "주변 식당 ↔ 학식·급식" 토글을 오가면 CafeteriaPanel이 매번 마운트/언마운트돼(MapPage.jsx가
-// view==='cafeteria'일 때만 조건부 렌더), 컴포넌트 내부 state만으로는 재진입할 때마다 프로필 기본값
-// 으로 되돌아가 버린다(직접 학식으로 바꿔놔도 기억되지 않는 비대칭 — 리뷰에서 발견).
-const MEAL_KIND_STORAGE_KEY = 'mapSettings:mealKind'
-const VALID_MEAL_KINDS = ['k12', 'university']
-
-function getSelectedMealKind(fallback) {
-  const saved = get(MEAL_KIND_STORAGE_KEY, null)
-  return VALID_MEAL_KINDS.includes(saved) ? saved : fallback
-}
 
 // 지도 탭 개편(지도·달력 모바일 개편 3안) — 예전엔 profile.school.type으로만 자동 결정되고 사용자가
 // 직접 바꿀 방법이 없었다. 이제 눈에 보이는 토글로 직접 전환할 수 있다(초기값만 저장된 학교 종류를
@@ -673,7 +661,10 @@ function UnivMealSection({ univCode, weekDates, selectedKey, todayKey, onSelectD
   )
 }
 
-export default function CafeteriaPanel() {
+// onMealKindChange: 지금 보고 있는 쪽(k12/university)을 지도(MapPage)에 알린다 — 그 값으로 지도가
+// 학교 위치로 갈지 대학 학식당 전체를 담을지 정한다. 마운트 직후에도 한 번 알려야 탭에 들어오자마자
+// 지도가 알맞은 곳으로 움직인다(사용자가 토글을 건드릴 때까지 기다리면 안 된다).
+export default function CafeteriaPanel({ onMealKindChange }) {
   const { profile } = useUser()
   const school = profile?.school ?? null
 
@@ -689,11 +680,16 @@ export default function CafeteriaPanel() {
   // 급식/대학 학식 중 어느 쪽을 보고 있는지 — 기기에 저장된 마지막 선택을 우선하고, 저장된 게
   // 없으면(첫 방문) 프로필의 학교 종류를 기본값으로 따른다. 사용자는 MealKindToggle로 언제든 직접
   // 전환할 수 있다(급식/학식 둘 다 프로필에 학교가 없으면 NoSchoolCard로 유도).
-  const [mealKind, setMealKindState] = useState(() => getSelectedMealKind(school?.type === 'university' ? 'university' : 'k12'))
+  const [mealKind, setMealKindState] = useState(() => getSelectedMealKind(defaultMealKindFor(school)))
+
+  // 마운트 직후와 전환 때마다 부모(지도)에 알린다.
+  useEffect(() => {
+    onMealKindChange?.(mealKind)
+  }, [mealKind, onMealKindChange])
 
   function handleChangeMealKind(key) {
     setMealKindState(key)
-    set(MEAL_KIND_STORAGE_KEY, key)
+    setSelectedMealKind(key)
   }
 
   function handleSelectBuilding(key) {
