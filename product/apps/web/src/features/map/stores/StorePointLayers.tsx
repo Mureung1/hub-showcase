@@ -1,8 +1,4 @@
-import type {
-  ExpressionSpecification,
-  FilterSpecification,
-  MapLayerMouseEvent,
-} from "maplibre-gl";
+import type { ExpressionSpecification, FilterSpecification } from "maplibre-gl";
 import { useEffect, useMemo, useState } from "react";
 import { Layer, Source, useMap } from "react-map-gl/maplibre";
 
@@ -85,6 +81,14 @@ type StorePointLayersProps = {
   storefrontMode: boolean;
 };
 
+type StoreHoverEvent = {
+  features?: Array<{
+    properties?: {
+      featureId?: unknown;
+    } | null;
+  }>;
+};
+
 export function StorePointLayers({
   stores,
   selected,
@@ -106,7 +110,7 @@ export function StorePointLayers({
       return;
     }
 
-    const handleMove = (event: MapLayerMouseEvent) => {
+    const handleMove = (event: StoreHoverEvent) => {
       const featureId = event.features?.[0]?.properties?.featureId;
       const nextFeatureId = typeof featureId === "string" ? featureId : null;
       setHoveredFeatureId((current) => (current === nextFeatureId ? current : nextFeatureId));
