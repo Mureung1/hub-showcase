@@ -213,6 +213,33 @@ hub/
 └── README.md
 ```
 
+## Agent 협업 워크플로우
+
+이 프로젝트는 AI Agent(Claude Code)와 함께 개발했습니다. AI가 코드를 전부 대신 짜는 방식이 아니라, **방향 설계와 검증은 사람이, 구현은 Agent가** 맡는 분업 구조로 진행했습니다.
+
+```mermaid
+flowchart TB
+  Direction["나 — 방향 설계·검토<br/><span>무엇을·왜 만들지 결정</span>"]
+  Request["작업을 잘게 쪼개 요청<br/><span>한 조각씩 Claude Code에</span>"]
+  Generate["코드 생성<br/><span>규칙·디자인 문서 참조</span>"]
+  Docs["참조 문서<br/><span>CLAUDE.md · Skill (규칙·디자인)</span>"]
+  Verify["브라우저에서 눈으로 검증<br/><span>'왜 이렇게 했는지' 되물음</span>"]
+  Commit["작업 단위마다 커밋<br/><span>검증 통과한 조각만</span>"]
+  PR["하루 끝에 PR<br/><span>base: N048_김우현</span>"]
+
+  Direction --> Request --> Generate
+  Docs -.참조.-> Generate
+  Generate --> Verify --> Commit
+  Commit -.다음 조각.-> Request
+  Commit --> PR
+```
+
+핵심은 **작은 조각의 순환**입니다. 큰 기능을 한 번에 만들지 않고, 작은 단위로 나눠 만들고 → 브라우저에서 직접 확인하고 → 통과한 것만 커밋하는 과정을 반복했습니다. 이렇게 하면 문제가 생겨도 어느 조각에서 틀어졌는지 바로 격리할 수 있습니다.
+
+- **규칙을 문서로 고정**: 설계 결정과 디자인 시스템을 [CLAUDE.md](CLAUDE.md)와 Skill에 적어두어, Agent가 매번 일관된 방식으로 작업하도록 했습니다.
+- **만들 때마다 이해하고 넘어가기**: 코드가 나올 때마다 "이게 뭘 하는지, 왜 이렇게 했는지"를 되물어 검토했습니다.
+- **검증 후 커밋**: 눈으로 동작을 확인한 조각만 커밋하고, 하루가 끝나면 PR로 묶었습니다.
+
 ## 문서
 - [프로젝트 기획서](https://github.com/jsjsbs7233/hub/wiki/AI-Agent-Challenge-%EA%B8%B0%ED%9A%8D%EC%84%9C)
 - [엣지케이스 결정사항](https://github.com/jsjsbs7233/hub/wiki/%EC%97%A3%EC%A7%80%EC%BC%80%EC%9D%B4%EC%8A%A4)
