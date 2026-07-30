@@ -15,6 +15,7 @@ dist-ssr
 # Python build artifacts (pptx-builder skill decks)
 __pycache__/
 render_out/
+*.pptx
 
 # Editor directories and files
 .vscode/*

@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import mascotKkini from '../assets/마스코트-끼니.png'
+import mascotKkini from '../assets/마스코트-끼니 - 여백 줄임.png'
 
 const NAV_LINKS = [
   { label: '냉장고', to: '/', activeOn: ['/'] },
