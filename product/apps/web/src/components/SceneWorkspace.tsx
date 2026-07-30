@@ -20,8 +20,27 @@ type SceneWorkspaceProps = {
   restoreFocusExternally: boolean;
 };
 
+type ScenePreviewVideo = {
+  id: string;
+  label: string;
+  url: string;
+};
+
 const DEMO_SPLAT_URL =
   import.meta.env.VITE_SCENE_DEMO_ASSET_URL ?? "https://sparkjs.dev/assets/splats/butterfly.spz";
+
+const SCENE_PREVIEW_VIDEOS: ScenePreviewVideo[] = [
+  {
+    id: "jongmyo",
+    label: "종묘",
+    url: `${import.meta.env.BASE_URL}videos/jongmyo.mp4`,
+  },
+  {
+    id: "gwanpyeong",
+    label: "관평동 거리",
+    url: `${import.meta.env.BASE_URL}videos/Gwanpyeong-dong.mp4`,
+  },
+];
 
 export function SceneWorkspace({ onClose, restoreFocusExternally }: SceneWorkspaceProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -151,6 +170,36 @@ export function SceneWorkspace({ onClose, restoreFocusExternally }: SceneWorkspa
 }
 
 function SceneDemoContent() {
+  const [availablePreviewVideos, setAvailablePreviewVideos] = useState<ScenePreviewVideo[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all(
+      SCENE_PREVIEW_VIDEOS.map(async (video) => {
+        try {
+          const response = await fetch(video.url, {
+            method: "HEAD",
+            cache: "no-store",
+          });
+          const contentType = response.headers.get("content-type");
+          return response.ok && !contentType?.includes("text/html") ? video : null;
+        } catch {
+          return null;
+        }
+      }),
+    ).then((videos) => {
+      if (cancelled) return;
+      setAvailablePreviewVideos(
+        videos.filter((video): video is ScenePreviewVideo => video !== null),
+      );
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <>
       <div className="scene-demo-viewer">
@@ -164,6 +213,21 @@ function SceneDemoContent() {
             실제 점포 촬영본도 같은 viewer에서 열리며, 완성 asset만 바꾸고 조작 방식은 유지됩니다.
           </p>
         </div>
+        {availablePreviewVideos.length > 0 && (
+          <div className="scene-storage-grid" aria-label="3DGS 렌더 영상">
+            {availablePreviewVideos.map((video) => (
+              <article key={video.id}>
+                <Play size={18} />
+                <div>
+                  <b>{video.label} 렌더 영상</b>
+                  <a href={video.url} target="_blank" rel="noreferrer">
+                    새 창에서 보기
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
         <div className="scene-storage-grid">
           <article>
             <HardDrive size={18} />
