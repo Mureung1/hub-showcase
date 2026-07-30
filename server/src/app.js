@@ -1,4 +1,3 @@
-const path = require('path');
 const express = require('express');
 const cors = require('cors');
 
@@ -31,11 +30,6 @@ app.use('/api/members', memberRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/teams', teamRoutes);
-
-// prototype 화면을 file://이 아니라 http://localhost:3000으로 열 수 있게 정적 서빙
-// (file:// origin은 알림 권한이 제대로 저장되지 않는 브라우저 문제가 있어서 필요함)
-// 위의 '/' 라우트보다 뒤에 둬서 index.html이 그 라우트를 가리지 않게 함
-app.use(express.static(path.join(__dirname, '..', '..', 'prototype')));
 
 app.listen(PORT, () => {
   console.log(`서버 실행 중: http://localhost:${PORT}`);

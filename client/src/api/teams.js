@@ -1,7 +1,7 @@
 import apiClient from './client';
 
-export async function getCurrentTeam() {
-  const res = await apiClient.get('/teams/current');
+export async function getCurrentTeam(teamId) {
+  const res = await apiClient.get('/teams/current', { params: { team_id: teamId } });
   return res.data;
 }
 

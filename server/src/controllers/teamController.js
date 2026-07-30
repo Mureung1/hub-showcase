@@ -1,9 +1,20 @@
 const teamModel = require('../models/teamModel');
-const CURRENT_TEAM_ID = require('../currentTeamId');
+
+function toId(raw) {
+  if (raw === undefined || raw === null || raw === '') return null;
+  const n = Number(raw);
+  return Number.isInteger(n) ? n : null;
+}
 
 async function getCurrentTeam(req, res) {
+  const teamId = toId(req.query.team_id);
+
+  if (teamId === null) {
+    return res.status(400).json({ error: 'team_id는 필수이며 정수여야 합니다.' });
+  }
+
   try {
-    const team = await teamModel.getTeamById(CURRENT_TEAM_ID);
+    const team = await teamModel.getTeamById(teamId);
     if (!team) {
       return res.status(404).json({ error: '팀을 찾을 수 없습니다.' });
     }
