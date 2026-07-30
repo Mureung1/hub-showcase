@@ -1,10 +1,145 @@
-# 작업 분해 (docs/checklist.md)
+# 현재 프로젝트 상태
 
-> 핵심 기능 ①(첫 행동/마이크로태스크 제안), ②(회피 원인 기반 맞춤 개입)를 잘게 쪼갠 작업 목록.
-> 덩어리가 크면 AI도 실패하고 검증도 못 함 → 한 항목 = 한 화면/한 함수 수준으로 유지.
-> [P0] 없으면 데모 자체가 안 됨 / [P1] 있으면 데모 완성도가 확 올라감 / [보류] 시간 남으면
+> 이 문서의 상단 대시보드가 현재 상태의 기준이다.
+>
+> - **완료**: 현재 코드에 구현 경로가 존재한다.
+> - **검증 완료**: 자동 테스트 또는 기록된 실제 환경 검증 근거가 있다.
+> - **백로그**: 필요성과 범위가 확인됐지만 아직 구현 또는 검증이 끝나지 않았다.
+> - **미구현 아이디어**: 장기 확장 후보이며 현재 제품 기능으로 설명하지 않는다.
+>
+> 아래의 **개발 기록**은 1~4주차 의사결정과 시행착오를 보존한 기록이다.
+> 과거 기록과 현재 상태가 다르면 이 대시보드를 우선한다.
 
 ---
+
+## 1. 현재 상태 대시보드
+
+### 완료
+
+#### 제품 흐름
+
+- [x] Landing(`/landing`) → 할 일 등록(`/register`) → Home(`/home`) → Focus → Completion → History(`/history`) 흐름
+- [x] 할 일 제목·유형·시작 예정 시간·마감 D-day·예상 회피 이유 등록
+- [x] `waiting | active | done` 상태별 Home 섹션과 TaskCard
+- [x] 직접 시작과 Nudge 시작의 Focus 진입 계약 분리
+- [x] Focus 타이머, 멈추기, 완료, 세션 저장·복구
+- [x] 완료 이벤트 기반 History 리스트·캘린더 뷰·최근 7일 Insight
+- [x] Asia/Seoul 기준 날짜 기반 연속 완료일(streak)
+- [x] 완료 직후 도움됨/아쉬움 피드백 저장
+
+#### 개입과 첫 행동
+
+- [x] 무응답 횟수 기반 Lv0~Lv4 개입 레벨 계산
+- [x] 마감 긴급도와 현재 레벨을 반영한 다음 알림 간격 계산
+- [x] Lv1·Lv3 회피 이유 재확인, Lv2 자유 입력, Lv4 강한 개입
+- [x] Lv2·Lv3 Gemini 마이크로태스크 생성
+- [x] Gemini API 오류·timeout·응답 형식·품질 검사 실패 시 `rule_based` fallback
+- [x] Gemini 응답 형식·품질 validator와 내부 실패 단계/규칙 로그
+- [x] 완료 기록의 과거 마이크로태스크를 Lv3 참고자료로 사용하는 memory evidence 흐름
+- [x] 늦은 비동기 응답과 중복 요청이 확정된 Nudge/Focus 상태를 덮지 않도록 방어
+
+#### 알림과 PWA
+
+- [x] Notification 권한 요청과 PushSubscription 생성·DB 저장·삭제
+- [x] 레벨 상승 시 Web Push 브로드캐스트
+- [x] 404/410 만료 구독 자동 삭제와 발송 실패 분류 로그
+- [x] Service Worker의 Push 수신·알림 클릭·오프라인 폴백
+- [x] 알림 권한은 있지만 구독이 없는 브라우저의 재구독 UI
+- [x] PWA manifest와 Vercel Deployment Protection용 credential 설정
+
+#### Shared Journey와 화면
+
+- [x] Landing Hero와 서비스 흐름·레벨별 개입 소개
+- [x] Home Journey Hero와 Lv0~Lv4 캐릭터·날씨 배경
+- [x] Focus 진입 레벨별 Walking 캐릭터와 Journey 배경
+- [x] Completion 성공 캐릭터와 보조 sparkles
+- [x] Nudge Modal Lv1~Lv4 캐릭터와 레벨별 색상
+- [x] Navbar 얼굴 로고, Register 안내 캐릭터, Home/History Summary UI
+
+#### API·데이터
+
+- [x] Task 생성·조회·삭제
+- [x] Task event 기록: `activated | notification_sent | level_up | done | stopped`
+- [x] 회피 이유 재확인 이력 저장
+- [x] 완료 시점 `durationSeconds`, `entryLevel`, `microTask`, `entryMode`, `generationSource`, `memoryEvidence` 스냅샷
+- [x] PushSubscription과 Feedback 저장
+- [x] Prisma + Supabase(Postgres), Vercel Express serverless 배포 구조
+
+### 검증 완료
+
+#### 자동 테스트
+
+- [x] Vitest 순수 함수 테스트: 레벨·알림 간격·날짜/streak·deadline·통계·마이크로태스크 검증
+- [x] React Testing Library 컴포넌트·사용자 상호작용 회귀 테스트
+- [x] Supertest 서버 라우트 테스트와 테스트 DB 가드
+- [x] Service Worker 알림 클릭 동작의 jsdom mock 테스트
+- [x] Playwright 설치와 `npm run test:e2e` 스크립트
+- [x] Playwright 스모크: Landing 렌더링
+- [x] Playwright 핵심 흐름: 할 일 생성 → Home → Focus 완료 → History
+- [x] Playwright 등록 검증: 제목 빈 값, D-day 빈 값에서 API 요청 차단
+
+#### 실제 환경에서 확인한 항목
+
+- [x] Vercel Production 배포와 SPA 새로고침 라우팅
+- [x] Lv1~Lv4 Nudge, Focus, Completion 흐름의 Production 수동 검증
+- [x] Desktop Chrome·Edge Web Push 수신
+- [x] iPhone 홈 화면에 추가한 PWA의 Web Push 수신
+- [x] Preview의 demo 간격과 Production의 실제 간격 분리
+- [x] 1440/1024/768/390/360px 중심의 주요 화면 반응형 검토 기록
+
+### 백로그
+
+#### 높은 우선순위
+
+- [ ] 서버 스케줄러가 `nextNudgeAt` 계산과 저장의 단일 책임자가 되도록 전환
+- [ ] Task별 `nextNudgeAt` 영속화와 새로고침·탭 종료 후 예약 복구
+- [ ] 외부 Cron 기반 알림 처리와 Task별 중복 이벤트·Push 방지
+- [ ] Focus 중 전체 Task 일시중지 상태의 서버 저장과 종료 후 재예약
+- [ ] `stopped` 이벤트 서버 멱등성 보강
+- [ ] `POST /api/tasks` 서버 검증을 다른 API의 `invalid_*` 응답 규칙과 통일
+- [ ] Task eventType 서버 allowlist 적용
+- [ ] Home·History 초기 조회 실패 시 오류 UI와 재시도 제공
+
+#### 추가 자동화·실기기 검증
+
+- [ ] Playwright: 등록 폼 새로고침 동작
+- [ ] Playwright: Focus 세션 새로고침 복구
+- [ ] Playwright: API 실패 시 오류 UI와 재시도
+- [ ] Android Chrome 실기기 Web Push 수신
+- [ ] 실제 Android 브라우저의 알림 클릭 후 기존 탭 포커스·새 탭 이동
+- [ ] Preview/Production 배포별 E2E 또는 smoke 검증 자동화
+- [ ] 간헐적인 서버 DB 통합 테스트 지연 원인 조사
+
+#### 제품·데이터 보강
+
+- [ ] 저장된 피드백을 다음 개입 속도와 전략에 반영
+- [ ] 완료 시점 skipCount 스냅샷 저장과 History 표시
+- [ ] 여러 날에 걸친 완료 기록 기반 Nudge 고도화
+- [ ] Lv4 도달 뒤 불필요한 다음 알림 예약·카운트다운 중단
+- [ ] 다중 사용자 도입 시 사용자별 Push 구독 소유권과 기기 관리
+- [ ] 챌린지 Hub의 `showcase.json` 최종 노출 및 Production `demoUrl` 확인
+- [ ] README·Wiki·기획서·디자인 Skill을 현재 구현 기준으로 최종 동기화
+
+### 미구현 아이디어
+
+- [ ] 사용자가 선택하지 않아도 회피 이유를 자동 추론
+- [ ] 피드백과 장기 행동 기록을 이용한 개입 톤·강도 자동 개인화
+- [ ] 정식 Pomodoro와 휴식/재개 기능
+- [ ] Google Calendar 등 외부 캘린더 연동
+- [ ] 시간대별 새벽·오전·오후·밤 Journey 테마
+- [ ] Walking 프레임 애니메이션과 목적지 도착 연출
+- [ ] 스카프·배지 등 캐릭터 장식 커스터마이징
+- [ ] 사용자 환경(장소·시간·음악 등)을 이용한 성공 요인 학습
+- [ ] 소셜·경쟁 기능과 다중 사용자 계정
+- [ ] 주간 리포트 확장과 스트릭 기반 보상·배지
+- [ ] 사이트 미접속 사용자를 위한 서버 스케줄러 기반 재개 알림
+
+---
+
+# 2. 개발 기록
+
+> 아래 내용은 당시의 계획과 판단을 보존한다. 이후 정책 변경으로 현재 구현과
+> 다를 수 있으며, 미완료 항목의 현재 분류는 위 대시보드에서 관리한다.
 
 ## 1주차 — 기반 세팅 + 할 일 등록
 
@@ -115,20 +250,15 @@
 - [x] [P0] 캘린더 히스토리 뷰 구현 — 날짜별 등록/완료 task를 달력 형태로 표시, 기존 히스토리 리스트 뷰와 함께 제공 (외부 캘린더 연동 아님, 우리 서비스 내부 데이터만 사용) (#43으로 완료)
 - [x] [P1] 넛지 모달 30초 자동 닫힘 타이머 적용 — 이유 선택이나 입력 중에도 멈추거나 초기화되지 않음
 - [x] [P1] 현재 모달에서는 레벨을 고정하고, 닫힌 뒤 다음 알림에서 다음 Lv로 진행
-- [ ] [P1] taskId + level별 메시지·microTask·generationSource 고정
-- [ ] [P1] Focus 진입 시 "다른 active task들"의 알림도 함께 정지 —
-      현재는 Focus 중인 task 하나만 타이머가 빠지고, 나머지 active
-      task는 백그라운드에서 계속 알림/레벨상승이 진행됨(task 1개뿐인
-      시연에서는 안 드러남). HomePage.jsx의 scheduleTaskTimer/
-      pollable 로직이 selectedTaskId 하나만 제외하는 구조라 발생.
-      Focus 세션 자체(경과시간)의 새로고침 복구는 정상 동작함
-      (2026-07-27 코드 확인, GPT 판단과 일치)
-- [ ] [P1] 늦게 도착한 Gemini 응답이 다음 레벨 화면을 덮어쓰지 않도록 처리
+- [x] [P1] 모달 진입 시 taskId + level별 메시지·microTask·generationSource 고정
+- [x] [P1] Focus 진입 시 다른 active task의 알림 타이머와 카운트다운도 함께 정지
+      (`clearAllTaskTimers`, `HomePage.test.jsx` 회귀 테스트로 확인)
+- [x] [P1] 늦게 도착한 Gemini 응답이 확정된 레벨 화면을 덮어쓰지 않도록
+      request sequence와 frozen message로 방어
 - [x] [P1] ReasonCheckpoint 입력값과 선택 상태 보존 — 재현 안 됨으로 확인. 근거: `NudgeModal.jsx`의 `showCheckpoint`가 false로 바뀌는(=`ReasonCheckpoint` unmount) 조건은 `checkpointAnswered`(제출 시 의도적으로 true) / `checkpointLevel`(모달 오픈 시 고정, 도중 변경 없음) / `lockedToStart`(`task.level===4`)뿐인데, `HomePage.jsx`의 `runTick`이 모달이 하나라도 열려 있으면 전역적으로 즉시 리턴해 레벨 상승 폴링 자체를 막는다 — 즉 체크포인트가 떠 있는 동안 `task.level`이 배경에서 4로 올라 unmount를 유발하는 시나리오가 애초에 불가능함. 유일하게 실제로 입력이 사라지는 경로는 사용자가 명시적으로 "닫기"를 눌러 모달 전체를 닫는 경우인데, 이건 다이얼로그를 직접 닫으면 입력이 사라지는 일반적인 UX 동작이라 버그로 보지 않음 (2026-07-27 조사, 코드 변경 없음)
 - [ ] [P1] Lv4 도달 후 추가 레벨 상승 예약을 중단하고, 불필요한 다음 알림 카운트다운을 표시하지 않음
-- [ ] [P1] 전체 사용자 흐름 E2E 자동화 — Playwright 미설치, 관련
-      의존성/테스트 파일 전무(코드로 확인). 지금 있는 건 Vitest
-      유닛/통합 테스트뿐. 계획만 있고 착수 전 (2026-07-27 확인)
+- [x] [P1] Playwright E2E 도입 — Landing 스모크, 등록 폼 빈 값 검증,
+      할 일 생성→Home→Focus 완료→History 핵심 흐름 자동화
 
 - [x] [P1] Focus "멈추기" 중복 클릭 방지 — `handleComplete`와 동일한 패턴(`stopInFlightRef` + `isStopping` state, 버튼 `disabled`)을 `handleStop`에 적용. RTL 테스트(`sends only one stopped request for rapid repeated clicks`) 추가, 관련 테스트 및 전체 프런트 테스트 통과 확인 (2026-07-27, `src/components/FocusMode.jsx`/`.test.jsx`)
 - [x] [P1] 할 일 등록 입력 검증·중복 제출 방지·오류 UI 보강 — 프론트만 진행(서버 검증은 아래 별도 P1 후보로 분리). `validateTaskTitle`(기존 미연결 자산)을 `RegisterPage.jsx`에 연결, D-day 검증용 `validateDeadline`(`src/lib/validateDeadline.ts`)을 simple-tdd로 신규 작성(Red→Green, 빈 값/음수 방지, 0은 유효)해 함께 배선. `submitInFlightRef`+`isSubmitting` 가드로 연타 시 요청 1회만 발송(오늘 Focus 멈추기에 적용한 패턴과 동일). `handleSubmit`을 try/catch로 감싸 실패 시 에러 메시지 표시(`FocusMode.jsx`의 `errorMessage` 패턴 재사용). `RegisterPage.test.jsx` 신규 작성(4케이스: 제목/D-day 빈 값 차단, 연타 방지, API 실패 시 에러 UI), 전체 프론트 typecheck·테스트(20 files / 209 tests) 통과 확인 (2026-07-27)
@@ -189,14 +319,11 @@
 - [x] 배포 최종 점검 7항목(환경변수/리전/DB/migration/Gemini키/CORS/라우팅) 확인 완료 — 리전만 이슈로 backlog 등록
 - [x] Lv1/Lv2/Lv3/Lv4/Focus~완료 프로덕션 수동 검증 완료
 
-- [ ] `showcase.json`이 챌린지 허브(connect-aiagentchallenge-26-1.github.io/hub)에 실제로 노출되는지 확인 필요 — 원인 후보 2건 발견 및 조치: (1) showcase 관련 파일이 `work` 브랜치에만 있고 `main` 미병합이었음 (2) `screenshots` 경로(소문자)와 실제 파일명(대소문자 혼용) 불일치, 리눅스 배포 환경은 대소문자 구분해서 404 가능성. 파일명 소문자 통일(`467f73b`) + `work`→`main` 머지로 조치했으나 실제 반영 여부 재확인 필요
-
 ### 발표 준비
 
 - [ ] [P0] 데모 시나리오 확정
 - [ ] [P0] 피칭덱 작성
 - [ ] [P1] 실제 발표 환경에서 데모 리허설
-- [ ] [P1] showcase.json 챌린지 허브 실제 노출 재확인
 
 ### Landing 최종 개선
 
@@ -207,60 +334,5 @@
 
 ---
 
-## 확인 필요 (보류 항목 — 시간 되면 포함)
-
-- [ ] 저장된 피드백을 다음 할 일의 개입 속도와 전략에 반영
-- [ ] 여러 날에 걸친 장기 히스토리 기반 넛지 프롬프트 고도화
-- [ ] 포커스 모드를 정식 뽀모도로 타이머로 확장할지 여부
-- [ ] Lv2 자유 텍스트 질문을 회피 이유 판단에 반영할지 (지금은 공감 문구 전용)
-- [ ] `.agents/` 빈 폴더 정리 (용도 확인 후)
-- [ ] 로컬 서버(localhost:5174) 원인불명 알림 현상 (급하지 않음)
-- [ ] History에 완료 시점 skipCount 스냅샷 표시 (마이그레이션 필요, 과거 기록 소급 불가)
-- [ ] tasks.test.ts:267 날짜 streak 테스트 가끔 타임아웃 (DB 왕복 지연 추정, 원인 조사는 범위 밖)
-
-- [ ] 완료 체크 시 칭찬 메시지 표시 (완료 정도에 따라 톤 다르게, 짧은 문구 로테이션)
-- [ ] 에러 케이스 점검: 등록 안 한 할일, 이미 완료했는데 무응답인 경우, 회피이유 미선택 상태 등
-- [ ] Home·History 초기 조회 실패 시 오류 UI와 재시도 제공
-- [ ] 등록 API(`POST /api/tasks`)에 `invalid_*` 컨벤션 검증 없음 — 다른 라우트(avoidance-reasons, events, feedbacks)와 컨벤션 안 맞음, 프론트 검증만으로 정상 경로는 막혀있어 급하지 않음 (2026-07-27, 122행 작업 중 스코프에서 분리)
-- [ ] 서버 Task eventType allowlist 적용
-- [ ] `stopped` 이벤트 서버 멱등성 가드 없음 — skipCount 반토막 로직이 중복 요청 시 여러 번 실행됨, UI 가드로 실질 위험은 제거됐으나 서버 단 정합성 보강은 별도 이슈 (2026-07-27, Focus 멈추기 중복 클릭 방지 작업 중 발견)
-- [ ] 배포 후 사용자 피드백 수집 방법 마련 (간단한 피드백 폼 또는 설문 링크)
-- [ ] README에 plan.md, checklist.md 링크 정리 + 데모 GIF/스크린샷 추가
-
-- [ ] Android Chrome 실기기 Web Push 수신 검증 (기록 없음, 데스크톱
-      Chrome과 혼동하지 않도록 구분 필요)
-- [ ] nextNudgeAt 미영속화 — "다음 알림까지 남은 시간"이 새로고침 시
-      전부 리셋되고 레벨/마감 기준으로 처음부터 재계산됨(예: 40초 중
-      35초 경과했어도 새로고침하면 다시 40초부터). Focus 세션 경과
-      시간 자체는 정상 복구되는 것과 별개 문제. 최소안(localStorage)/
-      장기안(Supabase) 검토 필요 (2026-07-27 코드 확인)
-      참고(2026-07-29): 알림이 "등록 순서"가 아니라 task별 nextNudgeAt
-      도달 순서로 뜨는 것은 의도된 설계(마감 긴급도가 급한 쪽이 먼저).
-      다만 모달이 하나만 열리는 구조상, 다른 task 모달이 열려 있는 동안
-      레벨업된 task는 모달이 닫힌 뒤 "경과 시간 이어받지 않고" 처음부터
-      새 delay로 재예약돼(HomePage.jsx scheduleActiveTaskTimers) 등록
-      순서와 다르게 느껴질 수 있음 — 위 nextNudgeAt 미영속화와 같은
-      뿌리(재계산 시 경과 시간 미반영)라 별도 이슈로 만들지 않고 여기 통합
-- [ ] 알림 클릭 포커스/새탭 로직 — jsdom mock 테스트로만 검증됨,
-      실제 Android 브라우저 동작은 미확인
-
-## 향후 확장 기능
-
-(plan.md 6-4 "향후 확장" 항목 — 이번 스프린트엔 포함하지 않음)
-
-- [ ] 회피 이유 자동 추론 (AI가 사용자 선택 없이 추론)
-- [ ] 대체 행동 제안 (스트릭 자체는 이미 MVP에 포함돼 2주차에서 구현됨 — 스트릭 기반 보상/뱃지 등 추가 동기부여 요소만 여기 해당)
-- [ ] 개입 전략 완전 개인화 (톤/강도 자동 학습)
-- [ ] 성공 요인 학습 (장소/시간/음악 등 환경 기록 기반 추천)
-- [ ] 실제 캘린더 연동 (캘린더 히스토리 뷰(내부)는 이번 스프린트에 구현됨, 실제 구글 캘린더 등록 연동은 별도)
-- [ ] 주간 리포트 및 통계 기능
-- [x] 랜딩페이지 캐릭터 일러스트 적용
-- [ ] 전체 화면 캐릭터 통일 및 애니메이션
-- [ ] 소셜/경쟁 요소 (다중 사용자 백엔드 필요)
-- [ ] (별도 기능, 이번 스코프 아님) "오늘 사이트 미접속" 리마인더 — daily-checkin-scan(#38)/서버 스케줄러와 연결되는 영역, 현재 미구현
-- [ ] 구독-사용자(디바이스) 매핑 및 다중 기기 관리 UI — 현재는 task와 subscription 간 소유 관계가 스키마에 없는 단일 사용자 프로토타입 구조라 모든 구독에 무조건 브로드캐스트됨. 로그인/사용자 구분이 생기면 재검토 (2026-07-27, 88행 관련)
-- [ ] [P1] 마감일 전까지 아직 안 끝난 할일을 매일 정해진 시각에 스캔해 세션이 끊긴 경우 이전 레벨에서 이어 재트리거하는 서버리스 함수 (`daily-checkin-scan`) — "매일 체크인"이 아니라 "세션 재개용 재트리거"임에 유의. 여러 날에 걸친 재개 시나리오는 라이브 데모로 시연하기 어려워 우선순위만 낮춤(스코프 자체는 유지) — `#38`이 이 작업을 전제로 하는데 정작 이 작업 자체를 만드는 이슈가 없음 — 그룹4 후반/4주차에 이슈화 필요
-- [ ] [P1] `daily-checkin-scan` ↔ `send-push` 연결 (여러 날에 걸친 세션 재개 시나리오, 라이브 데모로 시연하기 어려운 영역이라 후순위. 완전히 빼는 게 아니라 우선순위만 낮춤)
-- [ ] [P1] 실제 과거 완료 이벤트의 microTask 재사용 및 history_reuse 연결
-
----
+> 현재 남은 작업과 장기 아이디어는 문서 상단의 **백로그**와
+> **미구현 아이디어**에서 중복 없이 관리한다.
