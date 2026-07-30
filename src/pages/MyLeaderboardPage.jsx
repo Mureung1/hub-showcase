@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import AppButton from '../components/AppButton.jsx'
 import Card from '../components/Card.jsx'
 import LeaderboardPodium from '../components/LeaderboardPodium.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
@@ -18,13 +19,19 @@ const WINDOW_RADIUS = 2
 // 이번 범위에서 뺐다. 상위 %는 이미 받은 전체 목록 길이로 클라이언트에서 바로 계산 가능해 포함했다).
 export default function MyLeaderboardPage() {
   const navigate = useNavigate()
-  const { authMode } = useUser()
+  const { authMode, authLoading } = useUser()
   const [rows, setRows] = useState(null)
   const [error, setError] = useState('')
+  // 조회 실패 시 사용자가 직접 다시 시도할 수단. 없으면 RPC가 한 번만 실패해도 **새로고침 말고는
+  // 복구할 방법이 없다** — 데모 전날 실측된 "리더보드가 가끔 안 뜨는데 새로고침하면 나온다"의 절반이
+  // 이것이었다(나머지 절반은 토큰 갱신 레이스, supabaseRpc.js 참고).
+  // LeaderboardCard가 이미 같은 패턴(reloadTick)을 쓰는데 이 화면에만 빠져 있었다.
+  const [reloadTick, setReloadTick] = useState(0)
 
   useEffect(() => {
     if (authMode !== 'user') return undefined
     let cancelled = false
+    setError('')
     getXpLeaderboard()
       .then((result) => {
         if (!cancelled) setRows(result)
@@ -35,7 +42,20 @@ export default function MyLeaderboardPage() {
     return () => {
       cancelled = true
     }
-  }, [authMode])
+  }, [authMode, reloadTick])
+
+  // ⚠️ 세션 복원이 끝나기 전에는 authMode가 'guest'다 — 그대로 아래 분기를 타면 로그인한 사용자에게
+  // "로그인하면 경쟁할 수 있어요"가 잠깐(느린 회선에서는 꽤 길게) 보인다. 로딩과 게스트는 다른 상태다.
+  if (authLoading) {
+    return (
+      <div style={styles.page}>
+        <ScreenHeader title="리더보드" onBack={() => navigate('/profile')} />
+        <Card>
+          <Skeleton height={60} />
+        </Card>
+      </div>
+    )
+  }
 
   if (authMode !== 'user') {
     return (
@@ -61,6 +81,16 @@ export default function MyLeaderboardPage() {
       {error && (
         <Card>
           <p style={styles.errorText}>{error}</p>
+          <AppButton
+            variant="secondary"
+            onClick={() => {
+              setRows(null)
+              setReloadTick((t) => t + 1)
+            }}
+            style={{ marginTop: spacing.sm }}
+          >
+            다시 시도
+          </AppButton>
         </Card>
       )}
 

@@ -4,6 +4,7 @@ import { useUser } from '../context/UserContext.jsx'
 import AppButton from './AppButton.jsx'
 import Card from './Card.jsx'
 import ChevronIcon from './ChevronIcon.jsx'
+import Skeleton from './Skeleton.jsx'
 import Spinner from './Spinner.jsx'
 import { getDailyLeaderboard } from '../lib/leaderboard.js'
 import { getScoreBreakdown } from '../lib/nutritionScore.js'
@@ -68,7 +69,7 @@ function ScoreBreakdownPanel({ actual, target }) {
 // calcScore 값을 링으로 보여주므로 여기서는 로그인 유도만 하고 점수 중복 표시는 뺐다(판단 근거는
 // 통합 PRD 3절 참고).
 export default function LeaderboardCard() {
-  const { authMode, todayMealsTotal, effectiveRecommended } = useUser()
+  const { authMode, authLoading, todayMealsTotal, effectiveRecommended } = useUser()
   const [rows, setRows] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -99,6 +100,16 @@ export default function LeaderboardCard() {
       cancelled = true
     }
   }, [authMode, todayMealsTotal, reloadTick])
+
+  // ⚠️ 세션 복원 전에는 authMode가 'guest'다 — 로딩과 게스트는 다른 상태이므로 구분한다. 이게 없으면
+  // 로그인한 사용자에게 "로그인하면 비교할 수 있어요"가 잠깐(느린 회선에서는 꽤 길게) 보였다가 바뀐다.
+  if (authLoading) {
+    return (
+      <Card>
+        <Skeleton height={72} />
+      </Card>
+    )
+  }
 
   if (authMode !== 'user') {
     return (

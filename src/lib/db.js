@@ -3,6 +3,7 @@
 // 코드가 실수로 잘못된 조건을 걸어도 다른 사람 데이터가 새어나갈 수 없다. DB는 snake_case, 앱은
 // camelCase라 여기서 서로 변환한다.
 import { supabase } from './supabase.js'
+import { rpcWithAuthRetry } from './supabaseRpc.js'
 import { normalizeMealType } from './mealType.js'
 
 // PostgREST/GoTrue가 세션 만료·무효 토큰일 때 주는 에러들(코드 PGRST301, 또는 메시지에 jwt/token
@@ -325,7 +326,11 @@ export async function claimQuest(dateKey, questId, xpAwarded) {
     await throwFriendly(insertError)
   }
 
-  const { data, error: rpcError } = await supabase.rpc('increment_total_xp', { p_delta: xpAwarded })
+  // 여기도 rpcWithAuthRetry를 쓴다. 바로 위 insert가 성공한 뒤 이 호출만 토큰 만료로 401을 받으면
+  // **퀘스트는 클레임 처리됐는데 XP만 안 오르는** 상태가 되고, 리더보드가 XP 기준이라 그대로 순위에
+  // 반영된다. 재시도가 안전한 이유: 401은 JWT가 거부돼 **함수가 실행조차 안 된 것**이므로 중복 증가가
+  // 생길 수 없다(중복이 생길 수 있는 건 성공 후 응답을 못 받은 경우인데, 그건 401이 아니다).
+  const { data, error: rpcError } = await rpcWithAuthRetry('increment_total_xp', { p_delta: xpAwarded })
   if (rpcError) await throwFriendly(rpcError)
   return { alreadyClaimed: false, totalXp: Number(data) }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import BottomTabBar from './BottomTabBar.jsx'
 import ChatBotSheet from './ChatBotSheet.jsx'
@@ -33,8 +33,6 @@ let lastPathname = null
 // 바뀔 때마다 탭바까지 다시 그려진다.
 export default function AppShell({ hideTabBar = false }) {
   const { pathname } = useLocation()
-  const pathRef = useRef(pathname)
-  pathRef.current = pathname
   const { levelUpPopup, dismissLevelUpPopup } = useUser()
   const showChatBot = CHATBOT_PATHS.some((p) => pathname.startsWith(p))
 
@@ -48,13 +46,25 @@ export default function AppShell({ hideTabBar = false }) {
     lastPathname = pathname
   }, [pathname])
 
-  useEffect(() => {
+  // ⚠️ 저장 키는 **클로저의 pathname**이어야 한다. 예전엔 pathRef.current를 썼는데, 정리(cleanup)가
+  // 도는 시점에는 이미 새 경로로 리렌더된 뒤라 `pathRef.current`가 **새 경로**를 가리킨다 — 즉 떠나는
+  // 화면의 스크롤 위치가 들어오는 화면의 키에 저장되고, 바로 아래 복원이 그 값을 읽어 **새 화면이
+  // 맨 아래에서 열렸다.** MY 탭은 바로가기 그리드가 화면 맨 아래라 이 버그가 100% 재현됐다
+  // (퀘스트·리더보드·배지 도감… 전부 스크롤이 내려간 채로 열림).
+  // 이 이펙트에 붙은 정리는 언제나 "그 이펙트가 담당한 경로"의 것이므로 클로저 값이 정답이다.
+  //
+  // useLayoutEffect인 이유: 패시브 이펙트로 두면 정리가 **DOM 교체 뒤**에 돌아, 새 화면이 더 짧을 때
+  // 브라우저가 스크롤을 잘라내며 쏘는 scroll 이벤트를 떠나는 화면의 핸들러가 받아 엉뚱한 값을
+  // 저장한다. 레이아웃 이펙트는 DOM 교체 전에 정리되므로 그 창이 없다. 복원도 페인트 전에 끝나
+  // 화면이 한 번 깜빡였다가 올라가는 것도 사라진다.
+  useLayoutEffect(() => {
     // 이 화면에 들어올 때: 기억해둔 위치로 복원(처음 방문이면 맨 위).
     // View Transitions가 진행 중일 수 있어 즉시(behavior 기본값 auto)로 옮긴다 — 부드럽게 스크롤하면
     // 전환 애니메이션과 겹쳐 화면이 두 번 움직이는 것처럼 보인다.
+    // 리스너보다 **먼저** 복원한다 — 순서가 바뀌면 복원이 만든 scroll 이벤트를 자기 리스너가 받는다.
     window.scrollTo(0, scrollByPath.get(pathname) ?? 0)
 
-    const remember = () => scrollByPath.set(pathRef.current, window.scrollY)
+    const remember = () => scrollByPath.set(pathname, window.scrollY)
     // passive: 스크롤 성능에 영향을 주지 않게(이 핸들러는 preventDefault를 하지 않는다).
     window.addEventListener('scroll', remember, { passive: true })
     return () => {
