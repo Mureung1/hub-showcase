@@ -1,6 +1,6 @@
 import { useModalA11y } from '../../hooks/useModalA11y'
 
-// 4가지 분기 (docs/plan_3.md, prototype/demo_11.html의 renderInsightModal 참고):
+// 4가지 분기 (docs/plan.md, prototype/demo_11.html의 renderInsightModal 참고):
 // 1) 대상 공고 0건, 2) 이미 전부 충족, 3) 항목 1개만 보완하면 늘어나는 공고 있음, 4) 여러 항목을 함께 보완해야 함.
 // hasTip=false가 곧바로 "이미 다 갖췄다"는 아니다 — 항목 1개만 미충족인 공고만 improvementRanking에 카운트되고
 // 2개 이상 동시 미충족인 공고는 제외되므로, hasTip=false여도 matchRate가 100%가 아닐 수 있다.

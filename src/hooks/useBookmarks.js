@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { addBookmark, getBookmarks, removeBookmark } from '../api/bookmarks'
 
@@ -9,34 +9,49 @@ import { addBookmark, getBookmarks, removeBookmark } from '../api/bookmarks'
 export function useBookmarks() {
   const { user } = useAuth()
   const [bookmarkedIds, setBookmarkedIds] = useState(() => new Set())
+  // toggle이 await하는 동안 같은 jobId를 다시 클릭하면 둘 다 같은(토글 전) state를 보고 같은 요청을
+  // 중복으로 보내는 레이스가 있었다 — bookmarkedIds state 대신 ref로 최신 값을 동기적으로 추적하고,
+  // 같은 jobId에 대한 요청이 진행 중이면 새 클릭은 무시한다.
+  const bookmarkedIdsRef = useRef(bookmarkedIds)
+  const pendingRef = useRef(new Set())
+
+  const updateBookmarkedIds = useCallback((next) => {
+    bookmarkedIdsRef.current = next
+    setBookmarkedIds(next)
+  }, [])
 
   useEffect(() => {
     if (!user) {
-      setBookmarkedIds(new Set())
+      updateBookmarkedIds(new Set())
       return
     }
     let cancelled = false
     getBookmarks().then((jobs) => {
-      if (!cancelled) setBookmarkedIds(new Set(jobs.map((job) => job.job_id)))
+      if (!cancelled) updateBookmarkedIds(new Set(jobs.map((job) => job.job_id)))
     })
     return () => {
       cancelled = true
     }
-  }, [user])
+  }, [user, updateBookmarkedIds])
 
   const toggle = useCallback(async (jobId) => {
-    if (bookmarkedIds.has(jobId)) {
-      await removeBookmark(jobId)
-      setBookmarkedIds((prev) => {
-        const next = new Set(prev)
-        next.delete(jobId)
-        return next
-      })
-    } else {
-      await addBookmark(jobId)
-      setBookmarkedIds((prev) => new Set(prev).add(jobId))
+    if (pendingRef.current.has(jobId)) return
+    pendingRef.current.add(jobId)
+    try {
+      const wasBookmarked = bookmarkedIdsRef.current.has(jobId)
+      if (wasBookmarked) {
+        await removeBookmark(jobId)
+      } else {
+        await addBookmark(jobId)
+      }
+      const next = new Set(bookmarkedIdsRef.current)
+      if (wasBookmarked) next.delete(jobId)
+      else next.add(jobId)
+      updateBookmarkedIds(next)
+    } finally {
+      pendingRef.current.delete(jobId)
     }
-  }, [bookmarkedIds])
+  }, [updateBookmarkedIds])
 
   return { isBookmarked: (jobId) => bookmarkedIds.has(jobId), toggle }
 }

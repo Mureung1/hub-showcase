@@ -26,7 +26,9 @@ function selectJobsByIds(ids) {
 // bookmarks.job_id(Supabase, text)는 jobs.job_id(로컬 SQLite, integer)를 가리키지만 DB가 분리돼 있어
 // 진짜 FK를 걸 수 없다 — insert 전에 로컬 SQLite에서 존재 여부를 먼저 확인한다.
 bookmarksRouter.post('/bookmarks', async (req, res) => {
-  const jobId = Number.parseInt(req.body?.job_id, 10)
+  // 프론트는 항상 job.job_id(숫자)를 그대로 보내므로 문자열 파싱이 필요 없다 —
+  // parseInt는 "3xyz" 같은 값도 3으로 파싱해 400을 우회시키는 문제가 있었다.
+  const jobId = req.body?.job_id
   if (!Number.isInteger(jobId)) {
     res.status(400).json({ error: 'job_id가 올바르지 않습니다.' })
     return

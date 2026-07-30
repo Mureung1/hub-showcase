@@ -172,7 +172,7 @@ export function fixForeignLangScoresIfNeeded() {
 function runManualSeed() {
   seedAll(loadCsvRows())
 
-  // 완료 기준 (docs/checklist_2.md): 862건 적재 + 직종 9그룹 + 학력 6종 (+ 개발_Task.md: 인턴 90건) 분포가 원본 CSV와 일치
+  // 완료 기준 (docs/checklist.md): 862건 적재 + 직종 9그룹 + 학력 6종 (+ 개발_Task.md: 인턴 90건) 분포가 원본 CSV와 일치
   const total = db.prepare('SELECT COUNT(*) AS count FROM jobs').get().count
   const categoryCount = db.prepare('SELECT COUNT(DISTINCT job_category) AS count FROM jobs').get().count
   const educationCount = db.prepare('SELECT COUNT(DISTINCT education) AS count FROM jobs').get().count

@@ -10,7 +10,7 @@ export const EDUCATION_RANK = {
   박사: 5,
 }
 
-// checklist_2.md 확정 사항: 전공 placeholder 3종은 전공무관과 동일하게 항상 통과 처리
+// checklist.md 확정 사항: 전공 placeholder 3종은 전공무관과 동일하게 항상 통과 처리
 const MAJOR_ANY_VALUES = new Set(['전공무관', '관련 전공(공고별 상이)', '해당 교과 전공'])
 
 // OPIc은 숫자 점수가 아니라 등급(낮은→높은 순)이라 EDUCATION_RANK와 같은 방식으로 순서를 매겨서 비교한다.
@@ -77,7 +77,7 @@ function applyFilters(jobs, filters) {
   })
 }
 
-// checklist_2.md 확정 사항: 항목 1개만 보완하면 통과하는 시나리오만 카운트. 2개 이상 동시 미충족인 공고는 어느 항목에도 카운트하지 않는다.
+// checklist.md 확정 사항: 항목 1개만 보완하면 통과하는 시나리오만 카운트. 2개 이상 동시 미충족인 공고는 어느 항목에도 카운트하지 않는다.
 function countSingleGapImprovements(evaluated) {
   const counts = Object.fromEntries(CATEGORIES.map((category) => [category, 0]))
   for (const { checks } of evaluated) {
@@ -104,7 +104,7 @@ export function buildStats(jobList) {
 }
 
 // 필터 적용 → 대상 공고 전체에 evaluateJob 반복 → 통계 + 보완 우선순위 계산.
-// 가중치 없는 단순 개수 기반 점수화(checklist_2.md 확정 사항).
+// 가중치 없는 단순 개수 기반 점수화(checklist.md 확정 사항).
 export function runGapAnalysis(jobs, filters, spec) {
   const targetJobs = applyFilters(jobs, filters)
   const jobList = targetJobs.map((job) => evaluateJob(job, spec))
