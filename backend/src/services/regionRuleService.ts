@@ -60,6 +60,23 @@ function parseZoneTokens(mngZoneTrgtRgnNm: string): string[] {
     .filter(looksLikeZoneLabel)
 }
 
+// SGG_NM 기준 정부 API 원본 응답 캐시 — getZoneOptions(동 선택 전)과 getRegionRule(동 선택 후 저장)이
+// 같은 구/군에 대해 같은 raw rows를 두 번 라이브 조회하던 것을 없앤다. 정부 데이터는
+// scripts/syncRegionDistricts.ts로만 주기적으로 갱신되므로 짧은 TTL 캐시로도 최신성에 문제가 없다.
+const SGG_ROWS_CACHE_TTL_MS = 10 * 60 * 1000
+const sggRowsCache = new Map<string, { rows: GovRegionRow[]; expiresAt: number }>()
+
+async function fetchRowsBySggCached(sggNm: string): Promise<GovRegionRow[]> {
+  const cached = sggRowsCache.get(sggNm)
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.rows
+  }
+
+  const rows = await getRegionApiClient().fetchRowsBySgg(sggNm)
+  sggRowsCache.set(sggNm, { rows, expiresAt: Date.now() + SGG_ROWS_CACHE_TTL_MS })
+  return rows
+}
+
 function pickCategory(
   rows: GovRegionRow[],
   fields: { dow: keyof GovRegionRow; method: keyof GovRegionRow; begin: keyof GovRegionRow; end: keyof GovRegionRow },
@@ -154,7 +171,7 @@ export async function getZoneOptions(ctpvNm: string, sggNm: string): Promise<Zon
   }
 
   // SGG_NM만으로는 여러 시/도의 동명 구/군이 섞여 반환되므로 CTPV_NM으로 반드시 재필터링한다.
-  const allRows = await getRegionApiClient().fetchRowsBySgg(sggNm)
+  const allRows = await fetchRowsBySggCached(sggNm)
   const rows = allRows.filter((row) => row.CTPV_NM === ctpvNm)
 
   const zoneSet = new Set<string>()
@@ -192,7 +209,7 @@ export async function getRegionRule(ctpvNm: string, sggNm: string, dongNm: strin
     return cached
   }
 
-  const allRows = await getRegionApiClient().fetchRowsBySgg(sggNm)
+  const allRows = await fetchRowsBySggCached(sggNm)
   const matchingRows = allRows.filter(
     (row) => row.CTPV_NM === ctpvNm && parseZoneTokens(row.MNG_ZONE_TRGT_RGN_NM).includes(dongNm),
   )
