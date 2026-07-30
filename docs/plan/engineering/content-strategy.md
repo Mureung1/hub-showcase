@@ -50,28 +50,37 @@ MVP 콘텐츠는 아래 세 가지로 제한한다. 단, 기본 사용자 경험
 
 ## 3. 수집 방식
 
-콘텐츠 수집은 아래 순서로 진행한다.
+### 현재 MVP
 
-1. RSS/Atom이 있는 소스는 자동 수집한다.
-2. 공식 API가 있는 소스는 API로 자동 수집한다.
-3. RSS/API가 없지만 품질이 좋은 글은 관리자 화면에서 수동 등록한다.
-4. 크롤링은 제목/설명/썸네일 등 메타데이터 보강용으로만 사용한다.
-5. 원문 전문 저장을 위한 크롤링은 하지 않는다.
+1. 사전에 검수해 DB에 등록한 한국어 `primary` RSS/Atom 소스를 대상으로 한다.
+2. 운영자가 다중 source CLI를 수동 실행한다.
+3. RSS가 제공하는 제목, URL, 발행일, 저자, 공식 설명과 썸네일 URL 등 메타데이터만 수집한다.
+4. 원문 전문과 AI 요약은 저장하지 않는다.
+5. 현재 구현 계약은 [`content-pipeline.md`](content-pipeline.md)를 기준으로 한다.
+
+### 장기 전략 후보
+
+- 공식 API를 이용한 수집
+- 관리자 화면을 통한 수동 콘텐츠 등록
+- 제목·설명·썸네일 등 OG 메타데이터의 제한적 보강
+- 자동 scheduler와 영속 실행 이력·실패 알림
+
+위 항목은 현재 MVP 기능이 아니며, RSS 수집만으로 콘텐츠 운영이 부족하다는 근거가 확인된 뒤 별도로 설계한다. 원문 전문 저장을 위한 크롤링은 장기 전략에도 포함하지 않는다.
 
 ### 수집 가능한 데이터
 
 | 데이터 | 저장 여부 | 설명 |
 | --- | --- | --- |
-| 제목 | 저장 | RSS, OG, 원문 title |
+| 제목 | 저장 | 현재 MVP는 RSS/Atom title |
 | 제목 보조 번역 | 선택 저장 | 영어 원문일 때만 한국어 탐색 보조용으로 사용 |
 | URL | 저장 | canonical URL 기준 |
 | 출처 | 저장 | source_id로 연결 |
-| 발행일 | 저장 | RSS pubDate 또는 원문 메타데이터 |
+| 발행일 | 저장 | 현재 MVP는 RSS/Atom published 또는 updated |
 | 저자 | 가능하면 저장 | 없으면 null |
-| 공식 설명 | 저장 | RSS description, OG description, 원문 제공 소개문 |
+| 공식 설명 | 저장 | 현재 MVP는 source별로 허용한 RSS/Atom 공식 설명 필드 |
 | 공식 설명 보조 번역 | 선택 저장 | 원문 설명의 직역/의역 수준. 핵심 요약으로 확장하지 않음 |
 | 썸네일 URL | 저장 | 이미지 파일 자체가 아니라 URL 저장 |
-| 카테고리/태그 | 저장 | 소스 규칙, 키워드 규칙, 관리자 태깅 |
+| 카테고리/태그 | 저장 | 현재 MVP는 source 관심사를 상속하는 `source_rule` |
 | 읽기 시간 | 선택 저장 | 본문 전문을 저장하지 않으므로 정확값이 아니라 추정값으로 저장 |
 | URL 상태 | 저장 | active / broken / paywalled / removed |
 | 본문 전문 | 저장하지 않음 | 저작권/서비스 방향성 문제 |
@@ -81,10 +90,9 @@ MVP 콘텐츠는 아래 세 가지로 제한한다. 단, 기본 사용자 경험
 
 `reading_time_minutes`는 정확한 독서 시간이 아니라 추천 카드에서 사용자의 부담을 가늠하게 하는 추정값이다. 본문 전문을 저장하지 않는 원칙과 충돌하지 않도록 MVP에서는 아래 순서로 계산한다.
 
-1. RSS나 원문 메타데이터가 `reading_time`을 제공하면 그 값을 사용한다.
-2. 공식 설명, 제목, 카테고리만 있는 경우에는 소스별 기본값을 사용한다.
-3. 메타데이터 크롤링 단계에서 `article:section`, `description`, `word_count` 같은 비본문 메타데이터가 있으면 참고한다.
-4. 본문을 다운로드해서 글자 수를 세는 방식은 MVP에서 사용하지 않는다.
+1. 현재 검수된 source는 source별 기본값을 사용한다.
+2. 향후 RSS/Atom이 검증 가능한 읽기 시간 필드를 제공하는 source가 생기면 `source_meta` 사용을 별도로 연결한다.
+3. 본문을 다운로드해서 글자 수를 세는 방식은 MVP에서 사용하지 않는다.
 
 소스별 기본값 예시:
 
@@ -98,9 +106,9 @@ MVP 콘텐츠는 아래 세 가지로 제한한다. 단, 기본 사용자 경험
 
 정확한 시간이 불확실하면 카드에서 `약 5분`처럼 표시하고, `reading_time_source`를 `source_meta / source_default / manual` 중 하나로 저장한다.
 
-## 4. 크롤링 정책
+## 4. 장기 전략 후보: 제한적 크롤링 정책
 
-MVP에서 크롤링은 필수가 아니다. 다만 RSS가 제공하는 정보가 너무 부족한 경우, 메타데이터 보강 목적으로 제한적으로 사용할 수 있다.
+현재 MVP는 크롤링하지 않는다. RSS가 제공하는 정보가 부족해 카드 품질 문제가 확인된 경우에만 메타데이터 보강 수단으로 별도 검토한다.
 
 허용 범위:
 
@@ -158,7 +166,7 @@ articles
   -- active / broken / paywalled / removed
 ```
 
-MVP 기본 추천에는 `access_type = free` 또는 `partial_free`만 사용한다. `paywalled`와 `unknown`은 관리자 확인 전까지 노출하지 않는다.
+MVP 자동 추천에는 `access_type = free`만 사용한다. `partial_free`는 자동 추천하지 않고 운영자가 무료 범위를 확인한 수동 큐레이션 후보로만 다룬다. `paywalled`와 `unknown`은 노출하지 않는다.
 
 ## 5. 저장 구조
 
@@ -254,32 +262,26 @@ articles
 
 `quality_score`는 글의 사상이나 결론이 옳다는 점수가 아니다. 1인 개발자가 매일 개별 글을 평가할 수 없으므로, MVP에서는 출처 신뢰도와 접근성 중심의 기계적 점수로만 사용한다.
 
-기본 계산:
+현재 MVP 계산:
 
 ```text
 quality_score =
 source_quality_score
-+ access_bonus
++ 0.10  # free access
 + metadata_bonus
-- paywall_penalty
-- broken_link_penalty
-- clickbait_penalty
-- risk_topic_penalty
 ```
 
-점수 기준:
+현재 점수와 선필터 기준:
 
 | 항목 | 기준 | 점수 |
 | --- | --- | ---: |
 | source_quality_score | `trust_level = high` | 0.80 |
 | source_quality_score | `trust_level = medium` | 0.60 |
 | source_quality_score | `trust_level = low` | 자동 추천 제외 |
-| access_bonus | `access_type = free` | +0.10 |
+| free access bonus | `access_type = free` | +0.10 |
 | metadata_bonus | 공식 설명/발행일/저자 중 2개 이상 있음 | +0.05 |
-| paywall_penalty | `access_type = partial_free` | -0.20 |
-| broken_link_penalty | `url_status != active` | 자동 추천 제외 |
-| clickbait_penalty | 낚시성 제목 키워드 감지 | -0.20 |
-| risk_topic_penalty | 정치/사회/고위험 주제 자동 수집 | -0.30 또는 제외 |
+| source eligibility | active, RSS, 한국어, primary, low paywall risk | 하나라도 아니면 수집 대상 제외 |
+| access eligibility | `access_type = free` | 아니면 저장·자동 추천 제외 |
 
 MVP 자동 추천 기준:
 
@@ -290,7 +292,7 @@ and url_status = 'active'
 and source.trust_level in ('high', 'medium')
 ```
 
-`partial_free`는 자동 추천하지 않는다. 사용자가 원문을 열었을 때 무료로 읽을 수 있는 범위가 충분하다고 확인된 경우에만 수동 큐레이션으로 노출한다. 수동 큐레이션 글은 `quality_score`를 직접 보정할 수 있지만, 보정 사유를 `metadata.manual_reason`에 남긴다.
+클릭베이트·고위험 주제 감점과 운영자의 점수 수동 보정은 현재 수집 파이프라인에 없다. 필요성이 확인되면 별도 규칙과 감사 계약을 설계한다.
 
 ### content_interest_tags
 
@@ -306,9 +308,9 @@ content_interest_tags
 - primary key (content_id, interest_id)
 ```
 
-### article_assignments
+### 장기 전략 후보: article_assignments
 
-사용자에게 어떤 콘텐츠가 언제 노출되었는지 저장한다.
+날짜별 추천 고정이나 노출 이력이 실제로 필요해질 경우 사용자에게 어떤 콘텐츠가 언제 노출되었는지 저장하는 테이블을 검토할 수 있다. 현재 MVP는 완료한 사고 기록만으로 반복 추천을 제외하므로 `article_assignments`를 만들지 않는다.
 
 ```sql
 article_assignments
@@ -329,17 +331,16 @@ article_assignments
 - created_at timestamptz default now()
 ```
 
-이 테이블은 단순 추천 이력이 아니라, 나중에 같은 글을 아카이브에서 다시 꺼내 다른 미션을 수행하게 하는 기반이 된다.
+이 구조는 확정된 현재 스키마가 아니며 후속 설계 예시다.
 
 ### mission_records
 
-사용자의 사고 기록을 저장한다.
+사용자의 완료된 사고 기록을 저장한다. 현재 확정 스키마는 [`db-schema.md`](db-schema.md)의 `mission_records`를 기준으로 하며 `article_assignment_id`를 사용하지 않는다.
 
 ```sql
 mission_records
 - id uuid primary key
 - user_id uuid references auth.users(id)
-- article_assignment_id uuid references article_assignments(id)
 - article_id uuid references articles(id)
 - mission_type text not null
   -- question / rebuttal / connection / expression
@@ -351,15 +352,15 @@ mission_records
 - created_at timestamptz default now()
 ```
 
-### reading_events
+### 장기 전략 후보: reading_events
 
-원문을 실제로 읽었는지 완벽히 증명할 수는 없지만, 최소한의 행동 신호를 저장해 데이터 해석에 사용한다.
+원문을 실제로 읽었는지 완벽히 증명할 수는 없지만, 후속 측정 설계에서 최소한의 행동 신호가 필요해질 경우 별도 이벤트 테이블을 검토할 수 있다. 현재 MVP에는 `reading_events` 테이블이 없다.
 
 ```sql
 reading_events
 - id uuid primary key
 - user_id uuid references auth.users(id)
-- article_assignment_id uuid references article_assignments(id)
+- article_id uuid references articles(id)
 - event_type text not null
   -- card_viewed / original_opened / returned / mission_started / mission_submitted
 - occurred_at timestamptz default now()
@@ -387,7 +388,7 @@ reading_events
 
 ### 20개 관심사 소스 seed 초안
 
-아래 목록은 MVP 콜드스타트를 막기 위한 1차 seed다. 실제 등록 전에는 RSS/API 제공 여부, 접근성, 유료 여부를 확인한다. 자동 추천은 `primary` 소스만 사용하고, `optional`은 사용자 설정이 켜진 경우 또는 콘텐츠가 부족한 경우에만 사용한다.
+아래 목록은 장기적인 소스 확장 후보이며 현재 등록된 source 목록이 아니다. 실제 등록 전에는 RSS/Atom 제공 여부, 접근성, 유료 여부와 fixture를 source별로 검증한다. 현재 자동 추천은 검증 후 등록된 한국어 `primary` RSS/Atom source만 사용한다.
 
 | 관심사 | MVP 상태 | primary 후보 | optional/advanced 후보 | 비고 |
 | --- | --- | --- | --- | --- |
@@ -456,7 +457,6 @@ interests
 공식 소개문 일부
 왜 추천됐는지
 원문 보기
-오늘의 미션 시작
 ```
 
 예시:
@@ -471,11 +471,7 @@ Toss Tech
 왜 추천됐나요?
 개발 관심사에 맞고, 최근 뉴스 중심으로 읽어서 오늘은 실무 기술 블로그 관점의 글을 골랐어요.
 
-읽기 전 질문:
-이 글에서 제시한 문제 해결 방식은 다른 서비스에도 적용될 수 있을까요?
-
 원문 보기
-오늘의 미션 시작
 ```
 
 영어 원문 카드의 경우:
@@ -493,26 +489,21 @@ OpenAI News
 왜 추천됐나요?
 AI 관심사에 맞고, 글로벌 원출처 관점을 볼 수 있는 글이에요.
 
-읽기 전 질문:
-이 글은 기술 자체보다 어떤 사용 방식을 강조하고 있나요?
-
 원문 보기
-오늘의 미션 시작
 ```
+
+미션 질문은 사용자가 원문을 열고 돌아온 뒤 미션 화면에서 제시한다.
 
 ## 8. 미션 연결 방식
 
-콘텐츠 전문을 앱 안에 저장하지 않기 때문에 모든 콘텐츠를 하이라이트 기반으로 처리하면 안 된다.
+현재 MVP의 미션은 콘텐츠 유형과 관계없이 글 전체를 대상으로 한다. 앱은 콘텐츠 전문을 저장·표시하지 않으며, 사용자는 외부 원문을 읽고 돌아와 미션을 수행한다.
 
-콘텐츠 타입별 미션 앵커는 아래처럼 나눈다.
+```text
+anchor_type = whole_content
+selected_quote = null
+```
 
-| 콘텐츠 타입 | 기본 미션 앵커 | 보조 앵커 |
-| --- | --- | --- |
-| 뉴스 | 전체 콘텐츠 | 사용자가 기억나는 문장 입력 |
-| 공식 블로그 | 전체 콘텐츠 | 사용자가 인상 깊은 문장 입력 |
-| 전문 아티클 | 전체 콘텐츠 | 사용자가 인상 깊은 문장 입력 |
-| 영상 | 전체 콘텐츠 | 타임스탬프, 장면 메모 |
-| 앱 내부에 표시 가능한 짧은 글 | 하이라이트 | 전체 콘텐츠 |
+앱 내 하이라이트, 기억나는 문장 입력, 발췌문 선택과 영상 타임스탬프 입력은 현재 MVP에서 사용하지 않는다. DB enum은 `highlight`, `user_quote`, `timestamp`를 저장할 수 있지만 현재 API는 이 값을 요청에서 받지 않고 `whole_content`로 고정한다.
 
 MVP의 기본 흐름:
 
@@ -520,15 +511,21 @@ MVP의 기본 흐름:
 1. 콘텐츠 카드 확인
 2. 원문 링크로 이동
 3. 원문을 읽거나 본 뒤 앱으로 돌아옴
-4. 가장 걸렸던 문장/생각을 선택적으로 입력
-5. 앱이 미션 1개를 추천
-6. 사용자가 한 줄 이상 사고 기록 작성
-7. mission_records에 저장
+4. 앱이 미션 1개를 추천
+5. 사용자가 추천 미션을 수행하거나 다른 유형으로 변경
+6. 사용자가 사고 기록 작성
+7. 완료된 답변을 mission_records에 저장
 ```
+
+### 장기 전략 후보
+
+사용자 검증에서 글 전체 미션만으로 사고의 초점을 잡기 어렵다는 문제가 확인되면 하이라이트, 사용자 문장, 영상 타임스탬프를 별도 기능으로 검토한다. 원문 전문 저장과 재노출 금지 원칙은 이 경우에도 유지한다.
 
 ## 9. 미션 추천 규칙
 
 사용자가 네 가지 미션 중 직접 고르게 하면 결정 피로가 생긴다. 따라서 앱이 기본 미션 1개를 추천하고, 사용자는 필요할 때만 바꿀 수 있게 한다.
+
+현재 MVP는 서버가 관리하는 네 가지 고정 프롬프트 중 기본 미션 하나를 제공한다. 콘텐츠 분류나 사용자 수행 이력을 이용한 미션 개인화는 하지 않는다.
 
 ### 기본 미션 유형
 
@@ -539,7 +536,7 @@ MVP의 기본 흐름:
 | 연결 | 내 상황과 연결함 | 이 내용이 내 공부, 프로젝트, 생활과 어떻게 연결되는가? |
 | 표현 | 내 입장을 정리함 | 이 글을 보고 난 내 입장을 3줄로 정리하면? |
 
-### 콘텐츠 성격별 추천
+### 장기 전략 후보: 콘텐츠 성격별 추천
 
 | 조건 | 추천 미션 |
 | --- | --- |
@@ -659,7 +656,9 @@ MVP 운영 원칙:
 
 깸에서 AI는 사용자의 사고를 대신하지 않는다. AI는 콘텐츠를 읽을 관점을 잡아주는 진행자 역할만 한다.
 
-### 허용
+현재 MVP 수집·추천·미션 흐름은 AI 생성, AI 태깅과 AI 번역을 실행하지 않는다. 아래 목록은 후속 도입을 검토할 때의 허용 경계다.
+
+### 후속 도입 시 허용
 
 - 관심사 태깅 보조
 - 난이도 태깅 보조
@@ -721,16 +720,19 @@ MVP에서는 매일 개별 콘텐츠를 검수하는 운영을 전제로 두지 
 4. `optional`은 사용자가 영어 원문 허용 또는 심화 읽기를 켠 경우에만 기본 추천 후보에 넣는다.
 5. `advanced`는 MVP 기본 추천에서는 제외하고 운영자 큐레이션 또는 후속 기능에서만 사용한다.
 
-### 2단계: 매일 수집
+### 2단계: 수동 다중 source 수집
 
 ```text
-매일 1~2회 RSS/API 수집
+운영자가 collect_sources --dry-run 실행
+대상 source 수와 실패 여부 확인
+필요할 때 collect_sources --save 실행
 중복 URL 제거
 출처/관심사 태깅
 접근성 확인
-유료/깨진 링크 제외
-금칙어/고위험 주제 1차 필터링
+유료 신호와 부적격 source 제외
 ```
+
+자동 실행 주기, scheduler, 실행 이력과 실패 알림은 현재 운영 결과를 확인한 뒤 결정하는 장기 전략 후보이다.
 
 ### 3단계: 오늘의 콘텐츠 선정
 
@@ -752,38 +754,25 @@ source_type 균형 확인
 미션 1개 추천
 사용자 답변 작성
 mission_records 저장
-article_assignments 완료 처리
 ```
 
 ## 14. 완료 판정과 데이터 신뢰도
 
-원문 링크로 나간 사용자가 실제로 글을 읽었는지 앱이 완벽히 증명할 수는 없다. 따라서 MVP에서는 `읽음`을 강하게 주장하지 않고, `원문 열람 시도`, `미션 시작`, `사고 기록 제출`을 분리해서 저장한다.
-
-완료 상태는 아래처럼 나눈다.
-
-| 상태 | 조건 | 의미 |
-| --- | --- | --- |
-| assigned | 콘텐츠가 추천됨 | 아직 행동 없음 |
-| opened | 원문 링크를 열었음 | 읽었다고 단정하지 않음 |
-| engaged | 원문 열기 후 일정 시간 경과 또는 앱 복귀 후 미션 시작 | 최소 참여 신호 |
-| completed | 한 줄 이상 사고 기록 제출 | 미션 완료 |
+원문 링크로 나간 사용자가 실제로 글을 읽었는지 앱이 완벽히 증명할 수는 없다. 현재 MVP는 원문 열람 시도, 앱 복귀와 체류 시간을 측정하지 않으며 완료된 사고 기록만 저장한다.
 
 MVP 완료 기준:
 
 ```text
-completed_at은 사용자가 미션 답변을 제출했을 때만 기록한다.
-단, 리포트에서는 completed를 "읽음"이 아니라 "생각 기록 완료"로 표현한다.
+빈 답변과 명시적인 무성의 답변은 저장하지 않는다.
+유효한 미션 답변이 mission_records에 생성되면 "생각 기록 완료"다.
+"읽음 완료"나 "최소 참여 시간 충족"으로 해석하지 않는다.
 ```
 
-권장 최소 신호:
+`opened_original_at`, `returned_from_original_at`, `minimum_engagement_met`는 현재 MVP에서 채우지 않고 DB 기본값 `null`, `null`, `false`로 둔다.
 
-```text
-original_opened 이벤트 있음
-그리고 original_opened 이후 30초 이상 경과
-그리고 mission_submitted 이벤트 있음
-```
+### 장기 전략 후보: 읽기 참여 측정
 
-30초 기준을 만족하지 않아도 답변 제출은 허용한다. 다만 `minimum_engagement_met = false`로 저장해서 나중에 데이터 분석에서 구분한다. 사용자를 감시하는 구조가 아니라, 서비스 지표를 과신하지 않기 위한 장치다.
+사고 기록 제출만으로 가설을 검증하기 부족하다는 근거가 확인되면 원문 열람과 앱 복귀 같은 최소 행동 신호를 별도로 설계할 수 있다. 측정을 도입하더라도 단순 체류 시간을 실제 독서 완료로 간주하지 않는다.
 
 ## 15. 깨진 링크와 삭제된 원문 처리
 
@@ -820,8 +809,8 @@ original_opened 이벤트 있음
 - 저장된 제목
 - 출처
 - 발행일
+- 당시 사용자에게 제시된 미션 질문
 - 당시 사용자가 남긴 미션 답변
-- 사용자가 직접 입력한 인상 깊은 문장
 
 보여주지 않을 것:
 
@@ -859,14 +848,14 @@ MVP에서 바로 하지 않아도 되는 것:
 3. 기본 추천 풀은 한국어 원문 중심으로 구성한다.
 4. 영어 원문은 optional/advanced로 분리하고 기본 추천 비율을 10~20% 이내로 제한한다.
 5. 콘텐츠 전문은 저장하지 않는다.
-6. RSS/API/수동 등록을 기본 수집 방식으로 한다.
-7. 크롤링은 메타데이터 보강용으로만 제한한다.
+6. 현재 MVP는 검수된 RSS/Atom 소스를 수동 다중 source CLI로 수집한다.
+7. 공식 API, 관리자 수동 등록과 제한적 메타데이터 크롤링은 장기 전략 후보로 둔다.
 8. 사용자에게 AI 요약을 먼저 보여주지 않는다.
 9. 영어 원문에는 제목/공식 설명의 보조 번역만 제공하고, 원문 대체 요약은 제공하지 않는다.
 10. 보조 번역은 AI 자동번역을 허용하되 `보조 번역`으로 표시하고 원문에 없는 해석을 추가하지 않는다.
 11. 20개 관심사 모두 최소 seed 후보를 갖되, 시사이슈/사회문제는 `curated_only`로 둔다.
-12. 공식 설명, 원문 링크, 읽기 전 질문을 제공한다.
-13. 미션은 앱이 1개 추천하고 사용자는 필요할 때만 변경한다.
+12. 공식 설명과 원문 링크를 제공하고, 원문을 읽고 돌아온 뒤 글 전체 대상 미션을 제시한다.
+13. 현재 MVP는 서버가 고정 미션 1개를 추천하고 사용자는 필요할 때 네 가지 유형 안에서 변경한다.
 14. `reading_time_minutes`는 본문 크롤링 없이 소스 메타데이터 또는 소스별 기본값으로 추정한다.
 15. `quality_score`는 출처 신뢰도, 무료 접근성, 메타데이터 품질, 링크 상태, 고위험 주제 여부로 기계적으로 계산한다.
 16. 썸네일은 URL만 저장하고, 실패 시 기본 플레이스홀더를 보여준다.
@@ -874,6 +863,7 @@ MVP에서 바로 하지 않아도 되는 것:
 18. 관심사 기반 추천을 하되 source_type, perspective_type 균형을 기본으로 보고, stance 균형은 태깅된 논쟁 주제에 한해 적용한다.
 19. 완료는 `읽음`이 아니라 `생각 기록 완료`로 해석한다.
 20. 깨진 링크나 삭제 원문은 원문을 복원하지 않고, 사용자의 사고 기록만 유지한다.
-21. article_assignments와 mission_records를 통해 노출 이력과 사고 기록을 분리 저장한다.
+21. 노출 이력과 사고 기록을 분리하는 방향은 유지하되, 현재 MVP는 완료된 사고 기록을 `mission_records`에 저장하고 별도의 날짜별 배정은 사용하지 않는다.
+22. 하이라이트·사용자 문장 입력과 읽기 참여 측정은 현재 MVP에서 사용하지 않으며 필요성이 확인되면 후속으로 검토한다.
 
 이 구조를 따르면 깸은 콘텐츠 추천 서비스가 아니라, 콘텐츠를 매개로 사용자의 사고 흔적을 남기는 서비스라는 정체성을 유지할 수 있다.

@@ -15,6 +15,7 @@
 - 추적 parameter만 보수적으로 제거한다.
 - 기존 `canonical_url`은 article, metadata, tag를 갱신하지 않고 완전히 건너뛴다.
 - article과 관심사 tag는 item 단위 RPC 한 건으로 원자적으로 저장한다.
+- 운영자는 DB에서 수집 대상 source를 조회해 ID 오름차순으로 실행하는 다중 source CLI를 수동 실행한다.
 
 ### 이번 범위에서 제외
 
@@ -25,53 +26,64 @@
 - 기존 article 갱신과 깨진 링크 재검사
 - 자동 scheduler와 영속 batch run 테이블
 
-스케줄러는 수동 실행과 저장 안정성을 검증한 뒤 연결한다. 파이프라인 코어는 CLI와 이후 scheduler가 같은 진입점을 사용한다.
+스케줄러 도입 여부는 수동 다중 source 실행의 운영 결과를 확인한 뒤 별도로 결정한다. 현재 파이프라인 코어는 단일 source 실행과 다중 source CLI가 같은 `service.run()` 진입점을 사용한다.
 
 ## 2. 전체 흐름
 
 ```text
-source_id + mode(dry_run | save)
-  → source/source_interests 조회와 실행 조건 검증
-  → feed GET
-  → feedparser로 RSS/Atom 전체 파싱
-  → bozo·필수 구조 검사
-  → item 필드 매핑·sanitize
-  → canonical URL 정규화
-  → 필수값·접근성·추천 가능성 검증
-  → feed 내부 중복 제거
-  → DB 기존 URL 조회
-  → 안정적인 CollectionPlan 생성
-  → dry_run: 계획만 출력
-  → save: 신규 item마다 ingest_rss_article RPC
-  → 실행 요약과 exit code
+mode(dry_run | save)
+  → DB에서 수집 대상 source ID를 오름차순으로 조회
+  → source별로 아래 단일 source 파이프라인을 순차 실행
+      → source/source_interests 조회와 실행 조건 검증
+      → feed GET
+      → feedparser로 RSS/Atom 전체 파싱
+      → bozo·필수 구조 검사
+      → item 필드 매핑·sanitize
+      → canonical URL 정규화
+      → 필수값·접근성·추천 가능성 검증
+      → feed 내부 중복 제거
+      → DB 기존 URL 조회
+      → 안정적인 CollectionPlan 생성
+      → dry_run: 계획만 출력
+      → save: 신규 item마다 ingest_rss_article RPC
+  → source별 결과를 BatchCollectionResult로 집계
+  → 전체 실행 요약과 exit code
 ```
 
 - source 조회, fetch, feed parse 중 하나라도 실패하면 해당 실행은 저장을 시작하지 않는다.
 - item 변환 실패는 `rejected`, 기존 URL은 `duplicate`, RPC 실패는 `failed`로 구분한다.
 - item RPC 하나가 실패해도 다음 item은 처리한다.
 - dry-run과 save는 저장 단계 전까지 완전히 같은 코드를 사용한다.
-- source 하나가 한 실행의 fetch·parse·저장 격리 단위다. 여러 source는 같은 명령에서 병렬 처리하지 않고 source별 명령을 순차 실행한다.
+- source 하나가 fetch·parse·저장 격리 단위다. 여러 source는 같은 명령에서 병렬 처리하지 않고 ID 오름차순으로 순차 실행한다.
+- 한 source가 `PipelineError`로 실패해도 실패 정보를 기록하고 다음 source를 계속 실행한다.
 
 ## 3. 실행 인터페이스
 
 ```bash
 cd backend
+
+# 운영용 다중 source 실행
+uv run python -m app.jobs.collect_sources --dry-run
+uv run python -m app.jobs.collect_sources --save
+
+# 특정 source 진단용 단일 실행
 uv run python -m app.jobs.collect_feed --source-id <uuid> --dry-run
 uv run python -m app.jobs.collect_feed --source-id <uuid> --save
 ```
 
 - 기본 mode는 `--dry-run`이다.
 - 두 mode를 동시에 지정할 수 없다.
-- MVP는 한 번에 source 1개만 실행한다. 여러 source 등록과 수집을 지원하되, 각 source를 먼저 독립적으로 검증하고 순차 실행하여 실패 범위와 로그를 source 단위로 고정한다.
-- `--all`, 병렬 실행, scheduler orchestration은 MVP 이후다. 운영자가 실행할 source 순서는 별도로 정하며, 같은 canonical URL을 여러 source가 제공하면 먼저 저장된 source가 소유하고 이후 실행은 기존 URL로 완전히 건너뛴다.
+- 운영용 `collect_sources`는 실행 조건을 만족하는 source ID를 DB에서 조회해 오름차순으로 실행한다. `--source-id`를 받지 않는다.
+- `collect_feed`는 신규 source 검증이나 특정 source 장애 진단에 사용한다.
+- 병렬 실행과 scheduler orchestration은 MVP 이후다. 같은 canonical URL을 여러 source가 제공하면 ID 순으로 먼저 실행돼 저장된 source가 소유하고 이후 source는 기존 URL로 완전히 건너뛴다.
 
-| exit code | 상태 | 조건 |
+| exit code | 전체 상태 | 조건 |
 | ---: | --- | --- |
-| `0` | `success` | feed 성공, RPC 실패 0. duplicate와 일부 rejected는 허용 |
-| `1` | `partial_failure` | parse 성공 후 item RPC가 1건 이상 실패 |
-| `2` | `failure` | source/fetch/parse 실패, feed item 0건, 또는 모든 item rejected |
+| `0` | `success` | 모든 대상 source가 성공하고 item RPC 실패가 없음. duplicate와 일부 rejected는 허용 |
+| `1` | `partial_failure` | 일부 source의 파이프라인 또는 item 저장이 실패했지만 성공한 source가 하나 이상 있음 |
+| `2` | `failure` | 대상 source가 모두 실패 |
 
-모든 item이 기존 URL이라 `inserted=0`, `duplicate>0`인 실행은 정상이다.
+모든 item이 기존 URL이라 `inserted=0`, `duplicate>0`인 source 실행은 정상이다. 수집 대상 source가 0개면 CLI는 `success`로 끝나지만 실제 수집 경계를 검증한 것으로 보지 않는다.
 
 ## 4. Source 계약
 
@@ -462,6 +474,7 @@ ALL_ITEMS_REJECTED
 
 ```text
 backend/app/content/
+  batch_service.py
   models.py
   fetcher.py
   parser.py
@@ -475,24 +488,26 @@ backend/app/content/
 
 backend/app/jobs/
   collect_feed.py
+  collect_sources.py
 
 supabase/migrations/
-  <cli-generated>_add_rss_source_config.sql
-  <cli-generated>_create_ingest_rss_article.sql
+  20260715090747_add_rss_source_config.sql
+  20260715090748_create_ingest_rss_article.sql
+  20260724043752_add_source_feed_timezone.sql
 ```
 
-하드코딩 profile 파일은 없다. `repository.py`가 source 행을 읽고 `models.py`의 런타임 `SourceConfig`로 변환한다. parser와 변환 로직은 Supabase client를 모르며 DB 접근은 repository에만 둔다.
+하드코딩 profile 파일은 없다. `repository.py`가 수집 대상 source ID와 source 행을 읽고, `models.py`의 런타임 `SourceConfig`로 변환한다. `batch_service.py`는 조회된 source를 순서대로 `service.run()`에 전달하고 결과만 집계한다. parser와 변환 로직은 Supabase client를 모르며 DB 접근은 repository에만 둔다.
 
 ## 17. 부분 실패 계약
 
-| 실패 지점 | 저장 | 처리 | 최종 상태 |
+| 실패 지점 | 저장 | source 내부 처리 | 다중 source 처리 |
 | --- | --- | --- | --- |
-| source 검증 | 0건 | 중단 | failure |
-| fetch/parse | 0건 | 중단 | failure |
-| item 검증/access/quality | 해당 item 0건 | 다음 item | success 가능 |
-| item RPC | 해당 item rollback | 다음 item | partial_failure |
-| DB duplicate | 0건 | 다음 item | success |
-| 전 item rejected | 0건 | 종료 | failure |
+| source 검증 | 0건 | 해당 source 중단 | 실패 기록 후 다음 source |
+| fetch/parse | 0건 | 해당 source 중단 | 실패 기록 후 다음 source |
+| item 검증/access/quality | 해당 item 0건 | 다음 item | 해당 source는 success 가능 |
+| item RPC | 해당 item rollback | 다음 item | 해당 source를 실패로 집계 |
+| DB duplicate | 0건 | 다음 item | 해당 source는 success |
+| 전 item rejected | 0건 | 해당 source 중단 | 실패 기록 후 다음 source |
 
 parse 완료 전에는 저장하지 않는다.
 
@@ -501,13 +516,16 @@ parse 완료 전에는 저장하지 않는다.
 ### 정상 경로
 
 - [ ] 시작할 모든 한국어 primary source가 각자의 RSS/Atom fixture와 실제 feed에서 독립적으로 파싱된다.
-- [ ] source별 `--dry-run` 후 같은 순서로 source별 `--save`를 실행할 수 있다.
+- [ ] `collect_sources --dry-run`과 `collect_sources --save`가 수집 대상 source를 ID 오름차순으로 실행한다.
+- [ ] 특정 source는 `collect_feed --source-id ...`로 독립 검증할 수 있다.
+- [ ] 한 source가 실패해도 다음 source가 실행되고 전체 결과에 실패 source와 원인이 표시된다.
 - [ ] 최소 1개 item이 article 1개와 tag 1개 이상으로 저장된다.
 - [ ] 저장 article은 free, active, quality score 0.65 이상이며 추천 후보가 된다.
 - [ ] 동일 DB 상태의 dry-run 두 번 결과가 동일하다.
 - [ ] 실제 저장 후 같은 feed dry-run의 planned new가 0이다.
 - [ ] 정규화 전후 URL과 모든 제외/실패 사유가 출력된다.
-- [ ] dry-run에 발행일 결측 건수·비율, 관심사별 태깅 건수, 미태깅 건수, tagging method 분포가 출력된다.
+- [ ] 단일 source `collect_feed --dry-run`에 발행일 결측 건수·비율, 관심사별 태깅 건수, 미태깅 건수, tagging method 분포가 출력된다.
+- [ ] 다중 source `collect_sources --dry-run`에 전체 source 수, 성공·실패 source 수, item 상태 집계와 실패 source·item 정보가 출력된다.
 
 ### 실패해야 정상
 
@@ -525,7 +543,8 @@ parse 완료 전에는 저장하지 않는다.
 - [ ] 서로 다른 source가 같은 URL을 제공해도 먼저 저장된 article과 tag는 갱신되지 않는다.
 - [ ] anon/authenticated는 RPC를 실행할 수 없다.
 - [ ] dry-run 전후 articles와 tags 행 수가 같다.
-- [ ] RPC 일부 실패 시 다른 item은 저장되지만 exit code는 1이다.
+- [ ] 일부 source 또는 item 저장 실패 시 다른 source와 item은 계속 처리되고 전체 exit code는 1이다.
+- [ ] 모든 대상 source가 `PipelineError`로 실패하면 전체 exit code는 2다.
 - [ ] `published_at=null` item은 저장 가능하고 dry-run null 건수·비율에 포함되며, 추천 함수의 recency score는 `0.1`이다.
 - [ ] fresh local DB에서 기존 schema migration과 세 pipeline migration이 순서대로 재생된다.
 - [ ] 원격 dry-run 적용 결과를 확인하기 전에는 `db push`하지 않는다.
@@ -551,19 +570,19 @@ parse 완료 전에는 저장하지 않는다.
 
 ## 20. 첫 실행 순서
 
-1. 시작할 source와 source별 수집 설정·관심사·실행 순서를 확정한다.
+1. 시작할 source와 source별 수집 설정·관심사를 확정한다.
 2. 각 source를 `--source-id ... --dry-run`으로 개별 검증한다.
-3. 같은 순서로 각 source를 `--save`하고 즉시 같은 source를 다시 dry-run해 `planned_new=0`을 확인한다.
-4. 전체 source가 통과한 뒤에만 수동 운영 절차에 묶는다.
+3. `collect_sources --dry-run`을 실행해 대상 source 수, 실행 순서와 전체 상태를 확인한다.
+4. `collect_sources --save`를 실행하고 즉시 전체 dry-run을 다시 실행해 모든 source의 `planned_new=0`을 확인한다.
 
 ## 21. 여전히 사람이 결정해야 하는 항목
 
-### 시작 source와 최초 실행 순서
+### 시작 source와 중복 소유 우선순위
 
-실제 source 이름, feed URL, interests, 세 수집 설정 값은 feed fixture를 보고 사람이 정해야 한다. 여러 source가 같은 canonical URL을 제공하면 기존 URL 완전 skip 규칙 때문에 최초 저장 순서가 소유 source와 tag를 결정한다.
+실제 source 이름, feed URL, interests와 수집 설정 값은 feed fixture를 보고 사람이 정해야 한다. 여러 source가 같은 canonical URL을 제공하면 기존 URL 완전 skip 규칙 때문에 먼저 실행된 source가 article과 tag를 소유한다.
 
-- **MVP 권고:** 검수된 source별 순서를 명시하고 한 번에 하나씩 순차 실행한다. 구현이 단순하고 실패가 격리되지만, 먼저 실행한 source가 중복 글의 소유자가 된다.
-- **후속 선택지:** `sources.collection_priority`와 multi-source runner를 추가한다. 자동 실행 순서는 명확해지지만 새 도메인 값, batch 부분 실패, 동시성 계약이 필요해 MVP 범위를 늘린다.
+- **현재 MVP:** `collect_sources`가 source ID 오름차순으로 실행한다. 별도의 운영 우선순위 컬럼은 없다.
+- **후속 후보:** 중복 소유 순서를 ID가 아닌 운영 우선순위로 제어해야 할 필요가 확인되면 `sources.collection_priority`를 검토한다.
 
 ## 22. 후속 단계
 
