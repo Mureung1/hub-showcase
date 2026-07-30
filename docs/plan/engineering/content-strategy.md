@@ -50,28 +50,37 @@ MVP 콘텐츠는 아래 세 가지로 제한한다. 단, 기본 사용자 경험
 
 ## 3. 수집 방식
 
-콘텐츠 수집은 아래 순서로 진행한다.
+### 현재 MVP
 
-1. RSS/Atom이 있는 소스는 자동 수집한다.
-2. 공식 API가 있는 소스는 API로 자동 수집한다.
-3. RSS/API가 없지만 품질이 좋은 글은 관리자 화면에서 수동 등록한다.
-4. 크롤링은 제목/설명/썸네일 등 메타데이터 보강용으로만 사용한다.
-5. 원문 전문 저장을 위한 크롤링은 하지 않는다.
+1. 사전에 검수해 DB에 등록한 한국어 `primary` RSS/Atom 소스를 대상으로 한다.
+2. 운영자가 다중 source CLI를 수동 실행한다.
+3. RSS가 제공하는 제목, URL, 발행일, 저자, 공식 설명과 썸네일 URL 등 메타데이터만 수집한다.
+4. 원문 전문과 AI 요약은 저장하지 않는다.
+5. 현재 구현 계약은 [`content-pipeline.md`](content-pipeline.md)를 기준으로 한다.
+
+### 장기 전략 후보
+
+- 공식 API를 이용한 수집
+- 관리자 화면을 통한 수동 콘텐츠 등록
+- 제목·설명·썸네일 등 OG 메타데이터의 제한적 보강
+- 자동 scheduler와 영속 실행 이력·실패 알림
+
+위 항목은 현재 MVP 기능이 아니며, RSS 수집만으로 콘텐츠 운영이 부족하다는 근거가 확인된 뒤 별도로 설계한다. 원문 전문 저장을 위한 크롤링은 장기 전략에도 포함하지 않는다.
 
 ### 수집 가능한 데이터
 
 | 데이터 | 저장 여부 | 설명 |
 | --- | --- | --- |
-| 제목 | 저장 | RSS, OG, 원문 title |
+| 제목 | 저장 | 현재 MVP는 RSS/Atom title |
 | 제목 보조 번역 | 선택 저장 | 영어 원문일 때만 한국어 탐색 보조용으로 사용 |
 | URL | 저장 | canonical URL 기준 |
 | 출처 | 저장 | source_id로 연결 |
-| 발행일 | 저장 | RSS pubDate 또는 원문 메타데이터 |
+| 발행일 | 저장 | 현재 MVP는 RSS/Atom published 또는 updated |
 | 저자 | 가능하면 저장 | 없으면 null |
-| 공식 설명 | 저장 | RSS description, OG description, 원문 제공 소개문 |
+| 공식 설명 | 저장 | 현재 MVP는 source별로 허용한 RSS/Atom 공식 설명 필드 |
 | 공식 설명 보조 번역 | 선택 저장 | 원문 설명의 직역/의역 수준. 핵심 요약으로 확장하지 않음 |
 | 썸네일 URL | 저장 | 이미지 파일 자체가 아니라 URL 저장 |
-| 카테고리/태그 | 저장 | 소스 규칙, 키워드 규칙, 관리자 태깅 |
+| 카테고리/태그 | 저장 | 현재 MVP는 source 관심사를 상속하는 `source_rule` |
 | 읽기 시간 | 선택 저장 | 본문 전문을 저장하지 않으므로 정확값이 아니라 추정값으로 저장 |
 | URL 상태 | 저장 | active / broken / paywalled / removed |
 | 본문 전문 | 저장하지 않음 | 저작권/서비스 방향성 문제 |
@@ -81,10 +90,9 @@ MVP 콘텐츠는 아래 세 가지로 제한한다. 단, 기본 사용자 경험
 
 `reading_time_minutes`는 정확한 독서 시간이 아니라 추천 카드에서 사용자의 부담을 가늠하게 하는 추정값이다. 본문 전문을 저장하지 않는 원칙과 충돌하지 않도록 MVP에서는 아래 순서로 계산한다.
 
-1. RSS나 원문 메타데이터가 `reading_time`을 제공하면 그 값을 사용한다.
-2. 공식 설명, 제목, 카테고리만 있는 경우에는 소스별 기본값을 사용한다.
-3. 메타데이터 크롤링 단계에서 `article:section`, `description`, `word_count` 같은 비본문 메타데이터가 있으면 참고한다.
-4. 본문을 다운로드해서 글자 수를 세는 방식은 MVP에서 사용하지 않는다.
+1. 현재 검수된 source는 source별 기본값을 사용한다.
+2. 향후 RSS/Atom이 검증 가능한 읽기 시간 필드를 제공하는 source가 생기면 `source_meta` 사용을 별도로 연결한다.
+3. 본문을 다운로드해서 글자 수를 세는 방식은 MVP에서 사용하지 않는다.
 
 소스별 기본값 예시:
 
@@ -98,9 +106,9 @@ MVP 콘텐츠는 아래 세 가지로 제한한다. 단, 기본 사용자 경험
 
 정확한 시간이 불확실하면 카드에서 `약 5분`처럼 표시하고, `reading_time_source`를 `source_meta / source_default / manual` 중 하나로 저장한다.
 
-## 4. 크롤링 정책
+## 4. 장기 전략 후보: 제한적 크롤링 정책
 
-MVP에서 크롤링은 필수가 아니다. 다만 RSS가 제공하는 정보가 너무 부족한 경우, 메타데이터 보강 목적으로 제한적으로 사용할 수 있다.
+현재 MVP는 크롤링하지 않는다. RSS가 제공하는 정보가 부족해 카드 품질 문제가 확인된 경우에만 메타데이터 보강 수단으로 별도 검토한다.
 
 허용 범위:
 
@@ -158,7 +166,7 @@ articles
   -- active / broken / paywalled / removed
 ```
 
-MVP 기본 추천에는 `access_type = free` 또는 `partial_free`만 사용한다. `paywalled`와 `unknown`은 관리자 확인 전까지 노출하지 않는다.
+MVP 자동 추천에는 `access_type = free`만 사용한다. `partial_free`는 자동 추천하지 않고 운영자가 무료 범위를 확인한 수동 큐레이션 후보로만 다룬다. `paywalled`와 `unknown`은 노출하지 않는다.
 
 ## 5. 저장 구조
 
@@ -254,32 +262,26 @@ articles
 
 `quality_score`는 글의 사상이나 결론이 옳다는 점수가 아니다. 1인 개발자가 매일 개별 글을 평가할 수 없으므로, MVP에서는 출처 신뢰도와 접근성 중심의 기계적 점수로만 사용한다.
 
-기본 계산:
+현재 MVP 계산:
 
 ```text
 quality_score =
 source_quality_score
-+ access_bonus
++ 0.10  # free access
 + metadata_bonus
-- paywall_penalty
-- broken_link_penalty
-- clickbait_penalty
-- risk_topic_penalty
 ```
 
-점수 기준:
+현재 점수와 선필터 기준:
 
 | 항목 | 기준 | 점수 |
 | --- | --- | ---: |
 | source_quality_score | `trust_level = high` | 0.80 |
 | source_quality_score | `trust_level = medium` | 0.60 |
 | source_quality_score | `trust_level = low` | 자동 추천 제외 |
-| access_bonus | `access_type = free` | +0.10 |
+| free access bonus | `access_type = free` | +0.10 |
 | metadata_bonus | 공식 설명/발행일/저자 중 2개 이상 있음 | +0.05 |
-| paywall_penalty | `access_type = partial_free` | -0.20 |
-| broken_link_penalty | `url_status != active` | 자동 추천 제외 |
-| clickbait_penalty | 낚시성 제목 키워드 감지 | -0.20 |
-| risk_topic_penalty | 정치/사회/고위험 주제 자동 수집 | -0.30 또는 제외 |
+| source eligibility | active, RSS, 한국어, primary, low paywall risk | 하나라도 아니면 수집 대상 제외 |
+| access eligibility | `access_type = free` | 아니면 저장·자동 추천 제외 |
 
 MVP 자동 추천 기준:
 
@@ -290,7 +292,7 @@ and url_status = 'active'
 and source.trust_level in ('high', 'medium')
 ```
 
-`partial_free`는 자동 추천하지 않는다. 사용자가 원문을 열었을 때 무료로 읽을 수 있는 범위가 충분하다고 확인된 경우에만 수동 큐레이션으로 노출한다. 수동 큐레이션 글은 `quality_score`를 직접 보정할 수 있지만, 보정 사유를 `metadata.manual_reason`에 남긴다.
+클릭베이트·고위험 주제 감점과 운영자의 점수 수동 보정은 현재 수집 파이프라인에 없다. 필요성이 확인되면 별도 규칙과 감사 계약을 설계한다.
 
 ### content_interest_tags
 
@@ -306,9 +308,9 @@ content_interest_tags
 - primary key (content_id, interest_id)
 ```
 
-### article_assignments
+### 장기 전략 후보: article_assignments
 
-사용자에게 어떤 콘텐츠가 언제 노출되었는지 저장한다.
+날짜별 추천 고정이나 노출 이력이 실제로 필요해질 경우 사용자에게 어떤 콘텐츠가 언제 노출되었는지 저장하는 테이블을 검토할 수 있다. 현재 MVP는 완료한 사고 기록만으로 반복 추천을 제외하므로 `article_assignments`를 만들지 않는다.
 
 ```sql
 article_assignments
@@ -329,17 +331,16 @@ article_assignments
 - created_at timestamptz default now()
 ```
 
-이 테이블은 단순 추천 이력이 아니라, 나중에 같은 글을 아카이브에서 다시 꺼내 다른 미션을 수행하게 하는 기반이 된다.
+이 구조는 확정된 현재 스키마가 아니며 후속 설계 예시다.
 
 ### mission_records
 
-사용자의 사고 기록을 저장한다.
+사용자의 완료된 사고 기록을 저장한다. 현재 확정 스키마는 [`db-schema.md`](db-schema.md)의 `mission_records`를 기준으로 하며 `article_assignment_id`를 사용하지 않는다.
 
 ```sql
 mission_records
 - id uuid primary key
 - user_id uuid references auth.users(id)
-- article_assignment_id uuid references article_assignments(id)
 - article_id uuid references articles(id)
 - mission_type text not null
   -- question / rebuttal / connection / expression
@@ -351,15 +352,15 @@ mission_records
 - created_at timestamptz default now()
 ```
 
-### reading_events
+### 장기 전략 후보: reading_events
 
-원문을 실제로 읽었는지 완벽히 증명할 수는 없지만, 최소한의 행동 신호를 저장해 데이터 해석에 사용한다.
+원문을 실제로 읽었는지 완벽히 증명할 수는 없지만, 후속 측정 설계에서 최소한의 행동 신호가 필요해질 경우 별도 이벤트 테이블을 검토할 수 있다. 현재 MVP에는 `reading_events` 테이블이 없다.
 
 ```sql
 reading_events
 - id uuid primary key
 - user_id uuid references auth.users(id)
-- article_assignment_id uuid references article_assignments(id)
+- article_id uuid references articles(id)
 - event_type text not null
   -- card_viewed / original_opened / returned / mission_started / mission_submitted
 - occurred_at timestamptz default now()
@@ -387,7 +388,7 @@ reading_events
 
 ### 20개 관심사 소스 seed 초안
 
-아래 목록은 MVP 콜드스타트를 막기 위한 1차 seed다. 실제 등록 전에는 RSS/API 제공 여부, 접근성, 유료 여부를 확인한다. 자동 추천은 `primary` 소스만 사용하고, `optional`은 사용자 설정이 켜진 경우 또는 콘텐츠가 부족한 경우에만 사용한다.
+아래 목록은 장기적인 소스 확장 후보이며 현재 등록된 source 목록이 아니다. 실제 등록 전에는 RSS/Atom 제공 여부, 접근성, 유료 여부와 fixture를 source별로 검증한다. 현재 자동 추천은 검증 후 등록된 한국어 `primary` RSS/Atom source만 사용한다.
 
 | 관심사 | MVP 상태 | primary 후보 | optional/advanced 후보 | 비고 |
 | --- | --- | --- | --- | --- |
@@ -721,16 +722,19 @@ MVP에서는 매일 개별 콘텐츠를 검수하는 운영을 전제로 두지 
 4. `optional`은 사용자가 영어 원문 허용 또는 심화 읽기를 켠 경우에만 기본 추천 후보에 넣는다.
 5. `advanced`는 MVP 기본 추천에서는 제외하고 운영자 큐레이션 또는 후속 기능에서만 사용한다.
 
-### 2단계: 매일 수집
+### 2단계: 수동 다중 source 수집
 
 ```text
-매일 1~2회 RSS/API 수집
+운영자가 collect_sources --dry-run 실행
+대상 source 수와 실패 여부 확인
+필요할 때 collect_sources --save 실행
 중복 URL 제거
 출처/관심사 태깅
 접근성 확인
-유료/깨진 링크 제외
-금칙어/고위험 주제 1차 필터링
+유료 신호와 부적격 source 제외
 ```
+
+자동 실행 주기, scheduler, 실행 이력과 실패 알림은 현재 운영 결과를 확인한 뒤 결정하는 장기 전략 후보이다.
 
 ### 3단계: 오늘의 콘텐츠 선정
 
@@ -752,7 +756,6 @@ source_type 균형 확인
 미션 1개 추천
 사용자 답변 작성
 mission_records 저장
-article_assignments 완료 처리
 ```
 
 ## 14. 완료 판정과 데이터 신뢰도
@@ -859,8 +862,8 @@ MVP에서 바로 하지 않아도 되는 것:
 3. 기본 추천 풀은 한국어 원문 중심으로 구성한다.
 4. 영어 원문은 optional/advanced로 분리하고 기본 추천 비율을 10~20% 이내로 제한한다.
 5. 콘텐츠 전문은 저장하지 않는다.
-6. RSS/API/수동 등록을 기본 수집 방식으로 한다.
-7. 크롤링은 메타데이터 보강용으로만 제한한다.
+6. 현재 MVP는 검수된 RSS/Atom 소스를 수동 다중 source CLI로 수집한다.
+7. 공식 API, 관리자 수동 등록과 제한적 메타데이터 크롤링은 장기 전략 후보로 둔다.
 8. 사용자에게 AI 요약을 먼저 보여주지 않는다.
 9. 영어 원문에는 제목/공식 설명의 보조 번역만 제공하고, 원문 대체 요약은 제공하지 않는다.
 10. 보조 번역은 AI 자동번역을 허용하되 `보조 번역`으로 표시하고 원문에 없는 해석을 추가하지 않는다.
@@ -874,6 +877,6 @@ MVP에서 바로 하지 않아도 되는 것:
 18. 관심사 기반 추천을 하되 source_type, perspective_type 균형을 기본으로 보고, stance 균형은 태깅된 논쟁 주제에 한해 적용한다.
 19. 완료는 `읽음`이 아니라 `생각 기록 완료`로 해석한다.
 20. 깨진 링크나 삭제 원문은 원문을 복원하지 않고, 사용자의 사고 기록만 유지한다.
-21. article_assignments와 mission_records를 통해 노출 이력과 사고 기록을 분리 저장한다.
+21. 노출 이력과 사고 기록을 분리하는 방향은 유지하되, 현재 MVP는 완료된 사고 기록을 `mission_records`에 저장하고 별도의 날짜별 배정은 사용하지 않는다.
 
 이 구조를 따르면 깸은 콘텐츠 추천 서비스가 아니라, 콘텐츠를 매개로 사용자의 사고 흔적을 남기는 서비스라는 정체성을 유지할 수 있다.
