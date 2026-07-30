@@ -16,10 +16,10 @@ except ImportError:
     ddg_available = False
     print("⚠️ duckduckgo_search 모듈이 임포트되지 않았습니다. 'pip install duckduckgo-search'를 실행하세요.")
 
-load_dotenv()  #이거 활성화 해야 open ai api호출
+#load_dotenv()#이거 활성화하면 open ai api
 
 class BriefingOutputSchema(BaseModel):
-    win_probability: str = Field(description="마크다운 리스트와 굵은 글씨를 활용하여 작성한 상세한 승소 가능성 및 법적 쟁점 분석")
+    win_probability: str = Field(description="[💡핵심 쟁점], [⚖️판례 대입], [📊예상 승소율(%)], [⚠️리스크 및 방어] 4가지 섹션으로 구성된 마크다운 형식의 상세 분석 리포트")
     strategy_guide: list = Field(description="프론트엔드 체크리스트용. '지금 당장 해야 할 일'을 단계별로 쪼갠 문자열 배열(List)")
     extracted_data: dict = Field(description="발신인, 수신인, 사실관계(5W1H) 등 문서 템플릿용 파싱 데이터")
 
@@ -40,41 +40,30 @@ class LegalAIAgent:
             self.is_llm_active = False
 
     def setup_llm_chain(self):
-        prompt_template = """당신은 대한민국 10년 차 수석 민사 변호사 AI입니다. 
-당신의 목표는 의뢰인의 억울한 상황에 공감하면서도, 가장 날카롭고 현실적인 법률 전략을 제시하는 것입니다.
+        prompt_template = """대한민국 10년 차 수석 민사 변호사로서 아래 사건을 분석하세요.
 
-[의뢰인 사건 내용]
-{question}
+[사건 내용] {question}
+[추출 사실] {facts}
+[관련 법률/판례] {context}
 
-[무료 파서가 사전 추출한 사실관계 (육하원칙)]
-{facts}
+출력 지침:
+1. win_probability (승소 리포트): 아래 4가지 항목을 반드시 포함하여 마크다운으로 상세하고 날카롭게 작성하세요. 서론이나 인사말은 생략합니다.
+   - 💡 핵심 쟁점: 본 사건의 승패를 가르는 가장 중요한 법적 요인
+   - ⚖️ 판례/법리 대입: [관련 법률/판례]를 의뢰인의 현재 상황에 구체적으로 대입한 결과
+   - 📊 예상 승소율: 객관적인 승소 가능성(%) 및 산정 근거
+   - ⚠️ 리스크 및 방어: 패소할 수 있는 치명적 변수와 이를 뒤집기 위한 방어 논리
+2. strategy_guide (액션 플랜): 당장 해야 할 행동을 명확한 배열 형태로 제공 (추상적 조언 절대 배제)
 
-[관련 법률 및 판례 검색 결과]
-{context}
-
-출력 지침 (매우 중요):
-1. 공감과 전문성: 의뢰인의 답답한 마음에 공감하는 따뜻한 어조를 유지하되, 법적 진단은 객관적이고 단호하게 하세요.
-2. win_probability (리스크 분석): 
-   - 단순히 판례를 나열하지 마세요. 
-   - "의뢰인의 현재 사실관계"를 "검색된 판례의 기준"에 대입하여 논리적으로 분석하세요.
-   - 글머리 기호(-)와 굵은 글씨(**)를 적극 활용하여 가독성을 높이세요.
-3. strategy_guide (액션 플랜): 
-   - 추상적인 조언은 금지입니다. 
-   - 반드시 사용자가 즉시 실천할 수 있는 행동 지침을 짧은 문장들의 '배열(List)'로 출력하세요.
-
-출력 양식 (반드시 아래 JSON 키를 준수할 것):
+출력 JSON 형식:
 {{
-    "win_probability": "(마크다운 형식) 구체적 쟁점 분석 및 승소 가능성 진단",
-    "strategy_guide": [
-        "상대방에게 '언제까지 돈을 갚을 거냐'고 묻는 카톡 보내기",
-        "관련 계좌 이체 내역 PDF로 다운로드 받기"
-    ],
+    "win_probability": "위 지침에 따른 4단 구조의 상세 리포트",
+    "strategy_guide": ["카톡으로 대여금 반환 명시하여 답장 유도", "이체 내역 PDF 발급"],
     "extracted_data": {{
-        "sender_name": "...",
-        "receiver_name": "...",
+        "sender_name": "발신인",
+        "receiver_name": "수신인",
         "title": "사건명 (예: 대여금 반환 청구)",
-        "facts": "육하원칙에 기반한 사실관계 요약 (개조식)",
-        "legal_basis": "관련 법령 (예: 민법 제598조)",
+        "facts": "육하원칙 요약",
+        "legal_basis": "민법 조항 등",
         "demands": "요구사항",
         "deadline": "기한"
     }}
@@ -112,23 +101,26 @@ class LegalAIAgent:
         if person_match and not any(w in person_match.group(1) for w in ["본인", "제가", "내가", "사장", "주인"]):
             person = person_match.group(1)
 
-        case_type = ""
-        if any(w in text for w in ["빌려", "대여", "돈 안", "떼였", "못 받", "차용"]): 
+        # 🚀 [대폭 개선] 키워드 기반 사건 유형 분류망 확장
+        case_type = "기타 손해배상 및 부당이득 반환"
+        if any(w in text for w in ["빌려", "대여", "돈 안", "떼였", "못 받", "차용", "갚", "이자"]): 
             case_type = "대여금 반환 청구"
-        elif any(w in text for w in ["보증금", "전세", "방 빼", "계약 만료", "안 돌려"]): 
+        elif any(w in text for w in ["보증금", "전세", "방 빼", "계약 만료", "안 돌려", "집주인", "임대차"]): 
             case_type = "임대차 보증금 반환"
-        elif any(w in text for w in ["월세", "차임", "연체", "명도", "나가라", "미납"]): 
+        elif any(w in text for w in ["월세", "차임", "연체", "명도", "나가라", "미납", "세입자", "비워"]): 
             case_type = "차임(월세) 연체 및 명도 소송"
-        elif any(w in text for w in ["다쳤", "사고", "치료비", "입원", "폭행", "상해", "때렸", "맞았"]): 
+        elif any(w in text for w in ["다쳤", "사고", "치료비", "입원", "폭행", "상해", "때렸", "맞았", "교통사고", "합의금"]): 
             case_type = "손해배상 청구 (불법행위/신체상해)"
-        elif any(w in text for w in ["욕", "악플", "모욕", "명예훼손", "허위사실", "소문"]): 
+        elif any(w in text for w in ["욕", "악플", "모욕", "명예훼손", "허위사실", "소문", "댓글", "게시판"]): 
             case_type = "명예훼손 및 모욕 위자료 청구"
-        elif any(w in text for w in ["사기", "보이스피싱", "속았", "먹튀", "환불"]): 
+        elif any(w in text for w in ["사기", "보이스피싱", "속았", "먹튀", "환불", "중고나라", "당근", "사기꾼"]): 
             case_type = "사기 피해에 따른 부당이득 반환 및 손해배상"
-        elif any(w in text for w in ["이혼", "바람", "외도", "상간", "양육비"]): 
+        elif any(w in text for w in ["이혼", "바람", "외도", "상간", "양육비", "재산분할", "불륜"]): 
             case_type = "이혼 및 위자료 청구"
-        elif any(w in text for w in ["소음", "층간", "시끄러"]): 
-            case_type = "층간소음 생활방해 손해배상"
+        elif any(w in text for w in ["소음", "층간", "시끄러", "발망치", "윗집", "아랫집", "누수", "물새"]): 
+            case_type = "이웃분쟁 (층간소음/누수) 손해배상"
+        elif any(w in text for w in ["임금", "퇴직금", "월급", "수당", "노동청", "해고", "알바", "사장님"]): 
+            case_type = "임금 및 퇴직금 체불 진정"
 
         return {
             "when": when,
@@ -137,16 +129,14 @@ class LegalAIAgent:
             "case_type": case_type
         }
 
-    # 🚀 웹 검색 기반 위치 및 연락처 추출 로직 (직접 호출 방식)
     def get_institutions(self, query: str):
-        region = "대구" # 기본 관할지
+        region = "대구"
         regions = ["서울", "부산", "대구", "인천", "광주", "대전", "울산", "수원", "창원", "청주", "전주", "제주"]
         for r in regions:
             if r in query:
                 region = r
                 break
 
-        # 기본 기관 템플릿
         institutions = [
             {
                 "name": f"대한법률구조공단 {region}지부",
@@ -165,7 +155,6 @@ class LegalAIAgent:
         if ddg_available:
             try:
                 with DDGS() as ddgs:
-                    # 1. 구조공단 검색
                     results1 = list(ddgs.text(f"대한법률구조공단 {region}지부 전화번호", max_results=1))
                     if results1:
                         snippet1 = results1[0].get('body', '')
@@ -174,7 +163,6 @@ class LegalAIAgent:
                             institutions[0]["phone"] = phones1[0]
                         institutions[0]["search_info"] = (snippet1[:60] + "..")
 
-                    # 2. 지방법원 검색
                     results2 = list(ddgs.text(f"{region}지방법원 종합민원실 전화번호", max_results=1))
                     if results2:
                         snippet2 = results2[0].get('body', '')
@@ -189,8 +177,7 @@ class LegalAIAgent:
 
     def _fallback_parser(self, query: str, search_results: list = None):
         facts = self.extract_live_facts(query)
-        
-        case_type = facts.get("case_type") or ""
+        case_type = facts.get("case_type") or "기타 사건"
         amount = facts.get("amount") or "일금 [금액 기재] 원"
         person = facts.get("person") or "수신인(상대방)"
         when = facts.get("when") or "최근"
@@ -206,74 +193,28 @@ class LegalAIAgent:
             if top_prec:
                 rag_add_on += f"- 유사 판례 기준: {top_prec['title']}"
 
-        win_prob = ""
-        strategy = []
+        win_prob = f"**{case_type}** 사안으로 판단됩니다.\n\n정확한 쟁점 파악을 위해서는 관련 증거자료 수집이 필수적입니다.{rag_add_on}"
+        strategy = [
+            "구체적인 피해 사실(일시, 장소, 상대방 등)을 다시 적어보기",
+            "상대방의 인적 사항(이름, 연락처, 주소지) 파악하기",
+            "통화녹음, 카카오톡 캡처본 등 객관적 증거 확보하기"
+        ]
+        extracted = {
+            "title": f"{case_type} 및 법적 조치 예고",
+            "facts": f"- 귀하({person})와의 관계에서 {when} 경 분쟁이 발생함\n- 관련된 사항에 대해 명확한 책임을 요구함",
+            "legal_basis": "관련 법률 검토 및 판례 대입 필요",
+            "demands": f"본 서면 수령 후 즉시 연락을 취하고 {amount} 상당의 조치를 이행할 것",
+        }
 
-        if "대여금" in case_type:
-            win_prob = f"**{when}**에 발생한 대여 건의 경우, 차용증이 없더라도 **이체 내역 및 대화 캡처본**이 있다면 입증이 가능합니다.{rag_add_on}"
-            strategy = [
-                f"상대방({person})에게 빌려준 돈임을 명시하여 카톡을 보내고 답장 유도하기",
-                "이체 내역을 은행 어플에서 PDF로 발급받기",
-                "내용증명을 발송하여 심리적 압박 및 법적 기한 확정하기"
-            ]
-            extracted = {
-                "title": "대여금 반환 촉구 및 법적 조치 예고",
-                "facts": f"- {when} 경 귀하({person})에게 {amount}을 대여함\n- 변제기가 지났음에도 반환하지 않음",
-                "legal_basis": "민법 제598조(소비대차) 및 제390조(채무불이행)",
-                "demands": f"본 서면 수령 후 7일 이내에 {amount}을 반환할 것을 촉구함",
-            }
-        elif "보증금" in case_type:
-            win_prob = f"계약 만료 통보 내역이 확실하다면 무난히 승소 가능합니다.{rag_add_on}"
-            strategy = [
-                "문자나 통화 녹음으로 계약 해지 통보 내역 증빙 확보하기",
-                "임차권등기명령 신청에 필요한 3가지 필수 서류 준비하기",
-                "관할 법원에 임차권등기명령 신청 접수하기"
-            ]
-            extracted = {
-                "title": "임대차계약 종료에 따른 임대차보증금 반환 촉구",
-                "facts": f"- {when} 임대차 계약 만료일이 도래함\n- 현재까지 보증금 {amount}을 반환받지 못함",
-                "legal_basis": "주택임대차보호법 제3조의2(보증금의 회수)",
-                "demands": f"기일까지 보증금 {amount} 일체를 반환할 것을 촉구함",
-            }
-        elif "차임" in case_type or "명도" in case_type:
-            win_prob = f"2기 이상의 차임 연체 사실만 입증되면 명도 소송에서 승소 가능합니다.{rag_add_on}"
-            strategy = [
-                "점유이전금지가처분을 법원에 가장 먼저 신청하여 방어선 구축하기",
-                "미납된 차임(월세) 연체 내역 통장 사본 정리하기",
-                "내용증명 발송으로 임대차 계약 해지를 명확히 통보하기"
-            ]
-            extracted = {
-                "title": "차임(월세) 미납에 따른 계약 해지 통고 및 명도 촉구",
-                "facts": f"- 귀하({person})는 차임을 2기 이상 연체 중임\n- 미납된 총 금액은 {amount}에 달함",
-                "legal_basis": "민법 제640조(차임연체와 해지)",
-                "demands": f"밀린 차임 {amount}을 즉시 입금하고 목적물을 인도할 것을 요구함",
-            }
-        else:
-            win_prob = f"입력하신 정보만으로는 정확한 진단이 어렵습니다.{rag_add_on}"
-            strategy = [
-                "구체적인 피해 사실(일시, 상대방 등)을 육하원칙으로 다시 적어 질문하기",
-                "상대방의 이름, 연락처, 주소지 등 인적 사항 파악하기",
-                "가지고 있는 증거(카톡, 녹취록 등)를 날짜별로 정리하기"
-            ]
-            extracted = {
-                "title": "법적 조치 예고 및 의무 이행 촉구서",
-                "facts": f"- 귀하({person})와의 관계에서 {when} 경 법적 분쟁 사유가 발생함",
-                "legal_basis": "관련 법률 및 판례 검토 요망",
-                "demands": f"신속히 사안을 해결하고 {amount} 상당의 조치를 취할 것을 요구함",
-            }
-
-        if extracted:
-            extracted_data = {
-                "sender_name": "발신인 (본인)",
-                "sender_address": "발신인 주소지 기재",
-                "sender_phone": "010-XXXX-XXXX",
-                "receiver_name": person,
-                "receiver_address": "수신인 주소지 기재",
-                "deadline": "본 서면 수령 후 7일 이내"
-            }
-            extracted_data.update(extracted)
-        else:
-            extracted_data = None
+        extracted_data = {
+            "sender_name": "발신인 (본인)",
+            "sender_address": "발신인 주소지 기재",
+            "sender_phone": "010-XXXX-XXXX",
+            "receiver_name": person,
+            "receiver_address": "수신인 주소지 기재",
+            "deadline": "본 서면 수령 후 7일 이내"
+        }
+        extracted_data.update(extracted)
 
         return {
             "win_probability": win_prob,
@@ -289,7 +230,8 @@ class LegalAIAgent:
             try:
                 context = ""
                 if search_results:
-                    context = "\n\n".join([f"{res['title']}\n{res['content']}" for res in search_results])
+                    context_full_str = "\n\n".join([f"{res['title']}\n{res['content']}" for res in search_results])
+                    context = context_full_str[:1500] 
                 
                 result = self.chain.invoke({
                     "context": context, 
@@ -298,7 +240,7 @@ class LegalAIAgent:
                 })
                 return result
             except Exception as e:
-                print(f"🚨 LLM 실행 실패, Fallback(0원) 파서 작동: {e}")
+                print(f"🚨 LLM 실행 실패, Fallback 파서 작동: {e}")
                 return self._fallback_parser(query, search_results)
         else:
             return self._fallback_parser(query, search_results)
