@@ -2,6 +2,8 @@
 
 폐업을 준비하는 소상공인에게 흩어진 정보를 모아, **내 상황에 맞는 절차만 추려서 보여주고 진행 상태를 추적**하게 해주는 무료 셀프가이드 서비스입니다.
 
+**라이브 서비스:** https://glittering-tapioca-39242f.netlify.app
+
 ## 문제 정의
 
 폐업 시 필요한 정보(폐업신고 절차, 세무 신고, 정부 지원금)는 홈택스, 정부24, bizinfo.go.kr, 소상공인시장진흥공단 등 여러 공식 사이트에 흩어져 있습니다. 게다가 업종·직원 유무·임대 여부에 따라 실제로 필요한 절차가 달라, 사용자가 스스로 뭐가 해당되는지 판단하기 어렵고 세무 신고 같은 마감기한도 놓치기 쉽습니다.
@@ -33,9 +35,18 @@
 | 백엔드 | Express (Node.js / TypeScript) |
 | ORM / DB | Prisma + PostgreSQL (Supabase) |
 | 사용자 구분 | 쿠키 기반 익명 세션 ID (로그인 없음) |
-| 배포 | Vercel (FE) + Render (BE) |
+| 배포 | Netlify (FE) + Render (BE) |
 
-## 실행 방법
+## 배포
+
+| 서비스 | URL |
+|---|---|
+| 프론트엔드 (Netlify) | https://glittering-tapioca-39242f.netlify.app |
+| 백엔드 (Render) | https://hub-g87g.onrender.com |
+
+> Render 무료 플랜은 비활성 상태에서 인스턴스가 내려가며, 재요청 시 50초 이상 지연이 발생할 수 있습니다.
+
+## 로컬 실행 방법
 
 ### 프론트엔드
 
@@ -69,6 +80,12 @@ CORS_ORIGIN=http://localhost:5173
 NODE_ENV=development
 ```
 
+### FE + BE 동시 실행
+
+```bash
+npm run dev  # 루트에서 실행 — concurrently로 FE·BE 동시 기동
+```
+
 ## 법적 고지
 
 본 서비스는 세무·법률 대리 업무를 수행하지 않으며, 절차 안내와 공식 출처 링크만 제공합니다. 정확한 세율·금액·기한 등은 반드시 관할 기관(세무서, 홈택스, 정부24 등)에서 확인하세요.
@@ -76,7 +93,5 @@ NODE_ENV=development
 ## 더 자세한 내용
 
 전체 기획서(문제 정의, 유사 서비스 분석, Use Case, 사용자 시나리오, 법적 검토 등)는 [프로젝트 기획서](https://github.com/maeumum/hub/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EA%B8%B0%ED%9A%8D%EC%84%9C)에서 확인할 수 있습니다.
-
-## 향후 개발 진행 상황
 
 개발 Task 및 진행 상황은 [진행 상황](https://app.notion.com/p/AI-Agent-Challenge-39594b113eb280fa96dada92ba9df29c?source=copy_link)에서 확인할 수 있습니다.
