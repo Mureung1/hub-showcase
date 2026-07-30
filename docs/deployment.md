@@ -2,20 +2,25 @@
 
 프론트엔드는 Vercel, API 서버는 Render 에 올린다.
 
-## 배포 주소 (2026-07-29 연결 완료)
+## 배포 주소
 
 | | 주소 |
 |---|---|
-| 화면 (Vercel) | https://exam-priority-calculator.vercel.app |
+| **화면 (Vercel) — 사람들에게 주는 주소** | **https://what-first.vercel.app** |
+| 화면 (같은 앱, 프로젝트 기본 주소) | https://exam-priority-calculator.vercel.app |
 | API 서버 (Render) | https://exam-priority-server.onrender.com |
 | 상태 확인 | https://exam-priority-server.onrender.com/api/health |
 
-둘은 환경변수 두 개로 이어져 있다. **한쪽 주소가 바뀌면 반대쪽도 같이 고쳐야 한다.**
+두 화면 주소는 **같은 Vercel 프로젝트**를 가리킨다. 배포하면 둘 다 같이 갱신된다.
 
 | 환경변수 | 어디에 | 값 |
 |---|---|---|
 | `VITE_API_BASE_URL` | Vercel | Render 주소 |
-| `CORS_ORIGIN` | Render | Vercel 주소 |
+| `CORS_ORIGIN` | Render | (선택) 위 두 주소 외에 더 열어줄 주소 |
+
+> 이 서비스의 화면 주소 두 개는 `server/src/index.js` 의 `OWN_ORIGINS` 에 들어 있어서
+> **대시보드에 아무것도 안 넣어도 허용된다.** 주소를 하나 더 붙일 때마다 대시보드에
+> 들어가야 하면 빠뜨리기 쉬워서, 우리가 아는 주소는 코드에 두었다.
 
 연결 확인 근거는 [4. 배포 후 확인 결과](#4-배포-후-확인-결과-2026-07-29) 에 있다.
 남은 과제는 [막힌 지점](#막힌-지점) 을 본다.
@@ -32,7 +37,7 @@ Vite 프록시가 `/api` 를 `localhost:3001` 로 넘겨줘서 같은 오리진�
 |---|---|---|
 | `VITE_API_BASE_URL` | `frontend/src/utils/apiBase.js` | API 요청 주소의 앞부분. 비우면 기존처럼 같은 오리진 `/api`(로컬), 채우면 그 주소로 직접 요청(배포) |
 | `VITE_BASE_PATH` | `frontend/vite.config.js` | 정적 파일 경로 접두사. Vercel 은 `/`(기본), GitHub Pages 는 `/hub/`(`npm run build:pages`) |
-| `CORS_ORIGIN` | `server/src/index.js` | 허용할 프론트엔드 주소. 쉼표로 여러 개. 비우면 전부 허용(로컬 개발용) |
+| `CORS_ORIGIN` | `server/src/index.js` | **추가로** 허용할 주소. 자체 배포 주소(`OWN_ORIGINS`)는 여기 없어도 허용된다. 로컬에서 비우면 전부 허용, 배포(`NODE_ENV=production`)에서는 목록만 허용 |
 | `PORT` | `server/src/index.js` | Render 가 자동으로 넣어준다. 배포에서는 직접 설정하지 않는다 |
 | `render.yaml` | 저장소 루트 | Render Blueprint. rootDir/build/start/health 를 미리 적어둠 |
 | `frontend/vercel.json` | | Vite 프리셋 + SPA rewrite |
