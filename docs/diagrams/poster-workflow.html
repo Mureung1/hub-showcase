@@ -39,6 +39,7 @@
     color: var(--text);
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
   }
 
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -90,6 +91,11 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+    gap: 6mm;
+    background: var(--surface);
+    border: 1pt solid var(--border);
+    border-radius: 5mm;
+    padding: 6mm 8mm;
   }
 
   .section-label {
@@ -296,9 +302,10 @@
     <p class="lede">3주 동안 반복된 협업 방식 — 기능마다 처음부터 다시 도는 절차다</p>
   </header>
 
-  <section class="flow-wrap">
+  <section class="block">
     <div class="section-label"><span class="section-num">01</span><span class="section-title">일하는 순서</span></div>
 
+    <div class="flow-wrap">
     <div class="flow-row">
       <div class="step-card emphasis">
         <div class="step-num-badge">1</div>
@@ -343,9 +350,8 @@
       </svg>
     </div>
     <p class="loop-caption"><b>다음 기능으로 넘어갈 때마다 2번(설계서)부터 다시</b> — "문제 정의는 내가 한다"는 항상 지키는 원칙, 2~5번은 기능마다 반복되는 절차다</p>
-  </section>
+    </div>
 
-  <section class="block">
     <div class="case-row">
       <div class="case-card">
         <div class="case-card-head"><span class="icon">⚖️</span><b>갈리는 판단 사례</b></div>
@@ -387,9 +393,7 @@
         <span>리서치·코드 탐색도 메인 세션에서 직접 — 규모상 나눌 필요가 적었다</span>
       </div>
     </div>
-  </section>
 
-  <section class="block">
     <div class="evidence-row">
       <div class="evidence">
         <span class="icon">⌨️</span>
