@@ -3,7 +3,8 @@
   "title": "LifeLog",
   "summary": "ChatGPT 대화 기록을 분석해 고민과 감정의 흐름을 타임라인으로 보여주는 회고 웹 서비스",
   "githubUser": "dabinnida(백다빈)",
-  "demoUrl": "",
+  "demoUrl": "https://hub-mu-puce.vercel.app",
+  "demoVideoUrl": "https://www.youtube.com/watch?v=SOPCpoI1aYI",
   "thumbnail": "home.png",
   "screenshots": [
     "home.png",
