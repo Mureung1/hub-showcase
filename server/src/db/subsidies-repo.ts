@@ -82,15 +82,22 @@ const PAGE_SIZE = 1000
 
 /** Supabase에서 전체 row를 읽어 Subsidy[]로 변환. 실패 시 fallback 반환 */
 async function loadAll(): Promise<Subsidy[]> {
+  const startedAt = performance.now()
   const rows: SubsidyRow[] = []
   let from = 0
+  let roundTrips = 0
 
   for (;;) {
+    const fetchStartedAt = performance.now()
     const { data, error } = await supabase
       .from(SUBSIDIES_TABLE)
       .select('*')
       .order('id', { ascending: true })
       .range(from, from + PAGE_SIZE - 1)
+    roundTrips += 1
+    console.log(
+      `[timing] loadAll: supabase round trip #${roundTrips} (rows=${data?.length ?? 0}) took ${(performance.now() - fetchStartedAt).toFixed(1)}ms`,
+    )
 
     if (error) {
       console.error('[subsidies-repo] Supabase 조회 실패, 샘플 데이터로 대체:', error.message)
@@ -102,7 +109,14 @@ async function loadAll(): Promise<Subsidy[]> {
     from += PAGE_SIZE
   }
 
-  return rows.map(rowToSubsidy)
+  const mapStartedAt = performance.now()
+  const mapped = rows.map(rowToSubsidy)
+  console.log(
+    `[timing] loadAll: rowToSubsidy mapping (${rows.length} rows) took ${(performance.now() - mapStartedAt).toFixed(1)}ms`,
+  )
+  console.log(`[timing] loadAll: total (${roundTrips} round trip(s)) took ${(performance.now() - startedAt).toFixed(1)}ms`)
+
+  return mapped
 }
 
 /** 전체 목록 (정렬 + 페이지네이션 적용) */
@@ -111,7 +125,10 @@ export async function findAll(
   page: number = DEFAULT_PAGE,
   limit: number = DEFAULT_LIMIT,
 ): Promise<PagedResult> {
-  const sorted = applySort(await loadAll(), sort)
+  const items = await loadAll()
+  const sortStartedAt = performance.now()
+  const sorted = applySort(items, sort)
+  console.log(`[timing] findAll: applySort(${sort}, ${items.length} items) took ${(performance.now() - sortStartedAt).toFixed(1)}ms`)
   return paginate(sorted, page, limit)
 }
 
@@ -268,11 +285,23 @@ export async function match(
   page: number = DEFAULT_PAGE,
   limit: number = DEFAULT_LIMIT,
 ): Promise<PagedResult> {
+  const totalStartedAt = performance.now()
   const items = await loadAll()
+
+  const filterScoreStartedAt = performance.now()
   const filtered = items.filter(
     (item) => matchesRegion(item, profile) && matchesSupportRealm(item, profile),
   )
   const scored = filtered.map((item) => ({ ...item, match: scoreForProfile(item, profile) }))
+  console.log(
+    `[timing] match: filter+score (${items.length} → ${scored.length} items) took ${(performance.now() - filterScoreStartedAt).toFixed(1)}ms`,
+  )
+
+  const sortStartedAt = performance.now()
   const sorted = applySort(scored, sort)
-  return paginate(sorted, page, limit)
+  console.log(`[timing] match: applySort(${sort}) took ${(performance.now() - sortStartedAt).toFixed(1)}ms`)
+
+  const result = paginate(sorted, page, limit)
+  console.log(`[timing] match: total took ${(performance.now() - totalStartedAt).toFixed(1)}ms`)
+  return result
 }
