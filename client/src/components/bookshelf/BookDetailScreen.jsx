@@ -165,6 +165,7 @@ export function BookDetailScreen({
   onUpdateRecord,
   onDeleteRecord,
   onUpdateStatus,
+  sessionActions,
 }) {
   const [isReadingContextActive, setIsReadingContextActive] = useState(startInReadingContext);
   const [isRecordDialogOpen, setIsRecordDialogOpen] = useState(false);
@@ -183,10 +184,13 @@ export function BookDetailScreen({
           <BookOpen aria-hidden="true" size={19} strokeWidth={1.8} />
           <span>잇장</span>
         </a>
-        <Button type="button" variant="ghost" onClick={onBackToBookshelf}>
-          <ArrowLeft aria-hidden="true" size={17} strokeWidth={1.8} />
-          책장으로 돌아가기
-        </Button>
+        <div className="book-detail__actions">
+          <Button type="button" variant="ghost" onClick={onBackToBookshelf}>
+            <ArrowLeft aria-hidden="true" size={17} strokeWidth={1.8} />
+            책장으로 돌아가기
+          </Button>
+          {sessionActions}
+        </div>
       </header>
 
       <article className="reading-note" aria-labelledby="book-detail-title">

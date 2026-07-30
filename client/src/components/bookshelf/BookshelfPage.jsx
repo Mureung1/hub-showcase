@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BookOpen, Plus } from 'lucide-react';
+import { BookOpen, LogOut, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { AddBookDialog } from '@/components/bookshelf/AddBookDialog';
@@ -21,7 +21,22 @@ import {
   updateReadingRecord,
 } from '@/lib/api';
 
-function EmptyBookshelf({ user, onAddBook }) {
+function SessionActions({ user, isLoggingOut, logoutError, onLogout }) {
+  return (
+    <div className="bookshelf-session">
+      <div>
+        <span>{user.nickname}의 잇장</span>
+        <Button type="button" variant="ghost" disabled={isLoggingOut} onClick={onLogout}>
+          <LogOut aria-hidden="true" size={16} strokeWidth={1.8} />
+          {isLoggingOut ? '로그아웃 중…' : '로그아웃'}
+        </Button>
+      </div>
+      {logoutError && <p className="field-error" role="alert">{logoutError}</p>}
+    </div>
+  );
+}
+
+function EmptyBookshelf({ sessionActions, onAddBook }) {
   return (
     <main className="bookshelf-preview">
       <header className="bookshelf-preview__header">
@@ -29,7 +44,7 @@ function EmptyBookshelf({ user, onAddBook }) {
           <BookOpen aria-hidden="true" size={19} strokeWidth={1.8} />
           <span>잇장</span>
         </a>
-        <span>{user.nickname}의 잇장</span>
+        {sessionActions}
       </header>
 
       <section className="empty-bookshelf" aria-labelledby="empty-shelf-title">
@@ -52,7 +67,7 @@ function EmptyBookshelf({ user, onAddBook }) {
   );
 }
 
-export function BookshelfPage({ user }) {
+export function BookshelfPage({ user, isLoggingOut = false, logoutError = '', onLogout }) {
   const [isAddBookOpen, setIsAddBookOpen] = useState(false);
   const [books, setBooks] = useState([]);
   const [completedBooks, setCompletedBooks] = useState([]);
@@ -317,6 +332,15 @@ export function BookshelfPage({ user }) {
     openBook(quote.bookId, true);
   }
 
+  const sessionActions = (
+    <SessionActions
+      user={user}
+      isLoggingOut={isLoggingOut}
+      logoutError={logoutError}
+      onLogout={onLogout}
+    />
+  );
+
   if (isBooksLoading) {
     return <main className="bookshelf-preview"><p className="bookshelf-status">책장을 불러오고 있어요.</p></main>;
   }
@@ -348,10 +372,10 @@ export function BookshelfPage({ user }) {
           onUpdateRecord={handleUpdateRecord}
           onDeleteRecord={handleDeleteRecord}
           onUpdateStatus={handleUpdateStatus}
+          sessionActions={sessionActions}
         />
       ) : books.length || completedBooks.length || archivedBooks.length ? (
         <ReadingBookshelf
-          user={user}
           books={books}
           completedBooks={completedBooks}
           archivedBooks={archivedBooks}
@@ -368,9 +392,13 @@ export function BookshelfPage({ user }) {
           isReadingActivityLoading={isReadingActivityLoading}
           readingActivityError={readingActivityError}
           onRetryReadingActivity={() => setReadingActivityRequest((request) => request + 1)}
+          sessionActions={sessionActions}
         />
       ) : (
-        <EmptyBookshelf user={user} onAddBook={() => setIsAddBookOpen(true)} />
+        <EmptyBookshelf
+          sessionActions={sessionActions}
+          onAddBook={() => setIsAddBookOpen(true)}
+        />
       )}
       <AddBookDialog
         open={isAddBookOpen}

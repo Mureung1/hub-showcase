@@ -104,7 +104,6 @@ function StatusShelf({ title, kicker, books, emptyMessage, onSelectBook, onResto
 }
 
 export function ReadingBookshelf({
-  user,
   books,
   completedBooks = [],
   archivedBooks = [],
@@ -121,6 +120,7 @@ export function ReadingBookshelf({
   isReadingActivityLoading,
   readingActivityError,
   onRetryReadingActivity,
+  sessionActions,
 }) {
   const continueBook = getContinueBook(books);
   const [hoveredBookId, setHoveredBookId] = useState(null);
@@ -159,7 +159,7 @@ export function ReadingBookshelf({
           <BookOpen aria-hidden="true" size={19} strokeWidth={1.8} />
           <span>잇장</span>
         </a>
-        <span>{user.nickname}의 잇장</span>
+        {sessionActions}
       </header>
 
       <section className="reading-bookshelf" aria-labelledby="reading-shelf-title">

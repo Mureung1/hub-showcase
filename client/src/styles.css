@@ -356,6 +356,29 @@ input:focus-visible {
   text-decoration: none;
 }
 
+.bookshelf-session {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.bookshelf-session > div,
+.book-detail__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bookshelf-session button {
+  color: var(--muted);
+}
+
+.bookshelf-session .field-error {
+  max-width: 22rem;
+  text-align: right;
+}
+
 .empty-bookshelf {
   width: min(100%, 39rem);
   margin: min(17vh, 9rem) auto 0;
@@ -2091,6 +2114,19 @@ input:focus-visible {
   .book-detail__header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .book-detail__actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .bookshelf-session {
+    align-items: flex-start;
+  }
+
+  .bookshelf-session .field-error {
+    text-align: left;
   }
 
   .reading-note__book-object {

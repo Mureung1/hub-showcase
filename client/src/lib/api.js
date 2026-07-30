@@ -66,6 +66,11 @@ export async function loginWithGoogle(credential) {
   return session.user;
 }
 
+export async function logout() {
+  await request('/api/auth/logout', { method: 'POST' });
+  csrfToken = null;
+}
+
 export function getBooks() {
   return request('/api/bookshelf');
 }

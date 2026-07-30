@@ -35,6 +35,27 @@ test('requests reading activity for the selected date range', async () => {
   );
 });
 
+test('logs out with the csrf token and clears it', async () => {
+  fetch
+    .mockResolvedValueOnce(response({
+      user: { id: 7, nickname: '다정' },
+      csrfToken: 'csrf-token',
+    }))
+    .mockResolvedValueOnce(response(null))
+    .mockResolvedValueOnce(response({ reading: [], completed: [], archived: [] }));
+
+  const { getBooks, loginWithGoogle, logout } = await import('./api');
+  await loginWithGoogle('google-id-token');
+  await logout();
+  await getBooks();
+
+  const [, logoutOptions] = fetch.mock.calls[1];
+  const [, bookshelfOptions] = fetch.mock.calls[2];
+  expect(logoutOptions.method).toBe('POST');
+  expect(logoutOptions.headers['X-CSRF-Token']).toBe('csrf-token');
+  expect(bookshelfOptions.headers['X-CSRF-Token']).toBeUndefined();
+});
+
 test('uses the same-origin API proxy in production', async () => {
   vi.stubEnv('PROD', true);
   fetch.mockResolvedValueOnce(response({ reading: [], completed: [], archived: [] }));

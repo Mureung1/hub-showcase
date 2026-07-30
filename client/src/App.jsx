@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 
 import { BookshelfPage } from '@/components/bookshelf/BookshelfPage';
 import { OnboardingPage } from '@/components/onboarding/OnboardingPage';
-import { getSession } from '@/lib/api';
+import { getSession, logout } from '@/lib/api';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
 
   useEffect(() => {
     let isCancelled = false;
@@ -34,6 +36,20 @@ export default function App() {
     setUser(newUser);
   }
 
+  async function handleLogout() {
+    setIsLoggingOut(true);
+    setLogoutError('');
+    try {
+      await logout();
+      window.history.replaceState({}, '', '/');
+      setUser(null);
+    } catch (error) {
+      setLogoutError(error.message);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }
+
   if (isAuthLoading) {
     return <main className="bookshelf-preview"><p className="bookshelf-status">잇장을 불러오고 있어요.</p></main>;
   }
@@ -42,5 +58,12 @@ export default function App() {
     return <OnboardingPage onComplete={handleOnboardingComplete} />;
   }
 
-  return <BookshelfPage user={user} />;
+  return (
+    <BookshelfPage
+      user={user}
+      isLoggingOut={isLoggingOut}
+      logoutError={logoutError}
+      onLogout={handleLogout}
+    />
+  );
 }
