@@ -20,8 +20,8 @@ export default function RegionSelectSheet({ initialRegion, onSave, onClose }: Re
   const [dongNm, setDongNm] = useState(initialRegion?.dongNm ?? '')
 
   const { data: provinces = [] } = useProvinces()
-  const { data: districts = [] } = useDistricts(ctpvNm || undefined)
-  const { data: zoneOptions } = useZoneOptions(ctpvNm || undefined, sggNm || undefined)
+  const { data: districts = [], isFetching: isDistrictsLoading } = useDistricts(ctpvNm || undefined)
+  const { data: zoneOptions, isFetching: isZoneOptionsLoading } = useZoneOptions(ctpvNm || undefined, sggNm || undefined)
 
   useEffect(() => {
     setSggNm('')
@@ -70,7 +70,7 @@ export default function RegionSelectSheet({ initialRegion, onSave, onClose }: Re
         <select
           value={sggNm}
           onChange={(event) => setSggNm(event.target.value)}
-          disabled={!ctpvNm}
+          disabled={!ctpvNm || isDistrictsLoading}
           className={selectClassName}
         >
           <option value="">{t('region.districtPlaceholder')}</option>
@@ -81,12 +81,19 @@ export default function RegionSelectSheet({ initialRegion, onSave, onClose }: Re
           ))}
         </select>
 
+        {sggNm && isZoneOptionsLoading ? <p className="mb-[10px] text-[13px] text-sub">{t('common.loading')}</p> : null}
+
         {sggNm && zoneOptions && !zoneOptions.covered ? (
           <p className="mb-[10px] text-[13px] text-sub">{t('region.notCovered')}</p>
         ) : null}
 
         {needsDong ? (
-          <select value={dongNm} onChange={(event) => setDongNm(event.target.value)} className={selectClassName}>
+          <select
+            value={dongNm}
+            onChange={(event) => setDongNm(event.target.value)}
+            disabled={isZoneOptionsLoading}
+            className={selectClassName}
+          >
             <option value="">{t('region.zonePlaceholder')}</option>
             {zoneOptions?.dongOptions.map((dong) => (
               <option key={dong.name} value={dong.name}>
