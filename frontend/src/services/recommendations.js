@@ -16,6 +16,7 @@ export async function fetchRecommendations({
   maxMissingIngredients = 3,
   batchNumber = 1,
   excludedRecipeFingerprints = [],
+  previousRecommendations = [],
   signal,
 } = {}) {
   const response = await fetch(RECOMMENDATIONS_API_URL, {
@@ -27,6 +28,7 @@ export async function fetchRecommendations({
       batchSize: 3,
       batchNumber,
       excludedRecipeFingerprints,
+      previousRecommendations,
       allergens: [],
       excludedIngredients: [],
       dietaryPreferences: [],

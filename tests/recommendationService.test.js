@@ -9,6 +9,7 @@ const request = {
   batchSize: 3,
   batchNumber: 1,
   excludedRecipeFingerprints: [],
+  previousRecommendations: [],
   allergens: [],
   excludedIngredients: [],
   dietaryPreferences: [],
@@ -52,7 +53,7 @@ function generatedRecipe(index) {
     nutritionTags: ["nutrition:protein"],
     nutritionSummary: "단백질 중심 메뉴",
     substitutions: [],
-    steps: ["재료를 손질해요.", "충분히 익혀요."],
+    steps: ["재료를 손질해요.", "팬에서 충분히 익혀요.", "그릇에 담아 완성해요."],
     safetyNotes: ["고기를 충분히 익혀요."],
   };
 }
@@ -133,12 +134,15 @@ test("캐시가 없으면 Gemini 결과를 정책 검증 후 저장한다", asyn
   assert.equal(saved.recipes.length, 3);
 });
 
-test("품질 제한으로 레시피가 한 개만 생성되어도 정상 응답하고 이유를 전달한다", async () => {
+test("레시피가 세 개보다 적으면 세 번까지 재생성한 뒤 오류를 반환한다", async () => {
+  let attempts = 0;
   const service = createRecommendationService({
     supabaseClient: createSupabaseClient(),
     geminiClient: {
       model: "test-model",
-      generate: async () => ({
+      generate: async () => {
+        attempts += 1;
+        return {
         generated: {
           recipes: [generatedRecipe(1)],
           generationSummary: {
@@ -148,7 +152,8 @@ test("품질 제한으로 레시피가 한 개만 생성되어도 정상 응답�
           },
         },
         metadata: { model: "test-model", durationMs: 10 },
-      }),
+        };
+      },
     },
     cacheStore: {
       get: async () => null,
@@ -160,13 +165,14 @@ test("품질 제한으로 레시피가 한 개만 생성되어도 정상 응답�
     now: () => new Date("2026-07-22T06:00:00Z"),
   });
 
-  const result = await service.recommend(request);
-  assert.equal(result.recipes.length, 1);
-  assert.equal(result.meta.returnedCount, 1);
-  assert.equal(result.meta.stopReason, "qualityLimit");
+  await assert.rejects(
+    () => service.recommend(request),
+    (error) => error.code === "INVALID_RECOMMENDATION",
+  );
+  assert.equal(attempts, 3);
 });
 
-test("두 번째 생성에서는 정책 위반 메뉴만 제외하고 통과한 메뉴를 반환한다", async () => {
+test("정책 위반이 있으면 피드백을 반영해 세 개 전체를 다시 생성한다", async () => {
   let attempts = 0;
   let saved;
   const service = createRecommendationService({
@@ -177,7 +183,7 @@ test("두 번째 생성에서는 정책 위반 메뉴만 제외하고 통과한 
         attempts += 1;
         return {
           generated: {
-            recipes: [
+            recipes: attempts === 1 ? [
               generatedRecipe(1),
               {
                 ...generatedRecipe(2),
@@ -186,7 +192,7 @@ test("두 번째 생성에서는 정책 위반 메뉴만 제외하고 통과한 
                 requiredIngredients: [{ name: "양파", amount: 1, unit: "개" }],
               },
               generatedRecipe(3),
-            ],
+            ] : [1, 2, 3].map(generatedRecipe),
             generationSummary: {
               requestedCount: 3,
               returnedCount: 3,
@@ -213,10 +219,10 @@ test("두 번째 생성에서는 정책 위반 메뉴만 제외하고 통과한 
   const result = await service.recommend(request);
 
   assert.equal(attempts, 2);
-  assert.deepEqual(result.recipes.map(({ name }) => name), ["삼겹살 메뉴 1", "삼겹살 메뉴 3"]);
-  assert.equal(result.meta.returnedCount, 2);
-  assert.equal(result.meta.stopReason, "qualityLimit");
-  assert.equal(saved.recipes.length, 2);
+  assert.deepEqual(result.recipes.map(({ name }) => name), ["삼겹살 메뉴 1", "삼겹살 메뉴 2", "삼겹살 메뉴 3"]);
+  assert.equal(result.meta.returnedCount, 3);
+  assert.equal(result.meta.stopReason, "targetMet");
+  assert.equal(saved.recipes.length, 3);
 });
 
 test("추천 가능한 재료가 없으면 Gemini를 호출하지 않고 422 오류를 반환한다", async () => {

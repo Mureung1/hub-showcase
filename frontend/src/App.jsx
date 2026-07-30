@@ -18,6 +18,7 @@ import {
   buildIngredientFromForm,
   formatIngredientQuantity,
   getIngredientExpirationPresentation,
+  getIngredientStorageStatus,
 } from "./utils/ingredientUtils";
 import { isPantryIngredientName } from "./utils/pantry";
 import {
@@ -152,6 +153,14 @@ function App() {
         maxMissingIngredients: missingIngredientLimit,
         batchNumber: (recommendationMeta?.batchNumber ?? 1) + 1,
         excludedRecipeFingerprints: recommendationRecipes.map((recipe) => recipe.fingerprint),
+        previousRecommendations: recommendationRecipes.map((recipe) => ({
+          fingerprint: recipe.fingerprint,
+          name: recipe.name,
+          servingStyle: recipe.servingStyle,
+          cookingTechnique: recipe.cookingTechnique,
+          dishType: recipe.dishType,
+          primaryIngredients: recipe.primaryIngredients,
+        })),
       });
       setRecommendationRecipes((current) => [...current, ...result.recipes.filter((recipe) => !current.some((item) => item.fingerprint === recipe.fingerprint))]);
       setRecommendationMeta(result.meta);
@@ -551,7 +560,7 @@ function IngredientTile({ ingredient, onEdit, onAction }) {
   const ingredientTags = getIngredientTags(ingredient);
 
   return <article className={`ingredient-tile ${expiration.status}`}>
-    <div className="tile-top"><span className="ingredient-emoji" aria-hidden="true">{ingredient.icon}</span><div className="tile-primary"><div className="tile-title-row"><h3>{ingredient.name}</h3><strong className="quantity-text">{formatIngredientQuantity(ingredient)}</strong></div><div className={`expiration-line ${expiration.status}`}><span className="dday-badge">{expiration.badge}</span><strong>{expiration.label}</strong></div><span className="storage-info">{storageLabels[ingredient.storage]} 보관</span></div></div>
+    <div className="tile-top"><span className="ingredient-emoji" aria-hidden="true">{ingredient.icon}</span><div className="tile-primary"><div className="tile-title-row"><h3>{ingredient.name}</h3><strong className="quantity-text">{formatIngredientQuantity(ingredient)}</strong></div><div className={`expiration-line ${expiration.status}`}><span className="dday-badge">{expiration.badge}</span><strong>{getIngredientStorageStatus(ingredient)}</strong></div></div></div>
     <div
       className={`ingredient-labels${ingredientTags.length === 0 ? " is-empty" : ""}`}
       aria-label={ingredientTags.length > 0 ? "재료 태그" : undefined}

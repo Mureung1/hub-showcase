@@ -17,6 +17,7 @@ const request = {
   batchSize: 3,
   batchNumber: 1,
   excludedRecipeFingerprints: [],
+  previousRecommendations: [],
   allergens: [],
   excludedIngredients: [],
   dietaryPreferences: [],
@@ -48,7 +49,7 @@ function generatedRecipe(index) {
     nutritionTags: ["nutrition:protein"],
     nutritionSummary: "단백질 중심 메뉴",
     substitutions: [{ ingredient: "삼겹살", alternatives: ["목살"], note: "기름을 조금 줄여 조리하세요." }],
-    steps: ["재료를 손질해요.", "충분히 익혀요."],
+    steps: ["재료를 손질해요.", "팬에서 충분히 익혀요.", "그릇에 담아 완성해요."],
     safetyNotes: ["고기를 충분히 익혀요."],
   };
 }
@@ -88,11 +89,11 @@ test("레시피의 개 단위 사용량은 소수를 허용한다", () => {
   ];
 
   const result = generatedRecommendationSchema.parse({
-    recipes: [recipeWithFractionalCount],
+    recipes: [recipeWithFractionalCount, generatedRecipe(2), generatedRecipe(3)],
     generationSummary: {
       requestedCount: 3,
-      returnedCount: 1,
-      stopReason: "qualityLimit",
+      returnedCount: 3,
+      stopReason: "targetMet",
     },
   });
 
@@ -166,7 +167,7 @@ test("대체 재료 안내가 없는 응답은 형식 오류로 거부한다", a
   );
 });
 
-test("품질 기준을 통과한 레시피가 적으면 1~2개 응답을 허용한다", async () => {
+test("세 개보다 적은 Gemini 응답은 형식 오류로 거부한다", async () => {
   const fetchImpl = async () => new Response(JSON.stringify({
     id: "interaction-quality-limit",
     model: "test-model",
@@ -187,9 +188,10 @@ test("품질 기준을 통과한 레시피가 적으면 1~2개 응답을 허용�
   }), { status: 200, headers: { "Content-Type": "application/json" } });
   const client = createGeminiRecommendationClient({ apiKey: "test-key", model: "test-model", fetchImpl });
 
-  const result = await client.generate({ request, ingredientContext });
-  assert.equal(result.generated.recipes.length, 1);
-  assert.equal(result.generated.generationSummary.stopReason, "qualityLimit");
+  await assert.rejects(
+    () => client.generate({ request, ingredientContext }),
+    (error) => error instanceof GeminiRecommendationError && error.code === "GEMINI_INVALID_RESPONSE",
+  );
 });
 
 test("추천 요청은 부족 재료를 최대 다섯 개까지 허용한다", () => {
@@ -197,16 +199,15 @@ test("추천 요청은 부족 재료를 최대 다섯 개까지 허용한다", (
   assert.throws(() => recommendationRequestSchema.parse({ maxMissingIngredients: 6 }));
 });
 
-test("적합한 레시피가 없으면 빈 결과와 명시적인 종료 이유를 허용한다", () => {
-  const result = generatedRecommendationSchema.parse({
+test("빈 추천 결과는 형식 오류로 거부한다", () => {
+  assert.throws(() => generatedRecommendationSchema.parse({
     recipes: [],
     generationSummary: {
       requestedCount: 3,
       returnedCount: 0,
       stopReason: "noSuitableRecipe",
     },
-  });
-  assert.equal(result.recipes.length, 0);
+  }));
 });
 
 test("실제 반환 개수와 요약 개수가 다르면 형식 오류로 거부한다", () => {

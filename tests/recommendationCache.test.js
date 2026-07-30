@@ -13,6 +13,7 @@ const request = {
   batchSize: 3,
   batchNumber: 1,
   excludedRecipeFingerprints: [],
+  previousRecommendations: [],
   allergens: [],
   excludedIngredients: [],
   dietaryPreferences: [],

@@ -39,6 +39,14 @@ export const NUTRITION_TAGS = [
 ];
 
 const futurePreferenceSchema = z.array(z.string().trim().min(1).max(100)).max(20).default([]);
+const previousRecommendationSchema = z.object({
+  fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  name: z.string().trim().min(2).max(100),
+  servingStyle: z.enum(SERVING_STYLES),
+  cookingTechnique: z.enum(COOKING_TECHNIQUES),
+  dishType: z.enum(DISH_TYPES),
+  primaryIngredients: z.array(z.string().trim().min(1).max(100)).min(1).max(3),
+}).strict();
 
 export const recommendationRequestSchema = z.object({
   mode: z.enum(RECOMMENDATION_MODES).default("quick"),
@@ -46,6 +54,7 @@ export const recommendationRequestSchema = z.object({
   batchSize: z.literal(3).default(3),
   batchNumber: z.number().int().min(1).max(5).default(1),
   excludedRecipeFingerprints: z.array(z.string().regex(/^[a-f0-9]{64}$/)).max(12).default([]),
+  previousRecommendations: z.array(previousRecommendationSchema).max(12).default([]),
   allergens: futurePreferenceSchema,
   excludedIngredients: futurePreferenceSchema,
   dietaryPreferences: futurePreferenceSchema,
@@ -57,11 +66,26 @@ export const recommendationRequestSchema = z.object({
       message: "첫 추천 요청에는 제외할 레시피 fingerprint를 전달할 수 없습니다.",
     });
   }
+  if (request.batchNumber === 1 && request.previousRecommendations.length > 0) {
+    context.addIssue({
+      code: "custom",
+      path: ["previousRecommendations"],
+      message: "첫 추천 요청에는 이전 추천 정보를 전달할 수 없습니다.",
+    });
+  }
   if (request.batchNumber > 1 && request.excludedRecipeFingerprints.length === 0) {
     context.addIssue({
       code: "custom",
       path: ["excludedRecipeFingerprints"],
       message: "추가 추천 요청에는 이전 레시피 fingerprint가 필요합니다.",
+    });
+  }
+  const excludedFingerprints = new Set(request.excludedRecipeFingerprints);
+  if (request.previousRecommendations.some(({ fingerprint }) => !excludedFingerprints.has(fingerprint))) {
+    context.addIssue({
+      code: "custom",
+      path: ["previousRecommendations"],
+      message: "이전 추천 정보는 제외할 레시피 fingerprint와 일치해야 합니다.",
     });
   }
 });
@@ -103,7 +127,7 @@ export const generatedRecipeSchema = z.object({
   nutritionTags: z.array(z.enum(NUTRITION_TAGS)).max(NUTRITION_TAGS.length),
   nutritionSummary: z.string().trim().min(1).max(300),
   substitutions: z.array(generatedSubstitutionSchema).max(5),
-  steps: z.array(z.string().trim().min(1).max(300)).min(2).max(10),
+  steps: z.array(z.string().trim().min(5).max(300)).min(3).max(10),
   safetyNotes: z.array(z.string().trim().min(1).max(300)).max(3),
 }).strict().superRefine((recipe, context) => {
   if (recipe.servingStyle === "mealSet" && recipe.components.length < 2) {
@@ -123,43 +147,13 @@ export const generatedRecipeSchema = z.object({
 });
 
 export const generatedRecommendationSchema = z.object({
-  recipes: z.array(generatedRecipeSchema).max(3),
+  recipes: z.array(generatedRecipeSchema).length(3),
   generationSummary: z.object({
     requestedCount: z.literal(3),
-    returnedCount: z.number().int().min(0).max(3),
-    stopReason: z.enum(["targetMet", "qualityLimit", "noSuitableRecipe"]),
+    returnedCount: z.literal(3),
+    stopReason: z.literal("targetMet"),
   }).strict(),
-}).strict().superRefine((result, context) => {
-  if (result.generationSummary.returnedCount !== result.recipes.length) {
-    context.addIssue({
-      code: "custom",
-      path: ["generationSummary", "returnedCount"],
-      message: "반환 개수는 실제 레시피 개수와 같아야 합니다.",
-    });
-  }
-  if (result.recipes.length === 3 && result.generationSummary.stopReason !== "targetMet") {
-    context.addIssue({
-      code: "custom",
-      path: ["generationSummary", "stopReason"],
-      message: "레시피 3개를 반환했다면 목표 달성으로 표시해야 합니다.",
-    });
-  }
-  if (result.recipes.length > 0 && result.recipes.length < 3
-    && result.generationSummary.stopReason !== "qualityLimit") {
-    context.addIssue({
-      code: "custom",
-      path: ["generationSummary", "stopReason"],
-      message: "레시피를 적게 반환했다면 품질 제한으로 표시해야 합니다.",
-    });
-  }
-  if (result.recipes.length === 0 && result.generationSummary.stopReason !== "noSuitableRecipe") {
-    context.addIssue({
-      code: "custom",
-      path: ["generationSummary", "stopReason"],
-      message: "추천이 없다면 적합한 레시피 없음으로 표시해야 합니다.",
-    });
-  }
-});
+}).strict();
 
 export const recommendationRecipeSchema = generatedRecipeSchema.extend({
   id: z.string().startsWith("recipe-"),
@@ -167,7 +161,7 @@ export const recommendationRecipeSchema = generatedRecipeSchema.extend({
   missingIngredients: z.array(z.string().trim().min(1).max(100)).max(5),
 }).strict();
 
-export const recommendationRecipesSchema = z.array(recommendationRecipeSchema).max(3);
+export const recommendationRecipesSchema = z.array(recommendationRecipeSchema).length(3);
 
 const stringSchema = (description) => ({
   type: "string",
@@ -202,6 +196,7 @@ export const geminiRecommendationJsonSchema = {
   properties: {
     recipes: {
       type: "array",
+      minItems: 3,
       maxItems: 3,
       items: {
         type: "object",
@@ -252,6 +247,7 @@ export const geminiRecommendationJsonSchema = {
           },
           steps: {
             type: "array",
+            minItems: 3,
             items: stringSchema("초보자도 실행할 수 있는 한 단계의 조리 설명"),
           },
           safetyNotes: {
@@ -286,11 +282,11 @@ export const geminiRecommendationJsonSchema = {
     generationSummary: {
       type: "object",
       properties: {
-        requestedCount: { type: "integer", description: "항상 요청한 목표 개수 3" },
-        returnedCount: { type: "integer", description: "실제로 품질 기준을 통과해 반환한 개수" },
+        requestedCount: { type: "integer", enum: [3], description: "항상 요청한 목표 개수 3" },
+        returnedCount: { type: "integer", enum: [3], description: "품질 기준을 통과해 반환한 개수 3" },
         stopReason: {
           type: "string",
-          enum: ["targetMet", "qualityLimit", "noSuitableRecipe"],
+          enum: ["targetMet"],
         },
       },
       required: ["requestedCount", "returnedCount", "stopReason"],

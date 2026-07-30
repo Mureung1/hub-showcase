@@ -63,35 +63,31 @@ async function generateValidRecipes({ geminiClient, request, ingredientContext }
   let policyFeedback = [];
   let lastError;
 
-  for (let attempt = 1; attempt <= 2; attempt += 1) {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
       const result = await geminiClient.generate({ request, ingredientContext, policyFeedback });
-      const recipes = validateGeneratedRecipes(
-        result.generated,
-        request,
-        ingredientContext,
-        { allowPartial: attempt === 2 },
-      );
+      const recipes = validateGeneratedRecipes(result.generated, request, ingredientContext);
+      if (recipes.length !== request.batchSize) {
+        throw new RecommendationPolicyError([
+          `RECIPE_COUNT_REQUIRED: 정확히 ${request.batchSize}개의 품질 검증된 레시피가 필요합니다.`,
+        ]);
+      }
       return {
         recipes,
         generationSummary: {
           requestedCount: 3,
-          returnedCount: recipes.length,
-          stopReason: recipes.length === 3
-            ? "targetMet"
-            : recipes.length === 0
-              ? "noSuitableRecipe"
-              : "qualityLimit",
+          returnedCount: 3,
+          stopReason: "targetMet",
         },
         metadata: result.metadata,
         attempt,
       };
     } catch (error) {
       lastError = error;
-      const retryPolicyError = error instanceof RecommendationPolicyError && attempt === 1;
+      const retryPolicyError = error instanceof RecommendationPolicyError && attempt < 3;
       const retryFormatError = error instanceof GeminiRecommendationError
         && error.code === "GEMINI_INVALID_RESPONSE"
-        && attempt === 1;
+        && attempt < 3;
       if (!retryPolicyError && !retryFormatError) throw error;
       policyFeedback = error.violations ?? [error.message];
     }
@@ -144,12 +140,8 @@ export function createRecommendationService({ supabaseClient, geminiClient, cach
             batchNumber: cached.batch_number,
             maxBatches: 5,
             maxRecipes: 15,
-            returnedCount: cached.recipes.length,
-            stopReason: cached.recipes.length === 3
-              ? "targetMet"
-              : cached.recipes.length === 0
-                ? "noSuitableRecipe"
-                : "qualityLimit",
+            returnedCount: 3,
+            stopReason: "targetMet",
             generatedAt: cached.generated_at,
             expiresAt: cached.expires_at,
           },

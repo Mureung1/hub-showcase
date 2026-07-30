@@ -19,6 +19,14 @@ test("fetchRecommendations sends the fixed API contract", async () => {
       batchSize: 3,
       batchNumber: 2,
       excludedRecipeFingerprints: ["a".repeat(64)],
+      previousRecommendations: [{
+        fingerprint: "a".repeat(64),
+        name: "두부 덮밥",
+        servingStyle: "singleDish",
+        cookingTechnique: "panFry",
+        dishType: "riceBowl",
+        primaryIngredients: ["두부"],
+      }],
       allergens: [],
       excludedIngredients: [],
       dietaryPreferences: [],
@@ -31,6 +39,14 @@ test("fetchRecommendations sends the fixed API contract", async () => {
     maxMissingIngredients: 1,
     batchNumber: 2,
     excludedRecipeFingerprints: ["a".repeat(64)],
+    previousRecommendations: [{
+      fingerprint: "a".repeat(64),
+      name: "두부 덮밥",
+      servingStyle: "singleDish",
+      cookingTechnique: "panFry",
+      dishType: "riceBowl",
+      primaryIngredients: ["두부"],
+    }],
   });
 
   assert.equal(result.meta.source, "cache");

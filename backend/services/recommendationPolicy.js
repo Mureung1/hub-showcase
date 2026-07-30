@@ -226,6 +226,7 @@ export function validateGeneratedRecipes(generated, request, ingredientContext, 
   ]));
   const pantryNames = new Set(ASSUMED_PANTRY_INGREDIENTS.map(normalizeIngredientName));
   const excludedFingerprints = new Set(request.excludedRecipeFingerprints);
+  const previousRecommendations = request.previousRecommendations ?? [];
   const seenNames = new Set();
   const seenFingerprints = new Set();
 
@@ -252,6 +253,15 @@ export function validateGeneratedRecipes(generated, request, ingredientContext, 
     if (missingIngredients.length > request.maxMissingIngredients) {
       addRecipeViolation(index, `MISSING_INGREDIENT_LIMIT: recipes.${index}의 부족 재료가 ${request.maxMissingIngredients}개를 초과합니다.`);
     }
+    if (!recipe.requiredIngredients.some((ingredient) => ownedByName.has(normalizeIngredientName(ingredient.name)))) {
+      addRecipeViolation(index, `INVENTORY_INGREDIENT_REQUIRED: recipes.${index}는 보유 재료를 필수 재료로 최소 한 가지 사용해야 합니다.`);
+    }
+    if (requiredNames.size !== recipe.requiredIngredients.length) {
+      addRecipeViolation(index, `DUPLICATE_REQUIRED_INGREDIENT: recipes.${index}의 필수 재료가 중복됩니다.`);
+    }
+    if ([...optionalNames].some((name) => requiredNames.has(name))) {
+      addRecipeViolation(index, `INGREDIENT_ROLE_OVERLAP: recipes.${index}의 같은 재료가 필수와 선택 재료에 중복됩니다.`);
+    }
     const requiredTagSets = recipe.requiredIngredients.map((ingredient) => {
       const ownedIngredient = ownedByName.get(normalizeIngredientName(ingredient.name));
       return ownedIngredient?.tags?.length
@@ -268,6 +278,12 @@ export function validateGeneratedRecipes(generated, request, ingredientContext, 
     ));
     if (hasInstantIngredient && hasProcessedIngredient && !hasBalancingIngredient) {
       addRecipeViolation(index, `PROCESSING_BALANCE_REQUIRED: recipes.${index}의 인스턴트·가공식품 조합에는 채소 또는 가공되지 않은 단백질 필수 재료가 필요합니다.`);
+    }
+    const requiredNutritionTags = new Set(requiredTagSets
+      .flat()
+      .filter((tag) => tag.startsWith("nutrition:")));
+    if (request.mode === "balanced" && requiredNutritionTags.size < 2) {
+      addRecipeViolation(index, `BALANCED_NUTRITION_REQUIRED: recipes.${index}의 균형식에는 서로 다른 영양 식품군이 최소 두 가지 필요합니다.`);
     }
     if (recipe.servingStyle === "mealSet" && recipe.dishType !== "mealSet") {
       addRecipeViolation(index, `SERVING_STYLE_MISMATCH: recipes.${index}의 한 상 구성은 dishType도 mealSet이어야 합니다.`);
@@ -294,6 +310,13 @@ export function validateGeneratedRecipes(generated, request, ingredientContext, 
     seenNames.add(normalizedRecipeName);
     seenFingerprints.add(fingerprint);
 
+    for (const previousRecipe of previousRecommendations) {
+      if (getRecipeDifferenceCount(recipe, previousRecipe) < 2) {
+        addRecipeViolation(index, `PREVIOUS_RECOMMENDATION_TOO_SIMILAR: recipes.${index}가 이전 추천 ${previousRecipe.name}과 실질적으로 유사합니다.`);
+        break;
+      }
+    }
+
     const dDayIngredients = recipe.requiredIngredients
       .map((ingredient) => ownedByName.get(normalizeIngredientName(ingredient.name)))
       .filter((ingredient) => ingredient?.daysRemaining === 0)
@@ -315,10 +338,10 @@ export function validateGeneratedRecipes(generated, request, ingredientContext, 
   for (let leftIndex = 0; leftIndex < generated.recipes.length; leftIndex += 1) {
     for (let rightIndex = leftIndex + 1; rightIndex < generated.recipes.length; rightIndex += 1) {
       if (invalidRecipeIndexes.has(leftIndex) || invalidRecipeIndexes.has(rightIndex)) continue;
-      if (getRecipeDifferenceCount(generated.recipes[leftIndex], generated.recipes[rightIndex]) < 1) {
+      if (getRecipeDifferenceCount(generated.recipes[leftIndex], generated.recipes[rightIndex]) < 2) {
         addRecipeViolation(
           rightIndex,
-          `INSUFFICIENT_VARIETY: recipes.${leftIndex}와 recipes.${rightIndex}는 조리 형태·기법·주재료 중 한 가지 이상 달라야 합니다.`,
+          `INSUFFICIENT_VARIETY: recipes.${leftIndex}와 recipes.${rightIndex}는 조리 형태·기법·주재료 중 두 가지 이상 달라야 합니다.`,
         );
       }
     }
