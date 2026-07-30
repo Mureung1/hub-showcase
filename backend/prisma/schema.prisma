@@ -50,6 +50,8 @@ model Letter {
   threadId    String? // 스레드 식별자. 매칭이 성사된 Match.id를 그대로 재사용한다.
   replyToId   String? // 자기참조 — 어느 편지에 대한 답장인지 (답장 편지에만 채워짐)
   recipientId String? // 이 편지가 향하는 사람 (답장 편지에만 채워짐 — 모음소행 일반 편지는 null)
+  deliverAt   DateTime? // 답장이 상대에게 실제로 보이는 시각(createdAt + 8h, 답장 편지에만 채워짐).
+  // 그 전엔 수신자 조회에서 제외되고(존재 자체가 안 보임), 작성자 본인에게는 "보내는 중"으로 계속 보인다.
 
   replyTo Letter?  @relation("LetterReply", fields: [replyToId], references: [id])
   replies Letter[] @relation("LetterReply")

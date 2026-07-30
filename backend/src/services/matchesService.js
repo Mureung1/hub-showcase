@@ -2,7 +2,7 @@
 // 매칭된 편지(matchedLetter)를 읽을 때는 항상 select로 authorId를 제외해서,
 // "응답에 작성자를 역추적할 수 있는 정보가 나가면 안 된다"는 원칙을 쿼리 단계부터 강제한다.
 import { prisma } from '../lib/prisma.js'
-import { CACHE_TTL_DAYS } from '../config/matchingConfig.js'
+import { CACHE_TTL_DAYS, REPLY_DELIVERY_HOURS } from '../config/matchingConfig.js'
 
 const MATCHED_LETTER_SELECT = { id: true, content: true, createdAt: true, isMatchable: true }
 
@@ -169,6 +169,7 @@ export async function replyToMatch({ matchId, userId, title, content }) {
         content,
         envelope: 'basic',
         isMatchable: false,
+        deliverAt: new Date(Date.now() + REPLY_DELIVERY_HOURS * 60 * 60 * 1000),
       },
     })
     return { reply }

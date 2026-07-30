@@ -6,7 +6,7 @@ import {
   createLetter,
   getLetterById,
   getThreadLetterForUser,
-  hasLetterToday,
+  hasSentLetterWithinDelay,
   listMyLetters,
   listThreadLettersForUser,
   replyToLetter,
@@ -23,15 +23,15 @@ export async function postLetter(req, res, next) {
   try {
     const data = createLetterSchema.parse(req.body)
 
-    // 하루 1편 제한 + 미해결 추천 시 차단 (docs/plan.md 서비스 규칙, 배포 직전에 다루기로 미뤄둔 항목)
-    const [todayLetter, unresolvedMatch] = await Promise.all([
-      DAILY_LETTER_LIMIT_ENABLED ? hasLetterToday(req.userId) : null,
+    // 24시간 롤링 제한 + 미해결 추천 시 차단 (docs/plan.md 서비스 규칙)
+    const [recentLetter, unresolvedMatch] = await Promise.all([
+      DAILY_LETTER_LIMIT_ENABLED ? hasSentLetterWithinDelay(req.userId) : null,
       findUnresolvedMatchForAuthor(req.userId),
     ])
-    if (DAILY_LETTER_LIMIT_ENABLED && todayLetter) {
+    if (DAILY_LETTER_LIMIT_ENABLED && recentLetter) {
       return res
         .status(409)
-        .json({ error: '오늘은 이미 편지를 보냈어요. 내일 다시 써주세요.', reason_code: 'daily_limit' })
+        .json({ error: '편지를 보낸 지 24시간이 안 지났어요. 조금 더 기다려주세요.', reason_code: 'daily_limit' })
     }
     if (unresolvedMatch) {
       return res.status(409).json({
@@ -87,9 +87,12 @@ export async function getLetter(req, res, next) {
   }
 }
 
-// 8시간 배달 지연(E2)이 아직 구현 전이라 지금은 항상 'active'다. E2가 붙으면 여기서
-// 지연 경과 여부에 따라 'sending'/'active'를 나눠 반환하도록 바꾸면 된다.
+// 8시간 배달 지연(E2). listThreadLettersForUser/getThreadLetterForUser가 이미
+// deliveredOrMine으로 걸러주기 때문에, 여기 도달하는 deliverAt 미래 항목은 항상
+// "내가 쓴 것"이다(수신자가 아직 못 보는 건 쿼리 단계에서 이미 빠짐) — 그래서 아래는
+// 별도 authorId 비교 없이 deliverAt만 보고 'sending'/'active'를 나눠도 안전하다.
 function serializeThreadLetter(letter) {
+  const sending = !!(letter.deliverAt && letter.deliverAt > new Date())
   return {
     letter_id: letter.id,
     thread_id: letter.threadId,
@@ -97,7 +100,7 @@ function serializeThreadLetter(letter) {
     preview: `${letter.content.slice(0, 40)}…`,
     body: letter.content,
     created_at: letter.createdAt,
-    status: 'active',
+    status: sending ? 'sending' : 'active',
   }
 }
 
@@ -126,6 +129,9 @@ export async function getThreadLetter(req, res, next) {
         body: letter.content,
         created_at: letter.createdAt,
         is_mine: letter.authorId === req.userId,
+        // deliveredOrMine 필터 덕분에 여기 있는 미배달(deliverAt 미래) 항목은 항상 내가 쓴 것.
+        status: letter.deliverAt && letter.deliverAt > new Date() ? 'sending' : 'active',
+        deliver_at: letter.deliverAt,
       })),
     })
   } catch (err) {
