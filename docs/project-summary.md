@@ -78,91 +78,86 @@ RegisterScreen은 `[*]→open`, CandidateListScreen은 `open→matched/pending`,
 
 ## 6. 이번 프로젝트에서 실제로 만진 개념들
 
+아래는 전부 이 저장소 코드에 실제로 있거나, 오늘 직접 겪은(재현/디버깅한) 것만 남긴 목록이다. "알아두면 좋은 일반 개념"이었지 실제로 쓰지 않은 것들(GraphQL, WebSocket, TypeScript 등)은 7번 "대충 넘어간 부분"으로 옮겼다.
+
 ### 큰 틀 (Scope-level frameworks)
 - **SDLC(소프트웨어 개발 생명주기)** — 기획→설계→구현→테스트→배포→운영. `docs/checklist.md`의 주차별 구성이 이 순서.
-- **계층형 아키텍처(Layered Architecture)** — 위 2번 그림. 각 층은 자기 책임만 짐.
-- **도메인 객체의 상태 흐름** — 위 4번. 이 프로젝트를 한 장으로 압축하는 방법.
-- **요청 생명주기(Request Lifecycle)** — 위 5번. 층을 수직으로 관통하는 시선.
-- **책임 소유권 지도(Ownership Map)** — FE는 입력/화면 상태, BE는 규칙/인가, DB는 영속성/무결성, Auth는 신원. 오늘 버그들은 대부분 "누가 최신값의 주인인지"가 헷갈려서 남.
+- **계층형 아키텍처(Layered Architecture)** — 위 2번 그림. React/Express/Supabase가 각자 자기 책임만 짐.
+- **도메인 객체의 상태 흐름** — 위 4번. `matching_requests`의 `status`/`is_leader`/`group_id`가 실제 구현.
+- **요청 생명주기(Request Lifecycle)** — 위 5번. 실제 디버깅할 때 이 흐름을 따라가며 원인을 찾음.
+- **책임 소유권 지도(Ownership Map)** — App.jsx의 `joinedCandidate.groupCount`를 누가 최신으로 유지할지 헷갈려서 오늘 버그가 났던 것 자체가 이 개념의 실제 사례.
 
-### 프론트엔드 (React)
-- 컴포넌트, props, state(`useState`), 파생 상태(derived state), state 끌어올리기(lifting state up)
-- `useEffect` + 폴링(polling) + cleanup(뒷정리)
-- `useRef`로 "한 번만 실행" 가드
-- 제어 컴포넌트(controlled input), 네이티브 HTML5 폼 검증
-- 접근성(ARIA: `role="switch"`, `role="radio"`, `aria-pressed`, `aria-checked`)
-- 낙관적 UI 업데이트(optimistic update)
-- localStorage를 이용한 임시 데이터 전달
-- 가상 DOM/재조정(reconciliation), 리스트의 `key` prop
-- 재렌더링 트리거(자기 state / props / 부모 재렌더링)
-- 컴포넌트 생명주기(mount/update/unmount)
-- Context API(지금은 안 씀, prop drilling 대안), 메모이제이션(useMemo/useCallback)
-- 클라이언트 사이드 라우팅(안 씀 — step 숫자로 화면 전환), HMR(Hot Module Replacement)
-- 타입스크립트(안 씀 — 썼으면 잡혔을 버그들이 있었음)
+### 프론트엔드 (React) — `project_idea/src/`
+- 컴포넌트, props, state(`useState`), 파생 상태(derived state — `GroupChatScreen.jsx`의 `count`/`canBoard`), state 끌어올리기(`App.jsx`가 `registration`/`joinedCandidate`를 들고 있는 것)
+- `useEffect` + 폴링(polling, `setInterval`) + cleanup(`clearInterval`) — `GroupChatScreen.jsx`, `CandidateListScreen.jsx`
+- `useRef`로 "한 번만 실행" 가드 — `App.jsx`의 `hasResumedRef`
+- 제어 컴포넌트(controlled input), 네이티브 HTML5 폼 검증(`required`, `pattern`, `minLength`) — `LoginScreen.jsx`
+- 접근성(ARIA: `role="switch"`, `role="radio"`, `aria-pressed`, `aria-checked`, `aria-labelledby`)
+- 낙관적 UI 업데이트(optimistic update) — `handleConsent`, `handleBoard`
+- localStorage를 이용한 임시 데이터 전달 — 회원가입 후 이메일 인증 전 프로필 임시 저장, 마지막 등록 정보 기억
+- 리스트의 `key` prop — `candidates.map((c) => <div key={c.id}>)`
+- 콜백 props로 자식→부모 통신 — `onUpdateCandidate`, `onJoin`, `onSubmit`
 
-### 백엔드 (Express/Node)
-- REST 라우트, 라우트 등록 순서(`/mine/:userId`를 `/:id`보다 먼저)
-- 미들웨어 체인(`cors`, `express.json`)과 `next()`
+### 백엔드 (Express/Node) — `server/`
+- REST 라우트, 라우트 등록 순서(`/mine/:userId`를 `/:id`보다 먼저 등록해야 하는 이유)
+- 미들웨어 등록 순서(`cors` → `express.json` → 라우터)
 - 여러 라우트가 공유하는 헬퍼 함수(`applyRatingSubmission`, `sweepAutoRatings`)
-- 이벤트 루프/논블로킹 I/O, `async`/`await`
-- 무상태(stateless) 서버 — 수평 확장이 쉬운 이유
-- 중앙화된 에러 처리(지금은 라우트마다 반복 — 개선 여지)
-- 입력 검증 라이브러리(zod/joi — 지금은 안 씀)
-- 로깅(지금은 구조화 안 됨)
-- 인가(authorization)를 서버에서도 재확인(403 체크)
+- `async`/`await`로 DB 호출 기다리기
+- 인가(authorization)를 서버에서도 재확인 — `/board`의 `is_leader` 403 체크(프론트에서 버튼만 숨기는 걸로 안 끝냄)
 
 ### 데이터베이스/Supabase
-- 관계형 테이블, 외래키 제약(foreign key constraint), 참조 무결성, CASCADE 삭제(지금 없음)
-- Row Level Security(RLS) — `USING` vs `WITH CHECK`
+- 관계형 테이블, 외래키 제약(foreign key constraint), 참조 무결성 — 오늘 테스트 계정 정리하다 `ratings`가 `matching_requests`를 참조 중이라 삭제가 막혔던 것으로 실제로 겪음
+- Row Level Security(RLS) — `USING` vs `WITH CHECK`, public 버킷도 SELECT 정책이 필요했던 것
 - service-role key vs anon key(최소 권한 원칙)
-- N+1 쿼리 문제, 관계형 데이터를 JS에서 직접 병합
-- upsert, Map으로 그룹핑, PostgREST의 `.or()` 필터 문법
+- N+1 쿼리 패턴 — `matching_requests`를 먼저 가져오고 관련 `users`를 따로 가져와 JS에서 병합
+- upsert(`ProfileScreen.jsx`), Map으로 그룹핑(`roomsByKey`), PostgREST의 `.or()` 필터 문법
 
 ### 인증/보안
-- 인가(authorization) vs 인증(authentication)
-- OAuth/OAuth2, SSO, 액세스 토큰 vs 리프레시 토큰, JWT
-- 매직 링크, 익명 인증(anonymous auth), API 키
-- CORS, 동일 출처 정책(Same-Origin Policy), 프리플라이트 요청
-- XSS, CSRF
-
-### 네트워킹
-- IP 주소, 도메인 네임, DNS, 포트, 소켓
-- TCP vs UDP
-- HTTP, HTTPS, TLS/SSL, 인증서
-- HTTP 메서드, 상태 코드, 헤더, 바디, 쿼리 스트링, 쿠키/세션
-- 폴링, 롱 폴링, 웹소켓(WebSocket), SSE(Server-Sent Events)
-- 지연시간(latency), RTT, 캐시, CDN, 압축(gzip/brotli), HTTP/1.1 vs 2 vs 3, 커넥션 풀링
+- 인가(authorization) vs 인증(authentication) — 로그인 여부와 "그룹장만 가능" 여부는 다른 문제
+- 매직 링크, 익명 인증(anonymous auth, `signInAnonymously`) — 실제 구현된 로그인 방식
+- CORS, 프리플라이트 요청 — 오늘 배포 장애의 실제 원인, `curl -X OPTIONS`로 직접 확인함
 
 ### API 설계
-- REST, GraphQL, RPC, JSON
-- 웹훅(webhook) — Render의 Deploy Hook이 실제 예
-- 페이지네이션, 레이트 리밋, 콘텐츠 협상
+- REST, JSON
+- 웹훅(webhook) — Render의 Deploy Hook을 실제로 마주침
 
 ### 배포/인프라
-- 빌드타임 vs 런타임 설정(Vite `VITE_` 접두사 vs Render `process.env`)
-- 프로덕션 브랜치 vs 프리뷰 배포 vs 브랜치 별칭 — 오늘 제일 크게 부딪힌 개념
-- 리버스 프록시, 로드 밸런서, 헬스체크, 콜드 스타트, 서버리스
-- 컨테이너/Docker(4주차에 "시간 남으면"으로 미룸)
-- 블루-그린/카나리 배포, CI/CD
+- 빌드타임 vs 런타임 설정 — Vite의 `VITE_` 접두사(빌드에 박힘) vs Render의 `process.env`(실행 시 읽음)
+- 프로덕션 브랜치 vs 프리뷰 배포 vs 브랜치 별칭 — 오늘 제일 크게 부딪힌 개념(`ridesplit.vercel.app`이 `main` 기준이라 안 갱신되고, `work` 브랜치 별칭만 최신이었던 것)
+- 헬스체크(`/api/health`), 콜드 스타트(Render 무료 플랜에서 실제로 겪음)
+- CI/CD의 가장 단순한 형태 — `git push`하면 Render/Vercel이 자동으로 재배포
 
 ### 테스트/설계 원칙
-- TDD(Red-Green), 순수 함수(pure function)/참조 투명성
-- 단위 테스트 vs 통합 테스트 vs E2E(이 프로젝트는 단위 테스트만 있고 나머지는 수동 검증)
-- 관심사의 분리(separation of concerns), DRY 원칙과 그 예외(의도적 중복)
-- 레이스 컨디션, 원자성(atomicity)/트랜잭션, 멱등성(idempotency)
-- 유한 상태 기계(FSM) — 상태를 여러 변수로 쪼갤 때의 함정
+- TDD(Red-Green) — `matching.test.js`, `describeCost.test.js`
+- 순수 함수(pure function) — `matching.js`, `describeCost.js`를 DB/네트워크 없이 테스트 가능하게 분리
+- 단위 테스트만 있고 통합/E2E는 없음 — 라우트·화면은 전부 수동/스크립트로 검증
+- 관심사의 분리(separation of concerns) — FE/BE/DB 분리, 가격 로직을 `describeCost.js`로 뽑은 것
+- DRY 원칙의 의도적 예외 — `classifyBoarding`을 서버·프론트에 일부러 중복 구현(그룹장 아닌 멤버는 서버 응답을 못 받아서)
+- 레이스 컨디션 — 동시 신청 시 정원 초과 가능성, "저장 후 재검증" 임시방편으로 대응
+- 유한 상태 기계(FSM)와 상태 조합 누락 — `status` + `is_leader`를 따로 둬서 "방장 혼자인 방" 조합을 세 번이나 놓친 것
 
 ---
 
-## 7. 대충 넘어간 부분 (알고는 있어야 할 것)
+## 7. 대충 넘어간 부분 / 안 쓴 것 (알고는 있어야 할 것)
 
-- **폴링은 진짜 실시간이 아님** — 3~5초 텀 동안은 최신 상태가 아닐 수 있음. Supabase Realtime(웹소켓 기반)을 썼으면 대체 가능했음.
-- **동시성 제어가 정교하지 않음** — "저장 후 재검증해서 초과하면 되돌리기"라는 임시방편. 진짜 DB 트랜잭션/락은 아님.
+**실제로 안 쓴 기술(오늘 얘기는 나눴지만 이 프로젝트엔 없음)**
+- **웹소켓/SSE/Supabase Realtime** — 전부 폴링(`setInterval`)으로 대체함. 진짜 실시간은 아니고, 3~5초 텀 동안은 최신 상태가 아닐 수 있음.
+- **TypeScript** — 순수 JS만 씀. 이번에 났던 필드명 오타/구조 불일치 버그 중 일부는 TS였으면 컴파일 단계에서 잡혔을 것.
+- **Context API, useMemo/useCallback** — props로만 데이터를 내려줬고(prop drilling), 메모이제이션도 안 함. 지금 규모에선 필요 없었음.
+- **클라이언트 사이드 라우팅(React Router)** — URL이 안 바뀌고 `step` 숫자로만 화면 전환. 그래서 뒤로가기 버튼을 직접 구현해야 했음.
+- **OAuth/SSO, GraphQL** — Supabase Auth는 썼지만 구글 로그인 같은 OAuth 연동은 없음. API도 REST만 쓰고 GraphQL은 안 씀.
+- **DB 트랜잭션/락, CASCADE 삭제** — 동시 신청 정원 초과는 "저장 후 재검증"이라는 임시방편으로만 막음. 삭제 순서를 잘못 지키면 외래키 에러가 나는 것도 CASCADE가 없어서(오늘 테스트 계정 정리하다 직접 겪음).
+- **입력 검증 라이브러리(zod/joi), 중앙화된 에러 처리, 구조화된 로깅** — 라우트마다 그때그때 `if (error) return res.status(500)...`로 처리함.
+- **Docker** — 4주차에 "시간 남으면" 학습용으로 미뤄뒀고 결국 안 함.
+
+**설계상 아쉬웠던 지점**
 - **상태 설계가 꼬여있었음** — `status` + `is_leader` + `group_id`를 따로 두다 보니 "방장 혼자인 방" 경계 케이스에서 버그가 세 번 반복됨.
 - **자동 테스트는 순수 로직만** — Express 라우트나 React 컴포넌트는 자동 테스트 없이 손으로 검증함.
-- **인증 내부 동작은 블랙박스** — Supabase가 다 해줘서 실제로 어떻게 도는지는 깊게 안 봄.
-- **평가 점수 차등 차감 미구현** — 노쇼는 큰 차감 있지만, 지각 소폭 차감/임박 취소 대폭 차감은 없음(README에 기록).
-- **마이페이지 이용 이력 화면 없음** — 평가 기록은 쌓이지만 조회 화면이 없음(README에 기록).
+- **인증 내부 동작은 블랙박스** — Supabase가 다 해줘서 JWT/세션이 실제로 어떻게 도는지는 깊게 안 봄.
+
+**의도적으로 미룬 기능(README에 기록됨)**
+- **평가 점수 차등 차감 미구현** — 노쇼는 큰 차감 있지만, 지각 소폭 차감/임박 취소 대폭 차감은 없음.
+- **마이페이지 이용 이력 화면 없음** — 평가 기록은 쌓이지만 조회 화면이 없음.
 
 ---
 
