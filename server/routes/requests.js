@@ -626,12 +626,13 @@ router.post('/:id/board', async (req, res) => {
   const boardedAt = new Date()
   const result = classifyBoarding(target.desired_time, new Date(target.created_at), boardedAt)
 
-  // 그룹장이 탑승을 확인하면 그룹 전체(매칭된 멤버 전원)에게 반영
+  // 그룹장이 탑승을 확인하면 그룹 전체(매칭된 멤버 전원 + 아직 아무도 안 들어와 status가
+  // 'open'으로 남아있는 혼자인 그룹장 자신)에게 반영
   const { error: updateError } = await supabase
     .from('matching_requests')
     .update({ boarded_at: boardedAt.toISOString() })
     .eq('group_id', target.group_id)
-    .eq('status', 'matched')
+    .or('status.eq.matched,is_leader.eq.true')
 
   if (updateError) {
     return res.status(500).json({ error: updateError.message })

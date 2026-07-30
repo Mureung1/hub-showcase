@@ -104,7 +104,9 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
   }
 
   const me = members.find((m) => m.id === myRequestId);
-  const matchedMembers = members.filter((m) => m.status === "matched");
+  // 방장은 아무도 참여하기 전엔 status가 'open'으로 남아있어서(누가 들어와야 'matched'로 바뀜),
+  // 혼자인 상태에서도 인원수·동의 카운트에 포함되도록 is_leader도 함께 조건에 넣음
+  const matchedMembers = members.filter((m) => m.status === "matched" || m.is_leader);
 
   // 실시간 폴링으로 알게 된 인원수를 App.jsx의 candidate에도 반영해, '이전'으로 돌아가도 최신 값이 보이게 함
   useEffect(() => {
@@ -185,7 +187,7 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
       }
       // 그룹 전체에 반영된 걸 다음 폴링까지 기다리지 않도록, 매칭된 멤버 전원의 boarded_at을 미리 채워둠
       const boardedAtIso = new Date().toISOString();
-      setMembers((prev) => prev.map((m) => (m.status === "matched" ? { ...m, boarded_at: boardedAtIso } : m)));
+      setMembers((prev) => prev.map((m) => (m.status === "matched" || m.is_leader ? { ...m, boarded_at: boardedAtIso } : m)));
     } catch {
       setBoardingError("탑승 확인에 실패했어요. 서버가 켜져 있는지 확인해주세요.");
     } finally {
