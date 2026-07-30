@@ -54,7 +54,11 @@ function RecipeListPlaceholderPage() {
   const [detailError, setDetailError] = useState("");
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isLogoutPendingRef = useRef(false);
+  const mobileMenuButtonRef = useRef(null);
+  const mobileMenuCloseButtonRef = useRef(null);
+  const wasMobileMenuOpenRef = useRef(false);
   const isAddingRecipe = location.pathname === "/recipes/new";
   const isTransferInvitationDialog =
     location.pathname === "/transfer-invitations";
@@ -149,11 +153,22 @@ function RecipeListPlaceholderPage() {
     };
   }, [recipeId, user]);
 
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      mobileMenuCloseButtonRef.current?.focus();
+    } else if (wasMobileMenuOpenRef.current) {
+      mobileMenuButtonRef.current?.focus();
+    }
+
+    wasMobileMenuOpenRef.current = isMobileMenuOpen;
+  }, [isMobileMenuOpen]);
+
   const filteredRecipes = recipes.filter((recipe) =>
     matchesFilter(recipe, activeFilter),
   );
 
   function handleOpenTransferCode() {
+    setIsMobileMenuOpen(false);
     navigate("/transfer-invitations");
   }
 
@@ -162,11 +177,16 @@ function RecipeListPlaceholderPage() {
   }
 
   function handleOpenRecipeInput() {
+    setIsMobileMenuOpen(false);
     navigate("/recipes/new");
   }
 
   function handleCloseRecipeInput() {
     navigate("/recipes")
+  }
+
+  function handleCloseMobileMenu() {
+    setIsMobileMenuOpen(false);
   }
 
   async function handleLogout() {
@@ -220,13 +240,29 @@ function RecipeListPlaceholderPage() {
       <header
         className="hidden h-14 shrink-0 items-center gap-3 bg-[#15332a] bg-[url(/design-assets/cookbook/leather-texture-tile.png)] bg-center bg-size-[240px] px-4.5 text-base text-[#eed08b] max-[700px]:flex"
         inert={
-          isTransferInvitationDialog || isCookingMode || undefined
+          isTransferInvitationDialog ||
+          isCookingMode ||
+          isMobileMenuOpen ||
+          undefined
         }
         aria-hidden={
-          isTransferInvitationDialog || isCookingMode || undefined
+          isTransferInvitationDialog ||
+          isCookingMode ||
+          isMobileMenuOpen ||
+          undefined
         }
       >
-        <span aria-hidden="true">☰</span>
+        <button
+          type="button"
+          ref={mobileMenuButtonRef}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#aa8c4b] text-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e3c580]"
+          aria-label={isMobileMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
+          aria-controls="mobile-navigation"
+          aria-expanded={isMobileMenuOpen}
+          onClick={() => setIsMobileMenuOpen(true)}
+        >
+          <span aria-hidden="true">☰</span>
+        </button>
         <span>나만의 레시피북</span>
         {logoutError ? (
           <p
@@ -249,8 +285,12 @@ function RecipeListPlaceholderPage() {
 
       <div
         className="relative grid min-h-0 w-full min-w-0 max-w-[1580px] justify-self-center grid-cols-[186px_minmax(0,1fr)] overflow-hidden p-[36px_25px] drop-shadow-[0_11px_8px_rgb(21_25_20/0.3)] isolate before:pointer-events-none before:absolute before:inset-0 before:z-[-2] before:border-49 before:border-transparent before:[border-image:url(/design-assets/cookbook/leather-frame-9slice.png)_96_fill_stretch] before:content-[''] after:pointer-events-none after:absolute after:inset-[24px_28px_22px] after:z-[-1] after:rounded-[9px] after:bg-[#163229] after:bg-[url(/design-assets/cookbook/leather-texture-tile.png)] after:bg-center after:bg-size-[440px] after:shadow-[inset_0_0_28px_#06120e] after:content-[''] min-[1101px]:px-7.75 max-[1100px]:grid-cols-[155px_minmax(0,1fr)] max-[1100px]:pr-5 max-[700px]:flex-1 max-[700px]:grid-cols-1 max-[700px]:bg-[#15332a] max-[700px]:bg-[url(/design-assets/cookbook/leather-texture-tile.png)] max-[700px]:bg-center max-[700px]:bg-size-[300px] max-[700px]:p-3 max-[700px]:drop-shadow-none max-[700px]:before:hidden max-[700px]:after:hidden short-screen:py-7"
-        inert={isTransferInvitationDialog || undefined}
-        aria-hidden={isTransferInvitationDialog || undefined}
+        inert={
+          isTransferInvitationDialog || isMobileMenuOpen || undefined
+        }
+        aria-hidden={
+          isTransferInvitationDialog || isMobileMenuOpen || undefined
+        }
       >
         <aside
           className="flex h-full min-h-0 flex-col items-center overflow-hidden bg-[linear-gradient(90deg,transparent,#102b23_18%,#102b23_82%,transparent)] px-2.5 pb-6.5 pt-11.25 text-[#e3c580] max-[700px]:hidden short-screen:pt-7.5"
@@ -374,7 +414,8 @@ function RecipeListPlaceholderPage() {
               {!isLoading && !error && filteredRecipes.length === 0 ? (
                 <div className="mt-6.75 border border-dashed border-[#c9bea7] px-4.5 py-9 text-center text-[13px] text-[#626157]">
                   <h2 className="mb-2.5 text-[18px] font-medium text-[#272923]">아직 레시피가 없습니다.</h2>
-                  <p className="leading-[1.6]">첫 레시피 추가 화면은 다음 단계에서 연결됩니다.</p>
+                  <p className="leading-[1.6]">첫 번째 레시피를 기록해 보세요.</p>
+                  <p className="mt-1 leading-[1.6]">URL이나 기억나는 내용을 사용해 시작할 수 있습니다.</p>
                 </div>
               ) : null}
 
@@ -391,13 +432,13 @@ function RecipeListPlaceholderPage() {
                       <Link key={recipe.id} to={`/recipes/${recipe.id}`} className="flex min-h-28 justify-between gap-4 border-b border-[#d8cfbd] pb-4 pl-2.5 pt-5.5 hover:bg-[#f1ece1] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15332a] max-[700px]:min-h-19 max-[700px]:gap-2.5 max-[700px]:px-0 max-[700px]:py-3 short-screen:min-h-23 short-screen:py-3.5">
                         <div className="min-w-0">
                           <h2 className="mb-2.25 text-[22px] font-medium max-[700px]:mb-1.25 max-[700px]:text-[17px] short-screen:mb-1.5 short-screen:text-[19px]">{recipe.title}</h2>
-                          {recipe.description ? <p className="mb-3 text-[11px] leading-normal text-[#777469] max-[700px]:text-[10px]">{recipe.description}</p> : null}
-                          <div className="flex gap-2.5 text-[11px] text-[#68675e] max-[700px]:text-[10px]">
+                          {recipe.description ? <p className="mb-3 text-xs leading-normal text-[#777469]">{recipe.description}</p> : null}
+                          <div className="flex gap-2.5 text-xs text-[#68675e]">
                             <span>{typeLabels[recipe.type]}</span>
                             {sourceOrRelationship ? <span>{sourceOrRelationship}</span> : null}
                           </div>
                         </div>
-                        <time className="self-center whitespace-nowrap text-[11px] text-[#68675e] max-[700px]:text-[10px]" dateTime={recipe.createdAt}>
+                        <time className="self-center whitespace-nowrap text-xs text-[#68675e]" dateTime={recipe.createdAt}>
                           {new Date(recipe.createdAt).toLocaleDateString("ko-KR")}
                         </time>
                       </Link>
@@ -431,6 +472,19 @@ function RecipeListPlaceholderPage() {
                   onOpenTransferCode={handleOpenTransferCode}
                   onPrepare={handlePrepareRecipe}
                 />
+              </div>
+            ) : null}
+            {!isAddingRecipe && !recipeId ? (
+              <div className="flex h-full items-center justify-center p-10 text-center">
+                <div className="max-w-xs">
+                  <h2 className="text-2xl font-semibold tracking-[0.04em] text-[#34362f]">
+                    어떤 레시피를 펼쳐볼까요?
+                  </h2>
+                  <p className="mt-3 text-sm leading-6 text-[#626157]">
+                    왼쪽 목록에서 레시피를 선택하면 이 페이지에서 내용을
+                    확인할 수 있습니다.
+                  </p>
+                </div>
               </div>
             ) : null}
             {recipeId && isDetailLoading ? (
@@ -482,6 +536,71 @@ function RecipeListPlaceholderPage() {
           </section>
         </div>
       </div>
+
+      {isMobileMenuOpen ? (
+        <div
+          className="fixed inset-0 z-40 flex bg-[rgb(3_14_10/72%)] min-[701px]:hidden"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              handleCloseMobileMenu();
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              handleCloseMobileMenu();
+            }
+          }}
+        >
+          <aside
+            id="mobile-navigation"
+            role="dialog"
+            aria-modal="true"
+            aria-label="모바일 메뉴"
+            className="flex h-full w-[min(19rem,86vw)] flex-col bg-[#102b23] bg-[url(/design-assets/cookbook/leather-texture-tile.png)] bg-center bg-size-[300px] p-5 text-[#f3e1b4] shadow-[14px_0_36px_rgb(0_0_0/38%)]"
+          >
+            <div className="flex items-center justify-between border-b border-[rgb(220_193_126/32%)] pb-4">
+              <strong className="font-medium tracking-[0.06em]">
+                나만의 레시피북
+              </strong>
+              <button
+                type="button"
+                ref={mobileMenuCloseButtonRef}
+                className="flex h-10 w-10 items-center justify-center rounded-md border border-[#aa8c4b] text-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e3c580]"
+                aria-label="메뉴 닫기"
+                onClick={handleCloseMobileMenu}
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <nav
+              className="mt-5 grid gap-2"
+              aria-label="모바일 주 메뉴"
+            >
+              <Link
+                to="/recipes"
+                className="flex min-h-12 items-center rounded-lg border border-[#aa8c4b] px-4 text-[#eed08b] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e3c580]"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                레시피북
+              </Link>
+              <Link
+                to="/recipes/new"
+                className="flex min-h-12 items-center rounded-lg border border-transparent px-4 text-[#eed08b] hover:bg-[rgb(255_244_204/7%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e3c580]"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                새 레시피 기록
+              </Link>
+              <Link
+                to="/transfer-invitations"
+                className="flex min-h-12 items-center rounded-lg border border-transparent px-4 text-[#eed08b] hover:bg-[rgb(255_244_204/7%)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#e3c580]"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                전달 코드
+              </Link>
+            </nav>
+          </aside>
+        </div>
+      ) : null}
 
       {isTransferInvitationDialog ? (
         <div
