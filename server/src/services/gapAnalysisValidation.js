@@ -20,7 +20,7 @@ export function validateGapAnalysisRequest({ filters, spec }) {
   if (!isPlainObject(spec)) {
     throw invalid('spec은 필수이며 객체여야 합니다.')
   }
-  if (!(spec.education in EDUCATION_RANK)) {
+  if (!Object.hasOwn(EDUCATION_RANK, spec.education)) {
     throw invalid(`spec.education 값이 올바르지 않습니다: ${spec.education}`)
   }
   if (typeof spec.major !== 'string' || spec.major.trim() === '') {
@@ -50,7 +50,7 @@ export function validateGapAnalysisRequest({ filters, spec }) {
         throw invalid('spec.foreign_languages의 각 항목은 test(문자열)를 포함해야 합니다.')
       }
       if (item.test === 'OPIc') {
-        if (!(item.score in OPIC_RANK)) {
+        if (!Object.hasOwn(OPIC_RANK, item.score)) {
           throw invalid(`spec.foreign_languages의 OPIc 등급 값이 올바르지 않습니다: ${item.score}`)
         }
       } else if (!isNonNegativeNumber(item.score)) {

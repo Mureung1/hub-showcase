@@ -37,6 +37,19 @@ describe('validateGapAnalysisRequest', () => {
     ).toThrow(expect.objectContaining({ status: 400 }))
   })
 
+  it('education이 Object.prototype에서 상속된 이름("constructor" 등)이면 던진다', () => {
+    expect(() =>
+      validateGapAnalysisRequest({ filters: undefined, spec: { ...validSpec, education: 'constructor' } }),
+    ).toThrow(expect.objectContaining({ status: 400 }))
+  })
+
+  it('OPIc score가 Object.prototype에서 상속된 이름("toString" 등)이면 던진다', () => {
+    const spec = { ...validSpec, foreign_languages: [{ test: 'OPIc', score: 'toString' }] }
+    expect(() => validateGapAnalysisRequest({ filters: undefined, spec })).toThrow(
+      expect.objectContaining({ status: 400 }),
+    )
+  })
+
   it('major가 빈 문자열이면 던진다', () => {
     expect(() =>
       validateGapAnalysisRequest({ filters: undefined, spec: { ...validSpec, major: '' } }),

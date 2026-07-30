@@ -76,6 +76,18 @@ describe('POST /api/bookmarks', () => {
     expect(res.status).toBe(404)
     expect(mockUpsert).not.toHaveBeenCalled()
   })
+
+  it('job_id가 정수가 아니면 400을 응답하고 Supabase는 호출하지 않는다', async () => {
+    for (const badJobId of ['3xyz', '3.9', 3.9, null, undefined]) {
+      const res = await request(createApp())
+        .post('/api/bookmarks')
+        .set('Authorization', 'Bearer good-token')
+        .send({ job_id: badJobId })
+
+      expect(res.status).toBe(400)
+    }
+    expect(mockUpsert).not.toHaveBeenCalled()
+  })
 })
 
 describe('DELETE /api/bookmarks/:job_id', () => {
