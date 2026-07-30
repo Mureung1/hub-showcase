@@ -39,6 +39,26 @@ describe('보안 헤더', () => {
     expect(directives).toEqual(["frame-ancestors 'self'"])
   })
 
+  it('장기 캐시 규칙이 보안 헤더 규칙을 덮어쓰지 않는다', () => {
+    // 두 규칙이 다 매칭되면 Vercel은 헤더를 합친다. 같은 키가 겹치면 뒤 규칙이 이기므로,
+    // 캐시 규칙에 보안 헤더 키가 섞여 있으면 /assets/* 만 조용히 보안 헤더를 잃는다.
+    const cacheRule = (vercelConfig.headers ?? []).find((r) => r.source === '/assets/(.*)')
+    const keys = (cacheRule?.headers ?? []).map((h) => h.key)
+    expect(keys).toEqual(['Cache-Control'])
+    for (const k of Object.keys(SECURITY_HEADERS)) expect(keys).not.toContain(k)
+  })
+
+  it('immutable 장기 캐시는 해시가 붙는 /assets/* 에만 건다', () => {
+    // dist 루트의 favicon.png·manifest.json·apple-touch-icon.png는 **이름이 고정**이라
+    // 1년 캐시를 걸면 파일을 바꿔도 사용자에게 영영 반영되지 않는다. /assets/* 는 vite가
+    // 내용 해시를 파일명에 넣으므로(index-<hash>.js) 내용이 바뀌면 URL이 바뀌어 안전하다.
+    // index.html도 마찬가지 이유로 절대 포함하면 안 된다 — 그게 새 번들을 가리키는 유일한 통로다.
+    for (const rule of vercelConfig.headers ?? []) {
+      const immutable = (rule.headers ?? []).some((h) => /immutable/.test(h.value ?? ''))
+      if (immutable) expect(rule.source).toBe('/assets/(.*)')
+    }
+  })
+
   it('vercel.json 헤더 규칙에 Vercel 스키마 밖의 키가 없다', () => {
     // comment 같은 임의 키를 넣으면 배포 시 스키마 검증에서 떨어진다(실제로 넣을 뻔했다).
     const allowed = new Set(['source', 'headers', 'has', 'missing'])
