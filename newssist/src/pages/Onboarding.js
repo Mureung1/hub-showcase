@@ -7,7 +7,6 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const [keywords, setKeywords] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [nickname, setNickname] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -30,7 +29,7 @@ export default function Onboarding() {
     setSubmitting(true);
     setError(null);
     try {
-      await createProfile({ nickname: nickname.trim() || undefined, keywordIds: selectedIds });
+      await createProfile({ keywordIds: selectedIds });
       navigate('/', { replace: true });
     } catch (err) {
       setError(err.message);
@@ -50,16 +49,6 @@ export default function Onboarding() {
         {error && (
           <p className="font-body-md text-body-md text-error mb-stack-sm">{error}</p>
         )}
-
-        <label className="block font-label-mono text-label-mono uppercase tracking-wide text-on-surface-variant mb-1">
-          닉네임 (선택)
-        </label>
-        <input
-          type="text"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          className="w-full border border-outline-variant rounded px-3 py-2 mb-stack-lg font-body-md text-body-md"
-        />
 
         {loading ? (
           <p className="font-body-md text-body-md text-on-surface-variant">불러오는 중...</p>
