@@ -1,0 +1,10 @@
+.git
+.env
+.env.local
+.env.*.local
+.local
+.codex-ppt-build
+dist
+node_modules
+outputs/*.inspect.ndjson
+public/assets/fx
