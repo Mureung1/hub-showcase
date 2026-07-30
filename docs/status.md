@@ -523,5 +523,27 @@
     **`effort: low` 되돌림 판단은 불가하다.** p50 83.3초가 §14.5의 fixture p50 39.4초보다 나쁘지만 **입력이 다른 실제 질문 n=1**이라 통제된 비교가 아니다. 같은 fixture로 재봐야 판단할 수 있다
   - **H. AC 점검 미완** (F가 부분 수행이라 AC10·AC11·AC12 일부를 닫을 수 없다)
   - **검증**: 루트 typecheck·lint(web만)·build 통과. `--grounding-test` 14/14. 콘솔 오류 없음
-- 이후: T-019.4 잔여(F-5·7·9 · G 재측정 · H) → SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **T-019.4 이어가기 2 (2026-07-31)** — 타임아웃 결함 수정 + F-5·9 완료 + §12.5 분류 결함 수정. 커밋 `5786814` · `068a638`
+  - **⚠️ 타임아웃이 작동하지 않고 있었다 (§2.4.1)** — G 실측의 "100초 설정인데 103초 호출이 타임아웃 0건"이 모순이 아니라 **버그**였다
+    - `fetch`는 응답 **헤더**가 도착하면 resolve하는데 `clearTimeout`을 `finally`로 그 직후에 걸어, 생성 시간 전부가 들어가는 `response.text()` 구간이 무방비였다
+    - **실증**: 수정 전 3초 타임아웃으로 호출했는데 **156.5초 만에 정상 반환**(추론 토큰 8,531개). 수정 후 같은 프로브가 **3.0초에 `PROVIDER_TIMEOUT`**으로 중단된다
+    - **§2.4의 이전 서술이 틀렸다**: "45초로는 40~45%가 초과해 **재시도되어** 지연이 배가됐다"는 추론은 사실이 아니었다. 초과한 것은 맞지만 타임아웃된 적도 재시도된 적도 없다. 45→100초 상향도 실효가 없었다(둘 다 걸리지 않는 값)
+    - **§2.4.2 적용**: 단계 6·재검토 타임아웃은 **재시도하지 않고** §2.5 fallback stance로 직행한다. 이 수정으로 비로소 타임아웃이 걸리기 시작하므로, 재시도가 살아 있으면 그동안 "일어나고 있다"고 믿었던 배가가 진짜로 시작된다. 값은 **120초 잠정**
+    - **같은 함정을 두 번 밟았다** — T-019.3.1의 지연 오측정도 원인이 같았다. 그때는 프로브였고 이번엔 프로덕션 코드였다
+  - **F-5 재검토 실패 — 통과.** 두 실패 모드가 **동일한 처리**를 받는다
+    - 프롬프트 로드 실패(`RECHECKER_PROMPT_VERSION=nonexistent`) → 502 · `recheck_requested` 유지 · `reanswered_at` null(기회 미소진). **이전 세션의 "호출 전에 터져 오류 처리 범위 밖일 수 있다"는 우려는 기우였다** — `renderManagerPrompt`가 `rechecker.recheck()` 안이고 그게 try 블록 안이다
+    - 잘못된 `OPENROUTER_API_KEY`(실제 API 오류) → 동일하게 502 · 상태 유지
+    - `retry_recheck` → 같은 처리. 정상 env 복구 후 [다시 시도] 클릭 시 **실제로 재호출되어 `reanswered` + citations 7건**
+    - **`recheck_requested`에서 채택 → `user_accepted`** (`_after_recheck` 미부착) ✓ §10.6
+    - UI: [다시 시도]·[선택한 입장 채택]·[내 결정]·[내용 제외] 4버튼 전부 표시. 예전 `footer = null` 이던 갇힘 해소 확인
+  - **F-9 `?scenario=` — 통과.** provider-excluded(제외 배너 2건·충돌 2·자동 통과 1) · all-rejected · single-source-fallback 확인. happy-path는 서버 경로라 F-1에서 확인. MockValidationBanner 미발생, 콘솔 오류 없음
+  - **⚠️ §12.5 분류 결함 발견·수정** — F-9에서 드러났다
+    - **`auto_single_source`가 "결정 사항 · 사용자 판단 우선 적용"으로 분류되고 노트 bullet에 "— 내 결정 반영"이 붙었다.** 사용자가 판단한 적 없는 항목이 결정 사항으로 기록되는 것으로, §12.5가 "표현 정교화가 아니라 정확성 문제"로 못박은 지점이다
+    - 원인 두 곳 모두 `auto_consensus`만 보고 `auto_single_source`를 빠뜨렸다 — `FinalAnswerBlock`의 완료 뷰 그룹, `buildMockDecisionNote`의 bullet 분류
+    - 추가로 `noteBulletOf`가 Mock 템플릿의 "…— 내 결정 반영" 문구를 자동 통과 항목에도 그대로 쓰고 있었다. 자동 통과면 제목만 쓰도록 고쳤다(서버 경로는 제목이 템플릿과 매칭되지 않아 이미 중립 — **Mock 경로 전용 결함**)
+    - T-019.1에서 "문구가 약간 어색"으로 미뤄뒀던 항목인데, 실제로는 **분류 자체가 틀린 것**이었다
+  - **F-7(충돌 0건) 미수행** · **H(AC 점검) 미완**
+  - **env 원복 확인**: 주입은 전부 프로세스 환경변수로만 했고 `.env` 파일은 처음부터 미변경(`grep` 0건). 정상 env로 재기동해 확인
+  - **검증**: 루트 typecheck·lint(web만)·build 통과
+- 이후: T-019.4 잔여(F-7 · H · G 통제 재측정) → SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정
