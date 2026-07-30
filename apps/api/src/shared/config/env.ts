@@ -93,6 +93,14 @@ const envSchema = z.object({
   COMPARATOR_PROMPT_VERSION: z.string().min(1).default("v1"),
   /** 재검토(§10, AgendaRechecker) 프롬프트 버전. */
   RECHECKER_PROMPT_VERSION: z.string().min(1).default("v1"),
+  /** FinalAnswer 종합(SPEC-AI-003 §3, FinalAnswerComposer) 프롬프트 버전. */
+  COMPOSER_PROMPT_VERSION: z.string().min(1).default("v1"),
+  /**
+   * SPEC-AI-003 §7.3 — Context 에 포함할 DecisionNote 최대 개수.
+   * 초과분은 포함하지 않고 **몇 개가 생략됐는지 `context_snapshot`에 기록한다**
+   * (조용한 절단 금지). N=5 의 적정성은 실측 후 조정한다(§14).
+   */
+  CONTEXT_MAX_NOTES: z.coerce.number().int().positive().default(5),
   /** 결정 6 — 충돌로 매핑할 유형 목록(쉼표 구분). 단계 6용이라 이번엔 읽기만 한다. */
   MANAGER_CONFLICT_TYPES: z.string().min(1).default("main_answer"),
   /** 단계 6 병렬 제한. 단계 6은 T-019.3 — 여기선 자리만. */

@@ -3,6 +3,8 @@ import { AiProviderSchema, SourceAnswerStatusSchema } from "./enums.js";
 import { ErrorCodeSchema } from "./errorCodes.js";
 import { SourceAnswerSchema } from "./sourceAnswer.js";
 import { AgendaSchema } from "./agenda.js";
+import { FinalAnswerSchema } from "./finalAnswer.js";
+import { DecisionNoteSchema } from "./decisionNote.js";
 
 /**
  * SPEC-AI-001 4장 + SPEC-AI-002 §12.2 — Question 처리 진행 SSE 이벤트.
@@ -63,6 +65,29 @@ export const AgendaDoneEventSchema = z.object({
   agendas: z.array(AgendaSchema),
 });
 
+/**
+ * SPEC-AI-003 §8 — FinalAnswer 생성 시작.
+ *
+ * **충돌 0건 경로에서만 의미가 있다**(§8.1). 그 경로는 사용자 판단이 없어 3사→Manager→
+ * FinalAnswer가 연속 대기가 되므로 진행 표시가 필수다. 충돌이 있는 경로는 사용자 판단
+ * 중에 스트림이 닫혀 있어 web이 고정 문구로 표시하고 GET으로 폴링한다.
+ */
+export const FinalAnswerProgressEventSchema = z.object({
+  type: z.literal("final_answer.progress"),
+});
+
+/**
+ * SPEC-AI-003 §8 — FinalAnswer·DecisionNote 저장 완료, Question `completed`.
+ *
+ * web의 종료 판정은 §12.2 규칙 그대로다 — 특정 이벤트 이름을 하드코딩하지 않고
+ * "스트림 닫힘 + 마지막 `*.done` 스냅샷"으로 판단하므로 **web 로직은 바뀌지 않는다.**
+ */
+export const FinalAnswerDoneEventSchema = z.object({
+  type: z.literal("final_answer.done"),
+  finalAnswer: FinalAnswerSchema,
+  decisionNote: DecisionNoteSchema,
+});
+
 export const QuestionStreamEventSchema = z.discriminatedUnion("type", [
   SourceAnswerUpdatedEventSchema,
   SourceAnswerDoneEventSchema,
@@ -70,5 +95,7 @@ export const QuestionStreamEventSchema = z.discriminatedUnion("type", [
   AgendaCreatedEventSchema,
   AgendaJudgedEventSchema,
   AgendaDoneEventSchema,
+  FinalAnswerProgressEventSchema,
+  FinalAnswerDoneEventSchema,
 ]);
 export type QuestionStreamEvent = z.infer<typeof QuestionStreamEventSchema>;

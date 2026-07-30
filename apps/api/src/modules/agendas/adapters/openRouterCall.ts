@@ -78,6 +78,14 @@ const OpenRouterResponseSchema = z.object({
     .object({
       prompt_tokens: z.number().nullish(),
       completion_tokens: z.number().nullish(),
+      /**
+       * §14.4 — `completion_tokens`의 88~94%가 이것이다. 우리가 읽지도 저장하지도
+       * 않는 확장 사고 토큰이며, 지연이 여기에 정비례한다. SPEC-AI-003 §11이
+       * `reasoning` 설정 판단 재료로 요구한다.
+       */
+      completion_tokens_details: z
+        .object({ reasoning_tokens: z.number().nullish() })
+        .nullish(),
     })
     .nullish(),
   error: z
@@ -130,7 +138,11 @@ export interface CallOptions {
 export async function callOpenRouter(
   body: OpenRouterRequestBody,
   options: CallOptions = {},
-): Promise<{ content: string; outputTokens: number | null }> {
+): Promise<{
+  content: string;
+  outputTokens: number | null;
+  reasoningTokens: number | null;
+}> {
   const env = loadEnv();
   const { timeoutMs, retryOnTimeout = true } = options;
   const controller = new AbortController();
@@ -228,6 +240,8 @@ export async function callOpenRouter(
   return {
     content,
     outputTokens: parsed.usage?.completion_tokens ?? null,
+    reasoningTokens:
+      parsed.usage?.completion_tokens_details?.reasoning_tokens ?? null,
   };
 }
 

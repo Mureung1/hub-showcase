@@ -12,7 +12,14 @@ import { loadEnv } from "../../shared/config/env.js";
 
 const cache = new Map<string, string>();
 
-export type ManagerPromptKind = "classify" | "leftover" | "compare" | "recheck";
+export type ManagerPromptKind =
+  | "classify"
+  | "leftover"
+  | "compare"
+  | "recheck"
+  // SPEC-AI-003 — FinalAnswer 종합. finalNote 는 §5.2 의 요약만 재요청하는 경로다.
+  | "final"
+  | "finalNote";
 
 function fill(template: string, variables: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (whole, key: string) =>
