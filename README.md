@@ -71,6 +71,9 @@ React SPA Frontend
 
 Codex는 확정된 요구사항을 바탕으로 프론트엔드와 백엔드 코드를 작성하고, 테스트 코드와 배포 오류 수정도 도왔습니다. 저는 실행 결과를 확인하면서 기능이 의도대로 동작하는지 검증하고, 불필요한 기능을 줄이거나 입력 방식과 화면 흐름을 조정했습니다.
 
+<img width="1122" height="1402" alt="ChatGPT Image 2026년 7월 30일 오전 11_29_56" src="https://github.com/user-attachments/assets/af5caee6-b4f0-49e5-8d17-a64fc937e415" />
+
+
 ## 개발 중 발생한 문제와 해결
 
 ### 반복 근무 등록의 memo 데이터 불일치
