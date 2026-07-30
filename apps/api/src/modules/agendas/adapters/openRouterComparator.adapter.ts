@@ -113,9 +113,15 @@ export function createOpenRouterComparator(): ConflictComparator {
         prompt,
         schemaName: "agenda_comparison",
         schema: compareSchema(input.participants),
+        // §15.3 — 단계 6에만. 전형값은 거의 그대로이고 최악 케이스가 잘린다(§14.5).
+        reasoningEffort: env.MANAGER_JUDGE_REASONING_EFFORT,
       });
       return withOneRetry(async () => {
-        const { content, outputTokens } = await callOpenRouter(body);
+        // §2.4 — 판정은 100초. 45초로는 40~45%가 초과해 재시도되어 지연이 배가됐다.
+        const { content, outputTokens } = await callOpenRouter(
+          body,
+          env.MANAGER_JUDGE_TIMEOUT_MS,
+        );
         return {
           output: parseOutput(content, CompareOutputSchema, "단계 6"),
           outputTokens,

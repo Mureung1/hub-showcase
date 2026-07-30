@@ -129,6 +129,12 @@ export interface ManagerQualityMetrics {
    * 비율로 뭉개지 않고 쌍 그대로 남긴다 — "3중 1 손실"과 "2중 1 손실"은 다른 사건이다.
    */
   stanceSurvival: { participants: number; survived: number }[];
+  /**
+   * 부분 손실을 코드 stance로 메운 건수(§7.6·§11.2, T-019.4).
+   * `stanceSurvival`이 "얼마나 죽었나"라면 이쪽은 "얼마나 메웠나"다 — 3열의 그만큼이
+   * LLM 요약이 아니라 섹션 제목으로 채워졌다는 뜻이므로 품질 해석에 필요하다.
+   */
+  stancesFilled: number;
 }
 
 /**

@@ -204,6 +204,48 @@ export function groundStances(
  *
  * `quotes`가 원문 첫 문장이라 §11-2 검증을 그대로 통과한다.
  */
+/**
+ * 부분 손실 보충 (§7.6·§11.2, T-019.4).
+ *
+ * §11-4는 stance가 **0개**일 때만 쟁점을 폐기한다. 참여 3개 중 1개만 죽으면 쟁점은 살고
+ * **3열 화면에 한 칸이 빈다** — 판정은 3사를 보고 냈는데 근거는 2개만 남는다.
+ * 조사 한 글자 차이로 quote가 폐기되면(§11.2) 실제로 이 상태가 된다.
+ *
+ * 살아남지 못한 provider만 골라 §7.6 형식의 코드 stance로 채운다. 재시도는 하지 않는다 —
+ * §2.5의 재시도는 호출 실패에만 적용되고, `effort: low` 적용 후 관련 사건이 0/20으로
+ * 떨어졌기 때문이다(§14.5).
+ *
+ * ⚠️ **소멸을 막을 뿐 정확한 인용을 되찾지는 못한다.** 채워 넣는 `text`는 섹션 제목이라
+ * LLM이 만든 25자 요약보다 정보가 적다. 그 칸의 품질 저하를 감수하는 대신 쟁점이
+ * 사라지거나 근거가 비는 일은 없게 하는 거래다. 발생률은 `stanceSurvival`로 관측한다.
+ *
+ * `kind`는 건드리지 않는다 — 판정 자체는 성공했고 근거 한 칸만 메운 것이다.
+ */
+export function fillMissingStances(
+  grounded: AgendaStance[],
+  refs: DraftSourceRef[],
+  participants: AiProvider[],
+): { stances: AgendaStance[]; filled: AiProvider[] } {
+  const present = new Set(grounded.map((s) => s.provider));
+  const missing = participants.filter((p) => !present.has(p));
+  if (missing.length === 0) return { stances: grounded, filled: [] };
+
+  const missingSet = new Set(missing);
+  const codeStances = buildCodeStances(
+    refs.filter((ref) => missingSet.has(ref.provider)),
+  );
+  if (codeStances.length === 0) return { stances: grounded, filled: [] };
+
+  // 참여자 순서를 유지해 표시가 흔들리지 않게 한다(AC1).
+  const byProvider = new Map<AiProvider, AgendaStance>();
+  for (const s of [...grounded, ...codeStances]) byProvider.set(s.provider, s);
+  const ordered = participants
+    .map((p) => byProvider.get(p))
+    .filter((s): s is AgendaStance => s !== undefined);
+
+  return { stances: ordered, filled: codeStances.map((s) => s.provider) };
+}
+
 export function buildCodeStances(refs: DraftSourceRef[]): AgendaStance[] {
   const byProvider = new Map<AiProvider, DraftSourceRef[]>();
   for (const ref of refs) {

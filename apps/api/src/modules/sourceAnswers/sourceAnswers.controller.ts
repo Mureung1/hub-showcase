@@ -102,6 +102,11 @@ async function streamManagerSegment(input: {
       sourceAnswers,
       userClient,
       progress: {
+        // §12.2 — 단계 1~6 경과. 이것이 없으면 source_answer.done 이후 쟁점 목록이
+        // 확정될 때까지 화면이 비어 있고 사용자는 멈춘 것으로 본다.
+        onStage: (stage, done, total) => {
+          writeEvent(response, { type: "agenda.progress", stage, done, total });
+        },
         onAgendasCreated: (agendas) => {
           writeEvent(response, { type: "agenda.created", agendas });
         },

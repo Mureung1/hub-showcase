@@ -89,14 +89,37 @@ const envSchema = z.object({
   MANAGER_PROMPTS_DIR: z.string().min(1).default(defaultManagerPromptsDir),
   /** 단계 3·4(AgendaClassifier) 프롬프트 버전. manager_meta.classifierVersion에 스탬프. */
   CLASSIFIER_PROMPT_VERSION: z.string().min(1).default("v1"),
-  /** 단계 6(ConflictComparator) 프롬프트 버전. 단계 6은 T-019.3 — 여기선 자리만. */
+  /** 단계 6(ConflictComparator) 프롬프트 버전. manager_meta.comparatorVersion에 스탬프. */
   COMPARATOR_PROMPT_VERSION: z.string().min(1).default("v1"),
+  /** 재검토(§10, AgendaRechecker) 프롬프트 버전. */
+  RECHECKER_PROMPT_VERSION: z.string().min(1).default("v1"),
   /** 결정 6 — 충돌로 매핑할 유형 목록(쉼표 구분). 단계 6용이라 이번엔 읽기만 한다. */
   MANAGER_CONFLICT_TYPES: z.string().min(1).default("main_answer"),
   /** 단계 6 병렬 제한. 단계 6은 T-019.3 — 여기선 자리만. */
   MANAGER_CONCURRENCY: z.coerce.number().int().positive().default(3),
-  /** Manager 호출당 타임아웃(ms). SPEC-AI-001의 45초 정책과 동일(§2.4). */
+  /**
+   * 단계 3·4(분류) 호출 타임아웃(ms). SPEC-AI-001의 45초 정책을 그대로 쓴다(§2.4).
+   * 분할 후 p90이 여유롭게 들어오므로 올리지 않는다.
+   */
   MANAGER_TIMEOUT_MS: z.coerce.number().int().positive().default(45000),
+  /**
+   * 단계 6(판정)·재검토 호출 타임아웃(ms) — **분류보다 길다**(§2.4, 2026-07-30 개정).
+   *
+   * 45초로는 실측에서 **호출의 40~45%가 초과**해 재시도되어 지연이 오히려 배가됐다.
+   * p90이 65~66초이므로 100초로 둔다. **타임아웃을 올려 지연을 줄이는 역설**이며,
+   * 근거는 §14.5의 분위수 실측이다.
+   */
+  MANAGER_JUDGE_TIMEOUT_MS: z.coerce.number().int().positive().default(100000),
+  /**
+   * 단계 6에만 적용하는 OpenRouter `reasoning.effort`(§15.3). 빈 문자열이면 무설정.
+   *
+   * ⚠️ **단계 3·4에는 적용하지 않는다.** 실측에서 지연 2.68배·토큰 2.36배로
+   * 오히려 나빠졌다(3/3 회차 동일 방향, §15.3). 전형값은 거의 그대로이고
+   * 실효는 최악 케이스 절단이다(최대 292.5초 → 118.4초).
+   */
+  MANAGER_JUDGE_REASONING_EFFORT: z
+    .enum(["", "low", "medium", "high"])
+    .default("low"),
 })
   .superRefine((value, ctx) => {
     // 7.2: 플래그 ON이면 앱 기본 키 3종이 있어야 한다. 키 "값"은 메시지에 넣지 않는다.

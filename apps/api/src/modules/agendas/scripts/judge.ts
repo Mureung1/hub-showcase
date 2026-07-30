@@ -14,6 +14,7 @@ import { buildAgendaDrafts } from "../agendas.service.js";
 import type { CompareOutput, DraftSourceRef } from "../agendas.types.js";
 import { judgeDrafts } from "../pipeline/judge.js";
 import {
+  fillMissingStances,
   groundStances,
   type RejectedQuote,
 } from "../pipeline/grounding.js";
@@ -278,6 +279,43 @@ function fabricationCases(): void {
         r.stances.length === 0 &&
         r.stancesDiscarded.empty_output === 1 &&
         r.stancesDiscarded.empty_quotes === 0,
+    },
+    // --- T-019.4 B · 부분 손실 fallback (§7.6·§11.2) ---------------------
+    {
+      name: "⭐ 참여 2 중 1 stance 소멸 → fallback 으로 메워 2개가 되어야",
+      output: make([
+        // 조사 한 글자를 바꾼 인용(§11.2 실관측 형태) — 폐기되어 claude stance 가 죽는다.
+        { provider: "claude", quotes: ["가장 중요한 원칙은 기본 거부가다."], text: "조사 오차" },
+        { provider: "openai", quotes: ["먼저 접근 주체를 정의하고"], text: "주체 먼저" },
+      ]),
+      expect: "grounding 은 1개만 남기지만 fillMissingStances 가 claude 를 메운다",
+      check: (r) => {
+        if (r.stances.length !== 1 || r.quotesRejected !== 1) return false;
+        const filled = fillMissingStances(r.stances, refs, participants);
+        return (
+          filled.stances.length === 2 &&
+          filled.filled.length === 1 &&
+          filled.filled[0] === "claude" &&
+          // 메운 stance 의 quote 는 원문 첫 문장이라 §11-2 를 그대로 통과한다
+          filled.stances.some(
+            (s) => s.provider === "claude" && s.quotes.length >= 1,
+          ) &&
+          // 참여자 순서가 유지되어야 표시가 흔들리지 않는다(AC1)
+          filled.stances[0]?.provider === "claude"
+        );
+      },
+    },
+    {
+      name: "손실 없으면 fallback 이 아무것도 하지 않아야 (불필요 개입 방지)",
+      output: make([
+        { provider: "claude", quotes: ["가장 중요한 원칙은 기본 거부다."], text: "기본 거부" },
+        { provider: "openai", quotes: ["먼저 접근 주체를 정의하고"], text: "주체 먼저" },
+      ]),
+      expect: "filled 0건, stance 2개 그대로",
+      check: (r) => {
+        const filled = fillMissingStances(r.stances, refs, participants);
+        return filled.filled.length === 0 && filled.stances.length === 2;
+      },
     },
     {
       name: "인용은 냈지만 전부 날조 → empty_quotes 가 아니어야 (오귀인 방지)",

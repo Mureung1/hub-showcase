@@ -27,6 +27,24 @@ export const SourceAnswerDoneEventSchema = z.object({
   sourceAnswers: z.array(SourceAnswerSchema),
 });
 
+/**
+ * SPEC-AI-002 §12.2 — Manager 단계 1~6 진행 알림 (T-019.4 신설).
+ *
+ * ⚠️ **이것이 없으면 `source_answer.done` 이후 `agenda.created`까지 70초간 화면이 비어
+ * 있다.** heartbeat만 흐르고 사용자는 멈춘 것으로 본다. §2.3이 조기 표시를 필수로
+ * 격상했는데, 완화가 시작되는 지점 자체가 70초 뒤였다.
+ *
+ * 결과가 아니라 **경과**를 싣는다 — 저장하지 않고 화면 표시에만 쓴다.
+ */
+export const AgendaProgressEventSchema = z.object({
+  type: z.literal("agenda.progress"),
+  /** 어느 구간인가. web은 이 값으로 문구를 고른다. */
+  stage: z.enum(["classify", "leftover", "finalize", "judge"]),
+  /** 진행 카운터 — `judge`에서 "판정 N/M"을 만든다. 카운터가 없는 구간은 null. */
+  done: z.number().int().nonnegative().nullable(),
+  total: z.number().int().nonnegative().nullable(),
+});
+
 /** SPEC-AI-002 §12.2 — 단계 5: 쟁점 목록을 draft로 일괄 생성했을 때. */
 export const AgendaCreatedEventSchema = z.object({
   type: z.literal("agenda.created"),
@@ -48,6 +66,7 @@ export const AgendaDoneEventSchema = z.object({
 export const QuestionStreamEventSchema = z.discriminatedUnion("type", [
   SourceAnswerUpdatedEventSchema,
   SourceAnswerDoneEventSchema,
+  AgendaProgressEventSchema,
   AgendaCreatedEventSchema,
   AgendaJudgedEventSchema,
   AgendaDoneEventSchema,

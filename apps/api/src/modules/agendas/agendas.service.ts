@@ -76,6 +76,7 @@ function emptyQualityMetrics(): ManagerQualityMetrics {
     stage6DurationsMs: [],
     stancesDiscarded: {},
     stanceSurvival: [],
+    stancesFilled: 0,
   };
 }
 
@@ -88,9 +89,20 @@ function toClassifiableSection(section: PipelineSection): ClassifiableSection {
   };
 }
 
+/**
+ * Manager 진행 알림(§12.2). Service는 req/res를 모르므로 콜백으로만 노출한다.
+ * 결과가 아니라 **경과**이며 저장하지 않는다 — 화면의 무음 구간을 없애는 것이 목적이다.
+ */
+export type StageProgress = (
+  stage: "classify" | "leftover" | "finalize" | "judge",
+  done: number | null,
+  total: number | null,
+) => void;
+
 export async function buildAgendaDrafts(
   questionId: string,
   sourceAnswers: SourceAnswer[],
+  onProgress?: StageProgress,
 ): Promise<BuildAgendaDraftsResult> {
   const env = loadEnv();
   const classifier = getAgendaClassifier();
@@ -318,6 +330,9 @@ export async function buildAgendaDrafts(
 
   // 병렬 실행(동시성 MANAGER_CONCURRENCY). 결과는 입력(정렬) 순서를 보존한다.
   const stage3Start = performance.now();
+  // §12.2 — 단계 3 시작. 여기부터 30~60초 무음이므로 먼저 알린다.
+  onProgress?.("classify", null, null);
+
   const stage3Results = await mapWithConcurrency(
     nonPivotProviders,
     env.MANAGER_CONCURRENCY,
@@ -360,10 +375,12 @@ export async function buildAgendaDrafts(
   let lastError: string | undefined;
 
   // 단계 4: leftover + 제목 중립화 (Manager 호출 2, 조건부, §6.1)
+  // (진행 알림은 실제로 호출이 일어나는 분기 안에서 낸다 — 조건부라 밖에서 내면 거짓이 된다.)
   const needsStage4 =
     leftoverSections.length >= 1 || suspiciousCandidates.length >= 1;
   if (needsStage4) {
     trace.stage4Ran = true;
+    onProgress?.("leftover", null, null);
     const stage4Start = performance.now();
     const consumed = new Set<string>();
     try {
@@ -477,6 +494,7 @@ export async function buildAgendaDrafts(
   }
 
   // 단계 5: 후처리 → 균일 초안
+  onProgress?.("finalize", null, null);
   const drafts = finalizeDrafts(candidates);
 
   // 지표 (§14.1) — 분모 0이면 null
@@ -511,6 +529,8 @@ export interface ManagerProgress {
   onAgendasCreated?: (agendas: Agenda[]) => Promise<void> | void;
   /** 쟁점 하나의 판정·저장이 끝날 때마다 1건씩. **모아서 보내지 않는다**(§2.3 조기 표시). */
   onAgendaJudged?: (agenda: Agenda) => Promise<void> | void;
+  /** 단계 1~6 경과. 결과가 없는 구간의 무음을 없앤다(§12.2). */
+  onStage?: StageProgress;
 }
 
 export interface RunManagerResult {
@@ -544,7 +564,11 @@ export async function runManagerForQuestion(input: {
   const adminClient = getAdminClient();
 
   // 단계 1~5
-  const built = await buildAgendaDrafts(questionId, sourceAnswers);
+  const built = await buildAgendaDrafts(
+    questionId,
+    sourceAnswers,
+    progress?.onStage,
+  );
 
   // §2.5 — 단계 3·4 모두 실패하면 쟁점이 없다. manager_meta만 남기고 조용히 끝낸다.
   // (고정 안내 문구 + completed 마무리는 호출부가 SourceAnswer 경로와 함께 처리한다.)
@@ -574,6 +598,7 @@ export async function runManagerForQuestion(input: {
     pivotProvider: built.managerMeta.pivotProvider,
     conflictTypes: built.managerMeta.conflictTypes,
     concurrency: env.MANAGER_CONCURRENCY,
+    onProgress: (done, total) => progress?.onStage?.("judge", done, total),
     onJudged: async (finalized) => {
       const agendaId = idByDisplayOrder.get(finalized.draft.displayOrder);
       if (!agendaId) return; // 도달 불가 — INSERT 반환분과 초안은 1:1이다.

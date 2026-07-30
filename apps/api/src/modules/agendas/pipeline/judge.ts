@@ -10,6 +10,7 @@ import { getConflictComparator } from "../adapters/conflictComparator.registry.j
 import type { ComparableSection } from "../ports/conflictComparator.port.js";
 import {
   buildCodeStances,
+  fillMissingStances,
   groundStances,
   type RejectedQuote,
 } from "./grounding.js";
@@ -78,6 +79,8 @@ export interface JudgeDraftsInput {
   concurrency: number;
   /** 쟁점 하나가 마감될 때마다 즉시 호출된다(조기 표시). 저장·SSE를 여기에 건다. */
   onJudged?: (agenda: FinalizedAgenda) => Promise<void> | void;
+  /** 판정 N/M 경과. 폐기된 쟁점도 진행으로 세므로 onJudged 보다 먼저·자주 온다. */
+  onProgress?: (done: number, total: number) => void;
 }
 
 export interface JudgeDraftsResult {
@@ -111,6 +114,7 @@ export async function judgeDrafts(
     conflictTypes,
     concurrency,
     onJudged,
+    onProgress,
   } = input;
 
   const comparator = getConflictComparator();
@@ -126,6 +130,7 @@ export async function judgeDrafts(
     // 저장되는 지표 안에 둔다 — manager_meta 까지 도달해야 사후 진단이 된다.
     stancesDiscarded: { empty_output: 0, empty_quotes: 0, not_participant: 0, duplicate_provider: 0 },
     stanceSurvival: [],
+    stancesFilled: 0,
   };
 
   let quotesTotal = 0;
@@ -134,6 +139,8 @@ export async function judgeDrafts(
   let judgeFailedCount = 0;
   const droppedAgendaIds: string[] = [];
   const rejectedQuotes: RejectedQuote[] = [];
+  let stancesFilled = 0;
+  let settledCount = 0;
 
   const startedAt = performance.now();
 
@@ -192,7 +199,8 @@ export async function judgeDrafts(
             (quality.stancesDiscarded[reason] ?? 0) + count;
         }
 
-        // A-1 — (참여 수, 생존 수). 0개면 폐기(아래), 참여 수보다 적으면 **부분 손실**이다.
+        // A-1 — (참여 수, 생존 수). 보충 **전** 값을 기록한다: 보충 후를 적으면
+        // 항상 참여 수와 같아져 부분 손실이 지표에서 사라진다.
         quality.stanceSurvival.push({
           participants: participants.length,
           survived: grounded.stances.length,
@@ -201,8 +209,18 @@ export async function judgeDrafts(
         if (grounded.stances.length === 0) {
           // §11-4 — stance가 0개가 된 쟁점은 통째로 폐기한다.
           droppedAgendaIds.push(draft.id);
+          settledCount += 1;
+          onProgress?.(settledCount, drafts.length);
           return null;
         }
+
+        // §7.6·§11.2 — 일부 provider의 stance만 죽었으면 3열에 빈 칸이 남는다. 코드가 메운다.
+        const filledResult = fillMissingStances(
+          grounded.stances,
+          draft.sourceRefs,
+          participants,
+        );
+        stancesFilled += filledResult.filled.length;
 
         const type = result.output.disagreementType;
         quality.disagreementTypeDist[type] =
@@ -213,7 +231,7 @@ export async function judgeDrafts(
         judged = {
           draft,
           kind: mapDisagreementToKind(type, conflictTypes),
-          stances: grounded.stances,
+          stances: filledResult.stances,
           disagreementType: type,
           confidence,
           judgeFailed: false,
@@ -260,9 +278,12 @@ export async function judgeDrafts(
     const finalized = finalizeAgenda(judged, pivotProvider, questionId);
     // 조기 표시 — 이 쟁점만 즉시 저장·발신한다. 다른 쟁점을 기다리지 않는다.
     await onJudged?.(finalized);
+    settledCount += 1;
+    onProgress?.(settledCount, drafts.length);
     return finalized;
   };
 
+  onProgress?.(0, drafts.length);
   const settled = await mapWithConcurrency(drafts, concurrency, settle);
   const agendas = settled.filter(
     (item): item is FinalizedAgenda => item !== null,
@@ -274,6 +295,7 @@ export async function judgeDrafts(
     drafts.length > 0 ? droppedAgendaIds.length / drafts.length : null;
   quality.judgeFailRate =
     judgedCount > 0 ? judgeFailedCount / judgedCount : null;
+  quality.stancesFilled = stancesFilled;
 
   return {
     agendas,

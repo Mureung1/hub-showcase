@@ -31,6 +31,11 @@ export interface OpenRouterRequestBody {
   messages: { role: "user"; content: string }[];
   response_format: JsonSchemaResponseFormat;
   provider: { require_parameters: true };
+  /**
+   * §15.3 — **단계 6·재검토에만** 넣는다. 단계 3·4는 넣지 않는다(실측 역효과).
+   * 넣으면 그 파라미터를 지원하는 프로바이더로만 라우팅된다는 점에 유의.
+   */
+  reasoning?: { effort: "low" | "medium" | "high" };
   // max_tokens는 넣지 않는다(Qwen JSON 잘림 방지, §15.3).
 }
 
@@ -40,8 +45,10 @@ export function buildRequestBody(input: {
   prompt: string;
   schemaName: string;
   schema: Record<string, unknown>;
+  /** §15.3 — 빈 문자열·미지정이면 넣지 않는다. 단계 3·4는 항상 미지정이다. */
+  reasoningEffort?: string;
 }): OpenRouterRequestBody {
-  return {
+  const body: OpenRouterRequestBody = {
     model: input.model,
     messages: [{ role: "user", content: input.prompt }],
     response_format: {
@@ -50,6 +57,11 @@ export function buildRequestBody(input: {
     },
     provider: { require_parameters: true },
   };
+  const effort = input.reasoningEffort;
+  if (effort === "low" || effort === "medium" || effort === "high") {
+    body.reasoning = { effort };
+  }
+  return body;
 }
 
 // --- 응답 봉투 (외부 데이터 → Zod 검증) ---
@@ -104,10 +116,15 @@ export function formatAgendas(
  */
 export async function callOpenRouter(
   body: OpenRouterRequestBody,
+  /** §2.4 — 단계별로 다르다. 미지정이면 분류 기준(45초). */
+  timeoutMs?: number,
 ): Promise<{ content: string; outputTokens: number | null }> {
   const env = loadEnv();
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), env.MANAGER_TIMEOUT_MS);
+  const timer = setTimeout(
+    () => controller.abort(),
+    timeoutMs ?? env.MANAGER_TIMEOUT_MS,
+  );
 
   let response: Response;
   try {
