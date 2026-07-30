@@ -89,6 +89,43 @@ describe('프로젝트 목록', () => {
     expect(screen.getByText('더미')).toBeInTheDocument();
   });
 
+  it('자료 경고를 카드와 상세 화면에 표시하지 않는다', () => {
+    render(
+      <App
+        projects={[
+          {
+            id: 'warning',
+            title: '자료 경고 프로젝트',
+            summary: '자료 경고가 있습니다.',
+            featureTags: [],
+            techStack: [],
+            githubUser: 'student',
+            thumbnailUrl: '/thumbnail.webp',
+            dataWarnings: ['대표 이미지 확인 필요'],
+          },
+          {
+            id: 'fallback',
+            title: '대표 이미지 자동 선택 프로젝트',
+            summary: '다른 이미지를 대표 이미지로 사용합니다.',
+            featureTags: [],
+            techStack: [],
+            githubUser: 'student',
+            thumbnailUrl: '/fallback.webp',
+            dataWarnings: ['대표 이미지 자동 선택'],
+            imageFallback: true,
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.queryByText('자료 확인 필요')).not.toBeInTheDocument();
+    expect(screen.queryByText('대표 이미지 자동 선택')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '자료 경고 프로젝트 상세 보기' }));
+
+    expect(screen.queryByText('자료 확인 필요')).not.toBeInTheDocument();
+  });
+
   it('상세 정보가 없으면 빈 구역과 링크를 만들지 않는다', () => {
     render(
       <App

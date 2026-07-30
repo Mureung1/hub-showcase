@@ -275,16 +275,6 @@ a,
   font-weight: 700;
 }
 
-.warning-badge {
-  padding: 3px 7px;
-  border: 1px solid #e7c98a;
-  border-radius: 999px;
-  background: #fff8e8;
-  color: #8b641e;
-  font-size: 10px;
-  font-weight: 700;
-}
-
 .project-card h2 {
   margin: 10px 0 8px;
   display: -webkit-box;
