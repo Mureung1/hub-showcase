@@ -139,7 +139,7 @@ export default function Article() {
         </div>
 
         <div className="flex items-start justify-between gap-stack-md mb-stack-lg">
-          <h1 className="font-headline-md text-headline-md text-on-surface" style={{ fontSize: '28px', lineHeight: '36px' }}>
+          <h1 className="font-headline-sm text-headline-sm text-on-surface">
             {article.title}
           </h1>
           <button

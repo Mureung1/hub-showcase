@@ -37,7 +37,7 @@ export default function ArticleCard({ article, isBookmarked, onToggleBookmark })
       </div>
 
       <Link to={`/articles/${article.id}`}>
-        <h3 className="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors line-clamp-2">
+        <h3 className="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary transition-colors line-clamp-2">
           {article.title}
         </h3>
       </Link>
