@@ -27,7 +27,9 @@ export default function WaterIntakeCard() {
   }
 
   return (
-    <Card style={{ height: '100%', boxSizing: 'border-box' }}>
+    // marginBottom:0 — styles.card 기본 12px가 height:'100%'와 겹쳐 래퍼를 넘치던 것을 지운다
+    // (옆 MyDailyQuestWidget과 동일).
+    <Card style={{ height: '100%', boxSizing: 'border-box', marginBottom: 0 }}>
       <Pressable
         as="div"
         scale={0.98}

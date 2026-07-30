@@ -13,7 +13,20 @@ export default function MyDailyQuestWidget({ questBoard }) {
   const earnedXp = quests.filter((q) => q.claimed).reduce((sum, q) => sum + q.xp, 0)
 
   return (
-    <Card onClick={() => navigate('/profile/quests')} style={{ height: '100%', boxSizing: 'border-box' }}>
+    <Card
+      onClick={() => navigate('/profile/quests')}
+      // 옆의 WaterIntakeCard가 링(72px)+버튼 때문에 더 높아서, stretch로 늘어난 이 카드의 내용이
+      // 위로 쏠리고 아래에 빈 흰 공간이 남았다 — 세로 가운데로 모은다. marginBottom:0은
+      // styles.card의 기본 12px를 지우는 것(height:'100%'와 겹쳐 래퍼를 12px 넘치던 문제).
+      style={{
+        height: '100%',
+        boxSizing: 'border-box',
+        marginBottom: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: spacing.sm }}>
         <h3 style={{ margin: 0, fontSize: font.size.sm, fontWeight: 700, color: colors.textStrong }}>오늘의 퀘스트</h3>
         <span style={{ fontSize: font.size.xs, fontWeight: 700, color: colors.primary }}>
