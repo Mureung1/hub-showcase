@@ -85,7 +85,15 @@ the deployed backend URL only for local-bundle builds; prepended in `fetchWithTi
 (`openExternalLink` — opens external links in the system browser on native via `@capacitor/browser`, new
 tab on web; used by ad/map links since WebView blocks `target="_blank"`). `src/lib/useAndroidBackButton.js`
 (called in `App.jsx`, native-only) makes the hardware back button navigate back on sub-screens and exit at the
-`/analyze` home — being web code, it only takes effect once deployed. Camera (`<input type=file>`) and
+`/analyze` home — being web code, it only takes effect once deployed. `src/lib/appUpdate.js`'s
+`useAppUpdateCheck` (called in `router.jsx`, native-only) closes the gap the server-URL mode leaves: a web
+deploy only reaches the app once the WebView *reloads*, and resuming from the background keeps the old page
+alive indefinitely, so "I deployed the fix but the app is unchanged" was unobservable. On resume (only after
+≥1 min away, ≥5 min since the last check) it refetches `/index.html` with `cache: 'no-store'` and compares the
+hashed entry-bundle filename against the running one — the filename **is** the build id, so nothing has to be
+bumped by hand. ⚠️ It only shows a toast with a 새로고침 action; it never force-reloads, because a reload
+mid-analysis destroys the user's work. If either build id is unknown it stays silent rather than prompting a
+reload that would change nothing. Camera (`<input type=file>`) and
 `navigator.geolocation` need **no native code**: Capacitor's default `BridgeWebChromeClient` handles
 `onShowFileChooser`/`onGeolocationPermissionsShowPrompt`/`onPermissionRequest`, so `MainActivity` stays a plain
 `BridgeActivity`. Header/tab-bar use `env(safe-area-inset-*)`. Full build steps, the server-URL-vs-local-bundle
