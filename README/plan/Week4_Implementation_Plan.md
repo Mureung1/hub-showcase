@@ -70,19 +70,9 @@ gantt
 
 ### 🔴 High — ① 평가 기반 구축 (선행 필수)
 
-- [ ] **Task 21: [Data] 분석 검증용 mock 인터뷰 전사문 5건 이상 작성**
-  - *상세:* `backend/fixtures/interviews/` 에 마크다운 전사문을 작성한다. `AI_Pipeline_Design.md`의 **입력 포맷 계약(`화자명: 발언`, 줄바꿈 구분)**을 반드시 지킨다. 5건은 "많이 만드는 것"이 목적이 아니라 **서로 다른 실패 유형을 하나씩 담당**하는 것이 목적이다:
-    1. `01_supportive.md` — 가설을 명확히 지지하는 발언 다수 (happy path, `유력함` 기대)
-    2. `02_contradictory.md` — 반박 근거가 지지 근거보다 우세 (`수정 필요` 기대, 확증 편향 방어 검증)
-    3. `03_sparse.md` — 가설과 관련된 발언이 거의 없음 (`근거 부족` 기대 + Task 32 빈 상태 UI 재현 데이터)
-    4. `04_multi_hypothesis.md` — 한 발언이 2개 이상 가설에 걸침 (1단계 규칙 6 "가설마다 별도 항목" 검증)
-    5. `05_noisy.md` — 잡담·주제 이탈·화자 라벨 누락 줄 혼재 (환각 유발 함정, `speaker` 빈 문자열 처리 검증)
-    6. `06_long.md` *(선택)* — 긴 전사문 (Task 15 진행바·타임아웃/재시도 실검증용)
-  - *가설 세트:* `backend/fixtures/hypotheses.json` 에 각 전사문이 대응할 가설(`{ hypothesis_id, cause, effect }[]`)을 UUID로 고정 정의한다. 전사문과 가설이 짝을 이루지 않으면 평가가 불가능하다.
-  - *골든셋 라벨:* 각 md 상단 frontmatter에 기대값을 명시 — `hypothesis_set`, `expected_status`(가설별), `min_tags`/`max_tags`(태깅 수 허용 범위), `trap`(그 파일이 노리는 실패 유형). **정답 라벨은 사람이 직접 판단해 적는다**(AI 출력을 정답으로 삼으면 평가가 자기참조가 된다).
-  - *개인정보:* 실제 인터뷰 내용을 쓰지 않는다. 전부 창작 데이터이며, Task 35 데모 영상 촬영도 이 데이터로만 진행한다.
-  - *완료 조건:* 5건 이상의 md가 존재하고, 전부 `화자명: 발언` 포맷 계약을 지키며, `hypotheses.json`의 가설 세트와 매칭되고, 각 파일에 사람이 작성한 기대 라벨이 들어 있다.
-  - **⚠️ 라벨 출처 (2026-07-27):** `expected_status` 5건은 사람이 아니라 AI가 초안으로 채웠다(각 fixture frontmatter의 `label_source` 참고). 이 항목이 원래 경계했던 "AI가 채우면 자기참조 평가가 되어 무의미해진다" 위험이 그대로 적용된다. Task 22 baseline은 이 라벨로 이미 측정했지만, **정식 확정 전 사람 검수를 권장**하며 그 전까지 이 체크박스는 완료로 보지 않는다.
+- [x] **Task 21: [Data] 분석 검증용 mock 인터뷰 전사문 5건 이상 작성** (전사문·가설 세트 작성분)
+  - *상세:* `backend/fixtures/interviews/`에 6건(01~06) 작성 완료, `backend/fixtures/hypotheses.json`에 가설 세트 매칭 완료. `AI_Pipeline_Design.md`의 입력 포맷 계약을 지켰고 Task 22 baseline 측정에 실제 사용됨.
+  - **⚠️ 잔여 항목 (미래로 이관):** `expected_status` 골든 라벨은 사람이 아니라 AI가 초안으로 채운 상태(`label_source` 참고, 자기참조 평가 위험). 사람 검수는 [future_plan.md](future_plan.md#task-21-잔여분-data-mock-전사문-골든셋-라벨-사람-검수)로 이관.
 
 - [x] **Task 22: [Test/AI] 분석 품질 회귀 러너(eval) 구축 및 baseline 기록**
   - *상세:* `backend/src/eval/runEval.ts` 신규. Task 21의 fixture를 **실제 Gemini로** 1·2단계에 통과시키고 위 지표 4종을 계산해 표로 출력한다.
@@ -129,85 +119,45 @@ gantt
   - *완료 조건:* 3개 호출 지점이 전부 `lib/prompts/`를 참조하고, `grep`으로 라우터·파이프라인·태거에서 인라인 프롬프트 문자열이 0건이며, 프롬프트 빌더 단위 테스트가 통과하고, 리팩터 전후 `npm run eval` 지표가 **동일**하다(순수 구조 변경이므로 품질이 달라지면 버그다).
 
 - [ ] **Task 25: [AI/BE] 1단계 고도화 — 근거 강도(evidence_strength) 도입**
-  - *상세:* 1단계 출력 스키마에 `evidence_strength` 추가 (`직접 경험` / `의견` / `전언`, Task 23의 위계). `badge_label`(지지/반박/참고)과 **직교하는 축**이다 — "반박 근거인데 전언"이 가능해야 한다.
-    - *DB:* `evidence_tags.evidence_strength TEXT` 컬럼 추가 (마이그레이션 007). 기존 행은 `NULL` 허용 후 `'의견'`으로 백필하지 않는다 — 모르는 값을 추측해 채우면 이후 평가가 오염된다.
-    - *FE:* 사이드 드로어의 근거 표시에 강도 라벨을 함께 노출(기존 팔레트만 사용, `design.md`에 새 토큰 추가 금지).
-    - *환각 방어:* `evidence_strength`도 enum 밖의 값이면 저장 전 폐기 — `responseValidation.ts`에 검증을 추가한다(Task 16 모듈 재사용).
-  - *완료 조건:* mock `02_contradictory` / `05_noisy` 에서 강도가 사람 판단과 일치하게 분류되고, `evidence_tags`에 값이 적재되며, `npm run eval`의 `quote_match_rate`가 baseline 대비 **하락하지 않는다**(강도 판정이 인용 정확도를 해치지 않아야 함).
+  - → 미착수. 상세·완료 조건은 [future_plan.md](future_plan.md#task-25-aibe-1단계-고도화--근거-강도evidence_strength-도입)로 이관 (2026-07-30, 데모 안정화 우선 결정).
 
 - [ ] **Task 26: [AI/BE] 2단계 고도화 — 반증 우선 판정 + 확신도 캘리브레이션**
-  - *상세:* `suggested_status` 판정 규칙을 "근거 **수**"에서 "**강도 가중합 + 반박 존재 여부**"로 교체한다(Task 23 기준). 가중합 계산은 프롬프트에 맡기지 않고 **애플리케이션 코드의 순수 함수**로 구현한다.
-  - **⚠️ 코드 vs 프롬프트 A/B 비교는 하지 않는다 (2026-07-27 결정, eval 생략):** 애초에 A/B로 판정하려면 변동성을 감안해 안(2안) × 2회 = eval 4회 추가 소모가 필요한데, 무료 티어 쿼터에서 이건 비용 대비 얻는 정보가 적다. 코드 쪽이 이미 우세한 이유가 구조적으로 명확하다 — (a) LLM 비결정성을 판정 로직에서 제거해 지표 잡음이 줄고, (b) Task 28의 TDD 대상이 되며, (c) "왜 유력함인가"를 계산식으로 감사할 수 있어 이 도구의 근거 사슬 원칙과 정합된다. **A/B 실험 없이 애플리케이션 코드 쪽으로 바로 구현하고, 이 문단을 그 판단 근거로 남긴다.**
-    - `confidence`(높음/보통/낮음) + `confidence_reason`(1문장) 추가 → 마이그레이션 008. 사용자가 "AI가 얼마나 확신하는지"를 보고 검토 우선순위를 정할 수 있게 한다.
-    - `direction`은 Task 23의 3형태(원인 축소 / 결과 재정의 / 조건 추가) 중 하나를 명시하도록 강제.
-  - *완료 조건:* mock `03_sparse`에서 `유력함`이 나오지 않고, `01_supportive`에서 `근거 부족`이 나오지 않으며, **before/after 지표 표가 계획서 하단에 기록**된다. 개선되지 않았다면 개선되지 않았다고 적고 원인을 남긴다(수치를 좋아 보이게 고르지 않는다).
+  - → 미착수. 상세·완료 조건은 [future_plan.md](future_plan.md#task-26-aibe-2단계-고도화--반증-우선-판정--확신도-캘리브레이션)로 이관 (2026-07-30).
 
 - [ ] **Task 27: [AI/BE] 3단계(리파인) 고도화 — 근거 없는 반박에 대한 정직한 응답**
-  - *상세:* 현재 리파인은 사용자 의견을 **수용하는 쪽으로 기우는** 경향이 있다(3주차 프롬프트 규칙 2가 있지만 약함). 근거 목록에 사용자 주장을 뒷받침할 내용이 없으면:
-    - `reply`에서 "요청하신 방향을 뒷받침하는 근거가 전사문에 없습니다"를 **먼저** 말하고,
-    - `new_summary`는 원 뉘앙스를 유지한 채 표현만 다듬으며,
-    - 사용자가 그럼에도 반영을 원하면 그건 사용자의 판단이므로 가설 인라인 수정(Task 10) 경로로 안내한다.
-  - *검증 방법:* `02_contradictory` 근거 위에서 "이 가설은 사실 맞는 것 같은데?"라는 근거 없는 반박을 입력해, `new_summary`가 무비판적으로 뒤집히지 않는지 확인한다.
-  - *완료 조건:* 위 시나리오에서 `new_summary`의 결론 방향이 유지되고 `reply`에 근거 부재가 명시되며, `new_citations`가 여전히 입력 evidence 안의 id만 참조한다.
+  - → 미착수. 상세·완료 조건은 [future_plan.md](future_plan.md#task-27-aibe-3단계리파인-고도화--근거-없는-반박에-대한-정직한-응답)로 이관 (2026-07-30).
 
 ### 🔴 High — ③ TDD 및 테스트 코드로 기능 검증
 
 > **작업 규칙(모든 테스트 Task 공통):** 반드시 **실패하는 테스트를 먼저 작성하고 실패 출력을 눈으로 확인한 뒤에만** 구현으로 넘어간다. 처음부터 통과하는 테스트를 썼다면 그건 검증이 아니라 기록이다. 커밋도 `test: …` → `feat: …` 순서로 나눠 전이를 이력에 남긴다. 스타일은 기존 `responseValidation.test.ts`를 따른다(`import { describe, it, expect } from 'vitest'`, 한글 `it` 설명).
 
 - [ ] **Task 28: [Test/BE] 순수 로직 TDD 확장**
-  - *상세:* 현재 BE 테스트는 3개 파일뿐이다(`projectReport` / `responseValidation` / `timeoutRetry`). 4주차에 새로 생기거나 지금까지 미검증인 순수 로직을 Red→Green으로 채운다:
-    - `src/eval/metrics.ts` — 지표 4종 계산 (Task 22)
-    - 근거 강도 가중합 및 `suggested_status` 결정 함수 (Task 26)
-    - `lib/prompts/*` 의 `buildUserPrompt()` (Task 24)
-    - `recomputeSaveStatus()` — 전원 판단 완료 시에만 `saved`, 1건이라도 `검토 전`이면 `draft` (Task 12에서 구현했으나 테스트 없음)
-    - `sanitizeFilenamePart()` — 금지문자·한글·빈 문자열·초장문 (Task 13)
-    - 전사문 포맷 계약 검사기 — `화자명: 발언` 라인 비율이 낮으면 경고 (Task 21 fixture 자체 검증에도 사용)
-  - *완료 조건:* `npm test --prefix backend` 전체 통과, 신규 테스트 파일이 **각각 최소 1회 실패 → 통과 전이를 커밋 이력으로 증명**할 수 있음.
+  - **`requirement-verifier` Agent 판정 (2026-07-30, Task 39 실사용 기록):** 완료 조건 대비 **FAIL**. `npm test --prefix backend` 62/62 통과는 PASS이나, 대상 6항목 중 `src/eval/metrics.ts`(`fa2f6a837`→`8bb1518c8`, test→feat 전이 확인) 1건만 PASS. 근거 강도 가중합/`suggested_status` 함수(Task 26 미착수로 대상 코드 자체 없음)·`recomputeSaveStatus()`(`backend/src/routes/projects.ts:607`)·`sanitizeFilenamePart()`(`backend/src/routes/projects.ts:630`)·전사문 포맷 계약 검사기는 테스트 파일 0건으로 FAIL, `buildUserPrompt()`는 커밋 트레일러가 전부 Task 24 소속이라 Task 28 신규분 여부 NOT VERIFIED.
+  - → 잔여 4항목은 [future_plan.md](future_plan.md#task-28-잔여분-testbe-순수-로직-tdd-확장)로 이관 (2026-07-30).
 
 - [ ] **Task 29: [Test/FE] 화면 단위 테스트 도입**
-  - *상세:* 현재 FE 테스트는 `Dummy.test.tsx` 하나로, 사실상 vitest 설정 확인용이다. React Testing Library로 실제 컴포넌트를 검증한다(설정은 `frontend/vite.config.ts`의 `test` 블록에 이미 있고 globals가 켜져 있어 import 불필요):
-    - 대시보드 — 4개 검증 상태 배지가 각각 올바른 라벨로 렌더되는가, 체크박스 클릭이 행 이동을 유발하지 않는가(`stopPropagation`)
-    - 상세 화면 — `[1]` 마커 파싱: `citations`에 대응이 있으면 클릭 가능 링크, **없으면 일반 텍스트**(환각 방어의 마지막 방어선이므로 반드시 테스트)
-    - 사이드 드로어 — 참조 클릭 시 해당 근거의 quote·speaker·출처 인터뷰명이 표시되는가
-    - 진행바 — 분석 중 상태에서 렌더되고 완료 시 사라지는가
-    - 빈 상태 — 근거 0건 가설에서 화면이 깨지지 않는가 (Task 32와 연동)
-  - *네트워크:* `fetch`는 mock으로 고정한다. 실제 BE를 띄워야 통과하는 테스트는 단위 테스트가 아니다.
-  - *완료 조건:* `npm test --prefix frontend` 에서 실제 컴포넌트 테스트 **4개 이상** 통과, `Dummy.test.tsx` 제거.
+  - → 미착수(`Dummy.test.tsx`만 존재). 상세·완료 조건은 [future_plan.md](future_plan.md#task-29-testfe-화면-단위-테스트-도입)로 이관 (2026-07-30).
 
 - [ ] **Task 30: [Test/BE] 공유 라우터 계약 테스트 — Week3 Task 17 마감**
-  - *상세:* Task 13에서 `routes/share.ts`를 별도 라우터로 분리해 GET만 존재하게 만들었으므로 Task 17("공유 URL 쓰기 차단")은 구조적으로 이미 해결되어 있다. 다만 **테스트가 없어 나중에 누군가 POST를 추가하면 조용히 뚫린다.** 이를 회귀 테스트로 고정한다.
-    - `POST` / `PATCH` / `DELETE` `/api/share/:token` 이 2xx를 반환하지 않음
-    - 공유 응답 본문에 `share_token` 이외의 내부 식별자나 쓰기 경로가 노출되지 않음
-  - *완료 조건:* 테스트 통과 및 **Week3 계획서의 Task 17 체크박스를 `[x]`로 전환**(근거 커밋 해시를 함께 기록).
+  - → 미착수(`routes/share.ts` 대응 테스트 파일 없음). 상세·완료 조건은 [future_plan.md](future_plan.md#task-30-testbe-공유-라우터-계약-테스트)로 이관 (2026-07-30).
 
 ### 🟡 Medium — ④ 3주차 이월 기능 마감
 
 - [ ] **Task 31: [BE] 비-UTF-8 전사문 업로드 인코딩 대응 (Week3 Task 20 이월)**
-  - *상세:* `transcriptExtractor.ts`의 `buffer.toString('utf-8')` 고정을 `jschardet`로 인코딩 감지 → `iconv-lite`로 UTF-8 변환하도록 보강. EUC-KR로 저장된 한글 `.txt` 업로드 시 깨지는 문제(3주차에 실제 재현 확인됨).
-  - *TDD:* 변환 함수는 순수 함수다. EUC-KR/UTF-8/UTF-8 BOM/빈 버퍼 4케이스를 테스트로 먼저 고정한다. 테스트 픽스처는 Task 21의 mock 전사문 1건을 EUC-KR로 재저장해 사용.
-  - *완료 조건:* EUC-KR 한글 `.txt` 업로드 후 전사문이 깨지지 않고 추출되며, 기존 UTF-8 경로에 회귀가 없다.
+  - → 미착수(`jschardet`/`iconv-lite` 미설치). 상세·완료 조건은 [future_plan.md](future_plan.md#task-31-be-비-utf-8-전사문-업로드-인코딩-대응)로 이관 (2026-07-30).
 
 - [ ] **Task 32: [FE] 빈 상태(Empty State) UI 처리 (Week3 Task 19 이월)**
-  - *상세:* 전사문 미입력 / 매칭된 근거 0건 / 검증결과가 폴백 고정값(`"관련 근거가 수집되지 않았습니다."`)인 경우의 안내 화면. 단순히 "데이터 없음"이 아니라 **다음 행동**을 제시한다 — "이 가설과 관련된 발언이 전사문에서 발견되지 않았습니다. 가설을 좁히거나 전사문을 추가해 보세요."
-  - *재현 데이터:* Task 21의 `03_sparse.md`로 실제 빈 상태를 만들어 확인한다(더미 데이터 조작 금지).
-  - *완료 조건:* 세 가지 빈 상태에서 화면이 깨지지 않고 다음 행동을 안내하며, Task 29의 빈 상태 테스트가 통과한다.
+  - → 미착수. 상세·완료 조건은 [future_plan.md](future_plan.md#task-32-fe-빈-상태empty-state-ui-처리)로 이관 (2026-07-30).
 
 - [ ] **Task 33: [FE] 버전 히스토리 뷰어 (Week3 Task 18 이월)**
-  - *상세:* 상세 화면에서 `GET /api/projects/:id/hypotheses/:hid/versions`(Task 12에서 이미 구현됨)를 호출해 기존 버전 ↔ 현재 버전을 비교 표시. 서버 API가 이미 있으므로 **FE 작업만** 남아 있다. 버전이 0건이면 진입점 자체를 숨긴다.
-  - *완료 조건:* 원인/결과를 2회 수정한 가설에서 이전 버전 2건이 시간순으로 표시되고, 각 버전의 원인/결과가 현재 값과 나란히 비교된다.
+  - → 미착수(서버 API는 이미 존재, FE만 남음). 상세·완료 조건은 [future_plan.md](future_plan.md#task-33-fe-버전-히스토리-뷰어)로 이관 (2026-07-30).
 
 ### 🟡 Medium — ⑤ 기록 및 산출물 정리
 
 - [ ] **Task 34: [Docs] 주차별 구현 계획(Week2/3/4) ↔ Notion 연동 정리**
-  - *상세:* 지금 작업 이력은 3개의 마크다운 계획서와 git log에 흩어져 있어, 외부에 "무엇을 언제 어떻게 했는지" 한 번에 보여줄 수 없다. **원본은 로컬 마크다운으로 유지하고(git 추적), Notion은 조회용 미러**로 둔다(원본을 Notion으로 옮기면 코드 리뷰에서 계획이 사라진다).
-    - `backend/scripts/exportTasks.ts` — `README/plan/Week*_Implementation_Plan.md`를 파싱해 Task 레코드 배열 생성. 파싱 대상은 `- [x|  ] **Task N: [구분] 제목**` + `*상세:*` + `*완료 조건:*` + 섹션 헤더의 우선순위(🔴/🟡/🟢).
-    - 커밋 역참조: `git log --grep "(Task N)"`으로 각 Task의 커밋 해시를 붙인다 — 이게 있어야 Notion 보드에서 코드로 되짚을 수 있다(도구의 "근거 사슬" 원칙을 개발 프로세스에도 그대로 적용).
-    - **Notion DB 스키마:** `Week`(select) / `Task No`(number) / `구분`(select: BE·FE·AI·Setup·Test·Data·Docs·Demo) / `제목`(title) / `우선순위`(select) / `상태`(select: 완료·진행중·미착수) / `완료 조건`(text) / `커밋`(text).
-    - **Notion MCP 미연결이 실패가 되면 안 된다:** MCP가 붙어 있으면 페이지를 upsert하고, 없으면 `README/Notion_Task_Board.md`에 **붙여넣기용 표**를 생성하고 조용히 넘어간다. 어느 경로든 산출물은 남는다.
-  - *TDD:* 마크다운 파서는 순수 함수다. Week3 문서를 넣으면 Task 21건이 나오고 체크박스 상태가 실제와 일치하는지 테스트로 고정(Task 28에 포함).
-  - *완료 조건:* Week2/3/4 전 Task가 하나의 표로 정리되고, 각 행의 상태가 계획서 체크박스와 일치하며, 완료 Task에는 커밋 해시가 붙어 있다.
+  - → 미착수(계획서 자체가 이미 최우선 드롭 대상으로 지정). 상세·완료 조건은 [future_plan.md](future_plan.md#task-34-docs-notion-연동-정리)로 이관 (2026-07-30).
 
-- [ ] **Task 35: [Demo] 데모 영상 기획 — 5분 미만 시나리오 확정**
+- [x] **Task 35: [Demo] 데모 영상 기획 — 5분 미만 시나리오 확정** (2026-07-30 체크박스 정정 — [showcase/video_script.md](../../showcase/video_script.md) 완성 확인)
   - *상세:* `README/Demo_Script.md` 신규. 장면별로 **화면 / 나레이션 / 자막 / 소요시간**을 표로 확정한다. 목표 러닝타임 **4분 30초**(5분 제한에 30초 버퍼):
     | # | 장면 | 내용 | 시간 |
     |---|---|---|---|
@@ -223,21 +173,22 @@ gantt
   - *원칙:* **실제로 구현된 화면만 촬영한다.** 미구현 기능을 목업으로 연출하지 않는다. 촬영 데이터는 Task 21의 mock 전사문만 사용(개인정보 노출 방지).
   - *완료 조건:* 장면별 시간 합계가 5분 미만이고, 모든 장면이 현재 코드로 실제 재현 가능하며, 6번 장면(근거 사슬)이 가장 긴 분량을 차지한다.
 
-- [ ] **Task 36: [Demo] 데모 영상 녹화 및 편집**
+- [x] **Task 36: [Demo] 데모 영상 녹화 및 편집** (2026-07-30 체크박스 정정 — `showcase.json.demoVideoUrl`이 `https://youtu.be/OJJdIaxHGW8`로 실제 URL 등록 확인, `https://example.com` 플레이스홀더 아님)
   - *상세:* Task 35 스크립트대로 촬영·편집.
     - 해상도 1280×800 고정(공유 시 텍스트 가독성), 브라우저 확대 125%.
     - 분석 대기 구간은 잘라내지 말고 **배속 처리**(실제 소요시간을 속이지 않되 지루하지 않게).
     - **자막 필수** — 소리 없이 재생해도 이해되어야 한다.
     - 산출물 `showcase/demo.mp4`, 이후 `showcase/showcase.json`의 `demoUrl`을 실제 URL로 갱신(현재 `https://example.com` 플레이스홀더).
   - *완료 조건:* 5분 미만 완성본이 존재하고, 무음 재생으로도 전체 흐름이 이해되며, `showcase.json`의 `demoUrl`이 더 이상 플레이스홀더가 아니다.
+  - **⚠️ 잔여 확인:** `showcase/video_script.md` 하단 촬영 체크리스트 8항목이 미체크 상태로 남아 있다 — 실제 리허설·체크 여부를 별도 확인 필요.
 
 ### 🟢 Low — ⑥ 마감 정리
 
-- [ ] **Task 37: [Docs] 4주차 회고 및 고도화 결과 기록**
+- [x] **Task 37: [Docs] 4주차 회고 및 고도화 결과 기록** (2026-07-30, 축소 완료 — Task 25·26이 [future_plan.md](future_plan.md)로 이관되어 1·2단계 before/after 열은 측정 불가. baseline만 기록하고 표 하단에 "미측정" 사유 명시. v2 미룬 항목은 future_plan.md 하단 "범위 경계"로 정리)
   - *상세:* Task 22의 baseline과 Task 25~27 이후 지표를 **before/after 표**로 본 계획서 하단에 기록한다. 개선되지 않은 지표는 개선되지 않았다고 적고 가설을 남긴다. 더불어 v2로 미룬 항목(실제 모델 파인튜닝, 정량 데이터 그래프, 질문 생성 기능)을 한 곳에 정리한다.
   - *완료 조건:* 지표 표가 채워지고, 4주차에 내린 설계 결정과 미해결 항목이 문서로 남는다.
 
-- [ ] **Task 38: [Docs] `README/README.md` 교체**
+- [x] **Task 38: [Docs] `README/README.md` 교체** (2026-07-30 완료 — [README/README.md](../README.md) Vite 템플릿 문구 제거, 프로젝트 소개·실행 방법·문서 지도로 교체. 같은 작업에서 [README/Workflow.md](../Workflow.md) 신설 및 `pm_design_system` Skill을 `.claude/skills/`로 이관)
   - *상세:* 현재 프로젝트 루트 README 계열 문서에 Vite 템플릿 기본 문구가 그대로 남아 있다. 프로젝트 소개 · 실행 방법(`npm run install-all`, `npm run dev`, `npm test --prefix backend|frontend`, `npm run eval`) · 문서 지도(기획서/파이프라인 설계/주차별 계획)로 교체한다.
   - *완료 조건:* README만 읽고 처음 보는 사람이 프로젝트를 실행하고 문서를 찾아갈 수 있다.
 
@@ -245,7 +196,7 @@ gantt
 
 > **배경 — 현재 `showcase/showcase.json`의 `agent` 섹션은 실체가 없다.** 실측 결과 커스텀 Agent 0개, 커스텀 Skill 0개, 커스텀 Command 0개이며(`.claude/agents/`·`.claude/commands/` 디렉터리 자체가 존재하지 않음), 유일하게 설치된 caveman 계열 4개 스킬조차 **개발이 모두 끝난 뒤(2026-07-24 17:42)** 설치되어 2~3주차 개발에 사용된 적이 없다. 즉 showcase에 적힌 "설계·구현 계획 Agent" · "라이브 E2E 검증 Skill" · "TDD 유틸리티 작성 Skill"은 대화에서 일어난 작업에 **사후에 이름을 붙인 것**이며 파일로 존재하지 않는다. 이 대회는 AI **Agent** Challenge이므로 이 섹션이 곧 심사 대상이다. 4주차에 실제로 만들고 실제로 사용한다.
 
-- [ ] **Task 39: [Agent] 개발 워크플로 Skill / Agent 구축 및 4주차 실사용**
+- [x] **Task 39: [Agent] 개발 워크플로 Skill / Agent 구축 및 4주차 실사용** (2026-07-30 체크박스 정정 — Skill 4종 + Agent 1종 파일 존재 확인, `git log --grep "^Skill: "` 12건, `--grep "^Agent: "`는 Task 28 판정 커밋으로 1건 확보)
   - *실행 시점이 중요하다 — 4주차 **맨 앞**에서 만든다.* 제출 직전에 만들어 놓고 "4주간 이것으로 개발했다"고 쓰면 지금과 똑같은 문제가 형태만 바뀐 것이다. **Task 21 착수 전에 만들어, Task 21~38을 실제로 이 스킬들로 수행**해야 서술이 사실이 된다.
   - *상세:* 새로 발명하지 않는다. 4주차 계획에 **이미 들어 있는 작업을 스킬 파일로 포장**하는 것이므로 추가 비용이 거의 없다:
     | 아티팩트 | 위치 | 대응하는 4주차 작업 |
@@ -260,7 +211,7 @@ gantt
   - *완료 조건:* 4개 아티팩트가 레포에 파일로 존재하고, 4주차 커밋 이력에서 각 아티팩트가 **실제로 사용된 Task를 최소 1건씩** 커밋 트레일러로 지목할 수 있다(예: `tdd-feature-loop` → Task 28의 `test:` → `feat:` 커밋 쌍, 각각 `Skill: tdd-feature-loop` 트레일러 포함).
   - **Skill 개수 기준 (2026-07-27 명확화):** "위 4개까지만"은 **4주차에 새로 만드는 아티팩트** 기준이다. 이미 존재하는 자작 스킬 `branch-commit-push`(2026-07-24 도입, 실사용 중)는 이 개수에서 제외하되 showcase에는 **5번째 아티팩트로 함께 정직하게 기재**한다(Task 40). 마켓플레이스 설치분인 caveman 계열 4개는 개발에 사용된 적이 없으므로 showcase에 기재하지 않는다.
 
-- [ ] **Task 40: [Docs] `showcase.json` `agent` 섹션 실제 아티팩트 기준으로 재작성**
+- [x] **Task 40: [Docs] `showcase.json` `agent` 섹션 실제 아티팩트 기준으로 재작성** (2026-07-30 체크박스 정정 — `79efefafc`·`6bbd8e7da`·`31d653ebf` 커밋으로 agentTools 객체화·workflows 재작성·demoUrl/demoVideoUrl 분리 완료 확인)
   - *상세:* Task 39의 결과물만 기재한다. 존재하지 않는 것은 쓰지 않는다.
     - `agentTools` — Task 39의 신규 Skill 3개 + Agent 1개, 그리고 기존 자작 스킬 `branch-commit-push`(2026-07-24 도입)까지 **총 5개를 실제 파일명 그대로** 기재. caveman 계열(마켓플레이스 설치, 미사용)은 기재하지 않는다.
     - `workflows` — 현재 항목("설계 우선 태스크 구현 Workflow" 등)은 **서비스 개발 순서 설명**이지 Agent 활용이 아니다. 참고 사례처럼 **아티팩트를 이름으로 호출하는 절차**로 다시 쓴다. 예: `1. 계획서에서 Task의 완료 조건 확인 → 2. tdd-feature-loop Skill로 실패 테스트 작성(Red) → 3. 최소 구현(Green) → 4. requirement-verifier Agent로 완료 조건 대비 독립 판정 → 5. FAIL 항목 재작업 후 커밋`
