@@ -188,7 +188,7 @@ gantt
   - *상세:* Task 22의 baseline과 Task 25~27 이후 지표를 **before/after 표**로 본 계획서 하단에 기록한다. 개선되지 않은 지표는 개선되지 않았다고 적고 가설을 남긴다. 더불어 v2로 미룬 항목(실제 모델 파인튜닝, 정량 데이터 그래프, 질문 생성 기능)을 한 곳에 정리한다.
   - *완료 조건:* 지표 표가 채워지고, 4주차에 내린 설계 결정과 미해결 항목이 문서로 남는다.
 
-- [ ] **Task 38: [Docs] `README/README.md` 교체**
+- [x] **Task 38: [Docs] `README/README.md` 교체** (2026-07-30 완료 — [README/README.md](../README.md) Vite 템플릿 문구 제거, 프로젝트 소개·실행 방법·문서 지도로 교체. 같은 작업에서 [README/Workflow.md](../Workflow.md) 신설 및 `pm_design_system` Skill을 `.claude/skills/`로 이관)
   - *상세:* 현재 프로젝트 루트 README 계열 문서에 Vite 템플릿 기본 문구가 그대로 남아 있다. 프로젝트 소개 · 실행 방법(`npm run install-all`, `npm run dev`, `npm test --prefix backend|frontend`, `npm run eval`) · 문서 지도(기획서/파이프라인 설계/주차별 계획)로 교체한다.
   - *완료 조건:* README만 읽고 처음 보는 사람이 프로젝트를 실행하고 문서를 찾아갈 수 있다.
 
