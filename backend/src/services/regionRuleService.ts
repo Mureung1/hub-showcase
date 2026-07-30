@@ -66,6 +66,12 @@ function parseZoneTokens(mngZoneTrgtRgnNm: string): string[] {
 const SGG_ROWS_CACHE_TTL_MS = 10 * 60 * 1000
 const sggRowsCache = new Map<string, { rows: GovRegionRow[]; expiresAt: number }>()
 
+// 테스트에서만 사용 — 여러 테스트 케이스가 같은 sggNm을 재사용할 때 이전 테스트의 캐시된 rows가
+// 새로 설정한 mock을 무시하고 그대로 반환되는 것을 막기 위한 리셋 훅 (프로덕션 경로에서는 호출되지 않음).
+export function __resetSggRowsCacheForTests(): void {
+  sggRowsCache.clear()
+}
+
 async function fetchRowsBySggCached(sggNm: string): Promise<GovRegionRow[]> {
   const cached = sggRowsCache.get(sggNm)
   if (cached && cached.expiresAt > Date.now()) {
