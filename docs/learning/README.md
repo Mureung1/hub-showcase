@@ -23,6 +23,7 @@
 | `08-tdd-domain-rules.md` | TDD, 도메인 규칙, 행동 state machine, LLM intent 경계 |
 | `09-manager-runtime-interaction.md` | 매니저 runtime state, outside roaming, ladder/platform interaction |
 | `10-feature-implementation-map.md` | 창 관리, 사다리/평지, LLM API, Pixel TV 구현 숙지 |
+| `11-implementation-deep-dive.md` | 기능 구현을 문장으로 풀어쓴 코드 이해 해설 |
 
 ## ChatGPT 프로젝트에 넣을 추천 파일
 
