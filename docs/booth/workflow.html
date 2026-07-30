@@ -280,11 +280,18 @@
           <text class="t br" x="136" y="147.6">예</text>
 
           <path class="ln-o" marker-end="url(#ao)" d="M187,132 L196,132 L196,106 L188,106" />
-          <!-- 되돌아가는 세로 화살표(y 106~132)의 한가운데에 맞춰 올린다 -->
-          <text class="t br" x="199" y="111.5" style="fill: #a9791c">위반이면</text>
-          <text class="t br" x="199" y="116.1" style="fill: #a9791c">1회 재생성</text>
-          <text class="t s" x="199" y="122">2회 실패하면</text>
-          <text class="t s" x="199" y="126.5">템플릿으로 폴백</text>
+          <!--
+            되돌아가는 세로 화살표(y 106~132)의 한가운데에 맞춘다.
+            공용 클래스(.br/.s)를 키우면 도식 전체가 흔들리므로 이 네 줄만 인라인으로 올렸다.
+          -->
+          <text class="t br" x="199" y="111.2" style="fill: #a9791c; font-size: 4.4px">
+            위반이면
+          </text>
+          <text class="t br" x="199" y="116.6" style="fill: #a9791c; font-size: 4.4px">
+            1회 재생성
+          </text>
+          <text class="t s" x="199" y="122.4" style="font-size: 4.1px">2회 실패하면</text>
+          <text class="t s" x="199" y="127.6" style="font-size: 4.1px">템플릿으로 폴백</text>
 
           <!-- ===== L6 사람 ===== -->
           <rect x="78" y="150" width="109" height="18" rx="3" fill="url(#human)"
@@ -296,7 +303,9 @@
           <text class="t s" x="94" y="164" style="fill: #eaf2fd">
             문구를 고치거나, 그대로 발송 — 10초
           </text>
-          <text class="t br" x="192" y="161" style="fill: #3b7dd8">사람은 여기만</text>
+          <text class="t br" x="192" y="161.4" style="fill: #3b7dd8; font-size: 4.4px">
+            사람은 여기만
+          </text>
 
           <!-- ===== L7 법적 필터 ===== -->
           <rect class="bx" x="78" y="176" width="109" height="16" rx="3" />
