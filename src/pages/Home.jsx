@@ -22,7 +22,7 @@ import LoadingIndicator from '../components/LoadingIndicator'
 import PromoBanner from '../components/PromoBanner'
 import FilterChipGroup from '../components/FilterChipGroup'
 import mascotWave from '../assets/mascot-wave.png'
-import kkinniCharacter from '../assets/마스코트-끼니.png'
+import kkinniCharacter from '../assets/마스코트-끼니 - 여백 줄임.png'
 
 const SORT_OPTIONS = [
   { id: 'price-asc', label: '가격 낮은순' },
