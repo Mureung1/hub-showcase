@@ -43,13 +43,14 @@ function MeetingMatch({ members, currentMemberId, currentTeamId }) {
   }
 
   useEffect(() => {
-    getCurrentTeam()
+    getCurrentTeam(currentTeamId)
       .then((data) => {
         setTeam(data);
         const plan = getWeekPlan(data.start_date, data.end_date);
         setWeekIndex(plan.initialWeekIndex);
       })
       .catch((err) => console.error(err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadAvailability() {

@@ -3,7 +3,8 @@
   "title": "팀플 올인원",
   "summary": "대학생 팀 프로젝트의 시작(언제 모이지?)부터 끝(누가 뭘 얼마나 했지?)까지 하나로 잇는 웹 서비스입니다.",
   "githubUser": "jsjsbs7233(김우현)",
-  "demoUrl": "https://github.com/jsjsbs7233/hub",
+  "demoUrl": "https://hub-amber-one.vercel.app",
+  "demoVideoUrl": "https://youtu.be/RoEhmwYY1Vw",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/tasks.webp"
