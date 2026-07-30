@@ -13,7 +13,7 @@ import SegmentedControl from '../components/SegmentedControl.jsx'
 import ShortcutGrid from '../components/ShortcutGrid.jsx'
 import StatusCard from '../components/StatusCard.jsx'
 import TagMultiSelect from '../components/TagMultiSelect.jsx'
-import TextField from '../components/TextField.jsx'
+import NumberField from '../components/NumberField.jsx'
 import WaterIntakeCard from '../components/WaterIntakeCard.jsx'
 import { ALLERGY_OPTIONS, CONDITION_OPTIONS } from '../lib/healthProfile.js'
 import { calcRecommendedNutrients, NUTRIENT_LABELS } from '../lib/nutrition.js'
@@ -239,36 +239,35 @@ export default function Profile() {
 
   const formFields = (
     <>
-      <TextField
+      {/* type="number"가 아니라 NumberField다 — 안드로이드 웹뷰에서 type=number는 화면 글자를 남긴 채
+          value만 ''로 만들어, 신규 가입자가 신체정보를 다 채워도 저장 버튼이 끝내 안 켜졌다(출시용
+          APK에서 실제 발생, 같은 폰 크롬은 정상). 자세한 근거는 lib/numericInput.js 헤더 주석. */}
+      <NumberField
         label="나이"
         id="profile-age"
-        type="number"
-        min="1"
         autoFocus={isOnboarding}
         placeholder="25"
         value={form.age}
-        onChange={(e) => updateField('age', e.target.value)}
+        onValueChange={(v) => updateField('age', v)}
         error={validation.errors.age}
       />
       <LabeledSegmentedControl label="성별" options={SEX_OPTIONS} value={form.sex} onChange={(v) => updateField('sex', v)} />
-      <TextField
+      <NumberField
         label="키 (cm)"
         id="profile-height"
-        type="number"
-        min="1"
+        decimal
         placeholder="170"
         value={form.heightCm}
-        onChange={(e) => updateField('heightCm', e.target.value)}
+        onValueChange={(v) => updateField('heightCm', v)}
         error={validation.errors.heightCm}
       />
-      <TextField
+      <NumberField
         label="몸무게 (kg)"
         id="profile-weight"
-        type="number"
-        min="1"
+        decimal
         placeholder="65"
         value={form.weightKg}
-        onChange={(e) => updateField('weightKg', e.target.value)}
+        onValueChange={(v) => updateField('weightKg', v)}
         error={validation.errors.weightKg}
       />
       <LabeledSegmentedControl

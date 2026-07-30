@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import AppButton from './AppButton.jsx'
+import { normalizeNumericInput } from '../lib/numericInput.js'
 import { NUTRIENT_LABELS } from '../lib/nutrition.js'
 import { colors, font, radius, spacing } from '../styles/theme.js'
 
@@ -35,13 +36,15 @@ export default function NutrientEditForm({ nutrients, onCancel, onSave, saving =
             {label}
           </label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {/* type="number"가 아닌 이유: 안드로이드 웹뷰에서 화면 글자를 남긴 채 value만 ''가 되어
+                입력이 통째로 무시된다(lib/numericInput.js 헤더 주석 — 신체정보 저장이 실제로 막혔다).
+                여기는 TextField가 아니라 인라인 <input>이라 NumberField를 쓰지 않고 같은 정규화만 건다. */}
             <input
               id={`edit-nutrient-${key}`}
-              type="number"
-              min="0"
+              type="text"
               inputMode="decimal"
               value={values[key]}
-              onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
+              onChange={(e) => setValues((v) => ({ ...v, [key]: normalizeNumericInput(e.target.value, { decimal: true }) }))}
               style={{
                 width: 72,
                 padding: '6px 8px',

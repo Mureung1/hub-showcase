@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import AchievementRing from '../components/AchievementRing.jsx'
 import Card from '../components/Card.jsx'
 import ScreenHeader from '../components/ScreenHeader.jsx'
-import TextField from '../components/TextField.jsx'
+import NumberField from '../components/NumberField.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { logicalWeekKey } from '../lib/logicalDate.js'
 import { getWeekWaterHistory } from '../lib/questWeekContext.js'
@@ -108,13 +108,12 @@ export default function MyWaterPage() {
           {customOpen && (
             <div style={{ display: 'flex', gap: spacing.sm, width: '100%', alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
-                <TextField
+                {/* type="number"를 쓰면 안드로이드 웹뷰에서 값이 조용히 사라진다 — lib/numericInput.js 참고. */}
+                <NumberField
                   label="추가할 양(ml)"
                   id="water-custom-ml"
-                  type="number"
-                  min="1"
                   value={customMl}
-                  onChange={(e) => setCustomMl(e.target.value)}
+                  onValueChange={setCustomMl}
                   placeholder="예: 350"
                 />
               </div>

@@ -70,7 +70,7 @@ describe('AnalysisResultCard — 저장 전 수동 보정(트랙 2 §4)', () => 
 
     fireEvent.click(screen.getByText('직접 수정'))
 
-    expect(screen.getByLabelText('칼로리')).toHaveValue(300)
+    expect(screen.getByLabelText('칼로리')).toHaveValue('300')
     expect(onEditNutrients).not.toHaveBeenCalled()
   })
 
@@ -103,7 +103,7 @@ describe('AnalysisResultCard — 저장 전 수동 보정(트랙 2 §4)', () => 
 
     fireEvent.click(screen.getByText('직접 수정'))
     // 2인분 표시라 칼로리 입력 초깃값은 600(300*2)이어야 한다.
-    expect(screen.getByLabelText('칼로리')).toHaveValue(600)
+    expect(screen.getByLabelText('칼로리')).toHaveValue('600')
 
     fireEvent.change(screen.getByLabelText('칼로리'), { target: { value: '500' } })
     fireEvent.click(screen.getByText('적용'))
