@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   buildIngredientFromForm,
+  getIngredientStorageStatus,
   parseQuantityInput,
 } from "../frontend/src/utils/ingredientUtils.js";
 
@@ -83,4 +84,29 @@ test("분리 입력한 수량과 단위를 재료 데이터로 합친다", () =>
   expect(ingredient.quantity).toBe(10);
   expect(ingredient.unit).toBe("개");
   expect(ingredient.quantityMode).toBe("exact");
+});
+
+describe("재료 보관 상태", () => {
+  const referenceDate = new Date("2026-07-30T12:00:00");
+
+  test("등록일을 포함한 보관 일수와 보관 방법을 함께 표시한다", () => {
+    expect(getIngredientStorageStatus({
+      storage: "fridge",
+      storedAt: "2026-07-28",
+    }, referenceDate)).toBe("3일째 냉장 보관 중");
+  });
+
+  test("오늘 등록한 재료는 1일째로 표시한다", () => {
+    expect(getIngredientStorageStatus({
+      storage: "room",
+      storedAt: "2026-07-30",
+    }, referenceDate)).toBe("1일째 실온 보관 중");
+  });
+
+  test("등록일이 없으면 보관 방법만 표시한다", () => {
+    expect(getIngredientStorageStatus({
+      storage: "freezer",
+      storedAt: null,
+    }, referenceDate)).toBe("냉동 보관 중");
+  });
 });

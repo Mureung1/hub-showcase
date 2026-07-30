@@ -11,9 +11,23 @@ import {
   getTodayDateString,
 } from "./expiration";
 
+const INGREDIENT_STORAGE_LABELS = {
+  fridge: "냉장",
+  freezer: "냉동",
+  room: "실온",
+};
+
 export function formatIngredientQuantity(ingredient) {
   if (ingredient.quantityMode === "notTracked" || ingredient.quantity === null) return "보유 중";
   return `${ingredient.quantity}${ingredient.unit ?? ""}`;
+}
+
+export function getIngredientStorageStatus(ingredient, referenceDate = new Date()) {
+  const storageLabel = INGREDIENT_STORAGE_LABELS[ingredient.storage] ?? "기타";
+  if (!ingredient.storedAt) return `${storageLabel} 보관 중`;
+
+  const elapsedDays = Math.max(1, -getDaysRemaining(ingredient.storedAt, referenceDate) + 1);
+  return `${elapsedDays}일째 ${storageLabel} 보관 중`;
 }
 
 export function parseQuantityInput(input) {

@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 import App from "../frontend/src/App.jsx";
 
 const originalFetch = globalThis.fetch;
+const originalScrollTo = window.scrollTo;
 
 const recipe = {
   id: "recipe-test-1",
@@ -13,6 +14,10 @@ const recipe = {
   name: "간장 두부 덮밥",
   description: "노릇하게 구운 두부와 짭조름한 간장 소스를 밥에 얹어 먹는 간단한 한 그릇 요리예요.",
   servings: 1,
+  servingStyle: "singleDish",
+  cookingTechnique: "panFry",
+  primaryIngredients: ["두부"],
+  components: [],
   requiredIngredients: [{ name: "두부", amount: 1, unit: "모" }, { name: "대파", amount: 1, unit: "대" }],
   optionalIngredients: [],
   cookingTime: 15,
@@ -24,13 +29,14 @@ const recipe = {
   nutritionTags: ["nutrition:protein"],
   nutritionSummary: "단백질을 중심으로 간단히 먹기 좋은 메뉴예요.",
   substitutions: [{ ingredient: "대파", alternatives: ["양파"], note: "양파를 얇게 썰어 함께 볶아주세요." }],
-  steps: ["두부를 노릇하게 굽습니다.", "간장 소스를 넣고 밥에 올립니다."],
+  steps: ["두부를 먹기 좋게 자릅니다.", "두부를 노릇하게 굽습니다.", "간장 소스를 넣고 밥에 올립니다."],
   safetyNotes: [],
   missingIngredients: ["대파"],
 };
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
+  window.scrollTo = originalScrollTo;
   window.localStorage.clear();
 });
 
@@ -49,6 +55,7 @@ test("서비스 소개 탭에서 핵심 가치와 시작 동선을 제공한다"
   expect(screen.getByRole("heading", { name: "재료를 한눈에" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "먼저 먹을 것부터" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "있는 재료로 한 끼" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "무료로 시작하기" })).not.toBeInTheDocument();
   expect(requestedUrls).not.toContain("/api/recommendations");
 
   fireEvent.click(screen.getByRole("button", { name: "내 냉장고 채우기" }));
@@ -58,13 +65,27 @@ test("서비스 소개 탭에서 핵심 가치와 시작 동선을 제공한다"
 
 test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으로 이어진다", async () => {
   const requestedModes = [];
+  const recommendationRequests = [];
+  window.scrollTo = vi.fn();
   globalThis.fetch = async (url, options) => {
     if (url === "/api/ingredients") return new Response(JSON.stringify({ ingredients: [] }));
     if (url === "/api/recommendations") {
       const request = JSON.parse(options.body);
       requestedModes.push(request.mode);
+      recommendationRequests.push(request);
+      const recipeNames = request.batchNumber === 1
+        ? ["간장 두부 덮밥", "두부국", "두부 샐러드"]
+        : ["두부 김치찜", "두부 채소전", "두부 된장국"];
+      const fingerprintSeeds = request.batchNumber === 1 ? ["b", "c", "d"] : ["e", "f", "a"];
       return new Response(JSON.stringify({
-        recipes: [recipe, { ...recipe, id: "recipe-test-2", fingerprint: "c".repeat(64), name: "두부국", dishType: "soup" }, { ...recipe, id: "recipe-test-3", fingerprint: "d".repeat(64), name: "두부 샐러드", dishType: "salad" }],
+        recipes: recipeNames.map((name, index) => ({
+          ...recipe,
+          id: `recipe-test-${request.batchNumber}-${index}`,
+          fingerprint: fingerprintSeeds[index].repeat(64),
+          name,
+          dishType: ["riceBowl", "soup", "salad"][index],
+          cookingTechnique: ["panFry", "boil", "mix"][index],
+        })),
         meta: { source: "gemini", maxRecipes: 15, batchNumber: request.batchNumber, maxBatches: 5, stopReason: "qualityLimit" },
       }));
     }
@@ -75,30 +96,38 @@ test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으�
 
   expect(screen.getByRole("button", { name: "내 냉장고" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "오늘의 메뉴" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "레시피 추천" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "로그인" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "회원가입" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "레시피" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "구매 추천" })).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "레시피 추천" }));
-  expect(screen.getByRole("button", { name: "재료 등록하기" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "오늘의 메뉴" }));
+  expect(screen.getByRole("button", { name: "로그인" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "회원가입" })).toBeInTheDocument();
   await screen.findAllByRole("button", { name: "레시피 보기" });
+  expect(screen.getAllByRole("button", { name: "레시피 보기" })).toHaveLength(3);
   expect(screen.getAllByRole("link", { name: "대파 구매하기" })).toHaveLength(3);
   expect(screen.getByRole("button", { name: "다른 추천 보기 (남은 4회)" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /무난하게 먹고 싶어요/ }));
+  fireEvent.click(screen.getByRole("button", { name: /간편하고 익숙하게/ }));
   await waitFor(() => expect(requestedModes).toContain("quick"));
   expect(screen.getByRole("button", { name: "다른 추천 보기 (남은 4회)" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /균형 있게 먹고 싶어요/ }));
+  fireEvent.click(screen.getByRole("button", { name: /영양 균형을 챙겨서/ }));
   await waitFor(() => expect(requestedModes).toContain("balanced"));
   expect(screen.getByRole("button", { name: "다른 추천 보기 (남은 4회)" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "다른 추천 보기 (남은 4회)" }));
   await screen.findByRole("button", { name: "다른 추천 보기 (남은 3회)" });
+  expect(screen.getAllByRole("button", { name: "레시피 보기" })).toHaveLength(6);
+  expect(recommendationRequests.at(-1).previousRecommendations).toHaveLength(3);
+  expect(recommendationRequests.at(-1).excludedRecipeFingerprints).toHaveLength(3);
   expect(screen.queryByText("오늘의 추천을 모두 확인했어요.")).not.toBeInTheDocument();
   expect(screen.queryByText("억지로 개수를 채우지 않고 품질 기준을 통과한 메뉴만 보여드려요.")).not.toBeInTheDocument();
   const [recipeButton] = await screen.findAllByRole("button", { name: "레시피 보기" });
   fireEvent.click(recipeButton);
 
   await screen.findByRole("heading", { name: "간장 두부 덮밥" });
-  expect(screen.queryByRole("button", { name: "재료 등록하기" })).not.toBeInTheDocument();
+  expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: "auto" });
+  expect(screen.getByRole("button", { name: "로그인" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "회원가입" })).toBeInTheDocument();
   expect(screen.getAllByText(recipe.description)).toHaveLength(1);
   const recipeToolbar = screen.getByRole("toolbar", { name: "레시피 작업" });
   expect(within(recipeToolbar).getByRole("button", { name: "← 오늘의 메뉴" })).toBeInTheDocument();
@@ -115,8 +144,8 @@ test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으�
   expect(await screen.findByRole("button", { name: /저장됨/ })).toBeInTheDocument();
 });
 
-test("인스턴트와 가공식품 조합을 선택하면 코칭 후 상세로 이동한다", async () => {
-  const instantProcessedRecipe = {
+test("인스턴트와 가공식품 조합도 별도 코칭 없이 상세로 이동한다", async () => {
+  const instantRecipe = {
     ...recipe,
     id: "recipe-spam-ramen",
     fingerprint: "e".repeat(64),
@@ -124,34 +153,24 @@ test("인스턴트와 가공식품 조합을 선택하면 코칭 후 상세로 �
     requiredIngredients: [
       { name: "라면", amount: 1, unit: "개" },
       { name: "스팸", amount: 0.5, unit: "캔" },
-      { name: "계란", amount: 1, unit: "개" },
     ],
-    missingIngredients: ["계란"],
   };
   globalThis.fetch = async (url) => {
     if (url === "/api/ingredients") return new Response(JSON.stringify({ ingredients: [] }));
     if (url === "/api/recommendations") return new Response(JSON.stringify({
-      recipes: [instantProcessedRecipe],
+      recipes: [instantRecipe],
       meta: { source: "gemini", maxRecipes: 15, batchNumber: 1, maxBatches: 5 },
     }));
     throw new Error(`Unexpected request: ${url}`);
   };
 
   render(<App />);
-  fireEvent.click(screen.getByRole("button", { name: "레시피 추천" }));
-
+  fireEvent.click(screen.getByRole("button", { name: "오늘의 메뉴" }));
   const recipeHeading = await screen.findByRole("heading", { name: "스팸 김치라면" });
-  const recipeCard = recipeHeading.closest("article");
-  expect(within(recipeCard).getByRole("link", { name: "계란 구매하기" })).toHaveAttribute(
-    "href",
-    expect.stringContaining("query=%EA%B3%84%EB%9E%80"),
-  );
-  fireEvent.click(within(recipeCard).getByRole("button", { name: "레시피 보기" }));
+  fireEvent.click(within(recipeHeading.closest("article")).getByRole("button", { name: "레시피 보기" }));
 
-  expect(await screen.findByRole("dialog")).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "조금 더 든든하게 먹어볼까요?" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "원래 선택 계속하기" }));
   expect(await screen.findByRole("heading", { name: "스팸 김치라면" })).toBeInTheDocument();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
 test("요리 완료를 확인하면 레시피 사용량만큼 보유 재료를 차감한다", async () => {
@@ -206,7 +225,7 @@ test("요리 완료를 확인하면 레시피 사용량만큼 보유 재료를 �
   expect(await screen.findByRole("button", { name: "재료 수정" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "모두 사용" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /메뉴 열기/ })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "레시피 추천" }));
+  fireEvent.click(screen.getByRole("button", { name: "오늘의 메뉴" }));
   fireEvent.click(await screen.findByRole("button", { name: "레시피 보기" }));
   await screen.findByRole("heading", { name: "간장 두부 덮밥" });
   fireEvent.click(screen.getByRole("button", { name: "✓ 이 레시피로 요리했어요" }));

@@ -10,9 +10,11 @@
 
 ## 1. 미디어 가져오기
 
-1. `outputs/video-assets/`의 5개 PNG와 기능 시연 영상을 CapCut으로 가져온다.
+1. Figma에서 내보낸 5개 장면과 기능 시연 영상을 CapCut으로 가져온다.
 2. PNG와 시연 영상을 위의 순서대로 메인 타임라인에 배치한다.
 3. 장면 사이에는 0.2~0.4초 길이의 디졸브 또는 페이드 한 종류만 사용한다.
+
+완성된 영상은 [`project-introduction-video`](../../project-introduction-video/) 폴더에서 관리한다.
 
 ## 2. TTS 생성
 

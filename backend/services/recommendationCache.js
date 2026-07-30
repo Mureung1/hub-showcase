@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { getKstDateString, getNextKstMidnight } from "./recommendationPolicy.js";
 
 const CACHE_TABLE = "recipe_recommendation_cache";
-const RECOMMENDATION_POLICY_VERSION = "korean-menu-variety-v2";
+const RECOMMENDATION_POLICY_VERSION = "korean-menu-quality-v3";
 
 function sortStrings(values) {
   return [...values].sort((left, right) => left.localeCompare(right, "ko"));
@@ -19,6 +19,8 @@ export function createRecommendationCacheKey({ inventorySignature, request, now 
     batchSize: request.batchSize,
     batchNumber: request.batchNumber,
     excludedRecipeFingerprints: sortStrings(request.excludedRecipeFingerprints),
+    previousRecommendations: [...(request.previousRecommendations ?? [])]
+      .sort((left, right) => left.fingerprint.localeCompare(right.fingerprint)),
     allergens: sortStrings(request.allergens),
     excludedIngredients: sortStrings(request.excludedIngredients),
     dietaryPreferences: sortStrings(request.dietaryPreferences),

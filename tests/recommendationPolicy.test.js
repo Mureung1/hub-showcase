@@ -68,7 +68,7 @@ function recipe(values = {}) {
     nutritionTags: ["nutrition:protein"],
     nutritionSummary: "단백질 중심 메뉴",
     substitutions: [],
-    steps: ["재료를 손질해요.", "충분히 익혀요."],
+    steps: ["재료를 손질해요.", "팬에서 충분히 익혀요.", "그릇에 담아 완성해요."],
     safetyNotes: [],
     ...values,
   };
@@ -250,9 +250,12 @@ test("일반 추천에서는 소비기한 우선 재료를 강제로 사용하�
   const context = buildIngredientContext(rows, { today: "2026-07-22" });
   const generated = {
     recipes: [recipe({
-      name: "양파볶음",
+      name: "삼겹살 양파볶음",
       primaryIngredients: ["양파"],
-      requiredIngredients: [{ name: "양파", amount: 1, unit: "개" }],
+      requiredIngredients: [
+        { name: "삼겹살", amount: 150, unit: "g" },
+        { name: "양파", amount: 1, unit: "개" },
+      ],
     })],
   };
 
@@ -263,7 +266,59 @@ test("일반 추천에서는 소비기한 우선 재료를 강제로 사용하�
     excludedRecipeFingerprints: [],
   }, context);
 
-  assert.equal(recipes[0].name, "양파볶음");
+  assert.equal(recipes[0].name, "삼겹살 양파볶음");
+});
+
+test("부족 재료를 허용해도 보유 재료를 전혀 쓰지 않는 메뉴는 거부한다", () => {
+  const context = buildIngredientContext(rows, { today: "2026-07-22" });
+  const generated = {
+    recipes: [recipe({
+      name: "양파볶음",
+      primaryIngredients: ["양파"],
+      requiredIngredients: [{ name: "양파", amount: 1, unit: "개" }],
+    })],
+  };
+
+  assert.throws(
+    () => validateGeneratedRecipes(generated, {
+      mode: "quick",
+      maxMissingIngredients: 1,
+      batchNumber: 1,
+      excludedRecipeFingerprints: [],
+    }, context),
+    (error) => error instanceof RecommendationPolicyError
+      && error.violations.some((violation) => violation.startsWith("INVENTORY_INGREDIENT_REQUIRED")),
+  );
+});
+
+test("추가 추천은 이전 메뉴와 조리 형태·기법·주재료 중 두 가지 이상 달라야 한다", () => {
+  const context = buildIngredientContext(rows, { today: "2026-07-22" });
+  const previous = recipe();
+  const generated = {
+    recipes: [recipe({
+      name: "삼겹살 매콤볶음",
+      dishType: "riceBowl",
+    })],
+  };
+
+  assert.throws(
+    () => validateGeneratedRecipes(generated, {
+      mode: "quick",
+      maxMissingIngredients: 0,
+      batchNumber: 2,
+      excludedRecipeFingerprints: [createRecipeFingerprint(previous)],
+      previousRecommendations: [{
+        fingerprint: createRecipeFingerprint(previous),
+        name: previous.name,
+        servingStyle: previous.servingStyle,
+        cookingTechnique: previous.cookingTechnique,
+        dishType: previous.dishType,
+        primaryIngredients: previous.primaryIngredients,
+      }],
+    }, context),
+    (error) => error instanceof RecommendationPolicyError
+      && error.violations.some((violation) => violation.startsWith("PREVIOUS_RECOMMENDATION_TOO_SIMILAR")),
+  );
 });
 
 test("인스턴트와 가공식품 조합에는 균형 보완 필수 재료가 필요하다", () => {

@@ -10,8 +10,7 @@ AI Agent Challenge에서 Codex와 협업해 서비스를 개발한 과정을 정
 
 ## 산출물
 
-- [A3 인쇄용 PDF](../outputs/ai-agent-workflow-poster-a3.pdf)
-- [PNG 미리보기](../outputs/poster-assets/ai-agent-workflow-poster-a3.png)
+- [A3 인쇄용 PDF](../booth-exhibition-poster/n091-park-changhyun-ai-agent.pdf)
 - [Figma 편집본](https://www.figma.com/design/xt2pNGCDtZ8o4fh4VnikTu?node-id=33-2)
 
 PDF는 ISO A3 세로 규격인 297 x 420 mm로 제작했습니다.

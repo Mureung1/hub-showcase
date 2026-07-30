@@ -5,7 +5,7 @@
 ## 결과물
 
 - Figma: [03 · Core User Flow](https://www.figma.com/design/D2Zlcjyy5ThP80AU0YqVAx?node-id=30-20)
-- PNG: `outputs/video-assets/03-core-user-flow.png`
+- 최종 영상: [`n091-park-changhyun-project-introduction.mp4`](../../project-introduction-video/n091-park-changhyun-project-introduction.mp4)
 
 ## 사용자 흐름
 

@@ -14,7 +14,7 @@ services:
       - key: LOG_LEVEL
         value: info
       - key: CLIENT_ORIGIN
-        value: https://todays-fridge-n091.vercel.app
+        value: https://todays-fridge-n091.vercel.app,https://pkchanghyun-pixel.github.io
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SECRET_KEY

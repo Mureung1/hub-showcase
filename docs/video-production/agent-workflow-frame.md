@@ -5,8 +5,7 @@
 ## 결과물
 
 - Figma: [05 · Agent Workflow](https://www.figma.com/design/D2Zlcjyy5ThP80AU0YqVAx?node-id=39-20)
-- PNG: `outputs/video-assets/05-agent-workflow.png`
-- 참고 포스터: `outputs/poster-assets/ai-agent-workflow-poster-a3.png`
+- 최종 영상: [`n091-park-changhyun-project-introduction.mp4`](../../project-introduction-video/n091-park-changhyun-project-introduction.mp4)
 
 ## 역할
 

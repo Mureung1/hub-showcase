@@ -8,11 +8,32 @@ dotenv.config({
   quiet: true,
 });
 
+const clientOriginsSchema = z.string().min(1).default("http://localhost:5173").transform((value, context) => {
+  const origins = value.split(",").map((origin) => origin.trim()).filter(Boolean);
+
+  if (origins.length === 0 || origins.some((origin) => {
+    try {
+      new URL(origin);
+      return false;
+    } catch {
+      return true;
+    }
+  })) {
+    context.addIssue({
+      code: "custom",
+      message: "CLIENT_ORIGIN must contain comma-separated URLs",
+    });
+    return z.NEVER;
+  }
+
+  return origins;
+});
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
-  CLIENT_ORIGIN: z.string().url().default("http://localhost:5173"),
+  CLIENT_ORIGIN: clientOriginsSchema,
   SUPABASE_URL: z.string().url(),
   SUPABASE_SECRET_KEY: z.string().min(1),
   GEMINI_API_KEY: z.string().min(1),

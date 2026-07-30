@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { getDefaultIngredientTags, getIngredientTags, INGREDIENT_TAG_LABELS } from "../../shared/ingredientTags";
 import { convertQuantityToStandard } from "../../shared/quantityUnits";
 import "./App.css";
 import IngredientForm from "./components/IngredientForm";
-import NaggingMessage from "./components/NaggingMessage";
 import RecipeConsumptionModal from "./components/RecipeConsumptionModal";
 import { getAllowedStorageOptions, getDefaultStorage, getSuggestedUseByDate } from "./data/shelfLifeRules";
 import { consumeIngredients, deleteIngredient, getIngredients, registerIngredient, updateIngredient } from "./services/ingredients";
@@ -19,9 +18,8 @@ import {
   buildIngredientFromForm,
   formatIngredientQuantity,
   getIngredientExpirationPresentation,
+  getIngredientStorageStatus,
 } from "./utils/ingredientUtils";
-import { getRecipeNaggingMessage } from "./utils/naggingUtils";
-import { getCoachingTone, readMealChoiceHistory } from "./utils/mealChoiceHistory";
 import { isPantryIngredientName } from "./utils/pantry";
 import {
   createShoppingSearchUrl,
@@ -99,8 +97,6 @@ function App() {
   const [initialFocusField, setInitialFocusField] = useState("name");
   const [sortOrder, setSortOrder] = useState("expiry");
   const [confirmAction, setConfirmAction] = useState(null);
-  const [pendingRecipe, setPendingRecipe] = useState(null);
-  const [naggingMessage, setNaggingMessage] = useState(null);
   const [message, setMessage] = useState({ text: "", type: "success" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formValues, setFormValues] = useState(createInitialFormValues);
@@ -157,6 +153,14 @@ function App() {
         maxMissingIngredients: missingIngredientLimit,
         batchNumber: (recommendationMeta?.batchNumber ?? 1) + 1,
         excludedRecipeFingerprints: recommendationRecipes.map((recipe) => recipe.fingerprint),
+        previousRecommendations: recommendationRecipes.map((recipe) => ({
+          fingerprint: recipe.fingerprint,
+          name: recipe.name,
+          servingStyle: recipe.servingStyle,
+          cookingTechnique: recipe.cookingTechnique,
+          dishType: recipe.dishType,
+          primaryIngredients: recipe.primaryIngredients,
+        })),
       });
       setRecommendationRecipes((current) => [...current, ...result.recipes.filter((recipe) => !current.some((item) => item.fingerprint === recipe.fingerprint))]);
       setRecommendationMeta(result.meta);
@@ -352,45 +356,6 @@ function App() {
     window.setTimeout(() => setIsRecipeLoading(false), 350);
   };
 
-  const closeNaggingMessage = () => {
-    setNaggingMessage(null);
-    setPendingRecipe(null);
-  };
-
-  const continueFromNagging = (mode) => {
-    setNaggingMessage(null);
-    setPendingRecipe(null);
-    setSelectedMood(mode);
-    setMissingIngredientLimit(1);
-    setSelectedRecipe(null);
-    setActiveMainTab("recommend");
-  };
-
-  const handleRecipeSelect = (recipe) => {
-    const nextNaggingMessage = getRecipeNaggingMessage({
-      recipe,
-      ingredients: managedIngredients,
-      tone: getCoachingTone(readMealChoiceHistory(), { includeCurrentChoice: true }),
-    });
-    if (nextNaggingMessage) {
-      setPendingRecipe(recipe);
-      setNaggingMessage(nextNaggingMessage);
-      return;
-    }
-    selectMenu(recipe);
-  };
-
-  const continueOriginalFromNagging = () => {
-    if (!pendingRecipe) {
-      continueFromNagging("quick");
-      return;
-    }
-    const recipe = pendingRecipe;
-    setNaggingMessage(null);
-    setPendingRecipe(null);
-    selectMenu(recipe);
-  };
-
   const showRecommendations = () => {
     setSelectedRecipe(null);
     setActiveMainTab("recommend");
@@ -443,9 +408,10 @@ function App() {
         <nav className="header-nav" aria-label="상단 메뉴">
           {mainTabs.map(([id, label]) => <button key={id} type="button" className={activeMainTab === id ? "active" : ""} aria-current={activeMainTab === id ? "page" : undefined} onClick={() => (id === "recommend" ? showRecommendations() : setActiveMainTab(id))}>{label}</button>)}
         </nav>
-        {!selectedRecipe && <button className="header-cta" type="button" onClick={activeMainTab === "fridge" ? showRecommendations : openIngredientForm}>
-          {activeMainTab === "about" ? "냉장고 시작하기" : activeMainTab === "fridge" ? "레시피 추천" : "재료 등록하기"}
-        </button>}
+        <div className="header-auth-actions" aria-label="계정 메뉴">
+          <button className="login-action" type="button" title="준비 중인 기능입니다" onClick={() => flash("로그인 기능은 준비 중입니다.")}>로그인</button>
+          <button className="signup-action" type="button" title="준비 중인 기능입니다" onClick={() => flash("회원가입 기능은 준비 중입니다.")}>회원가입</button>
+        </div>
       </header>
 
       <main>
@@ -463,14 +429,13 @@ function App() {
         {activeMainTab === "fridge" && !isLoading && !ingredientError && <FridgeWorkspace ingredients={managedIngredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} requestIngredientAction={requestIngredientAction} showRecommendations={showRecommendations} />}
         {activeMainTab === "recommend" && (selectedRecipe
           ? <RecipeWorkspace menu={selectedRecipe} isLoading={isRecipeLoading} onBack={showRecommendations} isSaved={isRecipeSaved(selectedRecipe, savedRecipes)} onToggleSaved={() => toggleRecipeSaved(selectedRecipe)} onConsume={openConsumptionModal} isConsumed={consumedRecipeId === selectedRecipe.id} />
-          : <RecommendWorkspace recipes={recommendationRecipes} savedRecipes={savedRecipes} meta={recommendationMeta} isLoading={isRecommendationsLoading} isLoadingMore={isMoreRecommendationsLoading} error={recommendationError} onRetry={recommendationErrorScope === "more" ? loadMoreRecommendations : () => setRecommendationRetryKey((current) => current + 1)} onLoadMore={loadMoreRecommendations} selectedMood={selectedMood} setSelectedMood={setSelectedMood} missingIngredientLimit={missingIngredientLimit} setMissingIngredientLimit={setMissingIngredientLimit} onSelectRecipe={handleRecipeSelect} onToggleSaved={toggleRecipeSaved} />)}
+          : <RecommendWorkspace recipes={recommendationRecipes} savedRecipes={savedRecipes} meta={recommendationMeta} isLoading={isRecommendationsLoading} isLoadingMore={isMoreRecommendationsLoading} error={recommendationError} onRetry={recommendationErrorScope === "more" ? loadMoreRecommendations : () => setRecommendationRetryKey((current) => current + 1)} onLoadMore={loadMoreRecommendations} selectedMood={selectedMood} setSelectedMood={setSelectedMood} missingIngredientLimit={missingIngredientLimit} setMissingIngredientLimit={setMissingIngredientLimit} onSelectRecipe={selectMenu} onToggleSaved={toggleRecipeSaved} />)}
       </main>
       {message.text && <div className={`toast-message ${message.type}`} role={message.type === "error" ? "alert" : "status"} aria-live="polite">{message.text}</div>}
       {isFormOpen && <IngredientFormModal title={editingIngredientId ? "재료 수정" : "재료 추가"} onClose={closeIngredientForm}>
         <IngredientForm formValues={formValues} errors={errors} isEditing={Boolean(editingIngredientId)} isSubmitting={isSubmitting} initialFocusField={initialFocusField} onChange={handleFormChange} onBlur={handleFormBlur} onTagToggle={handleTagToggle} onApplySuggestedDate={applySuggestedDate} onSubmit={handleSubmitIngredient} onCancel={closeIngredientForm} />
       </IngredientFormModal>}
       {confirmAction && <ConfirmDialog action={confirmAction} isSubmitting={isSubmitting} onCancel={() => setConfirmAction(null)} onConfirm={completeIngredientAction} />}
-      {naggingMessage && pendingRecipe && <NaggingMessage message={naggingMessage} onAcceptSuggestion={() => continueFromNagging("balanced")} onContinueOriginal={continueOriginalFromNagging} onClose={closeNaggingMessage} />}
       {consumptionRecipe && <RecipeConsumptionModal recipe={consumptionRecipe} ingredients={managedIngredients} isSubmitting={isConsumptionSubmitting} error={consumptionError} onClose={closeConsumptionModal} onConfirm={confirmRecipeConsumption} />}
     </div>
   );
@@ -478,9 +443,9 @@ function App() {
 
 function AboutWorkspace({ onStart, onRecommend }) {
   const features = [
-    { number: "01", title: "재료를 한눈에", description: "보관 위치와 수량, 소비기한을 함께 기록해 냉장고 상태를 놓치지 않아요.", accent: "green" },
-    { number: "02", title: "먼저 먹을 것부터", description: "소비기한이 가까운 재료를 앞에 보여줘 식재료 낭비를 자연스럽게 줄여요.", accent: "red" },
-    { number: "03", title: "있는 재료로 한 끼", description: "Gemini가 보유 재료와 오늘의 상황을 바탕으로 검증된 1인분 메뉴를 제안해요.", accent: "orange" },
+    { icon: "🧺", title: "재료를 한눈에", description: "보관 위치와 수량, 소비기한을 함께 기록해 냉장고 상태를 놓치지 않아요.", accent: "green" },
+    { icon: "⏰", title: "먼저 먹을 것부터", description: "소비기한이 가까운 재료를 앞에 보여줘 식재료 낭비를 자연스럽게 줄여요.", accent: "red" },
+    { icon: "🍳", title: "있는 재료로 한 끼", description: "Gemini가 보유 재료와 오늘의 상황을 바탕으로 검증된 1인분 메뉴를 제안해요.", accent: "orange" },
   ];
 
   return (
@@ -521,8 +486,8 @@ function AboutWorkspace({ onStart, onRecommend }) {
 
       <div className="about-feature-grid">
         {features.map((feature) => (
-          <article className={`about-feature ${feature.accent}`} key={feature.number}>
-            <span>{feature.number}</span>
+          <article className={`about-feature ${feature.accent}`} key={feature.title}>
+            <span aria-hidden="true">{feature.icon}</span>
             <h3>{feature.title}</h3>
             <p>{feature.description}</p>
           </article>
@@ -541,10 +506,6 @@ function AboutWorkspace({ onStart, onRecommend }) {
         </ol>
       </div>
 
-      <div className="about-bottom-cta">
-        <div><span>있는 재료 그대로,</span><h2>오늘은 뭘 먹을지 바로 정해보세요.</h2></div>
-        <button type="button" onClick={onStart}>무료로 시작하기 <span aria-hidden="true">→</span></button>
-      </div>
     </section>
   );
 }
@@ -564,7 +525,7 @@ function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setAc
     <QuickActionSection onRecommend={showRecommendations} onUrgent={() => setActiveStorage("urgent")} />
 
     <section className="board-panel fridge-board">
-      <div className="ingredient-heading"><div><p className="eyebrow">MY INGREDIENTS</p><h2>내 재료 <span>{ingredients.length}개</span></h2></div><button className="secondary-action" type="button" onClick={openIngredientForm}>+ 재료 추가</button></div>
+      <div className="ingredient-heading"><div><p className="eyebrow">MY INGREDIENTS</p><h2>내 재료 <span>{ingredients.length}개</span></h2></div><button className="add-ingredient-action" type="button" onClick={openIngredientForm}><span aria-hidden="true">＋</span> 재료 추가</button></div>
       <div className="ingredient-toolbar">
         <nav className="storage-tabs" aria-label="재료 필터">{Object.entries(storageLabels).map(([id, label]) => <button key={id} type="button" className={activeStorage === id ? "active" : ""} aria-pressed={activeStorage === id} onClick={() => setActiveStorage(id)}>{label}</button>)}</nav>
         <label className="sort-control"><span>정렬</span><select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}><option value="expiry">소비기한 임박순</option><option value="recent">최근 등록순</option><option value="name">이름순</option></select></label>
@@ -599,8 +560,14 @@ function IngredientTile({ ingredient, onEdit, onAction }) {
   const ingredientTags = getIngredientTags(ingredient);
 
   return <article className={`ingredient-tile ${expiration.status}`}>
-    <div className="tile-top"><span className="ingredient-emoji" aria-hidden="true">{ingredient.icon}</span><div className="tile-primary"><div className="tile-title-row"><h3>{ingredient.name}</h3><strong className="quantity-text">{formatIngredientQuantity(ingredient)}</strong></div><div className={`expiration-line ${expiration.status}`}><span className="dday-badge">{expiration.badge}</span><strong>{expiration.label}</strong></div><span className="storage-info">{storageLabels[ingredient.storage]} 보관</span></div></div>
-    {ingredientTags.length > 0 && <div className="ingredient-labels" aria-label="재료 태그">{ingredientTags.map((tag) => <span className="tag-label" key={tag}>{INGREDIENT_TAG_LABELS[tag]}</span>)}</div>}
+    <div className="tile-top"><span className="ingredient-emoji" aria-hidden="true">{ingredient.icon}</span><div className="tile-primary"><div className="tile-title-row"><h3>{ingredient.name}</h3><strong className="quantity-text">{formatIngredientQuantity(ingredient)}</strong></div><div className={`expiration-line ${expiration.status}`}><span className="dday-badge">{expiration.badge}</span><strong>{getIngredientStorageStatus(ingredient)}</strong></div></div></div>
+    <div
+      className={`ingredient-labels${ingredientTags.length === 0 ? " is-empty" : ""}`}
+      aria-label={ingredientTags.length > 0 ? "재료 태그" : undefined}
+      aria-hidden={ingredientTags.length === 0 ? "true" : undefined}
+    >
+      {ingredientTags.map((tag) => <span className="tag-label" key={tag}>{INGREDIENT_TAG_LABELS[tag]}</span>)}
+    </div>
     <div className="ingredient-tile-actions">
       <button type="button" onClick={() => onEdit(ingredient)}>재료 수정</button>
       <button className="used-action" type="button" onClick={() => onAction("used", ingredient)}>모두 사용</button>
@@ -640,9 +607,9 @@ function WorkspaceShell({ eyebrow, title, description, children }) {
 }
 
 const moodOptions = [
-  { id: "expiryFirst", icon: "⏰", title: "소비기한부터 챙길래요", description: "임박 재료를 자연스러운 메뉴로 우선 활용" },
-  { id: "quick", icon: "🍳", title: "무난하게 먹고 싶어요", description: "불 사용 여부와 관계없이 익숙한 한 끼" },
-  { id: "balanced", icon: "🥗", title: "균형 있게 먹고 싶어요", description: "여러 식품군을 활용한 한 끼" },
+  { id: "expiryFirst", icon: "⏳", title: "먼저 먹을 재료부터" },
+  { id: "quick", icon: "🍳", title: "간편하고 익숙하게" },
+  { id: "balanced", icon: "🥗", title: "영양 균형을 챙겨서" },
 ];
 
 function RecommendWorkspace({ recipes, savedRecipes, meta, isLoading, isLoadingMore, error, onRetry, onLoadMore, selectedMood, setSelectedMood, missingIngredientLimit, setMissingIngredientLimit, onSelectRecipe, onToggleSaved }) {
@@ -652,10 +619,10 @@ function RecommendWorkspace({ recipes, savedRecipes, meta, isLoading, isLoadingM
     && recipes.length < maxRecipes
     && remainingRecommendationCount > 0;
 
-  return <WorkspaceShell eyebrow="Today&apos;s Menu" title="오늘 뭐 먹지?" description="지금 할 수 있는 만큼만 골라보세요. 냉장고 상황에 맞춰 선택지를 줄여드릴게요.">
+  return <WorkspaceShell eyebrow="TODAY'S MENU · 맞춤 추천" title="오늘 뭐 먹지?" description="냉장고 재료와 오늘의 상황을 함께 살펴, 지금 만들기 좋은 1인분 메뉴를 추천해드려요.">
     <section className="mood-section" aria-labelledby="mood-title">
       <div className="section-heading"><p className="eyebrow">Today&apos;s Energy</p><h2 id="mood-title">오늘은 어느 정도까지 할 수 있어요?</h2></div>
-      <div className="mood-selector">{moodOptions.map((mood) => <button key={mood.id} type="button" className={selectedMood === mood.id ? "active" : ""} aria-pressed={selectedMood === mood.id} onClick={() => setSelectedMood(mood.id)}><span aria-hidden="true">{mood.icon}</span><strong>{mood.title}</strong><small>{mood.description}</small></button>)}</div>
+      <div className="mood-selector">{moodOptions.map((mood) => <button key={mood.id} type="button" className={selectedMood === mood.id ? "active" : ""} aria-pressed={selectedMood === mood.id} onClick={() => setSelectedMood(mood.id)}><span aria-hidden="true">{mood.icon}</span><strong>{mood.title}</strong></button>)}</div>
     </section>
 
     {savedRecipes.length > 0 && <section className="recommendation-section saved-recipes-section" aria-labelledby="saved-recipes-title">
@@ -693,6 +660,13 @@ function EmptyRecipeState({ onShowOneMissing }) {
 }
 
 function RecipeWorkspace({ menu, isLoading, onBack, isSaved, onToggleSaved, onConsume, isConsumed }) {
+  const menuKey = menu?.id ?? menu?.fingerprint ?? menu?.name;
+
+  useLayoutEffect(() => {
+    if (!menuKey) return;
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [menuKey]);
+
   if (isLoading) return <WorkspaceShell eyebrow="Today&apos;s Menu" title="레시피 상세" description="선택한 메뉴 정보를 불러오고 있습니다."><div className="recipe-empty"><h2>레시피를 불러오는 중입니다...</h2><p>잠시만 기다려주세요.</p></div></WorkspaceShell>;
   if (!menu) return <WorkspaceShell eyebrow="Today&apos;s Menu" title="레시피 상세" description="오늘의 메뉴에서 선택하면 조리 과정을 볼 수 있습니다."><div className="recipe-empty"><h2>선택한 메뉴를 찾을 수 없습니다</h2><p>오늘의 메뉴 화면에서 레시피를 선택해주세요.</p><button type="button" onClick={onBack}>오늘의 메뉴 보기</button></div></WorkspaceShell>;
 

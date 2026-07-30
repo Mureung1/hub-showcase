@@ -5,7 +5,7 @@
 ## 결과물
 
 - Figma: [04 · Data Flow](https://www.figma.com/design/D2Zlcjyy5ThP80AU0YqVAx?node-id=36-20)
-- PNG: `outputs/video-assets/04-data-flow.png`
+- 최종 영상: [`n091-park-changhyun-project-introduction.mp4`](../../project-introduction-video/n091-park-changhyun-project-introduction.mp4)
 
 ## 표현 내용
 
