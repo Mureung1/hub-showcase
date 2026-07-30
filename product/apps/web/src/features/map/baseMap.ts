@@ -1,5 +1,7 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
 
+import { addStoreCategoryStyleImage } from "./stores/storeIconRegistry";
+
 export const BASE_MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 export const BASE_BUILDING_LAYER_ID = "localtwin-base-building-3d";
 
@@ -20,6 +22,7 @@ export type MissingStyleImageEvent = {
 
 export function addMissingStyleImageFallback(event: MissingStyleImageEvent) {
   if (event.target.hasImage(event.id)) return;
+  if (addStoreCategoryStyleImage(event)) return;
   const data = new Uint8Array(FALLBACK_ICON_SIZE * FALLBACK_ICON_SIZE * 4);
   const center = (FALLBACK_ICON_SIZE - 1) / 2;
   for (let y = 0; y < FALLBACK_ICON_SIZE; y += 1) {
