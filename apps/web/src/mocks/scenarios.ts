@@ -46,7 +46,7 @@ export const SCENARIOS: Record<ScenarioKey, Scenario> = {
     // 보는 공개 채널이라 "단골님께만"·"이 문자 보여주시면" 같은 문자 전용 말을 쓰면 안 된다.
     copy: "❄️ 오늘 진짜 춥죠? 몸 녹이러 오세요 🔥\n따뜻한 라떼 ☕ + 오늘의 스콘 🥐 세트를\n오늘 하루 특별한 가격에 준비했어요 💛\n세트 주문하시면 2,000원 할인 🎁",
     promo: "따뜻한 라떼+스콘 세트 2,000원 할인 (오늘)",
-    channels: ["dangol"], coupon: { used: 44, revenue: 61500 },
+    channels: ["instagram", "dangol"], coupon: { used: 44, revenue: 61500 },
   },
   heat: {
     label: "폭염", emoji: "🥵", temp: "35°C", cond: "폭염 · 체감 38°C · 자외선 매우 높음",
