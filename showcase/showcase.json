@@ -67,13 +67,13 @@
         "name": "기능 개발 Workflow",
         "steps": [
           "BACKLOG.md에서 이번 주 Task와 완료 기준 확정",
-          "계획 수립 Agent로 하루 크기 작업 분해",
-          "GitHub Issue 등록",
-          "feature/* 브랜치 생성",
-          "테스트 먼저 작성",
-          "구현",
-          "기능 검증 Agent로 프론트→백엔드→DB 왕복 검증",
-          "PR 생성"
+          "계획 수립 Agent로 하루 크기 작업 분해 후 내 계획과 비교",
+          "GitHub Issue 등록 · feature/* 브랜치 생성",
+          "테스트 먼저 작성(실패 확인) → 최소 구현으로 통과",
+          "기능 검증 Agent로 프론트→백엔드→DB 왕복 PASS/FAIL 판정",
+          "PR 생성 → CI가 lint·테스트·빌드 자동 실행",
+          "사람이 diff와 CI 결과 확인 후 머지 → Vercel·Render 자동 배포",
+          "라이브에서 핵심 흐름 1회 완주 후 BACKLOG 체크"
         ]
       },
       {
