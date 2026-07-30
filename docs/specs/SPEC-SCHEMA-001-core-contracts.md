@@ -86,7 +86,7 @@ packages/shared/
 | `QuestionStatusSchema` | `draft` `processing` `review_required` `completed` |
 | `SourceAnswerStatusSchema` | `pending` `processing` `succeeded` `failed` |
 | `AgendaStatusSchema` | `draft` `conflicted` `recheck_requested` `reanswered` `passed` `rejected` |
-| `AgendaResolutionReasonSchema` | `auto_consensus` `user_accepted` `user_accepted_after_recheck` `user_composed` `user_composed_after_recheck` `user_rejected` `user_rejected_after_recheck` |
+| `AgendaResolutionReasonSchema` | `auto_consensus` `auto_single_source` `user_accepted` `user_accepted_after_recheck` `user_composed` `user_composed_after_recheck` `user_rejected` `user_rejected_after_recheck` |
 | `FinalAnswerGenerationModeSchema` | `multi_source` `single_source_fallback` `all_agendas_rejected` |
 | `AiProviderSchema` | `claude` `openai` `gemini` |
 
@@ -136,6 +136,8 @@ packages/shared/
 | `excludedFromComparison` | boolean | 기본 false |
 | `excludedAt`? | string? | ISO 8601 |
 | `startedAt`? / `completedAt`? | string? | ISO 8601 |
+| `responseMeta`? | ResponseMeta? | 토큰·지연 등 관측 메타. SPEC-AI-001에서 추가 |
+| `promptVersion`? | string? | 사용한 프롬프트 버전 스탬프 |
 | `createdAt` / `updatedAt` | string | ISO 8601 |
 
 #### 5.3.1 `StructuredContentSchema` (최소 골격)
