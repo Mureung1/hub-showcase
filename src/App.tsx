@@ -1,7 +1,8 @@
 ﻿import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { AnimationEvent, ChangeEvent, CSSProperties, FormEvent, MouseEvent, PointerEvent, ReactNode } from "react";
+import type { AnimationEvent, CSSProperties, FormEvent, MouseEvent, PointerEvent, ReactNode } from "react";
 import { CanvasSpriteAnimator } from "./components/CanvasSpriteAnimator";
 import { useCallback } from "react";
+import { createInitialManagerState, defaultManagerCandidatePetId, managerCandidates } from "./data/managerCandidates";
 import {
   getDesktopIconAsset,
   getPetAnimationAsset,
@@ -11,9 +12,11 @@ import {
   getUnlockedPetStages,
   projectionModeAssets,
   interactionObjectAssets,
+  resolvePixelTvWatchingAnimationAsset,
   soundAssets,
   defaultLumiPetId,
   lumiMoodToSpriteState,
+  resolveDesktopPetSpriteState,
   resolvePetStageFromLevel,
   resolveSupportedPetAnimationState,
   type DesktopIconId,
@@ -26,11 +29,15 @@ import {
 import { prependQuestLog, questLogMarks, questLogResultLabels } from "./data/questLogs";
 import type { QuestLog } from "./data/questLogs";
 import {
+  resolveWindowPetLayerZIndex,
+  resolveWindowPetPlacementForSlot,
   resolveWindowPetPosition,
   runtimeWindowPetSlots,
+  windowPetRuntimeBaseSpriteSize,
 } from "./data/windowPetPlacements";
 import {
   defaultOpenWindowIds,
+  desktopShortcutWindowIds,
   initialWindowPositions,
   initialWindowSizes,
   windowRegistry,
@@ -43,8 +50,8 @@ import type { CreateQuestEventRequest, ManagerContext, QuestEventType } from "./
 import {
   managerLlmPromptVersion,
   requestManagerBehaviorIntentViaApi,
-  requestManagerDifficultyEvaluationViaApi,
   requestManagerLineViaApi,
+  requestManagerQuestAcceptancePreviewViaApi,
   requestManagerQuestSuggestionViaApi,
   requestManagerStatEvaluationViaApi,
   type ManagerLlmOutputKind,
@@ -53,50 +60,71 @@ import {
 import { createQuestLogRepository } from "./layers/storage/questLogRepository";
 import { usePixelTvMode } from "./hooks/usePixelTvMode";
 import { questLogSyncMessages, useQuestLogSync, type QuestLogSyncState } from "./hooks/useQuestLogSync";
-import { useWindowManager, type WindowRect } from "./hooks/useWindowManager";
-import { useWindowPetPlacementDrafts } from "./hooks/useWindowPetPlacementDrafts";
+import { useWindowManager, type WindowChromeProps, type WindowRect } from "./hooks/useWindowManager";
+import { useWindowPetPlacementProfile } from "./hooks/useWindowPetPlacementDrafts";
 import { useOutsidePetRuntime } from "./hooks/useOutsidePetRuntime";
 import { useQuestFlow } from "./hooks/useQuestFlow";
 import { getRestartServiceTarget } from "./domain/appLifecyclePolicy";
 import type { ManagerState, ManagerTone, QuestOutcomeStreak, QuestSize, UserProfile } from "./domain/appState";
+import { resolveManagerWindowInteraction, shouldShowManagerWindowInteraction, type ManagerWindowInteractionState } from "./domain/managerRuntimePriority";
 import { resolveBlinkFocusEffect, type BlinkEntryReason, type BlinkFocusMode } from "./domain/blinkFocusPolicy";
 import { getClimbPosition, type InteractionObject, type ResizeAxis } from "./domain/interactionObjects";
 import { applyManagerSpriteSelection } from "./domain/managerSpriteSelection";
 import { resolveManagerBehavior } from "./domain/managerBehaviorAdapter";
 import { normalizeManagerBehaviorIntent, type ManagerBehaviorIntent } from "./domain/managerBehaviorIntent";
 import { getPersonaLine, resolveManagerPersona, type ManagerPersona } from "./domain/managerPersonaPolicy";
+import { applyManagerExpGain, getManagerExpProgressPercent, managerExpPerLevel } from "./domain/managerProgression";
 import type { BehaviorContext, PetBehaviorMood, PetBehaviorRecentEvent, PetBehaviorStyle } from "./domain/petBehaviorStateMachine";
 import {
   outsidePetFieldRect,
   outsidePetInitialState,
   outsidePetSpriteSize,
+  resolveAvailableOutsidePetRoamAnimations,
   resolveRenderedOutsidePet,
+  resolveOutsidePetLayerZIndex,
   shouldMirrorOutsidePet,
+  shouldUseImmediateOutsidePetPosition,
   type InteractionSpritePosition,
   type OutsidePetSide,
   type OutsidePetState,
 } from "./domain/outsidePetRuntime";
-import { canPixelizeSource, createPixelizerPlan, getPixelizerPreviewSize, type PixelizerPlan } from "./domain/pixelizer";
+import {
+  canPixelizeSource,
+  createPixelTvPhotoFileName,
+  createPixelTvPhotoCapturePlan,
+  createPixelizerPlanForStream,
+  getPixelizerCoverSize,
+  resolvePixelTvStreamSettings,
+  transformPixelTvSamplePixels,
+  type PixelizerPlan,
+  type PixelTvPhotoCaptureRect,
+} from "./domain/pixelizer";
 import {
   calculateQuestReward,
+  createQuestDraftSnapshotKey,
+  type QuestAcceptancePreviewState,
   type QuestStatus,
 } from "./domain/questFlowPolicy";
 import { type Difficulty, type Quest, type QuestType } from "./domain/questLogic";
 import { getRecoveryRewardCandidates } from "./domain/rewardProgression";
 import { resolveSoundAssetId, type SoundEvent } from "./domain/soundPolicy";
-import { createRuleFallbackStatEvaluation, type StatDelta, type StatKey } from "./domain/statGrowth";
+import { applyManagerStatDeltas, createInitialManagerStats, createRuleFallbackStatEvaluation, type StatDelta, type StatKey } from "./domain/statGrowth";
 import { formatKoreanClockTime, formatRemainingUntilEndOfDay } from "./domain/timeFormatting";
 import "./styles.css";
 
 type AppScreen = "manager-select" | "wizard" | "manager-created" | "desktop";
 type OutsidePetPhase = "inside" | "blink" | "peek_from_edge" | "walk_in" | "free_roam" | "returning";
 type ManagerRuntimeLocation = "manager_window" | "window_edge" | "outside" | "transition";
-type ManagerWindowInteractionState = "none" | "quest_hanging" | "recovery_hiding";
 
 interface BlinkFocusState {
   id: number;
   mode: BlinkFocusMode;
   reducedMotion: "fade" | "full";
+}
+
+interface QuestRewardPreviewUiState {
+  status: "idle" | "loading" | "ready" | "error" | "stale";
+  message: string;
 }
 
 interface DesktopContextMenuState {
@@ -119,8 +147,11 @@ interface ManagerRuntimeStateInput {
   manager: ManagerState;
   displayStage: PetStageId;
   outsidePet: OutsidePetState;
+  showPixelTvWatching: boolean;
   showQuestHangingPet: boolean;
   showRecoveryHidingPet: boolean;
+  supportsQuestHangingPet: boolean;
+  supportsRecoveryHidingPet: boolean;
   showOutsidePet: boolean;
 }
 
@@ -140,11 +171,6 @@ interface DesktopContextMenuProps {
 interface PixelTvPropertiesWindowProps {
   connected: boolean;
   onToggle: () => void;
-}
-
-interface PixelTvSourceState {
-  url: string;
-  name: string;
 }
 
 interface PixelTvSourceSize {
@@ -180,8 +206,10 @@ interface ProfileSetupWizardProps {
 interface QuestWindowProps {
   quest: Quest;
   status: QuestStatus;
-  previousQuestTitle: string;
+  rewardPreviewState: QuestRewardPreviewUiState;
+  rewardPreview: QuestAcceptancePreviewState | null;
   onQuestChange: (patch: Partial<Quest>) => void;
+  onPreviewReward: () => void;
   onAccept: () => void;
   onOpenRunner: () => void;
   onRecommendNext: () => void;
@@ -266,13 +294,22 @@ interface OutsidePetLayerProps {
   pet: OutsidePetState;
   petId: PetId;
   stage: PetStageId;
+  objectZIndexes: Partial<Record<string, number>>;
 }
 
 interface WindowPetInteractionProps {
-  state: Extract<LumiSpriteState, "hanging" | "hiding">;
+  state: Extract<LumiSpriteState, "hanging" | "hiding" | "focused">;
   petId: PetId;
   stage: PetStageId;
   placement: "below-quest" | "beside-recovery";
+  position: WindowPosition;
+  measuredRect?: WindowRect;
+  zIndex: number;
+}
+
+interface PixelTvWatchingPetProps {
+  petId: PetId;
+  stage: PetStageId;
   position: WindowPosition;
   measuredRect?: WindowRect;
   zIndex: number;
@@ -372,43 +409,19 @@ const defaultProfile: UserProfile = {
 };
 
 const defaultManager: ManagerState = {
-  name: "루미",
-  petId: defaultLumiPetId,
-  level: 1,
-  exp: 0,
-  mood: "waiting",
-  line: toneLines.calm,
-  behaviorStyle: "balanced",
-  unlockedStages: ["stage-1"],
-  selectedStage: null,
-  soundEnabled: false,
+  ...createInitialManagerState(),
 };
 
-const selectableManagerPets: Array<{
-  petId: PetId;
-  name: string;
-  title: string;
-  description: string;
-}> = [
-  {
-    petId: "pink-manager",
-    name: "루미",
-    title: "분홍 전자 매니저",
-    description: "밝은 반응과 큰 동작이 잘 보이는 기본 매니저",
-  },
-  {
-    petId: "glass-frog",
-    name: "글라",
-    title: "유리 개구리 매니저",
-    description: "조용한 움직임과 점프 동작이 어울리는 매니저",
-  },
-  {
-    petId: "planaria",
-    name: "플라",
-    title: "플라나리아 매니저",
-    description: "작고 단순한 형태로 시작하는 샘플 매니저",
-  },
-];
+const interactionObjectDesktopWindowIds = desktopShortcutWindowIds.filter(
+  (id): id is "ladderObject" | "platformObject" => id === "ladderObject" || id === "platformObject",
+);
+
+const interactionObjectDesktopIconSrc: Record<(typeof interactionObjectDesktopWindowIds)[number], string> = {
+  ladderObject: "/assets/interaction-objects/ladder/ladder.png",
+  platformObject: "/assets/interaction-objects/platform/base.png",
+};
+
+const outsidePetRoamFallbackAnimations: PetAnimationState[] = ["idle", "walk", "run", "happy", "focused", "jump", "climbing"];
 
 function readStorage<T>(key: string, fallback: T): T {
   try {
@@ -429,6 +442,7 @@ function normalizeManager(manager: ManagerState): ManagerState {
   return {
     ...manager,
     petId: manager.petId ?? defaultLumiPetId,
+    stats: { ...createInitialManagerStats(), ...manager.stats },
     behaviorStyle: normalizeBehaviorStyle(manager.behaviorStyle),
     behaviorIntent: manager.behaviorIntent ? normalizeManagerBehaviorIntent(manager.behaviorIntent) : undefined,
     unlockedStages,
@@ -518,17 +532,7 @@ function createQuest(profile: UserProfile): Quest {
 }
 
 function addExp(manager: ManagerState, exp: number, line: string): ManagerState {
-  const total = manager.exp + exp;
-  const levelUps = Math.floor(total / 100);
-  const nextLevel = manager.level + levelUps;
-  return {
-    ...manager,
-    level: nextLevel,
-    exp: total % 100,
-    mood: "happy",
-    line,
-    unlockedStages: getUnlockedPetStages(nextLevel),
-  };
+  return applyManagerExpGain(manager, exp, line);
 }
 
 function getManagerDisplayStage(manager: ManagerState): PetStageId {
@@ -561,8 +565,9 @@ function createQuestEventRequest(
     managerAfter?: ManagerState;
     soundEnabled?: boolean;
     statEvaluation?: ReturnType<typeof createRuleFallbackStatEvaluation>;
-    statEvaluationSource?: "llm" | "rule_fallback";
+    statEvaluationSource?: "llm" | "rule_fallback" | "quest_acceptance_preview";
     statEvaluationFallbackReason?: string;
+    questAcceptancePreviewReason?: string;
   } = {},
 ): CreateQuestEventRequest {
   const eventType = getQuestEventType(result);
@@ -604,6 +609,7 @@ function createQuestEventRequest(
       statEvaluationSource: options.statEvaluationSource ?? "rule_fallback",
       statEvaluationFallbackReason: options.statEvaluationFallbackReason,
       llmPromptVersion: options.statEvaluationSource === "llm" ? managerLlmPromptVersion : undefined,
+      questAcceptancePreviewReason: options.questAcceptancePreviewReason,
       rewardCandidates: [...new Set([...rewardCandidates, ...recoveryRewardCandidates])],
       unlockedStagesAfter,
       stageUnlocked,
@@ -642,6 +648,14 @@ function getRuntimeSoundAssetId(event: SoundEvent, soundEnabled: boolean) {
 
 function getQuestLogStatDeltas(log: QuestLog): StatDelta[] {
   const value = log.metadata?.statDeltas;
+  return normalizeStatDeltas(value);
+}
+
+function getQuestEventRequestStatDeltas(request: CreateQuestEventRequest): StatDelta[] {
+  return normalizeStatDeltas(request.metadata?.statDeltas);
+}
+
+function normalizeStatDeltas(value: unknown): StatDelta[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
     if (!isRecord(item)) return [];
@@ -794,6 +808,9 @@ export default function App() {
   const [needsClarify, setNeedsClarify] = useState(false);
   const [selectedFailureReason, setSelectedFailureReason] = useState(failureReasons[0]);
   const [previousQuestTitle, setPreviousQuestTitle] = useState("");
+  const [rewardPreview, setRewardPreview] = useState<QuestAcceptancePreviewState | null>(null);
+  const [acceptedRewardPreview, setAcceptedRewardPreview] = useState<QuestAcceptancePreviewState | null>(null);
+  const [rewardPreviewState, setRewardPreviewState] = useState<QuestRewardPreviewUiState>({ status: "idle", message: "" });
   const [startOpen, setStartOpen] = useState(false);
   const [questOutcomeStreak, setQuestOutcomeStreak] = useState<QuestOutcomeStreak>({ result: null, count: 0 });
   const [blinkFocus, setBlinkFocus] = useState<BlinkFocusState | null>(null);
@@ -802,14 +819,14 @@ export default function App() {
   const [outsidePet, setOutsidePet] = useState<OutsidePetState>(outsidePetInitialState);
   const reducedMotion = usePrefersReducedMotion();
   const interactionObjects = useMemo(
-    () => createInteractionObjectsFromWindows(windowPositions, windowSizes),
-    [windowPositions, windowSizes],
+    () => createInteractionObjectsFromWindows(windowPositions, windowSizes, openWindows),
+    [openWindows, windowPositions, windowSizes],
   );
   const managerLlmStateRef = useRef({ profile, manager, quest, questStatus, previousQuestTitle, selectedFailureReason, logs });
   useEffect(() => {
     managerLlmStateRef.current = { profile, manager, quest, questStatus, previousQuestTitle, selectedFailureReason, logs };
   }, [logs, manager, previousQuestTitle, profile, quest, questStatus, selectedFailureReason]);
-  const refreshManagerBehaviorIntent = useCallback(async (context: ManagerContext) => {
+  const refreshManagerBehaviorIntent = useCallback(async (context: ManagerContext, options: { includeBehaviorIntent: boolean }) => {
     const snapshot = managerLlmStateRef.current;
     try {
       const lineOutput = await requestManagerLineViaApi(createManagerLlmRequest("managerLine", {
@@ -826,6 +843,8 @@ export default function App() {
     } catch {
       // Rule fallback already updated the visible manager line.
     }
+
+    if (!options.includeBehaviorIntent) return;
 
     try {
       const behaviorOutput = await requestManagerBehaviorIntentViaApi(createManagerLlmRequest("behaviorIntent", {
@@ -848,15 +867,18 @@ export default function App() {
       // Rule fallback already updated the visible manager behavior state.
     }
   }, []);
-  const applyManagerContext = useCallback((context: ManagerContext) => {
+  const applyManagerContext = useCallback((context: ManagerContext, options: { includeBehaviorIntent?: boolean } = {}) => {
     setManager((current) => ({ ...current, mood: context.currentMood, line: createManagerContextLine(context, getManagerPersona(current, profile)) }));
-    void refreshManagerBehaviorIntent(context);
+    void refreshManagerBehaviorIntent(context, { includeBehaviorIntent: options.includeBehaviorIntent === true });
   }, [profile, refreshManagerBehaviorIntent]);
+  const loadManagerContextWithBehaviorIntent = useCallback((context: ManagerContext) => {
+    applyManagerContext(context, { includeBehaviorIntent: true });
+  }, [applyManagerContext]);
   const { logSync, setLogSync } = useQuestLogSync({
     enabled: screen === "desktop",
     ignoreLogsBefore: serverLogCutoffIso,
     onLogsLoaded: setLogs,
-    onManagerContextLoaded: applyManagerContext,
+    onManagerContextLoaded: loadManagerContextWithBehaviorIntent,
   });
 
   useEffect(() => { if (screen === "desktop" || screen === "manager-created") writeStorage(profileKey, profile); }, [profile, screen]);
@@ -865,13 +887,22 @@ export default function App() {
 
   const managerDisplayStage = getManagerDisplayStage(manager);
   const getNextRoamAnimation = useCallback(
-    (pet: OutsidePetState, objects: InteractionObject[]) =>
-      resolveSupportedPetAnimationState(
+    (pet: OutsidePetState, objects: InteractionObject[]) => {
+      const supportedFallbackAnimations = outsidePetRoamFallbackAnimations.filter((animation) => hasPetAnimationAsset(manager.petId, managerDisplayStage, animation));
+      const availableAnimations = resolveAvailableOutsidePetRoamAnimations(objects, supportedFallbackAnimations, pet);
+      const resolvedAnimation = resolveSupportedPetAnimationState(
         manager.petId,
         managerDisplayStage,
         getNextOutsidePetRoamAnimation(pet, objects, manager, profile.managerTone, questOutcomeStreak, reducedMotion),
-      ),
+      );
+      if (availableAnimations.includes(resolvedAnimation)) return resolvedAnimation;
+      return availableAnimations[pet.roamTicks % availableAnimations.length] ?? "idle";
+    },
     [manager, managerDisplayStage, profile.managerTone, questOutcomeStreak, reducedMotion],
+  );
+  const isOutsidePetAnimationSupported = useCallback(
+    (animation: PetAnimationState) => hasPetAnimationAsset(manager.petId, managerDisplayStage, animation),
+    [manager.petId, managerDisplayStage],
   );
   useOutsidePetRuntime({
     outsidePet,
@@ -879,6 +910,7 @@ export default function App() {
     interactionObjects,
     openWindows,
     getNextRoamAnimation,
+    isAnimationSupported: isOutsidePetAnimationSupported,
   });
 
   const projectionModeAsset = projectionModeAssets.find((asset) => asset.mode === "single_plane_pepper");
@@ -903,7 +935,7 @@ export default function App() {
     }
 
     const persona = resolveManagerPersona({ petId: selectedPetId, tone: defaultProfile.managerTone, questStyle: defaultProfile.questSize });
-    const nextManager = normalizeManager({ ...defaultManager, petId: selectedPetId, behaviorStyle: persona.behaviorStyle, line: getPersonaLine("setup", persona) });
+    const nextManager = normalizeManager(applyManagerSpriteSelection({ ...defaultManager, behaviorStyle: persona.behaviorStyle, line: getPersonaLine("setup", persona) }, selectedPetId));
     setManager(nextManager);
     setWizardDraft(defaultProfile);
     setNeedsClarify(false);
@@ -928,12 +960,15 @@ export default function App() {
     setScreen(restartTarget.screen);
     setProfile(defaultProfile);
     setWizardDraft(defaultProfile);
-    setManager(defaultManager);
-    setSelectedPetId(defaultLumiPetId);
+    setManager(createInitialManagerState());
+    setSelectedPetId(defaultManagerCandidatePetId);
     setLogs([]);
     setQuest(createQuest(defaultProfile));
     setQuestStatus("draft");
     setPreviousQuestTitle("");
+    setRewardPreview(null);
+    setAcceptedRewardPreview(null);
+    setRewardPreviewState({ status: "idle", message: "" });
     setSelectedFailureReason(failureReasons[0]);
     setQuestOutcomeStreak({ result: null, count: 0 });
     setOutsidePet(outsidePetInitialState);
@@ -1017,6 +1052,8 @@ export default function App() {
     }));
   }
   async function enrichQuestEventWithLlmStatEvaluation(request: CreateQuestEventRequest): Promise<CreateQuestEventRequest> {
+    if (request.metadata?.statEvaluationSource === "quest_acceptance_preview") return request;
+
     const snapshot = managerLlmStateRef.current;
 
     try {
@@ -1060,6 +1097,10 @@ export default function App() {
 
     try {
       const enrichedRequest = await enrichQuestEventWithLlmStatEvaluation(request);
+      const enrichedStatDeltas = getQuestEventRequestStatDeltas(enrichedRequest);
+      if (enrichedStatDeltas.length > 0) {
+        setManager((current) => ({ ...current, stats: applyManagerStatDeltas(current.stats, enrichedStatDeltas) }));
+      }
       const savedEvent = await createQuestEventViaApi(enrichedRequest);
       if (savedEvent.log) recordQuestLog(savedEvent.log);
       applyManagerContext(savedEvent.managerContext);
@@ -1099,11 +1140,14 @@ export default function App() {
     }
   }, []);
 
-  const reevaluateQuestDifficultyBeforeAccept = useCallback(async (questDraft: Quest) => {
+  const previewQuestAcceptanceReward = useCallback(async () => {
     const snapshot = managerLlmStateRef.current;
+    const snapshotKey = createQuestDraftSnapshotKey(snapshot.quest);
+    setRewardPreviewState({ status: "loading", message: "◇ 계산 중" });
+    setRewardPreview(null);
 
     try {
-      const output = await requestManagerDifficultyEvaluationViaApi(createManagerLlmRequest("difficultyEvaluation", {
+      const output = await requestManagerQuestAcceptancePreviewViaApi(createManagerLlmRequest("questAcceptancePreview", {
         managerContext: {
           currentMood: snapshot.manager.mood,
           recentEventCount: snapshot.logs.length,
@@ -1113,15 +1157,30 @@ export default function App() {
         },
         profile: snapshot.profile,
         manager: snapshot.manager,
-        quest: questDraft,
+        quest: snapshot.quest,
         questStatus: snapshot.questStatus,
         previousQuestTitle: snapshot.previousQuestTitle,
         selectedFailureReason: snapshot.selectedFailureReason,
         logs: snapshot.logs,
-      }));
-      return output.difficultyEvaluation;
+      }), undefined, { throttleMs: 0 });
+      setRewardPreview({ snapshotKey, preview: output.questAcceptancePreview });
+      setRewardPreviewState({ status: "ready", message: "" });
     } catch {
-      return null;
+      const fallbackStatEvaluation = createRuleFallbackStatEvaluation({
+        questType: snapshot.questStatus === "recovery" ? "recovery" : snapshot.quest.type,
+        eventType: snapshot.questStatus === "recovery" ? "recovery_completed" : "quest_completed",
+        difficulty: snapshot.quest.difficulty,
+      });
+      setRewardPreview({
+        snapshotKey,
+        preview: {
+          difficulty: snapshot.quest.difficulty,
+          rewardExp: calculateQuestReward(snapshot.quest.difficulty, snapshot.quest.amount, snapshot.quest.type),
+          statEvaluation: fallbackStatEvaluation,
+          reason: "client rule fallback reward preview",
+        },
+      });
+      setRewardPreviewState({ status: "ready", message: "⚠ 임시 계산" });
     }
   }, []);
 
@@ -1152,7 +1211,11 @@ export default function App() {
     recordOutcomeStreak,
     saveQuestEvent: (request) => void saveQuestEvent(request),
     recommendQuest: () => void recommendQuestWithLlm(),
-    reevaluateQuestBeforeAccept: reevaluateQuestDifficultyBeforeAccept,
+    acceptancePreview: rewardPreview,
+    acceptedPreview: acceptedRewardPreview,
+    setAcceptancePreview: setRewardPreview,
+    setAcceptedPreview: setAcceptedRewardPreview,
+    onAcceptNeedsPreview: () => setRewardPreviewState({ status: "stale", message: "↻ 재계산 필요" }),
     createQuestEventRequest,
   });
 
@@ -1160,12 +1223,15 @@ export default function App() {
     event.preventDefault();
     if (isGoalAbstract(wizardDraft.goal) && !wizardDraft.focusAnswer) { setNeedsClarify(true); return; }
     const savedProfile: UserProfile = { ...wizardDraft, name: wizardDraft.name.trim() || "사용자", nickname: wizardDraft.nickname.trim() || "루카스", goal: wizardDraft.goal.trim() || defaultProfile.goal };
-    const selectedPet = selectableManagerPets.find((pet) => pet.petId === selectedPetId);
+    const selectedPet = managerCandidates.find((pet) => pet.petId === selectedPetId);
     const selectedPersona = resolveManagerPersona({ petId: selectedPetId, tone: savedProfile.managerTone, questStyle: savedProfile.questSize });
     setProfile(savedProfile);
     setQuest(createQuest(savedProfile));
     setQuestStatus("draft");
-    setManager(normalizeManager({ ...defaultManager, petId: selectedPetId, name: selectedPet?.name ?? defaultManager.name, behaviorStyle: selectedPersona.behaviorStyle, line: getPersonaLine("quest_recommended", selectedPersona) }));
+    setRewardPreview(null);
+    setAcceptedRewardPreview(null);
+    setRewardPreviewState({ status: "idle", message: "" });
+    setManager(normalizeManager(applyManagerSpriteSelection({ ...defaultManager, name: selectedPet?.name ?? defaultManager.name, behaviorStyle: selectedPersona.behaviorStyle, line: getPersonaLine("quest_recommended", selectedPersona) }, selectedPetId)));
     setLogs([]);
     resetOpenWindows(["quest", "manager", "ladderObject", "platformObject"]);
     resetWindowPositions();
@@ -1190,8 +1256,29 @@ export default function App() {
     setManager((current) => ({ ...current, soundEnabled: !current.soundEnabled }));
   }
 
-  const showRecoveryHidingPet = questStatus === "recovery" && isWindowVisible("recovery") && questOutcomeStreak.result === "failed" && questOutcomeStreak.count >= 2;
-  const showQuestHangingPet = questStatus === "draft" && isWindowVisible("quest") && questOutcomeStreak.result === "success" && questOutcomeStreak.count >= 2;
+  const visibleWindowKey = openWindows.join("|");
+  const managerWindowInteractionRolls = useMemo(
+    () => ({
+      quest: (Date.now() % 1000) / 1000,
+      recovery: ((Date.now() + 379) % 1000) / 1000,
+    }),
+    [questOutcomeStreak.count, questOutcomeStreak.result, questStatus, visibleWindowKey],
+  );
+  const showRecoveryHidingPet = shouldShowManagerWindowInteraction({
+    visible: questStatus === "recovery" && isWindowVisible("recovery"),
+    randomValue: managerWindowInteractionRolls.recovery,
+    streakMatches: questOutcomeStreak.result === "failed",
+    streakCount: questOutcomeStreak.count,
+  });
+  const showQuestHangingPet = shouldShowManagerWindowInteraction({
+    visible: questStatus === "draft" && isWindowVisible("quest"),
+    randomValue: managerWindowInteractionRolls.quest,
+    streakMatches: questOutcomeStreak.result === "success",
+    streakCount: questOutcomeStreak.count,
+  });
+  const showPixelTvWatching = isWindowVisible("pixelTv");
+  const supportsQuestHangingPet = hasPetAnimationAsset(manager.petId, managerDisplayStage, "hanging");
+  const supportsRecoveryHidingPet = hasPetAnimationAsset(manager.petId, managerDisplayStage, "hiding");
   const showOutsidePet = outsidePet.phase !== "inside" && outsidePet.phase !== "blink";
   const renderedOutsidePet = useMemo(
     () => resolveRenderedOutsidePet(outsidePet, interactionObjects),
@@ -1201,14 +1288,26 @@ export default function App() {
     manager,
     displayStage: managerDisplayStage,
     outsidePet: renderedOutsidePet,
+    showPixelTvWatching,
     showQuestHangingPet,
     showRecoveryHidingPet,
+    supportsQuestHangingPet,
+    supportsRecoveryHidingPet,
     showOutsidePet,
   });
+  const questWindowChrome = windowChrome("quest");
+  const recoveryWindowChrome = windowChrome("recovery");
+  const pixelTvWindowChrome = windowChrome("pixelTv");
+  const ladderWindowChrome = windowChrome("ladderObject");
+  const platformWindowChrome = windowChrome("platformObject");
+  const outsidePetObjectZIndexes = {
+    "ladder-1": ladderWindowChrome.zIndex,
+    "platform-1": platformWindowChrome.zIndex,
+  };
 
   if (screen === "manager-select") return <main className="xp-boot-screen"><ManagerSelectWindow selectedPetId={selectedPetId} onSelect={setSelectedPetId} onContinue={continueWithSelectedManager} /></main>;
   if (screen === "wizard") return <main className="xp-boot-screen"><ProfileSetupWizard draft={wizardDraft} needsClarify={needsClarify} onChange={setWizardDraft} onSubmit={submitWizard} /></main>;
-  if (screen === "manager-created") return <main className="xp-boot-screen"><XpWindow className="created-window" title="Manager Created" titlebarIcon="◇" onClose={undefined}><p className="created-lead">매니저가 깨어났어요.</p><div className="created-card"><DesktopPet mood="happy" petId={manager.petId} stage={managerDisplayStage} large /><div><strong>◇ 루미 ◇</strong><span>전자 생물형 페이스메이커</span><br /><small>목표를 오늘의 퀘스트로 나누고 실패하면 다음 분량을 다시 맞춰요.</small></div></div><div className="window-actions"><button className="xp-button primary" type="button" onClick={enterDesktop}>데스크톱으로 이동</button></div></XpWindow></main>;
+  if (screen === "manager-created") return <main className="xp-boot-screen"><XpWindow className="created-window" title="Manager Created" titlebarIcon="◇" onClose={undefined}><p className="created-lead">매니저가 깨어났어요.</p><div className="created-card"><DesktopPet mood="happy" petId={manager.petId} stage={managerDisplayStage} large /><div><strong>◇ {manager.name} ◇</strong><span>전자 생물형 페이스메이커</span><small>목표를 오늘의 퀘스트로 나누고 실패하면 다음 분량을 다시 맞춰요.</small></div></div><div className="window-actions"><button className="xp-button primary" type="button" onClick={enterDesktop}>데스크톱으로 이동</button></div></XpWindow></main>;
 
   return (
     <main className="xp-desktop" aria-label="Manager.exe desktop" onClick={() => setPixelTvContextMenu(null)}>
@@ -1226,6 +1325,16 @@ export default function App() {
           onClick={launchProjectionMode}
           onContextMenu={openPixelTvContextMenu}
         />
+        {interactionObjectDesktopWindowIds.map((windowId) => (
+          <DesktopIcon
+            key={windowId}
+            label={windowRegistry[windowId].label}
+            type={windowId}
+            overrideIdleSrc={interactionObjectDesktopIconSrc[windowId]}
+            overrideHoverSrc={interactionObjectDesktopIconSrc[windowId]}
+            onClick={() => openAppWindow(windowId)}
+          />
+        ))}
         <DesktopIcon label="휴지통" type="trash" onClick={() => openAppWindow("trash")} />
       </nav>
 
@@ -1238,24 +1347,26 @@ export default function App() {
           pet={managerRuntimeState.outside}
           petId={manager.petId}
           stage={managerRuntimeState.stage}
+          objectZIndexes={outsidePetObjectZIndexes}
         />
       )}
 
-      {isWindowVisible("quest") && <XpWindow className="quest-window" title={questStatus === "recovery" ? "복구 퀘스트" : "오늘의 퀘스트"} {...windowChrome("quest")}><QuestWindow quest={quest} status={questStatus} previousQuestTitle={previousQuestTitle} onQuestChange={updateQuest} onAccept={acceptQuest} onOpenRunner={() => openWindow("runner")} onRecommendNext={openTodayQuest} /></XpWindow>}
-      {managerRuntimeState.windowInteraction === "quest_hanging" && <WindowPetInteraction state="hanging" petId={manager.petId} stage={managerRuntimeState.stage} placement="below-quest" position={windowPositions.quest} measuredRect={windowRects.quest} zIndex={10 + openWindows.indexOf("quest")} />}
+      {isWindowVisible("quest") && <XpWindow className="quest-window" title={questStatus === "recovery" ? "복구 퀘스트" : "오늘의 퀘스트"} {...questWindowChrome}><QuestWindow quest={quest} status={questStatus} rewardPreviewState={rewardPreviewState} rewardPreview={rewardPreview} onQuestChange={updateQuest} onPreviewReward={() => void previewQuestAcceptanceReward()} onAccept={acceptQuest} onOpenRunner={() => openWindow("runner")} onRecommendNext={openTodayQuest} /></XpWindow>}
+      {managerRuntimeState.windowInteraction === "quest_hanging" && <WindowPetInteraction state="hanging" petId={manager.petId} stage={managerRuntimeState.stage} placement="below-quest" position={windowPositions.quest} measuredRect={windowRects.quest} zIndex={questWindowChrome.zIndex} />}
+      {managerRuntimeState.windowInteraction === "pixel_tv_watching" && <PixelTvWatchingPet petId={manager.petId} stage={managerRuntimeState.stage} position={windowPositions.pixelTv} measuredRect={windowRects.pixelTv} zIndex={pixelTvWindowChrome.zIndex} />}
       {isWindowVisible("runner") && <XpWindow className="runner-window" title="QuestRunner.exe" {...windowChrome("runner")}><QuestRunnerWindow quest={quest} onComplete={completeQuest} onFail={startFailureFlow} /></XpWindow>}
       {isWindowVisible("failure") && <XpWindow className="failure-window" title="퀘스트가 소멸했어" {...windowChrome("failure")}><FailureWindow selectedFailureReason={selectedFailureReason} onReasonChange={setSelectedFailureReason} onCreateRecovery={createRecovery} /></XpWindow>}
-      {isWindowVisible("recovery") && <XpWindow className="recovery-window" title="복구 퀘스트" {...windowChrome("recovery")}><RecoveryWindow quest={quest} onEdit={editRecovery} onAccept={acceptQuest} /></XpWindow>}
-      {managerRuntimeState.windowInteraction === "recovery_hiding" && <WindowPetInteraction state="hiding" petId={manager.petId} stage={managerRuntimeState.stage} placement="beside-recovery" position={windowPositions.recovery} measuredRect={windowRects.recovery} zIndex={10 + openWindows.indexOf("recovery")} />}
+      {isWindowVisible("recovery") && <XpWindow className="recovery-window" title="복구 퀘스트" {...recoveryWindowChrome}><RecoveryWindow quest={quest} onEdit={editRecovery} onAccept={acceptQuest} /></XpWindow>}
+      {managerRuntimeState.windowInteraction === "recovery_hiding" && <WindowPetInteraction state="hiding" petId={manager.petId} stage={managerRuntimeState.stage} placement="beside-recovery" position={windowPositions.recovery} measuredRect={windowRects.recovery} zIndex={recoveryWindowChrome.zIndex} />}
       {isWindowVisible("manager") && <XpWindow className="manager-window" title="매니저" {...windowChrome("manager")}><ManagerWindow manager={manager} petAway={managerRuntimeState.petAwayFromManagerWindow} /></XpWindow>}
       {isWindowVisible("profile") && <XpWindow className="profile-window" title="내 프로필" {...windowChrome("profile")}><ProfileWindow profile={profile} onSave={saveProfile} /></XpWindow>}
       {isWindowVisible("journal") && <XpWindow className="journal-window" title="기록 노트" {...windowChrome("journal")} onClose={() => closeAppWindow("journal")}><JournalWindow logs={logs} sync={logSync} /></XpWindow>}
       {isWindowVisible("trash") && <XpWindow className="trash-window" title="휴지통" {...windowChrome("trash")}><div className="empty-trash">비어 있음</div></XpWindow>}
       {isWindowVisible("settings") && <XpWindow className="settings-window" title="설정" {...windowChrome("settings")}><SettingsWindow manager={manager} onSelectStage={selectManagerStage} onToggleSound={toggleManagerSound} /></XpWindow>}
       {isWindowVisible("pixelTv") && (
-        <XpWindow className="pixel-tv-window" title="Pixel TV" {...windowChrome("pixelTv")}>
+        <PixelTvObjectWindow chrome={pixelTvWindowChrome}>
           <PixelTvWindow manager={manager} stage={managerRuntimeState.stage} />
-        </XpWindow>
+        </PixelTvObjectWindow>
       )}
       {isWindowVisible("pixelTvProperties") && (
         <XpWindow className="pixel-tv-properties-window" title="Pixel TV 속성" {...windowChrome("pixelTvProperties")}>
@@ -1263,12 +1374,12 @@ export default function App() {
         </XpWindow>
       )}
       {isWindowVisible("ladderObject") && (
-        <XpWindow className="interaction-object-window ladder-object-window" title="" resizeAxis="vertical" {...windowChrome("ladderObject")}>
+        <XpWindow className="interaction-object-window ladder-object-window" title="" resizeAxis="vertical" {...ladderWindowChrome}>
           <LadderObjectWindow />
         </XpWindow>
       )}
       {isWindowVisible("platformObject") && (
-        <XpWindow className="interaction-object-window platform-object-window" title="평지" resizeAxis="horizontal" {...windowChrome("platformObject")}>
+        <XpWindow className="interaction-object-window platform-object-window" title="평지" resizeAxis="horizontal" {...platformWindowChrome}>
           <PlatformObjectWindow />
         </XpWindow>
       )}
@@ -1310,7 +1421,9 @@ function StartMenu({ questStatus, onOpenWindow, onRestart, onOpenManagerSelect }
         <span>다시 시작</span>
       </button>
       <button type="button" onClick={onOpenManagerSelect}>
-        <span className="menu-icon text-icon" aria-hidden="true">MS</span>
+        <span className="menu-icon" aria-hidden="true">
+          <img src={getDesktopIconAsset("pet-swap").idleSrc} alt="" />
+        </span>
         <span>매니저 바꾸기</span>
       </button>
     </div>
@@ -1323,7 +1436,7 @@ function ManagerSelectWindow({ selectedPetId, onSelect, onContinue }: ManagerSel
       <section className="manager-select-panel">
         <p className="wizard-lead">함께 지낼 전자 매니저를 선택해 주세요</p>
         <div className="manager-select-grid">
-          {selectableManagerPets.map((pet) => {
+          {managerCandidates.map((pet) => {
             const selected = selectedPetId === pet.petId;
             return (
               <button
@@ -1356,20 +1469,107 @@ function DesktopContextMenu({ x, y, onOpenProperties }: DesktopContextMenuProps)
   );
 }
 
-const pixelTvPreviewFrame = { width: 320, height: 180 };
+const pixelTvPreviewFrame = { width: 354, height: 249 };
+
+function PixelTvObjectWindow({ chrome, children }: { chrome: WindowChromeProps; children: ReactNode }) {
+  const objectRef = useRef<HTMLElement | null>(null);
+  const [dragOffset, setDragOffset] = useState<WindowPosition | null>(null);
+  const objectStyle = {
+    left: `${chrome.position.x}px`,
+    top: `${chrome.position.y}px`,
+    width: chrome.size ? `${chrome.size.width}px` : undefined,
+    height: chrome.size ? `${chrome.size.height}px` : undefined,
+    zIndex: chrome.zIndex,
+  } as CSSProperties;
+
+  useLayoutEffect(() => {
+    const element = objectRef.current;
+    if (!element) return undefined;
+
+    const measure = () => {
+      const rect = element.getBoundingClientRect();
+      chrome.onMeasure({ x: rect.left, y: rect.top, width: rect.width, height: rect.height });
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+
+    if (typeof ResizeObserver === "undefined") {
+      return () => window.removeEventListener("resize", measure);
+    }
+
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(element);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [chrome.position.x, chrome.position.y, chrome.size?.height, chrome.size?.width]);
+
+  function startDrag(event: PointerEvent<HTMLDivElement>) {
+    const rect = objectRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    setDragOffset({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+    chrome.onFocus();
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function dragWindow(event: PointerEvent<HTMLDivElement>) {
+    if (!dragOffset) return;
+
+    const maxX = Math.max(0, window.innerWidth - 180);
+    const maxY = Math.max(0, window.innerHeight - 78);
+    chrome.onMove({
+      x: Math.min(Math.max(event.clientX - dragOffset.x, 0), maxX),
+      y: Math.min(Math.max(event.clientY - dragOffset.y, 0), maxY),
+    });
+  }
+
+  function stopDrag(event: PointerEvent<HTMLDivElement>) {
+    if (!dragOffset) return;
+
+    setDragOffset(null);
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  return (
+    <section
+      ref={objectRef}
+      className={`pixel-tv-object-window ${chrome.isActive ? "active" : ""}`}
+      style={objectStyle}
+      onPointerDown={chrome.onFocus}
+    >
+      {children}
+      <div
+        className="pixel-tv-frame-drag-layer"
+        aria-label="Pixel TV 이동"
+        role="button"
+        tabIndex={0}
+        onPointerDown={startDrag}
+        onPointerMove={dragWindow}
+        onPointerUp={stopDrag}
+        onPointerCancel={stopDrag}
+      />
+      <button className="pixel-tv-exit-button" type="button" aria-label="Pixel TV 닫기" onClick={chrome.onClose}>
+        <span>닫기</span>
+      </button>
+    </section>
+  );
+}
 
 function PixelTvWindow({ manager, stage }: PixelTvWindowProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameRef = useRef<number | null>(null);
-  const [source, setSource] = useState<PixelTvSourceState | null>(null);
   const [sourceSize, setSourceSize] = useState<PixelTvSourceSize | null>(null);
   const [cameraState, setCameraState] = useState<PixelTvCameraState>("idle");
-  const [captureSrc, setCaptureSrc] = useState<string | null>(null);
-  const [pixelScale, setPixelScale] = useState(8);
 
   useEffect(() => {
+    void startCamera();
+
     return () => {
       if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
       streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -1377,21 +1577,22 @@ function PixelTvWindow({ manager, stage }: PixelTvWindowProps) {
   }, []);
 
   useEffect(() => {
-    return () => {
-      if (source) URL.revokeObjectURL(source.url);
-    };
-  }, [source]);
-
-  useEffect(() => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
     if (!canvas || !video || cameraState !== "live") return undefined;
 
-    const drawFrame = () => {
+    let lastDrawAt = 0;
+
+    const drawFrame = (timestamp: number) => {
       if (canPixelizeSource(video.videoWidth, video.videoHeight)) {
-        const plan = createPixelizerPlan(video.videoWidth, video.videoHeight, { scale: pixelScale });
-        setSourceSize((current) => current?.width === plan.sourceWidth && current.height === plan.sourceHeight ? current : { width: plan.sourceWidth, height: plan.sourceHeight });
-        renderPixelizedSource(video, canvas, plan);
+        const streamSettings = resolvePixelTvStreamSettings(video.videoWidth, video.videoHeight);
+        const frameInterval = 1000 / streamSettings.targetFps;
+        if (timestamp - lastDrawAt >= frameInterval) {
+          const plan = createPixelizerPlanForStream(video.videoWidth, video.videoHeight, streamSettings);
+          setSourceSize((current) => current?.width === plan.sourceWidth && current.height === plan.sourceHeight ? current : { width: plan.sourceWidth, height: plan.sourceHeight });
+          renderPixelizedSource(video, canvas, plan);
+          lastDrawAt = timestamp;
+        }
       }
 
       frameRef.current = window.requestAnimationFrame(drawFrame);
@@ -1402,33 +1603,7 @@ function PixelTvWindow({ manager, stage }: PixelTvWindowProps) {
       if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
     };
-  }, [cameraState, pixelScale]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !source || cameraState === "live") {
-      if (cameraState !== "live") setSourceSize(null);
-      return;
-    }
-
-    let disposed = false;
-    const image = new Image();
-    image.onload = () => {
-      if (disposed) return;
-
-      const plan = createPixelizerPlan(image.naturalWidth, image.naturalHeight, { scale: pixelScale });
-      setSourceSize({ width: plan.sourceWidth, height: plan.sourceHeight });
-      renderPixelizedSource(image, canvas, plan);
-    };
-    image.onerror = () => {
-      if (!disposed) setSourceSize(null);
-    };
-    image.src = source.url;
-
-    return () => {
-      disposed = true;
-    };
-  }, [cameraState, pixelScale, source]);
+  }, [cameraState]);
 
   async function startCamera() {
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -1438,100 +1613,57 @@ function PixelTvWindow({ manager, stage }: PixelTvWindowProps) {
 
     setCameraState("requesting");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: "user" } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: "user",
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 24, max: 30 },
+        },
+      });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-      setSource(null);
       setCameraState("live");
     } catch {
       setCameraState("error");
     }
   }
 
-  function stopCamera() {
-    if (frameRef.current !== null) window.cancelAnimationFrame(frameRef.current);
-    frameRef.current = null;
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
-    setCameraState("idle");
-    setSourceSize(null);
-  }
-
-  function handleSourceChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    stopCamera();
-    setSource({ url: URL.createObjectURL(file), name: file.name });
-    event.target.value = "";
-  }
-
-  function capturePhoto() {
+  async function capturePhoto() {
     const canvas = canvasRef.current;
     if (!canvas || canvas.width === 0 || canvas.height === 0) return;
-    setCaptureSrc(canvas.toDataURL("image/png"));
+
+    try {
+      const animation = getLumiAnimationAsset("happy", manager.petId, stage);
+      const captureCanvas = await createPixelTvPhotoCapture(canvas, animation.src, manager.name);
+      downloadPixelTvPhoto(captureCanvas, createPixelTvPhotoFileName(new Date()));
+    } catch {
+      downloadPixelTvPhoto(canvas, createPixelTvPhotoFileName(new Date()));
+    }
   }
 
-  const signalLabel = cameraState === "live" ? "CAM LIVE" : source ? "FILE INPUT" : cameraState === "requesting" ? "REQUESTING" : cameraState === "error" ? "CAM BLOCKED" : "NO SIGNAL";
+  const signalLabel = cameraState === "live" ? "CAM LIVE" : cameraState === "requesting" ? "REQUESTING" : cameraState === "error" ? "CAM BLOCKED" : "NO SIGNAL";
 
   return (
     <section className="pixel-tv-panel">
       <video ref={videoRef} className="pixel-tv-video-source" playsInline muted />
       <div className="pixel-tv-screen">
         <canvas ref={canvasRef} className="pixel-tv-canvas" aria-label="픽셀화 미리보기" />
-        {cameraState !== "live" && !source && <span>{signalLabel}</span>}
+        {cameraState !== "live" && <span>{signalLabel}</span>}
       </div>
-      <div className="pixel-tv-controls">
-        {cameraState === "live" ? (
-          <button className="xp-button" type="button" onClick={stopCamera}>정지</button>
-        ) : (
-          <button className="xp-button primary" type="button" onClick={startCamera} disabled={cameraState === "requesting"}>
-            카메라
-          </button>
-        )}
-        <button className="xp-button" type="button" onClick={capturePhoto} disabled={!sourceSize}>사진</button>
-        <label className="xp-button pixel-tv-file-button">
-          <span>파일</span>
-          <input type="file" accept="image/*" onChange={handleSourceChange} />
-        </label>
-        <label className="pixel-tv-scale-control">
-          <span>픽셀</span>
-          <input
-            type="range"
-            min="2"
-            max="24"
-            step="1"
-            value={pixelScale}
-            onChange={(event) => setPixelScale(Number(event.target.value))}
-          />
-          <strong>{pixelScale}</strong>
-        </label>
-      </div>
-      <div className="pixel-tv-status">
-        <span>{cameraState === "live" ? "WEBCAM" : source?.name ?? signalLabel}</span>
-        <strong>{sourceSize ? `${sourceSize.width}x${sourceSize.height}` : "--"}</strong>
-      </div>
-      <div className="pixel-tv-photo-slot">
-        {captureSrc ? (
-          <div className="pixel-tv-photo-card">
-            <img src={captureSrc} alt="" />
-            <DesktopPet mood={manager.mood} petId={manager.petId} stage={stage} />
-            <span>{manager.name} + Pixel TV</span>
-          </div>
-        ) : (
-          <span>PHOTO EMPTY</span>
-        )}
-      </div>
+      <button className="pixel-tv-capture-button" type="button" onClick={() => { void capturePhoto(); }} disabled={!sourceSize} aria-label="사진 저장">
+        <span>사진</span>
+      </button>
     </section>
   );
 }
 
 function renderPixelizedSource(source: CanvasImageSource, canvas: HTMLCanvasElement, plan: PixelizerPlan) {
-  const previewSize = getPixelizerPreviewSize(plan, pixelTvPreviewFrame);
+  const previewSize = getPixelizerCoverSize(plan, pixelTvPreviewFrame);
   const sampleCanvas = document.createElement("canvas");
   sampleCanvas.width = plan.sampleWidth;
   sampleCanvas.height = plan.sampleHeight;
@@ -1541,12 +1673,110 @@ function renderPixelizedSource(source: CanvasImageSource, canvas: HTMLCanvasElem
 
   canvas.width = previewSize.width;
   canvas.height = previewSize.height;
-  sampleContext.imageSmoothingEnabled = true;
+  sampleContext.imageSmoothingEnabled = false;
   sampleContext.clearRect(0, 0, plan.sampleWidth, plan.sampleHeight);
   sampleContext.drawImage(source, 0, 0, plan.sampleWidth, plan.sampleHeight);
+  const sampleImage = sampleContext.getImageData(0, 0, plan.sampleWidth, plan.sampleHeight);
+  sampleImage.data.set(transformPixelTvSamplePixels(sampleImage.data, plan.sampleWidth, plan.sampleHeight));
+  sampleContext.putImageData(sampleImage, 0, 0);
   previewContext.imageSmoothingEnabled = plan.smoothing;
   previewContext.clearRect(0, 0, previewSize.width, previewSize.height);
   previewContext.drawImage(sampleCanvas, 0, 0, previewSize.width, previewSize.height);
+}
+
+async function createPixelTvPhotoCapture(tvCanvas: HTMLCanvasElement, managerSpriteSrc: string, managerName: string) {
+  const plan = createPixelTvPhotoCapturePlan();
+  const captureCanvas = document.createElement("canvas");
+  captureCanvas.width = plan.width;
+  captureCanvas.height = plan.height;
+  const context = captureCanvas.getContext("2d");
+  if (!context) return captureCanvas;
+
+  context.imageSmoothingEnabled = plan.smoothing;
+  drawPixelTvPhotoBackdrop(context, plan.width, plan.height);
+  drawPixelTvFrame(context, plan.tvFrame);
+  drawPixelTvScreen(context, tvCanvas, plan.tvScreen);
+  await drawManagerCaptureSprite(context, managerSpriteSrc, plan.managerSprite);
+  drawPixelTvPhotoCaption(context, plan.caption, managerName);
+
+  return captureCanvas;
+}
+
+function downloadPixelTvPhoto(canvas: HTMLCanvasElement, fileName: string) {
+  const link = document.createElement("a");
+  link.href = canvas.toDataURL("image/png");
+  link.download = fileName;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function drawPixelTvPhotoBackdrop(context: CanvasRenderingContext2D, width: number, height: number) {
+  const sky = context.createLinearGradient(0, 0, 0, height);
+  sky.addColorStop(0, "#5eb7f3");
+  sky.addColorStop(0.58, "#bdeaff");
+  sky.addColorStop(0.59, "#78b957");
+  sky.addColorStop(1, "#3b8f3f");
+  context.fillStyle = sky;
+  context.fillRect(0, 0, width, height);
+
+  context.fillStyle = "rgba(255, 255, 255, 0.82)";
+  context.fillRect(58, 42, 58, 14);
+  context.fillRect(78, 30, 42, 18);
+  context.fillRect(116, 44, 70, 12);
+}
+
+function drawPixelTvFrame(context: CanvasRenderingContext2D, rect: PixelTvPhotoCaptureRect) {
+  context.fillStyle = "#5b4b3d";
+  context.fillRect(rect.x, rect.y, rect.width, rect.height);
+  context.fillStyle = "#d8c8a4";
+  context.fillRect(rect.x + 8, rect.y + 8, rect.width - 16, rect.height - 16);
+  context.fillStyle = "#2b2722";
+  context.fillRect(rect.x + 22, rect.y + 22, rect.width - 48, rect.height - 50);
+  context.fillStyle = "#5a4634";
+  context.fillRect(rect.x + rect.width - 54, rect.y + rect.height - 36, 34, 12);
+  context.fillRect(rect.x + 48, rect.y + rect.height - 16, 36, 10);
+  context.fillRect(rect.x + rect.width - 94, rect.y + rect.height - 16, 36, 10);
+}
+
+function drawPixelTvScreen(context: CanvasRenderingContext2D, tvCanvas: HTMLCanvasElement, rect: PixelTvPhotoCaptureRect) {
+  context.fillStyle = "#101414";
+  context.fillRect(rect.x, rect.y, rect.width, rect.height);
+  context.drawImage(tvCanvas, rect.x, rect.y, rect.width, rect.height);
+  context.fillStyle = "rgba(255, 255, 255, 0.08)";
+  for (let y = rect.y; y < rect.y + rect.height; y += 6) {
+    context.fillRect(rect.x, y, rect.width, 2);
+  }
+}
+
+async function drawManagerCaptureSprite(context: CanvasRenderingContext2D, spriteSrc: string, rect: PixelTvPhotoCaptureRect) {
+  const sprite = await loadCanvasImage(spriteSrc);
+  context.fillStyle = "rgba(255, 253, 246, 0.86)";
+  context.fillRect(rect.x + 18, rect.y + 28, rect.width - 28, rect.height - 34);
+  context.shadowColor = "rgba(83, 188, 255, 0.55)";
+  context.shadowBlur = 16;
+  context.drawImage(sprite, 0, 0, 64, 64, rect.x, rect.y, rect.width, rect.height);
+  context.shadowBlur = 0;
+}
+
+function drawPixelTvPhotoCaption(context: CanvasRenderingContext2D, rect: PixelTvPhotoCaptureRect, managerName: string) {
+  context.fillStyle = "#fffdf6";
+  context.fillRect(rect.x, rect.y, rect.width, rect.height);
+  context.strokeStyle = "#8f897c";
+  context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+  context.fillStyle = "#1f1f1f";
+  context.font = "700 14px Tahoma, sans-serif";
+  context.fillText(`${managerName} + Pixel TV`, rect.x + 10, rect.y + 17);
+}
+
+function loadCanvasImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Unable to load image: ${src}`));
+    image.src = src;
+  });
 }
 
 function PixelTvPropertiesWindow({ connected, onToggle }: PixelTvPropertiesWindowProps) {
@@ -1592,14 +1822,64 @@ function BlinkFocusOverlay({ effect, onDone }: BlinkFocusOverlayProps) {
 }
 
 function ProfileSetupWizard({ draft, needsClarify, onChange, onSubmit }: ProfileSetupWizardProps) {
-  return <XpWindow className="setup-window" title="Manager.exe 설치 마법사" onClose={undefined}><form className="setup-form" onSubmit={onSubmit}><p className="wizard-lead">전자 생물 매니저를 깨울 준비를 할게요</p><div className="wizard-grid"><label htmlFor="profile-name">이름</label><input id="profile-name" value={draft.name} onChange={(event) => onChange({ ...draft, name: event.target.value })} placeholder="김동민" /><label htmlFor="profile-nickname">닉네임</label><input id="profile-nickname" value={draft.nickname} onChange={(event) => onChange({ ...draft, nickname: event.target.value })} placeholder="루카스" /><label htmlFor="profile-goal">함께 키울 목표</label><textarea id="profile-goal" value={draft.goal} onChange={(event) => onChange({ ...draft, goal: event.target.value })} /><label htmlFor="daily-minutes">하루 가능 시간</label><select id="daily-minutes" value={draft.dailyMinutes} onChange={(event) => onChange({ ...draft, dailyMinutes: Number(event.target.value) })}><option value={15}>15분</option><option value={30}>30분</option><option value={45}>45분</option><option value={60}>60분</option></select><span>퀘스트 크기</span><div className="segmented-control">{(["tiny", "balanced", "challenge"] as QuestSize[]).map((size) => <button className={draft.questSize === size ? "selected" : ""} key={size} type="button" onClick={() => onChange({ ...draft, questSize: size })}>{size === "tiny" ? "아주 작게" : size === "balanced" ? "보통" : "도전적"}</button>)}</div><span>매니저 말투</span><div className="segmented-control">{(["calm", "friendly", "firm"] as ManagerTone[]).map((tone) => <button className={draft.managerTone === tone ? "selected" : ""} key={tone} type="button" onClick={() => onChange({ ...draft, managerTone: tone })}>{tone === "calm" ? "차분함" : tone === "friendly" ? "친구 같음" : "단호함"}</button>)}</div></div>{needsClarify && <div className="clarify-box"><strong>목표를 조금 더 구체화해볼게</strong><span>먼저 어떤 부분부터 시작할까?</span><div className="clarify-options">{["개념 읽기", "기출 문제", "오답 정리", "아직 모르겠음"].map((answer) => <label key={answer}><input type="radio" name="focus" checked={draft.focusAnswer === answer} onChange={() => onChange({ ...draft, focusAnswer: answer })} />{answer}</label>)}</div></div>}<div className="window-actions"><button className="xp-button" type="button" disabled>이전</button><button className="xp-button primary" type="submit">매니저 깨우기</button></div></form></XpWindow>;
+  return <XpWindow className="setup-window" title="Manager.exe 설치 마법사" onClose={undefined}><form className="setup-form" onSubmit={onSubmit}><p className="wizard-lead">전자 생물 매니저를 깨울 준비를 할게요</p><div className="wizard-grid"><label htmlFor="profile-name">이름</label><input id="profile-name" value={draft.name} onChange={(event) => onChange({ ...draft, name: event.target.value })} placeholder="김동민" /><label htmlFor="profile-nickname">닉네임</label><input id="profile-nickname" value={draft.nickname} onChange={(event) => onChange({ ...draft, nickname: event.target.value })} placeholder="루카스" /><label htmlFor="profile-goal">함께 키울 목표</label><textarea id="profile-goal" value={draft.goal} onChange={(event) => onChange({ ...draft, goal: event.target.value })} placeholder="예: 수능 수학 1등급. 확통이 약하고 하루 40분 가능. 오답이 쌓이면 쉽게 지쳐요." /><label htmlFor="daily-minutes">하루 가능 시간</label><select id="daily-minutes" value={draft.dailyMinutes} onChange={(event) => onChange({ ...draft, dailyMinutes: Number(event.target.value) })}><option value={15}>15분</option><option value={30}>30분</option><option value={45}>45분</option><option value={60}>60분</option></select><span>진행 강도</span><div className="segmented-control">{(["tiny", "balanced", "challenge"] as QuestSize[]).map((size) => <button className={draft.questSize === size ? "selected" : ""} key={size} type="button" onClick={() => onChange({ ...draft, questSize: size })}>{size === "tiny" ? "가볍게" : size === "balanced" ? "보통" : "도전적으로"}</button>)}</div><span>매니저 말투</span><div className="segmented-control">{(["calm", "friendly", "firm"] as ManagerTone[]).map((tone) => <button className={draft.managerTone === tone ? "selected" : ""} key={tone} type="button" onClick={() => onChange({ ...draft, managerTone: tone })}>{tone === "calm" ? "차분함" : tone === "friendly" ? "친구 같음" : "단호함"}</button>)}</div></div>{needsClarify && <div className="clarify-box"><strong>목표를 조금 더 구체화해볼게</strong><span>먼저 어떤 부분부터 시작할까?</span><div className="clarify-options">{["개념 읽기", "기출 문제", "오답 정리", "아직 모르겠음"].map((answer) => <label key={answer}><input type="radio" name="focus" checked={draft.focusAnswer === answer} onChange={() => onChange({ ...draft, focusAnswer: answer })} />{answer}</label>)}</div></div>}<div className="window-actions"><button className="xp-button" type="button" disabled>이전</button><button className="xp-button primary" type="submit">매니저 깨우기</button></div></form></XpWindow>;
 }
 
-function QuestWindow({ quest, status, previousQuestTitle, onQuestChange, onAccept, onOpenRunner, onRecommendNext }: QuestWindowProps) {
+function QuestWindow({ quest, status, rewardPreviewState, rewardPreview, onQuestChange, onPreviewReward, onAccept, onOpenRunner, onRecommendNext }: QuestWindowProps) {
   if (status === "active") return <section className="quest-program-link"><div className="program-icon" aria-hidden="true">EXE</div><h2>퀘스트가 실행 중이야</h2><p>완료, 실패, 복구 흐름은 QuestRunner.exe 창에서 처리해.</p><strong>{quest.title}</strong><div className="window-actions"><button className="xp-button primary" type="button" onClick={onOpenRunner}>실행창 앞으로</button></div></section>;
   if (status === "success") return <section className="quest-program-link"><div className="program-icon" aria-hidden="true">OK</div><h2>오늘의 퀘스트를 완료했어</h2><p>기록은 저장됐고, 다음 오늘의 퀘스트를 추천할 수 있어.</p><strong>{quest.title}</strong><div className="window-actions"><button className="xp-button primary" type="button" onClick={onRecommendNext}>새 퀘스트 추천</button></div></section>;
   if (status === "failed") return <section className="quest-program-link"><div className="program-icon" aria-hidden="true">!</div><h2>복구가 필요한 퀘스트야</h2><p>실패 이유를 기록하고 더 작은 복구 퀘스트로 이어갈 수 있어.</p><strong>{quest.title}</strong></section>;
-  return <section className="quest-draft">{status === "recovery" ? <div className="recovery-summary"><strong>다시 시작할 수 있는 작은 퀘스트로 줄였어</strong><span>기존: {previousQuestTitle}</span><span>복구: {quest.title}</span></div> : <div className="quest-summary"><span>오늘 수행할 퀘스트 초안</span><strong>3 / 4 완료</strong></div>}<form className="quest-form"><label htmlFor="quest-title">제목</label><input className="xp-input" id="quest-title" value={quest.title} onChange={(event) => onQuestChange({ title: event.target.value })} /><label htmlFor="quest-type">유형</label><select className="xp-select" id="quest-type" value={quest.type} onChange={(event) => onQuestChange({ type: event.target.value as QuestType })}><option value="time">시간형</option><option value="quantity">수량형</option><option value="action">행동형</option></select><label htmlFor="quest-amount">분량</label><div className="form-pair"><input className="xp-input" id="quest-amount" type="number" min={1} value={quest.amount} onChange={(event) => onQuestChange({ amount: Number(event.target.value) })} /><select className="xp-select" aria-label="분량 단위" value={quest.unit} onChange={(event) => onQuestChange({ unit: event.target.value })}><option>분</option><option>개</option><option>회</option><option>페이지</option></select></div><span>난이도</span><div className="difficulty" aria-label="난이도 선택">{(["easy", "normal", "hard"] as Difficulty[]).map((difficulty) => { const inputId = `difficulty-${difficulty}`; return <span className="choice-field" key={difficulty}><input id={inputId} name="difficulty" type="radio" checked={quest.difficulty === difficulty} onChange={() => onQuestChange({ difficulty })} /><label htmlFor={inputId}>{difficultyLabels[difficulty]}</label></span>; })}</div><label htmlFor="quest-deadline">제한 시간</label><select className="xp-select" id="quest-deadline" value={quest.deadline} onChange={(event) => onQuestChange({ deadline: event.target.value })}><option>오늘 23:59</option><option>오늘 18:00</option><option>오늘 21:00</option></select></form><div className="quest-footer"><span className="reward">예상 보상: EXP {quest.rewardExp}</span><button className="xp-button primary" type="button" onClick={onAccept}>수락</button></div></section>;
+  const preview = rewardPreview?.preview;
+  const canAccept = rewardPreviewState.status === "ready" && Boolean(preview);
+
+  return (
+    <section className="quest-draft">
+      {status !== "recovery" && <div className="quest-summary"><span>오늘 수행할 퀘스트 초안</span><strong>3 / 4 완료</strong></div>}
+      <form className="quest-form">
+        <label htmlFor="quest-title">제목</label>
+        <input className="xp-input" id="quest-title" value={quest.title} onChange={(event) => onQuestChange({ title: event.target.value })} />
+        <label htmlFor="quest-type">유형</label>
+        <select className="xp-select" id="quest-type" value={quest.type} onChange={(event) => onQuestChange({ type: event.target.value as QuestType })}>
+          <option value="time">시간형</option>
+          <option value="quantity">수량형</option>
+          <option value="action">행동형</option>
+        </select>
+        <label htmlFor="quest-amount">분량</label>
+        <div className="form-pair">
+          <input className="xp-input" id="quest-amount" type="number" min={1} value={quest.amount} onChange={(event) => onQuestChange({ amount: Number(event.target.value) })} />
+          <select className="xp-select" aria-label="분량 단위" value={quest.unit} onChange={(event) => onQuestChange({ unit: event.target.value })}>
+            <option>분</option>
+            <option>개</option>
+            <option>회</option>
+            <option>페이지</option>
+          </select>
+        </div>
+        <label htmlFor="quest-deadline">제한 시간</label>
+        <select className="xp-select" id="quest-deadline" value={quest.deadline} onChange={(event) => onQuestChange({ deadline: event.target.value })}>
+          <option>오늘 23:59</option>
+          <option>오늘 18:00</option>
+          <option>오늘 21:00</option>
+        </select>
+      </form>
+      {preview && rewardPreviewState.status === "ready" && (
+        <div className="quest-reward-preview" aria-label="예상 보상">
+          <strong>{difficultyLabels[preview.difficulty]} · EXP {preview.rewardExp}</strong>
+          <div>
+            {preview.statEvaluation.statDeltas.map((delta) => (
+              <span className="log-chip stat" key={`${delta.stat}-${delta.amount}`}>{statLabels[delta.stat]} +{delta.amount}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {rewardPreviewState.message && <p className={`quest-preview-message ${rewardPreviewState.status}`}>{rewardPreviewState.message}</p>}
+      <div className="quest-footer">
+        <span className="reward">{canAccept ? "계산 완료" : "수락 전 보상을 계산해줘"}</span>
+        <button className="xp-button primary" type="button" disabled={rewardPreviewState.status === "loading"} onClick={canAccept ? onAccept : onPreviewReward}>
+          {canAccept ? "수락" : rewardPreviewState.status === "loading" ? "계산 중" : "예상 보상 계산"}
+        </button>
+      </div>
+    </section>
+  );
 }
 
 function QuestRunnerWindow({ quest, onComplete, onFail }: QuestRunnerWindowProps) {
@@ -1713,6 +1993,7 @@ function RecoveryWindow({ quest, onEdit, onAccept }: RecoveryWindowProps) {
 
 function ManagerWindow({ manager, petAway }: ManagerWindowProps) {
   const displayStage = getManagerDisplayStage(manager);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   return (
     <section className="manager-panel">
       <div className="manager-stage">
@@ -1728,12 +2009,12 @@ function ManagerWindow({ manager, petAway }: ManagerWindowProps) {
             role="progressbar"
             aria-label="루미 경험치"
             aria-valuemin={0}
-            aria-valuemax={100}
+            aria-valuemax={managerExpPerLevel}
             aria-valuenow={manager.exp}
           >
-            <i style={{ width: `${manager.exp}%` }} />
+            <i style={{ width: `${getManagerExpProgressPercent(manager.exp)}%` }} />
           </div>
-          <span className="exp-value">{manager.exp} / 100 EXP</span>
+          <span className="exp-value">{manager.exp} / {managerExpPerLevel} EXP</span>
         </div>
         <div className="manager-status">
           <span className={`status-pixel ${manager.mood}`}>{managerStatusIcons[manager.mood]}</span>
@@ -1741,6 +2022,26 @@ function ManagerWindow({ manager, petAway }: ManagerWindowProps) {
         </div>
       </div>
       <p className="dialogue-panel">{manager.line}</p>
+      <button
+        className="manager-status-toggle xp-button"
+        type="button"
+        aria-label="능력치 보기"
+        title="능력치 보기"
+        aria-expanded={detailsOpen}
+        onClick={() => setDetailsOpen((open) => !open)}
+      >
+        {detailsOpen ? "♡" : "✦"}
+      </button>
+      {detailsOpen && (
+        <dl className="manager-detail-panel">
+          {(Object.keys(statLabels) as StatKey[]).map((stat) => (
+            <div key={stat}>
+              <dt>{statLabels[stat]}</dt>
+              <dd>{manager.stats[stat]}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
     </section>
   );
 }
@@ -2014,7 +2315,9 @@ function DesktopIcon({
       onPointerUp={() => setIconState("hover")}
       disabled={disabled}
     >
-      <span className="desktop-icon-graphic" aria-hidden="true">{iconSrc && <img src={iconSrc} alt="" />}</span>
+      <span className="desktop-icon-graphic" aria-hidden="true">
+        {iconSrc ? <img src={iconSrc} alt="" /> : <b className="desktop-icon-fallback">{windowRegistry[type].titleIcon}</b>}
+      </span>
       <strong>{label}</strong>
     </button>
   );
@@ -2039,25 +2342,30 @@ function PlatformObjectWindow() {
 
   return (
     <section className="object-window-content platform-object-content" aria-label="평지 오브젝트">
-      <div className="platform-tile-strip" aria-hidden="true">
-        <img className="platform-tile-cap" src={asset.tiles?.left ?? asset.src} alt="" draggable={false} />
-        <span className="platform-tile-repeat" style={{ backgroundImage: `url(${asset.tiles?.centerRepeat ?? asset.src})` }} />
-        <img className="platform-tile-cap" src={asset.tiles?.right ?? asset.src} alt="" draggable={false} />
+      <div className="platform-base-viewport" aria-hidden="true">
+        <img className="platform-base-image" src={asset.src} alt="" draggable={false} />
       </div>
     </section>
   );
 }
 
-function OutsidePetLayer({ pet, petId, stage }: OutsidePetLayerProps) {
+function OutsidePetLayer({ pet, petId, stage, objectZIndexes }: OutsidePetLayerProps) {
   const renderableStage = getRenderablePetStage(petId, stage);
   const animation = getInteractionPrototypeAnimation(petId, renderableStage, pet.animation);
+  const immediatePosition = shouldUseImmediateOutsidePetPosition(pet);
   const petStyle = {
     left: `${pet.position.x}px`,
     top: `${pet.position.y}px`,
+    zIndex: resolveOutsidePetLayerZIndex(pet, objectZIndexes),
   } as CSSProperties;
 
   return (
-    <div className={`outside-pet-layer ${pet.phase} ${pet.animation}`} data-pet-stage={renderableStage} style={petStyle} aria-hidden="true">
+    <div
+      className={`outside-pet-layer ${pet.phase} ${pet.animation} ${pet.behavior ?? "no-behavior"} ${immediatePosition ? "attached" : ""}`}
+      data-pet-stage={renderableStage}
+      style={petStyle}
+      aria-hidden="true"
+    >
       <CanvasSpriteAnimator
         animation={animation}
         ariaLabel={`${pet.animation} 핑크 매니저`}
@@ -2071,9 +2379,9 @@ function OutsidePetLayer({ pet, petId, stage }: OutsidePetLayerProps) {
 function WindowPetInteraction({ state, petId, stage, placement, position, measuredRect, zIndex }: WindowPetInteractionProps) {
   const animation = getLumiAnimationAsset(state, petId, stage);
   const renderableStage = getRenderablePetStage(petId, stage);
-  const placementDrafts = useWindowPetPlacementDrafts();
+  const placementProfile = useWindowPetPlacementProfile(petId, stage);
   const runtimeSlot = runtimeWindowPetSlots[placement];
-  const selectedPlacement = placementDrafts[runtimeSlot.motion][runtimeSlot.edge];
+  const selectedPlacement = resolveWindowPetPlacementForSlot(placementProfile, runtimeSlot);
   const targetPosition = measuredRect ? { x: measuredRect.x, y: measuredRect.y } : position;
   const targetSize = measuredRect ? { width: measuredRect.width, height: measuredRect.height } : runtimeSlot.windowSize;
   const resolvedPosition = resolveWindowPetPosition({
@@ -2082,19 +2390,57 @@ function WindowPetInteraction({ state, petId, stage, placement, position, measur
     windowSize: targetSize,
     frameWidth: animation.frameWidth,
     anchor: animation.anchor,
-    baseSpriteSize: 96,
+    baseSpriteSize: windowPetRuntimeBaseSpriteSize,
   });
   const interactionStyle = {
     left: `${resolvedPosition.left}px`,
     top: `${resolvedPosition.top}px`,
     width: `${resolvedPosition.size}px`,
     height: `${resolvedPosition.size}px`,
-    zIndex: resolvedPosition.layer === "behind-window" ? Math.max(1, zIndex - 1) : zIndex + 1,
+    zIndex: resolveWindowPetLayerZIndex(zIndex, resolvedPosition.layer),
   } as CSSProperties;
 
   return (
     <div className={`window-pet-interaction ${placement} ${state} ${resolvedPosition.layer}`} data-pet-stage={renderableStage} style={interactionStyle} aria-hidden="true">
       <CanvasSpriteAnimator animation={animation} ariaLabel={`${state} 핑크 매니저`} mirrorX={selectedPlacement.mirrorX} />
+    </div>
+  );
+}
+
+function PixelTvWatchingPet({ petId, stage, position, measuredRect, zIndex }: PixelTvWatchingPetProps) {
+  const startedAtRef = useRef(Date.now());
+  const [elapsedMs, setElapsedMs] = useState(0);
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setElapsedMs(Date.now() - startedAtRef.current);
+    }, 1_000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const watchingAnimation = resolvePixelTvWatchingAnimationAsset(petId, stage, elapsedMs);
+  const animation = watchingAnimation.animation;
+  const renderableStage = getRenderablePetStage(petId, stage);
+  const targetPosition = measuredRect ? { x: measuredRect.x, y: measuredRect.y } : position;
+  const targetSize = measuredRect
+    ? { width: measuredRect.width, height: measuredRect.height }
+    : initialWindowSizes.pixelTv ?? { width: 372, height: 332 };
+  const watchingStyle = {
+    left: `${targetPosition.x + targetSize.width + 12}px`,
+    top: `${targetPosition.y + targetSize.height / 2 - 48}px`,
+    width: "96px",
+    height: "96px",
+    zIndex: zIndex + 1,
+  } as CSSProperties;
+
+  return (
+    <div className="window-pet-interaction pixel-tv-watching front" data-pet-stage={renderableStage} style={watchingStyle} aria-hidden="true">
+      {watchingAnimation.hasWatchingReaction && (
+        <div className="pixel-tv-reaction-balloon">
+          <div className="pixel-tv-reaction-heart" />
+        </div>
+      )}
+      <CanvasSpriteAnimator animation={animation} ariaLabel="Pixel TV를 보는 전자 매니저" />
     </div>
   );
 }
@@ -2110,6 +2456,26 @@ function getInteractionObjectAsset(type: InteractionObjectAsset["type"]): Intera
 }
 
 function createManagerRuntimeState(input: ManagerRuntimeStateInput): ManagerRuntimeState {
+  const windowInteraction = resolveManagerWindowInteraction({
+    showPixelTvWatching: input.showPixelTvWatching,
+    showQuestHangingPet: input.showQuestHangingPet,
+    showRecoveryHidingPet: input.showRecoveryHidingPet,
+    supportsQuestHangingPet: input.supportsQuestHangingPet,
+    supportsRecoveryHidingPet: input.supportsRecoveryHidingPet,
+  });
+  if (windowInteraction === "pixel_tv_watching") {
+    return {
+      location: "window_edge",
+      mood: input.manager.mood,
+      stage: input.displayStage,
+      animation: "focused",
+      windowInteraction,
+      outside: input.outsidePet,
+      petAwayFromManagerWindow: true,
+      showOutsidePet: false,
+    };
+  }
+
   if (input.showOutsidePet) {
     return {
       location: "outside",
@@ -2136,26 +2502,26 @@ function createManagerRuntimeState(input: ManagerRuntimeStateInput): ManagerRunt
     };
   }
 
-  if (input.showQuestHangingPet) {
+  if (windowInteraction === "quest_hanging") {
     return {
       location: "window_edge",
       mood: input.manager.mood,
       stage: input.displayStage,
       animation: "hanging",
-      windowInteraction: "quest_hanging",
+      windowInteraction,
       outside: input.outsidePet,
       petAwayFromManagerWindow: true,
       showOutsidePet: false,
     };
   }
 
-  if (input.showRecoveryHidingPet) {
+  if (windowInteraction === "recovery_hiding") {
     return {
       location: "window_edge",
       mood: input.manager.mood,
       stage: input.displayStage,
       animation: "hiding",
-      windowInteraction: "recovery_hiding",
+      windowInteraction,
       outside: input.outsidePet,
       petAwayFromManagerWindow: true,
       showOutsidePet: false,
@@ -2177,14 +2543,17 @@ function createManagerRuntimeState(input: ManagerRuntimeStateInput): ManagerRunt
 function createInteractionObjectsFromWindows(
   positions: Record<WindowId, WindowPosition>,
   sizes: Partial<Record<WindowId, WindowSize>>,
+  openWindows: WindowId[],
 ): InteractionObject[] {
   const ladderPosition = positions.ladderObject;
   const ladderSize = sizes.ladderObject ?? initialWindowSizes.ladderObject ?? { width: 86, height: 184 };
   const platformPosition = positions.platformObject;
-  const platformSize = sizes.platformObject ?? initialWindowSizes.platformObject ?? { width: 280, height: 124 };
+  const platformSize = sizes.platformObject ?? initialWindowSizes.platformObject ?? { width: 280, height: 440 };
 
-  return [
-    {
+  const objects: InteractionObject[] = [];
+
+  if (openWindows.includes("ladderObject")) {
+    objects.push({
       id: "ladder-1",
       type: "ladder",
       resizeAxis: "vertical",
@@ -2194,25 +2563,31 @@ function createInteractionObjectsFromWindows(
         width: 36,
         height: Math.max(72, ladderSize.height - 46),
       },
-    },
-    {
+    });
+  }
+
+  if (openWindows.includes("platformObject")) {
+    objects.push({
       id: "platform-1",
       type: "platform",
       resizeAxis: "horizontal",
       rect: {
-        x: platformPosition.x + 18,
-        y: platformPosition.y + Math.max(48, platformSize.height - 53),
-        width: Math.max(96, platformSize.width - 36),
-        height: 22,
+        x: platformPosition.x + 12,
+        y: platformPosition.y + Math.max(96, Math.round(platformSize.width * 0.62)),
+        width: Math.max(96, platformSize.width - 24),
+        height: 18,
       },
-    },
-    {
-      id: "escape-edge-1",
-      type: "window_escape_edge",
-      resizeAxis: "none",
-      rect: { x: window.innerWidth - 18, y: outsidePetFieldRect.y - 48, width: 10, height: 150 },
-    },
-  ];
+    });
+  }
+
+  objects.push({
+    id: "escape-edge-1",
+    type: "window_escape_edge",
+    resizeAxis: "none",
+    rect: { x: window.innerWidth - 18, y: outsidePetFieldRect.y - 48, width: 10, height: 150 },
+  });
+
+  return objects;
 }
 
 function getNextOutsidePetRoamAnimation(
@@ -2255,7 +2630,7 @@ function getRecentBehaviorEvent(streak: QuestOutcomeStreak): PetBehaviorRecentEv
 
 function DesktopPet({ mood, petId, stage, large = false }: DesktopPetProps) {
   const [hovered, setHovered] = useState(false);
-  const spriteState = hovered ? "hover" : lumiMoodToSpriteState[mood];
+  const spriteState = resolveDesktopPetSpriteState(mood, hovered);
   const animation = getLumiAnimationAsset(spriteState, petId, stage);
   const renderableStage = getRenderablePetStage(petId, stage);
 

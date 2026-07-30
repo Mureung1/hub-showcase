@@ -163,6 +163,19 @@
 
 공통 보조 작업: 첫 진입, 매니저 선택, 퀘스트 실행, 기록 노트, Pixel TV, 시작 메뉴 재시작 흐름이 자연스럽게 이어지도록 flow polish를 병행한다.
 
+## 세션별 인수인계 줄기
+
+새 Codex 계정이나 병렬 세션으로 이어갈 때는 아래 줄기 기준으로 작업 범위를 나눈다. 상세 프롬프트는 `docs/handoff-2026-07-30.md`에 둔다.
+
+| 줄기 | 담당 범위 | 관련 Task | 현재 상태 | 다음 액션 |
+|---|---|---|---|---|
+| A | App Flow / Reset / Component Consistency | T-101, T-401, T-405, flow polish | Review | 첫 진입, 매니저 바꾸기, 다시 시작, 새로고침/재접속의 localStorage와 서버 hydration 일관성 수동 검수 |
+| C | LLM Manager API | T-603, T-709, T-711 | Review | 실제 env key가 있는 환경에서 `/api/manager/*` enabled path와 fallback path를 Network/server log로 확인 |
+| 1 | State Machine / Interaction | T-702, T-714, T-715, T-716 | Review | outside roaming loop, ladder/platform attach, 방향 반전, z-index, unsupported animation fallback을 브라우저에서 확인 |
+| B | Asset Runtime / Placement / Review Tool | T-701, T-702 | Review | `?review=sprites` placement 저장값과 runtime `WindowPetInteraction` 적용값의 일치 여부 확인 |
+| 2 | Sound / Game Feel | T-713, T-726, T-727 | In Progress | 대형 sound asset 커밋 전략을 먼저 결정하고, cyber-purr/클릭/감정 효과음/음악창 manifest와 UI를 연결 |
+| 3 | Pixel TV / World Theme | T-721, T-724, T-725, T-708 | Review / Backlog | Pixel TV/photo/projection 수동 검수 후 현실 시간 기반 해/달/빛 theme 설계와 구현 |
+
 ## Roadmap 연결
 
 - 일정은 `four-week-roadmap.md`에서 관리한다.

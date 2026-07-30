@@ -62,4 +62,16 @@ describe("manager behavior intent", () => {
 
     expect(normalizeManagerBehaviorIntent("bad response", fallback)).toEqual(fallback);
   });
+
+  it("limits behavior intent lines for the manager window", () => {
+    const result = normalizeManagerBehaviorIntent({
+      behaviorStyle: "balanced",
+      tone: "friendly",
+      line: "First line is intentionally long and should fit inside the manager window.\nSecond line is enough.\nThird line should be removed.",
+      suggestedBehaviorBias: [],
+    });
+
+    expect(result.line.split("\n")).toHaveLength(2);
+    expect(result.line.length).toBeLessThanOrEqual(96);
+  });
 });

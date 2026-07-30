@@ -106,8 +106,8 @@ export const windowRegistry: Record<WindowId, WindowSpec> = {
   pixelTv: {
     label: "Pixel TV",
     titleIcon: "TV",
-    initialPosition: { x: 420, y: 205 },
-    initialSize: { width: 372, height: 332 },
+    initialPosition: { x: 40, y: 24 },
+    initialSize: { width: 780, height: 780 },
     desktopIconAssetId: "pixel-tv",
     windowIconAssetId: "pixel-tv",
   },
@@ -128,13 +128,23 @@ export const windowRegistry: Record<WindowId, WindowSpec> = {
     label: "평지",
     titleIcon: "_",
     initialPosition: { x: 735, y: 350 },
-    initialSize: { width: 280, height: 124 },
+    initialSize: { width: 280, height: 440 },
   },
 };
 
 export const windowIds = Object.keys(windowRegistry) as WindowId[];
 export const workflowWindowIds = windowIds.filter((id) => windowRegistry[id].workflow);
 export const defaultOpenWindowIds = ["quest", "manager", "ladderObject", "platformObject"] as const satisfies readonly WindowId[];
+export const desktopShortcutWindowIds = [
+  "quest",
+  "manager",
+  "profile",
+  "journal",
+  "pixelTv",
+  "ladderObject",
+  "platformObject",
+  "trash",
+] as const satisfies readonly WindowId[];
 
 export const initialWindowPositions = Object.fromEntries(
   windowIds.map((id) => [id, windowRegistry[id].initialPosition]),

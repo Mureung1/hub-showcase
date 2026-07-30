@@ -3,8 +3,8 @@ import type {
   GetQuestEventsQuery,
   ManagerContext,
   QuestEventRecord,
-} from "../contracts/questEvents";
-import { buildManagerContext } from "../contracts/questEvents";
+} from "../contracts/questEvents.js";
+import { buildManagerContext } from "../contracts/questEvents.js";
 
 export interface QuestEventStore {
   insertQuestEvent(input: CreateQuestEventRequest): Promise<QuestEventRecord>;

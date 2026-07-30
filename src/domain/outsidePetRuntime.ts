@@ -34,8 +34,13 @@ export type OutsidePetBehavior =
   | "idle_on_platform"
   | "jump_down";
 
-export const outsidePetFieldRect = { x: 190, y: 430, width: 780, height: 116 };
+export const outsidePetFieldRect = { x: 190, y: 620, width: 780, height: 116 };
 export const outsidePetSpriteSize = 96;
+export const outsidePetWalkInStepPx = 10;
+export const outsidePetInteractionCandidateRangePx = 220;
+export const outsidePetFreeRoamTickMs = 1100;
+export const outsidePetFreeRoamStateChangeTicks = 7;
+const outsidePetLadderBottomReachPx = 96;
 
 export const outsidePetInitialState: OutsidePetState = {
   phase: "inside",
@@ -69,9 +74,6 @@ export function resolveOutsidePetRoamPosition(
     if (platform) return { x: platform.rect.x + platform.rect.width / 2 - outsidePetSpriteSize / 2, y: platform.rect.y - outsidePetSpriteSize + 12 };
   }
 
-  const standingPlatform = getStandingPlatform({ x: fallbackPosition.x, y: pet.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize }, objects);
-  if (standingPlatform) return { x: fallbackPosition.x, y: standingPlatform.rect.y - outsidePetSpriteSize + 12 };
-
   return { x: fallbackPosition.x, y: outsidePetFieldRect.y };
 }
 
@@ -87,12 +89,18 @@ export function resolveOutsidePetAttachmentPosition(object: InteractionObject, a
 export function resolveRenderedOutsidePet(pet: OutsidePetState, objects: InteractionObject[]): OutsidePetState {
   if (pet.phase !== "free_roam") return pet;
 
-  if (pet.platformId && (pet.behavior === "land_on_platform" || pet.behavior === "idle_on_platform")) {
+  if (
+    pet.platformId &&
+    (pet.behavior === "jump_to_platform" ||
+      pet.behavior === "land_on_platform" ||
+      pet.behavior === "idle_on_platform" ||
+      pet.behavior === "jump_down")
+  ) {
     const platform = objects.find((object) => object.id === pet.platformId && object.type === "platform");
     if (!platform) return pet;
     return {
       ...pet,
-      position: resolvePlatformStandPosition(platform),
+      position: resolvePlatformBehaviorRenderPosition(pet, platform),
     };
   }
 
@@ -103,7 +111,7 @@ export function resolveRenderedOutsidePet(pet: OutsidePetState, objects: Interac
 
   return {
     ...pet,
-    position: resolveOutsidePetAttachmentPosition(attachedObject, "climbing"),
+    position: resolveOutsidePetAttachmentPosition(attachedObject, "climbing", pet.climbProgress ?? 0.48),
   };
 }
 
@@ -124,10 +132,36 @@ export function resolveOutsidePetDirection(pet: OutsidePetState, objects: Intera
 }
 
 export function resolveOutsidePetAnimationSpeed(animation: PetAnimationState): number {
-  if (animation === "run") return 21;
-  if (animation === "walk") return 11;
-  if (animation === "jump") return 28;
+  if (animation === "run") return 14;
+  if (animation === "walk") return 7;
+  if (animation === "jump") return 18;
   return 0;
+}
+
+export function resolveOutsidePetWalkInStep(pet: OutsidePetState, targetX: number): OutsidePetState {
+  const step = pet.side === "left" ? outsidePetWalkInStepPx : -outsidePetWalkInStepPx;
+  const nextX = pet.position.x + step;
+  const reachedTarget = pet.side === "left" ? nextX >= targetX : nextX <= targetX;
+  if (reachedTarget) {
+    return {
+      ...pet,
+      phase: "free_roam",
+      animation: "idle",
+      behavior: "idle",
+      behaviorTicks: outsidePetFreeRoamStateChangeTicks,
+      roamTicks: 0,
+      attachedObjectId: undefined,
+      platformId: undefined,
+      climbProgress: undefined,
+      position: { ...pet.position, x: targetX, y: outsidePetFieldRect.y },
+    };
+  }
+
+  return {
+    ...pet,
+    position: { x: nextX, y: outsidePetFieldRect.y },
+    direction: step > 0 ? 1 : -1,
+  };
 }
 
 export function resolveOutsidePetHorizontalMove(
@@ -149,6 +183,34 @@ export function resolveOutsidePetHorizontalMove(
   return { x, direction: pet.direction, stoppedForTarget: false };
 }
 
+export function shouldChooseNextOutsidePetRoamAnimation(pet: OutsidePetState): boolean {
+  return (pet.behaviorTicks ?? outsidePetFreeRoamStateChangeTicks) >= outsidePetFreeRoamStateChangeTicks;
+}
+
+export function resolveStoppedInteractionAnimation(pet: OutsidePetState, objects: InteractionObject[], requestedAnimation?: PetAnimationState): PetAnimationState | null {
+  if (requestedAnimation === "jump") return null;
+  const target = getNearestStoppedInteractionObject(pet, objects);
+  if (target?.type === "ladder") return "climbing";
+  if (target?.type === "platform") return "jump";
+  return null;
+}
+
+export function resolveAvailableOutsidePetRoamAnimations(
+  objects: InteractionObject[],
+  supportedAnimations: PetAnimationState[],
+  pet?: OutsidePetState,
+): PetAnimationState[] {
+  const hasLadder = hasInteractionCandidateInRange(objects, "ladder", pet);
+  const hasPlatform = hasInteractionCandidateInRange(objects, "platform", pet);
+  return supportedAnimations.filter((animation) => {
+    if (animation === "climbing") return hasLadder;
+    if (animation === "jump") return hasPlatform;
+    if (animation === "hanging") return false;
+    if (animation === "hiding") return false;
+    return true;
+  });
+}
+
 export function advanceOutsidePetBehavior(pet: OutsidePetState, _objects: InteractionObject[]): OutsidePetState {
   if (pet.behavior === "climb_ladder" || pet.behavior === "hold_ladder" || pet.behavior === "descend_ladder") {
     return advanceClimbBehavior(pet, _objects);
@@ -166,7 +228,7 @@ export function startOutsidePetBehavior(pet: OutsidePetState, objects: Interacti
     const petRect = { x: pet.position.x, y: pet.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize };
     const ladder = pet.attachedObjectId
       ? objects.find((object) => object.id === pet.attachedObjectId && object.type === "ladder")
-      : getNearbyLadder(petRect, objects);
+      : getStoppedInteractionObjectByType(pet, objects, "ladder") ?? getNearbyLadder(petRect, objects);
 
     if (ladder) {
       return {
@@ -183,16 +245,15 @@ export function startOutsidePetBehavior(pet: OutsidePetState, objects: Interacti
 
   if (animation === "jump") {
     const petRect = { x: pet.position.x, y: pet.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize };
-    const platform = getNearbyPlatform(petRect, objects);
+    const platform = getStoppedInteractionObjectByType(pet, objects, "platform") ?? getNearbyPlatform(petRect, objects);
     if (platform) {
-      const standPosition = resolvePlatformStandPosition(platform);
       return {
         ...pet,
         animation,
         behavior: "jump_to_platform",
         behaviorTicks: 0,
         platformId: platform.id,
-        position: { x: standPosition.x, y: standPosition.y - 36 },
+        position: resolvePlatformBehaviorRenderPosition({ ...pet, behavior: "jump_to_platform" }, platform),
       };
     }
   }
@@ -230,6 +291,45 @@ export function shouldMirrorOutsidePet(pet: OutsidePetState): boolean {
   return pet.direction < 0;
 }
 
+export function shouldUseImmediateOutsidePetPosition(pet: OutsidePetState): boolean {
+  return (
+    ((pet.behavior === "climb_ladder" || pet.behavior === "hold_ladder" || pet.behavior === "descend_ladder") && Boolean(pet.attachedObjectId)) ||
+    ((pet.behavior === "jump_to_platform" ||
+      pet.behavior === "land_on_platform" ||
+      pet.behavior === "idle_on_platform" ||
+      pet.behavior === "jump_down") &&
+      Boolean(pet.platformId))
+  );
+}
+
+export function resolveOutsidePetLayerZIndex(
+  pet: OutsidePetState,
+  objectZIndexes: Partial<Record<string, number>>,
+  fallbackZIndex = 18,
+): number {
+  if (pet.platformId && isPlatformBehavior(pet.behavior)) {
+    const platformZIndex = objectZIndexes[pet.platformId];
+    if (typeof platformZIndex === "number") return platformZIndex + 1;
+  }
+
+  if (pet.attachedObjectId && isLadderBehavior(pet.behavior)) {
+    const ladderZIndex = objectZIndexes[pet.attachedObjectId];
+    if (typeof ladderZIndex === "number") return ladderZIndex + 1;
+  }
+
+  if (pet.phase === "peek_from_edge") return 12;
+  if (pet.animation === "climbing") return 80;
+  return fallbackZIndex;
+}
+
+function isPlatformBehavior(behavior: OutsidePetBehavior | undefined) {
+  return behavior === "jump_to_platform" || behavior === "land_on_platform" || behavior === "idle_on_platform" || behavior === "jump_down";
+}
+
+function isLadderBehavior(behavior: OutsidePetBehavior | undefined) {
+  return behavior === "climb_ladder" || behavior === "hold_ladder" || behavior === "descend_ladder";
+}
+
 function getInteractionObjectApproachDirection(pet: OutsidePetState, objects: InteractionObject[]): 1 | -1 | null {
   const objectTargets = objects
     .filter((object) => object.type === "ladder" || object.type === "platform")
@@ -241,16 +341,53 @@ function getInteractionObjectApproachDirection(pet: OutsidePetState, objects: In
 }
 
 function isInsideInteractionObjectDirectionDeadZone(pet: OutsidePetState, objects: InteractionObject[]): boolean {
+  return getNearestStoppedInteractionObject(pet, objects) !== undefined;
+}
+
+function getNearestStoppedInteractionObject(pet: OutsidePetState, objects: InteractionObject[]): InteractionObject | undefined {
   const petCenterX = pet.position.x + outsidePetSpriteSize / 2;
-  return objects
+  const targets = objects
     .filter((object) => object.type === "ladder" || object.type === "platform")
-    .some((object) => Math.abs(getRectCenterX(object.rect) - petCenterX) < 36);
+    .filter((object) => object.type !== "ladder" || isLadderReachableFromPet(pet, object))
+    .map((object) => ({ object, distance: Math.abs(getRectCenterX(object.rect) - petCenterX) }))
+    .sort((a, b) => a.distance - b.distance);
+  const nearest = targets[0];
+  return nearest && nearest.distance < 36 ? nearest.object : undefined;
+}
+
+function getStoppedInteractionObjectByType(
+  pet: OutsidePetState,
+  objects: InteractionObject[],
+  type: InteractionObject["type"],
+): InteractionObject | undefined {
+  const target = getNearestStoppedInteractionObject(pet, objects);
+  return target?.type === type ? target : undefined;
+}
+
+function hasInteractionCandidateInRange(
+  objects: InteractionObject[],
+  type: "ladder" | "platform",
+  pet: OutsidePetState | undefined,
+): boolean {
+  const candidates = objects.filter((object) => object.type === type);
+  if (!pet) return candidates.length > 0;
+
+  const petCenterX = pet.position.x + outsidePetSpriteSize / 2;
+  return candidates.some((object) => Math.abs(getRectCenterX(object.rect) - petCenterX) <= outsidePetInteractionCandidateRangePx);
 }
 
 function advanceClimbBehavior(pet: OutsidePetState, objects: InteractionObject[]): OutsidePetState {
   const ladder = pet.attachedObjectId ? objects.find((object) => object.id === pet.attachedObjectId && object.type === "ladder") : undefined;
   if (!ladder) {
-    return { ...pet, animation: "idle", behavior: "idle", behaviorTicks: 0, attachedObjectId: undefined, climbProgress: undefined };
+    return {
+      ...pet,
+      animation: "idle",
+      behavior: "idle",
+      behaviorTicks: 0,
+      attachedObjectId: undefined,
+      climbProgress: undefined,
+      position: { x: pet.position.x, y: outsidePetFieldRect.y },
+    };
   }
 
   if (pet.behavior === "climb_ladder") {
@@ -312,7 +449,14 @@ function advanceClimbBehavior(pet: OutsidePetState, objects: InteractionObject[]
 function advancePlatformBehavior(pet: OutsidePetState, objects: InteractionObject[]): OutsidePetState {
   const platform = pet.platformId ? objects.find((object) => object.id === pet.platformId && object.type === "platform") : undefined;
   if (!platform) {
-    return { ...pet, animation: "idle", behavior: "idle", behaviorTicks: 0, platformId: undefined };
+    return {
+      ...pet,
+      animation: "idle",
+      behavior: "idle",
+      behaviorTicks: 0,
+      platformId: undefined,
+      position: { x: pet.position.x, y: outsidePetFieldRect.y },
+    };
   }
 
   if (pet.behavior === "jump_to_platform") {
@@ -326,7 +470,12 @@ function advancePlatformBehavior(pet: OutsidePetState, objects: InteractionObjec
       };
     }
 
-    return { ...pet, animation: "jump", behaviorTicks: (pet.behaviorTicks ?? 0) + 1 };
+    return {
+      ...pet,
+      animation: "jump",
+      behaviorTicks: (pet.behaviorTicks ?? 0) + 1,
+      position: resolvePlatformBehaviorRenderPosition(pet, platform),
+    };
   }
 
   if (pet.behavior === "land_on_platform") {
@@ -346,7 +495,7 @@ function advancePlatformBehavior(pet: OutsidePetState, objects: InteractionObjec
         animation: "jump",
         behavior: "jump_down",
         behaviorTicks: 0,
-        position: { x: pet.position.x + pet.direction * 24, y: pet.position.y - 24 },
+        position: resolvePlatformBehaviorRenderPosition({ ...pet, behavior: "jump_down" }, platform),
       };
     }
 
@@ -354,17 +503,23 @@ function advancePlatformBehavior(pet: OutsidePetState, objects: InteractionObjec
   }
 
   if ((pet.behaviorTicks ?? 0) >= 1) {
+    const jumpDownPosition = resolvePlatformBehaviorRenderPosition(pet, platform);
     return {
       ...pet,
       animation: "idle",
       behavior: "idle",
       behaviorTicks: 0,
       platformId: undefined,
-      position: { x: pet.position.x, y: outsidePetFieldRect.y },
+      position: { x: jumpDownPosition.x, y: outsidePetFieldRect.y },
     };
   }
 
-  return { ...pet, animation: "jump", behaviorTicks: (pet.behaviorTicks ?? 0) + 1 };
+  return {
+    ...pet,
+    animation: "jump",
+    behaviorTicks: (pet.behaviorTicks ?? 0) + 1,
+    position: resolvePlatformBehaviorRenderPosition(pet, platform),
+  };
 }
 
 function resolvePlatformStandPosition(platform: InteractionObject): InteractionSpritePosition {
@@ -374,8 +529,15 @@ function resolvePlatformStandPosition(platform: InteractionObject): InteractionS
   };
 }
 
+function resolvePlatformBehaviorRenderPosition(pet: OutsidePetState, platform: InteractionObject): InteractionSpritePosition {
+  const standPosition = resolvePlatformStandPosition(platform);
+  if (pet.behavior === "jump_to_platform") return { x: standPosition.x, y: standPosition.y - 36 };
+  if (pet.behavior === "jump_down") return { x: standPosition.x + pet.direction * 24, y: standPosition.y - 24 };
+  return standPosition;
+}
+
 export function getNearbyLadder(petRect: { x: number; y: number; width: number; height: number }, objects: InteractionObject[]): InteractionObject | undefined {
-  return objects.find((object) => object.type === "ladder" && isNearObject(petRect, object.rect, 96));
+  return objects.find((object) => object.type === "ladder" && isLadderReachableFromRect(petRect, object));
 }
 
 function getNearbyPlatform(petRect: { x: number; y: number; width: number; height: number }, objects: InteractionObject[]): InteractionObject | undefined {
@@ -390,20 +552,20 @@ function getNearbyPlatform(petRect: { x: number; y: number; width: number; heigh
   });
 }
 
-function getStandingPlatform(petRect: { x: number; y: number; width: number; height: number }, objects: InteractionObject[]): InteractionObject | undefined {
-  return objects.find((object) => {
-    if (object.type !== "platform") return false;
-
-    const petFootX = petRect.x + petRect.width / 2;
-    const petFootY = petRect.y + petRect.height;
-    const insidePlatform = petFootX >= object.rect.x && petFootX <= object.rect.x + object.rect.width;
-    const closeToTop = Math.abs(petFootY - object.rect.y) <= 28;
-    return insidePlatform && closeToTop;
-  });
-}
-
 function getRectCenterX(rect: { x: number; width: number }): number {
   return rect.x + rect.width / 2;
+}
+
+function isLadderReachableFromPet(pet: OutsidePetState, ladder: InteractionObject): boolean {
+  return isLadderReachableFromRect({ x: pet.position.x, y: pet.position.y, width: outsidePetSpriteSize, height: outsidePetSpriteSize }, ladder);
+}
+
+function isLadderReachableFromRect(petRect: { x: number; y: number; width: number; height: number }, ladder: InteractionObject): boolean {
+  const petCenterX = petRect.x + petRect.width / 2;
+  const ladderCenterX = getRectCenterX(ladder.rect);
+  const petTopY = petRect.y;
+  const ladderBottomY = ladder.rect.y + ladder.rect.height;
+  return Math.abs(ladderCenterX - petCenterX) < 36 && Math.abs(ladderBottomY - petTopY) <= outsidePetLadderBottomReachPx;
 }
 
 function isNearObject(a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }, threshold: number) {

@@ -1,7 +1,8 @@
-import type { CreateQuestLogRequest, GetQuestLogsQuery, QuestLogRecord } from "../contracts/questLogs";
-import type { CreateQuestEventRequest, GetQuestEventsQuery, QuestEventRecord } from "../contracts/questEvents";
-import { buildManagerContext } from "../contracts/questEvents";
-import type { QuestEventStore } from "./questEventStore";
+import type { CreateQuestLogRequest, GetQuestLogsQuery, QuestLogRecord } from "../contracts/questLogs.js";
+import type { CreateQuestEventRequest, GetQuestEventsQuery, QuestEventRecord } from "../contracts/questEvents.js";
+import { buildManagerContext } from "../contracts/questEvents.js";
+import type { ManagerPlanStore, SaveManagerGoalPlanInput, SaveManagerPlanRevisionInput } from "./managerPlanStore.js";
+import type { QuestEventStore } from "./questEventStore.js";
 
 export interface SupabaseConfig {
   url: string;
@@ -120,6 +121,71 @@ export function createSupabaseQuestEventStore(config: SupabaseConfig): QuestEven
 
       return buildManagerContext((await response.json()) as QuestEventRecord[]);
     },
+  };
+}
+
+export function createSupabaseManagerPlanStore(config: SupabaseConfig): ManagerPlanStore {
+  const baseUrl = config.url.replace(/\/$/, "");
+  const headers = {
+    apikey: config.serviceRoleKey,
+    authorization: `Bearer ${config.serviceRoleKey}`,
+    "content-type": "application/json",
+  };
+
+  return {
+    async saveGoalPlan(input) {
+      const response = await fetch(`${baseUrl}/rest/v1/manager_goal_plans`, {
+        method: "POST",
+        headers: { ...headers, prefer: "return=representation" },
+        body: JSON.stringify(toGoalPlanInsertRow(input)),
+      });
+      if (!response.ok) throw new Error(`Supabase manager goal plan insert failed: ${response.status}`);
+      return readInsertedRow(response);
+    },
+    async savePlanRevision(input) {
+      const response = await fetch(`${baseUrl}/rest/v1/manager_plan_revisions`, {
+        method: "POST",
+        headers: { ...headers, prefer: "return=representation" },
+        body: JSON.stringify(toPlanRevisionInsertRow(input)),
+      });
+      if (!response.ok) throw new Error(`Supabase manager plan revision insert failed: ${response.status}`);
+      return readInsertedRow(response);
+    },
+  };
+}
+
+async function readInsertedRow(response: Response): Promise<{ id: string; createdAt: string }> {
+  const rows = (await response.json()) as Array<{ id?: unknown; created_at?: unknown }>;
+  const row = rows[0];
+  if (typeof row?.id !== "string" || typeof row.created_at !== "string") throw new Error("Supabase insert returned no plan row.");
+  return { id: row.id, createdAt: row.created_at };
+}
+
+function toGoalPlanInsertRow(input: SaveManagerGoalPlanInput) {
+  return {
+    goal: input.goal,
+    category: input.category,
+    status: "active",
+    source: input.source,
+    fallback_reason: input.fallbackReason ?? null,
+    prompt_version: input.promptVersion,
+    plan_version: 1,
+    plan_json: input.plan,
+  };
+}
+
+function toPlanRevisionInsertRow(input: SaveManagerPlanRevisionInput) {
+  return {
+    plan_id: input.planId ?? null,
+    trigger_event_id: input.triggerEventId ?? null,
+    goal: input.goal,
+    source: input.source,
+    fallback_reason: input.fallbackReason ?? null,
+    prompt_version: input.promptVersion,
+    revision_reason: input.rebalance.changes[0]?.reason ?? "success_streak",
+    changes_json: input.rebalance.changes,
+    after_plan_json: input.rebalance.rebalancedPlan,
+    next_quest_json: input.rebalance.nextQuest,
   };
 }
 

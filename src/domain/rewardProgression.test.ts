@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { getRecoveryRewardCandidates, getUnlockedStagesFromLevel } from "./rewardProgression";
 
 describe("reward progression", () => {
-  it("unlocks stage-2 at level 3", () => {
-    expect(getUnlockedStagesFromLevel(3)).toEqual(["stage-1", "stage-2"]);
+  it("unlocks stage-2 at level 2", () => {
+    expect(getUnlockedStagesFromLevel(2)).toEqual(["stage-1", "stage-2"]);
   });
 
   it("unlocks stage-3 at level 6 and stage-4 at level 10", () => {

@@ -1,19 +1,26 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { CanvasSpriteAnimator } from "./CanvasSpriteAnimator";
-import { getSpriteReviewAnimations, getSpriteReviewSet, spriteReviewSets, type SpriteReviewSetId } from "../data/spriteReviewAssets";
+import { getSpriteReviewAnimations, getSpriteReviewSet, spriteReviewSets, type SpriteReviewSet, type SpriteReviewSetId } from "../data/spriteReviewAssets";
 import type { SpriteAnimationAsset } from "../data/assetManifest";
 import {
+  defaultWindowPetActiveEdges,
   defaultWindowPetPlacementDrafts,
-  readWindowPetPlacementDrafts,
+  defaultWindowPetPlacementProfile,
+  getRuntimeWindowPetPlacementProfileIdForReviewSet,
+  readWindowPetPlacementProfile,
   resolveWindowPetPosition,
   runtimeWindowPetSlots,
-  windowPetPlacementStorageKey,
+  windowPetRuntimeBaseSpriteSize,
+  writeWindowPetPlacementProfile,
   type WindowPetAttachSide,
   type WindowPetMotion,
   type WindowPetPlacementDraft,
   type WindowPetPlacementDraftsByMotion,
+  type WindowPetPlacementProfile,
+  type WindowPetPlacementProfileId,
 } from "../data/windowPetPlacements";
+import { measureSpriteSheetGeometryFromRgba, type SpriteSheetGeometryRecommendation } from "../data/spriteSheetMetrics";
 
 const scaleOptions = [2, 3, 4] as const;
 const speedOptions = [0.5, 1, 1.5, 2] as const;
@@ -22,7 +29,8 @@ const placementMotionOptions = ["hanging", "hiding", "climbing", "jump"] as cons
 const questMockWindow = { x: 140, y: 62, ...runtimeWindowPetSlots["below-quest"].windowSize };
 const recoveryMockWindow = { x: 140, y: 62, ...runtimeWindowPetSlots["beside-recovery"].windowSize };
 
-type PlacementDraftsBySet = Partial<Record<SpriteReviewSetId, PlacementDraftsByMotion>>;
+type PlacementProfilesBySet = Partial<Record<SpriteReviewSetId, WindowPetPlacementProfile>>;
+type GeometryByAnimationId = Record<string, SpriteSheetGeometryRecommendation>;
 type AttachSide = WindowPetAttachSide;
 type PlacementMotion = WindowPetMotion;
 type PlacementDraft = WindowPetPlacementDraft;
@@ -48,16 +56,15 @@ export function SpriteSheetReviewTool() {
   const [speed, setSpeed] = useState<(typeof speedOptions)[number]>(1);
   const [reviewSetId, setReviewSetId] = useState<SpriteReviewSetId>("pink-manager-stage-2-production-candidates");
   const [placementMotion, setPlacementMotion] = useState<PlacementMotion>("hanging");
-  const [attachSide, setAttachSide] = useState<AttachSide>(runtimeWindowPetSlots["below-quest"].edge);
-  const [placementDrafts, setPlacementDrafts] = useState<PlacementDraftsBySet>(() => ({
-    "pink-manager-stage-2": readWindowPetPlacementDrafts((key) => window.localStorage.getItem(key)),
-    "pink-manager-stage-2-production-candidates": readWindowPetPlacementDrafts((key) => window.localStorage.getItem(key)),
-  }));
+  const [placementProfiles, setPlacementProfiles] = useState<PlacementProfilesBySet>(() => readInitialPlacementProfilesBySet());
+  const [geometryByAnimationId, setGeometryByAnimationId] = useState<GeometryByAnimationId>({});
   const [saveMessage, setSaveMessage] = useState("");
   const [showAnchor, setShowAnchor] = useState(true);
   const mockWindowRef = useRef<HTMLElement | null>(null);
   const reviewSet = getSpriteReviewSet(reviewSetId);
-  const currentSetPlacements = placementDrafts[reviewSetId] ?? defaultWindowPetPlacementDrafts;
+  const currentPlacementProfile = placementProfiles[reviewSetId] ?? defaultWindowPetPlacementProfile;
+  const currentSetPlacements = currentPlacementProfile.drafts;
+  const attachSide = currentPlacementProfile.activeEdges[placementMotion] ?? defaultWindowPetActiveEdges[placementMotion];
   const currentPlacement = currentSetPlacements[placementMotion][attachSide];
   const mockWindow = placementMotion === "hiding" ? recoveryMockWindow : questMockWindow;
   const [measuredMockWindow, setMeasuredMockWindow] = useState<MockWindowRect>(mockWindow);
@@ -69,6 +76,7 @@ export function SpriteSheetReviewTool() {
   );
   const selectedBaseAnimation = baseAnimations.find((animation) => animation.states[0] === placementMotion) ?? baseAnimations[0];
   const selectedAnimation = withSpeed(selectedBaseAnimation, speed);
+  const selectedGeometry = geometryByAnimationId[selectedBaseAnimation.id];
   const edgePoint = getMockEdgePoint(effectiveMockWindow, currentPlacement.edge);
   const resolvedPreviewPosition = resolveWindowPetPosition({
     placement: currentPlacement,
@@ -76,7 +84,7 @@ export function SpriteSheetReviewTool() {
     windowSize: { width: effectiveMockWindow.width, height: effectiveMockWindow.height },
     frameWidth: selectedAnimation.frameWidth,
     anchor: selectedAnimation.anchor,
-    baseSpriteSize: selectedAnimation.frameWidth * scale,
+    baseSpriteSize: windowPetRuntimeBaseSpriteSize,
   });
   const previewSpriteScale = resolvedPreviewPosition.size / selectedAnimation.frameWidth;
   const anchorX = (currentPlacement.mirrorX ? selectedAnimation.frameWidth - selectedAnimation.anchor.x : selectedAnimation.anchor.x) * previewSpriteScale;
@@ -95,16 +103,16 @@ export function SpriteSheetReviewTool() {
         .join("\n");
       return `  ${motion}: {\n${sides}\n  },`;
     })
-    .join("\n")}\n}`;
+    .join("\n")}\n}\nactiveEdges: ${JSON.stringify(currentPlacementProfile.activeEdges, null, 2)}`;
 
   useLayoutEffect(() => {
     const element = mockWindowRef.current;
     if (!element) return undefined;
 
-    const stageRect = element.offsetParent instanceof HTMLElement
-      ? element.offsetParent.getBoundingClientRect()
-      : { left: 0, top: 0 };
     const measure = () => {
+      const stageRect = element.offsetParent instanceof HTMLElement
+        ? element.offsetParent.getBoundingClientRect()
+        : { left: 0, top: 0 };
       const rect = element.getBoundingClientRect();
       setMeasuredMockWindow({
         x: rect.left - stageRect.left,
@@ -131,17 +139,21 @@ export function SpriteSheetReviewTool() {
   }, [mockWindow.x, mockWindow.y, mockWindow.width, mockWindow.height, placementMotion]);
 
   function updatePlacement(nextPlacement: Partial<PlacementDraft>) {
-    setPlacementDrafts((drafts) => {
-      const setDrafts = drafts[reviewSetId] ?? defaultWindowPetPlacementDrafts;
+    setPlacementProfiles((profiles) => {
+      const setProfile = profiles[reviewSetId] ?? defaultWindowPetPlacementProfile;
+      const setDrafts = setProfile.drafts;
       return {
-        ...drafts,
+        ...profiles,
         [reviewSetId]: {
-          ...setDrafts,
-          [placementMotion]: {
-            ...setDrafts[placementMotion],
-            [attachSide]: {
-              ...setDrafts[placementMotion][attachSide],
-              ...nextPlacement,
+          ...setProfile,
+          drafts: {
+            ...setDrafts,
+            [placementMotion]: {
+              ...setDrafts[placementMotion],
+              [attachSide]: {
+                ...setDrafts[placementMotion][attachSide],
+                ...nextPlacement,
+              },
             },
           },
         },
@@ -150,14 +162,64 @@ export function SpriteSheetReviewTool() {
     setSaveMessage("");
   }
 
+  function updateActiveEdge(nextSide: AttachSide) {
+    setPlacementProfiles((profiles) => {
+      const setProfile = profiles[reviewSetId] ?? defaultWindowPetPlacementProfile;
+      return {
+        ...profiles,
+        [reviewSetId]: {
+          ...setProfile,
+          activeEdges: {
+            ...setProfile.activeEdges,
+            [placementMotion]: nextSide,
+          },
+        },
+      };
+    });
+    setSaveMessage("");
+  }
+
   function savePlacementForRuntime() {
-    window.localStorage.setItem(windowPetPlacementStorageKey, JSON.stringify(currentSetPlacements));
-    setPlacementDrafts((drafts) => ({
-      ...drafts,
-      "pink-manager-stage-2": currentSetPlacements,
-      "pink-manager-stage-2-production-candidates": currentSetPlacements,
+    const profileId = getPlacementProfileIdForReviewSet(reviewSet);
+    writeWindowPetPlacementProfile(
+      (key) => window.localStorage.getItem(key),
+      (key, value) => window.localStorage.setItem(key, value),
+      profileId,
+      currentPlacementProfile,
+    );
+    setPlacementProfiles((profiles) => ({
+      ...profiles,
+      [reviewSetId]: currentPlacementProfile,
     }));
-    setSaveMessage("Saved for runtime preview on this browser origin.");
+    setSaveMessage(`Saved runtime canonical placement profile: ${profileId}`);
+  }
+
+  function updateGeometry(animation: SpriteAnimationAsset, image: HTMLImageElement) {
+    const canvas = document.createElement("canvas");
+    canvas.width = animation.sheetWidth;
+    canvas.height = animation.sheetHeight;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return;
+
+    context.drawImage(image, 0, 0, animation.sheetWidth, animation.sheetHeight);
+    const imageData = context.getImageData(0, 0, animation.sheetWidth, animation.sheetHeight);
+    const geometry = measureSpriteSheetGeometryFromRgba(
+      {
+        data: imageData.data,
+        width: animation.sheetWidth,
+        height: animation.sheetHeight,
+        frameWidth: animation.frameWidth,
+        frameHeight: animation.frameHeight,
+        frameCount: animation.frameCount,
+      },
+      animation.anchor.type,
+    );
+    if (!geometry) return;
+
+    setGeometryByAnimationId((current) => ({
+      ...current,
+      [animation.id]: geometry,
+    }));
   }
 
   return (
@@ -208,7 +270,7 @@ export function SpriteSheetReviewTool() {
               value={attachSide}
               onChange={(event) => {
                 const nextSide = event.target.value as AttachSide;
-                setAttachSide(nextSide);
+                updateActiveEdge(nextSide);
               }}
             >
               {attachSideOptions.map((option) => (
@@ -291,12 +353,18 @@ export function SpriteSheetReviewTool() {
             {selectedAnimation.anchor.type}: {selectedAnimation.anchor.x}, {selectedAnimation.anchor.y}
             {currentPlacement.mirrorX ? ` -> mirrored ${selectedAnimation.frameWidth - selectedAnimation.anchor.x}, ${selectedAnimation.anchor.y}` : ""}
           </span>
+          {selectedGeometry ? (
+            <span>
+              recommended {selectedGeometry.recommendedAnchor.x}, {selectedGeometry.recommendedAnchor.y} · protrusion L{selectedGeometry.protrusion.left}/R{selectedGeometry.protrusion.right}
+              {selectedGeometry.peekSide ? ` · peek ${selectedGeometry.peekSide}` : ""}
+            </span>
+          ) : null}
         </div>
         <button type="button" onClick={savePlacementForRuntime}>
           Save placement
         </button>
         <p className="sprite-placement-save-message">
-          {saveMessage || "Save writes this placement to the same browser origin used by the runtime preview."}
+          {saveMessage || "Save writes this pet/stage placement to the runtime canonical profile used by the app."}
         </p>
       </section>
 
@@ -421,7 +489,7 @@ export function SpriteSheetReviewTool() {
               </div>
 
               <div className="sprite-review-sheet">
-                <img src={animation.src} alt={`${animation.states[0]} source sheet`} />
+                <img src={animation.src} alt={`${animation.states[0]} source sheet`} onLoad={(event) => updateGeometry(baseAnimation ?? animation, event.currentTarget)} />
               </div>
 
               <dl className="sprite-review-meta">
@@ -441,6 +509,22 @@ export function SpriteSheetReviewTool() {
                     {animation.anchor.x}, {animation.anchor.y}
                   </dd>
                 </div>
+                {geometryByAnimationId[baseAnimation?.id ?? animation.id] ? (
+                  <>
+                    <div>
+                      <dt>Recommended</dt>
+                      <dd>
+                        {geometryByAnimationId[baseAnimation?.id ?? animation.id].recommendedAnchor.x}, {geometryByAnimationId[baseAnimation?.id ?? animation.id].recommendedAnchor.y}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Protrusion</dt>
+                      <dd>
+                        L{geometryByAnimationId[baseAnimation?.id ?? animation.id].protrusion.left} / R{geometryByAnimationId[baseAnimation?.id ?? animation.id].protrusion.right}
+                      </dd>
+                    </div>
+                  </>
+                ) : null}
               </dl>
 
               <p className="sprite-review-note">{baseAnimation?.notes}</p>
@@ -450,6 +534,19 @@ export function SpriteSheetReviewTool() {
       </section>
     </main>
   );
+}
+
+function readInitialPlacementProfilesBySet(): PlacementProfilesBySet {
+  return Object.fromEntries(
+    spriteReviewSets.map((set) => [
+      set.id,
+      readWindowPetPlacementProfile((key) => window.localStorage.getItem(key), getPlacementProfileIdForReviewSet(set)),
+    ]),
+  ) as PlacementProfilesBySet;
+}
+
+function getPlacementProfileIdForReviewSet(reviewSet: SpriteReviewSet): WindowPetPlacementProfileId {
+  return getRuntimeWindowPetPlacementProfileIdForReviewSet(reviewSet);
 }
 
 function getMockEdgePoint(mockWindow: MockWindowRect, edge: AttachSide) {

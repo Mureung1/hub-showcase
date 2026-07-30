@@ -3,7 +3,7 @@
   "title": "전자 생물 AI 매니저",
   "summary": "목표 관리를 XP 데스크톱형 게임 경험으로 바꾸고, 전자 생물 매니저와 함께 오늘의 퀘스트를 수행하며 성장하는 서비스입니다.",
   "githubUser": "YIFNEN(김동민)",
-  "demoUrl": "https://github.com/YIFNEN/hub",
+  "demoUrl": "https://ai-pet-manager-demo.vercel.app",
   "demoVideoUrl": "https://drive.google.com/file/d/1ijejeUDljFUR5o_lJnJmMKL4KLRw8sDm/view?usp=drive_link",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
@@ -18,6 +18,7 @@
   "features": [
     "프로필과 목표를 바탕으로 오늘의 퀘스트를 만들고 QuestRunner.exe 흐름으로 실행합니다.",
     "완료, 실패, 복구 이벤트를 Hono API와 Supabase quest_logs에 저장하고 기록 노트에서 다시 조회합니다.",
+    "OpenAI 기반 매니저 LLM API가 목표 쪼개기, 퀘스트 추천, 수락 전 보상 예측, 행동 의도를 생성하고 실패 시 rule fallback으로 흐름을 유지합니다.",
     "Canvas sprite animation, blink focus scene, Pixel TV, Agent workflow로 전자 생물 매니저의 게임성을 강화합니다."
   ],
   "featureTags": [
@@ -31,13 +32,15 @@
     "Vite",
     "Hono",
     "Supabase",
+    "OpenAI",
+    "Vercel",
     "Vitest",
     "Mermaid"
   ],
   "techHighlights": [
     "React state와 컴포넌트 분리로 XP 데스크톱의 창, 퀘스트 실행, 기록 노트 흐름을 구현했습니다.",
-    "Vite middleware, Hono contract parser, Supabase quest_logs를 연결해 Quest Event 저장/조회 수직 슬라이스를 완성했습니다.",
-    "ManagerBehaviorIntent와 TDD/Verifier/Skill 기반 Agent workflow로 LLM 확장 경계와 검증 절차를 분리했습니다."
+    "Vercel Functions, Hono contract parser, Supabase quest_logs와 manager plan store를 연결해 배포 환경에서도 API와 기록 저장을 유지합니다.",
+    "Manager LLM API는 OpenAI provider, strict contract parser, rate limit, rule fallback을 분리해 데모 flow가 API 실패에도 끊기지 않도록 설계했습니다."
   ],
   "developmentWithAI": "저는 서비스 컨셉, 핵심 사용자 흐름, 확장 우선순위, 수동 검증 결과를 결정했습니다. AI Agent는 현재 저장소를 조사하고 구현 계획을 나눈 뒤, 승인된 범위에서 코드와 문서를 수정했습니다. 구현 후에는 typecheck, build, 하네스 검증, 브라우저 Network 확인 시나리오를 분리해 검증했습니다.",
   "agent": {

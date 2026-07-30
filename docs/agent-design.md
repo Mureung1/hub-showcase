@@ -101,14 +101,26 @@ MVP v1에서는 규칙 기반 Agent 흐름을 기본값으로 유지하되, Hono
 - React는 `/api/manager/*` Hono route만 호출한다.
 - API key는 server env에만 둔다.
 - prompt version은 `manager-api-v1`로 시작한다.
-- 기본 모델은 비용과 latency를 우선해 `gpt-5-nano`를 사용하고, 품질 고도화가 필요한 route만 이후 `gpt-5-mini` 후보로 올린다.
-- LLM 출력은 `managerLine`, `questSuggestion`, `difficultyEvaluation`, `statEvaluation`, `behaviorIntent` 중 하나의 제한 schema로만 받는다.
+- 기본 모델은 비용과 latency를 우선해 `gpt-5-nano`를 사용하고, 계획 생성/리밸런싱/수락 preview처럼 추론 품질이 필요한 route는 `OPENAI_FALLBACK_MODEL` 기본값인 `gpt-5-mini`를 사용한다.
+- LLM 출력은 `managerLine`, `questSuggestion`, `difficultyEvaluation`, `statEvaluation`, `behaviorIntent`, `goalPlan`, `planRebalance`, `questAcceptancePreview` 중 하나의 제한 schema로만 받는다.
 - React 연결 지점은 `managerLine`/`behaviorIntent`는 manager context 갱신, `questSuggestion`은 사용자가 새 퀘스트 추천을 누를 때, `difficultyEvaluation`은 사용자가 편집한 퀘스트를 수락하기 직전, `statEvaluation`은 Quest Event 저장 직전으로 제한한다.
+- `goalPlan`은 profile 생성 또는 목표 변경 시 호출하고, 장기 목표를 월간/주간/일간/milestone 구조로 분해한다.
+- `planRebalance`는 실패, 복구 완료, 연속 성공처럼 의미 있는 이벤트 이후에만 호출한다.
+- `planRebalance`는 전체 계획을 재조정하되 화면에는 `nextQuest` 하나와 짧은 `recoveryReason`만 노출한다. 월간/주간/milestone 계획은 내부 저장과 다음 추천 근거로 사용한다.
+- `questAcceptancePreview`는 수락 직전 난이도, EXP, stat reward를 한 번에 확정하는 route이며, 기존 `difficultyEvaluation`/`statEvaluation`은 세부 route로 유지한다.
 - 비용 제한은 server-side daily cap과 output kind별 minimum interval로 적용한다.
+- React client도 output kind별 60초 throttle을 적용해 dev remount, context sync 반복, 버튼 연타가 실제 provider 호출로 곧장 이어지지 않게 한다.
+- 저장 성공 후 manager context 반영은 `managerLine`만 갱신하고, `behaviorIntent`는 초기 context load 같은 큰 맥락 갱신에서만 호출한다.
+- 매니저 창 문구는 한두 줄만 사용하며 서버/도메인 정규화에서 최대 2줄, 줄당 48자 이내로 제한한다.
+- `questSuggestion`은 장기 목표를 그대로 제목으로 쓰지 않고 오늘 할 수 있는 작은 다음 행동으로 분해한다.
+- 추천 퀘스트의 `type`, `amount`, `difficulty`, `rewardExp`는 profile의 `questSize`, `dailyMinutes`, 최근 이벤트, 현재 퀘스트 상태에 맞춰 조정한다.
+- `questSize`는 내부 계약명으로 유지하지만 visible UI에서는 사용자가 이해하기 쉬운 `진행 강도`로 표시한다.
+- `questSuggestion`의 EXP도 난이도별 범위를 통과해야 한다: `easy=5..15`, `normal=16..35`, `hard=36..60`.
 - `difficultyEvaluation`의 EXP는 난이도별 범위로 검증한다: `easy=5..15`, `normal=16..35`, `hard=36..60`.
 - schema 검증에 실패하거나 provider 호출이 실패하면 rule fallback을 사용한다.
 - 실패해도 퀘스트 수락, 완료, 실패, 복구 flow는 중단되지 않아야 한다.
 - raw prompt는 DB에 장기 저장하지 않는다. 필요하면 최종 출력, `promptVersion`, `source`, `fallbackReason`만 저장한다.
+- Supabase가 설정된 서버는 `manager_goal_plans`와 `manager_plan_revisions`에 bounded plan output과 revision metadata를 저장한다. 저장 실패는 UI flow를 중단하지 않는다.
 
 ## MVP 규칙 기반 동작
 

@@ -54,13 +54,67 @@ Expansion notes:
 - Public quest exploration must keep `visibility` defaulted to `private`.
 - Camera or gesture features should store settings or consent versions only, not raw frames.
 
+## manager_goal_plans
+
+Created by `supabase/migrations/002_create_manager_goal_plans.sql`.
+
+Fields:
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | uuid | primary key |
+| `user_id` | uuid nullable | future auth link |
+| `anonymous_session_id` | text nullable | MVP anonymous session |
+| `goal` | text | profile goal at plan creation time |
+| `category` | text | `study`, `exercise`, `hobby`, `career`, `habit` |
+| `status` | text | default `active` |
+| `source` | text | `llm` or `rule_fallback` |
+| `fallback_reason` | text nullable | fallback reason when applicable |
+| `prompt_version` | text | e.g. `manager-api-v1` |
+| `plan_version` | integer | default `1` |
+| `plan_json` | jsonb | bounded `goalPlan` contract output |
+| `created_at` | timestamptz | server insert time |
+| `updated_at` | timestamptz | future update marker |
+
+Indexes:
+
+- `created_at desc`
+- `(user_id, created_at desc)`
+- `(anonymous_session_id, created_at desc)`
+
+## manager_plan_revisions
+
+Created by `supabase/migrations/002_create_manager_goal_plans.sql`; existing databases that already applied `002` receive `next_quest_json` through `supabase/migrations/003_add_manager_plan_revision_next_quest.sql`.
+
+Fields:
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | uuid | primary key |
+| `plan_id` | uuid nullable | references `manager_goal_plans(id)` |
+| `trigger_event_id` | uuid nullable | references `quest_logs(id)` |
+| `goal` | text | goal at rebalance time |
+| `source` | text | `llm` or `rule_fallback` |
+| `fallback_reason` | text nullable | fallback reason when applicable |
+| `prompt_version` | text | e.g. `manager-api-v1` |
+| `revision_reason` | text | first change reason |
+| `changes_json` | jsonb | bounded `planRebalance.changes` |
+| `after_plan_json` | jsonb | bounded `planRebalance.rebalancedPlan` |
+| `next_quest_json` | jsonb | bounded `planRebalance.nextQuest` shown to the user after rebalancing |
+| `created_at` | timestamptz | server insert time |
+
+Indexes:
+
+- `(plan_id, created_at desc)`
+- `trigger_event_id`
+
 ## Normalization Plan For Remaining Features
 
 `quest_logs`는 현재 수직 슬라이스의 중심 이벤트 테이블이다. 남은 기능을 모두 고려하면 `metadata`는 임시 확장 영역으로만 사용하고, 반복 조회, 권한 제어, 사용자 설정, 보상 인벤토리처럼 독립 수명이 있는 데이터는 단계적으로 별도 테이블로 승격한다.
 
 | Phase | Table or view | Why | Candidate columns | Related tasks |
 |---|---|---|---|---|
-| 1 | `user_profiles` | 프로필, 목표, 선호 퀘스트 크기, 매니저 톤을 저장 | `id`, `nickname`, `primary_goal`, `category`, `minimum_minutes`, `quest_size`, `manager_tone`, `created_at`, `updated_at` | T-709, T-711 |
+| 1 | `user_profiles` | 프로필, 목표, 선호 진행 강도, 매니저 톤을 저장 | `id`, `nickname`, `primary_goal`, `category`, `minimum_minutes`, `quest_size`, `manager_tone`, `created_at`, `updated_at` | T-709, T-711 |
 | 1 | `manager_personas` | LLM 매니저가 사용할 제한된 Persona와 rule fallback을 저장 | `id`, `profile_id`, `pet_id`, `behavior_style`, `tone`, `voice_id`, `prompt_guardrails`, `created_at`, `updated_at` | T-709, T-711, T-713 |
 | 2 | `user_stats` | Quest Event metadata에서 능력치 증가를 반복 조회 가능한 값으로 승격 | `id`, `profile_id`, `stat_key`, `value`, `updated_at` | T-712 |
 | 2 | `reward_inventory` | 보상, 테마, sound, accessory 해금 상태를 관리 | `id`, `profile_id`, `reward_id`, `reward_type`, `source_event_id`, `unlocked_at`, `equipped_at` | T-703, T-707 |

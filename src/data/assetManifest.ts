@@ -17,7 +17,8 @@ export type PetMotionState =
   | "run"
   | "jump"
   | "walk"
-  | "climbing";
+  | "climbing"
+  | "watching";
 export type PetAnimationState = PetMotionState | "hover";
 export type LumiMood = "waiting" | "focused" | "happy" | "recovering";
 export type PetId =
@@ -75,6 +76,7 @@ export type DesktopIconId =
   | "trash"
   | "rewards"
   | "theme-settings"
+  | "pet-swap"
   | "pixel-tv";
 
 export interface DesktopIconAsset {
@@ -177,7 +179,7 @@ export interface FutureAssetSlot {
 }
 
 const planariaStage1Path = "/assets/lumi/planaria-stage-1";
-const pinkManagerStage1CandidatePath = "/assets/lumi/pink-manager-stage-1-production-candidates";
+const pinkManagerStage1Path = "/assets/lumi/pink-manager-stage-1";
 const planariaFloatAnchor: SpriteAnchor = { type: "float", x: 32, y: 60 };
 const stage2PetFloatAnchor: SpriteAnchor = { type: "float", x: 32, y: 58 };
 const stage2PetHangingAnchor: SpriteAnchor = { type: "top-grip", x: 32, y: 5 };
@@ -186,7 +188,7 @@ export const defaultLumiPetId = "pink-manager" as const satisfies PetId;
 export const fallbackLumiStage = "stage-2" as const satisfies PetStageId;
 export const petStageUnlockLevels: Record<PetStageId, number> = {
   "stage-1": 1,
-  "stage-2": 3,
+  "stage-2": 2,
   "stage-3": 6,
   "stage-4": 10,
 };
@@ -278,11 +280,45 @@ const canonicalStage2PetIds = [
   "glass-frog",
 ] as const;
 
+const promotedStage2CandidatePetIds = [
+  "costasiella-kuroshimae",
+  "fried-egg-jellyfish",
+  "sea-bunny-slug",
+] as const;
+
 const stage2PetAnimation = (petId: (typeof canonicalStage2PetIds)[number], spec: PetMotionSpec): SpriteAnimationAsset => ({
   id: `${petId}-stage-2-${spec.state}`,
   petId,
   stage: "stage-2",
   src: `/assets/lumi/${petId}-stage-2/${petId}-stage-2-${spec.state}-sheet.png`,
+  sheetWidth: spec.frameCount * 64,
+  sheetHeight: 64,
+  frameWidth: 64,
+  frameHeight: 64,
+  frameCount: spec.frameCount,
+  fps: spec.fps,
+  loop: spec.loop,
+  states: [spec.state],
+  reducedMotionFrame: 0,
+  playbackFrames: spec.playbackFrames ? [...spec.playbackFrames] : undefined,
+  anchor: spec.anchor,
+});
+
+const stage2PromotedCandidateVersion = (petId: (typeof promotedStage2CandidatePetIds)[number], state: PetMotionState) => {
+  if ((petId === "costasiella-kuroshimae" || petId === "sea-bunny-slug") && (state === "hanging" || state === "climbing")) {
+    return "v2";
+  }
+  return "v1";
+};
+
+const promotedStage2CandidateAnimation = (
+  petId: (typeof promotedStage2CandidatePetIds)[number],
+  spec: PetMotionSpec,
+): SpriteAnimationAsset => ({
+  id: `${petId}-stage-2-${spec.state}`,
+  petId,
+  stage: "stage-2",
+  src: `/assets/lumi/${petId}-stage-2-production-candidates/${petId}-stage-2-${spec.state}-sheet-${stage2PromotedCandidateVersion(petId, spec.state)}.png`,
   sheetWidth: spec.frameCount * 64,
   sheetHeight: 64,
   frameWidth: 64,
@@ -309,11 +345,24 @@ const stage2PetCatalog = Object.fromEntries(
   };
 };
 
+const promotedStage2CandidateCatalog = Object.fromEntries(
+  promotedStage2CandidatePetIds.map((petId) => [
+    petId,
+    {
+      "stage-2": Object.fromEntries(stage2PetMotionSpecs.map((spec) => [spec.state, promotedStage2CandidateAnimation(petId, spec)])),
+    },
+  ]),
+) as {
+  [K in (typeof promotedStage2CandidatePetIds)[number]]: {
+    "stage-2": Record<PetMotionState, SpriteAnimationAsset>;
+  };
+};
+
 const pinkManagerStage1IdleAnimation: SpriteAnimationAsset = {
   id: "pink-manager-stage-1-idle",
   petId: "pink-manager",
   stage: "stage-1",
-  src: `${pinkManagerStage1CandidatePath}/pink-manager-stage-1-idle-sheet-v1.png`,
+  src: `${pinkManagerStage1Path}/pink-manager-stage-1-idle-sheet.png`,
   sheetWidth: 256,
   sheetHeight: 64,
   frameWidth: 64,
@@ -322,6 +371,23 @@ const pinkManagerStage1IdleAnimation: SpriteAnimationAsset = {
   fps: 4,
   loop: true,
   states: ["idle"],
+  reducedMotionFrame: 0,
+  anchor: stage2PetFloatAnchor,
+};
+
+const pinkManagerStage2WatchingAnimation: SpriteAnimationAsset = {
+  id: "pink-manager-stage-2-watching",
+  petId: "pink-manager",
+  stage: "stage-2",
+  src: "/assets/lumi/pink-manager-stage-2-production-candidates/pink-manager-stage-2-watching-sheet-v1.png",
+  sheetWidth: 256,
+  sheetHeight: 64,
+  frameWidth: 64,
+  frameHeight: 64,
+  frameCount: 4,
+  fps: 5,
+  loop: true,
+  states: ["watching"],
   reducedMotionFrame: 0,
   anchor: stage2PetFloatAnchor,
 };
@@ -342,9 +408,15 @@ export const petAnimationCatalog: PetAnimationCatalog = {
     "stage-1": {
       idle: pinkManagerStage1IdleAnimation,
     },
-    ...stage2PetCatalog["pink-manager"],
+    "stage-2": {
+      ...stage2PetCatalog["pink-manager"]["stage-2"],
+      watching: pinkManagerStage2WatchingAnimation,
+    },
   },
   "glass-frog": stage2PetCatalog["glass-frog"],
+  "costasiella-kuroshimae": promotedStage2CandidateCatalog["costasiella-kuroshimae"],
+  "fried-egg-jellyfish": promotedStage2CandidateCatalog["fried-egg-jellyfish"],
+  "sea-bunny-slug": promotedStage2CandidateCatalog["sea-bunny-slug"],
 };
 
 function getAvailablePetStage(petId: PetId, stage: PetStageId): PetStageId {
@@ -551,6 +623,10 @@ export const lumiMoodToSpriteState: Record<LumiMood, LumiSpriteState> = {
   recovering: "recovering",
 };
 
+export function resolveDesktopPetSpriteState(_mood: LumiMood, hovered: boolean): LumiSpriteState {
+  return hovered ? "happy" : "idle";
+}
+
 const twoStateIcon = (id: DesktopIconId): DesktopIconAsset => ({
   id,
   idleSrc: `/assets/icons/${id}-idle-pixel-v2.png`,
@@ -569,6 +645,13 @@ export const desktopIconAssets: Record<DesktopIconId, DesktopIconAsset> = {
   trash: twoStateIcon("trash"),
   rewards: twoStateIcon("rewards"),
   "theme-settings": twoStateIcon("theme-settings"),
+  "pet-swap": {
+    id: "pet-swap",
+    idleSrc: "/assets/icons/pet_swap_icon_64px.png",
+    hoverSrc: "/assets/icons/pet_swap_icon_64px.png",
+    activeSrc: "/assets/icons/pet_swap_icon_64px.png",
+    disabledSrc: "/assets/icons/pet_swap_icon_64px.png",
+  },
   "pixel-tv": twoStateIcon("pixel-tv"),
 };
 
@@ -638,17 +721,11 @@ export const interactionObjectAssets: InteractionObjectAsset[] = [
     },
   },
   {
-    id: "platform-object-tiles-v1",
+    id: "platform-object-base-v1",
     type: "platform",
-    src: "/assets/interaction-objects/platform/platform-tiles.png",
+    src: "/assets/interaction-objects/platform/base.png",
     resizeAxis: "horizontal",
     anchorPoints: ["left", "right", "center"],
-    tileMode: "horizontal-3part",
-    tiles: {
-      left: "/assets/interaction-objects/platform/platform-left.png",
-      centerRepeat: "/assets/interaction-objects/platform/platform-center-repeat.png",
-      right: "/assets/interaction-objects/platform/platform-right.png",
-    },
     metrics: {
       tileWidth: 32,
       tileHeight: 24,
@@ -727,6 +804,16 @@ export function getPetAnimationAsset(petId: PetId, stage: PetStageId, state: Pet
 export function hasPetAnimationAsset(petId: PetId, stage: PetStageId, state: PetAnimationState): boolean {
   const petCatalog = petAnimationCatalog[petId] as Partial<Record<PetStageId, Partial<Record<PetAnimationState, SpriteAnimationAsset>>>> | undefined;
   return Boolean(petCatalog?.[stage]?.[state]);
+}
+
+export function resolvePixelTvWatchingAnimationAsset(petId: PetId, stage: PetStageId, elapsedMs = 0) {
+  const slot = Math.floor(Math.max(0, elapsedMs) / 10_000) % 2;
+  const state = slot === 0 ? "focused" : "happy";
+
+  return {
+    animation: getLumiAnimationAsset(state, petId, stage),
+    hasWatchingReaction: true,
+  };
 }
 
 export function resolveSupportedPetAnimationState(petId: PetId, stage: PetStageId, state: PetAnimationState): PetAnimationState {

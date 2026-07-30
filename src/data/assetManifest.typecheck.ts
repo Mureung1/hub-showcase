@@ -42,12 +42,18 @@ type _PixelTvIconExists = Assert<"pixel-tv" extends keyof typeof desktopIconAsse
 type _PlanariaPetExists = Assert<"planaria" extends keyof typeof petAnimationCatalog ? true : false>;
 type _PinkManagerPetExists = Assert<"pink-manager" extends keyof typeof petAnimationCatalog ? true : false>;
 type _GlassFrogPetExists = Assert<"glass-frog" extends keyof typeof petAnimationCatalog ? true : false>;
+type _CostasiellaPetExists = Assert<"costasiella-kuroshimae" extends keyof typeof petAnimationCatalog ? true : false>;
+type _FriedEggJellyfishPetExists = Assert<"fried-egg-jellyfish" extends keyof typeof petAnimationCatalog ? true : false>;
+type _SeaBunnySlugPetExists = Assert<"sea-bunny-slug" extends keyof typeof petAnimationCatalog ? true : false>;
 
 const activePetId = "pink-manager" as const satisfies PetId;
 const activeStageId = "stage-2" as const satisfies PetStageId;
 const stage2PetIds = [
   "pink-manager",
   "glass-frog",
+  "costasiella-kuroshimae",
+  "fried-egg-jellyfish",
+  "sea-bunny-slug",
 ] as const satisfies readonly PetId[];
 const stage2MotionStates = [
   "idle",
@@ -81,7 +87,7 @@ for (const state of ["idle", "focused", "happy", "recovering", "resting", "hover
   }
 }
 
-if (resolvePetStageFromLevel(3) !== "stage-2" || !getUnlockedPetStages(6).includes("stage-3")) {
+if (resolvePetStageFromLevel(2) !== "stage-2" || !getUnlockedPetStages(6).includes("stage-3")) {
   throw new Error("Pet stage unlock rules must follow level thresholds");
 }
 
