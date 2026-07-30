@@ -58,7 +58,13 @@ flowchart LR
 
 - **플래너**(설계): 렌더링 형식이 아니라 "학생이 무엇을 어려워하는가"에서 출발해 계획을 생성합니다. 화학적 함정 체크리스트·데이터 소스 확인·확신도가 계획에 포함되고, "만들지 말자"도 정당한 결론입니다.
 - **리뷰어**(사후 검증): 계획자·구현자와 **다른 눈**으로 완성된 화면을 독립 검증합니다 — "에러 없이 렌더됨"과 "학생이 오해 없이 이해함"은 별개이기 때문입니다.
-- 현재 화학과는 `chemistry-planner` · `chemistry-reviewer` 한 쌍이 가동 중이고(`.claude/agents/`), 학과가 늘어나면 같은 템플릿으로 쌍을 추가합니다. 상세 규칙은 [CLAUDE.md](./CLAUDE.md) 참고.
+- 현재 화학과(`chemistry-planner`·`chemistry-reviewer`)와 컴퓨터공학과(`cs-planner`·`cs-reviewer`) 두 쌍이 가동 중이고(`.claude/agents/`), 학과가 늘어나면 같은 템플릿으로 쌍을 추가합니다. 상세 규칙은 [CLAUDE.md](./CLAUDE.md) 참고.
+
+## 배포
+
+- **프론트엔드**: [Vercel](https://hub-tau-seven.vercel.app)
+- **백엔드(Gemini 프록시)**: Render
+- 프론트/백엔드를 분리 배포하고, 하드코딩 대신 환경변수(`VITE_API_BASE_URL`, `FRONTEND_ORIGIN`)로 서로의 주소를 주고받습니다. 필요한 환경변수 목록은 [.env.example](./.env.example) 참고.
 
 ## 실행 방법
 
