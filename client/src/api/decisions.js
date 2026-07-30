@@ -26,3 +26,10 @@ export async function updateDecisionMemo(id, memo) {
     body: JSON.stringify({ memo }),
   })
 }
+
+export async function deleteDecisions(ids) {
+  return apiRequest("/api/decisions", {
+    method: "DELETE",
+    body: JSON.stringify({ ids }),
+  })
+}

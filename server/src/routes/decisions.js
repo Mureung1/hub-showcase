@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { readDecisions, appendDecision, updateDecisionMemo } from "../services/decisionStore.js"
+import { readDecisions, appendDecision, updateDecisionMemo, deleteDecisions } from "../services/decisionStore.js"
 import { requireAuth } from "../middleware/auth.js"
 
 const router = Router()
@@ -50,6 +50,20 @@ router.patch("/:id", requireAuth, async (req, res) => {
       return
     }
     res.json({ success: true, data: updated })
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message })
+  }
+})
+
+// DELETE /api/decisions — 인사이트 노트 카드 삭제
+router.delete("/", requireAuth, async (req, res) => {
+  try {
+    const { ids } = req.body
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new Error("ids must be a non-empty array")
+    }
+    const deleted = await deleteDecisions(req.userId, ids)
+    res.json({ success: true, data: { deletedIds: deleted.map((row) => row.id) } })
   } catch (err) {
     res.status(500).json({ success: false, error: err.message })
   }

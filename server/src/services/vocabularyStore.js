@@ -8,13 +8,14 @@ export async function readVocabulary(userId) {
   const supabase = getSupabase()
   const { data, error } = await supabase
     .from("vocabulary")
-    .select("term, definition, excerpt, excerpt_translation, added_at, articles(title, url)")
+    .select("id, term, definition, excerpt, excerpt_translation, added_at, articles(title, url)")
     .eq("user_id", userId)
     .order("added_at", { ascending: false })
 
   if (error) throw new Error(error.message)
 
   return data.map((row) => ({
+    id: row.id,
     term: row.term,
     definition: row.definition,
     excerpt: row.excerpt ?? null,
@@ -73,4 +74,21 @@ export async function appendVocabulary(
     articleUrl,
     addedAt: saved.added_at,
   }
+}
+
+// 개별/날짜 그룹 삭제 모두 이 함수 하나로 처리한다(호출부가 ids 배열
+// 길이만 다르게 넘김). 서버는 SUPABASE_SERVICE_ROLE_KEY로 접속해 RLS를
+// 우회하므로, .eq("user_id", userId)가 소유권 검증의 유일한 방어선이다
+// (decisionStore.js의 updateDecisionMemo와 동일한 이유 — 없으면 IDOR).
+export async function deleteVocabularyTerms(userId, ids) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from("vocabulary")
+    .delete()
+    .in("id", ids)
+    .eq("user_id", userId)
+    .select("id")
+
+  if (error) throw new Error(error.message)
+  return data
 }

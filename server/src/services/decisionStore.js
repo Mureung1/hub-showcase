@@ -80,3 +80,19 @@ export async function updateDecisionMemo(userId, id, memo) {
   if (error) throw new Error(error.message)
   return data
 }
+
+// 인사이트 노트 카드 삭제. vocabularyStore.js의 deleteVocabularyTerms와 동일한
+// 이유로 .eq("user_id", userId)가 소유권 검증의 유일한 방어선이다(서버는
+// SUPABASE_SERVICE_ROLE_KEY로 접속해 RLS를 우회하므로 빠뜨리면 IDOR).
+export async function deleteDecisions(userId, ids) {
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from("decisions")
+    .delete()
+    .in("id", ids)
+    .eq("user_id", userId)
+    .select("id")
+
+  if (error) throw new Error(error.message)
+  return data
+}

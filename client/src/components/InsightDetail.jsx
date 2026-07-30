@@ -42,11 +42,13 @@ export default function InsightDetail({ item, onMemoSaved }) {
       </header>
 
       <div className="insight-context">
+        <p className="insight-context-label">AI 3줄 요약</p>
         <ul className="insight-summary-list">
           {item.summaryBullets.map((bullet) => (
             <li key={bullet}>{bullet}</li>
           ))}
         </ul>
+        <p className="insight-context-label">AI 인사이트</p>
         <p className="insight-highlight">{item.insight}</p>
       </div>
 

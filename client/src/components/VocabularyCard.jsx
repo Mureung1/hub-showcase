@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-export default function VocabularyCard({ item }) {
+export default function VocabularyCard({ item, onDelete }) {
   const [flipped, setFlipped] = useState(false)
 
   function toggleFlip() {
@@ -14,6 +14,11 @@ export default function VocabularyCard({ item }) {
     }
   }
 
+  function handleDeleteClick(e) {
+    e.stopPropagation()
+    onDelete?.()
+  }
+
   return (
     <div
       className={`vocabulary-card${flipped ? " flipped" : ""}`}
@@ -25,6 +30,9 @@ export default function VocabularyCard({ item }) {
     >
       <div className="vocabulary-card-inner">
         <div className="vocabulary-card-face vocabulary-card-front">
+          <button type="button" className="vocabulary-card-delete" onClick={handleDeleteClick}>
+            삭제
+          </button>
           <h2 className="vocabulary-term">{item.term}</h2>
           <p className="vocabulary-definition">{item.definition}</p>
         </div>

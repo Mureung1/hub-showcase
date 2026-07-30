@@ -67,3 +67,56 @@ API, 응답, 코드 위치)는 남기지 않으므로, 재현 가능한 점검 �
 2. 잘못된 URL 입력 시 fallback 대신(혹은 fallback과 함께) 사용자에게 알림
 3. `Reader.jsx`가 기사 선택 시 `setSearchParams`로 URL 동기화
 4. `docs/backlog.md` "배포" Task 상태를 Todo → Done으로 갱신
+
+## 2026-07-30 2차 점검 — 재배포 필요 확인
+
+- **대상**: FE `https://articles-client-nine.vercel.app` (Vercel), BE
+  `https://articles-server-lc3l.onrender.com` (Render)
+- **배경**: 로컬 `work` 브랜치에 인사이트 노트 카드 삭제(`d4a2ac8`), 단어장
+  삭제(`2b84deb`), 기사 분석 캐싱(`f00b931`), 인사이트 노트 상세 AI 3줄
+  요약/인사이트 레이블(`cd68be2`) 등 최근 커밋을 반영해 재배포하기 전 사전
+  점검.
+- **소스 상태**: 로컬 `work`는 `origin/work`와 완전히 동기화(`cd68be2`,
+  working tree clean) — push는 이미 끝난 상태. 저장소에 `vercel.json`/
+  `render.yaml` 등 IaC 배포 설정이 없어 두 플랫폼 모두 대시보드 기반
+  배포이고, 로컬에 `vercel`/`render` CLI나 `.vercel` 연결도 없음 — 배포
+  트리거 자체는 대시보드에서 수동 확인/실행 필요.
+
+### 1. BE 생존 확인
+- `GET /api/health` → `{"success":true,"data":{"status":"ok"}}` (200).
+- `GET /api/dashboard` → 200, CNBC 기사 3건 정상 반환(기사 날짜
+  2026-07-29 — RSS 큐레이션 파이프라인이 최근에도 정상 동작 중임을 시사).
+- 기사 분석 캐싱(`f00b931`)이 실제 배포된 BE에 반영됐는지는 실제 Claude
+  호출 비용 때문에 이번엔 API로 직접 검증하지 않음 — Render 대시보드
+  "Events"에서 배포된 커밋 해시가 `cd68be2`(또는 그 이후)인지로 대신
+  확인할 것.
+
+### 2. FE 배포 최신성 — **stale 확인됨, 재배포 필요**
+- FE 루트(`/`) 200, 번들 `/assets/index-CXduaqo8.js`에
+  `articles-server-lc3l.onrender.com`이 박혀 있고 `localhost:4000`은 없음 —
+  올바른 백엔드를 가리키는 점은 정상.
+- **다만 아래 최근 3개 커밋에서 새로 추가된 한국어 문자열이 배포된 번들에
+  전혀 없음(각 0건) — 즉 현재 라이브 FE는 이 커밋들 이전 빌드로, 재배포가
+  실제로 필요한 상태:**
+  - `2b84deb`(단어장 삭제): `"...에 저장된 단어 N개를 모두
+    삭제하시겠습니까?"`, `"이 단어를 삭제하시겠습니까?"`
+    (`Vocabulary.jsx`) — 번들에 0건
+  - `d4a2ac8`(인사이트 노트 카드 삭제): `"이 노트를 삭제하시겠습니까?"`
+    (`InsightNote.jsx`) — 번들에 0건
+  - `cd68be2`(AI 3줄 요약/인사이트 레이블): `"AI 3줄 요약"`
+    (`InsightDetail.jsx`) — 번들에 0건 (단, 더 오래된
+    `BottomSheet.jsx`의 `"AI 인사이트"` aria-label은 존재 — 이건 최근
+    커밋과 무관한 기존 문자열이라 최신성 근거가 되지 못함)
+
+### 결론 / 다음 액션
+- BE는 생존·핵심 API 정상, 최신 커밋 반영 여부는 Render 대시보드에서
+  배포된 커밋 해시로 재확인 필요.
+- **FE는 명확히 재배포가 필요.** Vercel 대시보드 → Deployments에서
+  `cd68be2` 커밋이 최신 배포로 올라가 있는지 확인하고, 없다면 수동
+  Redeploy(또는 자동 배포 훅 자체가 걸려 있는지) 확인할 것. 재배포 후
+  환경변수(`VITE_API_BASE_URL`/Supabase 2종)도 값이 비어있지 않은지 함께
+  점검.
+- 재배포 완료 후에는 위 3개 문자열이 번들에 나타나는지로 재확인 가능하고,
+  브라우저로 실제 삭제 동작(단어장 개별/날짜 카드, 인사이트 노트 카드)과
+  캐싱 동작(같은 URL 재분석 시 단어장 중복 미적재)을 직접 클릭해 확인해야
+  함(API 호출만으로는 렌더링/클릭 동작까지 검증 불가).

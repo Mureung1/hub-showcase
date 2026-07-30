@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react"
 import { Link, NavLink } from "react-router-dom"
-import { getVocabulary } from "../api/vocabulary.js"
-import { getDecisions } from "../api/decisions.js"
 import { useAuth } from "../context/AuthContext.jsx"
+import { useVocabularyCount } from "../context/VocabularyContext.jsx"
+import { useDecisionCount } from "../context/DecisionContext.jsx"
 
 function PlusIcon() {
   return (
@@ -52,24 +51,8 @@ function InsightIcon() {
 
 export default function Sidebar() {
   const { user, signOut } = useAuth()
-  const [vocabularyCount, setVocabularyCount] = useState(0)
-  const [decisionCount, setDecisionCount] = useState(0)
-
-  useEffect(() => {
-    // 단어장/판단 히스토리 모두 로그인 사용자별 데이터라 비로그인 상태에서는
-    // 401만 돌아온다 — 뱃지 카운트는 로그인 상태일 때만 조회한다.
-    if (user) {
-      getVocabulary()
-        .then((vocabulary) => setVocabularyCount(vocabulary.length))
-        .catch(() => {})
-      getDecisions()
-        .then((decisions) => setDecisionCount(decisions.length))
-        .catch(() => {})
-    } else {
-      setVocabularyCount(0)
-      setDecisionCount(0)
-    }
-  }, [user])
+  const { vocabularyCount } = useVocabularyCount()
+  const { decisionCount } = useDecisionCount()
 
   return (
     <nav className="sidebar" aria-label="글로벌 내비게이션">
