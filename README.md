@@ -52,6 +52,25 @@
 
 ---
 
+## 🖼 Screenshots
+
+**Live Demo:** [https://hub-tan-pi.vercel.app/](https://hub-tan-pi.vercel.app/) · **Demo Video:** [시연 영상 보기](https://photos.icloud.com/shared/album/06fPpKuI6vX9GBLu8DrCRgNHA)
+
+비대면 셀프 케어 → AI 식단 → 로컬 헬스장 매칭 → O2O 상담까지의 사용자 여정입니다.
+
+| | |
+|:---:|:---:|
+| **랜딩** — PT 없이도 체계적으로 시작 | **회원 홈** — 루틴 · 식단 · 근처 매칭 |
+| ![랜딩](./showcase/screenshots/landing.webp) | ![회원 홈](./showcase/screenshots/home.webp) |
+| **맞춤 PT 강좌** — 부위·목적별 VOD | **강좌 상세** — 영상 · 자극 포인트 · 세트 가이드 |
+| ![맞춤 PT 강좌](./showcase/screenshots/courses.webp) | ![강좌 상세](./showcase/screenshots/course-detail.webp) |
+| **식단 기록** — Gemini Vision AI 분석·피드백 | **지도** — Naver Map · GPS 기반 헬스장 매칭 |
+| ![식단 기록](./showcase/screenshots/meals.webp) | ![지도](./showcase/screenshots/map.webp) |
+| **헬스장 상세** — 매칭 점수 · 운영 정보 | **상담 신청** — O2O 연계 · PII 암호화 폼 |
+| ![헬스장 상세](./showcase/screenshots/gym-detail.webp) | ![상담 신청](./showcase/screenshots/consultation.webp) |
+
+---
+
 ## 🛠 Tech Stack
 
 | 영역 | 기술 |
@@ -95,6 +114,7 @@
 ```
 hub/
 ├── README.md                 ← 이 파일 (프로젝트 소개)
+├── showcase/                 ← 쇼케이스 메타·스크린샷
 └── fitcheck-project/
     ├── README.md             ← 개발 가이드 (시작하기)
     ├── backend/README.md     ← API · env · 암호화
