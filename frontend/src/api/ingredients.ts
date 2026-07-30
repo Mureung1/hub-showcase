@@ -10,8 +10,10 @@ export interface RecommendedIngredient {
   matchCount: number;
 }
 
-export async function getRecommendedIngredients(symptomIds: number[]): Promise<RecommendedIngredient[]> {
-  const res = await fetch(`${API_BASE_URL}/ingredients/recommend?symptomIds=${symptomIds.join(',')}`);
+export async function getRecommendedIngredients(symptomIds: number[], token: string): Promise<RecommendedIngredient[]> {
+  const res = await fetch(`${API_BASE_URL}/ingredients/recommend?symptomIds=${symptomIds.join(',')}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   const data = await res.json();
   if (!res.ok) {
     throw new ApiError(data.error ?? '추천 성분을 불러오지 못했습니다.', res.status);

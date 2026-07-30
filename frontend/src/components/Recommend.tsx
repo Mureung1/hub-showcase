@@ -6,12 +6,19 @@ import { ApiError } from '../api/ApiError';
 
 interface RecommendProps {
   ingredientIds: number[];
+  exceededIngredientNames: string[];
   token: string;
   onSelect: (product: Product) => void;
   onAuthError: () => void;
 }
 
-export function Recommend({ ingredientIds, token, onSelect, onAuthError }: RecommendProps) {
+export function Recommend({
+  ingredientIds,
+  exceededIngredientNames,
+  token,
+  onSelect,
+  onAuthError,
+}: RecommendProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +42,14 @@ export function Recommend({ ingredientIds, token, onSelect, onAuthError }: Recom
       .finally(() => setLoading(false));
   }, [ingredientIds, token, onAuthError]);
 
+  // 중복 체크에서 이미 상한을 초과한 성분은 추천하되, 경고를 붙이고 목록 아래로 내린다.
+  const exceededNames = new Set(exceededIngredientNames);
+  const isAlreadyExceeded = (product: Product) =>
+    product.matchedIngredientNames.some((name) => exceededNames.has(name));
+  const sortedProducts = [...products].sort(
+    (a, b) => Number(isAlreadyExceeded(a)) - Number(isAlreadyExceeded(b))
+  );
+
   return (
     <>
       <h1 className="heading" style={{ fontSize: 22 }}>
@@ -55,8 +70,9 @@ export function Recommend({ ingredientIds, token, onSelect, onAuthError }: Recom
         <p className="sub">추천 성분과 일치하는 제품이 없어요.</p>
       )}
 
-      {products.map((product, index) => {
+      {sortedProducts.map((product, index) => {
         const color = getChipColor(index);
+        const alreadyExceeded = isAlreadyExceeded(product);
         return (
           <button
             className="card product-card"
@@ -87,6 +103,11 @@ export function Recommend({ ingredientIds, token, onSelect, onAuthError }: Recom
                     {name}
                   </span>
                 ))}
+                {alreadyExceeded && (
+                  <span className="tag" style={{ color: 'var(--color-accent-pink)' }}>
+                    이미 초과 섭취 중
+                  </span>
+                )}
                 {product.exceedsPersonalLimit && (
                   <span className="tag" style={{ color: 'var(--color-accent-pink)' }}>
                     상한 섭취량 주의

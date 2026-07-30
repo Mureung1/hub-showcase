@@ -26,6 +26,7 @@ interface StoredFlow {
   symptoms: string[];
   recommendedIngredientIds: number[];
   supplements: string[];
+  exceededIngredientNames: string[];
   selectedProduct: Product | null;
 }
 
@@ -34,6 +35,7 @@ const INITIAL_FLOW: StoredFlow = {
   symptoms: [],
   recommendedIngredientIds: [],
   supplements: [],
+  exceededIngredientNames: [],
   selectedProduct: null,
 };
 
@@ -67,14 +69,24 @@ function App() {
     () => loadStoredFlow().recommendedIngredientIds
   );
   const [supplements, setSupplements] = useState<string[]>(() => loadStoredFlow().supplements);
+  const [exceededIngredientNames, setExceededIngredientNames] = useState<string[]>(
+    () => loadStoredFlow().exceededIngredientNames
+  );
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(
     () => loadStoredFlow().selectedProduct
   );
 
   useEffect(() => {
-    const flow: StoredFlow = { screen, symptoms, recommendedIngredientIds, supplements, selectedProduct };
+    const flow: StoredFlow = {
+      screen,
+      symptoms,
+      recommendedIngredientIds,
+      supplements,
+      exceededIngredientNames,
+      selectedProduct,
+    };
     sessionStorage.setItem(FLOW_STORAGE_KEY, JSON.stringify(flow));
-  }, [screen, symptoms, recommendedIngredientIds, supplements, selectedProduct]);
+  }, [screen, symptoms, recommendedIngredientIds, supplements, exceededIngredientNames, selectedProduct]);
 
   function handleLoggedIn(result: LoginResponse) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(result));
@@ -102,6 +114,7 @@ function App() {
     setSymptoms([]);
     setRecommendedIngredientIds([]);
     setSupplements([]);
+    setExceededIngredientNames([]);
     setSelectedProduct(null);
   }
 
@@ -132,6 +145,11 @@ function App() {
     }
   }
 
+  function handleOverlapNext(exceededNames: string[]) {
+    setExceededIngredientNames(exceededNames);
+    setScreen('recommend');
+  }
+
   function handleSelectProduct(product: Product) {
     setSelectedProduct(product);
     setScreen('detail');
@@ -148,6 +166,7 @@ function App() {
     setSymptoms([]);
     setRecommendedIngredientIds([]);
     setSupplements([]);
+    setExceededIngredientNames([]);
     setSelectedProduct(null);
   }
 
@@ -176,19 +195,25 @@ function App() {
               <>
                 {screen === 'home' && <Home onStart={handleStart} />}
                 {screen === 'analysis' && (
-                  <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
+                  <Analysis
+                    symptoms={symptoms}
+                    token={auth.token}
+                    onNext={handleAnalysisNext}
+                    onAuthError={handleAuthError}
+                  />
                 )}
                 {screen === 'overlap' && (
                   <Overlap
                     supplements={supplements}
                     token={auth.token}
-                    onNext={() => setScreen('recommend')}
+                    onNext={handleOverlapNext}
                     onAuthError={handleAuthError}
                   />
                 )}
                 {screen === 'recommend' && (
                   <Recommend
                     ingredientIds={recommendedIngredientIds}
+                    exceededIngredientNames={exceededIngredientNames}
                     token={auth.token}
                     onSelect={handleSelectProduct}
                     onAuthError={handleAuthError}

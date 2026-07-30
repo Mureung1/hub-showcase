@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "title": "Green Connect",
+  "title": "Green-connect",
   "summary": "증상과 생활 패턴을 분석해 필요한 성분을 추천하고, 이미 먹고 있는 영양제와의 성분 중복을 체크한 뒤 기업 규모와 무관하게 성분·품질 기준으로만 믿을 수 있는 건강기능식품을 연결해주는 개인 맞춤형 추천 서비스",
   "githubUser": "tyoonii(김태윤)",
   "demoUrl": "https://greenconnect-psi.vercel.app",
   "demoVideoUrl": "https://drive.google.com/file/d/1EwxvStdtyWCq4GL9IP5jhbRt5gd5OZO3/view?usp=sharing",
-  "thumbnail": "hub/성분분석.png",
+  "thumbnail": "showcase/screenshots/Green-connect.png",
   "screenshots": [
-    "hub/홈(증상 체크).png",
-    "hub/성분분석.png",
-    "hub/제품추천.png"
+    "showcase/screenshots/홈(증상 체크).png",
+    "showcase/screenshots/성분분석.png",
+    "showcase/screenshots/제품추천.png"
   ],
-  "problem": "건강기능식품 시장은 브랜드 인지도와 광고비가 큰 대기업 제품이 우선적으로 노출되고, 실제로 내 몸에 필요한 성분인지, 이미 먹고 있는 다른 제품과 성분이 겹쳐 과다 섭취 위험은 없는지는 소비자가 스스로 판단하기 어렵다. Green Connect는 기업 규모와 무관하게 성분·품질 기준만으로 제품을 추천해 이 정보 비대칭을 해소한다.",
+  "problem": "건강기능식품 시장은 브랜드 인지도와 광고비가 큰 대기업 제품이 우선적으로 노출되고, 실제로 내 몸에 필요한 성분인지, 이미 먹고 있는 다른 제품과 성분이 겹쳐 과다 섭취 위험은 없는지는 소비자가 스스로 판단하기 어렵다. Green-connect는 기업 규모와 무관하게 성분·품질 기준만으로 제품을 추천해 이 정보 비대칭을 해소한다.",
   "targetUsers": [
     "여러 영양제를 동시에 복용 중이라 성분 중복이 걱정되는 사람",
     "내 몸 상태에 맞는 성분을 스스로 판단하기 어려운 건강기능식품 초심자",
@@ -21,7 +21,7 @@
     "증상·생활 패턴 체크리스트 기반 필요 성분 추천",
     "복용 중인 영양제 입력 시 성분 중복 및 상한 섭취량 초과 여부 경고",
     "기업 규모와 무관하게 성분·품질 기준으로만 매칭된 제품 추천 카드",
-    "제품 상세 화면에서 HACCP 등 인증 정보 확인 후 스마트스토어로 바로 이동",
+    "제품 상세 화면에서 정보 확인 후 스마트스토어로 바로 이동",
     "로그인 후 성별·나이·키·몸무게 기반 개인화된 권장/상한 섭취량 적용"
   ],
   "featureTags": [
@@ -39,15 +39,15 @@
   "techHighlights": [
     "2025 KDRIs(한국인 영양소 섭취기준) 공식 기준을 반영한 성별·나이별 상한 섭취량/권장 섭취량 개인화 로직",
     "증상 → 추천 성분 → 제품 매칭까지 이어지는 3단 API 파이프라인(화면-API-DB 각 1:1 대응 구조)",
-    "TDD로 작성한 입력값 유효성 검증 로직(출생연도 등)"
+    "TDD로 작성한 입력값 유효성 검증 로직"
   ],
   "developmentWithAI": "Claude Code를 활용해 기획 문서(백로그, 아키텍처 문서)를 함께 정리하고, TDD 절차에 따라 테스트를 먼저 작성한 뒤 구현하는 방식으로 검증 로직을 추가했다. 또한 실제 코드를 기준으로 화면-API-DB 흐름을 다이어그램으로 재정리해 진단 기록 미저장, 인증 누락 등 실제 구현과 기획이 어긋난 지점을 발견하고 다음 작업 우선순위에 반영했다.",
   "agent": {
-    "summary": "Claude Code를 활용해 기획 문서(백로그, 아키텍처 문서)를 함께 정리하고, TDD 절차에 따라 테스트를 먼저 작성한 뒤 구현하는 방식으로 검증 로직을 추가했다. 성분-증상 매핑, 중복/상한 섭취량 체크, KDRIs 기반 개인화 로직을 함께 설계·구현했고, 네이버 쇼핑검색 API와 식약처 성분정보 API로 목업 데이터를 실제 데이터로 교체하는 작업도 함께 진행했다.",
+    "summary": "기획 문서 정리부터 TDD 기반 검증 로직 구현, 목업 데이터의 실제 API 교체까지 Claude Code의 서브에이전트·스킬을 함께 활용했다.",
     "agentTools": [
       { "name": "Explore", "type": "agent", "purpose": "커밋 내역과 코드베이스를 탐색해 이번 주 작업 내용을 정리" },
-      { "name": "tdd-backend-feature", "type": "skill", "purpose": "출생연도 유효성 검증 로직을 TDD(Red-Green) 절차로 구현" },
-      { "name": "design-system-lavender", "type": "skill", "purpose": "발표 자료 페이지에 프로젝트 디자인 시스템(색상·폰트·컴포넌트 톤) 적용" }
+      { "name": "tdd-backend-feature", "type": "skill", "purpose": "검증 로직을 TDD(Red-Green) 절차로 구현" },
+      { "name": "design skill", "type": "skill", "purpose": "발표 자료 페이지에 프로젝트 디자인 시스템 적용" }
     ],
     "workflows": [
       { "name": "기획 정리", "steps": ["백로그 우선순위 결정", "주차별 작업 분해"] },
