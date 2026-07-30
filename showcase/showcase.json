@@ -1,11 +1,19 @@
 {
   "schemaVersion": 1,
   "title": "나만의 레시피북",
-  "summary": "흩어진 레시피를 AI로 정리하고 수정해 나만의 레시피북에 보관하는 아카이빙 서비스입니다.",
+  "summary": "내 취향의 레시피, 가족의 레시피 등 나의 추억이 담긴 레시피를 나만의 레시피북에 보관하는 아카이빙 서비스입니다.",
   "githubUser": "ketru44(강성준)",
-  "demoUrl": "https://drive.google.com/file/d/1qiaIfg4x0xMBch0Ix8fwsqTZpBmH_8oP/view?usp=sharing",
+  "demoUrl": "https://mealmory.vercel.app",
+  "demoVideoUrl": "https://drive.google.com/file/d/1qiaIfg4x0xMBch0Ix8fwsqTZpBmH_8oP/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
-  "screenshots": [],
+  "screenshots": [
+    "screenshots/LandingPage.webp",
+    "screenshots/MainPage.webp",
+    "screenshots/RecipeDetail.webp",
+    "screenshots/DraftPage.webp",
+    "screenshots/AddNewRecipe.webp",
+    "screenshots/AddNewRecipeByCode.webp"
+  ],
   "problem": "직접 알고 있거나 인터넷에서 발견한 레시피는 여러 장소에 흩어져 있고 형식도 일정하지 않아, 다시 찾아 실제 요리에 활용하기 어렵습니다. 가족이나 가까운 사람에게 받은 레시피도 전달한 사람과의 관계와 기억을 함께 보관하기 어렵습니다.",
   "targetUsers": [
     "흩어진 레시피를 한곳에 모아 관리하고 싶은 사용자",
@@ -15,11 +23,12 @@
   "features": [
     "URL이나 직접 입력으로 제공한 레시피를 AI가 재료와 조리 단계로 구조화합니다.",
     "AI가 만든 초안을 사용자가 확인하고 수정한 뒤 자신의 레시피북에 저장합니다.",
-    "저장한 레시피를 목록과 상세 화면에서 다시 확인합니다.",
-    "전달받은 레시피를 전해준 사람, 전달받은 날짜, 개인 메모와 함께 보관합니다."
+    "전달받은 레시피를 전해준 사람, 전달받은 날짜, 개인 메모와 함께 보관합니다.",
+    "사용자의 추억과 스토리를 레시피를 통해서 저장합니다."
   ],
   "featureTags": [
     "AI 레시피 정리",
+    "레시피 공유",
     "레시피북 관리",
     "관계 정보 보관"
   ],
@@ -36,7 +45,8 @@
   "techHighlights": [
     "Firebase ID 토큰을 Express에서 검증하고 PostgreSQL의 내부 사용자와 연결해 개인별 레시피 데이터를 관리합니다.",
     "OpenAI Responses API의 엄격한 JSON Schema와 백엔드 재검증을 적용하고, 외부 URL 수집의 사설 IP 접근과 응답 범위를 제한했습니다.",
-    "React와 Tailwind CSS로 로그인, 레시피 입력, AI 초안 편집 흐름을 모바일 우선 화면으로 구현했습니다."
+    "React와 Tailwind CSS로 로그인, 레시피 입력, AI 초안 편집 흐름을 모바일 우선 화면으로 구현했습니다.",
+    "Youtube 레시피 데이터를 가져오기 위해서 youtube api, script library, gemini preview의 과정을 거칩니다."
   ],
   "developmentWithAI": "저는 서비스의 문제, 핵심 사용자 흐름과 제품 정책을 결정했습니다. AI와 함께 요구사항을 티켓으로 나누고, 관련 문서와 기존 코드를 확인한 뒤 테스트 가능한 동작부터 검증하며 최소 범위로 구현했습니다. 완료한 작업과 결정, 시행착오와 검증 결과는 프로젝트 이력에 기록해 다음 작업에 이어지도록 관리했습니다.",
   "agent": {
