@@ -3,7 +3,7 @@
   "title": "있는대로-레시피 추천 서비스",
   "summary": "냉장고 속 보유 재료와 소비기한을 바탕으로 지금 만들 수 있는 1인분 레시피를 추천하는 자취생용 식재료 관리 서비스",
   "githubUser": "pkchanghyun-pixel(박창현)",
-  "demoUrl": "",
+  "demoUrl": "https://todays-fridge-n091.vercel.app/",
   "demoVideoUrl": "https://drive.google.com/file/d/1ObDb4uQwJamUq36IZANdI_kbD-HyugWW/view?usp=drive_link",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
