@@ -672,20 +672,15 @@ function RecipeWorkspace({ menu, isLoading, onBack, isSaved, onToggleSaved, onCo
   useEffect(() => {
     if (!menuKey || !actionSentinelRef.current) return undefined;
 
-    let frameId;
     const updateStickyState = () => {
-      window.cancelAnimationFrame(frameId);
-      frameId = window.requestAnimationFrame(() => {
-        const headerHeight = document.querySelector(".site-header")?.getBoundingClientRect().height ?? 72;
-        setAreActionsStuck(actionSentinelRef.current.getBoundingClientRect().top <= headerHeight);
-      });
+      const headerHeight = document.querySelector(".site-header")?.getBoundingClientRect().height ?? 72;
+      setAreActionsStuck(actionSentinelRef.current.getBoundingClientRect().top <= headerHeight);
     };
 
     updateStickyState();
     window.addEventListener("scroll", updateStickyState, { passive: true });
     window.addEventListener("resize", updateStickyState);
     return () => {
-      window.cancelAnimationFrame(frameId);
       window.removeEventListener("scroll", updateStickyState);
       window.removeEventListener("resize", updateStickyState);
     };
