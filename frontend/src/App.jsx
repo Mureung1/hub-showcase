@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getDefaultIngredientTags, getIngredientTags, INGREDIENT_TAG_LABELS } from "../../shared/ingredientTags";
 import { convertQuantityToStandard } from "../../shared/quantityUnits";
 import "./App.css";
@@ -660,6 +660,21 @@ function EmptyRecipeState({ onShowOneMissing }) {
 }
 
 function RecipeWorkspace({ menu, isLoading, onBack, isSaved, onToggleSaved, onConsume, isConsumed }) {
+  const actionSentinelRef = useRef(null);
+  const [areActionsStuck, setAreActionsStuck] = useState(false);
+
+  useEffect(() => {
+    if (!menu || !actionSentinelRef.current || !("IntersectionObserver" in window)) return undefined;
+
+    const headerHeight = document.querySelector(".site-header")?.getBoundingClientRect().height ?? 72;
+    const observer = new IntersectionObserver(
+      ([entry]) => setAreActionsStuck(!entry.isIntersecting),
+      { rootMargin: `-${headerHeight}px 0px 0px`, threshold: 0 },
+    );
+    observer.observe(actionSentinelRef.current);
+    return () => observer.disconnect();
+  }, [menu]);
+
   if (isLoading) return <WorkspaceShell eyebrow="Today&apos;s Menu" title="레시피 상세" description="선택한 메뉴 정보를 불러오고 있습니다."><div className="recipe-empty"><h2>레시피를 불러오는 중입니다...</h2><p>잠시만 기다려주세요.</p></div></WorkspaceShell>;
   if (!menu) return <WorkspaceShell eyebrow="Today&apos;s Menu" title="레시피 상세" description="오늘의 메뉴에서 선택하면 조리 과정을 볼 수 있습니다."><div className="recipe-empty"><h2>선택한 메뉴를 찾을 수 없습니다</h2><p>오늘의 메뉴 화면에서 레시피를 선택해주세요.</p><button type="button" onClick={onBack}>오늘의 메뉴 보기</button></div></WorkspaceShell>;
 
@@ -688,7 +703,8 @@ function RecipeWorkspace({ menu, isLoading, onBack, isSaved, onToggleSaved, onCo
   const description = menu.description ?? menu.nutritionSummary;
 
   return <section className="recipe-detail-screen">
-    <div className="recipe-detail-actions" role="toolbar" aria-label="레시피 작업">
+    <div ref={actionSentinelRef} className="recipe-detail-actions-sentinel" aria-hidden="true" />
+    <div className={`recipe-detail-actions${areActionsStuck ? " is-stuck" : ""}`} role="toolbar" aria-label="레시피 작업">
       <button className="back-to-recipes" type="button" onClick={onBack}>← 오늘의 메뉴</button>
       <button className="save-detail-recipe" type="button" aria-pressed={isSaved} onClick={onToggleSaved}>{isSaved ? "♥ 저장됨" : "♡ 레시피 저장"}</button>
       <button className="consume-recipe-button" type="button" onClick={onConsume} disabled={isConsumed}>{isConsumed ? "✓ 재료 차감 완료" : "✓ 이 레시피로 요리했어요"}</button>
