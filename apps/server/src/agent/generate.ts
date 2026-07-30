@@ -67,7 +67,12 @@ export function buildProposalPrompt(ctx: ProposalContext): string {
 - 매장 내부 사정(매출 하락·진단 수치 등)을 문구에 노출 금지.
 - 모든 문구(title·copy·promo)는 오직 한국어로만. 한자·중국어·일본어·영어 단어 금지 (이모지 허용).
 - 의료 효능·과장 표현(치료·완치·효능·최고·1등·무조건·100% 등) 금지.
-- 할인율은 20%를 넘지 마세요. 금액으로 깎아줄 때는 3,000원을 넘지 마세요.
+- **혜택은 반드시 "N% 할인" 또는 "N원 할인" 둘 중 하나로만 쓰세요.**
+  할인율은 20%를 넘지 마세요. 금액으로 깎아줄 때는 3,000원을 넘지 마세요.
+- **무료 증정·1+1은 쓰지 마세요.** "스콘 1개 무료", "1+1", "○○ 증정"은 모두 안 됩니다.
+  공짜로 주는 대신 그만큼 할인해 주는 문구로 바꿔 쓰세요.
+- **copy와 promo는 같은 형태로 쓰세요.** 문구가 "%"면 쿠폰도 "%", 문구가 "원"이면 쿠폰도 "원"이어야
+  하고 숫자도 같아야 합니다. 서로 다르면 손님에게 다른 혜택을 약속하게 됩니다.
 - channels는 instagram, x, dangol 중에서 고르세요.
 
 [좋은 예시] (비 오는 날)
@@ -75,6 +80,11 @@ title: 비 오는 날 픽업 10% 할인
 copy: ☔ 비 오는 오늘, 나가기 귀찮으시죠?
 따뜻한 아메리카노 미리 주문하고 픽업만 쏙 해가세요 ☕
 오늘 픽업 주문 10% 할인이에요 🎉
+
+[나쁜 예시] — promo.value에 이렇게 쓰면 안 됩니다
+"스콘 1개 무료"  ← 무료 증정이라 안 됨(할인 폭을 읽을 수 없음)
+"1+1 이벤트"     ← 증정이라 안 됨
+"오늘의 특별 혜택" ← 할인 숫자가 없어서 안 됨
 
 반드시 아래 JSON 형식으로만 응답하세요(다른 텍스트 없이):
 {"title": "캠페인 제목", "copy": "발송 문구", "promo": {"type": "할인", "value": "픽업 10% 할인"}, "channels": ["dangol", "instagram"]}`;
@@ -135,12 +145,15 @@ function parseAndValidate(raw: string): Proposal | null {
 export function buildFallbackProposal(ctx: ProposalContext): Proposal {
   const { store, weather } = ctx;
   const rainy = weather.isPrecipitating;
+  // 쿠폰은 금액권만 허용되므로(quality.ts) 폴백도 "N원 할인"이어야 한다 —
+  // 정률로 두면 폴백 자체가 품질검사를 못 통과해, 마지막 안전망이 규칙 위반이 된다.
+  // copy에도 같은 금액을 적어 문구와 쿠폰이 처음부터 일치하게 둔다.
   return {
-    title: rainy ? "비 오는 날 픽업 혜택" : "오늘의 방문 혜택",
+    title: rainy ? "비 오는 날 픽업 1,000원 할인" : "오늘의 방문 1,000원 할인",
     copy: rainy
-      ? `☔ 비 오는 오늘, ${store.name}에서 따뜻하게 픽업 어떠세요?\n미리 주문하고 편하게 받아가세요 🏃`
-      : `오늘 ${store.name}에서 특별한 혜택을 준비했어요.\n지나는 길에 편하게 들러주세요 ☕`,
-    promo: { type: "할인", value: "픽업 10% 할인" },
+      ? `☔ 비 오는 오늘, ${store.name}에서 따뜻하게 픽업 어떠세요?\n미리 주문하시면 1,000원 할인해 드려요 🏃`
+      : `오늘 ${store.name}에서 특별한 혜택을 준비했어요.\n지나는 길에 들러주시면 1,000원 할인해 드려요 ☕`,
+    promo: { type: "할인", value: "픽업 1,000원 할인" },
     channels: ["dangol"],
   };
 }
@@ -154,7 +167,10 @@ async function tryGenerate(
 ): Promise<Proposal | null> {
   try {
     const parsed = parseAndValidate(await caller(prompt, apiKey));
-    if (!parsed) return null; // 파싱·스키마 실패
+    if (!parsed) {
+      logReject("JSON 파싱 또는 스키마 검증 실패");
+      return null;
+    }
     // copy와 promo의 할인 숫자가 어긋난 채 저장되지 않게 먼저 맞춘다(재생성 대상이 아니다 —
     // 나머지가 멀쩡한 제안을 통째로 버리는 것보다 숫자 하나를 맞추는 쪽이 낫다).
     // 가드레일은 맞춘 뒤의 값으로 검사해야 상한 판정이 실제 저장값과 일치한다.
@@ -171,11 +187,25 @@ async function tryGenerate(
     //
     // 실측 비용: 저장된 제안 10건 중 1건만 재검사에 걸린다(정규화 후) → 재생성 1회까지
     // 실패해 템플릿 폴백으로 떨어질 확률 ≈ 1%.
-    if (!checkProposalQuality(proposal, storeName).ok) return null; // 품질 위반 → 재생성 대상
+    const quality = checkProposalQuality(proposal, storeName);
+    if (!quality.ok) {
+      // 왜 버렸는지 남긴다. 예전엔 조용히 null이라, 폴백이 늘어도 원인이 규칙 위반인지
+      // 네트워크 오류인지 구분할 수 없었다(2026-07-30 금액권 규칙 도입 때 실제로 막힘).
+      logReject(`품질 위반: ${quality.violations.join(" | ")}`);
+      return null;
+    }
     return proposal;
-  } catch {
-    return null; // 네트워크 등 호출 실패
+  } catch (e) {
+    logReject(`호출·파싱 실패: ${e instanceof Error ? e.message : String(e)}`);
+    return null;
   }
+}
+
+/** 제안이 버려진 이유. 운영에선 소음이라 LLM_DEBUG=1일 때만 찍는다. */
+function logReject(reason: string): void {
+  if (!process.env.LLM_DEBUG) return;
+  // eslint-disable-next-line no-console
+  console.warn(`[generate] 제안 버림 — ${reason}`);
 }
 
 /**

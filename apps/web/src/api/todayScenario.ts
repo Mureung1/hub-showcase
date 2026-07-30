@@ -110,12 +110,19 @@ export function scenarioFromApi(
   const impHead = flat
     ? "이 가게 데이터 기준 평균 수준"
     : `이 가게 데이터 기준 ${signedPct(delta)} ${down ? "예상" : "기대"}`;
+  // 뒷문장은 하락일 때만 "방어"를 말한다. 상승·평균 수준인데 "하락을 줄일 수 있습니다"를
+  // 붙이면 바로 위의 "+7% 기대"와 정면으로 모순된다(맑은 날 화면에 실제로 노출됐다).
+  // 상승일 때는 06:30 잡이 임계(−20%) 미달이면 알림을 스킵하는 동작(jobs/daily.ts)과
+  // 같은 말을 해준다 — 화면과 에이전트 행동이 어긋나 보이지 않게.
+  const impTail = down
+    ? "방어 마케팅으로 하락을 줄일 수 있습니다."
+    : "방어할 하락이 없는 날이라, 에이전트도 굳이 캠페인을 권하지 않습니다.";
   const impDetail = diagnosis.estimated
     ? `아직 매출 데이터가 적어 업종 평균으로 추정했어요. ${meta.label}인 날은 보통 ${signedPct(delta)} 수준입니다. 데이터가 쌓이면 더 정확해집니다.`
     // "최근 N일"이라고 하면 연속 구간처럼 읽히는데, 실제로는 캠페인을 보낸 날을 뺀 표본이라
     // 비연속이다. 그 날들을 왜 뺐는지(= 캠페인 효과가 날씨 진단에 섞이면 안 됨)까지 한 줄에
     // 넣으면 길어져서, 근거가 되는 표본이 무엇인지만 밝힌다.
-    : `캠페인 없던 ${diagnosis.sampleDays}일 기준, ${meta.label}인 날은 비 안 오는 날 대비 ${signedPct(delta)}였어요. 방어 마케팅으로 하락을 줄일 수 있습니다.`;
+    : `캠페인 없던 ${diagnosis.sampleDays}일 기준, ${meta.label}인 날은 비 안 오는 날 대비 ${signedPct(delta)}였어요. ${impTail}`;
 
   return {
     ...base,

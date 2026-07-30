@@ -6,7 +6,9 @@ import type {
   SendCampaignRequest,
   SendCampaignResponse,
   TrackingResponse,
+  ScenarioKey,
 } from "shared";
+import { promoLimitViolations } from "shared";
 import { DANGOL_CONSENT } from "../styles/tokens";
 
 /**
@@ -98,12 +100,24 @@ function mockTracking(id: string): TrackingResponse {
   return { used, target: DANGOL_CONSENT, revenue: used * 1300 };
 }
 
+/**
+ * MOCK용 "캠페인 DB" — 실서버는 PATCH로 받은 편집본을 DB에 저장했다가 send에서 다시 읽어
+ * 가드레일을 재검사한다(routes/campaigns.ts). MOCK도 같은 순서를 따라야
+ * "수정은 받아주고 발송에서 거부"라는 서버 동작이 데모에서 그대로 재현된다.
+ */
+const mockCampaigns = new Map<string, { copy: string; promo: string }>();
+
 /** PATCH /campaigns/:id — 승인/수정/반려. */
 export function patchCampaign(
   id: string,
   req: CampaignPatchRequest,
 ): Promise<CampaignPatchResponse> {
   if (MOCK_MODE) {
+    // 서버 PATCH는 가드레일을 보지 않고 저장만 한다 — 여기서도 저장만 한다.
+    mockCampaigns.set(id, {
+      copy: req.editedCopy ?? "",
+      promo: req.editedPromo?.value ?? "",
+    });
     return Promise.resolve({ campaignId: id, status: req.status ?? "approved" });
   }
   return apiSend<CampaignPatchResponse>("PATCH", `/campaigns/${id}`, req);
@@ -121,9 +135,33 @@ export function patchCampaign(
  * og:title에 `@계정 on Instagram: …`이 나오는지로 봐야 한다:
  *   curl -s -A "Mozilla/5.0" https://www.instagram.com/p/<코드>/ | grep 'og:title'
  */
-// 2026-07-27 실게시분(WeatherPilot이 만든 흐린 날 문구). 이전 값 DbSE6HDkmpB는
-// 계정에 없는 게시물이라 데모에서 링크가 깨져 있었다(200이 와서 못 알아챘다).
-const DEMO_IG_PERMALINK = "https://www.instagram.com/p/DbSzcwRiaQ8/";
+/**
+ * 날씨 시나리오별 실게시물 permalink.
+ *
+ * 하나로 두면 어떤 날씨를 골라도 "게시물 보기"가 같은 글로 가서, 날씨에 따라 문구가
+ * 바뀌는 게 데모의 핵심인데 정작 그걸 못 보여준다. 시나리오마다 미리 올려 둔 글을 가리킨다.
+ *
+ * 채울 값은 **실제로 게시된 게시물의 permalink만** — 빈 문자열로 두면 그 시나리오는
+ * `posted:false`(복사 폴백)로 정직하게 강등된다. 없는 게시물을 가리키면 링크가 깨지고,
+ * 존재하지 않는 게시를 성공으로 꾸미는 셈이 된다.
+ *
+ * 실존 확인은 HTTP 상태로 하면 안 된다 — 인스타는 없는 게시물에도 200을 준다.
+ * og:title에 `@계정 on Instagram: …`이 나오는지로 봐야 한다:
+ *   curl -s -A "Mozilla/5.0" https://www.instagram.com/p/<코드>/ | grep 'og:title'
+ */
+// 2026-07-30 @cafe_kimsajang 실게시분 4건. 각 게시물의 캡션이 아래 SCENARIOS[key]의
+// copy·promo와 같은 내용이라, 데모에서 날씨를 바꾸면 열리는 글도 같이 바뀐다.
+// og:title로 4건 모두 실존·문구 일치 확인 (이전 값 DbSE6HDkmpB는 없는 게시물이라
+// 링크가 깨져 있었는데 200이 와서 못 알아챘다 — 그래서 위 curl 방식으로 확인한다).
+const DEMO_IG_PERMALINKS: Record<ScenarioKey, string> = {
+  rain: "https://www.instagram.com/p/DbXynt0kn-i/",
+  sunny: "https://www.instagram.com/p/DbXrbvBEnR0/",
+  cold: "https://www.instagram.com/p/DbU_jhXiXxH/",
+  heat: "https://www.instagram.com/p/DbSzcwRiaQ8/",
+};
+
+/** 실연동은 서버 permalink를 쓴다. MOCK만 위 표에서 시나리오별로 고른다. */
+const NO_IG_POST_REASON = "MOCK_MODE — 이 날씨용 실게시물 미등록";
 
 /** POST /campaigns/:id/send — 발송(야간이면 예약). */
 export function sendCampaign(
@@ -131,11 +169,24 @@ export function sendCampaign(
   req: SendCampaignRequest,
   /** MOCK 전용 캡션. 실서버는 DB의 proposal로 캡션을 직접 만들므로 이 값을 쓰지 않는다. */
   mockCaption?: string,
+  /** MOCK 전용 — 어떤 날씨 게시물을 열지 고르는 데만 쓴다. 실서버 경로는 무시. */
+  mockScenarioKey?: ScenarioKey,
 ): Promise<SendCampaignResponse> {
   if (MOCK_MODE) {
+    // 발송 직전 가드레일 재검사 — 서버 POST /send와 같은 지점, 같은 메시지(routes/campaigns.ts).
+    // 이게 없으면 서버를 안 켠 데모에서 상한을 넘긴 쿠폰이 그대로 "발송 완료"까지 간다.
+    const edited = mockCampaigns.get(id);
+    if (edited) {
+      const violations = promoLimitViolations(`${edited.copy} ${edited.promo}`);
+      if (violations.length > 0) {
+        return Promise.reject(new Error(`가드레일 위반: ${violations.join("; ")}`));
+      }
+    }
+
     const hasDangol = req.channels.includes("dangol");
     const scheduled = hasDangol && req.assumeNight === true;
     const igOn = req.channels.includes("instagram");
+    const permalink = mockScenarioKey ? DEMO_IG_PERMALINKS[mockScenarioKey] : "";
     return Promise.resolve({
       status: scheduled ? "scheduled" : "sent",
       recipients: hasDangol ? DANGOL_CONSENT : 0,
@@ -143,10 +194,10 @@ export function sendCampaign(
       // instagram 채널일 때만 sns를 채운다(서버 응답 형태와 동일).
       sns: igOn
         ? {
-            posted: Boolean(DEMO_IG_PERMALINK),
-            permalink: DEMO_IG_PERMALINK || undefined,
+            posted: Boolean(permalink),
+            permalink: permalink || undefined,
             caption: mockCaption ?? "",
-            error: DEMO_IG_PERMALINK ? undefined : "MOCK_MODE — 실게시 안 함",
+            error: permalink ? undefined : NO_IG_POST_REASON,
           }
         : undefined,
     });

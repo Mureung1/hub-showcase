@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { ScenarioKey, ChannelId, Tone, Scenario, SendCampaignResponse, TrackingResponse } from "shared";
-import { buildSmsBody, buildSnsCaption } from "shared";
+import { buildSmsBody, buildSnsCaption, MAX_DISCOUNT_PCT, MAX_DISCOUNT_WON } from "shared";
 import { T, font, won, DAYS, DANGOL_TOTAL, DANGOL_CONSENT } from "./styles/tokens";
 import { SCENARIOS, CHANNELS, HISTORY } from "./mocks/scenarios";
 import { MOCK_MODE, getWeatherToday, getProposalToday, patchCampaign, sendCampaign, getTracking } from "./api/client";
@@ -28,10 +28,6 @@ type RemoteState =
   | { status: "ready"; scenario: Scenario; campaignId: string; stale: boolean; date: string }
   | { status: "empty"; message: string } // 서버는 붙었으나 오늘 제안이 아직 없음
   | { status: "error"; message: string };
-
-// 서버 가드레일(agent/guardrails.ts)과 동일 상한 — 여기 값은 안내용이고 최종 강제는 서버다.
-const MAX_DISCOUNT_PCT = 20;
-const MAX_DISCOUNT_WON = 3000;
 
 // ---- 채널 브랜드 로고 (앱아이콘 스타일 인라인 SVG — 외부 아이콘 라이브러리 미사용) ------
 function InstagramLogo({ size = 22 }: { size?: number }) {
@@ -228,7 +224,8 @@ export default function WeatherPilotV3() {
         channels,
         editedPromo: { type: "할인", value: promoValue },
       });
-      const result = await sendCampaign(sendId, { channels, assumeNight: nightMode }, snsCaption);
+      // scenarioKey는 MOCK에서만 쓴다 — 날씨별로 미리 올려 둔 인스타 게시물을 고르는 용도.
+      const result = await sendCampaign(sendId, { channels, assumeNight: nightMode }, snsCaption, scenarioKey);
       setSentCampaignId(sendId);
       setSendResult(result);
       setView("sent");
@@ -252,9 +249,8 @@ export default function WeatherPilotV3() {
         .wp-ch:hover:not(.on){background:#F0F5FB;}
         textarea:focus,button:focus-visible{outline:3px solid rgba(74,144,226,.35);outline-offset:2px;}
         @keyframes wpFade{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
-        @keyframes wpPulse{0%,100%{opacity:1;}50%{opacity:.3;}}
         .wp-view{animation:wpFade .22s ease;}
-        @media (prefers-reduced-motion: reduce){.wp-view{animation:none;} .wp-btn{transition:none;} .wp-dot{animation:none;}}
+        @media (prefers-reduced-motion: reduce){.wp-view{animation:none;} .wp-btn{transition:none;}}
       `}</style>
 
       <div style={{ maxWidth: 440, margin: "0 auto", padding: "16px 16px 40px" }}>
@@ -505,7 +501,9 @@ function EditView({ copy, onCopyChange, promoEdit, onPromoChange, promoLabel, ch
           </span>
         </div>
         {overLimit && (
-          <div style={warnBox}>{overLimitText} 이대로 발송하면 서버가 거부합니다.</div>
+          /* MOCK_MODE에서도 api/client가 같은 판정으로 발송을 거부한다(shared/promoLimits.ts).
+             서버를 안 켠 데모에서 상한이 무방비였던 문제 — 이제 두 경로가 같은 문장으로 막는다. */
+          <div style={warnBox}>{overLimitText} 이대로는 발송이 거부됩니다.</div>
         )}
         {mismatch && (
           <div style={warnBox}>{mismatch} 문자와 쿠폰이 다른 혜택으로 발송돼요.</div>
@@ -614,6 +612,10 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
   const tracking = dangolOn && !scheduled;
   const names = channels.map((id) => CHANNELS.find((c) => c.id === id)?.label).filter(Boolean) as string[];
   const target = sendResult.recipients;
+  // 발송된 채널은 이 화면의 핵심 정보라 회색 본문에 묻히면 안 된다 — 파란 굵은 글씨로 띄운다.
+  const sentChannels = (
+    <span style={{ color: T.primaryDark, fontWeight: 700 }}>{names.join(" · ")}</span>
+  );
 
   // SNS 게시 결과: instagram은 본인 계정 실게시 시도(서버), 실패·미설정·X는 문구 복사 폴백.
   const igPosted = igOn && (sendResult.sns?.posted ?? false);
@@ -686,10 +688,10 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
         <div style={{ fontSize: 13, color: T.sub, marginTop: 5, lineHeight: 1.6 }}>
           {s.title}<br />
           {scheduled
-            ? <>{names.join(" · ")}<br />단골은 <b>내일 오전 8시 예약발송</b>으로 전환됐어요.</>
+            ? <>{sentChannels}<br />단골은 <b>내일 오전 8시 예약발송</b>으로 전환됐어요.</>
             : dangolOn
-              ? <>{names.join(" · ")}<br />수신동의 단골 {target}명에게 발송했어요.</>
-              : <>{names.join(" · ")}<br />{snsHint}</>}
+              ? <>{sentChannels}<br />수신동의 단골 {target}명에게 발송했어요.</>
+              : <>{sentChannels}<br />{snsHint}</>}
         </div>
         {sendResult.couponCode && (
           <div style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, background: T.surfaceAlt, fontSize: 12.5, color: T.ink, fontWeight: 600 }}>
@@ -737,7 +739,7 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
           </p>
           {/* 귀속 방법 안내 — SNS는 공개 채널이라 개인별 쿠폰 코드를 못 준다(shared/sns.ts).
               대신 캡션의 📍 줄이 증표 역할을 하므로, 사장님이 뭘 확인하면 되는지 알려 준다.
-              채널 역할("도달")은 화면 맨 아래 한 곳에서만 말한다 — 여기서 또 하면 같은 말 반복. */}
+              "왜 쿠폰 추적이 안 되는지"는 화면 맨 아래에서만 말한다 — 여기서 또 하면 같은 말 반복. */}
           <p style={{ fontSize: 11, color: T.muted, marginTop: 6, lineHeight: 1.5 }}>
             게시물을 보고 온 손님이 <b>매장에서 화면을 보여주면</b> 혜택을 적용해 주세요.
           </p>
@@ -748,8 +750,13 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
         <Card>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: 14, fontWeight: 700 }}>🎟️ 쿠폰 사용 추적</span>
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: T.up, fontWeight: 700 }}>
-              <span className="wp-dot" style={{ width: 7, height: 7, borderRadius: 999, background: T.up, animation: "wpPulse 1.6s infinite" }} /> 실시간
+            {/* 이 배지는 "실시간"이었다. 화면은 1초 폴링으로 갱신되지만 값 자체는 쿠폰 코드
+                누적 집계라, 실시간 이벤트 추적을 하는 것처럼 읽히면 안 된다 — CLAUDE.md와
+                README·제출물 문서가 모두 "실시간이라 단정하지 말 것"으로 못박아 둔 지점이다.
+                점의 pulse도 함께 뺐다. 초록 점이 깜빡이는 건 LIVE 관용구라, 글자만 바꾸면
+                그림이 여전히 실시간을 주장한다. */}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: T.upText, fontWeight: 700 }}>
+              <span style={{ width: 7, height: 7, borderRadius: 999, background: T.up }} /> 쿠폰 코드 누적 집계
             </span>
           </div>
           <div style={{ height: 8, background: "#E9EFF6", borderRadius: 999, marginTop: 12, overflow: "hidden" }}>
@@ -772,11 +779,17 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
 
       <p style={{ textAlign: "center", fontSize: 12, color: T.muted, marginTop: 14, lineHeight: 1.6 }}>
         {scheduled ? "예약 시간이 되면 자동 발송하고 추적을 시작할게요."
-          : tracking ? "쿠폰 사용은 쿠폰 코드로 누적 집계돼요. 날씨 회복이 아니라 이 캠페인이 만든 매출입니다."
+          /* 두 문장을 한 덩어리로 흘리면 마지막 "다."만 다음 줄로 넘어가 잘려 보인다.
+             문장 경계에서 직접 줄을 나눠 "날씨 회복이 아니라…"가 통째로 아랫줄에 오게 한다. */
+          : tracking ? <>쿠폰 사용은 쿠폰 코드로 누적 집계돼요.<br />날씨 회복이 아니라 이 캠페인이 만든 매출입니다.</>
           /* SNS 단독 발송 — 쿠폰이 발급되지 않는다(서버가 dangol 없으면 발급 경로를 건너뜀).
              구 문구는 "SNS 반응은 성과 탭에서 집계"였으나 PerfView는 쿠폰 사용률·귀속 매출만 보여준다.
-             없는 기능을 약속하지 말고, 매출 추적을 켜는 방법을 안내한다. */
-          : "SNS는 도달을 맡는 채널이라 쿠폰 추적 대상이 아니에요. 매출 추적은 단골 문자를 함께 보내면 시작됩니다."}
+             없는 기능을 약속하지 말고, 매출 추적을 켜는 방법을 안내한다.
+
+             "도달을 맡는 채널"은 광고 업계 말이라 사장님에게 안 와닿는다. 추적이 안 되는
+             진짜 이유(공개 채널 → 사람마다 다른 쿠폰 코드를 줄 수 없음)를 그대로 쓴다.
+             위 tracking 문구와 같은 이유로 문장 경계에서 직접 줄을 나눈다. */
+          : <>SNS는 누구나 보는 공개 채널이라<br />손님마다 다른 쿠폰 코드를 줄 수 없어요.<br />매출 추적은 단골 문자를 함께 보내면 시작됩니다.</>}
       </p>
     </div>
   );

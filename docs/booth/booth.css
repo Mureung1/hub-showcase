@@ -1,0 +1,271 @@
+/*
+ * 데모데이 부스 A3 전시물 공용 스타일 (297 × 420mm 세로).
+ *
+ * 규칙 (CLAUDE.md): 외부 스타일 라이브러리 금지 — 순수 CSS만.
+ * 색은 apps/web/src/styles/tokens.ts 값을 그대로 옮겼다. 인쇄물과 라이브 데모 화면이
+ * 같은 브랜드로 보여야 부스에서 "같은 제품"으로 읽힌다.
+ *
+ * 단위는 전부 mm — 인쇄 좌표를 손으로 잡아야 A3에서 여백이 안 뜬다.
+ *
+ * ⚠️ 폰트를 시스템에 기대지 않고 woff2를 직접 들고 있다. 이유:
+ *    PC에 설치된 Pretendard는 .otf(CFF 아웃라인)라 Chrome이 PDF로 뽑을 때 서브셋 임베드를
+ *    못 하고 Type3(글자를 그림으로 그리는 방식)로 떨어뜨렸다 — 그게 뷰어에서 깨져 보인 원인.
+ *    fonts/ 의 woff2는 Pretendard의 TrueType(glyf) 빌드라 FontFile2로 정상 임베드된다.
+ *    (`npm pack pretendard` → dist/web/static/woff2-subset, OFL-1.1)
+ *    이렇게 두면 다른 PC에서 열어도 인쇄물이 똑같이 나온다.
+ */
+
+@font-face {
+  font-family: "PretendardBooth";
+  src: url("./fonts/Pretendard-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: block;
+}
+@font-face {
+  font-family: "PretendardBooth";
+  src: url("./fonts/Pretendard-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-display: block;
+}
+@font-face {
+  font-family: "PretendardBooth";
+  src: url("./fonts/Pretendard-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "PretendardBooth";
+  src: url("./fonts/Pretendard-ExtraBold.woff2") format("woff2");
+  font-weight: 800;
+  font-display: block;
+}
+
+@page {
+  size: A3 portrait;
+  margin: 0;
+}
+
+:root {
+  /* tokens.ts 원본 */
+  --brand: #4a90e2;
+  --brand-lt: #62a8f5;
+  --brand-dk: #3b7dd8;
+  --bg: #eef3f8;
+  --surface: #ffffff;
+  --surface-alt: #f4f7fa;
+  --line: #e4eaf1;
+  --ink: #253449;
+  --sub: #6b7787;
+  --muted: #99a3b1;
+  --down: #ff7a45;
+  --down-text: #d9603c;
+  --down-bg: #fcede6;
+  --up: #2fb37a;
+  --up-text: #2f9464;
+  --up-bg: #e8f7f0;
+
+  --font: "PretendardBooth", "맑은 고딕", "Malgun Gothic", "Segoe UI", sans-serif;
+  --mono: "Consolas", "D2Coding", "Courier New", monospace;
+}
+
+* {
+  box-sizing: border-box;
+  /* 배경색이 인쇄에서 빠지면 도식이 전부 흰 상자가 된다 */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  /* 한글은 어절 단위로 끊어야 한다 — 기본값이면 "우회해"가 "우/회해"로 쪼개진다 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  background: #cfd8e3; /* 화면 미리보기용 — 인쇄 시 지면 밖이라 안 나옴 */
+}
+
+.page {
+  position: relative;
+  width: 297mm;
+  height: 420mm;
+  padding: 12mm 13mm 9mm;
+  margin: 0 auto;
+  background: var(--surface);
+  overflow: hidden; /* 넘치면 2페이지가 되므로 잘라내고 육안 검수로 잡는다 */
+  display: flex;
+  flex-direction: column;
+}
+
+@media screen {
+  body {
+    padding: 10mm 0;
+  }
+  .page {
+    box-shadow: 0 4mm 12mm rgba(37, 52, 73, 0.25);
+  }
+}
+
+/* ============================ 헤더 ============================ */
+
+.head {
+  position: relative;
+  background: linear-gradient(135deg, var(--brand-lt) 0%, var(--brand-dk) 100%);
+  color: #fff;
+  border-radius: 4mm;
+  padding: 5.5mm 9mm;
+  display: flex;
+  align-items: center;
+  gap: 8mm;
+  flex: 0 0 auto;
+}
+
+.head-mark {
+  font-size: 17mm;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.head-body {
+  flex: 1 1 auto;
+}
+
+.head h1 {
+  margin: 0 0 2.4mm;
+  font-size: 14mm;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-weight: 800;
+}
+
+.head h1 .thin {
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.head p {
+  margin: 0;
+  font-size: 5mm;
+  line-height: 1.4;
+  opacity: 0.97;
+}
+
+.head-tag {
+  flex: 0 0 auto;
+  text-align: right;
+  font-size: 4mm;
+  line-height: 1.5;
+  opacity: 0.92;
+}
+
+.head-tag b {
+  display: block;
+  font-size: 5.4mm;
+  letter-spacing: 0.01em;
+}
+
+/* ============================ 공통 조각 ============================ */
+
+/* 챕터는 넉넉히 띄운다 — 부스에서 멀리서 볼 때 덩어리가 구분돼야 한다 */
+.sec {
+  flex: 0 0 auto;
+  margin-top: 7mm;
+}
+
+.sec-title {
+  display: flex;
+  align-items: baseline;
+  gap: 3mm;
+  margin: 0 0 4mm;
+}
+
+.sec-title b {
+  font-size: 6.6mm;
+  letter-spacing: -0.025em;
+}
+
+.sec-title span {
+  font-size: 4mm;
+  color: var(--sub);
+}
+
+.sec-title::before {
+  content: "";
+  width: 1.8mm;
+  height: 6.6mm;
+  background: var(--brand);
+  border-radius: 1mm;
+  transform: translateY(0.8mm);
+}
+
+.card {
+  background: var(--surface);
+  border: 0.4mm solid var(--line);
+  border-radius: 3mm;
+  padding: 4.2mm 4.6mm;
+}
+
+.big {
+  font-size: 22mm;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 3.2mm;
+  letter-spacing: -0.02em;
+  color: var(--sub);
+}
+
+.cap {
+  font-size: 3.5mm;
+  line-height: 1.45;
+  color: var(--sub);
+}
+
+/* ============================ 하단 바 ============================ */
+
+.foot {
+  margin-top: auto;
+  flex: 0 0 auto;
+  border-top: 0.6mm solid var(--line);
+  padding-top: 5mm;
+  display: flex;
+  align-items: center;
+  gap: 8mm;
+}
+
+.qr {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.qr img {
+  display: block;
+  /* 아래 글자가 QR보다 넓어서 .qr 폭을 늘린다 — auto 마진이 없으면 코드만 왼쪽으로 쏠린다 */
+  margin: 0 auto;
+  width: 31mm;
+  height: 31mm;
+  border: 0.4mm solid var(--line);
+  border-radius: 2mm;
+  padding: 1.2mm;
+  background: #fff;
+}
+
+.qr b {
+  display: block;
+  margin-top: 2mm;
+  font-size: 4.2mm;
+  color: var(--ink);
+}
+
+.qr span {
+  display: block;
+  margin-top: 0.6mm;
+  font-size: 3.1mm;
+  color: var(--muted);
+}

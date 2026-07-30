@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import type { EnsembleWeather, Diagnosis, WeatherCondition } from "shared";
-import { generateProposal, type ProposalContext } from "./generate";
+import { generateProposal, buildFallbackProposal, type ProposalContext } from "./generate";
 import { checkProposalQuality } from "./quality";
 
 /**
@@ -46,7 +46,7 @@ const ctx: ProposalContext = {
 const cleanProposal = {
   title: "비 오는 날 픽업 혜택",
   copy: "오늘 따뜻한 아메리카노 픽업으로 편하게 즐기세요 ☕",
-  promo: { type: "할인", value: "픽업 10% 할인" },
+  promo: { type: "할인", value: "픽업 1,000원 할인" },
   channels: ["dangol"],
 };
 const cleanJson = JSON.stringify(cleanProposal);
@@ -58,16 +58,45 @@ describe("checkProposalQuality — 루브릭", () => {
     expect(checkProposalQuality(cleanProposal, "김사장 카페").ok).toBe(true);
   });
 
-  it("한자·일본어·영어가 섞이면 비한국어로 잡는다", () => {
-    const han = checkProposalQuality({ ...cleanProposal, copy: "오늘 特別 할인" });
-    expect(han.ok).toBe(false);
-    expect(han.violations.join()).toContain("비한국어");
+  // 한국어 검사는 "금지 목록"이 아니라 "한글만 허용" 규칙이다.
+  //
+  // 예전 테스트는 한자·일본어·영어 3종만 확인했다 — 구현의 금지 목록을 그대로 베낀 셈이라
+  // 목록에 없는 언어는 검증할 수 없었고, 실제로 러시아어가 통과해 저장됐다(2026-07-30).
+  // 그래서 스크립트를 넓게 깔아 "한글 아닌 문자는 무엇이든 잡힌다"를 규칙으로 검증한다.
+  it.each([
+    ["실제 유출 문구(러시아어)", "오늘 주문하시면 스콘 1개 бесплат로 드립니다! 🥐"],
+    ["키릴", "бесплат 혜택"],
+    ["그리스", "Ελληνικά 혜택"],
+    ["아랍", "مجاني 혜택"],
+    ["태국", "ไทย 할인"],
+    ["히브리", "שלום 혜택"],
+    ["데바나가리", "मुफ़्त 혜택"],
+    ["반각 가나", "ﾊﾛｰ 혜택"],
+    ["한자", "오늘 特別 할인"],
+    ["일본어", "こんにちは 혜택"],
+    ["영어", "Today special sale"],
+  ])("한글이 아닌 문자가 섞이면 잡는다 — %s", (_name, copy) => {
+    const r = checkProposalQuality({ ...cleanProposal, copy });
+    expect(r.ok).toBe(false);
+    expect(r.violations.join()).toContain("비한국어");
+  });
 
-    const jp = checkProposalQuality({ ...cleanProposal, title: "こんにちは 혜택" });
-    expect(jp.ok).toBe(false);
+  // 오탐 방지. 여기가 깨지면 멀쩡한 제안이 조용히 템플릿 폴백으로 떨어진다.
+  it.each([
+    ["이모지·금액", "☔ 비 오는 오늘, 픽업 주문 1,000원 할인이에요 🎉"],
+    // ☕️는 U+2615 + U+FE0F(변이선택자, 카테고리 Mn)다. 규칙에 \p{M}을 넣으면 여기서 오탐난다.
+    ["변이선택자 이모지·온도", "기온 28℃ 🥐☕️ 오늘도 활짝 웃으세요"],
+    ["금액·문장부호", "3,000원 할인! (광고) — 무료수신거부 가능"],
+    ["자모 단독", "ㅋㅋㅋ 좋아요 ㅠㅠ"],
+    ["폴백 문구(비)", "☔ 비 오는 오늘, 김사장 카페에서 따뜻하게 픽업 어떠세요?\n미리 주문하고 편하게 받아가세요 🏃"],
+    ["폴백 문구(맑음)", "오늘 김사장 카페에서 특별한 혜택을 준비했어요.\n지나는 길에 편하게 들러주세요 ☕"],
+  ])("정상 한국어 문구는 통과한다 — %s", (_name, copy) => {
+    expect(checkProposalQuality({ ...cleanProposal, copy }).ok).toBe(true);
+  });
 
-    const en = checkProposalQuality({ ...cleanProposal, copy: "Today special sale" });
-    expect(en.ok).toBe(false);
+  it("위반 메시지에 걸린 문자를 담아 무엇이 문제인지 보여준다", () => {
+    const r = checkProposalQuality({ ...cleanProposal, copy: "스콘 1개 бесплат로" });
+    expect(r.violations.join()).toContain("비한국어 문자(copy): б е с п л а т");
   });
 
   it("손님 문구에 매출·진단 등 내부 정보가 노출되면 잡는다", () => {
@@ -80,6 +109,68 @@ describe("checkProposalQuality — 루브릭", () => {
     const r = checkProposalQuality({ ...cleanProposal, channels: ["dangol", "facebook"] });
     expect(r.ok).toBe(false);
     expect(r.violations.join()).toContain("채널");
+  });
+
+  // 쿠폰은 "N% 할인"·"N원 할인" 두 형태로만.
+  //
+  // 막는 이유는 취향이 아니라 상한이다. "스콘 1개 무료"는 %도 원도 아니라서
+  // maxDiscountPct·maxDiscountWon이 둘 다 0을 읽고 20%·3,000원 상한을 그냥 지나간다
+  // (실측 2026-07-30). 형태가 읽혀야 상한이 걸린다.
+  it.each([
+    ["무료 증정(실측 유출분)", "스콘 1개 무료"],
+    ["1잔 무료", "아메리카노 1잔 무료"],
+    ["증정", "케이크 한 조각 증정"],
+    ["1+1", "1+1 이벤트"],
+    ["반값", "반값 이벤트"],
+    ["숫자 없는 문구", "오늘의 특별 혜택"],
+  ])("쿠폰 형태를 읽을 수 없으면 잡는다 — %s", (_name, value) => {
+    const r = checkProposalQuality({ ...cleanProposal, promo: { type: "할인", value } });
+    expect(r.ok).toBe(false);
+    expect(r.violations.join()).toContain("쿠폰 형태를 읽을 수 없음");
+  });
+
+  it.each([
+    ["정률", "픽업 10% 할인"],
+    ["정액", "픽업 1,000원 할인"],
+    ["원 쿠폰", "2,000원 쿠폰"],
+    ["말이 붙은 금액", "따뜻한 세트 2,000원 할인 (단골 전용)"],
+  ])("%·원 두 형태는 통과한다 — %s", (_name, value) => {
+    expect(checkProposalQuality({ ...cleanProposal, promo: { type: "할인", value } }).ok).toBe(true);
+  });
+
+  it("문구와 쿠폰의 혜택 형태가 다르면 잡는다", () => {
+    // syncPromoToCopy는 형태가 같을 때만 숫자를 맞춘다. 형태가 어긋나면 되쓸 자리가 없어
+    // 그대로 저장되고, 문자와 쿠폰이 서로 다른 혜택을 약속한다(사장님이 지적한 그 증상).
+    const r = checkProposalQuality({
+      ...cleanProposal,
+      copy: "오늘 픽업 주문 10% 할인이에요",
+      promo: { type: "할인", value: "2,000원 할인" },
+    });
+    expect(r.ok).toBe(false);
+    expect(r.violations.join()).toContain("혜택 형태 불일치");
+  });
+
+  it("형태가 같으면 숫자가 달라도 형태 위반으로는 안 잡는다", () => {
+    // 숫자 불일치는 syncPromoToCopy가 copy 기준으로 맞추는 몫이라 여기서 재생성시키지 않는다.
+    const r = checkProposalQuality({
+      ...cleanProposal,
+      copy: "오늘 픽업 주문 10% 할인이에요",
+      promo: { type: "할인", value: "15% 할인" },
+    });
+    expect(r.violations.join()).not.toContain("형태 불일치");
+  });
+
+  it("할인이 아닌 %는 혜택 표기로 오인하지 않는다", () => {
+    // RATE는 "% 할인"에만 앵커돼 있어야 한다. 넓게 잡으면 원두 배합비처럼 할인과 무관한 %가
+    // 정률로 읽혀, 정액 쿠폰과 형태 불일치로 걸리고 멀쩡한 제안이 폴백으로 떨어진다.
+    // (참고: "100% 아라비카"는 별개로 금칙어 "100%"와 넓은 maxDiscountPct에 걸린다 — 기존 동작이다.)
+    const r = checkProposalQuality({
+      ...cleanProposal,
+      copy: "아라비카 15% 블렌딩 원두로 내려요 ☕",
+      promo: { type: "할인", value: "2,000원 할인" },
+    });
+    expect(r.violations.join()).not.toContain("형태 불일치");
+    expect(r.ok).toBe(true);
   });
 
   it("할인율 20% 초과·창작 상호는 가드레일로 잡는다", () => {
@@ -141,25 +232,47 @@ describe.skipIf(!process.env.GROQ_API_KEY)("LLM 라이브 매트릭스 (날씨×
   it(
     "각 조합에서 생성된 제안이 품질 루브릭을 통과한다",
     async () => {
-      const report: { case: string; ok: boolean; violations: string; title: string }[] = [];
+      // promo까지 찍는다 — 금액권 강제가 실제로 지켜지는지 통과/실패만이 아니라 값으로 봐야 한다.
+      //
+      // fallback 열이 핵심이다. 규칙을 조이면 "위반 0건"은 쉽게 만들 수 있다 — 재생성이
+      // 다 실패해서 템플릿으로 떨어지면 어차피 통과하기 때문이다. 그때 사장님 화면엔
+      // LLM 문구가 아니라 매일 똑같은 템플릿이 뜬다. 통과율만 보면 이걸 놓친다.
+      const report: {
+        case: string;
+        ok: boolean;
+        fallback: boolean;
+        violations: string;
+        title: string;
+        promo: string;
+      }[] = [];
       for (const w of weatherCases) {
         for (const c of categoryCases) {
-          const proposal = await generateProposal({
+          const ctx: ProposalContext = {
             store: { name: "김사장 카페", category: c.category, menuTags: c.menuTags, tone: "친근" },
             weather: w.weather,
             diagnosis,
-          });
+          };
+          const proposal = await generateProposal(ctx);
           const q = checkProposalQuality(proposal, "김사장 카페");
+          const template = buildFallbackProposal(ctx);
           report.push({
             case: `${w.label}×${c.category}`,
             ok: q.ok,
+            fallback: proposal.title === template.title && proposal.copy === template.copy,
             violations: q.violations.join("; "),
             title: proposal.title,
+            promo: proposal.promo.value,
           });
         }
       }
-      // eslint-disable-next-line no-console
+      const fellBack = report.filter((r) => r.fallback).length;
+      /* eslint-disable no-console */
       console.table(report);
+      console.log(
+        `폴백 ${fellBack}/${report.length}건 (${Math.round((fellBack / report.length) * 100)}%)` +
+          " — 높으면 규칙이 아니라 프롬프트를 고쳐야 한다는 뜻이다.",
+      );
+      /* eslint-enable no-console */
       const failures = report.filter((r) => !r.ok);
       expect(failures, JSON.stringify(failures, null, 2)).toEqual([]);
     },

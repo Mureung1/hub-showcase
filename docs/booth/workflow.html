@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>WeatherPilot — AI 에이전트 워크플로우</title>
+    <!-- 폰트 선로딩 — 이유는 planning.html 주석 참고 -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-Regular.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-SemiBold.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-Bold.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-ExtraBold.woff2" />
+    <link rel="stylesheet" href="./booth.css" />
+    <style>
+      /* 범례 */
+      .legend {
+        display: flex;
+        align-items: center;
+        gap: 7mm;
+        margin: 0 0 10mm;
+        font-size: 3.7mm;
+        font-weight: 600;
+        color: var(--sub);
+      }
+      .lg {
+        display: flex;
+        align-items: center;
+        gap: 2.2mm;
+      }
+      .lg i {
+        display: block;
+        width: 7mm;
+        height: 5mm;
+        border-radius: 1.2mm;
+        flex: 0 0 auto;
+      }
+      .lg-proc {
+        background: #fff;
+        border: 0.5mm solid var(--brand);
+      }
+      /* 정사각형을 45도 돌리면 도식의 가로로 긴 마름모와 안 맞는다 — 실제 비율대로 그린다 */
+      .lg-dia {
+        width: 9mm;
+        height: 5mm;
+        flex: 0 0 auto;
+        display: block;
+      }
+      .lg-ext {
+        background: #f3e8ff;
+        border: 0.5mm solid #9333ea;
+      }
+      .lg-db {
+        background: #dcfce7;
+        border: 0.5mm solid #16a34a;
+      }
+      .lg-human {
+        background: var(--brand-dk);
+      }
+      .lg-skip {
+        background: var(--surface-alt);
+        border: 0.5mm dashed var(--muted);
+      }
+
+      .chart {
+        display: block;
+        width: 100%;
+      }
+
+      /* 하단 바 */
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2.5mm;
+        margin-bottom: 3mm;
+      }
+      .chip {
+        border: 0.4mm solid var(--line);
+        border-radius: 999mm;
+        padding: 1.6mm 4mm;
+        font-size: 3.6mm;
+        font-weight: 600;
+        background: var(--surface-alt);
+      }
+      .chip b {
+        color: var(--brand-dk);
+      }
+      /* 칩·설명이 QR보다 낮아서 가운데 정렬하면 구분선 아래로 밀린다 — 위로 붙인다 */
+      .foot {
+        align-items: flex-start;
+        /*
+         * 구분선이 도식과 칩 사이 딱 가운데 오게 맞춘 값.
+         * 선 위쪽 간격은 margin-top:auto가 먹는 여백, 아래쪽은 이 padding이라
+         * 이 값을 줄인 만큼 위쪽이 늘어난다. 위 3.6mm / 아래 10.5mm 였던 걸 7mm씩으로.
+         */
+        padding-top: 6.5mm;
+      }
+      /* QR 하나뿐이라 지면 오른쪽 끝에 붙으면 허전하다 — 안쪽으로 들인다 */
+      .foot .qr {
+        margin-right: 16mm;
+      }
+      .note {
+        margin: 0;
+        font-size: 3.5mm;
+        line-height: 1.5;
+        color: var(--sub);
+      }
+      .note b {
+        color: var(--ink);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ============ 헤더 ============ -->
+      <header class="head">
+        <div class="head-body">
+          <h1>AI 에이전트 워크플로우</h1>
+          <p>
+            날씨를 읽고 · 매출을 진단하고 · 문구를 쓰고 · 스스로 검사하고 · 법을 지켜 보낸다.<br />
+            <b>사람이 개입하는 곳은 딱 한 칸이다.</b>
+          </p>
+        </div>
+        <div class="head-tag">
+          <b>WeatherPilot</b>
+          N111 양서형
+        </div>
+      </header>
+
+      <section class="sec">
+        <p class="sec-title">
+          <b>에이전트가 도는 길</b><span>판단 지점 3곳 · 되돌아오는 고리 2개</span>
+        </p>
+
+        <div class="legend">
+          <span class="lg"><i class="lg-proc"></i>처리</span>
+          <span class="lg">
+            <svg class="lg-dia" viewBox="0 0 36 20" xmlns="http://www.w3.org/2000/svg">
+              <polygon points="18,1.4 34.6,10 18,18.6 1.4,10" fill="#fdf1d6" stroke="#d9a441"
+                stroke-width="1.6" stroke-linejoin="round" />
+            </svg>
+            판단
+          </span>
+          <span class="lg"><i class="lg-ext"></i>외부 API</span>
+          <span class="lg"><i class="lg-db"></i>DB</span>
+          <span class="lg"><i class="lg-human"></i>사람</span>
+          <span class="lg"><i class="lg-skip"></i>가지 않는 길</span>
+        </div>
+
+        <!--
+          도식 좌표계: viewBox 1단위 = 1mm (폭 273mm = 지면 내용 폭).
+          왼쪽 = 외부 API 입력 / 가운데 = 에이전트 본선 / 오른쪽 = 분기 결과
+          x=196 = 재생성 고리 레인, x=268 = 학습 고리 레인 (다른 상자와 안 겹치게 비워둠)
+        -->
+        <!--
+          minX·minY를 -1로 둔다: 첫 박스가 y=0, 왼쪽 상자들이 x=0에 붙어 있어서
+          테두리 굵기의 바깥쪽 절반이 뷰박스를 벗어나 그 변만 얇게 보였다.
+          위·왼쪽으로 1씩 넓혀 선이 온전히 들어오게 한다. (내용 좌표는 0~273 그대로)
+        -->
+        <svg class="chart" viewBox="-1 -1 274 269" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
+              markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#253449" />
+            </marker>
+            <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
+              markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#3b7dd8" />
+            </marker>
+            <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
+              markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#d9a441" />
+            </marker>
+            <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
+              markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#99a3b1" />
+            </marker>
+            <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
+              markerHeight="5" orient="auto-start-reverse">
+              <path d="M0,1 L9,5 L0,9 z" fill="#9333ea" />
+            </marker>
+            <linearGradient id="human" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#62a8f5" />
+              <stop offset="1" stop-color="#3b7dd8" />
+            </linearGradient>
+          </defs>
+
+          <style>
+            .bx { fill: #fff; stroke: #4a90e2; stroke-width: 0.6; }
+            .dc { fill: #fdf1d6; stroke: #d9a441; stroke-width: 0.6; }
+            .ex { fill: #f3e8ff; stroke: #9333ea; stroke-width: 0.5; }
+            .sk { fill: #f4f7fa; stroke: #99a3b1; stroke-width: 0.5; stroke-dasharray: 1.6 1.2; }
+            .t  { font-family: "PretendardBooth","맑은 고딕","Malgun Gothic",sans-serif; fill: #253449; }
+            .m  { font-size: 5.4px; font-weight: 700; }
+            .s  { font-size: 3.5px; fill: #6b7787; }
+            .d  { font-size: 4.6px; font-weight: 700; }
+            .n  { font-size: 7px; font-weight: 800; fill: #4a90e2; }
+            .br { font-size: 3.6px; font-weight: 700; fill: #6b7787; }
+            .ex-t { font-size: 3.9px; font-weight: 700; fill: #6b21a8; }
+            .sk-t { font-size: 3.9px; font-weight: 700; fill: #6b7787; }
+            .ln { stroke: #253449; stroke-width: 0.6; fill: none; }
+            .ln-g { stroke: #99a3b1; stroke-width: 0.5; fill: none; stroke-dasharray: 1.8 1.4; }
+            .ln-p { stroke: #9333ea; stroke-width: 0.5; fill: none; }
+            .ln-o { stroke: #d9a441; stroke-width: 0.7; fill: none; }
+            .ln-b { stroke: #3b7dd8; stroke-width: 1.1; fill: none; }
+          </style>
+
+          <!-- ===== 본선 화살표 ===== -->
+          <path class="ln" marker-end="url(#a)" d="M132.5,16 L132.5,22" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,39 L132.5,45" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,62 L132.5,68" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,91 L132.5,97" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,114 L132.5,120" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,143 L132.5,149" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,168 L132.5,175" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,192 L132.5,198" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,221 L132.5,227" />
+          <path class="ln" marker-end="url(#a)" d="M132.5,244 L132.5,250" />
+
+          <!-- ===== L0 트리거 ===== -->
+          <rect class="bx" x="78" y="0" width="109" height="16" rx="3" />
+          <text class="t m" x="132.5" y="7.2" text-anchor="middle">매일 아침 · 서버 기동 때</text>
+          <text class="t s" x="132.5" y="12.6" text-anchor="middle">
+            크론 06:30 KST — 무료 플랜에선 기동 잡이 실경로
+          </text>
+
+          <!-- ===== L1 날씨 ===== -->
+          <rect class="ex" x="0" y="24" width="50" height="14" rx="2.5" />
+          <text class="t ex-t" x="25" y="30" text-anchor="middle">기상청 단기예보</text>
+          <text class="t ex-t" x="25" y="35.2" text-anchor="middle">OpenWeatherMap</text>
+          <path class="ln-p" marker-end="url(#ap)" d="M50,31 L77,31" />
+
+          <rect class="bx" x="78" y="23" width="109" height="16" rx="3" />
+          <text class="t n" x="85" y="33">①</text>
+          <text class="t m" x="94" y="30.4">날씨 앙상블</text>
+          <text class="t s" x="94" y="35.8">두 소스를 병합 · 한쪽이 죽어도 진행</text>
+
+          <!-- ===== L2 진단 ===== -->
+          <rect class="ex" x="0" y="47" width="50" height="14" rx="2.5"
+            style="fill: #dcfce7; stroke: #16a34a" />
+          <text class="t ex-t" x="25" y="53" text-anchor="middle" style="fill: #14532d">
+            daily_sales
+          </text>
+          <text class="t ex-t" x="25" y="58.2" text-anchor="middle" style="fill: #14532d">
+            그 가게 매출 이력
+          </text>
+          <path class="ln-p" marker-end="url(#ap)" d="M50,54 L77,54" style="stroke: #16a34a" />
+
+          <rect class="bx" x="78" y="46" width="109" height="16" rx="3" />
+          <text class="t n" x="85" y="56">②</text>
+          <text class="t m" x="94" y="53.4">매출 진단</text>
+          <text class="t s" x="94" y="58.8">비 오는 날 우리 가게는 몇 % 빠지나</text>
+
+          <!-- ===== L3 임계 판단 ===== -->
+          <polygon class="dc" points="132.5,68 187,80 132.5,92 78,80" />
+          <text class="t d" x="132.5" y="82" text-anchor="middle">하락이 20% 이상인가?</text>
+          <text class="t br" x="136" y="95.6">예</text>
+
+          <path class="ln-g" marker-end="url(#ag)" d="M187,80 L204,80" />
+          <text class="t br" x="192" y="77">아니오</text>
+          <rect class="sk" x="205" y="72" width="60" height="16" rx="2.5" />
+          <text class="t sk-t" x="235" y="78.4" text-anchor="middle">오늘은 보내지 않는다</text>
+          <text class="t s" x="235" y="83.6" text-anchor="middle">마케팅 남발 방지</text>
+
+          <!-- ===== L4 생성 ===== -->
+          <rect class="ex" x="0" y="99" width="50" height="14" rx="2.5" />
+          <text class="t ex-t" x="25" y="105" text-anchor="middle">Groq LLM</text>
+          <text class="t ex-t" x="25" y="110.2" text-anchor="middle">llama-3.3-70b</text>
+          <path class="ln-p" marker-end="url(#ap)" d="M50,106 L77,106" />
+
+          <rect class="bx" x="78" y="98" width="109" height="16" rx="3" />
+          <text class="t n" x="85" y="108">③</text>
+          <text class="t m" x="94" y="105.4">문구 · 쿠폰 생성</text>
+          <text class="t s" x="94" y="110.8">날씨와 진단을 넣어 초안을 쓴다</text>
+
+          <!-- ===== L5 품질 판단 + 재생성 고리 ===== -->
+          <polygon class="dc" points="132.5,120 187,132 132.5,144 78,132" />
+          <text class="t d" x="132.5" y="134" text-anchor="middle">스스로 검사 — 통과인가?</text>
+          <text class="t br" x="136" y="147.6">예</text>
+
+          <path class="ln-o" marker-end="url(#ao)" d="M187,132 L196,132 L196,106 L188,106" />
+          <!--
+            되돌아가는 세로 화살표(y 106~132)의 한가운데에 맞춘다.
+            공용 클래스(.br/.s)를 키우면 도식 전체가 흔들리므로 이 네 줄만 인라인으로 올렸다.
+          -->
+          <text class="t br" x="199" y="111.2" style="fill: #a9791c; font-size: 4.4px">
+            위반이면
+          </text>
+          <text class="t br" x="199" y="116.6" style="fill: #a9791c; font-size: 4.4px">
+            1회 재생성
+          </text>
+          <text class="t s" x="199" y="122.4" style="font-size: 4.1px">2회 실패하면</text>
+          <text class="t s" x="199" y="127.6" style="font-size: 4.1px">템플릿으로 폴백</text>
+
+          <!-- ===== L6 사람 ===== -->
+          <rect x="78" y="150" width="109" height="18" rx="3" fill="url(#human)"
+            stroke="#3b7dd8" stroke-width="0.8" />
+          <text class="t n" x="85" y="161" style="fill: #fff">④</text>
+          <text class="t m" x="94" y="158.2" style="fill: #fff; font-size: 6px">
+            사장님 검토 · 승인
+          </text>
+          <text class="t s" x="94" y="164" style="fill: #eaf2fd">
+            문구를 고치거나, 그대로 발송 — 10초
+          </text>
+          <text class="t br" x="192" y="161.4" style="fill: #3b7dd8; font-size: 4.4px">
+            사람은 여기만
+          </text>
+
+          <!-- ===== L7 법적 필터 ===== -->
+          <rect class="bx" x="78" y="176" width="109" height="16" rx="3" />
+          <text class="t n" x="85" y="186">⑤</text>
+          <text class="t m" x="94" y="183.4">법적 필터 — 서버가 강제</text>
+          <text class="t s" x="94" y="188.8">단골 142명 → 수신동의 98명 · (광고) 자동 삽입</text>
+
+          <!-- ===== L8 야간 판단 ===== -->
+          <polygon class="dc" points="132.5,198 187,210 132.5,222 78,210" />
+          <text class="t d" x="132.5" y="212" text-anchor="middle">지금 21시~08시인가?</text>
+          <text class="t br" x="136" y="225.6">아니오</text>
+
+          <path class="ln-g" marker-end="url(#ag)" d="M187,210 L204,210" />
+          <text class="t br" x="194" y="207">예</text>
+          <rect class="sk" x="205" y="202" width="60" height="16" rx="2.5" />
+          <text class="t sk-t" x="235" y="208.4" text-anchor="middle">보내지 않고 예약</text>
+          <text class="t s" x="235" y="213.6" text-anchor="middle">정보통신망법 야간 차단</text>
+
+          <!-- ===== L9 발송 ===== -->
+          <rect class="ex" x="0" y="226" width="50" height="20" rx="2.5" />
+          <text class="t ex-t" x="25" y="232.4" text-anchor="middle">Solapi 문자</text>
+          <text class="t ex-t" x="25" y="237.6" text-anchor="middle">Instagram 게시</text>
+          <!-- X는 서버가 게시하지 않는다 — 있는 그대로 적는다 -->
+          <text class="t" x="25" y="243" text-anchor="middle"
+            style="font-size: 3.4px; fill: #8b7aa0">X(트위터)는 문구 복사</text>
+          <path class="ln-p" marker-start="url(#ap)" d="M51,236 L77,236" />
+
+          <rect class="bx" x="78" y="228" width="109" height="16" rx="3" />
+          <text class="t n" x="85" y="238">⑥</text>
+          <text class="t m" x="94" y="235.4">발송 + 쿠폰 발급</text>
+          <text class="t s" x="94" y="240.8">동의한 단골에게 1인 1코드</text>
+
+          <!-- ===== L10 집계 ===== -->
+          <rect class="bx" x="78" y="251" width="109" height="16" rx="3" />
+          <text class="t n" x="85" y="261">⑦</text>
+          <text class="t m" x="94" y="258.4">쿠폰 사용 집계</text>
+          <text class="t s" x="94" y="263.8">이 캠페인이 만든 매출을 실측</text>
+
+          <!-- ===== 학습 고리 (⑦ → ②) ===== -->
+          <path class="ln-b" marker-end="url(#ab)"
+            d="M187,259 L268,259 L268,54 L188,54" />
+          <!-- 라벨은 세로로 돌리면 한글이 안 읽힌다 — 고리 안쪽 빈 자리에 가로로 둔다 -->
+          <text class="t" x="205" y="234"
+            style="font-size: 5.2px; font-weight: 800; fill: #3b7dd8">학습 고리</text>
+          <text class="t" x="205" y="241" style="font-size: 3.9px; fill: #253449">
+            보낸 날은 '평상시'가 아니다.
+          </text>
+          <text class="t" x="205" y="246.6" style="font-size: 3.9px; fill: #253449">
+            다음 진단의 기준선에서 빼서
+          </text>
+          <text class="t" x="205" y="252.2" style="font-size: 3.9px; fill: #253449">
+            캠페인 효과가 섞이지 않게 한다.
+          </text>
+        </svg>
+      </section>
+
+      <!-- ============ 하단 ============ -->
+      <footer class="foot">
+        <div style="flex: 1 1 auto">
+          <div class="chips">
+            <span class="chip">할인율 <b>≤ 20%</b></span>
+            <span class="chip">정액 할인 <b>≤ 3,000원</b></span>
+            <span class="chip">문자 <b>≤ 2,000 byte</b></span>
+            <span class="chip">금칙어 <b>11개</b></span>
+            <span class="chip">서버 테스트 <b>183건 통과</b></span>
+          </div>
+          <p class="note">
+            이 수치들은 <b>프롬프트로 부탁하지 않고 서버 코드가 막는다.</b> 에이전트가 어겨도
+            발송되지 않는다.<br />
+            쿠폰 추적은 실시간이 아니라 <b>코드 기반 누적 집계</b>이고, 문자·Instagram은
+            <b>본인 번호·본인 계정</b>에만 실제로 나간다.
+          </p>
+        </div>
+        <div class="qr">
+          <img src="./assets/qr-service.svg" alt="서비스 QR" />
+          <b>직접 확인</b>
+          <span>weatherpilot-web.vercel.app</span>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

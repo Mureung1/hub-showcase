@@ -1,0 +1,158 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>WeatherPilot — 쇼케이스 썸네일 (16:9)</title>
+<!--
+  쇼케이스 썸네일 원본 (1600×900, 16:9).
+
+  왜 HTML인가: 기존 썸네일은 대시보드 스크린샷을 817×740으로 크롭한 것이라 16:9가 아니었고,
+  잘라낸 화면만 보여 서비스가 무엇인지 한눈에 읽히지 않았다. 크롭 대신 카피 + 화면을
+  같이 얹은 커버를 만든다. 인쇄물(docs/booth/*.html)과 같은 방식 — 정적 HTML을 헤드리스
+  크롬으로 굽는다. 외부 스타일링 라이브러리는 쓰지 않는다(프로젝트 규칙).
+
+  굽는 법: 스크래치패드의 shoot-thumb.mjs (viewport 1600×900, DPR 1) → showcase/thumbnail.webp
+
+  색은 skills/weatherpilot-design/references/tokens.css, 폰트는 docs/booth/fonts의
+  Pretendard를 그대로 재사용한다(값을 다시 적지 않는다).
+-->
+<style>
+  @font-face {
+    font-family: "Pretendard";
+    src: url("../docs/booth/fonts/Pretendard-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-display: block;
+  }
+  @font-face {
+    font-family: "Pretendard";
+    src: url("../docs/booth/fonts/Pretendard-SemiBold.woff2") format("woff2");
+    font-weight: 600;
+    font-display: block;
+  }
+  @font-face {
+    font-family: "Pretendard";
+    src: url("../docs/booth/fonts/Pretendard-Bold.woff2") format("woff2");
+    font-weight: 700;
+    font-display: block;
+  }
+  @font-face {
+    font-family: "Pretendard";
+    src: url("../docs/booth/fonts/Pretendard-ExtraBold.woff2") format("woff2");
+    font-weight: 800;
+    font-display: block;
+  }
+
+  :root {
+    /* tokens.css 값 */
+    --primary: #4a90e2;
+    --primary-light: #62a8f5;
+    --ink: #253449;
+    --down: #ff7a45;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { width: 1600px; height: 900px; }
+
+  body {
+    display: flex;
+    align-items: center;
+    gap: 72px;
+    padding: 0 84px;
+    font-family: "Pretendard", sans-serif;
+    color: #fff;
+    /* 브랜드 그라데이션(tokens.css --gradient-primary)을 커버 전체로 확장 */
+    background: linear-gradient(150deg, #6fb1f5 0%, var(--primary) 55%, #3b7dd8 100%);
+    overflow: hidden;
+  }
+
+  /* 배경 장식 — 빗방울 결의 사선 원. 카피 가독성을 해치지 않게 아주 낮은 대비로만 둔다. */
+  .glow {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.09);
+  }
+  .glow.a { width: 520px; height: 520px; left: -170px; top: -190px; }
+  .glow.b { width: 300px; height: 300px; left: 44%; bottom: -150px; }
+
+  .left { position: relative; flex: 1; min-width: 0; }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+  }
+  .brand .mark {
+    width: 54px;
+    height: 54px;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.22);
+    display: grid;
+    place-items: center;
+    font-size: 30px;
+  }
+
+  h1 {
+    margin-top: 34px;
+    font-size: 68px;
+    font-weight: 800;
+    line-height: 1.24;
+    letter-spacing: -2.2px;
+  }
+  h1 .accent {
+    /* 하락(▼)을 뜻하는 주황을 카피에서도 한 번 쓴다 — 화면의 진단 알약과 같은 색 언어 */
+    color: #ffd9c9;
+  }
+
+  .sub {
+    margin-top: 26px;
+    font-size: 27px;
+    font-weight: 400;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: -0.5px;
+  }
+
+  /* showcase.json의 featureTags와 같은 3개 — 쇼케이스 카드와 커버가 같은 말을 하게 한다 */
+  .tags { margin-top: 44px; display: flex; gap: 12px; }
+  .tag {
+    padding: 12px 22px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1.5px solid rgba(255, 255, 255, 0.34);
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+
+  /* 실제 대시보드 스크린샷(880×1840)을 폭 420으로 축소해 통째로 얹는다 */
+  .shot {
+    width: 420px;
+    flex: 0 0 420px;
+    border-radius: 26px;
+    overflow: hidden;
+    box-shadow: 0 40px 90px rgba(20, 50, 90, 0.42);
+    background: #eef3f8;
+  }
+  .shot img { display: block; width: 100%; }
+</style>
+
+<div class="glow a"></div>
+<div class="glow b"></div>
+
+<div class="left">
+  <div class="brand"><span class="mark">⛅</span> WeatherPilot</div>
+  <h1>날씨가 매출을 <span class="accent">깎는 날</span>,<br />마케팅은 이미 준비돼 있다</h1>
+  <p class="sub">
+    에이전트가 날씨·매출을 분석해 문구와 쿠폰을 미리 만들어 둡니다.<br />
+    사장님은 승인만 누르고, 쿠폰 코드로 실제 매출을 확인합니다.
+  </p>
+  <div class="tags">
+    <span class="tag">날씨 기반 AI 제안</span>
+    <span class="tag">승인 후 발송</span>
+    <span class="tag">쿠폰 성과 실측</span>
+  </div>
+</div>
+
+<div class="shot"><img src="../showcase/screenshots/home.webp" alt="WeatherPilot 대시보드" /></div>

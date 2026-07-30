@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>WeatherPilot — 기획 · 주제</title>
+    <!--
+      폰트를 미리 받는다. font-display:block이라 로딩 전에는 글자가 안 그려지는데,
+      Chrome이 그 사이에 PDF를 찍으면 글자가 통째로 빠진 PDF가 나온다(실제로 겪었다).
+      인쇄할 때 --virtual-time-budget 도 함께 준다 — README 참고.
+    -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-Regular.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-SemiBold.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-Bold.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="./fonts/Pretendard-ExtraBold.woff2" />
+    <link rel="stylesheet" href="./booth.css" />
+    <style>
+      /* ---------- 1. 문제 ---------- */
+      .problem {
+        display: grid;
+        grid-template-columns: 1.1fr 1.1fr 1.15fr;
+        gap: 5mm;
+      }
+      .problem .card {
+        display: flex;
+        flex-direction: column;
+      }
+      .p-label {
+        font-size: 4mm;
+        font-weight: 700;
+        color: var(--sub);
+      }
+      .p-src {
+        margin-top: auto;
+        padding-top: 3mm;
+        font-size: 3.1mm;
+        line-height: 1.4;
+        color: var(--muted);
+      }
+      /* 업종별 감소폭 막대 */
+      .rows {
+        margin: 4mm 0 0;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 2.5mm;
+        margin-bottom: 2.4mm;
+        font-size: 3.6mm;
+      }
+      .row span:first-child {
+        flex: 0 0 26mm;
+        font-weight: 600;
+      }
+      .row .track {
+        flex: 1 1 auto;
+        height: 5.5mm;
+        background: var(--surface-alt);
+        border-radius: 1mm;
+        overflow: hidden;
+      }
+      /* span은 기본이 inline이라 display:block을 줘야 height가 먹는다 */
+      .row .fill {
+        display: block;
+        height: 100%;
+        background: var(--down);
+        border-radius: 1mm;
+      }
+      .row b {
+        flex: 0 0 12mm;
+        text-align: right;
+        color: var(--down-text);
+        font-size: 4mm;
+      }
+      /* 하루 시간 도넛 */
+      .clock {
+        display: flex;
+        align-items: center;
+        gap: 5mm;
+        margin-top: 3mm;
+      }
+      .dial {
+        width: 32mm;
+        height: 32mm;
+        border-radius: 50%;
+        flex: 0 0 auto;
+        background: conic-gradient(var(--down) 0deg 2.5deg, var(--line) 2.5deg 360deg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .dial i {
+        width: 23mm;
+        height: 23mm;
+        border-radius: 50%;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-style: normal;
+        font-size: 4.4mm;
+        font-weight: 800;
+        color: var(--down-text);
+      }
+      .quote {
+        margin: 3mm 0 0;
+        font-size: 6mm;
+        line-height: 1.45;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+      }
+      .quote em {
+        font-style: normal;
+        background: linear-gradient(transparent 60%, #ffe0a8 60%);
+        font-weight: 800;
+      }
+      .strike {
+        color: var(--muted);
+        text-decoration: line-through;
+        font-weight: 500;
+      }
+      .insight {
+        margin-top: 4mm;
+        background: var(--surface-alt);
+        border-radius: 2.5mm;
+        padding: 3.5mm 4mm;
+        font-size: 3.7mm;
+        line-height: 1.5;
+      }
+      .insight b {
+        color: var(--brand-dk);
+      }
+
+      /* ---------- 2. 해법 ---------- */
+      .solve {
+        display: grid;
+        grid-template-columns: 1fr 68mm;
+        gap: 7mm;
+      }
+      .flow {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 4mm;
+      }
+      .flow-row {
+        display: flex;
+        align-items: stretch;
+        gap: 3mm;
+      }
+      .flow-tag {
+        flex: 0 0 22mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        font-size: 4.4mm;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .flow-tag span {
+        display: block;
+        font-size: 3.2mm;
+        font-weight: 600;
+        color: var(--sub);
+      }
+      .steps {
+        flex: 1 1 auto;
+        display: flex;
+        align-items: stretch;
+        gap: 1.8mm;
+      }
+      .step {
+        flex: 1 1 0;
+        border-radius: 2mm;
+        padding: 3.2mm 1.5mm;
+        text-align: center;
+        font-size: 3.7mm;
+        line-height: 1.25;
+        font-weight: 700;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.4mm;
+      }
+      /* 사람 칸엔 사람, 에이전트 칸엔 로봇 — 멀리서도 누가 하는 일인지 바로 보인다 */
+      .step i {
+        font-style: normal;
+        font-size: 6mm;
+        line-height: 1;
+      }
+      /* 사람이 하는 칸 = 주황 / 에이전트가 하는 칸 = 회색 / 사람이 남는 한 칸 = 브랜드 블루 */
+      .step-human {
+        background: var(--down-bg);
+        border: 0.45mm solid var(--down);
+        color: var(--down-text);
+      }
+      .step-agent {
+        background: var(--surface-alt);
+        border: 0.4mm solid var(--line);
+        color: var(--sub);
+        font-weight: 600;
+      }
+      .step-key {
+        background: linear-gradient(150deg, var(--brand-lt), var(--brand-dk));
+        border: 0.45mm solid var(--brand-dk);
+        color: #fff;
+        box-shadow: 0 1.5mm 4mm rgba(74, 144, 226, 0.35);
+      }
+      .handoff {
+        margin-left: 25mm;
+        display: flex;
+        align-items: center;
+        gap: 3mm;
+        font-size: 3.8mm;
+        font-weight: 700;
+        color: var(--brand-dk);
+      }
+      .handoff::before,
+      .handoff::after {
+        content: "";
+        flex: 1 1 auto;
+        border-top: 0.4mm solid var(--line);
+      }
+      .handoff span {
+        background: var(--bg);
+        border-radius: 999mm;
+        padding: 1.6mm 5mm;
+      }
+      .gains {
+        margin-left: 25mm;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 3.5mm;
+      }
+      .gain {
+        background: var(--surface-alt);
+        border: 0.4mm solid var(--line);
+        border-radius: 2.5mm;
+        padding: 3.5mm 4.5mm;
+        display: flex;
+        align-items: center;
+      }
+      .gain-lab {
+        font-size: 3.6mm;
+        line-height: 1.35;
+        color: var(--sub);
+        font-weight: 600;
+      }
+      .gain-num {
+        margin-left: auto;
+        font-size: 9.5mm;
+        font-weight: 800;
+        letter-spacing: -0.035em;
+        white-space: nowrap;
+        color: var(--brand-dk);
+      }
+      .gain-num s {
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 6mm;
+      }
+      .shot {
+        display: flex;
+        flex-direction: column;
+        gap: 3mm;
+      }
+      /*
+       * 폰 캡처는 세로 2.09:1이라 68mm 폭이면 141mm까지 자란다 — 지면의 3분의 1.
+       * 아래를 잘라 상단(문구 편집·채널 선택)만 보여준다. 폭은 유지되니 글자는 더 커 보인다.
+       */
+      .shot img {
+        width: 100%;
+        height: 76mm;
+        object-fit: cover;
+        object-position: top center;
+        border-radius: 3mm;
+        border: 0.5mm solid var(--line);
+        display: block;
+        /* 아래를 흐리게 빼서 '잘린' 게 아니라 '이어진다'로 읽히게 한다 */
+        -webkit-mask-image: linear-gradient(#000 84%, transparent 100%);
+        mask-image: linear-gradient(#000 84%, transparent 100%);
+      }
+      .shot-cap {
+        margin: 0;
+        text-align: center;
+        font-size: 4.8mm;
+        font-weight: 600;
+        line-height: 1.4;
+        color: var(--sub);
+      }
+      .shot-cap b {
+        color: var(--brand-dk);
+      }
+
+      /* ---------- 3. 차별점 ---------- */
+      .diffs {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5mm;
+      }
+      .diff {
+        border: 0.4mm solid var(--line);
+        border-top: 2mm solid var(--brand);
+        border-radius: 2.5mm;
+        padding: 3.6mm 4.4mm;
+        display: flex;
+        flex-direction: column;
+      }
+      .diff-n {
+        font-size: 3.4mm;
+        font-weight: 800;
+        color: var(--brand);
+        letter-spacing: 0.04em;
+      }
+      .diff > b {
+        display: block;
+        margin: 1.6mm 0 2.5mm;
+        font-size: 5.4mm;
+        line-height: 1.28;
+        letter-spacing: -0.025em;
+      }
+      .diff p {
+        margin: 0;
+        font-size: 3.7mm;
+        line-height: 1.42;
+        color: var(--sub);
+      }
+      .diff p b {
+        color: var(--ink);
+      }
+      /* 03 카드 안 자율성 계단 */
+      .lvbar {
+        margin-top: auto;
+        padding-top: 3.5mm;
+        display: flex;
+        align-items: flex-end;
+        gap: 1.5mm;
+      }
+      .lv {
+        flex: 1 1 0;
+        border-radius: 1.5mm;
+        text-align: center;
+        font-size: 3.2mm;
+        font-weight: 700;
+        padding: 2mm 0.5mm;
+        background: var(--surface-alt);
+        color: var(--muted);
+      }
+      .lv-0 {
+        padding-top: 2mm;
+      }
+      .lv-1 {
+        padding-top: 5mm;
+        background: var(--brand);
+        color: #fff;
+      }
+      .lv-2 {
+        padding-top: 8mm;
+        border: 0.4mm dashed var(--muted);
+      }
+      /* 지면 최소 글자 크기를 3mm(8.5pt) 밑으로 내리지 않는다 — 부스 거리에서 안 읽힌다 */
+      .lv small {
+        display: block;
+        font-size: 3mm;
+        font-weight: 600;
+        opacity: 0.85;
+      }
+      .diff .mono {
+        margin-top: 2.5mm;
+      }
+
+      /* ---------- 4. 하단 ---------- */
+      .scope {
+        flex: 1 1 auto;
+      }
+      .scope-row {
+        display: flex;
+        align-items: baseline;
+        gap: 3.5mm;
+        font-size: 3.7mm;
+        line-height: 1.5;
+        margin-bottom: 1.8mm;
+      }
+      .pill {
+        flex: 0 0 19mm;
+        text-align: center;
+        border-radius: 1.5mm;
+        padding: 1mm 0;
+        font-size: 3.2mm;
+        font-weight: 800;
+      }
+      .pill-real {
+        background: var(--up-bg);
+        color: var(--up-text);
+      }
+      .pill-sub {
+        background: #fff3d6;
+        color: #a9791c;
+      }
+      .pill-mock {
+        background: var(--surface-alt);
+        color: var(--sub);
+      }
+      .stack {
+        margin: 3mm 0 0;
+        font-size: 3.3mm;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ============ 헤더 ============ -->
+      <header class="head">
+        <div class="head-mark">🌦️</div>
+        <div class="head-body">
+          <h1>WeatherPilot<span class="thin"> · 웨더파일럿</span></h1>
+          <p>
+            날씨 때문에 흔들리는 동네 가게 매출을,<br />
+            사장님이 신경 쓰지 않아도 <b>AI가 알아서 방어하는 자율 마케팅 에이전트</b>
+          </p>
+        </div>
+        <div class="head-tag">
+          <b>N111 양서형</b>
+          weatherpilot-web.vercel.app
+        </div>
+      </header>
+
+      <!-- ============ 1. 문제 ============ -->
+      <section class="sec">
+        <p class="sec-title">
+          <b>왜 만들었나</b><span>날씨는 매출을 흔드는데, 대응할 사람이 없다</span>
+        </p>
+        <div class="problem">
+          <div class="card">
+            <span class="p-label">비 오는 날 대면소비</span>
+            <span class="big" style="color: var(--down-text)">−6%</span>
+            <div class="rows">
+              <div class="row">
+                <span>오프라인 쇼핑</span>
+                <span class="track"><span class="fill" style="width: 100%"></span></span>
+                <b>−7%</b>
+              </div>
+              <div class="row">
+                <span>대면소비 전체</span>
+                <span class="track"><span class="fill" style="width: 86%"></span></span>
+                <b>−6%</b>
+              </div>
+              <div class="row">
+                <span>외식</span>
+                <span class="track"><span class="fill" style="width: 43%"></span></span>
+                <b>−3%</b>
+              </div>
+            </div>
+            <p class="p-src">
+              한국은행 BOK 이슈노트 제2025-29호(2025.9)<br />
+              일별 카드사용액 × 기온·강수량 분석.<br />
+              금·토에 비가 오면 감소폭이 더 컸다.
+            </p>
+          </div>
+
+          <div class="card">
+            <span class="p-label">사장님의 하루</span>
+            <span class="big">10분</span>
+            <div class="clock">
+              <div class="dial"><i>10분</i></div>
+              <p class="cap" style="margin: 0">
+                1인 운영 카페 사장님이<br />마케팅에 쓸 수 있는<br />하루 시간의 전부
+              </p>
+            </div>
+            <p class="p-src">오픈 준비 · 응대 · 마감을 혼자 처리한다.</p>
+          </div>
+
+          <div class="card">
+            <span class="p-label">그래서 무엇을 만들 것인가</span>
+            <p class="quote">
+              <span class="strike">더 좋은 마케팅 툴</span>이 아니라<br />
+              <em>“마케팅을 안 해도 되는 상태”</em>
+            </p>
+            <div class="insight">
+              전국 평균은 <b>−6%</b>. 그런데 <b>우리 가게는?</b><br />
+              업계 평균으로는 오늘 무엇을 할지 정할 수 없다. 그래서 WeatherPilot은
+              <b>그 가게의 매출 이력으로 직접 계산</b>한다.
+            </div>
+            <p class="p-src">
+              제품의 목표는 기능 제공이 아니라 <b>의사결정 대행</b> —<br />
+              에이전트가 판단까지 끝내 두고, 사장님은 확인만 한다.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 2. 해법 ============ -->
+      <section class="sec">
+        <p class="sec-title">
+          <b>무엇이 달라지나</b><span>사람이 개입하는 지점을 5곳에서 1곳으로</span>
+        </p>
+        <div class="solve">
+          <div class="flow">
+            <div class="flow-row">
+              <div class="flow-tag">AS-IS<span>사장님 혼자</span></div>
+              <div class="steps">
+                <div class="step step-human"><i>🧑</i>날씨 확인</div>
+                <div class="step step-human"><i>🧑</i>전략 판단</div>
+                <div class="step step-human"><i>🧑</i>문구 작성</div>
+                <div class="step step-human"><i>🧑</i>채널 발송</div>
+                <div class="step step-human"><i>🧑</i>효과 확인</div>
+              </div>
+            </div>
+
+            <div class="handoff"><span>판단까지 에이전트가 넘겨받는다</span></div>
+
+            <div class="flow-row">
+              <div class="flow-tag" style="color: var(--brand-dk)">
+                TO-BE<span>WeatherPilot</span>
+              </div>
+              <div class="steps">
+                <div class="step step-agent"><i>🤖</i>날씨 분석</div>
+                <div class="step step-agent"><i>🤖</i>매출 진단</div>
+                <div class="step step-agent"><i>🤖</i>문구·쿠폰 생성</div>
+                <div class="step step-key"><i>🧑</i>검토 · 승인</div>
+                <div class="step step-agent"><i>🤖</i>발송</div>
+                <div class="step step-agent"><i>🤖</i>효과 측정</div>
+              </div>
+            </div>
+
+            <div class="gains">
+              <div class="gain">
+                <span class="gain-lab">사람이 개입하는<br />지점</span>
+                <span class="gain-num"><s>5곳</s> → 1곳</span>
+              </div>
+              <div class="gain">
+                <span class="gain-lab">검토에서 발송까지<br />걸리는 시간</span>
+                <span class="gain-num">10초</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="shot">
+            <img src="../../showcase/screenshots/review.webp" alt="검토·승인 화면" />
+            <p class="shot-cap">
+              사장님이 보는 화면은 <b>이것 하나</b><br />
+              문구를 고치거나, 그대로 발송
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 3. 차별점 ============ -->
+      <section class="sec">
+        <p class="sec-title"><b>차별점</b><span>비슷한 도구가 잘 안 하는 세 가지</span></p>
+        <div class="diffs">
+          <div class="diff">
+            <span class="diff-n">01 &nbsp; 규제 대응</span>
+            <b>법을 UI가 아니라<br />서버가 강제한다</b>
+            <p>
+              수신동의·<b>(광고)</b> 표기·야간 차단을 발송 API에서 검사한다. 화면을 우회해 API를
+              직접 불러도 막힌다.
+            </p>
+            <span class="mono">apps/server/src/legal/filter.ts</span>
+          </div>
+          <div class="diff">
+            <span class="diff-n">02 &nbsp; 측정 설계</span>
+            <b>채널마다 맡는<br />역할을 분리했다</b>
+            <p>
+              단골 문자는 <b>한 사람에 코드 하나</b>라서 누가 실제로 왔는지 셀 수 있고, 수신자
+              목록이 없는 공개 채널은 <b>새&nbsp;손님에게 알리는 일</b>을 맡는다.
+            </p>
+            <span class="mono">coupons · issueCouponsFor()</span>
+          </div>
+          <div class="diff">
+            <span class="diff-n">03 &nbsp; 자율성 근거</span>
+            <b>성과가 쌓여야<br />권한이 올라간다</b>
+            <p>승격 버튼을 누르는 건 언제나 사장님이다. 에이전트가 스스로 권한을 넓히지 않는다.</p>
+            <div class="lvbar">
+              <div class="lv lv-0">L0<small>제안만</small></div>
+              <div class="lv lv-1">L1<small>승인 후 실행</small></div>
+              <div class="lv lv-2">L2<small>완전 자율</small></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 4. 하단 ============ -->
+      <footer class="foot">
+        <div class="scope">
+          <p class="sec-title" style="margin-bottom: 3mm">
+            <b>구현 범위를 있는 그대로</b>
+          </p>
+          <div class="scope-row">
+            <span class="pill pill-real">실연동</span>
+            <span>
+              날씨(기상청+OpenWeatherMap) · LLM(Groq) · DB(Supabase) · 문자(Solapi) · Instagram
+              게시<br /><b>단, 본인 번호·본인 계정에만</b>
+            </span>
+          </div>
+          <div class="scope-row">
+            <span class="pill pill-sub">대체</span>
+            <span>POS 연동 → 수동 일매출 입력 + CSV 업로드</span>
+          </div>
+          <div class="scope-row">
+            <span class="pill pill-mock">모의</span>
+            <span>080 수신거부 실회선 · 타인 계정 SNS 게시</span>
+          </div>
+          <p class="stack">
+            React + TypeScript(Vite) · Node + Express · Supabase · Vercel · Render / 서버 테스트
+            <b>183건 통과</b>
+          </p>
+        </div>
+        <div class="qr">
+          <img src="./assets/qr-service.svg" alt="서비스 QR" />
+          <b>지금 써보기</b>
+          <span>weatherpilot-web.vercel.app</span>
+        </div>
+        <div class="qr">
+          <img src="./assets/qr-video.svg" alt="시연 영상 QR" />
+          <b>시연 영상 5분</b>
+          <span>실제 문자 도착까지</span>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

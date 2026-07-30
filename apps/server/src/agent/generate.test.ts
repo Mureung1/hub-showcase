@@ -58,14 +58,14 @@ describe("generateProposal", () => {
     const caller = vi.fn(async () =>
       JSON.stringify({
         title: "비 오는 날 픽업 할인",
-        copy: "☔ 비 오는 오늘, 픽업 10% 할인!",
-        promo: { type: "할인", value: "픽업 10% 할인" },
+        copy: "☔ 비 오는 오늘, 픽업 1,000원 할인!",
+        promo: { type: "할인", value: "픽업 1,000원 할인" },
         channels: ["dangol", "instagram"],
       }),
     );
     const proposal = await generateProposal(ctx, { apiKey: "TEST", caller });
     expect(proposal.title).toBe("비 오는 날 픽업 할인");
-    expect(proposal.promo.value).toBe("픽업 10% 할인");
+    expect(proposal.promo.value).toBe("픽업 1,000원 할인");
     expect(proposal.channels).toContain("dangol");
     expect(caller).toHaveBeenCalledOnce();
   });
@@ -97,7 +97,7 @@ describe("generateProposal", () => {
   const valid = JSON.stringify({
     title: "정상 제안",
     copy: "정상 문구",
-    promo: { type: "할인", value: "10% 할인" },
+    promo: { type: "할인", value: "1,000원 할인" },
     channels: ["dangol"],
   });
 
@@ -137,7 +137,7 @@ describe("generateProposal", () => {
     const han = JSON.stringify({
       title: "비 오는 날 카페 픽업 할인",
       copy: "☔ 비 오는 오늘 10% 할인된 가격에 즐기세요! 🎉今日의 주문은 픽업으로 받아보세요!",
-      promo: { type: "할인", value: "10% 할인" },
+      promo: { type: "할인", value: "1,000원 할인" },
       channels: ["dangol"],
     });
     const c = vi.fn(async () => (calls++ === 0 ? han : valid));
@@ -146,12 +146,42 @@ describe("generateProposal", () => {
     expect(c).toHaveBeenCalledTimes(2);
   });
 
+  it("copy에 러시아어가 섞이면 재생성한다 (실측 회귀: 2026-07-30 유출분)", async () => {
+    // 옛 검사는 한자·가나·라틴만 보는 금지 목록이라 키릴이 그대로 통과해 저장됐다.
+    let calls = 0;
+    const ru = JSON.stringify({
+      title: "흐린 날 커피 한잔",
+      copy: "흐린 오늘, 김사장 카페에서 따뜻한 커피 한잔 어떠세요? ☕️ 오늘 주문하시면 스콘 1개 бесплат로 드립니다! 🥐",
+      promo: { type: "할인", value: "1,000원 할인" },
+      channels: ["dangol"],
+    });
+    const c = vi.fn(async () => (calls++ === 0 ? ru : valid));
+    const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    expect(proposal.title).toBe("정상 제안");
+    expect(c).toHaveBeenCalledTimes(2);
+  });
+
+  it("재생성까지 러시아어면 한국어 템플릿으로 폴백한다", async () => {
+    // 사용자 요구("다른 언어가 포함되면 폴백")가 끝까지 지켜지는지 — 2회 모두 오염된 경우.
+    const ru = JSON.stringify({
+      title: "무료 스콘",
+      copy: "스콘 1개 бесплат로 드립니다!",
+      promo: { type: "할인", value: "1,000원 할인" },
+      channels: ["dangol"],
+    });
+    const c = vi.fn(async () => ru);
+    const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
+    expect(c).toHaveBeenCalledTimes(2);
+    expect(proposal.copy).not.toContain("бесплат");
+    expect(checkProposalQuality(proposal, ctx.store.name).ok).toBe(true);
+  });
+
   it("허용 안 된 채널이면 재생성한다", async () => {
     let calls = 0;
     const bad = JSON.stringify({
       title: "정상 제안",
       copy: "정상 문구",
-      promo: { type: "할인", value: "10% 할인" },
+      promo: { type: "할인", value: "1,000원 할인" },
       channels: ["facebook"],
     });
     const c = vi.fn(async () => (calls++ === 0 ? bad : valid));
@@ -164,7 +194,7 @@ describe("generateProposal", () => {
     const leak = JSON.stringify({
       title: "정상 제안",
       copy: "비 오는 날 매출이 걱정이라 준비했어요",
-      promo: { type: "할인", value: "10% 할인" },
+      promo: { type: "할인", value: "1,000원 할인" },
       channels: ["dangol"],
     });
     const c = vi.fn(async () => (calls++ === 0 ? leak : valid));
@@ -176,7 +206,7 @@ describe("generateProposal", () => {
     const c = vi.fn(async () => "계속 깨진 응답");
     const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
     // 비 오는 날씨(ctx.weather.isPrecipitating=true) 폴백
-    expect(proposal.title).toBe("비 오는 날 픽업 혜택");
+    expect(proposal.title).toBe("비 오는 날 픽업 1,000원 할인");
     expect(c).toHaveBeenCalledTimes(2);
   });
 
@@ -185,16 +215,16 @@ describe("generateProposal", () => {
       throw new Error("network");
     });
     const proposal = await generateProposal(ctx, { apiKey: "TEST", caller: c });
-    expect(proposal.title).toBe("비 오는 날 픽업 혜택");
+    expect(proposal.title).toBe("비 오는 날 픽업 1,000원 할인");
     expect(c).toHaveBeenCalledTimes(2);
   });
 });
 
 describe("buildFallbackProposal", () => {
-  it("비 오는 날은 픽업 문구, 할인율은 20% 이하", () => {
+  it("비 오는 날은 픽업 문구, 쿠폰은 금액권이고 3,000원 이하", () => {
     const p = buildFallbackProposal(ctx);
-    expect(p.title).toBe("비 오는 날 픽업 혜택");
-    expect(p.promo.value).toContain("10%");
+    expect(p.title).toBe("비 오는 날 픽업 1,000원 할인");
+    expect(p.promo.value).toContain("1,000원 할인");
     expect(p.channels).toContain("dangol");
   });
 
@@ -203,7 +233,14 @@ describe("buildFallbackProposal", () => {
       ...ctx,
       weather: { ...weather, isPrecipitating: false, condition: "clear" },
     });
-    expect(p.title).toBe("오늘의 방문 혜택");
+    expect(p.title).toBe("오늘의 방문 1,000원 할인");
+  });
+
+  it("폴백은 문구와 쿠폰이 같은 금액을 말한다", () => {
+    // 폴백은 검사 없이 반환되므로, 여기서 어긋나면 손님에게 서로 다른 혜택이 나간다.
+    const p = buildFallbackProposal(ctx);
+    expect(p.copy).toContain("1,000원 할인");
+    expect(p.promo.value).toContain("1,000원 할인");
   });
 
   it("폴백 제안은 가드레일을 통과한다", () => {

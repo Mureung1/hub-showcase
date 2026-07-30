@@ -1,7 +1,7 @@
 import type { Proposal } from "shared";
 import { getSupabase } from "./client";
 import { syncPromoToCopy } from "../agent/promoSync";
-import { checkProposalQuality } from "../agent/quality";
+import { checkProposalQuality, findNonKoreanLetters } from "../agent/quality";
 
 /**
  * 저장된 제안 수리 — 파이프라인이 품질검사를 강제하기 전에 들어온 행을 고친다.
@@ -25,16 +25,15 @@ import { checkProposalQuality } from "../agent/quality";
  */
 
 /** copy에서 관찰된 비한국어 표기 → 한국어. 추측하지 않고, 실제로 나온 것만 넣는다. */
-const HANJA_FIXES: Record<string, string> = {
-  今日: "오늘",
+const NON_KOREAN_FIXES: Record<string, string> = {
+  今日: "오늘", // 2026-07-26 "🎉今日의 주문은…"
+  бесплат: "무료", // 2026-07-30 "스콘 1개 бесплат로 드립니다"
 };
-
-const NON_KOREAN_RE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}A-Za-z]/gu;
 
 /** 명시 매핑으로 고칠 수 있는 것만 고친다. */
 function fixNonKorean(text: string): string {
   let out = text;
-  for (const [from, to] of Object.entries(HANJA_FIXES)) {
+  for (const [from, to] of Object.entries(NON_KOREAN_FIXES)) {
     out = out.replaceAll(from, to);
   }
   return out;
@@ -66,17 +65,26 @@ async function main() {
   for (const row of rows) {
     const before = row.proposal as Proposal;
     const synced = syncPromoToCopy(before);
-    const after: Proposal = { ...synced, copy: fixNonKorean(synced.copy) };
+    // title·copy·promo 모두 손님에게 보이므로 같은 매핑을 적용한다.
+    // (copy만 고치면 promo.value에 남은 비한국어가 수리 후에도 위반으로 남는다 — 2026-07-30 실측)
+    const after: Proposal = {
+      ...synced,
+      title: fixNonKorean(synced.title),
+      copy: fixNonKorean(synced.copy),
+      promo: { ...synced.promo, value: fixNonKorean(synced.promo.value) },
+    };
 
     const promoChanged = after.promo.value !== before.promo.value;
     const copyChanged = after.copy !== before.copy;
+    const titleChanged = after.title !== before.title;
 
-    if (promoChanged || copyChanged) {
+    if (promoChanged || copyChanged || titleChanged) {
       changed += 1;
       console.log(`${row.date}  ${row.status}`);
       if (promoChanged) console.log(`  promo  "${before.promo.value}"  →  "${after.promo.value}"`);
+      if (titleChanged) console.log(`  title  "${before.title}"  →  "${after.title}"`);
       if (copyChanged) {
-        const marks = [...new Set(before.copy.match(NON_KOREAN_RE) ?? [])].join(" ");
+        const marks = findNonKoreanLetters(before.copy).join(" ");
         console.log(`  copy   비한국어 [${marks}] 치환`);
       }
 
