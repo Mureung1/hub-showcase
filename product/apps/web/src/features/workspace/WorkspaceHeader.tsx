@@ -16,24 +16,28 @@ function PeriodSelect({
   onChange: (period: string) => void;
 }) {
   const options = periods.length > 0 ? periods : value ? [value] : [];
+  const has2026Period = periods.some((period) => period.startsWith("2026"));
   const formatPeriod = (period: string) => `${period.slice(0, 4)}년 ${period.slice(4)}분기`;
   const formatAvailability = (period: string) => {
     const available = availability[period] ?? [];
-    if (available.includes("sales") && available.includes("flow")) return "전체 분석";
-    if (available.includes("flow")) return "점포·유동인구";
-    return "점포 데이터만";
+    const hasSales = available.includes("sales");
+    const hasFlow = available.includes("flow");
+    if (hasSales && hasFlow) return "점포·매출·유동 자료 있음";
+    if (hasSales) return "점포·매출 자료 있음";
+    if (hasFlow) return "점포·유동 자료 있음";
+    return "점포 자료만";
   };
   return (
     <label className="header-control period-control">
-      <span className="sr-only">분석 데이터 분기</span>
+      <span className="sr-only">상권 통계 분기</span>
       <select
-        aria-label="분석 데이터 분기"
+        aria-label="상권 통계 분기"
         value={value}
         disabled={periods.length <= 1}
         title={
           periods.length <= 1
             ? "현재 선택 가능한 분기는 한 개입니다."
-            : "분기별로 실제 적재된 데이터 범위를 확인하며 선택합니다."
+            : "분기마다 실제 적재된 점포·매출·유동 자료를 구분해서 표시합니다."
         }
         onChange={(event) => onChange(event.target.value)}
       >
@@ -42,6 +46,11 @@ function PeriodSelect({
             {`${formatPeriod(period)} · ${formatAvailability(period)}`}
           </option>
         ))}
+        {!has2026Period && periods.length > 0 && (
+          <option value="__2026-unavailable" disabled>
+            2026년 분기 통계 · 현재 API에 없음
+          </option>
+        )}
         {!value && <option value="">분기 확인 중</option>}
       </select>
     </label>
@@ -147,23 +156,23 @@ export function WorkspaceHeader({
           </button>
         </div>
       </header>
-      <section className="demo-note" aria-label="데모 데이터 안내">
+      <section className="demo-note" aria-label="데이터 기준 안내">
         <span className="pulse-dot" />
         {apiState === "checking"
           ? "분석 서버 연결을 확인하는 중입니다."
           : apiState === "waking"
-            ? "분석 서버를 준비하고 있습니다. 준비되면 현재 조건의 최신 데이터를 자동으로 불러옵니다."
+            ? "분석 서버를 준비하고 있습니다. 준비되면 현재 조건의 데이터를 자동으로 불러옵니다."
             : apiState === "unavailable"
               ? "분석 서버에 연결하지 못했습니다. 예시 데이터로 대체하지 않았습니다."
               : analysisState === "loading"
-                ? "서울 상권분석 공식 데이터를 불러오는 중입니다."
+                ? "서울 상권분석 공식 분기 자료를 불러오는 중입니다."
                 : analysisState === "error"
                   ? "상권 분석 API에 연결하지 못했습니다. 예시 값으로 대체하지 않았습니다."
                   : analysisState === "unavailable"
-                    ? `${categorySelection.name}은 점포 위치와 반경 경쟁 지표만 제공합니다.`
+                    ? `${categorySelection.name}은 점포 위치 2026.06 기준과 경쟁 지표만 제공합니다.`
                     : analysisSource === "demo"
-                      ? "Demo mode · 검증 snapshot 예시이며 실제 조회 결과가 아닙니다."
-                      : `서울 상권분석 ${period.slice(0, 4)}년 ${period.slice(4)}분기 API 결과입니다.`}{" "}
+                      ? "Demo mode · 검증 스냅샷 예시이며 실제 조회 결과가 아닙니다."
+                      : `상권 통계 ${period.slice(0, 4)}년 ${period.slice(4)}분기 · 지도 점포 위치 2026.06 기준입니다.`}{" "}
         {(apiState === "unavailable" || analysisState === "error") && (
           <button
             type="button"
