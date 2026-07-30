@@ -7,7 +7,7 @@ function formatPublishedAt(value) {
   return value.replaceAll("-", ".");
 }
 
-export default function NoticeDiscovery() {
+export default function NoticeDiscovery({ accessToken }) {
   const [sources, setSources] = useState([]);
   const [sourceId, setSourceId] = useState("");
   const [keyword, setKeyword] = useState("");
@@ -51,7 +51,7 @@ export default function NoticeDiscovery() {
     setItems(null);
 
     try {
-      const response = await discoverNotices({ keyword, sourceId });
+      const response = await discoverNotices({ keyword, sourceId }, accessToken);
       const candidates = Array.isArray(response.items) ? response.items : [];
       setItems(candidates);
       if (response.cached) setNoticeMessage("최근 탐색 결과를 표시하고 있습니다.");

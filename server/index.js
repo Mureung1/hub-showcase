@@ -371,7 +371,7 @@ app.get("/api/sites", (request, response) => {
   sendJson(response, 200, { sites: getActiveSiteRegistry() });
 });
 
-app.post("/api/recommend-sites", async (request, response) => {
+app.post("/api/recommend-sites", requireAuth, async (request, response) => {
   const validation = recommendSitesRequestSchema.safeParse(request.body);
 
   if (!validation.success) {
@@ -393,7 +393,7 @@ app.post("/api/recommend-sites", async (request, response) => {
   }
 });
 
-app.get("/api/discover", discoverRateLimit, async (request, response) => {
+app.get("/api/discover", requireAuth, discoverRateLimit, async (request, response) => {
   const validation = noticeDiscoveryQuerySchema.safeParse(request.query);
 
   if (!validation.success) {
@@ -443,7 +443,7 @@ app.get("/api/fetch-html", htmlFetchRateLimit, requireScanAccess, async (request
   }
 });
 
-app.post("/api/analyze", analyzeRateLimit, async (request, response) => {
+app.post("/api/analyze", requireAuth, analyzeRateLimit, async (request, response) => {
   const validation = analyzeRequestSchema.safeParse(request.body);
 
   if (!validation.success) {

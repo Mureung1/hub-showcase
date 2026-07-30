@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { createRequireAuth } from "../server/middleware/requireAuth.js";
@@ -53,4 +54,12 @@ test("검증된 토큰의 사용자 ID만 request에 설정한다", async () => 
   assert.equal(nextCalled, true);
   assert.deepEqual(request.user, { id: "account-a", email: "student@example.com" });
   assert.equal(request.accessToken, "token-a");
+});
+
+test("비용 또는 외부 요청 API는 인증 미들웨어를 먼저 통과해야 한다", () => {
+  const serverSource = readFileSync(new URL("../server/index.js", import.meta.url), "utf8");
+
+  assert.match(serverSource, /app\.post\("\/api\/analyze", requireAuth, analyzeRateLimit,/);
+  assert.match(serverSource, /app\.post\("\/api\/recommend-sites", requireAuth,/);
+  assert.match(serverSource, /app\.get\("\/api\/discover", requireAuth, discoverRateLimit,/);
 });

@@ -1361,7 +1361,7 @@ function OpportunityAgentWorkbench() {
         profile: activeUserProfile,
         rawText: "",
         sourceUrl: url,
-      });
+      }, session?.access_token);
       if (autoSave) {
         await saveAnalysisIfEnabled(result);
       }
@@ -2043,8 +2043,8 @@ function OpportunityAgentWorkbench() {
 
           {activeView === "recommendations" ? (
             <div className="view-page recommendations-view">
-              <SiteRecommendations key={isAuthConfigured ? user?.id || "unauthenticated" : "local"} onAddSource={addRecommendedSource} profile={activeUserProfile} savedSources={sourceOptions} settings={userSettings} />
-              <NoticeDiscovery />
+              <SiteRecommendations accessToken={session?.access_token} key={isAuthConfigured ? user?.id || "unauthenticated" : "local"} onAddSource={addRecommendedSource} profile={activeUserProfile} savedSources={sourceOptions} settings={userSettings} />
+              <NoticeDiscovery accessToken={session?.access_token} />
             </div>
           ) : null}
 

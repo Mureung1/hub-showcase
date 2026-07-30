@@ -133,6 +133,9 @@ OpenAI는 `ALLOW_LIVE_OPENAI=true`일 때만 실제 호출을 시도합니다.
 
 공지 목록 수집과 Gemini/OpenAI 분석은 별도 단계입니다. “분석 화면으로”는 후보 링크를 입력란에 채울 뿐 자동 분석하지 않으며, 현재 출처는 자동 본문 추출을 지원하지 않으므로 원문을 붙여넣은 뒤 직접 분석을 실행하세요. 자세한 출처 정책은 [NOTICE_SOURCES.md](./NOTICE_SOURCES.md)에 정리했습니다.
 
+### 보호된 분석·추천 API
+
+`POST /api/analyze`, `POST /api/recommend-sites`, `GET /api/discover`는 로그인한 사용자의 Bearer access token이 필요합니다. 브라우저는 로그인 세션의 토큰을 자동으로 전송하며, 토큰이 없거나 유효하지 않으면 서버는 `401`을 반환합니다. 이 제한은 실제 Gemini/OpenAI 호출과 외부 공지 탐색이 로그인 없는 요청으로 사용되는 것을 막습니다.
 ### POST `/api/analyze`
 
 붙여넣은 `rawText`를 우선 분석합니다. 기존 URL 분석 흐름도 유지하며, URL만 입력한 경우 서버가 가져온 본문을 같은 분석 인터페이스로 전달합니다.
