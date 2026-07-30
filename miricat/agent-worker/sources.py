@@ -53,6 +53,17 @@ SOURCES = [
                 "상세는 원래 POST(go_post)지만 GET ?seq= 도 동작 확인.",
     },
     {
+        "id": "gwangju_bus",
+        "name": "광주 버스운행정보 공지사항",
+        "active": True,                     # 2026-07-30 검증 완료 (정적 HTML, GET 상세 동작)
+        "list_url": "https://bus.gwangju.go.kr/guide/notice/noticeList",
+        "list_pattern": r"fnView\('(\d+)'\)\"[^>]*>\s*([^<]{5,60})",
+        "view_url": "https://bus.gwangju.go.kr/guide/notice/noticeView?B_IDX={id}",
+        "body_selector": "#gj_content",
+        "note": "광주시 BIS 공지 — 감차·우회·시간변경 전용 게시판이라 필터 불필요. "
+                "상세는 원래 POST(fnView)지만 GET ?B_IDX= 도 동작 확인.",
+    },
+    {
         "id": "seoul_topis",
         "name": "서울 TOPIS 교통소식",
         "active": True,                     # 2026-07-28 검증 완료 (JSON 목록+본문 동봉·원문 링크 렌더)

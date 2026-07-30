@@ -14,11 +14,13 @@ REGIONS = {
     "daejeon_sejong": {"min_x": 127.15, "max_x": 127.65, "min_y": 36.10, "max_y": 36.75},
     "sudogwon":       {"min_x": 126.35, "max_x": 127.85, "min_y": 36.85, "max_y": 38.35},
     "busan":          {"min_x": 128.60, "max_x": 129.40, "min_y": 34.95, "max_y": 35.50},
+    "gwangju":        {"min_x": 126.55, "max_x": 127.10, "min_y": 34.95, "max_y": 35.40},
 }
 SOURCE_REGION = {
     "daejeon_bus": "daejeon_sejong", "daejeon_city": "daejeon_sejong", "sejong_sctc": "daejeon_sejong",
     "seoul_topis": "sudogwon", "gbis_route": "sudogwon",
     "busan_bims": "busan",
+    "gwangju_bus": "gwangju",
 }
 
 def same_region(route, source_id):

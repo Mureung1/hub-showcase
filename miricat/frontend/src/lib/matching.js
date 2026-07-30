@@ -10,6 +10,7 @@ export const SOURCE_LABEL = {
   seoul_topis: "서울 TOPIS",
   gbis_route: "경기버스정보",
   busan_bims: "부산 BIMS",
+  gwangju_bus: "광주 버스운행정보",
   its_incident: "국가교통정보센터",
 };
 
@@ -82,11 +83,13 @@ const REGIONS = {
   daejeon_sejong: { minX: 127.15, maxX: 127.65, minY: 36.10, maxY: 36.75 },
   sudogwon: { minX: 126.35, maxX: 127.85, minY: 36.85, maxY: 38.35 },
   busan: { minX: 128.60, maxX: 129.40, minY: 34.95, maxY: 35.50 },
+  gwangju: { minX: 126.55, maxX: 127.10, minY: 34.95, maxY: 35.40 },
 };
 const SOURCE_REGION = {
   daejeon_bus: "daejeon_sejong", daejeon_city: "daejeon_sejong", sejong_sctc: "daejeon_sejong",
   seoul_topis: "sudogwon", gbis_route: "sudogwon",
   busan_bims: "busan",
+  gwangju_bus: "gwangju",
 };
 export function sameRegion(route, sourceId) {
   const region = REGIONS[SOURCE_REGION[sourceId]];
