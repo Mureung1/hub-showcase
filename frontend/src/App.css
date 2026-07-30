@@ -382,19 +382,25 @@
 .mood-section,
 .recommendation-section,
 .special-recipe-section { margin-top: 28px; padding: 30px; border: 1px solid rgba(64,82,71,.1); border-radius: 22px; background: #fff; box-shadow: 0 14px 36px rgba(45,61,51,.055); }
-.mood-section .section-heading { margin-bottom: 20px; }
-.mood-selector { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
-.mood-selector button { min-width: 0; min-height: 112px; padding: 18px; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 12px; border: 1px solid #e2e7e3; border-radius: 16px; color: var(--text); background: #fbfcfb; text-align: left; transition: 160ms ease; }
-.mood-selector button:hover { transform: translateY(-2px); border-color: #f2aa87; }
-.mood-selector button.active { border-color: #82b69a; background: #eef8f2; box-shadow: 0 8px 20px rgba(0,109,54,.09); }
-.mood-selector button > span { grid-row: 1 / 3; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 14px; background: #fff7f2; font-size: 22px; }
-.mood-selector strong { font-size: 16px; }
-.mood-selector small { color: var(--muted); line-height: 1.45; }
+.mood-section { border-color: rgba(0,109,54,.11); box-shadow: 0 18px 44px rgba(35,65,48,.07); }
+.mood-section .section-heading { margin-bottom: 24px; }
+.mood-section .section-heading .eyebrow { color: #d76532; letter-spacing: .045em; }
+.mood-section .section-heading h2 { color: #343632; font-size: 24px; font-weight: 760; letter-spacing: -.025em; line-height: 1.35; word-break: keep-all; }
+.mood-selector { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
+.mood-selector button { min-width: 0; min-height: 178px; padding: 24px 18px; display: grid; grid-template-rows: 88px auto; place-items: center; align-content: center; row-gap: 12px; border: 1px solid #dfe7e2; border-radius: 18px; color: #1d2a22; background: #fcfdfc; text-align: center; transition: transform 160ms ease,border-color 160ms ease,background 160ms ease,box-shadow 160ms ease; }
+.mood-selector button:hover { transform: translateY(-2px); border-color: #9dbdac; background: #f8fbf9; box-shadow: 0 10px 24px rgba(35,65,48,.07); }
+.mood-selector button.active { border-color: #69a484; background: #edf7f1; box-shadow: 0 10px 26px rgba(0,109,54,.11); }
+.mood-selector button > span { width: 88px; height: 88px; display: grid; place-items: center; border: 1px solid rgba(111,78,54,.06); border-radius: 24px; background: #fff5ed; box-shadow: 0 8px 20px rgba(93,58,34,.07); font-size: 48px; line-height: 1; }
+.mood-selector button:nth-child(1) > span { background: #fff4e8; }
+.mood-selector button:nth-child(2) > span { background: #fff3ed; }
+.mood-selector button:nth-child(3) > span { background: #eef8f2; }
+.mood-selector button.active > span { border-color: rgba(0,109,54,.1); background: #fff; }
+.mood-selector strong { display: block; min-width: 0; color: #30332f; font-size: 18px; font-weight: 760; letter-spacing: -.02em; line-height: 1.35; white-space: nowrap; }
 .recommendation-section-heading { margin-bottom: 22px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
 .recommendation-section-heading h2 { margin: 3px 0 0; font-size: 25px; }
 .recommendation-section-heading p:last-child { margin: 7px 0 0; color: var(--muted); }
 .one-missing-toggle { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; font-weight: 800; white-space: nowrap; }
-.one-missing-toggle select { min-height: 34px; padding: 6px 28px 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; }
+.one-missing-toggle select { min-height: 34px; padding: 6px 28px 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; }
 .recipe-recommendation-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
 .recipe-card { min-width: 0; padding: 22px; display: flex; flex-direction: column; border: 1px solid #e3e7e4; border-radius: 18px; background: #fff; box-shadow: 0 8px 22px rgba(45,61,51,.055); }
 .recipe-card.special { border-color: #f1d4bd; background: linear-gradient(180deg,#fffaf6 0%,#fff 58%); }
@@ -455,7 +461,8 @@
   .recommendation-section,
   .special-recipe-section { padding: 20px; border-radius: 20px; }
   .mood-selector { grid-template-columns: 1fr; }
-  .mood-selector button { min-height: 84px; }
+  .mood-selector button { min-height: 164px; padding: 20px 16px; grid-template-rows: 80px auto; }
+  .mood-selector button > span { width: 80px; height: 80px; font-size: 44px; }
   .recommendation-section-heading { align-items: flex-start; flex-direction: column; }
   .recipe-recommendation-grid { grid-template-columns: 1fr; }
   .special-recipe-section .recommendation-section-heading > button { width: 100%; }
@@ -467,8 +474,11 @@ body {
   margin: 0;
   background: #f8f7f3;
   color: var(--text);
-  font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  font-synthesis: none;
   line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 button, input, select { font: inherit; }
@@ -561,6 +571,40 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
   margin-bottom: 32px;
 }
 
+.content-screen > .screen-title {
+  position: relative;
+  overflow: hidden;
+  padding: 30px 34px;
+  border: 1px solid rgba(0, 109, 54, .1);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 92% 18%, rgba(255, 126, 71, .15), transparent 11rem),
+    linear-gradient(125deg, #f1f8f4 0%, #fff8f2 100%);
+  box-shadow: 0 16px 38px rgba(45, 61, 51, .065);
+}
+
+.content-screen > .screen-title::after {
+  position: absolute;
+  right: 34px;
+  bottom: -30px;
+  width: 118px;
+  height: 118px;
+  border: 1px solid rgba(0, 109, 54, .09);
+  border-radius: 999px;
+  content: "";
+}
+
+.content-screen > .screen-title .eyebrow {
+  width: fit-content;
+  margin-bottom: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #236844;
+  background: rgba(255, 255, 255, .76);
+  box-shadow: 0 4px 12px rgba(45, 61, 51, .05);
+  letter-spacing: .07em;
+}
+
 .eyebrow {
   margin-bottom: 8px;
   color: var(--secondary);
@@ -569,19 +613,26 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
 }
 
 .screen-title h1 {
-  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 14px;
+  color: #34322f;
   font-size: clamp(36px, 4vw, 46px);
-  line-height: 1.08;
-  font-weight: 900;
-  letter-spacing: -.045em;
+  line-height: 1.12;
+  font-weight: 780;
+  letter-spacing: -.04em;
 }
 
 .screen-title p {
+  position: relative;
+  z-index: 1;
   max-width: 680px;
   margin-bottom: 0;
-  color: var(--muted);
+  color: #506159;
   font-size: 16px;
+  font-weight: 500;
   line-height: 1.7;
+  word-break: keep-all;
 }
 
 /* Service introduction */
@@ -2426,6 +2477,19 @@ select:focus-visible {
 
   .app-shell > main {
     padding-top: 24px;
+  }
+
+  .content-screen > .screen-title {
+    padding: 24px 22px;
+    border-radius: 20px;
+  }
+
+  .content-screen > .screen-title::after {
+    right: -34px;
+  }
+
+  .screen-title h1 {
+    font-size: clamp(34px, 12vw, 44px);
   }
 
   .fridge-title {

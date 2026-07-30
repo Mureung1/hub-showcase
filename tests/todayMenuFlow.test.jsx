@@ -105,10 +105,10 @@ test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으�
   expect(screen.getAllByRole("button", { name: "레시피 보기" })).toHaveLength(3);
   expect(screen.getAllByRole("link", { name: "대파 구매하기" })).toHaveLength(3);
   expect(screen.getByRole("button", { name: "다른 추천 보기 (남은 4회)" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /무난하게 먹고 싶어요/ }));
+  fireEvent.click(screen.getByRole("button", { name: /간편하고 익숙하게/ }));
   await waitFor(() => expect(requestedModes).toContain("quick"));
   expect(screen.getByRole("button", { name: "다른 추천 보기 (남은 4회)" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: /균형 있게 먹고 싶어요/ }));
+  fireEvent.click(screen.getByRole("button", { name: /영양 균형을 챙겨서/ }));
   await waitFor(() => expect(requestedModes).toContain("balanced"));
   expect(screen.getByRole("button", { name: "다른 추천 보기 (남은 4회)" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "다른 추천 보기 (남은 4회)" }));

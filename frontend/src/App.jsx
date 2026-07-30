@@ -607,9 +607,9 @@ function WorkspaceShell({ eyebrow, title, description, children }) {
 }
 
 const moodOptions = [
-  { id: "expiryFirst", icon: "⏰", title: "소비기한부터 챙길래요", description: "임박 재료를 자연스러운 메뉴로 우선 활용" },
-  { id: "quick", icon: "🍳", title: "무난하게 먹고 싶어요", description: "불 사용 여부와 관계없이 익숙한 한 끼" },
-  { id: "balanced", icon: "🥗", title: "균형 있게 먹고 싶어요", description: "여러 식품군을 활용한 한 끼" },
+  { id: "expiryFirst", icon: "⏳", title: "먼저 먹을 재료부터" },
+  { id: "quick", icon: "🍳", title: "간편하고 익숙하게" },
+  { id: "balanced", icon: "🥗", title: "영양 균형을 챙겨서" },
 ];
 
 function RecommendWorkspace({ recipes, savedRecipes, meta, isLoading, isLoadingMore, error, onRetry, onLoadMore, selectedMood, setSelectedMood, missingIngredientLimit, setMissingIngredientLimit, onSelectRecipe, onToggleSaved }) {
@@ -619,10 +619,10 @@ function RecommendWorkspace({ recipes, savedRecipes, meta, isLoading, isLoadingM
     && recipes.length < maxRecipes
     && remainingRecommendationCount > 0;
 
-  return <WorkspaceShell eyebrow="Today&apos;s Menu" title="오늘 뭐 먹지?" description="지금 할 수 있는 만큼만 골라보세요. 냉장고 상황에 맞춰 선택지를 줄여드릴게요.">
+  return <WorkspaceShell eyebrow="TODAY'S MENU · 맞춤 추천" title="오늘 뭐 먹지?" description="냉장고 재료와 오늘의 상황을 함께 살펴, 지금 만들기 좋은 1인분 메뉴를 추천해드려요.">
     <section className="mood-section" aria-labelledby="mood-title">
       <div className="section-heading"><p className="eyebrow">Today&apos;s Energy</p><h2 id="mood-title">오늘은 어느 정도까지 할 수 있어요?</h2></div>
-      <div className="mood-selector">{moodOptions.map((mood) => <button key={mood.id} type="button" className={selectedMood === mood.id ? "active" : ""} aria-pressed={selectedMood === mood.id} onClick={() => setSelectedMood(mood.id)}><span aria-hidden="true">{mood.icon}</span><strong>{mood.title}</strong><small>{mood.description}</small></button>)}</div>
+      <div className="mood-selector">{moodOptions.map((mood) => <button key={mood.id} type="button" className={selectedMood === mood.id ? "active" : ""} aria-pressed={selectedMood === mood.id} onClick={() => setSelectedMood(mood.id)}><span aria-hidden="true">{mood.icon}</span><strong>{mood.title}</strong></button>)}</div>
     </section>
 
     {savedRecipes.length > 0 && <section className="recommendation-section saved-recipes-section" aria-labelledby="saved-recipes-title">
