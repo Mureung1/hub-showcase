@@ -16,3 +16,8 @@ export function getSiteOrigin(): string {
   if (typeof window !== 'undefined') return window.location.origin;
   return 'http://localhost:5173';
 }
+
+/** 비밀번호 재설정 메일 링크 리다이렉트 URL */
+export function getPasswordResetRedirectUrl(): string {
+  return `${getSiteOrigin()}/reset-password`;
+}

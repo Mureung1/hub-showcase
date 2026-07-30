@@ -100,6 +100,19 @@
   flex-shrink: 0;
 }
 
+.user-header-profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-sm);
+}
+
+.user-header-profile-link:hover .user-header-name {
+  color: var(--text-primary);
+}
+
 .user-header-name {
   display: none;
   font-size: 0.8125rem;

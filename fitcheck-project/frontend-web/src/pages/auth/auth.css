@@ -85,6 +85,24 @@
   color: var(--text-secondary);
 }
 
+.auth-field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.auth-inline-link {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.auth-inline-link:hover {
+  text-decoration: underline;
+}
+
 .auth-field input {
   width: 100%;
   padding: 0.625rem 0.75rem;

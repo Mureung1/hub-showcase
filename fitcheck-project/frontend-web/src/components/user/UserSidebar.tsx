@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { USER_NAV_ITEMS } from '../../constants/userNav';
 import { useAuth } from '../../hooks/useAuth';
 import './UserSidebar.css';
@@ -51,10 +51,11 @@ export default function UserSidebar() {
       </nav>
 
       <div className="user-sidebar-footer">
-        <div className="user-sidebar-profile">
+        <NavLink to="/user/account" className="user-sidebar-profile user-sidebar-profile-link">
           <span className="avatar avatar-sm avatar-accent">{initial}</span>
           <span className="user-sidebar-name">{label}</span>
-        </div>
+          <Settings size={16} aria-hidden="true" />
+        </NavLink>
         <button
           type="button"
           className="user-sidebar-logout"
