@@ -545,5 +545,42 @@
   - **F-7(충돌 0건) 미수행** · **H(AC 점검) 미완**
   - **env 원복 확인**: 주입은 전부 프로세스 환경변수로만 했고 `.env` 파일은 처음부터 미변경(`grep` 0건). 정상 env로 재기동해 확인
   - **검증**: 루트 typecheck·lint(web만)·build 통과
-- 이후: T-019.4 잔여(F-7 · H · G 통제 재측정) → SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **T-019.4 완료 (2026-07-31)** — F 전체 통과, H(AC) 점검 완료. 커밋 `5786814`·`068a638`·`d789c3b` + 본 항목
+  - **F-7 충돌 0건 경로 — 통과** (`MANAGER_CONFLICT_TYPES=__never_matches__` 주입, 3사 1회)
+    - Question이 **`review_required`를 거치지 않고** `processing → completed`. 갇히지 않았다(§12.1)
+    - 쟁점 4건 전부 `passed` — `auto_consensus` 1 · `auto_single_source` 3
+    - 완료 뷰 **"자동 통과 4건"**, "결정 사항" 그룹 없음. 새로고침 복원 후에도 동일(§12.5)
+    - `manager_meta.conflictTypes`에 `["__never_matches__"]` 스탬프 — 판정 시점 설정이 남아 재현 가능(AC4)
+  - **120초 타임아웃 첫 실측 — `judgeFailRate` 0%, 타임아웃 0건**
+    - 단계 6 쟁점당 **29.7초 · 88.3초** (호출 2회; 나머지 3건은 `single_source`라 미호출) → **p50 59.0 · p90 82.4 · 최대 88.3초**
+    - 최대 88.3초로 120초 안에 들어왔다. **판단 기준(≤20%)을 충족하므로 120초 유지가 타당하다**
+    - ⚠️ 다만 **호출 2회짜리 표본**이다. 이전 세션 관측(p90 111초·최대 115초)과 프로브 156.5초를 함께 보면 여유가 크지 않다 — 축적 후 재판단 필요
+    - 단계 3 38.7초 · 단계 6 wall-clock 88.6초
+  - **⚠️ 같은 실행에서 관측된 품질 이상**: `quoteRejectRate` **40%**(임계 10%의 4배) · `agendaDropRate` **20%**(임계 5%의 4배)
+    - `stanceSurvival`에 **`{participants:2, survived:0}`** 이 찍혔고 `stancesDiscarded`는 전부 0 → **`quotes: []`가 아니라 인용이 전부 검증에서 탈락**해 쟁점이 폐기됐다. §11.2가 규정한 최소 의역 계열로 보인다
+    - T-019.3.1과 달리 **이번엔 원인이 지표로 즉시 읽힌다** — `stanceSurvival`·`stancesDiscarded` 계측이 의도대로 작동했다
+    - `stancesFilled` 0 — 생존 0이면 §11-4로 쟁점 폐기가 우선이고 부분 손실 보충은 적용되지 않는다(설계대로)
+  - **H. Acceptance Criteria 점검**
+
+    | AC | 상태 | 근거 / 남은 것 |
+    |---|---|---|
+    | AC1 재현성 | ✅ | `Math.random` 실사용 0건(주석 언급뿐). `manager_meta`에 pivot·`pivotSelectionReason`·`shuffleSeed`·모델·프롬프트 버전·`conflictTypes` 스탬프. T-019.3.2에서 같은 fixture 재실행 시 pivot·seed 완전 동일 |
+    | AC2 분류 | ⚠️ 부분 | 배정·leftover 승격·제목 중립화는 T-019.2에서 실측. **단계 3b 누락 회수 경로 미확인** — 특정 섹션만 누락시킬 수단이 없다 |
+    | AC3 참여 수 계산 | ✅ | `countParticipants`가 코드로 셈. `participantCount <= 1` → 단계 6 건너뛰고 `single_source`+`auto_single_source`(F-7에서 3건 실측). `kind`는 `disagreementType`만 보므로 2:1 다수결 통과 경로가 없다 |
+    | AC4 판정 | ✅ | 동시성 3 병렬, `disagreementType` 5유형 저장. `kind`가 설정 기반임을 F-7 주입으로 실증. 판정 시점 `conflictTypes` 스탬프로 저장분 불변 |
+    | AC5 근거 검증 | ✅ | `--grounding-test` **14/14**(날조 주입 8 + `empty_quotes` 4 + fallback 2). 실 데이터에서 자연 발생 날조 폐기 확인. `quoteRejectRate` 기록 |
+    | AC6 selectedContent | ✅ | §9.2 규칙표대로 코드가 채우고 개정 CHECK 통과. `finalize.ts`에 `NO_VALUE` 없음 — Manager는 만들지 않는다 |
+    | AC7 저장·복원 | ✅ | `adminClient`(시스템 쓰기)/`userClient`(사용자 행동) 분리. `GET .../agendas` 복원(이번 태스크에서 배선 누락 수정). 무토큰 401·미소유 404·위조 `userId` 무시 실측 |
+    | AC8 SSE | ✅ | 실측 이벤트 순서 `updated`×6 → `done` → `progress` → `created` → `judged`×N → `agenda.done`. heartbeat 12회가 Manager 구간에도 유지. `*.done` 없이 닫히면 GET 화해 구현 |
+    | AC9 사용자 판단 | ✅ | `conflicted` 4액션 · `recheck_requested` 4액션([다시 시도] 포함) · `reanswered` 3액션. `_after_recheck`는 `reanswered`에서만 부착(실측). 허용 안 된 전이 409 |
+    | AC10 실패 경로 | ⚠️ **부분·결함 1건** | 재검토 실패는 ✅ 실증(프롬프트 로드 실패·API 오류 둘 다 `recheck_requested` 유지·기회 미소진). 단계 6 실패 fallback은 **코드만 확인, 실측 미발생**(타임아웃 0건). **단계 3·4 모두 실패 → 고정 문구 + `completed`는 미구현** ↓ |
+    | AC11 web 재배선 | ✅ | 서버 경로에서 `buildMockAgendas` 제거(`?scenario=`에만 잔존), 4액션 회귀 없음, [다시 시도] 추가, `?scenario=` 4종 통과 |
+    | AC12 검증 | ✅ | 루트 typecheck·build 통과, lint는 **web만**(api에 script 없음 — 명시). 3사 성공·부분 실패·단일 성공·재검토·재검토 실패 시나리오 확인. `.env` 미변경, 키 미노출 |
+
+  - **⚠️ AC10 미구현 결함 (코드 추적으로 확인, 미수정)** — 단계 3·4가 **모두** 실패하면 서버가 `drafts: []`를 반환하는데(`agendas.service.ts` 452~468행), web의 `applyAgendas`는 `agendas.length > 0`이어야 마감 판단을 하므로 **아무 일도 일어나지 않고 Question이 `processing`에 갇힌다.** `applyServerSnapshot`의 `allFailed` 분기는 **3사 전멸**만 처리하며, "3사 성공 + Manager 완전 실패"는 다른 경로다
+    - §2.5·§6.2는 이 경우 "고정 안내 문구로 마무리 + `completed`"를 요구한다. 서버 주석도 "고정 문구 처리는 호출부가"라고 적혀 있으나 **호출부에 그 처리가 없다**
+    - **고정 안내 문구의 내용은 제품 문구 결정이라 임의로 만들지 않았다.** 3사 전멸용 `allProvidersFailedContent`와는 상황이 달라(원문은 멀쩡히 있고 비교만 실패) 그대로 쓸 수 없다
+  - **env 원복 확인**: 주입은 전부 프로세스 환경변수로만 했고 `.env` 파일 미변경(`grep` 0건, `git status` 변경 없음). 정상 재기동 후 프로세스에 주입값 잔존 0건 확인
+  - **예산**: 3사 질문 1회 / Manager 약 7회 (상한 3사 1 · Manager 20)
+- 이후: AC10 잔여 결함(Manager 완전 실패 시 고정 문구+completed) · G 통제 재측정(effort:low 판단) → SPEC-AI-003(FinalAnswer) → SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정
