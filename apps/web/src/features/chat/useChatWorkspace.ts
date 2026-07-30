@@ -229,6 +229,21 @@ function buildMockFinalAnswer(
  * 이어 content에 저장하고 bullets 배열은 표시용 파생 필드로만 뷰에 유지한다.
  * seq·sources는 결정 2-1에 따라 저장하지 않는다.
  */
+/**
+ * 자동 통과인가 — `resolutionReason` 기준(§12.5).
+ *
+ * ⚠️ **`auto_single_source`를 빼먹으면 안 된다.** 그러면 단일 소스 자동 통과가
+ * "사용자 판단" 쪽으로 떨어져 노트에 "— 내 결정 반영"이 붙는다. 사용자가 판단한 적
+ * 없는 항목에 그렇게 적으면 **노트가 사실과 달라진다.** §12.5가 표현 정교화가 아니라
+ * 정확성 문제로 다루라고 못박은 지점이다.
+ */
+function isAutoPassed(agenda: Agenda): boolean {
+  return (
+    agenda.resolutionReason === "auto_consensus" ||
+    agenda.resolutionReason === "auto_single_source"
+  );
+}
+
 function buildMockDecisionNote(
   chatId: string,
   chatTitle: string,
@@ -238,22 +253,29 @@ function buildMockDecisionNote(
 ): DecisionNote {
   // Agenda 제목으로 활성 시나리오 템플릿의 개조식 noteBullet을 찾는다
   const templates = getActiveScenario().agendaTemplates;
-  const noteBulletOf = (agenda: Agenda): string =>
-    templates.find((template) => template.title === agenda.title)?.noteBullet ??
-    agenda.title;
+  const noteBulletOf = (agenda: Agenda): string => {
+    // §12.5 — 자동 통과 항목에는 사용자 판단 문구를 쓰지 않는다.
+    // Mock 템플릿의 noteBullet 은 "…— 내 결정 반영"처럼 **사용자가 판단했을 때**의
+    // 문구다. 같은 쟁점이 단일 소스로 자동 통과하는 시나리오에서 그대로 쓰면
+    // 사용자가 판단한 적 없는 항목에 "내 결정 반영"이 붙어 노트가 사실과 달라진다.
+    // (서버 경로는 제목이 템플릿과 매칭되지 않아 agenda.title 로 떨어지므로 이미 중립이다.)
+    if (isAutoPassed(agenda)) return agenda.title;
+    return (
+      templates.find((template) => template.title === agenda.title)
+        ?.noteBullet ?? agenda.title
+    );
+  };
 
   const bullets =
     finalAnswer.generationMode === "all_agendas_rejected"
       ? [finalAnswer.content]
       : [
           ...agendas
-            .filter((agenda) => agenda.resolutionReason === "auto_consensus")
+            .filter((agenda) => isAutoPassed(agenda))
             .map((agenda) => noteBulletOf(agenda)),
           ...agendas
             .filter(
-              (agenda) =>
-                agenda.status === "passed" &&
-                agenda.resolutionReason !== "auto_consensus",
+              (agenda) => agenda.status === "passed" && !isAutoPassed(agenda),
             )
             .map((agenda) => noteBulletOf(agenda)),
         ].filter((bullet) => bullet.length > 0);

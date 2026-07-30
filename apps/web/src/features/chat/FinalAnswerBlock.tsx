@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Text } from "@astryxdesign/core/Text";
-import type { Question } from "./types";
+import type { Agenda, Question } from "./types";
 import { providerMeta } from "./mockData";
 import "./chat.css";
 
@@ -60,13 +60,16 @@ export function FinalAnswerBlock({ question }: { question: Question }) {
     );
   }
 
-  const consensus = question.agendas.filter(
-    (agenda) => agenda.resolutionReason === "auto_consensus",
-  );
+  // §12.5 — 분류는 `resolutionReason` 기준이며 **`auto_single_source`도 자동 통과**다.
+  // 빠뜨리면 단일 소스가 "사용자 판단 우선 적용"으로 분류돼 사용자가 판단한 적 없는
+  // 항목이 결정 사항으로 표시된다. 표현 문제가 아니라 정확성 문제다.
+  const isAutoPassed = (agenda: Agenda): boolean =>
+    agenda.resolutionReason === "auto_consensus" ||
+    agenda.resolutionReason === "auto_single_source";
+
+  const consensus = question.agendas.filter(isAutoPassed);
   const decisions = question.agendas.filter(
-    (agenda) =>
-      agenda.status === "passed" &&
-      agenda.resolutionReason !== "auto_consensus",
+    (agenda) => agenda.status === "passed" && !isAutoPassed(agenda),
   );
   const excluded = question.agendas.filter(
     (agenda) => agenda.status === "rejected",
