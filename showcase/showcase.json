@@ -3,7 +3,8 @@
   "title": "시험 벼락치기 스케줄러",
   "summary": "시험 날짜와 남은 공부량, 평소 수면·카페인 상태를 입력하면 생물수학 모델로 \"시험 시작 시각에 각성도가 가장 높아지는\" 수면·카페인 스케줄을 계산해주는 웹 도구입니다.",
   "githubUser": "dodeho(안정연)",
-  "demoUrl": "",
+  "githubUrl": "https://github.com/dodeho/hub",
+  "demoUrl": "https://hub-dodeho1.vercel.app",
   "demoVideoUrl": "https://youtu.be/xXPeTG6G5F0",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
