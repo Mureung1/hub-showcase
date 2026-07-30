@@ -50,16 +50,6 @@ flowchart LR
 - 1인분 재료, 대체 재료, 조리 순서, 정성적 영양 구성과 안전 안내
 - 레시피 브라우저 저장과 요리 후 보유 재료 자동 차감
 
-## 화면
-
-| 내 냉장고 | 오늘의 메뉴 |
-| --- | --- |
-| ![내 냉장고](showcase/screenshots/home.webp) | ![오늘의 메뉴](showcase/screenshots/today-menu.webp) |
-
-| 레시피 상세 | 사용 재료 차감 |
-| --- | --- |
-| ![레시피 상세](showcase/screenshots/recipe-detail.webp) | ![사용 재료 차감](showcase/screenshots/ingredient-usage.webp) |
-
 ## 기술 구성
 
 | 영역 | 기술 | 역할 |
