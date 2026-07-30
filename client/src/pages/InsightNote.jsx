@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { getDecisions } from "../api/decisions.js"
+import { getDecisions, deleteDecisions } from "../api/decisions.js"
 import { useAuth } from "../context/AuthContext.jsx"
+import { useDecisionCount } from "../context/DecisionContext.jsx"
 import InsightDetail from "../components/InsightDetail.jsx"
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"]
@@ -39,6 +40,7 @@ function InsightCalendarPlaceholder() {
 
 export default function InsightNote() {
   const { user } = useAuth()
+  const { setDecisionCount } = useDecisionCount()
   const [decisions, setDecisions] = useState([])
   const [selectedId, setSelectedId] = useState(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -56,6 +58,18 @@ export default function InsightNote() {
 
   function handleMemoSaved(id, memo) {
     setDecisions((prev) => prev.map((d) => (d.id === id ? { ...d, memo } : d)))
+  }
+
+  async function handleDeleteDecision(e, id) {
+    e.stopPropagation()
+    if (!window.confirm("이 노트를 삭제하시겠습니까?")) return
+    await deleteDecisions([id])
+    setDecisions((prev) => {
+      const next = prev.filter((d) => d.id !== id)
+      setDecisionCount(next.length)
+      if (selectedId === id) setSelectedId(next[0]?.id ?? null)
+      return next
+    })
   }
 
   const filteredDecisions = useMemo(() => {
@@ -124,18 +138,34 @@ export default function InsightNote() {
           ) : (
             <>
               {filteredDecisions.map((item) => (
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   key={item.id}
                   className={`insight-card ${item.id === selectedId ? "active" : ""}`}
                   onClick={() => setSelectedId(item.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      setSelectedId(item.id)
+                    }
+                  }}
                 >
-                  <p className="insight-card-title">{item.title}</p>
+                  <div className="insight-card-header">
+                    <p className="insight-card-title">{item.title}</p>
+                    <button
+                      type="button"
+                      className="insight-card-delete"
+                      onClick={(e) => handleDeleteDecision(e, item.id)}
+                    >
+                      삭제
+                    </button>
+                  </div>
                   <p className="insight-card-preview">{item.insight}</p>
                   <p className="insight-card-date">
                     {new Date(item.createdAt).toLocaleDateString("ko-KR")}
                   </p>
-                </button>
+                </div>
               ))}
               {filteredDecisions.length === 0 && (
                 <p className="insight-master-empty">

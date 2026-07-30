@@ -405,3 +405,25 @@ PATCH /api/decisions/3f2a1c9e-...-uuid
   반환한다.
 - **인증(필수)**: `Authorization: Bearer <access_token>` 헤더가 없거나
   유효하지 않으면 `401`을 반환한다.
+
+## 9. DELETE /api/decisions — 인사이트 노트 카드 삭제 (신규, 2026-07-30)
+
+```json
+// 요청
+{ "ids": ["3f2a1c9e-...-uuid"] }
+
+// 응답
+{ "success": true, "data": { "deletedIds": ["3f2a1c9e-...-uuid"] } }
+```
+
+- 인사이트 노트 마스터 리스트의 카드 삭제 버튼에서 호출한다. `ids`는 배열
+  형태지만 현재 UI는 카드 단위로 항상 단일 id만 담아 보낸다.
+- `ids`가 빈 배열이거나 배열이 아니면
+  `500 { success: false, error: "ids must be a non-empty array" }`를 반환한다.
+- 소유권 검증: 서버는 `SUPABASE_SERVICE_ROLE_KEY`로 접속해 RLS를 우회하므로,
+  `decisionStore.js`의 `deleteDecisions`가 `user_id` 조건을 애플리케이션
+  레벨에서 직접 검사한다(`DELETE /api/vocabulary`와 동일한 패턴) — 본인
+  소유가 아닌 id는 조용히 무시되며(에러 아님), `deletedIds`에는 실제로
+  삭제된 id만 담긴다.
+- **인증(필수)**: `Authorization: Bearer <access_token>` 헤더가 없거나
+  유효하지 않으면 `401`을 반환한다.

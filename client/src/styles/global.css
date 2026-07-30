@@ -905,6 +905,13 @@ h2 {
   background: var(--brand-blue-light);
 }
 
+.insight-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
 .insight-card-title {
   font-size: 14px;
   font-weight: 600;
@@ -913,6 +920,24 @@ h2 {
   overflow: hidden;
   text-overflow: ellipsis;
   margin-bottom: var(--space-xs);
+  flex: 1;
+  min-width: 0;
+}
+
+.insight-card-delete {
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-xs);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.insight-card-delete:hover {
+  background: var(--alert-bg);
+  color: var(--alert-text);
 }
 
 .insight-card-preview {
