@@ -1,0 +1,572 @@
+{
+  "exportedAt": "2026-07-28T01:37:15.179Z",
+  "categories": [
+    {
+      "id": "contest",
+      "label": "공모전",
+      "description": "팀 단위 공모전, 팀원모집까지"
+    }
+  ],
+  "listings": [
+    {
+      "id": "con-1",
+      "category_id": "contest",
+      "title": "청년 아이디어 공모전",
+      "description": "팀 단위 지원 · 3인 이내",
+      "deadline_date": "2026-07-25",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "기획",
+      "team_board_count": 2,
+      "source_url": null
+    },
+    {
+      "id": "con-2",
+      "category_id": "contest",
+      "title": "교내 캡스톤 경진대회",
+      "description": "개인 지원 가능",
+      "deadline_date": "2026-08-05",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "개발",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-3",
+      "category_id": "contest",
+      "title": "SNS 콘텐츠 공모전",
+      "description": "개인·팀 자유",
+      "deadline_date": "2026-08-08",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "마케팅",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-4",
+      "category_id": "contest",
+      "title": "지역 해커톤",
+      "description": "4인 1팀 · 개발 직군 우대",
+      "deadline_date": "2026-08-12",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "개발",
+      "team_board_count": 1,
+      "source_url": null
+    },
+    {
+      "id": "con-5",
+      "category_id": "contest",
+      "title": "지속가능경영 아이디어 공모전",
+      "description": "3인 이내 팀",
+      "deadline_date": "2026-08-17",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "사회공헌",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-6",
+      "category_id": "contest",
+      "title": "환경 캠페인 아이디어 공모전",
+      "description": "2~4인 팀",
+      "deadline_date": "2026-07-31",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "사회공헌",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-7",
+      "category_id": "contest",
+      "title": "데이터 분석 경진대회",
+      "description": "개인·팀 자유",
+      "deadline_date": "2026-08-04",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "데이터/AI",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-8",
+      "category_id": "contest",
+      "title": "광고 카피라이팅 공모전",
+      "description": "개인 지원",
+      "deadline_date": "2026-08-09",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "마케팅",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-9",
+      "category_id": "contest",
+      "title": "창업 아이디어 챌린지",
+      "description": "3인 이내 팀",
+      "deadline_date": "2026-08-15",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "창업",
+      "team_board_count": 1,
+      "source_url": null
+    },
+    {
+      "id": "con-10",
+      "category_id": "contest",
+      "title": "앱 개발 해커톤",
+      "description": "4인 1팀 · 개발 직군 우대",
+      "deadline_date": "2026-08-26",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "개발",
+      "team_board_count": 2,
+      "source_url": null
+    },
+    {
+      "id": "con-11",
+      "category_id": "contest",
+      "title": "사진 공모전",
+      "description": "개인 지원",
+      "deadline_date": "2026-09-10",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "디자인",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-12",
+      "category_id": "contest",
+      "title": "인공지능 알고리즘 경진대회",
+      "description": "개인·팀 자유",
+      "deadline_date": "2026-08-11",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "데이터/AI",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-13",
+      "category_id": "contest",
+      "title": "이공계 융합 아이디어 공모전",
+      "description": "이공계열 전공자 대상 · 3인 이내 팀",
+      "deadline_date": "2026-08-22",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "이공계/공학",
+      "team_board_count": 1,
+      "source_url": null
+    },
+    {
+      "id": "con-14",
+      "category_id": "contest",
+      "title": "로봇공학 경진대회",
+      "description": "기계·전자공학 전공자 우대 · 4인 1팀",
+      "deadline_date": "2026-08-30",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "이공계/공학",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-15",
+      "category_id": "contest",
+      "title": "청소년 진로교육 콘텐츠 기획 공모전",
+      "description": "개인·팀 자유",
+      "deadline_date": "2026-08-02",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "기획",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-16",
+      "category_id": "contest",
+      "title": "캠퍼스 축제 기획 공모전",
+      "description": "팀 단위 지원",
+      "deadline_date": "2026-08-10",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "기획",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-17",
+      "category_id": "contest",
+      "title": "지역상권 활성화 기획 공모전",
+      "description": "3인 이내 팀",
+      "deadline_date": "2026-08-19",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "기획",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-18",
+      "category_id": "contest",
+      "title": "신제품 런칭 기획 공모전",
+      "description": "팀 단위 지원",
+      "deadline_date": "2026-09-05",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "기획",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-19",
+      "category_id": "contest",
+      "title": "웹서비스 개발 해커톤",
+      "description": "개발 직군 우대 · 팀 단위",
+      "deadline_date": "2026-08-07",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "개발",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-20",
+      "category_id": "contest",
+      "title": "임베디드 SW 경진대회",
+      "description": "전자·컴퓨터공학 전공 우대",
+      "deadline_date": "2026-08-29",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "개발",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-21",
+      "category_id": "contest",
+      "title": "빅데이터 분석 공모전",
+      "description": "개인·팀 자유",
+      "deadline_date": "2026-08-14",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "데이터/AI",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-22",
+      "category_id": "contest",
+      "title": "머신러닝 챌린지",
+      "description": "개인 지원 가능",
+      "deadline_date": "2026-08-23",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "데이터/AI",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-23",
+      "category_id": "contest",
+      "title": "데이터 시각화 공모전",
+      "description": "개인·팀 자유",
+      "deadline_date": "2026-09-03",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "데이터/AI",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-24",
+      "category_id": "contest",
+      "title": "신재생에너지 아이디어 공모전",
+      "description": "이공계열 전공자 우대",
+      "deadline_date": "2026-08-18",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "이공계/공학",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-25",
+      "category_id": "contest",
+      "title": "화학소재 연구 공모전",
+      "description": "화학·소재공학 전공자 우대",
+      "deadline_date": "2026-08-27",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "이공계/공학",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-26",
+      "category_id": "contest",
+      "title": "드론 설계 경진대회",
+      "description": "기계·전자공학 전공자 우대 · 팀 단위",
+      "deadline_date": "2026-09-08",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "이공계/공학",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-27",
+      "category_id": "contest",
+      "title": "브랜드 로고 디자인 공모전",
+      "description": "개인 지원",
+      "deadline_date": "2026-07-30",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "디자인",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-28",
+      "category_id": "contest",
+      "title": "UX/UI 디자인 챌린지",
+      "description": "개인·팀 자유",
+      "deadline_date": "2026-08-12",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "디자인",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-29",
+      "category_id": "contest",
+      "title": "제품 패키지 디자인 공모전",
+      "description": "개인 지원",
+      "deadline_date": "2026-08-21",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "디자인",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-30",
+      "category_id": "contest",
+      "title": "일러스트 공모전",
+      "description": "개인 지원",
+      "deadline_date": "2026-08-31",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "디자인",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-31",
+      "category_id": "contest",
+      "title": "브랜드 마케팅 전략 공모전",
+      "description": "팀 단위 지원",
+      "deadline_date": "2026-08-06",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "마케팅",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-32",
+      "category_id": "contest",
+      "title": "숏폼 콘텐츠 마케팅 공모전",
+      "description": "개인·팀 자유",
+      "deadline_date": "2026-08-15",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "마케팅",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-33",
+      "category_id": "contest",
+      "title": "소셜미디어 캠페인 공모전",
+      "description": "개인·팀 자유",
+      "deadline_date": "2026-08-24",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "마케팅",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-34",
+      "category_id": "contest",
+      "title": "청년 창업 아이디어 공모전",
+      "description": "3인 이내 팀",
+      "deadline_date": "2026-08-04",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "창업",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-35",
+      "category_id": "contest",
+      "title": "소셜벤처 창업경진대회",
+      "description": "팀 단위 지원",
+      "deadline_date": "2026-08-20",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "창업",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-36",
+      "category_id": "contest",
+      "title": "캠퍼스 창업 챌린지",
+      "description": "개인·팀 자유",
+      "deadline_date": "2026-08-28",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "창업",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-37",
+      "category_id": "contest",
+      "title": "글로벌 스타트업 챌린지",
+      "description": "팀 단위 지원",
+      "deadline_date": "2026-09-12",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "창업",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-38",
+      "category_id": "contest",
+      "title": "탄소중립 아이디어 공모전",
+      "description": "개인·팀 자유",
+      "deadline_date": "2026-08-09",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "사회공헌",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-39",
+      "category_id": "contest",
+      "title": "사회적기업가 정신 공모전",
+      "description": "개인 지원",
+      "deadline_date": "2026-08-22",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "사회공헌",
+      "team_board_count": 0,
+      "source_url": null
+    },
+    {
+      "id": "con-40",
+      "category_id": "contest",
+      "title": "다문화 상생 공모전",
+      "description": "개인·팀 자유",
+      "deadline_date": "2026-09-06",
+      "eligible_regions": null,
+      "eligible_grades": null,
+      "interest": "사회공헌",
+      "team_board_count": 0,
+      "source_url": null
+    }
+  ],
+  "boardPosts": [
+    {
+      "id": "p1",
+      "listing_id": "con-1",
+      "title": "디자이너 1명 구해요",
+      "meta": "기획·개발 2명 확정 · UI/UX 담당자 모집",
+      "body": "기획·개발 각 1명 확정됐고, UI/UX 디자인 맡아주실 분 찾습니다. Figma 다룰 줄 아시면 좋아요. 주 2회 온라인 미팅, 마감까지 같이 갑니다.",
+      "status": "recruiting"
+    },
+    {
+      "id": "p2",
+      "listing_id": "con-1",
+      "title": "기획 같이 하실 분",
+      "meta": "1인 팀 · 아이디어부터 같이 짤 팀원 구함",
+      "body": "아직 주제도 확정 안 된 1인 팀입니다. 같이 아이디어부터 짤 분 구해요.",
+      "status": "recruiting"
+    },
+    {
+      "id": "p3",
+      "listing_id": "con-4",
+      "title": "프론트엔드 1명 구해요",
+      "meta": "백엔드·기획 2명 확정 · React 다룰 줄 아는 분",
+      "body": "백엔드·기획 2명은 확정됐고, 화면 붙여줄 프론트엔드 팀원을 찾습니다. React 다룰 줄 아시면 좋아요. 주말 오프라인 1회 예정입니다.",
+      "status": "recruiting"
+    },
+    {
+      "id": "p4",
+      "listing_id": "con-9",
+      "title": "마케팅 담당자 구해요",
+      "meta": "기획·개발 2명 확정 · 마케팅/홍보 담당자 모집",
+      "body": "아이디어는 확정됐고 마케팅 전략 짜주실 분 찾습니다. SNS 홍보 경험 있으면 좋아요.",
+      "status": "recruiting"
+    },
+    {
+      "id": "p5",
+      "listing_id": "con-10",
+      "title": "백엔드 개발자 구해요",
+      "meta": "프론트·기획 2명 확정 · Node.js 가능자 우대",
+      "body": "프론트엔드와 기획은 확정됐고, 서버 쪽 맡아주실 분 찾습니다. Node.js 다뤄보셨으면 좋아요.",
+      "status": "recruiting"
+    },
+    {
+      "id": "p6",
+      "listing_id": "con-10",
+      "title": "기획자 1명 구해요",
+      "meta": "개발 2명 확정 · 아이디어 기획 담당",
+      "body": "개발 인원은 확정됐고, 전체 기획과 발표 자료를 맡아주실 분을 찾습니다.",
+      "status": "recruiting"
+    }
+  ],
+  "comments": [
+    {
+      "id": 1,
+      "post_id": "p1",
+      "who": "공모전러버",
+      "text": "저 포트폴리오 있어요! 지원할게요",
+      "created_at": "2026-07-22T08:48:25.828326+00:00"
+    },
+    {
+      "id": 2,
+      "post_id": "p1",
+      "who": "디자이너지망생",
+      "text": "주제 방향 조금만 더 알 수 있을까요?",
+      "created_at": "2026-07-22T08:48:25.828326+00:00"
+    },
+    {
+      "id": 3,
+      "post_id": "p1",
+      "who": "글쓴이",
+      "text": "위 댓글에 답장 남겼어요, 확인해주세요!",
+      "created_at": "2026-07-22T08:48:25.828326+00:00"
+    },
+    {
+      "id": 4,
+      "post_id": "p3",
+      "who": "프론트엔드지망",
+      "text": "경험은 적지만 배우면서 하고 싶어요, 지원할게요!",
+      "created_at": "2026-07-22T08:48:25.828326+00:00"
+    }
+  ]
+}

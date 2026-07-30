@@ -4,7 +4,6 @@
 
 export const categories = [
   { id: "scholarship", label: "장학금", desc: "국가·교내 장학금 모아보기" },
-  { id: "contest", label: "공모전", desc: "팀 단위 공모전, 팀원모집까지" },
   { id: "local", label: "지자체 혜택", desc: "거주·소속 지역 혜택 확인" },
   { id: "activity", label: "대외활동", desc: "서포터즈·홍보대사 모집 정보" },
   { id: "internship", label: "인턴십", desc: "공공·민간 인턴십 채용 공고" },
@@ -43,48 +42,6 @@ export const listings = [
   { id: "sch-28", categoryId: "scholarship", title: "경남 지역인재 장학금", desc: "경남 소재 대학 재학생", dDay: 44, eligibleRegions: ["gyeongnam"] },
   { id: "sch-29", categoryId: "scholarship", title: "복학생 학업지원 장학금", desc: "2학년 이상 복학생", dDay: 12, eligibleGrades: ["2", "3", "4"] },
   { id: "sch-30", categoryId: "scholarship", title: "졸업학년 취업준비 장학금", desc: "4학년 대상", dDay: 50, eligibleGrades: ["4"] },
-
-  // 공모전
-  { id: "con-1", categoryId: "contest", title: "청년 아이디어 공모전", desc: "팀 단위 지원 · 3인 이내", dDay: 3, teamBoardCount: 2, interest: "기획" },
-  { id: "con-2", categoryId: "contest", title: "교내 캡스톤 경진대회", desc: "개인 지원 가능", dDay: 14, interest: "개발" },
-  { id: "con-3", categoryId: "contest", title: "SNS 콘텐츠 공모전", desc: "개인·팀 자유", dDay: 17, interest: "마케팅" },
-  { id: "con-4", categoryId: "contest", title: "지역 해커톤", desc: "4인 1팀 · 개발 직군 우대", dDay: 21, teamBoardCount: 1, interest: "개발" },
-  { id: "con-5", categoryId: "contest", title: "지속가능경영 아이디어 공모전", desc: "3인 이내 팀", dDay: 26, interest: "사회공헌" },
-  { id: "con-6", categoryId: "contest", title: "환경 캠페인 아이디어 공모전", desc: "2~4인 팀", dDay: 9, interest: "사회공헌" },
-  { id: "con-7", categoryId: "contest", title: "데이터 분석 경진대회", desc: "개인·팀 자유", dDay: 13, interest: "데이터/AI" },
-  { id: "con-8", categoryId: "contest", title: "광고 카피라이팅 공모전", desc: "개인 지원", dDay: 18, interest: "마케팅" },
-  { id: "con-9", categoryId: "contest", title: "창업 아이디어 챌린지", desc: "3인 이내 팀", dDay: 24, teamBoardCount: 1, interest: "창업" },
-  { id: "con-10", categoryId: "contest", title: "앱 개발 해커톤", desc: "4인 1팀 · 개발 직군 우대", dDay: 35, teamBoardCount: 2, interest: "개발" },
-  { id: "con-11", categoryId: "contest", title: "사진 공모전", desc: "개인 지원", dDay: 50, interest: "디자인" },
-  { id: "con-12", categoryId: "contest", title: "인공지능 알고리즘 경진대회", desc: "개인·팀 자유", dDay: 20, interest: "데이터/AI" },
-  { id: "con-13", categoryId: "contest", title: "이공계 융합 아이디어 공모전", desc: "이공계열 전공자 대상 · 3인 이내 팀", dDay: 31, teamBoardCount: 1, interest: "이공계/공학" },
-  { id: "con-14", categoryId: "contest", title: "로봇공학 경진대회", desc: "기계·전자공학 전공자 우대 · 4인 1팀", dDay: 39, interest: "이공계/공학" },
-  { id: "con-15", categoryId: "contest", title: "청소년 진로교육 콘텐츠 기획 공모전", desc: "개인·팀 자유", dDay: 11, interest: "기획" },
-  { id: "con-16", categoryId: "contest", title: "캠퍼스 축제 기획 공모전", desc: "팀 단위 지원", dDay: 19, interest: "기획" },
-  { id: "con-17", categoryId: "contest", title: "지역상권 활성화 기획 공모전", desc: "3인 이내 팀", dDay: 28, interest: "기획" },
-  { id: "con-18", categoryId: "contest", title: "신제품 런칭 기획 공모전", desc: "팀 단위 지원", dDay: 45, interest: "기획" },
-  { id: "con-19", categoryId: "contest", title: "웹서비스 개발 해커톤", desc: "개발 직군 우대 · 팀 단위", dDay: 16, interest: "개발" },
-  { id: "con-20", categoryId: "contest", title: "임베디드 SW 경진대회", desc: "전자·컴퓨터공학 전공 우대", dDay: 38, interest: "개발" },
-  { id: "con-21", categoryId: "contest", title: "빅데이터 분석 공모전", desc: "개인·팀 자유", dDay: 23, interest: "데이터/AI" },
-  { id: "con-22", categoryId: "contest", title: "머신러닝 챌린지", desc: "개인 지원 가능", dDay: 32, interest: "데이터/AI" },
-  { id: "con-23", categoryId: "contest", title: "데이터 시각화 공모전", desc: "개인·팀 자유", dDay: 43, interest: "데이터/AI" },
-  { id: "con-24", categoryId: "contest", title: "신재생에너지 아이디어 공모전", desc: "이공계열 전공자 우대", dDay: 27, interest: "이공계/공학" },
-  { id: "con-25", categoryId: "contest", title: "화학소재 연구 공모전", desc: "화학·소재공학 전공자 우대", dDay: 36, interest: "이공계/공학" },
-  { id: "con-26", categoryId: "contest", title: "드론 설계 경진대회", desc: "기계·전자공학 전공자 우대 · 팀 단위", dDay: 48, interest: "이공계/공학" },
-  { id: "con-27", categoryId: "contest", title: "브랜드 로고 디자인 공모전", desc: "개인 지원", dDay: 8, interest: "디자인" },
-  { id: "con-28", categoryId: "contest", title: "UX/UI 디자인 챌린지", desc: "개인·팀 자유", dDay: 21, interest: "디자인" },
-  { id: "con-29", categoryId: "contest", title: "제품 패키지 디자인 공모전", desc: "개인 지원", dDay: 30, interest: "디자인" },
-  { id: "con-30", categoryId: "contest", title: "일러스트 공모전", desc: "개인 지원", dDay: 40, interest: "디자인" },
-  { id: "con-31", categoryId: "contest", title: "브랜드 마케팅 전략 공모전", desc: "팀 단위 지원", dDay: 15, interest: "마케팅" },
-  { id: "con-32", categoryId: "contest", title: "숏폼 콘텐츠 마케팅 공모전", desc: "개인·팀 자유", dDay: 24, interest: "마케팅" },
-  { id: "con-33", categoryId: "contest", title: "소셜미디어 캠페인 공모전", desc: "개인·팀 자유", dDay: 33, interest: "마케팅" },
-  { id: "con-34", categoryId: "contest", title: "청년 창업 아이디어 공모전", desc: "3인 이내 팀", dDay: 13, interest: "창업" },
-  { id: "con-35", categoryId: "contest", title: "소셜벤처 창업경진대회", desc: "팀 단위 지원", dDay: 29, interest: "창업" },
-  { id: "con-36", categoryId: "contest", title: "캠퍼스 창업 챌린지", desc: "개인·팀 자유", dDay: 37, interest: "창업" },
-  { id: "con-37", categoryId: "contest", title: "글로벌 스타트업 챌린지", desc: "팀 단위 지원", dDay: 52, interest: "창업" },
-  { id: "con-38", categoryId: "contest", title: "탄소중립 아이디어 공모전", desc: "개인·팀 자유", dDay: 18, interest: "사회공헌" },
-  { id: "con-39", categoryId: "contest", title: "사회적기업가 정신 공모전", desc: "개인 지원", dDay: 31, interest: "사회공헌" },
-  { id: "con-40", categoryId: "contest", title: "다문화 상생 공모전", desc: "개인·팀 자유", dDay: 46, interest: "사회공헌" },
 
   // 지자체 혜택
   { id: "loc-1", categoryId: "local", title: "청년 월세 지원", desc: "서울 거주 무주택 청년", dDay: 5, eligibleRegions: ["seoul"], interest: "주거" },
@@ -224,10 +181,9 @@ export const gradeOptions = [
 
 // 관심분야는 지역·학년과 달리 카테고리마다 항목이 달라서 카테고리 목록 화면에서만 쓴다.
 // (기획서 6번 원칙은 "관심분야는 필터가 아닌 우선 정렬"이었지만, 2026-07-15 사용자 요청으로
-// 공모전·지자체 혜택·대외활동·인턴십 4개 카테고리에 한해 실제 필터로 반영하기로 결정을 뒤집었다.
+// 지자체 혜택·대외활동·인턴십 3개 카테고리에 한해 실제 필터로 반영하기로 결정을 뒤집었다.
 // 장학금은 관심분야보다 자격조건(소득분위·학년 등) 중심이라 제외했다.)
 export const interestOptionsByCategory = {
-  contest: ["기획", "개발", "데이터/AI", "이공계/공학", "디자인", "마케팅", "창업", "사회공헌"],
   local: ["주거", "교통", "취업", "문화", "금융", "복지", "창업", "교육"],
   activity: ["봉사", "홍보/서포터즈", "국제교류", "정책참여", "탐방/체험", "이공계/기술"],
   internship: ["개발", "데이터/AI", "엔지니어링/제조", "경영/기획", "마케팅", "공공/행정"],

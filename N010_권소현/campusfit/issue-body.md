@@ -24,15 +24,21 @@
 
 ## 목요일 — 서버 + DB 시작
 - [ ] Express가 필터 조건(쿼리 파라미터) 받아서 걸러주기
-- [ ] Supabase 프로젝트 + listings 테이블 생성
+- [x] Supabase 프로젝트 + listings 테이블 생성
 
-**완료 기준**: /api/listings?univType=국립 요청 시 국립대 항목만 응답으로 오고, Supabase 대시보드에서 테이블이 보인다
+**완료 기준**: Supabase 프로젝트 생성, SQL Editor로 categories/listings/board_posts/comments
+테이블 생성 완료, Supabase 대시보드에서 테이블이 보인다
+(참고: 완료 기준에 있던 `univType`(국립/사립) 필터 예시는 삭제 — 이후 국립/사립 필터 자체를
+빼기로 결정해서 더 이상 유효하지 않음)
 
 ## 금요일 — 연결 + 점검
-- [ ] 서버가 Supabase에서 데이터 가져오게 연결
+- [x] 서버가 Supabase에서 데이터 가져오게 연결
 - [ ] 전체 흐름 점검
 
-**완료 기준**: 필터를 바꿀 때마다 화면 목록이 실제 DB 데이터 기준으로 바뀐다 (수직슬라이스 완성)
+**완료 기준**: `listings`/`board_posts` 라우트가 better-sqlite3 대신 Supabase 쿼리로 데이터를
+가져온다, mock 데이터를 `npm run db:seed`로 Supabase에 이전, 새로고침·서버 재시작해도
+화면 데이터가 유지된다 (수직슬라이스 완성은 아직 — categoryId 필터만 있고 필터 변경에 따른
+동적 목록 갱신은 미확인)
 
 ## 공부 (매일, notes/ 폴더에 커밋)
 - [ ] 월: Main.jsx 코드 읽기 + 사전지식 복습(CLAUDE.md·skill·Plan mode·Agent·FE-BE-DB 흐름) -> notes/월-복습.md

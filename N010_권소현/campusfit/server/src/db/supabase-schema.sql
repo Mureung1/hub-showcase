@@ -27,12 +27,18 @@ create table listings (
   source_url text
 );
 
+-- listing_id는 listings(id)를 가리킬 수도, DB에 저장하지 않고 실시간으로 불러오는
+-- 온통청년(youth-*) 리스팅을 가리킬 수도 있어서 외래키 제약을 걸지 않는다.
+-- owner_token: 로그인이 없어서 "본인 글인지"를 서버가 확인할 방법이 없었다. 생성 시
+-- 랜덤 토큰을 저장해두고 수정·삭제 요청에 같은 토큰이 와야만 허용한다.
 create table board_posts (
   id text primary key,
-  listing_id text not null references listings(id),
+  listing_id text not null,
   title text not null,
   meta text not null,
-  body text not null
+  body text not null,
+  status text not null default 'recruiting',
+  owner_token text
 );
 
 create table comments (
@@ -40,5 +46,6 @@ create table comments (
   post_id text not null references board_posts(id),
   who text not null,
   text text not null,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  owner_token text
 );

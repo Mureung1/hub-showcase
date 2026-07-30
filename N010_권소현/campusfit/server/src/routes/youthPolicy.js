@@ -26,6 +26,22 @@ function isExcluded(text) {
   return EXCLUDE_KEYWORDS.some((k) => text.includes(k));
 }
 
+function daysUntil(dateStr) {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const deadline = new Date(`${dateStr}T00:00:00Z`);
+  return Math.round((deadline - today) / 86400000);
+}
+
+// aplyYmd는 "20260728 ~ 20260930" 형식. 상시/미정 정책은 빈 문자열이라 파싱 안 되면
+// undefined를 반환 — 이 경우 실제 마감이 없는 것으로 보고 큰 값(999)을 그대로 쓴다.
+function parseDeadline(aplyYmd) {
+  const match = aplyYmd && aplyYmd.match(/(\d{8})\s*~\s*(\d{8})/);
+  if (!match) return undefined;
+  const end = match[2];
+  return `${end.slice(0, 4)}-${end.slice(4, 6)}-${end.slice(6, 8)}`;
+}
+
 function guessRegions(text) {
   if (!text) return undefined;
   const matched = Object.entries(REGION_KEYWORDS)
@@ -84,6 +100,7 @@ function guessInterest(categoryId, text) {
 function toYouthListing(item) {
   const categoryId = guessCategory(item);
   const text = `${item.plcyNm} ${item.plcyExplnCn} ${item.lclsfNm} ${item.sprvsnInstCdNm || ""} ${item.rgtrInstCdNm || ""} ${item.operInstCdNm || ""}`;
+  const deadlineDate = parseDeadline(item.aplyYmd);
   return {
     id: `youth-${item.plcyNo}`,
     categoryId,
@@ -92,38 +109,50 @@ function toYouthListing(item) {
     interest: guessInterest(categoryId, text),
     sourceUrl: item.aplyUrlAddr || item.refUrlAddr1 || item.refUrlAddr2 || undefined,
     eligibleRegions: guessRegions(text),
-    dDay: 999, // TODO: 나중에 실제 날짜로 교체, 일단 임시값
+    dDay: deadlineDate ? daysUntil(deadlineDate) : 999, // 상시/미정은 마감 없는 것으로 취급
   };
 }
+// 온통청년 서버가 가끔(특히 pageSize=3000 같은 무거운 요청 여러 개를 동시에 보내면)
+// JSON 대신 HTML 에러 페이지를 돌려줄 때가 있다. 그럴 때 하나가 죽어서 전체 라우트가
+// 500나는 걸 막기 위해, 실패하면 빈 배열로 취급하고 서버 로그에만 남긴다.
+async function fetchYouthPolicyList(url, label) {
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    return data?.result?.youthPolicyList || [];
+  } catch (err) {
+    console.error(`온통청년 API 실패 (${label}):`, err.message);
+    return [];
+  }
+}
+
 router.get("/", async (req, res) => {
   const apiKey = process.env.YOUTH_POLICY_API_KEY;
-  const generalUrl = `https://www.youthcenter.go.kr/go/ythip/getPlcy?apiKeyNm=${apiKey}&pageSize=150&rtnType=json`;
-  const internshipUrl = `https://www.youthcenter.go.kr/go/ythip/getPlcy?apiKeyNm=${apiKey}&pageSize=100&rtnType=json&plcyKywdNm=인턴`;
-  const activityUrl = `https://www.youthcenter.go.kr/go/ythip/getPlcy?apiKeyNm=${apiKey}&pageSize=100&rtnType=json&lclsfNm=참여권리`;
+  const generalUrl = `https://www.youthcenter.go.kr/go/ythip/getPlcy?apiKeyNm=${apiKey}&pageSize=3000&rtnType=json`;
+  const internshipUrl = `https://www.youthcenter.go.kr/go/ythip/getPlcy?apiKeyNm=${apiKey}&pageSize=3000&rtnType=json&plcyKywdNm=인턴`;
+  const activityUrl = `https://www.youthcenter.go.kr/go/ythip/getPlcy?apiKeyNm=${apiKey}&pageSize=3000&rtnType=json&lclsfNm=참여권리`;
 
-  const [generalRes, internshipRes, activityRes] = await Promise.all([
-    fetch(generalUrl),
-    fetch(internshipUrl),
-    fetch(activityUrl),
+  const [generalList, internshipList, activityList] = await Promise.all([
+    fetchYouthPolicyList(generalUrl, "전체"),
+    fetchYouthPolicyList(internshipUrl, "인턴"),
+    fetchYouthPolicyList(activityUrl, "참여권리"),
   ]);
-  const generalData = await generalRes.json();
-  const internshipData = await internshipRes.json();
-  const activityData = await activityRes.json();
 
-  const internshipItems = internshipData.result.youthPolicyList.map((item) => ({
+  const internshipItems = internshipList.map((item) => ({
     ...item,
     __forceInternship: true,
   }));
-  const activityItems = activityData.result.youthPolicyList.map((item) => ({
+  const activityItems = activityList.map((item) => ({
     ...item,
     __forceActivity: true,
   }));
-  const allItems = [...generalData.result.youthPolicyList, ...internshipItems, ...activityItems];
+  const allItems = [...generalList, ...internshipItems, ...activityItems];
   const uniqueItems = [...new Map(allItems.map((item) => [item.plcyNm, item])).values()];
 
   const listings = uniqueItems
     .filter((item) => !isExcluded(`${item.plcyNm} ${item.plcyExplnCn}`))
-    .map(toYouthListing);
+    .map(toYouthListing)
+    .filter((listing) => listing.dDay >= 0); // 마감일이 지난 건 목록에서 뺀다
   res.json(listings);
 });
 export default router;

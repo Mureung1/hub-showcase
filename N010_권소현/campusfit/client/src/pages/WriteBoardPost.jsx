@@ -2,26 +2,33 @@ import { useState } from "react";
 import { Link, useNavigate, useOutletContext, useParams } from "react-router-dom";
 
 export default function WriteBoardPost() {
-  const { listingId } = useParams();
+  const { listingId, postId } = useParams();
   const navigate = useNavigate();
-  const { addBoardPost, listings } = useOutletContext();
-  const listing = listings.find((l) => l.id === listingId);
+  const { addBoardPost, editBoardPost, listings, boardPosts } = useOutletContext();
 
-  const [title, setTitle] = useState("");
-  const [meta, setMeta] = useState("");
-  const [body, setBody] = useState("");
+  const editingPost = postId ? boardPosts.find((p) => p.id === postId) : null;
+  const listing = listings.find((l) => l.id === (editingPost ? editingPost.listingId : listingId));
+
+  const [title, setTitle] = useState(editingPost ? editingPost.title : "");
+  const [meta, setMeta] = useState(editingPost ? editingPost.meta : "");
+  const [body, setBody] = useState(editingPost ? editingPost.body : "");
 
   const canSubmit = title.trim() && meta.trim() && body.trim();
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
-    const created = await addBoardPost({
-      listingId: listing.id,
-      title: title.trim(),
-      meta: meta.trim(),
-      body: body.trim(),
-    });
-    navigate(`/board/post/${created.id}`);
+    if (editingPost) {
+      await editBoardPost(editingPost.id, { title: title.trim(), meta: meta.trim(), body: body.trim() });
+      navigate(`/board/post/${editingPost.id}`);
+    } else {
+      const created = await addBoardPost({
+        listingId: listing.id,
+        title: title.trim(),
+        meta: meta.trim(),
+        body: body.trim(),
+      });
+      navigate(`/board/post/${created.id}`);
+    }
   };
 
   return (
@@ -30,7 +37,7 @@ export default function WriteBoardPost() {
         <Link to={`/board/listing/${listing.id}`}>홈</Link> /{" "}
         <Link to={`/board/listing/${listing.id}`}>팀원모집</Link>
       </p>
-      <h1 style={{ fontSize: 30 }}>{listing.title}의 팀원모집 글쓰기</h1>
+      <h1 style={{ fontSize: 30 }}>{listing.title}의 팀원모집 {editingPost ? "수정" : "글쓰기"}</h1>
       <div className="info-box">
         <p className="info-title">제목</p>
         <input
@@ -61,7 +68,7 @@ export default function WriteBoardPost() {
         />
       </div>
       <button className="btn-accent" onClick={handleSubmit} disabled={!canSubmit}>
-        등록
+        {editingPost ? "수정 완료" : "등록"}
       </button>
     </div>
   );

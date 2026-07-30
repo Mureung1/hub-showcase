@@ -3,7 +3,8 @@ import { Link, useOutletContext, useParams } from "react-router-dom";
 import { interestOptionsByCategory } from "../data/mockListings";
 import BookmarkStar from "../components/BookmarkStar";
 
-const GRADE_GUIDE_CATEGORIES = ["contest", "activity", "internship"];
+const GRADE_GUIDE_CATEGORIES = ["activity", "internship"];
+const TEAM_RECRUIT_INTEREST = "팀원모집";
 
 export default function CategoryList() {
   const { categoryId } = useParams();
@@ -16,6 +17,7 @@ export default function CategoryList() {
     toggleBookmark,
     categories,
     listings,
+    boardPosts,
   } = useOutletContext();
   const [interest, setInterest] = useState("all");
 
@@ -31,7 +33,11 @@ const totalCount = listings.filter((l) => l.categoryId === categoryId).length;
     .filter((l) => l.categoryId === categoryId)
     .filter((l) => region === "all" || !l.eligibleRegions || l.eligibleRegions.includes(region))
     .filter((l) => grade === "all" || !l.eligibleGrades || l.eligibleGrades.includes(grade))
-    .filter((l) => interest === "all" || l.interest === interest)
+    .filter((l) => {
+      if (interest === "all") return true;
+      if (interest === TEAM_RECRUIT_INTEREST) return boardPosts.some((p) => p.listingId === l.id);
+      return l.interest === interest;
+    })
     .sort((a, b) => {
       const aMatch = region !== "all" && a.eligibleRegions?.includes(region) ? 0 : 1;
       const bMatch = region !== "all" && b.eligibleRegions?.includes(region) ? 0 : 1;
@@ -83,6 +89,14 @@ const totalCount = listings.filter((l) => l.categoryId === categoryId).length;
                   {opt}
                 </button>
               ))}
+              {categoryId === "activity" && (
+                <button
+                  className={`chip sm ${interest === TEAM_RECRUIT_INTEREST ? "active" : ""}`}
+                  onClick={() => setInterest(TEAM_RECRUIT_INTEREST)}
+                >
+                  {TEAM_RECRUIT_INTEREST}
+                </button>
+              )}
             </div>
           </div>
         )}

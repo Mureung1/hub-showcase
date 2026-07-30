@@ -75,7 +75,7 @@ export default function ListingDetail() {
           공식 페이지에서 지원하기 ↗
         </a>
       )}
-      {listing.teamBoardCount > 0 && (
+      {(listing.teamBoardCount > 0 || listing.categoryId === "activity") && (
         <Link className="btn-team" to={`/board/listing/${listing.id}`}>
           팀원 모집하기
         </Link>
