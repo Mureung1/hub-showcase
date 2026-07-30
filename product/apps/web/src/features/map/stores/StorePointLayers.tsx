@@ -1,5 +1,5 @@
 import type { ExpressionSpecification, FilterSpecification } from "maplibre-gl";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Layer, Source, useMap } from "react-map-gl/maplibre";
 
 import type { MarketStore } from "../../market/types";
@@ -81,26 +81,14 @@ type StorePointLayersProps = {
   storefrontMode: boolean;
 };
 
-type StoreHoverEvent = {
-  features?: Array<{
-    properties?: {
-      featureId?: unknown;
-    } | null;
-  }>;
-};
-
-type StoreLayerEventMap = {
-  on: (
-    type: "mousemove" | "mouseleave",
-    layerId: string,
-    listener: (event: StoreHoverEvent) => void,
-  ) => void;
-  off: (
-    type: "mousemove" | "mouseleave",
-    layerId: string,
-    listener: (event: StoreHoverEvent) => void,
-  ) => void;
-};
+function hoverFilter(featureId: string, selectedFeatureId: string): FilterSpecification {
+  return [
+    "all",
+    UNCLUSTERED_STORE_FILTER,
+    ["==", ["get", "featureId"], featureId],
+    ["!=", ["get", "featureId"], selectedFeatureId],
+  ];
+}
 
 export function StorePointLayers({
   stores,
@@ -110,34 +98,40 @@ export function StorePointLayers({
   storefrontMode,
 }: StorePointLayersProps) {
   const { current: mapRef } = useMap();
-  const [hoveredFeatureId, setHoveredFeatureId] = useState<string | null>(null);
   const data = useMemo(() => createStoreFeatureCollection(stores), [stores]);
   const selectedFeatureId = selected ? storeFeatureIdentity(selected) : NO_SELECTED_STORE;
-  const resolvedHoveredFeatureId = hoveredFeatureId ?? NO_HOVERED_STORE;
   const hasFocusedStore = storefrontMode && selected !== null;
 
   useEffect(() => {
     const map = mapRef?.getMap();
-    if (!map || !visible) {
-      setHoveredFeatureId(null);
-      return;
-    }
+    if (!map || !visible) return;
+    const canvas = map.getCanvas();
+    let hoveredFeatureId = NO_HOVERED_STORE;
 
-    const layerEvents = map as unknown as StoreLayerEventMap;
-    const handleMove = (event: StoreHoverEvent) => {
-      const featureId = event.features?.[0]?.properties?.featureId;
-      const nextFeatureId = typeof featureId === "string" ? featureId : null;
-      setHoveredFeatureId((current) => (current === nextFeatureId ? current : nextFeatureId));
+    const applyHover = (featureId: string) => {
+      if (featureId === hoveredFeatureId || !map.getLayer(STORE_HOVER_HALO_LAYER_ID)) return;
+      hoveredFeatureId = featureId;
+      map.setFilter(
+        STORE_HOVER_HALO_LAYER_ID,
+        hoverFilter(featureId, selectedFeatureId),
+      );
     };
-    const handleLeave = (_event: StoreHoverEvent) => setHoveredFeatureId(null);
+    const handleMove = (event: MouseEvent) => {
+      const bounds = canvas.getBoundingClientRect();
+      const point: [number, number] = [event.clientX - bounds.left, event.clientY - bounds.top];
+      const feature = map.queryRenderedFeatures(point, { layers: [STORE_POINT_HIT_LAYER_ID] })[0];
+      const featureId = feature?.properties?.featureId;
+      applyHover(typeof featureId === "string" ? featureId : NO_HOVERED_STORE);
+    };
+    const handleLeave = () => applyHover(NO_HOVERED_STORE);
 
-    layerEvents.on("mousemove", STORE_POINT_HIT_LAYER_ID, handleMove);
-    layerEvents.on("mouseleave", STORE_POINT_HIT_LAYER_ID, handleLeave);
+    canvas.addEventListener("mousemove", handleMove, { passive: true });
+    canvas.addEventListener("mouseleave", handleLeave);
     return () => {
-      layerEvents.off("mousemove", STORE_POINT_HIT_LAYER_ID, handleMove);
-      layerEvents.off("mouseleave", STORE_POINT_HIT_LAYER_ID, handleLeave);
+      canvas.removeEventListener("mousemove", handleMove);
+      canvas.removeEventListener("mouseleave", handleLeave);
     };
-  }, [mapRef, visible]);
+  }, [mapRef, selectedFeatureId, visible]);
 
   if (!visible || stores.length === 0) return null;
 
@@ -233,12 +227,7 @@ export function StorePointLayers({
       <Layer
         id={STORE_HOVER_HALO_LAYER_ID}
         type="circle"
-        filter={[
-          "all",
-          UNCLUSTERED_STORE_FILTER,
-          ["==", ["get", "featureId"], resolvedHoveredFeatureId],
-          ["!=", ["get", "featureId"], selectedFeatureId],
-        ]}
+        filter={hoverFilter(NO_HOVERED_STORE, selectedFeatureId)}
         paint={{
           "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 10.5, 17, 16.5],
           "circle-color": STORE_COLOR_EXPRESSION,
