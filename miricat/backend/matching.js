@@ -54,6 +54,7 @@ const REGIONS = {
   changwon: { minX: 128.45, maxX: 128.90, minY: 35.05, maxY: 35.35 },
   ulsan: { minX: 129.00, maxX: 129.47, minY: 35.40, maxY: 35.72 },
   incheon: { minX: 126.35, maxX: 126.85, minY: 37.20, maxY: 37.65 },
+  jeonju: { minX: 126.95, maxX: 127.30, minY: 35.72, maxY: 35.92 },
 };
 const SOURCE_REGION = {
   daejeon_bus: 'daejeon_sejong', daejeon_city: 'daejeon_sejong', sejong_sctc: 'daejeon_sejong',
@@ -65,6 +66,7 @@ const SOURCE_REGION = {
   changwon_bus: 'changwon',
   ulsan_its: 'ulsan',
   incheon_bus: 'incheon',
+  jeonju_its: 'jeonju',
 };
 function sameRegion(route, sourceId) {
   const region = REGIONS[SOURCE_REGION[sourceId]];

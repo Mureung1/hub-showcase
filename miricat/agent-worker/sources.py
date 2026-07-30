@@ -122,6 +122,17 @@ SOURCES = [
                 "본문 동봉이라 재요청 없음.",
     },
     {
+        "id": "jeonju_its",
+        "name": "전주 교통정보센터 공지",
+        "active": True,                     # 2026-07-31 검증 (목록·본문 API, Referer 필수)
+        "fetcher": "jeonju",
+        "list_url": "https://its.jeonju.go.kr/its/notice.view",   # 대표 URL(기록용)
+        "list_pattern": None,
+        "view_url": "https://its.jeonju.go.kr/its/notice.view",   # 상세가 POST 폼이라 목록이 원문 링크
+        "note": "전주시 교통정보센터 공지 — 시내버스 노선조정 등. 웹방화벽이 Referer 없는 "
+                "요청을 막아서 헤더 고정. 게시 빈도는 낮은 편.",
+    },
+    {
         "id": "seoul_topis",
         "name": "서울 TOPIS 교통소식",
         "active": True,                     # 2026-07-28 검증 완료 (JSON 목록+본문 동봉·원문 링크 렌더)

@@ -171,8 +171,35 @@ def _incheon_fetch_body(source, seq):
     return " ".join(_html.unescape(text).split())
 
 
+_JEONJU_REFERER = {"Referer": "https://its.jeonju.go.kr/its/notice.view"}   # 방화벽이 Referer 없는 요청을 차단
+
+
+def _jeonju_fetch_list(source):
+    """전주 ITS 전용: 게시판 목록 API(POST). Referer 헤더가 없으면 방화벽에 막힌다."""
+    resp = requests.post("https://its.jeonju.go.kr/bbs/selectRfcComtnbbsdataList.do",
+                         data={"search_normal": "y"},
+                         headers={**HEADERS, **_JEONJU_REFERER, "X-Requested-With": "XMLHttpRequest"},
+                         timeout=10)
+    items = []
+    for row in resp.json().get("resultList", []):
+        items.append((str(row.get("DATA_SUID")), " ".join((row.get("DATA_TITLE") or "").split())))
+    return items[:MAX_ITEMS_PER_RUN]
+
+
+def _jeonju_fetch_body(source, seq):
+    resp = requests.post("https://its.jeonju.go.kr/bbs/selectRfcComtnbbsdataContent.do",
+                         data={"data_sid": seq},
+                         headers={**HEADERS, **_JEONJU_REFERER, "X-Requested-With": "XMLHttpRequest"},
+                         timeout=10)
+    row = resp.json().get("result") or {}
+    import html as _html
+    text = re.sub(r"<[^>]+>", " ", row.get("DATA_CONTENT") or "")
+    return " ".join(_html.unescape(text).split())
+
+
 # 표준(HTML+정규식) 틀을 못 따르는 소스들의 전용 페처 (목록 함수, 본문 함수)
 FETCHERS = {
+    "jeonju": (_jeonju_fetch_list, _jeonju_fetch_body),
     "incheon": (_incheon_fetch_list, _incheon_fetch_body),
     "ulsan": (_ulsan_fetch_list, _ulsan_fetch_body),
     "changwon": (_changwon_fetch_list, _changwon_fetch_body),
