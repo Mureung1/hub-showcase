@@ -10,6 +10,7 @@
 import { scoreMultiDaySchedule } from "./multiDayObjective.js";
 import type { CaffeineDose } from "./caffeineConcentration.js";
 import type { MultiDayCandidates, NightCandidate } from "./multiDayCandidates.js";
+import type { ExamStudyNeed } from "./studyReservation.js";
 
 export interface LocalSearchInput {
   habitualBedTime: number;
@@ -20,6 +21,14 @@ export interface LocalSearchInput {
   halfLifeHours: number;
   warmupDays?: number;
   minSleepHours?: number;
+  /** ① 밤별 최소 수면시간(있으면 밤 인덱스별로 minSleepHours 대신 쓰인다) */
+  minSleepHoursByNight?: number[];
+  /** ② 시험별 남은 공부량(examTimes와 같은 좌표계) */
+  studyNeeds?: ExamStudyNeed[];
+  /** ② 공부 가능 구간의 시작(보통 "지금"의 연속 좌표) */
+  studyWindowStart?: number;
+  /** ② true면 공부 부족분을 점수에서 깎아 "덜 자고 더 공부하는" 스케줄을 찾는다 */
+  enforceStudyTime?: boolean;
   fixedDoses?: CaffeineDose[];
   /** 하루 안전 섭취 한도(mg). 넘기면 초과분에 패널티가 붙는다(#3) */
   dailyLimitMg?: number;
@@ -76,6 +85,10 @@ export function searchMultiDaySchedule(input: LocalSearchInput): LocalSearchResu
     halfLifeHours,
     warmupDays,
     minSleepHours,
+    minSleepHoursByNight,
+    studyNeeds,
+    studyWindowStart,
+    enforceStudyTime,
     fixedDoses,
     dailyLimitMg,
     iterations = DEFAULT_ITERATIONS,
@@ -130,6 +143,10 @@ export function searchMultiDaySchedule(input: LocalSearchInput): LocalSearchResu
       halfLifeHours,
       warmupDays,
       minSleepHours,
+      minSleepHoursByNight,
+      studyNeeds,
+      studyWindowStart,
+      enforceStudyTime,
       fixedDoses,
       dailyLimitMg,
     }).score;

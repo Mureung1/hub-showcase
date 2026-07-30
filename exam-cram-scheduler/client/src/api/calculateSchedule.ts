@@ -51,6 +51,16 @@ export interface ScheduleCalculateRequest {
   caffeineSensitivity: CaffeineSensitivity;
   healthProfile: HealthProfile;
   minSleepHours?: number;
+  /**
+   * ① 밤별 최소 수면시간(2026-07-30). 조정 화면에서 밤마다 다르게 조절한 값을 담는다.
+   * 인덱스는 recommendedSchedule.nights[]와 같다(0 = 오늘 밤). 안 담긴 밤은 서버에서 minSleepHours로 채운다.
+   */
+  minSleepHoursByNight?: number[];
+  /**
+   * ② "공부 시간 확보" 선택(2026-07-30). 결과 화면 경고에서 "네"를 누르면 true로 재요청한다.
+   * true면 서버가 잠을 줄여서라도 남은 공부량을 확보하는 스케줄을 찾는다.
+   */
+  reserveStudyTime?: boolean;
   nightOverrides?: NightOverrideInput[];
 }
 
@@ -78,6 +88,27 @@ export interface CaffeineReference {
   label: string;
 }
 
+/** ② 시험 하나의 공부 시간 확보 현황 */
+export interface ExamStudyReservation {
+  subject: string;
+  /** 사용자가 입력한 남은 공부량(시간) */
+  requiredHours: number;
+  /** 추천 스케줄에서 이 시험 전에 확보되는(깨어있는) 공부 시간 */
+  availableHours: number;
+  /** max(0, 필요 - 확보) — 0보다 크면 공부 시간이 부족하다 */
+  shortfallHours: number;
+}
+
+/** ② 공부 시간 확보 현황 전체(2026-07-30) */
+export interface StudyReservation {
+  /** 이 응답이 reserveStudyTime=true(공부 우선)로 계산됐는지 */
+  enforced: boolean;
+  /** 시험별 부족분의 합(시간). 0이면 모든 시험이 공부 시간을 확보함 */
+  totalShortfallHours: number;
+  /** 남은 공부량이 있는 시험만(requiredHours > 0) */
+  byExam: ExamStudyReservation[];
+}
+
 /** 서버가 돌려주는 응답 전체 */
 export interface ScheduleCalculateResponse {
   alertnessTimeline: AlertnessPoint[];
@@ -87,6 +118,7 @@ export interface ScheduleCalculateResponse {
     caffeineReference: CaffeineReference;
   };
   warnings: string[];
+  studyReservation: StudyReservation;
 }
 
 /**

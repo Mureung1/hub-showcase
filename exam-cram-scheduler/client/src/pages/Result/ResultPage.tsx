@@ -5,14 +5,17 @@ import { Card, Button, WarningBanner, WeekSchedule } from '../../components';
 import text from '../../styles/text.module.css';
 import styles from './ResultPage.module.css';
 import { useSchedule } from '../../context/ScheduleContext';
+import type { StudyReservation } from '../../api/calculateSchedule';
 import { buildCalendarData, buildDaySummaries, buildSummary } from './formatSchedule';
 import { buildChartGeometry, VIEW_HEIGHT, type ChartGeometry } from './buildChart';
 import { saveSchedule } from '../../storage/savedSchedules';
 
 export function ResultPage() {
-  const { request, response } = useSchedule();
+  const { request, response, setRequest } = useSchedule();
   const navigate = useNavigate();
   const [saveError, setSaveError] = useState<string | null>(null);
+  // ② "공부 시간 확보할까요?"에서 "아니오(이대로 잘게요)"를 누르면 이 화면에선 다시 안 묻는다.
+  const [studyPromptDismissed, setStudyPromptDismissed] = useState(false);
 
   // 계산 없이 주소로 직접 들어왔거나 새로고침한 경우 — 보관함이 비어 있으므로
   // 그리려다 크래시하지 않도록 안내만 띄운다(#18).
@@ -51,6 +54,13 @@ export function ResultPage() {
       return;
     }
     navigate('/');
+  }
+
+  // ② "네, 공부 시간 확보할게요" — 잠을 줄여서라도 공부 시간을 확보하도록 reserveStudyTime=true로 다시 계산한다.
+  function handleReserveStudy() {
+    if (request === null) return;
+    setRequest({ ...request, reserveStudyTime: true });
+    navigate('/processing');
   }
 
   return (
@@ -99,6 +109,14 @@ export function ResultPage() {
         <WarningBanner key={warning}>{warning}</WarningBanner>
       ))}
 
+      {/* ② 공부 시간 확보 안내 — studyReservation은 예전에 저장된 응답엔 없을 수 있어 옵셔널로 다룬다 */}
+      <StudyReservationPrompt
+        reservation={response.studyReservation}
+        dismissed={studyPromptDismissed}
+        onReserve={handleReserveStudy}
+        onDismiss={() => setStudyPromptDismissed(true)}
+      />
+
       {/* #39 — 그래프 아래 주간 스케줄. 시험기간이 보통 1~2주라 월 전체 대신 걸친 주만
           가로 스크롤로 보고, 각 날짜의 취침·기상·카페인 요약을 클릭 없이 그 아래에 상시 표시한다.
           (홈 화면은 여전히 월 캘린더 + 상세 시트를 쓴다 — 결과 화면만 주 단위로 분리) */}
@@ -116,6 +134,72 @@ export function ResultPage() {
         </Card>
       </div>
     </AppShell>
+  );
+}
+
+/**
+ * ② 남은 공부량 안내(2026-07-30). 추천 스케줄에서 공부 시간이 부족하면
+ *  - 아직 안 물어본 상태: "공부 시간을 확보할까요?" + [네/아니오]. 네를 누르면 reserveStudyTime=true로 재계산.
+ *  - 이미 "공부 우선"으로 계산했는데도 부족: 더 줄일 수 없다는 안내만.
+ * studyReservation은 예전에 저장된 응답엔 없을 수 있어 옵셔널로 받는다.
+ */
+function StudyReservationPrompt({
+  reservation,
+  dismissed,
+  onReserve,
+  onDismiss,
+}: {
+  reservation?: StudyReservation;
+  dismissed: boolean;
+  onReserve: () => void;
+  onDismiss: () => void;
+}) {
+  if (!reservation || reservation.totalShortfallHours <= 0) return null;
+
+  const fmt = (h: number) => (Number.isInteger(h) ? `${h}` : h.toFixed(1));
+  const shortExams = reservation.byExam.filter((exam) => exam.shortfallHours > 0);
+
+  // 이미 "공부 우선"으로 계산했는데도 남는 부족분 — 물리적으로 더 못 줄이는 상황이라 안내만 한다.
+  if (reservation.enforced) {
+    return (
+      <WarningBanner>
+        공부 시간을 최대한 확보했어요. 다만 남은 시간이 부족해 아직 {fmt(reservation.totalShortfallHours)}시간
+        모자라요.
+      </WarningBanner>
+    );
+  }
+
+  // 아직 안 물어봤고(enforced 아님) 사용자가 닫지도 않았을 때만 선택지를 띄운다.
+  if (dismissed) return null;
+
+  return (
+    <Card>
+      <div className={text.label} style={{ marginBottom: 6 }}>
+        공부 시간이 부족해요
+      </div>
+      <p className={text.subtext} style={{ marginBottom: shortExams.length > 0 ? 10 : 14 }}>
+        추천 스케줄대로면 시험 전에 공부할 시간이 총 {fmt(reservation.totalShortfallHours)}시간 부족해요. 잠을 조금
+        줄여서 공부 시간을 확보할까요?
+      </p>
+      {shortExams.length > 0 && (
+        <ul style={{ margin: '0 0 14px', paddingLeft: 18 }}>
+          {shortExams.map((exam) => (
+            <li key={exam.subject} className={text.subtext} style={{ marginBottom: 2 }}>
+              {exam.subject}: {fmt(exam.requiredHours)}시간 필요 / {fmt(exam.availableHours)}시간 확보
+              <b> ({fmt(exam.shortfallHours)}시간 부족)</b>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Button variant="primary" onClick={onReserve}>
+          네, 공부 시간 확보할게요
+        </Button>
+        <Button variant="secondary" onClick={onDismiss}>
+          아니오, 이대로 잘게요
+        </Button>
+      </div>
+    </Card>
   );
 }
 
