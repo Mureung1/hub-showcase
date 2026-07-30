@@ -111,6 +111,10 @@ router.get('/', requireAuth, async (req, res, next) => {
           { members: { some: { userId: req.user.id } } },
         ],
       },
+      orderBy: [
+        { billingDay: 'asc' },
+        { serviceName: 'asc' },
+      ],
     })
 
     res.status(200).json({
