@@ -207,28 +207,4 @@ describe('프로젝트 목록', () => {
       'https://www.youtube.com/watch?v=example-video-id',
     );
   });
-
-  it('프로젝트 소개 자료 링크를 상세 패널에 외부 링크로 표시한다', () => {
-    render(
-      <App
-        projects={[{
-          id: 'intro-project',
-          title: '소개 자료 시험 프로젝트',
-          summary: '프로젝트 소개 자료를 확인합니다.',
-          featureTags: [],
-          techStack: [],
-          githubUser: 'student',
-          thumbnailUrl: '/thumbnail.webp',
-          projectIntroUrl: 'https://example.com/project-introduction',
-        }]}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: '소개 자료 시험 프로젝트 상세 보기' }));
-
-    expect(screen.getByRole('link', { name: '프로젝트 소개 보기 ↗' })).toHaveAttribute(
-      'href',
-      'https://example.com/project-introduction',
-    );
-  });
 });

@@ -30,7 +30,6 @@
     "githubUser": { "type": "string", "minLength": 1, "maxLength": 80 },
     "demoUrl": { "type": "string", "maxLength": 500 },
     "demoVideoUrl": { "type": "string", "maxLength": 500, "pattern": "^$|^https://" },
-    "projectIntroUrl": { "type": "string", "maxLength": 500, "pattern": "^$|^https://" },
     "thumbnail": {
       "type": "string",
       "pattern": "^(?!/)(?!.*\\.\\.)(?!.*\\\\).+\\.(webp|png|jpg|jpeg)$"

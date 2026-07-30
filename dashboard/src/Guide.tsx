@@ -14,7 +14,6 @@ const emptyShowcase = {
   githubUser: '',
   demoUrl: '',
   demoVideoUrl: '',
-  projectIntroUrl: '',
   thumbnail: '',
   screenshots: [],
   problem: '',
@@ -191,8 +190,8 @@ export default function Guide() {
             <p><code>features: []</code>처럼 비워도 됩니다. 해당 영역만 숨깁니다. 제목, 설명, 문제, 기능처럼 표시할 내용이 모두 없을 때만 제외됩니다.</p>
           </details>
           <details open>
-            <summary>배포·영상·소개 자료 링크는 어디에 넣나요?</summary>
-            <p><code>demoUrl</code>에는 배포 주소, <code>demoVideoUrl</code>에는 YouTube나 Drive 영상 주소, <code>projectIntroUrl</code>에는 발표 자료나 소개 페이지의 <code>https://</code> 주소를 적습니다. 소스 링크는 제출 브랜치에서 자동으로 만듭니다. 비워둔 링크는 표시하지 않습니다.</p>
+            <summary>배포 링크와 시연 영상 링크는 어디에 넣나요?</summary>
+            <p><code>demoUrl</code>에는 배포 주소를 적습니다. 영상은 <code>demoVideoUrl</code>에 YouTube나 Drive의 <code>https://</code> 주소를 적습니다. 비워두면 링크를 표시하지 않습니다.</p>
           </details>
           <details open>
             <summary>작성한 내용은 언제 사이트에 나오나요?</summary>

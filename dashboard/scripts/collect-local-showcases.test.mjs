@@ -23,7 +23,6 @@ const showcase = {
   githubUser: 'dashboard-test',
   demoUrl: '',
   demoVideoUrl: 'https://drive.google.com/file/d/example/view',
-  projectIntroUrl: 'https://example.com/project-introduction',
   thumbnail: 'thumbnail.webp',
   screenshots: ['screenshots/home.webp'],
   agent: {
@@ -93,7 +92,6 @@ test('유효한 브랜치의 JSON과 이미지만 공개 자료로 만든다', a
   const output = JSON.parse(await readFile(path.join(outputDir, 'data/showcases.json'), 'utf8'));
   assert.equal(output.projectCount, 16);
   assert.equal(output.projects[0].title, 'GitHub Pages 수집 시험');
-  assert.equal(output.projects[0].projectIntroUrl, 'https://example.com/project-introduction');
 
   const thumbnail = await readFile(
     path.join(outputDir, 'showcases/dashboard-showcase-test/thumbnail.webp'),
