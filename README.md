@@ -144,7 +144,7 @@ flowchart TB
 | DB | Supabase (PostgreSQL) |
 | LLM | Groq (`llama-3.3-70b`, 무료·OpenAI 호환) — 원안 Claude, provider 교체 가능 |
 | 외부 연동 | 기상청·OpenWeatherMap(날씨) · Solapi(문자) · Instagram Graph API(본인 계정 게시) |
-| 테스트/품질 | Vitest (서버 183건) · ESLint · `tsc --noEmit` |
+| 테스트/품질 | Vitest (서버 216건) · ESLint · `tsc --noEmit` |
 
 ## 📁 프로젝트 구조
 
@@ -202,7 +202,8 @@ curl http://localhost:4000/weather/today   # 오늘 매장 앙상블 날씨
 
 > 데모의 "쿠폰 실시간 추적"은 연출이며, 실제로는 쿠폰 코드 기반 누적 집계입니다.
 > Instagram·Solapi 모두 **본인 계정/번호에만** 실동작하고, 타인 대상은 모의로 둡니다.
-> Instagram 실게시 검증 기록: [`@cafe_kimsajang` 게시물](https://www.instagram.com/p/DbSE6HDkmpB/) (2026-07-27, 앱 개발 모드)
+> Instagram 실게시 검증 기록: [`@cafe_kimsajang` 게시물](https://www.instagram.com/p/DbSzcwRiaQ8/) (2026-07-27, 앱 개발 모드).
+> 2026-07-30에 날씨 시나리오별 4건(비·맑음·한파·폭염)으로 확장했습니다 — 목록은 `apps/web/src/api/client.ts`의 `DEMO_IG_PERMALINKS`.
 
 ## 📚 문서
 
