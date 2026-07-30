@@ -660,5 +660,42 @@
     - **H-4 실측**: 생성 지연 분위수, `completion_tokens`/`reasoning_tokens`, 타임아웃 건수, `generationModeDist`
     - 예산(3사 2회 / 호출 30회)은 **전혀 쓰지 않았다**
   - **T-020.2 잔여**: web 재배선(`buildMockFinalAnswer`·`buildMockDecisionNote` 제거, GET 폴링, **web의 기존 `completed` 전이 제거**)
+- **T-020.1 검증 (2026-07-31)** — 실호출 검증. **1~5 통과, 6·7 부분/미수행.** 3사 실행 **0회**, FinalAnswer 호출 **2회**(상한 3사 2 / 호출 30)
+  - **1. `multi_source` 생성 (`19f77a22`, 기존 Agenda 재사용)**
+
+    | 항목 | 결과 |
+    |---|---|
+    | 한 호출로 FinalAnswer+DecisionNote | ✅ compose 1회 |
+    | §3.1 입력 | ✅ 키가 `question · passed · rejected · mode · excludedProviders` 뿐 — **stances·quotes·rawContent·이전 Context 전부 미포함** |
+    | 저장·전이 | ✅ `status=completed` · `completed_at` 기록 |
+    | 실측 | **32.6초** · completion 1,704 · reasoning 1,349 (**79%**) |
+
+    FinalAnswer는 AI 출처 언급 없이 자연스러운 글로 나왔고, DecisionNote는 그 요약이었다.
+  - **2. 409 · 멱등 전이** — ✅ 재요청 `409 ALREADY_EXISTS`. 이미 `completed`인 행에 `markCompleted` 재호출 시 **오류 없고 `completed_at`도 보존**된다(web 전이가 아직 살아 있어 동시 시도가 실제로 일어난다)
+  - **3. `all_agendas_rejected`** — ✅ **AI 미호출**(`durationMs`·토큰 전부 null), 고정 문구가 FinalAnswer·DecisionNote에 **동일하게** 저장, `prompt_version=null`
+  - **5. 대체 노트 (§5.2, 스텁 주입, LLM 0회)** — ✅ `decisionNote:""` 주입 → **재시도 1회**(`composeNoteOnly`) → 그것도 실패 → 대체 노트 생성 → **`completed`. 갇히지 않는다.** `decisionNoteFallback=true`, `prompt_version="fallback"`, 판단 주체 표기 없음
+  - **4. `single_source_fallback`** — ✅ 모드 판정·금지 표현 검사 통과. **15.2초** · completion 761 · reasoning 332
+    - ⚠️ **입력이 비현실적이다.** `excluded_from_comparison`으로 2건을 뺐지만 **Agenda에는 여전히 3사 stance가 남아 있다.** 실제 `single_source_fallback`은 Agenda 자체가 단일 provider 기반이라 상황이 다르다. 다만 그만큼 **더 강한 시험**이었다 — 입력에 3사 근거가 보이는데도 "합의"·"일치"를 쓰지 않았다
+  - **6. Context (§7) — 단위 검증만. AC9 부분 충족**
+    - `buildContext` **6/6**: 직전은 FinalAnswer 전문 · 직전의 노트는 미사용 · 이전은 DecisionNote · 상한 5 적용 · **생략 건수 정확(7−5=2)** · `context_version=v1`
+    - ❌ **미검증**: `context_snapshot`에 실데이터가 담기는지, "이전 DecisionNote들" 경로, 상한 초과 실사례. Question 3건 이상이 필요해 **T-020.2의 web 데모 흐름에서 자연히 채워진다**
+  - **7. SSE (충돌 0건 경로) — ❌ 미수행.** 새 질문 1회가 필요한데 데이터 복원에 시간을 써 남기지 못했다. 코드 경로는 `runManagerForQuestion`에 배선돼 있으나 **실제 이벤트 도착은 확인 안 됨**
+  - **8. 실측 (H-4)** — 표본 2건이라 분위수는 참고값이다
+
+    | 항목 | 값 |
+    |---|---|
+    | 생성 지연 | 15.2s · 32.6s → **p50 23.9 · 최대 32.6** (n=2, p90 산출 불가) |
+    | `completion_tokens` | 761 · 1,704 |
+    | `reasoning_tokens` | 332 · 1,349 (**비중 44%·79%**) |
+    | 타임아웃 | **0건** (120초 대비 여유 있음) |
+    | `generationModeDist` | multi 1 · single 1 · all_rejected 1 (검증 실행 기준) |
+
+    §2.2의 추정(30~60초) 하단에 들어왔다. **`reasoning` 무설정 유지가 타당해 보인다** — 지연이 예산 안이고 단계 6(92%)보다 추론 비중이 낮다. 다만 n=2라 결론은 아니다
+  - **주입 지점 추가(승인 범위)**: `composeForQuestion`·`composeIfSettled`에 `composer?` 선택 파라미터. **기본값은 레지스트리 조회**이고 프로덕션은 아무것도 넘기지 않으며, 주석에 "테스트 주입용"을 명시했다. 스텁은 하네스에만 두고 **레지스트리에 등록하지 않았다**(하네스는 삭제됨)
+  - **⚠️ 검증 중 내 실수 2건 (둘 다 복구함)**
+    1. 스크래치 Question 스냅샷에 **`selected_content`를 빠뜨렸다.** 테스트 3에서 그것을 null로 만들어 복원이 CHECK(`agendas_passed_content_ck`)에 걸렸다. `selected_source_ref`가 가리키는 섹션 원문에서 §9.2와 같은 방식으로 되살렸다
+    2. 테스트 3 준비 시 `kind='single_source'`인데 `resolution_reason`만 `user_rejected`로 바꿔 **계약 검증에 걸렸다.** `AgendaSchema`의 superRefine이 잘못된 테스트 데이터를 잡아준 것이다
+    - **최종 복원 검증**: Agenda 4건(status/reason/kind/content) · SourceAnswer 3건 · Question 상태·`completed_at` 전부 원본 스냅샷과 **정확히 일치** 확인
+  - **검증**: 루트 typecheck·lint(web만)·build 통과. `--mode-test` 16/16
 - 이후: 폐기 인용 차이 축적 후 §11.2 개정 판단 · G 통제 재측정(effort:low) · AC2(단계 3b) → SPEC-AI-003(FinalAnswer) → SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

@@ -26,6 +26,7 @@ import * as sourceAnswersRepo from "../sourceAnswers/sourceAnswers.repository.js
 import { buildFallbackNote } from "./pipeline/fallbackNote.js";
 import { buildContext, type BuiltContext } from "./pipeline/context.js";
 import type {
+  FinalAnswerComposer,
   PassedAgendaInput,
   RejectedAgendaInput,
 } from "./ports/finalAnswerComposer.port.js";
@@ -113,6 +114,15 @@ export async function composeForQuestion(input: {
   /** 최종 스냅샷을 RLS로 되읽기 위한 사용자 클라이언트. */
   userClient: SupabaseClient;
   progress?: ComposeProgress;
+  /**
+   * ⚠️ **테스트 주입용.** 기본값은 레지스트리 조회이며 프로덕션 경로에서는 아무것도
+   * 넘기지 않는다. 타입으로는 오용을 막을 수 없으므로 여기 명시한다.
+   *
+   * ADR-005가 포트를 둔 목적이 갈아끼우는 것인데 레지스트리에서 직접 가져오면
+   * 호출부가 갈아끼울 수 없어 §5.2의 "decisionNote 만 빈 문자열" 경로를 검증할 수 없다.
+   * 스텁은 검증 하네스에만 두고 **레지스트리에 등록하지 않는다.**
+   */
+  composer?: FinalAnswerComposer;
 }): Promise<ComposeResult> {
   const env = loadEnv();
   const adminClient = getAdminClient();
@@ -152,7 +162,7 @@ export async function composeForQuestion(input: {
     noteContent = ALL_REJECTED_CONTENT;
   } else {
     input.progress?.onStart?.();
-    const composer = getFinalAnswerComposer();
+    const composer = input.composer ?? getFinalAnswerComposer();
     const { passed, rejected } = toComposerInput(input.agendas);
     const composeInput = {
       question: input.questionMessage,
@@ -261,6 +271,8 @@ export async function composeIfSettled(input: {
   userClient: SupabaseClient;
   questionId: string;
   progress?: ComposeProgress;
+  /** ⚠️ 테스트 주입용 — `composeForQuestion`과 같다. 프로덕션은 넘기지 않는다. */
+  composer?: FinalAnswerComposer;
 }): Promise<ComposeResult | null> {
   const adminClient = getAdminClient();
 
@@ -282,6 +294,7 @@ export async function composeIfSettled(input: {
     sourceAnswers,
     userClient: input.userClient,
     progress: input.progress,
+    composer: input.composer,
   });
 }
 
