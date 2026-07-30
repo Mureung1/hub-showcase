@@ -11,9 +11,10 @@ from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 from fastapi import FastAPI, Query, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import iterate_in_threadpool
+from starlette.types import Scope
 
 from app import agent, config
 
@@ -151,6 +152,28 @@ async def stream_brief(
     )
 
 
+class RevalidatedStaticFiles(StaticFiles):
+    """정적 자산을 **쓸 때마다 서버에 물어보게** 만든다.
+
+    `StaticFiles`는 `ETag`·`Last-Modified`만 붙이고 `Cache-Control`은 주지 않는다.
+    그러면 브라우저가 휴리스틱 캐싱(RFC 9111 §4.2.2)으로 "마지막 수정 이후 경과
+    시간의 10%쯤은 신선하다"고 스스로 정하고, 그 창 안에서는 재검증조차 하지 않는다.
+
+    그래서 **배포해도 옛 화면이 그대로 도는 일이 실제로 일어났다** (2026-07-29):
+    `DEFAULT_LIMIT`을 8로 고쳐 배포했는데 페이지는 계속 `limit=3`을 보냈고,
+    서버 로그에는 재배포 이후 `/app.js` 요청이 **아예 찍히지 않았다** — 브라우저가
+    묻지도 않고 캐시본을 쓴 것이다. 데모 중에 코드를 고치면 다시 겪는다.
+
+    `no-cache`는 캐시 금지가 아니라 **"재검증한 뒤 써라"** 다. 파일이 그대로면
+    `304`로 끝나므로 트래픽은 거의 늘지 않고, 바뀌었으면 즉시 새 파일을 받는다.
+    """
+
+    async def get_response(self, path: str, scope: Scope) -> Response:
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 # 정적 프론트를 같은 오리진에서 서빙한다. 이러면 EventSource가 상대 경로
 # `/api/brief/stream`을 그대로 쓸 수 있어 CORS 설정이 필요 없다.
 #
@@ -159,4 +182,4 @@ async def stream_brief(
 #
 # 여기서 하는 일은 파일을 내보내는 것뿐이다. 에이전트 로직은 절대 이 파일로
 # 새지 않는다 (CLAUDE.md 의존 방향: main.py → agent.py → tools.py).
-app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
+app.mount("/", RevalidatedStaticFiles(directory=WEB_DIR, html=True), name="web")
