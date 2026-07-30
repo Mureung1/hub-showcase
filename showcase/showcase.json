@@ -6,7 +6,7 @@
   "demoUrl": "hub-gamma-mocha.vercel.app",
   "demoVideoUrl": "https://youtu.be/_PldTrHoKHs",
   "thumbnail": "thumbnail.png",
-  "screenshots": [
+  "screenshots": [ 
     "screenshots/ing.png",
     "screenshots/newproject.png",
     "screenshots/signup.png"
