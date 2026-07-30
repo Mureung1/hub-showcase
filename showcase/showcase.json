@@ -4,7 +4,7 @@
   "summary": "멘토(대학원생)와 멘티(학부생)를 연결해주는 플랫폼입니다.",
   "githubUser": "meatbest9(백승주)",
   "demoUrl": "https://mentoring-sigma.vercel.app/",
-  "demoVideoUrl": "https://www.youtube.com/watch?v=example-video-id",
+  "demoVideoUrl": "https://youtu.be/XitpG92fgyc",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
@@ -12,20 +12,21 @@
     "screenshots/mentorhome.webp",
     "screenshots/question.webp"
   ],
-  "problem": "학부생이 고민이 있을 때, 대학원생에게 조언을 구하기가 너무 어렵다.",
+  "problem": "학부생이 고민이 있을 때, 고민에 알맞은 대학원생을 찾기가 어렵습니다.",
   "targetUsers": [
     "고민이 있는 학부생",
     "학부생들을 돕고 싶은 대학원생"
   ],
   "features": [
-    "멘티와 멘토를 매칭해줍니다.",
+    "멘토들의 프로필을 멘티가 확인할 수 있습니다.",
+    "멘티가 멘토를 선택하여 면담 신청을 보내고 수락되면 채팅도 서로 할 수 있습니다.",
     "쌓인 포인트를 바탕으로 멘토가 상점을 이용할 수 있습니다(추가 예정)."
 
   ],
   "featureTags": [
-    "멘토링 매칭",
-    "포인트 관리"
-    
+    "멘토 프로필 조회",
+    "면담 신청 및 수락 후 채팅",
+    "포인트 상점 (구현 예정)"
   ],
   "techStack": [
     "React",
@@ -39,9 +40,10 @@
   "techHighlights": [
     "React 상태 관리로 멘토들의 프로필 정보를 화면에 나타냅니다.",
     "Express API와 axios를 사용해서 면담 신청 생성, 조회, 수락, 거절 등을 구현합니다.",
-    "Agent 1개와 Skill 5개를 Workflow로 연결해 질문 분석부터 결과 요약까지 처리합니다."
+    "Agent 2개와 Skill 2개를 Workflow로 연결해 계획 수립부터 결과 검증까지 처리합니다."
   ],
-  "developmentWithAI": "저는 문제와 핵심 기능을 정했습니다. AI는 핵심 기능 구현 전략과 이를 바탕으로 작업 계획을 수립하고, 코드를 구현했습니다. 저는 또한 AI의 결과물을 검토했습니다",
+  "developmentWithAI": "저는 문제와 핵심 기능을 정했습니다. AI는 핵심 기능 구현 전략과 이를 바탕으로 작업 계획을 수립하고, 코드를 구현하고 검증했습니다.", 
+
   "agent": {
     "summary": "기획부터 구현, 테스트, PR 작성까지 Agent와 Skill을 함께 사용했습니다.",
     "agentTools": [
@@ -53,12 +55,17 @@
       {
         "type": "agent",
         "name": "test Agent",
-        "purpose": "클라이언트, 서버, DB 각각에서 주요 흐름이 잘 작동하는지 확인합니다."
+        "purpose": "클라이언트, 서버, DB 각각의 내부에서 독립적인 흐름이 잘 작동하는지 확인합니다."
       },
       {
         "type": "skill",
-        "name": "Design Skill",
+        "name": "디자인 Skill",
         "purpose": "UI를 보다 일관된 스타일로 설계하도록 돕습니다."
+      },
+      {
+        "type": "skill",
+        "name": "핵심 기능 구현 skill",
+        "purpose": "계획 수립부터 구현, 테스트까지 핵심 기능을 완성하도록 돕습니다"
       }
     ],
     "workflows": [
@@ -66,21 +73,15 @@
         "name": "기능 개발 Workflow",
         "steps": [
           "핵심 기능 정의",
-          "Agent에게 구현 계획 요청",
-          "계획 검토한 뒤 Agent로 코드 구현",
-          " Test Agent로 테스트 실행"
-        
+          "핵심 기능 구현 skill로 작업 시작",
+          "planner agent로 작업 계획 수립",
+          "계획 확인 후 이슈 초안 받기",
+          "검토 후 이슈 생성",
+          "이슈 순서대로 구현",
+          "일련의 흐름이 완성되면 test agent로 클라이언트, 서버, DB 각각의 독립적인 흐름 검증",
+          "완전히 구현되면 e2e 검증"        
         ]
-      },
-      {
-        "name": "PR 협업 Workflow",
-        "steps": [
-          "PR 작성",
-          "Agent에게 변경 내용 점검 요청",
-          "리뷰 의견 반영",
-          "최종 결과 확인"
-        ]
-      }
+      }  
     ]
   }
 }
