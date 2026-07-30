@@ -62,3 +62,9 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+
+
+# 4. 데모 계정
+
+로그인 화면에는 심사·시연에서 계정을 새로 만들지 않고 바로 들어올 수 있도록 데모 계정을 자동 입력하는 안내 박스가 있다. 계정 값은 화면에 그대로 표시되고 프론트엔드 빌드 번들에도 포함되므로 비밀이 아니다 — 이는 숨길 수 없는 성질이며(`VITE_` 환경변수로 빼도 동일하다) 의도된 결정이다. 따라서 이 계정은 **데모 전용 폐기 계정**으로만 쓰고 민감한 데이터를 두지 않으며, 실서비스 전환 시 안내 박스와 함께 제거한다. 인증 자체를 우회하지는 않고 값을 폼에 채워 기존 로그인 흐름으로 제출할 뿐이다. 자세한 한계는 `docs/handoff/09-LIMITS-AND-BACKLOG.md` §1.1을 참고한다.

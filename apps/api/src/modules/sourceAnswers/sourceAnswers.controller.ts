@@ -227,7 +227,9 @@ export async function postSourceAnswers(
     });
     serverContext = built.text;
     if (built.omittedNoteCount > 0) {
-      // §7.3 — 조용히 자르지 않는다. 생략 건수를 로그로도 남긴다(스냅샷에도 저장된다).
+      // §7.3 — Context 상한(CONTEXT_MAX_NOTES) 초과분은 제외된다.
+      // ⚠️ 생략 건수는 아직 context_snapshot에 저장되지 않는다 — 콘솔 로그만 남는다.
+      //    SPEC-AI-003 AC9 미충족. 백로그(docs/handoff/09-LIMITS-AND-BACKLOG.md §1.2).
       console.info(
         `[context] DecisionNote ${built.omittedNoteCount}건 생략(상한 초과)`,
       );
