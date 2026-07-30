@@ -31,7 +31,7 @@
 | Manager AI 비교·재검토 Prompt | `SPEC-AI-002-manager.md` | **완료 (2026-07-31, T-019.1~19.6 — AC 10/12 충족, 2건 부분)** |
 | FinalAnswer·DecisionNote 서버 생성 | `SPEC-AI-003-final-answer.md` | **Ready (2026-07-31 — 결정 3건 확정. 다음: T-020 구현)** |
 | 사용자 소유권·RLS·Migration | `SPEC-DB-001-user-ownership-and-rls.md` | 완료 (2026-07-22, T-015 — AC1~AC6 실측 PASS) |
-| DecisionNote 저장·Export | `SPEC-EXPORT-001-notes-and-zip.md` | 미작성 |
+| DecisionNote 저장·Export | `SPEC-EXPORT-001-notes-and-zip.md` | **Ready (2026-07-31 — Epic 4 Story 4-3·4-4. 서버 작업 없음. 다음: T-021 구현)** |
 | 비밀번호 재설정 (Should) | `SPEC-AUTH-004-password-reset.md` | 보류 |
 
 ## Spec 작성 시 고정 요구사항
