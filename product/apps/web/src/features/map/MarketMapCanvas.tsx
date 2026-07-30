@@ -1,3 +1,4 @@
+import type { GeoJSONSource, MapLayerMouseEvent } from "maplibre-gl";
 import { ChevronRight, MapPinned } from "lucide-react";
 import { lazy, Suspense, useMemo, useState, type RefObject } from "react";
 import Map, { Layer, Marker, Popup, type MapRef } from "react-map-gl/maplibre";
@@ -18,19 +19,19 @@ import {
 } from "./marketBoundaryGeometry";
 import { getMapPresentationProfile, type MapPresentationMode } from "./mapPresentation";
 import { SelectedMarketBoundary } from "./SelectedMarketBoundary";
-import {
-  groupStoreMarkers,
-  isStoreMarkerDeemphasized,
-  STORE_MARKER_DETAIL_ZOOM,
-} from "./storeMarkerLod";
 import "./storeMarkerLod.css";
 import { StoreDensityHeatmap } from "./StoreDensityHeatmap";
+import {
+  STORE_CLUSTER_CIRCLE_LAYER_ID,
+  STORE_POINT_HIT_LAYER_ID,
+  STORE_POINT_SOURCE_ID,
+} from "./stores/storeGeoJson";
+import { StorePointLayers } from "./stores/StorePointLayers";
 import { SupportedRegionOverlays } from "./SupportedRegionOverlays";
 import { storefrontStoreIdentity } from "./storefronts/storefrontObjectField";
 import { READY_OVERLAY_REGIONS, type MapBounds } from "./supportedRegions";
 import type { SelectedStorefront } from "./storefronts/SelectedStorefrontLayer";
 
-const DENSITY_MARKER_MIN_ZOOM = 15.7;
 const SELECTED_MARKET_BUILDING_LAYER_ID = `${BASE_BUILDING_LAYER_ID}-selected-market`;
 
 const StorefrontBuildingLayers = lazy(() =>
@@ -56,6 +57,46 @@ function readMapBounds(map: {
   };
 }
 
+function handleStoreLayerClick(
+  event: MapLayerMouseEvent,
+  onSelectStore: (storeKey: string) => void,
+  onClearSelection: () => void,
+) {
+  const clusterFeature = event.features?.find(
+    (feature) => feature.layer.id === STORE_CLUSTER_CIRCLE_LAYER_ID,
+  );
+  if (clusterFeature?.geometry.type === "Point") {
+    const rawClusterId = clusterFeature.properties?.cluster_id;
+    const clusterId = typeof rawClusterId === "number" ? rawClusterId : Number(rawClusterId);
+    const source = event.target.getSource(STORE_POINT_SOURCE_ID) as GeoJSONSource | undefined;
+    if (source && Number.isFinite(clusterId)) {
+      const center = clusterFeature.geometry.coordinates as [number, number];
+      void source
+        .getClusterExpansionZoom(clusterId)
+        .then((zoom) => {
+          event.target.easeTo({
+            center,
+            zoom: Math.min(zoom, 17.5),
+            duration: 450,
+            essential: true,
+          });
+        })
+        .catch(() => undefined);
+    }
+    return;
+  }
+
+  const storeFeature = event.features?.find(
+    (feature) => feature.layer.id === STORE_POINT_HIT_LAYER_ID,
+  );
+  const storeKey = storeFeature?.properties?.storeKey;
+  if (typeof storeKey === "string") {
+    onSelectStore(storeKey);
+    return;
+  }
+  onClearSelection();
+}
+
 type MarketMapCanvasProps = {
   market: Market;
   marketKey: MarketKey;
@@ -79,62 +120,10 @@ type MarketMapCanvasProps = {
   selected: MarketStore | null;
   score: number | null;
   onSelectStore: (storeKey: string) => void;
+  onClearSelection: () => void;
   visibleSupportedRegion: boolean;
   onEvidenceOpen: () => void;
 };
-
-function StoreMarker({
-  store,
-  selectedName,
-  presentationCategory,
-  prefabMode,
-  detailed,
-  count,
-  onSelect,
-}: {
-  store: MarketStore;
-  selectedName: string | null;
-  presentationCategory: string;
-  prefabMode: boolean;
-  detailed: boolean;
-  count: number;
-  onSelect: (storeKey: string) => void;
-}) {
-  const isSelected = selectedName === store.name;
-  const isDeemphasized = isStoreMarkerDeemphasized(
-    store,
-    selectedName,
-    prefabMode ? "storefront3d" : "analysis",
-  );
-  const { icon: Icon, tone, label: groupLabel } = resolveCategoryPresentation(presentationCategory);
-  const label = count > 1 ? `${groupLabel} 점포 ${count}개 묶음 보기` : `${store.name} 후보 보기`;
-  return (
-    <Marker longitude={store.longitude} latitude={store.latitude} anchor="bottom">
-      <button
-        type="button"
-        aria-label={label}
-        title={count > 1 ? `${groupLabel} 점포 ${count}개` : `${store.name} · ${store.category}`}
-        className={[
-          "map-marker",
-          tone,
-          isSelected ? "is-selected" : "",
-          isDeemphasized ? "is-deemphasized" : "",
-          detailed ? "is-detailed" : "is-compact",
-          count > 1 ? "is-clustered" : "",
-          prefabMode ? "is-storefront-fallback" : "",
-        ]
-          .filter(Boolean)
-          .join(" ")}
-        onClick={() => onSelect(store.id ?? store.name)}
-      >
-        <span>
-          <Icon size={detailed ? 21 : 16} strokeWidth={2.5} />
-        </span>
-        {count > 1 && <small className="store-marker-count">{count}</small>}
-      </button>
-    </Marker>
-  );
-}
 
 type MapContentsProps = {
   activeDemandLabel: string;
@@ -142,7 +131,6 @@ type MapContentsProps = {
   activeOverlayRegion: (typeof READY_OVERLAY_REGIONS)[number] | undefined;
   baseBuildingsRendered: boolean;
   boundaryVisible: boolean;
-  densityMarkersVisible: boolean;
   densityStores: MarketStore[];
   effectivePresentationMode: MapPresentationMode;
   flowPeople: Array<{ longitude: number; latitude: number; delay: number }>;
@@ -152,7 +140,6 @@ type MapContentsProps = {
   marketId: string;
   marketKey: MarketKey;
   marketTransitionActive: boolean;
-  markerGroups: ReturnType<typeof groupStoreMarkers>;
   onEvidenceOpen: () => void;
   onSelectStore: (storeKey: string) => void;
   onStorefrontUnavailable: () => void;
@@ -165,9 +152,9 @@ type MapContentsProps = {
   selectedDistanceLabel: string;
   selectedPresentation: ReturnType<typeof resolveCategoryPresentation>;
   storefrontObjectHitStores: MarketStore[];
+  storePoints: MarketStore[];
   storesVisible: boolean;
   visibleStorefronts: SelectedStorefront[];
-  zoom: number;
 };
 
 type SelectedStorePopupProps = Pick<
@@ -239,7 +226,6 @@ function MapContents({
   activeOverlayRegion,
   baseBuildingsRendered,
   boundaryVisible,
-  densityMarkersVisible,
   densityStores,
   effectivePresentationMode,
   flowPeople,
@@ -249,7 +235,6 @@ function MapContents({
   marketId,
   marketKey,
   marketTransitionActive,
-  markerGroups,
   onEvidenceOpen,
   onSelectStore,
   onStorefrontUnavailable,
@@ -262,9 +247,9 @@ function MapContents({
   selectedDistanceLabel,
   selectedPresentation,
   storefrontObjectHitStores,
+  storePoints,
   storesVisible,
   visibleStorefronts,
-  zoom,
 }: MapContentsProps) {
   const SelectedIcon = selectedPresentation.icon;
   return (
@@ -313,7 +298,7 @@ function MapContents({
             "#d5c3e2",
           ],
           "fill-extrusion-height": ["to-number", ["get", "render_height"], 8],
-          "fill-extrusion-opacity": effectivePresentationMode === "storefront3d" ? 0.5 : 0.94,
+          "fill-extrusion-opacity": effectivePresentationMode === "storefront3d" ? 0.72 : 0.94,
           "fill-extrusion-vertical-gradient": true,
         }}
       />
@@ -325,6 +310,13 @@ function MapContents({
       {boundaryVisible && !marketTransitionActive && (
         <SelectedMarketBoundary marketId={marketId} marketKey={marketKey} />
       )}
+      <StorePointLayers
+        stores={storePoints}
+        selected={selected}
+        visible={storesVisible}
+        densityMode={effectivePresentationMode === "analysis" && layer === "density"}
+        storefrontMode={effectivePresentationMode === "storefront3d"}
+      />
       {storesVisible && profile.storefrontsVisible && (
         <Suspense fallback={null}>
           <StorefrontBuildingLayers
@@ -348,7 +340,10 @@ function MapContents({
               className="storefront-object-hit-target"
               aria-label={`${store.name} 3D 점포 선택`}
               title={`${store.name} · ${store.category}`}
-              onClick={() => onSelectStore(store.id ?? store.name)}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectStore(store.id ?? store.name);
+              }}
             />
           </Marker>
         ))}
@@ -376,20 +371,6 @@ function MapContents({
               aria-label={`${activeDemandLabel} 유동 수요`}
             />
           </Marker>
-        ))}
-      {storesVisible &&
-        densityMarkersVisible &&
-        markerGroups.map(({ store, count }) => (
-          <StoreMarker
-            key={`${store.id ?? `${store.name}:${store.longitude}:${store.latitude}`}:${count}`}
-            store={store}
-            selectedName={selected?.name ?? null}
-            presentationCategory={selectedCategoryName}
-            prefabMode={profile.storefrontsVisible}
-            detailed={zoom >= STORE_MARKER_DETAIL_ZOOM}
-            count={count}
-            onSelect={onSelectStore}
-          />
         ))}
       {effectivePresentationMode === "storefront3d" &&
         selected &&
@@ -438,6 +419,7 @@ export function MarketMapCanvas({
   selected,
   score,
   onSelectStore,
+  onClearSelection,
   visibleSupportedRegion,
   onEvidenceOpen,
 }: MarketMapCanvasProps) {
@@ -460,7 +442,6 @@ export function MarketMapCanvas({
       insideSelectedMarketFilter(profile.localTwinOverlayVisible ? marketBoundaryGeometry : null),
     [marketBoundaryGeometry, profile.localTwinOverlayVisible],
   );
-  const [zoom, setZoom] = useState(15.4);
   const [mapReady, setMapReady] = useState(false);
   const visibleStorefronts = useMemo(
     () => (profile.storefrontsVisible ? storefrontBuildings3d : []),
@@ -474,13 +455,6 @@ export function MarketMapCanvas({
     () => mapStores.filter((store) => representedStoreIds.has(storefrontStoreIdentity(store))),
     [mapStores, representedStoreIds],
   );
-  const markerStores = useMemo(
-    () =>
-      profile.storefrontsVisible
-        ? mapStores.filter((store) => !representedStoreIds.has(storefrontStoreIdentity(store)))
-        : mapStores,
-    [mapStores, profile.storefrontsVisible, representedStoreIds],
-  );
   const densityStores = useMemo(
     () =>
       mapStores.filter(
@@ -489,20 +463,6 @@ export function MarketMapCanvas({
       ),
     [mapStores, selectedCategoryName],
   );
-  const markerGroups = useMemo(
-    () =>
-      groupStoreMarkers(
-        markerStores,
-        zoom,
-        selected?.name ?? null,
-        profile.storefrontsVisible ? "storefront3d" : "analysis",
-      ),
-    [markerStores, profile.storefrontsVisible, selected?.name, zoom],
-  );
-  const densityMarkersVisible =
-    effectivePresentationMode !== "analysis" ||
-    layer !== "density" ||
-    zoom >= DENSITY_MARKER_MIN_ZOOM;
   const selectedPresentation = resolveCategoryPresentation(selectedCategoryName);
   const selectedDistanceLabel = selected
     ? `${selectedPresentation.label} · 상권 중심에서 ${selected.distance}`
@@ -525,19 +485,28 @@ export function MarketMapCanvas({
         dragPan
         scrollZoom
         touchZoomRotate
+        interactiveLayerIds={
+          storesVisible ? [STORE_CLUSTER_CIRCLE_LAYER_ID, STORE_POINT_HIT_LAYER_ID] : []
+        }
         onLoad={(event) => {
           event.target.on("styleimagemissing", addMissingStyleImageFallback);
           hideExternalBuildingLayers(event.target);
-          setZoom(event.target.getZoom());
+          onVisibleCenterChange([event.target.getCenter().lng, event.target.getCenter().lat]);
           onVisibleBoundsChange(readMapBounds(event.target));
         }}
         onIdle={() => setMapReady(true)}
         onStyleData={(event) => hideExternalBuildingLayers(event.target)}
-        onMove={(event) => {
-          setZoom(event.viewState.zoom);
-          onVisibleCenterChange([event.viewState.longitude, event.viewState.latitude]);
+        onClick={(event) => handleStoreLayerClick(event, onSelectStore, onClearSelection)}
+        onMouseEnter={(event) => {
+          event.target.getCanvas().style.cursor = "pointer";
         }}
-        onMoveEnd={(event) => onVisibleBoundsChange(readMapBounds(event.target))}
+        onMouseLeave={(event) => {
+          event.target.getCanvas().style.cursor = "";
+        }}
+        onMoveEnd={(event) => {
+          onVisibleCenterChange([event.viewState.longitude, event.viewState.latitude]);
+          onVisibleBoundsChange(readMapBounds(event.target));
+        }}
       >
         <MapContents
           activeDemandLabel={activeDemandLabel}
@@ -545,7 +514,6 @@ export function MarketMapCanvas({
           activeOverlayRegion={activeOverlayRegion}
           baseBuildingsRendered={baseBuildingsRendered}
           boundaryVisible={boundaryVisible}
-          densityMarkersVisible={densityMarkersVisible}
           densityStores={densityStores}
           effectivePresentationMode={effectivePresentationMode}
           flowPeople={flowPeople}
@@ -555,7 +523,6 @@ export function MarketMapCanvas({
           marketId={marketId}
           marketKey={marketKey}
           marketTransitionActive={marketTransitionActive}
-          markerGroups={markerGroups}
           onEvidenceOpen={onEvidenceOpen}
           onSelectStore={onSelectStore}
           onStorefrontUnavailable={onStorefrontUnavailable}
@@ -568,9 +535,9 @@ export function MarketMapCanvas({
           selectedDistanceLabel={selectedDistanceLabel}
           selectedPresentation={selectedPresentation}
           storefrontObjectHitStores={storefrontObjectHitStores}
+          storePoints={mapStores}
           storesVisible={storesVisible}
           visibleStorefronts={visibleStorefronts}
-          zoom={zoom}
         />
       </Map>
       {!mapReady && (

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "title": "LocalTwin — 설명 가능한 동네 상권 분석",
-  "summary": "서울 동네 상권을 지도와 공공데이터로 함께 읽어, 예비 창업자가 입지를 비교할 수 있게 돕는 설명 가능한 분석 도구입니다.",
+  "summary": "서울 동네 상권을 지도와 공공데이터로 함께 읽어, 예비 창업자가 입지를 비교할 수 있게 돕는 설명 가능한 분석 도구입니다. https://drive.google.com/drive/folders/1nc4SzlU1rAdfG6_4Vtu9OiZUPTEHUxad?usp=sharing",
   "githubUser": "HyunKN(정현우)",
   "demoUrl": "https://localtwin-product.vercel.app/",
-  "demoVideoUrl": "https://drive.google.com/drive/folders/1nc4SzlU1rAdfG6_4Vtu9OiZUPTEHUxad?usp=sharing",
+  "demoVideoUrl": "https://www.youtube.com/watch?v=oxlKGrXqhwU",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/market-analysis.webp",
@@ -17,7 +17,7 @@
     "상권 근거를 빠르게 비교해야 하는 소상공인 지원 담당자"
   ],
   "features": [
-    "지도에서 상권 또는 직접 선택한 위치를 기준으로 100m, 300m, 500m 반경(임시)을 분석합니다.",
+    "지도에서 선택한 상권을 기준으로 분석합니다.",
     "카페, 음식점, 베이커리, 편의점별로 주변 동일 업종 점포와 밀도를 확인합니다.",
     "경쟁, 개·폐업, 추정 매출, 시간대별 활동, 유동인구, 인구를 한 화면의 근거로 연결합니다.",
     "입지 점수에 신뢰도, 근거, 데이터 출처, 기준 시점, 공간 단위를 함께 표시합니다.",

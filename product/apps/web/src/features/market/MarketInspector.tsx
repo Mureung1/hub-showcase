@@ -2,13 +2,13 @@ import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import type { MarketAnalysis, MarketStoreTrend } from "../../services/marketAnalysis";
 import { EvidenceCoverageSummary } from "./EvidenceCoverageSummary";
 import { InspectorFlow } from "./InspectorFlow";
+import { InspectorDecisionSummary } from "./MarketDecisionSummary";
+import { InspectorHeader } from "./MarketInspectorHeader";
+import { InspectorScoreAndCompetition } from "./MarketScoreAndCompetition";
 import {
   InspectorFootfall,
-  InspectorHeader,
-  InspectorDecisionSummary,
   InspectorPopulation,
   InspectorRankings,
-  InspectorScoreAndCompetition,
   InspectorStoreTrend,
   InspectorSummary,
   InspectorTurnoverAndSales,
@@ -62,19 +62,19 @@ function PartialCompetitionSummary({
     <section className="metric-section partial-competition-summary" aria-label="경쟁 현황">
       <div className="section-title">
         <span>경쟁 현황</span>
-        <small>최신 점포 위치 기준</small>
+        <small>점포 위치 2026.06 기준</small>
       </div>
       <div className="competition-chart">
         <div className="competition-stat">
-          <span>같은 업종 점포</span>
+          <span>선택 상권 경계 내</span>
           <b>{sameCategoryCount.toLocaleString("ko-KR")}곳</b>
-          <small>{categorySelection.name} 최신 점포 위치 집계</small>
+          <small>동일 업종 점포</small>
         </div>
         <div className="legend-list">
           <span>
             <i className="green" /> {categorySelection.name} <b>{sameCategoryCount}</b>
           </span>
-          <small>선택한 상권 안에서 같은 세부 업종으로 확인된 점포입니다.</small>
+          <small>2026.06 점포 위치 스냅샷에서 같은 세부 업종만 집계합니다.</small>
         </div>
       </div>
     </section>
