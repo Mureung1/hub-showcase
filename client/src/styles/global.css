@@ -994,6 +994,13 @@ h2 {
   margin: var(--space-lg) 0;
 }
 
+.insight-context-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
 .insight-summary-list {
   padding-left: var(--space-lg);
   margin-bottom: var(--space-md);
