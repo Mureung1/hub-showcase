@@ -154,10 +154,11 @@
           x=196 = 재생성 고리 레인, x=268 = 학습 고리 레인 (다른 상자와 안 겹치게 비워둠)
         -->
         <!--
-          minY를 -1로 둔다: 첫 박스가 y=0이라 테두리(굵기 0.6)의 위쪽 절반이 뷰박스 밖으로
-          잘려 그 변만 얇게 보였다. 위로 1 넓혀 선이 온전히 들어오게 한다.
+          minX·minY를 -1로 둔다: 첫 박스가 y=0, 왼쪽 상자들이 x=0에 붙어 있어서
+          테두리 굵기의 바깥쪽 절반이 뷰박스를 벗어나 그 변만 얇게 보였다.
+          위·왼쪽으로 1씩 넓혀 선이 온전히 들어오게 한다. (내용 좌표는 0~273 그대로)
         -->
-        <svg class="chart" viewBox="0 -1 273 269" xmlns="http://www.w3.org/2000/svg">
+        <svg class="chart" viewBox="-1 -1 274 269" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5"
               markerHeight="5" orient="auto-start-reverse">
