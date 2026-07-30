@@ -32,6 +32,16 @@ const MIN_SOUND_THRESHOLD = 3;
 // STT/LLM/TTS 중 하나가 응답 없이 멈추는 상황을 대비한 타임아웃
 const PROCESSING_TIMEOUT_MS = 20000;
 
+// STT/TTS가 사용 한도(429)에 걸리면 이 시간 동안 음성 기능을 끄고 텍스트로만 대화한다.
+// 새로고침해도 바로 다시 시도해서 또 걸리는 일이 없도록 localStorage에 만료 시각을 남겨둔다.
+const VOICE_QUOTA_COOLDOWN_MS = 30 * 60 * 1000;
+const VOICE_DISABLED_STORAGE_KEY = 'airpodslog.voiceDisabledUntil';
+
+function isVoiceQuotaCooldownActive() {
+  const until = Number(window.localStorage.getItem(VOICE_DISABLED_STORAGE_KEY));
+  return Number.isFinite(until) && until > Date.now();
+}
+
 function withTimeout(promise, ms, timeoutMessage) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(timeoutMessage)), ms);
@@ -57,8 +67,12 @@ export default function AirPodsLog() {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [sessionId, setSessionId] = useState(null);
+  // 로그인/기록보기/설정으로 이동하는 좌측 슬라이드 사이드바가 열려있는지
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   // 대화 전체 상태 머신: idle(대기/텍스트 전용 폴백) | listening(듣는 중) | processing(STT→LLM→TTS) | speaking(응답 재생 중)
   const [conversationState, setConversationState] = useState('idle');
+  // STT/TTS 사용 한도 초과로 음성 기능 전체(마이크 입력 + 음성 응답)를 끈 상태인지
+  const [voiceDisabled, setVoiceDisabled] = useState(isVoiceQuotaCooldownActive);
   // listening 상태의 서브 단계: waiting(발화 대기, 무한정) | active(발화 중, 무음 지속시간 감지 시작)
   const [listeningPhase, setListeningPhase] = useState('waiting');
 
@@ -92,10 +106,16 @@ export default function AirPodsLog() {
   // 현재 세션이 아직 유효한지("대화 종료"를 누르지 않았는지). 이게 false면 처리 중이던
   // STT/LLM/TTS 응답이 뒤늦게 도착해도 화면/오디오에 반영하지 않음.
   const sessionAliveRef = useRef(false);
+  // voiceDisabled state를 콜백/클로저 안에서도 최신값으로 읽기 위한 ref (다른 *Ref 필드들과 동일한 패턴)
+  const voiceDisabledRef = useRef(voiceDisabled);
 
   useEffect(() => {
     conversationStateRef.current = conversationState;
   }, [conversationState]);
+
+  useEffect(() => {
+    voiceDisabledRef.current = voiceDisabled;
+  }, [voiceDisabled]);
 
   // 메시지 관련 작성
   // 메시지가 추가될 때마다 스크롤을 맨 아래로 내림
@@ -206,6 +226,11 @@ export default function AirPodsLog() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 사이드바 메뉴(기록 보기/설정/로그인)를 눌러 다른 화면으로 이동하면 사이드바는 자동으로 닫음
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
   const handleStart = () => {
     navigate('/situation');
   };
@@ -298,6 +323,26 @@ export default function AirPodsLog() {
     setInputValue('');
   };
 
+  // STT/TTS가 사용 한도(429)에 걸렸을 때 호출. 마이크 루프를 끄고 이후로는 텍스트로만
+  // 대화하게 하며, 새로고침해도 바로 재시도하지 않도록 쿨다운을 localStorage에 남긴다.
+  const disableVoice = () => {
+    if (voiceDisabledRef.current) return; // 이미 꺼진 상태면 중복 안내하지 않음
+    voiceDisabledRef.current = true;
+    setVoiceDisabled(true);
+    conversationActiveRef.current = false;
+    window.localStorage.setItem(VOICE_DISABLED_STORAGE_KEY, String(Date.now() + VOICE_QUOTA_COOLDOWN_MS));
+    if (sessionAliveRef.current) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          sender: 'agent',
+          text: '🔇 음성 사용 한도를 다 써서 지금은 텍스트로만 대화할 수 있어요. 잠시 후 다시 음성을 사용할 수 있어요.',
+        },
+      ]);
+    }
+  };
+
   // 무음 감지(자동) 또는 마이크 버튼(수동 폴백) 둘 다 이 경로로 녹음을 종료하고 처리로 넘김
   const stopListeningAndProcess = () => {
     if (mediaRecorderRef.current?.state !== 'recording') return;
@@ -308,7 +353,7 @@ export default function AirPodsLog() {
   // LISTENING 진입: 마이크를 열고 녹음을 시작. SPEAKING → LISTENING 자동 전환과
   // 최초 "대화 시작" 클릭 이후 마이크 권한이 이미 있으므로 별도 사용자 제스처 없이 호출 가능.
   const startListening = async () => {
-    if (!sessionAliveRef.current || !conversationActiveRef.current) {
+    if (!sessionAliveRef.current || !conversationActiveRef.current || voiceDisabledRef.current) {
       setConversationState('idle');
       return;
     }
@@ -413,6 +458,9 @@ export default function AirPodsLog() {
           await player.play();
         } catch (err) {
           console.error('TTS 재생 실패:', err);
+          if (err?.status === 429) {
+            disableVoice();
+          }
           finish();
         }
       })();
@@ -421,9 +469,12 @@ export default function AirPodsLog() {
 
   // 응답을 말하고, 끝나면 대화가 살아있는 한 자동으로 LISTENING으로 돌아감 (이슈 3 핵심 루프)
   const speakThenContinue = async (text) => {
-    await playReply(text);
+    // 음성이 꺼진 상태(사용 한도 초과)면 TTS 호출 자체를 건너뛰고 텍스트만 남긴다
+    if (!voiceDisabledRef.current) {
+      await playReply(text);
+    }
     if (!sessionAliveRef.current) return; // 재생 중/대기 중 "종료"를 눌렀으면 아무 것도 하지 않음
-    if (conversationActiveRef.current) {
+    if (conversationActiveRef.current && !voiceDisabledRef.current) {
       startListening();
     } else {
       setConversationState('idle');
@@ -439,12 +490,17 @@ export default function AirPodsLog() {
 
     // "상황 선택" 클릭이 최초이자 유일한 사용자 제스처이므로, 이 안에서 마이크 권한을
     // 미리 확보해둬야 이후 SPEAKING → LISTENING 자동 전환 시 추가 클릭 없이 마이크를 켤 수 있음.
-    try {
-      const permStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      permStream.getTracks().forEach((track) => track.stop());
-    } catch (err) {
-      console.error('마이크 권한 확보 실패:', err);
-      conversationActiveRef.current = false; // 텍스트 전용 폴백으로 진행
+    // 단, 이미 사용 한도 초과로 음성이 꺼진 상태라면 굳이 권한을 다시 요청하지 않는다.
+    if (voiceDisabledRef.current) {
+      conversationActiveRef.current = false;
+    } else {
+      try {
+        const permStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        permStream.getTracks().forEach((track) => track.stop());
+      } catch (err) {
+        console.error('마이크 권한 확보 실패:', err);
+        conversationActiveRef.current = false; // 텍스트 전용 폴백으로 진행
+      }
     }
     if (!sessionAliveRef.current) return; // 권한 요청 중 "종료"를 눌렀으면 중단
 
@@ -547,7 +603,13 @@ export default function AirPodsLog() {
     } catch (err) {
       console.error('STT 처리 실패:', err);
       if (!sessionAliveRef.current) return;
-      // STT 호출 자체가 실패한 경우(네트워크, 타임아웃, API 한도 초과 등)는
+      // STT 사용 한도(429) 초과라면 음성 기능을 끄고 텍스트로만 계속한다 (disableVoice가 안내 메시지를 남김)
+      if (err?.status === 429) {
+        disableVoice();
+        setConversationState('idle');
+        return;
+      }
+      // 그 외 STT 호출 자체가 실패한 경우(네트워크, 타임아웃 등)는
       // "못 알아들었다"가 아니라 텍스트 경로(handleSendMessage)와 동일하게 안내한다.
       replyText = '지금은 응답을 받아올 수 없어요. 잠시 후 다시 시도해주세요.';
       setMessages((prev) => [...prev, { id: Date.now() + 1, sender: 'agent', text: replyText }]);
@@ -619,25 +681,24 @@ export default function AirPodsLog() {
 
   const HomeScreen = (
     <div className="home-screen">
-      <div className="auth-status-bar">
-        {user ? (
-          <>
-            <span className="auth-status-avatar" title={user.email} aria-hidden="true">
-              {user.email?.[0]?.toUpperCase() ?? '?'}
-            </span>
-            <button type="button" onClick={() => navigate('/history')}>기록 보기</button>
-            <button type="button" onClick={signOut}>로그아웃</button>
-          </>
-        ) : (
-          <button type="button" className="auth-status-login" onClick={() => navigate('/login')}>
-            <span aria-hidden="true">🔑</span> 로그인
-          </button>
-        )}
-        <button type="button" onClick={() => navigate('/settings')} title="설정" aria-label="설정">
-          <span aria-hidden="true">⚙️</span>
-        </button>
+      <button
+        type="button"
+        className="hamburger-button"
+        onClick={() => setSidebarOpen(true)}
+        aria-label="메뉴 열기"
+      >
+        <span aria-hidden="true">☰</span>
+      </button>
+      {/* 브랜드 마크: 이모지 대신 오디오 파형 형태의 커스텀 아이콘 (각 막대가 다른 위상으로 움직여 이퀄라이저처럼 보임) */}
+      <div className="home-icon" aria-hidden="true">
+        <svg className="home-icon-svg" viewBox="0 0 64 64" width="64" height="64">
+          <rect className="wave-bar wave-bar--1" x="4" y="24" width="8" height="16" rx="4" />
+          <rect className="wave-bar wave-bar--2" x="16" y="16" width="8" height="32" rx="4" />
+          <rect className="wave-bar wave-bar--3" x="28" y="6" width="8" height="52" rx="4" />
+          <rect className="wave-bar wave-bar--4" x="40" y="16" width="8" height="32" rx="4" />
+          <rect className="wave-bar wave-bar--5" x="52" y="24" width="8" height="16" rx="4" />
+        </svg>
       </div>
-      <div className="home-icon">🎧</div>
       <h1 className="home-title">AirPods Log</h1>
       <p className="home-subtitle">상황을 기록하면, 당신만의 에이전트가<br/>오디오로 대화를 이어갑니다.</p>
       <button className="btn-primary" onClick={handleStart}>
@@ -666,7 +727,7 @@ export default function AirPodsLog() {
   );
 
   const statusText = {
-    idle: '텍스트로 대화 중 (마이크 사용 불가)',
+    idle: voiceDisabled ? '음성 사용 한도 초과 (텍스트로 대화 중)' : '텍스트로 대화 중 (마이크 사용 불가)',
     listening: listeningPhase === 'active' ? '듣는 중...' : '편하게 말씀해주세요',
     processing: '생각하는 중...',
     speaking: '말하는 중...',
@@ -677,15 +738,20 @@ export default function AirPodsLog() {
       {/* 상단 헤더 */}
       <header className="chat-header">
         <div className="chat-header-status">
+          <button
+            type="button"
+            className="hamburger-button hamburger-button--inline"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="메뉴 열기"
+          >
+            <span aria-hidden="true">☰</span>
+          </button>
           <span
             className={`status-dot ${conversationState === 'listening' ? 'status-dot--recording' : ''} ${conversationState === 'processing' || conversationState === 'speaking' ? 'status-dot--analyzing' : ''}`}
           ></span>
           <span className="status-text">{statusText}</span>
         </div>
         <div className="chat-header-actions">
-          <button className="settings-button" onClick={() => navigate('/settings')} title="설정" aria-label="설정">
-            ⚙️
-          </button>
           <button className="end-button" onClick={handleEndConversation} title="대화 종료">
             종료
           </button>
@@ -734,7 +800,13 @@ export default function AirPodsLog() {
           className={`mic-button ${conversationState === 'listening' ? 'mic-button--recording' : ''}`}
           onClick={handleMicClick}
           disabled={conversationState !== 'listening'}
-          title={conversationState === 'listening' ? '말 다 했어요 (수동 종료)' : '자동으로 듣고 있어요'}
+          title={
+            conversationState === 'listening'
+              ? '말 다 했어요 (수동 종료)'
+              : voiceDisabled
+              ? '음성 사용 한도 초과로 꺼져 있어요'
+              : '자동으로 듣고 있어요'
+          }
         >
           {conversationState === 'listening' ? '⏹️' : '🎙️'}
         </button>
@@ -760,6 +832,46 @@ export default function AirPodsLog() {
     </div>
   );
 
+  // 로그인/기록보기/설정으로 이동하는 좌측 슬라이드 사이드바. 홈/채팅 화면의 햄버거 버튼으로 연다.
+  const Sidebar = (
+    <>
+      <div
+        className={`sidebar-backdrop ${sidebarOpen ? 'sidebar-backdrop--open' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden="true"
+      />
+      <nav className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`} aria-label="메뉴">
+        <div className="sidebar-header">
+          {user ? (
+            <div className="sidebar-user">
+              <span className="auth-status-avatar" aria-hidden="true">
+                {user.email?.[0]?.toUpperCase() ?? '?'}
+              </span>
+              <span className="sidebar-user-email" title={user.email}>{user.email}</span>
+            </div>
+          ) : (
+            <button type="button" className="sidebar-login-btn" onClick={() => navigate('/login')}>
+              <span aria-hidden="true">🔑</span> 로그인 / 회원가입
+            </button>
+          )}
+        </div>
+        <div className="sidebar-nav">
+          <button type="button" className="sidebar-nav-item" onClick={() => navigate('/history')}>
+            <span aria-hidden="true">🗒️</span> 기록 보기
+          </button>
+          <button type="button" className="sidebar-nav-item" onClick={() => navigate('/settings')}>
+            <span aria-hidden="true">⚙️</span> 설정
+          </button>
+        </div>
+        {user && (
+          <button type="button" className="sidebar-logout-btn" onClick={signOut}>
+            로그아웃
+          </button>
+        )}
+      </nav>
+    </>
+  );
+
   return (
     <div className="app-shell">
       <div className="app-window">
@@ -772,6 +884,7 @@ export default function AirPodsLog() {
           <Route path="/settings" element={<SettingsScreen />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        {Sidebar}
       </div>
     </div>
   );
