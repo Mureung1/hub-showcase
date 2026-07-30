@@ -22,9 +22,9 @@ function PeriodSelect({
     const available = availability[period] ?? [];
     const hasSales = available.includes("sales");
     const hasFlow = available.includes("flow");
-    if (hasSales && hasFlow) return "점포·매출·유동 자료 있음";
+    if (hasSales && hasFlow) return "점포·매출·유동인구 자료 있음";
     if (hasSales) return "점포·매출 자료 있음";
-    if (hasFlow) return "점포·유동 자료 있음";
+    if (hasFlow) return "점포·유동인구 자료 있음";
     return "점포 자료만";
   };
   return (
@@ -37,7 +37,7 @@ function PeriodSelect({
         title={
           periods.length <= 1
             ? "현재 선택 가능한 분기는 한 개입니다."
-            : "분기마다 실제 적재된 점포·매출·유동 자료를 구분해서 표시합니다."
+            : "분기마다 실제 적재된 점포·매출·유동인구 자료를 구분해서 표시합니다."
         }
         onChange={(event) => onChange(event.target.value)}
       >
@@ -48,7 +48,7 @@ function PeriodSelect({
         ))}
         {!has2026Period && periods.length > 0 && (
           <option value="__2026-unavailable" disabled>
-            2026년 분기 통계 · 현재 API에 없음
+            2026년 상권 통계 · 공공 원천 미공개
           </option>
         )}
         {!value && <option value="">분기 확인 중</option>}
@@ -169,10 +169,10 @@ export function WorkspaceHeader({
                 : analysisState === "error"
                   ? "상권 분석 API에 연결하지 못했습니다. 예시 값으로 대체하지 않았습니다."
                   : analysisState === "unavailable"
-                    ? `${categorySelection.name}은 점포 위치 2026.06 기준과 경쟁 지표만 제공합니다.`
+                    ? `${categorySelection.name}은 2026년 6월 점포 원천 스냅샷과 경쟁 지표만 제공합니다. 실시간 영업 여부는 아닙니다.`
                     : analysisSource === "demo"
                       ? "Demo mode · 검증 스냅샷 예시이며 실제 조회 결과가 아닙니다."
-                      : `상권 통계 ${period.slice(0, 4)}년 ${period.slice(4)}분기 · 지도 점포 위치 2026.06 기준입니다.`}{" "}
+                      : `상권 통계: ${period.slice(0, 4)}년 ${period.slice(4)}분기 · 지도 점포: 2026년 6월 원천 스냅샷(실시간 영업 여부 아님).`} {" "}
         {(apiState === "unavailable" || analysisState === "error") && (
           <button
             type="button"
