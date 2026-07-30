@@ -6,8 +6,8 @@
 `dataset_versions` 는 A1(backend) 만 만든다. `ds_demo_v1` 는 아홉 직무가 함께 쓰는 한
 행이므로 여기서 다시 만들면 적재에서 중복 키가 된다.
 
-CONTRACT 10.5 의 `allowed_uses` 예시값(`baseline`·`evidence`)은 `0001_initial_schema.sql`
-의 `allowed_uses_known` CHECK 가 허용하지 않는다. A1 과 같은 값으로 담는다.
+CONTRACT 10.5의 `allowed_uses` 예시값(`baseline`·`evidence`)은 `0001_initial_schema.sql`
+의 `allowed_uses_known` CHECK가 허용하지 않는다. A1과 같은 값으로 담는다.
 
 최근 1년 공고 5건이 기업군 6종을 다 덮지 못한다. 덮지 못한 기업군의 최근 지표 행은
 만들지 않고 `cluster_axes.rows` 에서도 뺀다. 산출물 4종은 기업군 6종 전부에 만든다.
@@ -66,7 +66,7 @@ CLUSTER_ORDER = (
     "game",
 )
 
-# 지표 family 와 정책 버전의 대응. 정책 행은 `0002_seed_reference.sql` 이 넣는다.
+# 지표 family와 정책 버전의 대응. 정책 행은 `0002_seed_reference.sql`이 넣는다.
 METRIC_POLICY: dict[str, str] = {
     "posting_prevalence": "mp_v1_prevalence",
     "requiredness_ratio": "mp_v1_requiredness",
@@ -81,7 +81,7 @@ METRIC_FAMILIES = tuple(METRIC_POLICY)
 DEPTHS = ("foundation", "application", "tradeoff")
 DEPTH_RANK = {"foundation": 1, "application": 2, "tradeoff": 3}
 
-# 스냅샷 출처 계층 A 의 허용 용도. 스키마 CHECK 가 허용하는 값만 담는다.
+# 스냅샷 출처 계층 A의 허용 용도. 스키마 CHECK가 허용하는 값만 담는다.
 ALLOWED_USES = (
     "statistics",
     "interpretation_context",
@@ -114,7 +114,7 @@ DIMENSIONS: tuple[tuple[str, str, str, str, tuple[str, ...], bool], ...] = (
         "python",
         "technology",
         "Python 구현력",
-        "데이터 처리와 학습·추론 코드를 Python 으로 직접 작성하는 요구.",
+        "데이터 처리와 학습·추론 코드를 Python으로 직접 작성하는 요구.",
         ("Python", "파이썬", "Python 3"),
         False,
     ),
@@ -122,7 +122,7 @@ DIMENSIONS: tuple[tuple[str, str, str, str, tuple[str, ...], bool], ...] = (
         "dl-framework",
         "technology",
         "딥러닝 프레임워크",
-        "PyTorch·TensorFlow 로 모델을 정의하고 학습·평가 루프를 다루는 요구.",
+        "PyTorch·TensorFlow로 모델을 정의하고 학습·평가 루프를 다루는 요구.",
         ("PyTorch", "파이토치", "TensorFlow", "딥러닝 프레임워크"),
         False,
     ),
@@ -146,7 +146,7 @@ DIMENSIONS: tuple[tuple[str, str, str, str, tuple[str, ...], bool], ...] = (
         "model-serving",
         "tooling",
         "모델 서빙·배포",
-        "학습한 모델을 추론 서버와 API 로 배포하고 지연·비용을 관리하는 요구.",
+        "학습한 모델을 추론 서버와 API로 배포하고 지연·비용을 관리하는 요구.",
         ("모델 서빙", "추론 서버", "TorchServe", "Triton"),
         True,
     ),
@@ -171,7 +171,7 @@ def dim_id(slug: str) -> str:
     return DIM_INFO[slug]["dimension_id"]
 
 
-# 관련 관계. relation_type 은 dst 가 src 에 대해 갖는 위치다.
+# 관련 관계. relation_type은 dst가 src에 대해 갖는 위치다.
 DIMENSION_RELATIONS: tuple[tuple[str, str, str], ...] = (
     ("python", "dl-framework", "related"),
     ("python", "data-prep", "related"),
@@ -221,9 +221,9 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 )
 
 
-# ============================================================ 3. 채용공고 9건
+# ============================================================ 3. 채용공고 15건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
-# 주석은 recent 5건에만 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
+# 주석은 상세 해석이 필요한 공고에 붙는다. 해석 payload의 세 종류 번호가 여기서 나온다.
 #   ("base", 기준선 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
@@ -498,12 +498,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_kakao",
         "company": "카카오",
         "cluster": "bigtech_platform",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입 지원 가능",
         "career_label_raw": "신입~3년",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2025-02-18T10:00:00+09:00",
+        "posted_at": "2026-02-18T10:00:00+09:00",
         "title": "AI 엔지니어 (추천) 신입·주니어",
         "sections": (
             ("주요업무", (
@@ -527,12 +527,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_wantedlab",
         "company": "원티드랩",
         "cluster": "startup",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입",
         "career_label_raw": "신입",
         "edu_label_raw": "학력 무관",
-        "posted_at": "2025-04-08T10:00:00+09:00",
+        "posted_at": "2026-04-08T10:00:00+09:00",
         "title": "AI 엔지니어 (신입)",
         "sections": (
             ("주요업무", (
@@ -556,12 +556,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_samsungsds",
         "company": "삼성에스디에스",
         "cluster": "si_enterprise",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력",
         "career_label_raw": "경력 3년 이상",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2024-11-12T10:00:00+09:00",
+        "posted_at": "2026-05-26T10:00:00+09:00",
         "title": "AI 엔지니어 (고객사 프로젝트)",
         "sections": (
             ("주요업무", (
@@ -585,12 +585,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_sendbird",
         "company": "센드버드",
         "cluster": "b2b_saas",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력",
         "career_label_raw": "경력 3년 이상",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2025-01-20T10:00:00+09:00",
+        "posted_at": "2026-06-23T10:00:00+09:00",
         "title": "AI 엔지니어 (메시징 제품)",
         "sections": (
             ("주요업무", (
@@ -609,6 +609,225 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "summary": "",
         "summary_ratio": "",
     },
+    {
+        "nn": "10",
+        "company_id": "co_coupang",
+        "company": "쿠팡",
+        "cluster": "bigtech_platform",
+        "period": PRIOR,
+        "entry_label": "entry_junior",
+        "entry_label_raw": "신입 지원 가능",
+        "career_label_raw": "신입~2년",
+        "edu_label_raw": "학사 이상",
+        "posted_at": "2025-08-19T10:00:00+09:00",
+        "title": "AI 엔지니어 (수요 예측) 신입·주니어",
+        "sections": (
+            ("주요업무", (
+                ("상품 수요 예측 모델의 학습 데이터를 구축하고 품질을 점검합니다.", "data-prep", "application", None),
+                ("예측 결과를 평가 지표로 비교하고 개선 실험을 수행합니다.", None, "application", None),
+            )),
+            ("자격요건", (
+                ("Python으로 데이터 처리와 모델 학습 코드를 작성할 수 있는 분", "python", "application", None),
+                ("PyTorch로 예측 모델을 학습해 본 경험이 있는 분", "dl-framework", "application", None),
+            )),
+            ("우대사항", (
+                ("대규모 거래 데이터를 전처리해 본 경험이 있는 분", "data-prep", "tradeoff", None),
+                ("실험 결과를 재현 가능한 형태로 기록해 본 분", None, "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "11",
+        "company_id": "co_daangn",
+        "company": "당근마켓",
+        "cluster": "startup",
+        "period": PRIOR,
+        "entry_label": "entry_junior",
+        "entry_label_raw": "신입 지원 가능",
+        "career_label_raw": "경력 무관",
+        "edu_label_raw": "학력 무관",
+        "posted_at": "2025-06-10T10:00:00+09:00",
+        "title": "AI 엔지니어 (지역 추천) 신입·주니어",
+        "sections": (
+            ("주요업무", (
+                ("지역 서비스에 적용할 추천 모델과 LLM 기능을 개발합니다.", "llm-app", "application", None),
+                ("사용자 행동 로그를 학습 데이터로 정제합니다.", "data-prep", "application", None),
+            )),
+            ("자격요건", (
+                ("Python으로 데이터 분석과 모델 실험을 수행할 수 있는 분", "python", "application", None),
+                ("서비스 문제를 실험 가능한 가설로 바꿀 수 있는 분", None, "foundation", None),
+            )),
+            ("우대사항", (
+                ("RAG 또는 프롬프트 기반 기능을 만들어 본 경험이 있는 분", "llm-app", "application", None),
+                ("데이터 라벨링 기준을 설계해 본 경험이 있는 분", "data-prep", "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "12",
+        "company_id": "co_channelcorp",
+        "company": "채널코퍼레이션",
+        "cluster": "b2b_saas",
+        "period": PRIOR,
+        "entry_label": "entry_junior",
+        "entry_label_raw": "신입 지원 가능",
+        "career_label_raw": "신입~3년",
+        "edu_label_raw": "학사 이상",
+        "posted_at": "2025-10-14T10:00:00+09:00",
+        "title": "AI 엔지니어 (상담 자동화) 신입·주니어",
+        "sections": (
+            ("주요업무", (
+                ("고객 상담 문서를 검색하는 RAG 기능을 개발합니다.", "llm-app", "application", None),
+                ("모델 응답 API의 지연과 오류를 관찰합니다.", "model-serving", "application", None),
+            )),
+            ("자격요건", (
+                ("Python으로 웹 API와 데이터 처리 코드를 작성할 수 있는 분", "python", "application", None),
+                ("LLM 응답 품질을 평가해 본 경험이 있는 분", "llm-app", "foundation", None),
+            )),
+            ("우대사항", (
+                ("모델을 컨테이너 환경에 배포해 본 경험이 있는 분", "model-serving", "foundation", None),
+                ("고객 피드백을 제품 개선에 반영해 본 분", None, "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "13",
+        "company_id": "co_viva",
+        "company": "비바리퍼블리카",
+        "cluster": "fintech_finance",
+        "period": PRIOR,
+        "entry_label": "experienced",
+        "entry_label_raw": "경력",
+        "career_label_raw": "경력 3년 이상",
+        "edu_label_raw": "학사 이상",
+        "posted_at": "2024-09-03T10:00:00+09:00",
+        "title": "AI 엔지니어 (금융 위험 모델)",
+        "sections": (
+            ("주요업무", (
+                ("금융 위험 모델에 사용할 데이터를 정제하고 피처를 설계합니다.", "data-prep", "tradeoff", None),
+                ("운영 모델의 성능과 데이터 변화를 모니터링합니다.", "model-serving", "application", None),
+            )),
+            ("자격요건", (
+                ("Python으로 대용량 데이터를 분석하고 모델링할 수 있는 분", "python", "application", None),
+                ("데이터 품질 검증 절차를 설계해 본 경험이 있는 분", "data-prep", "application", None),
+            )),
+            ("우대사항", (
+                ("모델 서빙 파이프라인을 운영해 본 경험이 있는 분", "model-serving", "application", None),
+                ("금융 데이터 보호 정책을 이해하는 분", None, "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "14",
+        "company_id": "co_lgcns",
+        "company": "엘지씨엔에스",
+        "cluster": "si_enterprise",
+        "period": PRIOR,
+        "entry_label": "experienced",
+        "entry_label_raw": "경력",
+        "career_label_raw": "경력 3년 이상",
+        "edu_label_raw": "학사 이상",
+        "posted_at": "2024-05-21T10:00:00+09:00",
+        "title": "AI 엔지니어 (제조 품질 분석)",
+        "sections": (
+            ("주요업무", (
+                ("제조 현장 데이터를 수집하고 학습용 데이터로 전처리합니다.", "data-prep", "application", None),
+                ("품질 예측 모델을 개발하고 고객사 환경에서 검증합니다.", "dl-framework", "application", None),
+            )),
+            ("자격요건", (
+                ("Python 기반 데이터 분석과 모델 개발 경험이 있는 분", "python", "application", None),
+                ("딥러닝 프레임워크로 모델을 학습해 본 경험이 있는 분", "dl-framework", "application", None),
+            )),
+            ("우대사항", (
+                ("센서 데이터의 결측과 이상치를 처리해 본 경험이 있는 분", "data-prep", "foundation", None),
+                ("고객사 프로젝트 문서를 작성해 본 경험이 있는 분", None, "foundation", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+    {
+        "nn": "15",
+        "company_id": "co_krafton",
+        "company": "크래프톤",
+        "cluster": "game",
+        "period": PRIOR,
+        "entry_label": "experienced",
+        "entry_label_raw": "경력",
+        "career_label_raw": "경력 3년 이상",
+        "edu_label_raw": "학사 이상",
+        "posted_at": "2025-03-25T10:00:00+09:00",
+        "title": "게임 AI 엔지니어 (대화형 캐릭터)",
+        "sections": (
+            ("주요업무", (
+                ("대화형 캐릭터를 위한 LLM 응용 모델을 개발합니다.", "llm-app", "application", None),
+                ("게임 서버에서 사용할 추론 API를 개발하고 운영합니다.", "model-serving", "tradeoff", None),
+            )),
+            ("자격요건", (
+                ("Python으로 모델 학습과 평가 코드를 구현할 수 있는 분", "python", "application", None),
+                ("PyTorch 학습 구조를 수정하고 실험해 본 경험이 있는 분", "dl-framework", "tradeoff", None),
+            )),
+            ("우대사항", (
+                ("LLM 프롬프트와 RAG 구조를 설계해 본 경험이 있는 분", "llm-app", "application", None),
+                ("실시간 모델 서빙의 지연을 측정해 본 경험이 있는 분", "model-serving", "application", None),
+            )),
+        ),
+        "summary": "",
+        "summary_ratio": "",
+    },
+)
+
+
+def expanded_posting(
+    nn: str,
+    source_nn: str,
+    period: str,
+    posted_at: str,
+    entry_label: str,
+) -> dict[str, Any]:
+    """기존 기업군의 요구 구성을 재사용해 16~30번 독립 표본을 만든다."""
+    source = next(posting for posting in POSTINGS if posting["nn"] == source_nn)
+    label_source = next(
+        posting for posting in POSTINGS if posting["entry_label"] == entry_label
+    )
+    return {
+        **source,
+        "nn": nn,
+        "period": period,
+        "posted_at": posted_at,
+        "entry_label": entry_label,
+        "entry_label_raw": label_source["entry_label_raw"],
+        "career_label_raw": label_source["career_label_raw"],
+        "title": f"{source['title']} (확장 표본 {nn})",
+        "summary": "",
+        "summary_ratio": "",
+    }
+
+
+POSTINGS += (
+    expanded_posting("16", "01", RECENT, "2026-01-05T10:00:00+09:00", "entry_junior"),
+    expanded_posting("17", "02", RECENT, "2026-01-26T10:00:00+09:00", "experienced"),
+    expanded_posting("18", "03", RECENT, "2026-02-16T10:00:00+09:00", "entry_junior"),
+    expanded_posting("19", "04", RECENT, "2026-03-09T10:00:00+09:00", "entry_junior"),
+    expanded_posting("20", "04", RECENT, "2026-03-30T10:00:00+09:00", "experienced"),
+    expanded_posting("21", "05", RECENT, "2026-04-20T10:00:00+09:00", "entry_junior"),
+    expanded_posting("22", "05", RECENT, "2026-05-11T10:00:00+09:00", "experienced"),
+    expanded_posting("23", "08", RECENT, "2026-05-25T10:00:00+09:00", "entry_junior"),
+    expanded_posting("24", "08", RECENT, "2026-06-22T10:00:00+09:00", "experienced"),
+    expanded_posting("25", "01", PRIOR, "2024-03-18T10:00:00+09:00", "entry_junior"),
+    expanded_posting("26", "02", PRIOR, "2024-07-08T10:00:00+09:00", "experienced"),
+    expanded_posting("27", "03", PRIOR, "2024-11-12T10:00:00+09:00", "experienced"),
+    expanded_posting("28", "04", PRIOR, "2025-03-17T10:00:00+09:00", "entry_junior"),
+    expanded_posting("29", "08", PRIOR, "2025-07-07T10:00:00+09:00", "entry_junior"),
+    expanded_posting("30", "05", PRIOR, "2025-11-10T10:00:00+09:00", "experienced"),
 )
 
 # ============================================================ 파생 구조
@@ -626,6 +845,15 @@ def source_id(nn: str) -> str:
 
 def posting_version_id(nn: str) -> str:
     return f"pv_demo_{JOB_ROLE_ID}_{nn}"
+
+
+def closed_at(posting: dict[str, Any]) -> str | None:
+    """2026년 진행 중 6건을 제외한 공고의 결정적 마감 시각."""
+    if posting["nn"] in {"01", "02", "03", "04", "05", "06"}:
+        return None
+    if posting["period"] == RECENT:
+        return "2026-07-01T18:00:00+09:00"
+    return "2025-12-01T18:00:00+09:00"
 
 
 def chunk_id(nn: str, k: int) -> str:
@@ -837,7 +1065,7 @@ class FactBuilder:
         computed = value
         if computed is None and numerator is not None and denominator:
             computed = round(numerator / denominator, 6)
-        # CONTRACT 10.3 — overall 은 analysis_ready, 기업군은 표본이 작아 low_confidence.
+        # CONTRACT 10.3 — overall은 analysis_ready, 기업군은 표본이 작아 low_confidence.
         status = "analysis_ready" if scope_level == "overall" else "low_confidence"
         uncertainty = None
         if measure in WILSON_MEASURES[family] and denominator and numerator is not None:
@@ -933,7 +1161,7 @@ def build_statistics_facts() -> FactBuilder:
                     period=period, numerator=boundary, denominator=total, sample_size=total,
                 )
 
-                # --- entry_label_advanced_signal_rate (대상군 축이 entry_junior 로 고정)
+                # --- entry_label_advanced_signal_rate (대상군 축이 entry_junior로 고정)
                 if segment == SEGMENT_ENTRY:
                     advanced = sum(
                         1 for dims in dim_sets.values()
@@ -1053,7 +1281,7 @@ COMBOS: tuple[tuple[str, str, str, str, tuple[str, ...]], ...] = (
      "한 데이터셋으로 학습과 평가를 끝까지 돌려 본 수준",
      ("python", "dl-framework", "data-prep")),
     ("serving", "기본 스택 + 모델 서빙",
-     "학습으로 끝내지 않고 호출 가능한 API 로 감싸 본 경험을 묻는 조합입니다.",
+     "학습으로 끝내지 않고 호출 가능한 API로 감싸 본 경험을 묻는 조합입니다.",
      "모델을 엔드포인트로 배포해 본 수준",
      ("python", "dl-framework", "model-serving")),
     ("llm", "LLM 응용 + 데이터 전처리",
@@ -1069,7 +1297,7 @@ COMBOS: tuple[tuple[str, str, str, str, tuple[str, ...]], ...] = (
 REALITY_TAGS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
     ("end_to_end", "학습부터 서빙까지 이어 본 경험", ("dl-framework", "model-serving")),
     ("data_handling", "데이터를 직접 다듬어 본 경험", ("data-prep",)),
-    ("llm_product", "LLM 을 제품 기능으로 붙여 본 경험", ("llm-app",)),
+    ("llm_product", "LLM을 제품 기능으로 붙여 본 경험", ("llm-app",)),
 )
 
 CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
@@ -1082,11 +1310,11 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 
 
 def axis_level(value: int | None) -> str:
-    if value is None or value < 15:
+    if value is None:
         return "—"
-    if value >= 60:
+    if value >= 70:
         return "강"
-    if value >= 35:
+    if value >= 31:
         return "중"
     return "약"
 
@@ -1287,11 +1515,11 @@ def build_statistics_payload() -> dict[str, Any]:
             reality.append({"tag": tag, "label": label, "pct": value})
     reality.sort(key=lambda row: -row["pct"])
 
-    # --- cluster_axes (최근 공고가 없는 기업군은 행을 만들지 않는다)
+    # --- cluster_axes (표본 확보를 위해 recent와 prev 전체 기간을 합산한다)
     axes_rows = []
-    for cluster_id in RECENT_CLUSTERS:
-        n = cluster_n[cluster_id]
-        members = [p for p in RECENT_POSTINGS if p["cluster"] == cluster_id]
+    for cluster_id in CLUSTER_ORDER:
+        members = [p for p in POSTINGS if p["cluster"] == cluster_id]
+        n = len(members)
         cells = []
         for _axis_id, axis_label, slugs in CLUSTER_AXES:
             count = sum(
@@ -1443,7 +1671,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
          "mid", "#items", "dl-training"),
     ),
     "startup": (
-        ("llm-app", "LLM 응용", "API 를 호출해 본 경험", "검색과 프롬프트를 조합해 하나를 완성한 수준까지",
+        ("llm-app", "LLM 응용", "API를 호출해 본 경험", "검색과 프롬프트를 조합해 하나를 완성한 수준까지",
          '자격요건의 "LLM 프롬프트와 RAG 구조를 이해하고 구현" 문장',
          "다른 기업군에서 우대이던 항목이 필수 자리에 있습니다. 호출 경험이 아니라 완성한 파이프라인 하나가 필요합니다.",
          "high", "#items", "rag-quality"),
@@ -1457,7 +1685,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
          "mid", "#items", "dl-training"),
     ),
     "b2b_saas": (
-        ("model-serving", "서빙", "모델을 감싸 본 경험", "고객이 호출하는 API 의 안정성까지",
+        ("model-serving", "서빙", "모델을 감싸 본 경험", "고객이 호출하는 API의 안정성까지",
          '자격요건의 "모델을 추론 서버로 배포하고 API로 제공" 문장',
          "우대이던 서빙이 필수 요건입니다. 남이 돈을 내고 쓰는 API 라 실패 응답과 안정성이 모델 성능만큼 중요해집니다.",
          "high", "#items", "serving-api"),
@@ -1547,11 +1775,13 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
     interpretations: list[dict[str, Any]] = []
     baseline_notes: list[dict[str, Any]] = []
     signal_notes: list[dict[str, Any]] = []
+    annotation_candidates: list[tuple[dict[str, Any], tuple[Any, ...], str]] = []
     mark_n = base_n = note_n = 0
     for section, lines in posting["sections"]:
         rows = []
         for line in lines:
             row = {"text": line[0], "mark_n": None, "note_n": None, "base_n": None, "base_ref": None}
+            annotation_candidates.append((row, line, section))
             ann = line[3]
             if ann is not None:
                 if ann[0] == "base":
@@ -1572,14 +1802,59 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
                     signal_notes.append({"n": note_n, "title": ann[1], "body": ann[2]})
             rows.append(row)
         raw_sections.append({"section": section, "lines": rows})
+
+    dimensions = list(dict.fromkeys(
+        line[1] for _row, line, _section in annotation_candidates if line[1] in DIM_INFO
+    ))
+    dimension_labels = [DIM_INFO[slug]["label"] for slug in dimensions[:2]]
+    focus = "·".join(dimension_labels) if dimension_labels else "모델 구현과 검증"
+
+    if not baseline_notes:
+        row, line, _section = annotation_candidates[0]
+        base_n = 1
+        row["base_n"], row["base_ref"] = base_n, "직무 공통 기대치"
+        baseline_notes.append({
+            "n": base_n, "base_ref": "직무 공통 기대치",
+            "body": f"{posting['title']}의 ‘{line[0]}’ 문장에서 확인하는 핵심은 {focus}입니다. 이를 실제 과제로 수행할 수 있어야 합니다.",
+        })
+    if not interpretations:
+        row, line, section = annotation_candidates[min(1, len(annotation_candidates) - 1)]
+        mark_n = 1
+        row["mark_n"] = mark_n
+        interpretations.append({
+            "n": mark_n, "title": f"{section}에서 확인할 실행 경험",
+            "body": f"{posting['title']}의 ‘{line[0]}’ 문장은 도구 이름보다 실행 조건과 판단 기준을 묻습니다. {focus} 관련 경험을 입력, 선택, 결과 순서로 설명할 수 있어야 합니다.",
+            "confidence": "medium", "ratio": "공고 문맥 기반 해석",
+            "sources": [{"type": "posting", "url": posting_url(posting["nn"])}],
+        })
+    if not signal_notes:
+        row, line, _section = annotation_candidates[min(2, len(annotation_candidates) - 1)]
+        note_n = 1
+        row["note_n"] = note_n
+        signal_notes.append({
+            "n": note_n, "title": f"{posting['company']}가 따로 확인하는 지점",
+            "body": f"{posting['title']}에서 ‘{line[0]}’ 문장을 별도로 적은 만큼, 지원 자료에는 선택 이유와 결과를 한 사례로 연결하세요. 사례의 중심 주제는 {focus}입니다.",
+        })
+
+    summary_body = posting["summary"].strip()
+    if not summary_body:
+        summary_variants = (
+            f"{posting['company']}의 {posting['title']} 공고에서 핵심 요구는 {focus}입니다. 이를 직접 실행하고 결과까지 설명해야 하며, 지원 자료에서는 입력, 선택 기준, 확인한 결과를 한 흐름으로 보여주는 것이 중요합니다.",
+            f"{posting['title']}에서 중심이 되는 요구는 {focus}입니다. 구현 기록에 실험 조건과 비교 결과를 함께 남겨야 공고가 확인하려는 실행 깊이가 드러납니다.",
+            f"{posting['title']}의 핵심 요구는 {focus}입니다. 단순 사용 경험이 아니라 재현 가능한 작업으로 제시하고, README에서 문제, 선택 이유, 결과를 순서대로 확인할 수 있게 구성하세요.",
+        )
+        summary_body = summary_variants[(int(posting["nn"]) - 1) % len(summary_variants)]
+    summary_ratio = posting["summary_ratio"].strip() or (
+        f"직무 공통 기대치 {len(baseline_notes)}건 · 숨은 의미 {len(interpretations)}건 · 회사 특징 {len(signal_notes)}건"
+    )
     return {
         "posting_id": posting_id(posting["nn"]),
         "company": posting["company"],
         "title": posting["title"],
         "summary": {
             "n": None, "title": "종합 해석 — 이 공고가 찾는 사람",
-            "body": posting["summary"], "confidence": "high",
-            "ratio": posting["summary_ratio"],
+            "body": summary_body, "confidence": "high",
+            "ratio": summary_ratio,
             "sources": [{"type": "posting", "url": posting_url(posting["nn"])}],
         },
         "raw_sections": raw_sections,
@@ -1723,8 +1998,8 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         "highlights": [
             {
                 "title": "점수표를 포트폴리오의 주인공으로",
-                "body": f"{label} 기준에서도 모델을 여러 개 돌린 기록보다 무엇이 얼마나 좋아졌는지 보여주는 표 하나가 강합니다. README 첫 절에 평가 세트와 버전별 점수를 두세요.",
-                "tips": ["문항은 실제 데이터에서 뽑고 정답 근거를 함께 기록", "바꾸기 전후 점수를 한 표에 나란히"],
+                "body": f"{label}에서 모델을 여러 개 돌린 기록보다 무엇이 얼마나 좋아졌는지 보여주는 표 하나가 강합니다. README 첫 절에 평가 세트와 버전별 점수를 두세요.",
+                "tips": ["README 첫 절에 평가 데이터 위치와 실행 명령을 적기", "같은 평가 세트의 변경 전후 점수를 한 표에 두고 목표 지표가 개선되면 완료로 표시"],
                 "linked_item_ids": [
                     CONCEPT_INFO["eval-harness"]["concept_id"],
                     CONCEPT_INFO["dl-training"]["concept_id"],
@@ -1733,7 +2008,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             {
                 "title": "노트북 밖으로 꺼낸 흔적",
                 "body": "학습 코드만 있는 저장소가 대다수입니다. 호출 가능한 엔드포인트와 요청·응답 예시가 있으면 서빙을 묻는 문장 전체가 준비됩니다.",
-                "tips": ["엔드포인트 하나와 요청 예시 한 장", "요청당 지연 시간을 재 본 기록 한 줄"],
+                "tips": ["README에 엔드포인트 주소, 실행 명령, 요청·응답 예시를 함께 배치", "동일 입력 100회 기준 지연 시간을 변경 전후로 비교하고 목표 범위를 만족하면 완료로 표시"],
                 "linked_item_ids": [
                     CONCEPT_INFO["serving-api"]["concept_id"],
                     CONCEPT_INFO["infra-cost"]["concept_id"],
@@ -1771,7 +2046,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "평가 검증",
             "question": "그 모델이 좋아졌다는 것을 어떻게 확인했나요?",
             "followups": ["평가 세트의 문항은 어떻게 뽑았나요?", "점수는 올랐는데 체감이 나빠진 경우는 없었나요?"],
-            "point": "지표의 한계까지 함께 말하면 기준선 위로 올라섭니다. 정답 암기가 아니라 내 실험의 기준을 설명하세요.",
+            "point": "지표를 고른 이유, 다른 지표를 제외한 판단, 변경 전후 결과를 차례로 답하세요. 체감 품질과 수치가 어긋난 사례까지 말하면 평가 기준의 한계를 이해했는지 확인할 수 있습니다.",
             "linked_item_ids": [
                 CONCEPT_INFO["eval-harness"]["concept_id"],
                 CONCEPT_INFO["ml-basics"]["concept_id"],
@@ -1781,14 +2056,14 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "데이터 검증",
             "question": "학습 데이터를 어떻게 만들었나요?",
             "followups": ["잘못된 라벨은 어떻게 찾았나요?", "데이터가 열 배로 늘면 어디가 먼저 막히나요?"],
-            "point": "정리된 데이터셋을 받아 쓴 경험만 있으면 답이 짧아집니다. 직접 만든 과정이 있어야 이야기가 이어집니다.",
+            "point": "수집 기준과 라벨 규칙을 선택한 이유, 오류 표본을 찾은 방법, 수정 후 지표 변화를 답하세요. 꼬리질문에는 데이터가 늘 때 먼저 바꿀 병목과 그 판단 근거를 연결합니다.",
             "linked_item_ids": [CONCEPT_INFO["python-data"]["concept_id"]],
         },
         {
             "kicker": "서빙 검증",
             "question": "학습한 모델을 어떻게 호출 가능하게 만들었나요?",
             "followups": ["요청 하나에 얼마나 걸리나요?", "모델이 죽으면 어떤 응답이 나가나요?"],
-            "point": "배포 경험이 있으면 이 질문 전체를 제가 해봤는데요로 시작할 수 있습니다.",
+            "point": "API 구조를 선택한 이유와 실패 응답 기준, 측정한 지연 시간을 함께 답하세요. 모델 장애를 재현했을 때의 응답과 복구 결과까지 제시하면 완료입니다.",
             "linked_item_ids": [
                 CONCEPT_INFO["serving-api"]["concept_id"],
                 CONCEPT_INFO["infra-cost"]["concept_id"],
@@ -1798,7 +2073,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "태도 검증 · 자소서 연동",
             "question": "실험 결과를 다른 직군에 어떻게 설명했나요?",
             "followups": ["상대가 이해하지 못한 부분은 무엇이었나요?"],
-            "point": "자소서 소재는 반드시 면접에서 재검증됩니다. 사실 관계를 스스로 꼬리질문해 보세요.",
+            "point": "설명 자료의 대상을 어떻게 판단했고 어떤 표현을 덜어냈는지, 피드백 뒤 결론이 어떻게 바뀌었는지를 답하세요. 자소서의 주장과 실제 문서 결과가 일치해야 합니다.",
             "linked_item_ids": [CONCEPT_INFO["git-collab"]["concept_id"]],
         },
     ]
@@ -1821,15 +2096,15 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "지표로 말하는 능력이 신입 지원자 사이에서 가장 희소한 항목입니다.",
      ("평가 세트", "점수 비교", "실험 기록")),
     (3, "STEP 03 · 2주", 2, "high", "노트북 밖으로 꺼내 호출 가능하게 만들기",
-     "학습한 모델을 API 로 감싸 배포하고 요청당 지연 시간과 자원 사용량을 재 두세요.",
+     "학습한 모델을 API로 감싸 배포하고 요청당 지연 시간과 자원 사용량을 재 두세요.",
      "배포된 엔드포인트 + 요청·응답 예시 + 지연·비용 측정 표",
      "직무 외 요구 가운데 서빙·인프라가 가장 자주 나타납니다.",
      ("서빙 API", "지연 측정", "비용 감각")),
-    (4, "STEP 04 · 2주", 2, "mid", "기업군에 맞춰 마무리하기",
-     "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
-     "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+    (4, "STEP 04 · 2주", 2, "mid", "RAG 품질과 협업 문서를 기업군에 맞춰 마무리하기",
+     "검색 실패 사례를 모아 RAG 품질을 한 차례 개선하고, 재현 명령과 협업 규칙을 README에 적으세요. 지원 기업군의 편차 항목이 있으면 같은 문서의 첫 번째 사례로 배치합니다.",
+     "검색 실패 사례·변경 전후 품질 비교표 + 실행 명령·협업 규칙이 있는 README + 편차 항목 산출물",
      "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
-     ("편차 보강", "소개 순서", "문서 정리")),
+     ("RAG 품질", "협업 규칙", "편차 보강")),
 )
 
 STEP_FILLS: tuple[tuple[str, ...], ...] = (
@@ -1944,7 +2219,7 @@ WIKI: dict[str, dict[str, Any]] = {
     "serving-ops": {
         "why": "직무 외 요구 가운데 서빙·인프라가 가장 자주 나타나고, 일부 기업군은 자격요건에 둡니다.",
         "depth": {"foundation": "모델을 함수로 감싸 호출해 본다",
-                  "application": "API 로 배포하고 요청당 지연을 잰다",
+                  "application": "API로 배포하고 요청당 지연을 잰다",
                   "tradeoff": "품질 저하를 감지하고 재학습·재배포 주기를 설계한다"},
         "prereq": ["HTTP 요청과 응답의 기본", "컨테이너로 실행하는 법"],
         "misconceptions": ["배포는 인프라 팀의 일이라는 생각", "정확도가 높으면 서비스가 된다는 생각"],
@@ -1953,7 +2228,7 @@ WIKI: dict[str, dict[str, Any]] = {
     },
     "llm-application": {
         "why": "LLM 응용 요구가 1년 사이 우대에서 자격요건으로 올라오는 흐름이 뚜렷하고, 스타트업 기업군은 이미 필수로 둡니다.",
-        "depth": {"foundation": "API 를 호출해 기능 하나를 만든다",
+        "depth": {"foundation": "API를 호출해 기능 하나를 만든다",
                   "application": "문서를 색인하고 검색 결과로 답을 만든다",
                   "tradeoff": "검색 단계와 프롬프트를 나눠 품질 저하의 원인을 가른다"},
         "prereq": ["임베딩과 유사도의 의미", "문서 분할과 색인의 기본"],
@@ -1979,7 +2254,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     """테이블명 → 행 목록. 데이터베이스에 접속하지 않는다."""
     t: dict[str, list[dict[str, Any]]] = {}
 
-    # `dataset_versions` 는 A1(backend) 이 만든다. 여기서 만들지 않는다.
+    # `dataset_versions`는 A1(backend)이 만든다. 여기서 만들지 않는다.
 
     # --- 2~7 출처와 공고
     sources, snapshots, observations, assessments = [], [], [], []
@@ -2022,7 +2297,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
             "snapshot_id": snapshot_id(nn), "title": p["title"],
             "career_label_raw": p["career_label_raw"], "edu_label_raw": p["edu_label_raw"],
             "entry_label_raw": p["entry_label_raw"], "entry_label": p["entry_label"],
-            "posted_at": p["posted_at"], "closed_at": None,
+            "posted_at": p["posted_at"], "closed_at": closed_at(p),
             "dataset_version": DATASET_VERSION,
         })
     t["sources"] = sources
@@ -2437,7 +2712,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     t["wiki_revisions"] = revisions
     t["wiki_evidence"] = wiki_evidence
 
-    # --- 33 분석 산출물 27행
+    # --- 33 분석 산출물 52행
     outputs: list[dict[str, Any]] = []
 
     def add_output(output_type: str, agent: str, scope_level: str, scope_id: str,
@@ -2465,7 +2740,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
             "interpretation", "interpretation", "cluster", cid,
             interpretation_payload("cluster", cid), cid,
         )
-    for p in RECENT_POSTINGS:
+    for p in POSTINGS:
         pid = posting_id(p["nn"])
         intp_outputs[pid] = add_output(
             "interpretation", "interpretation", "posting", pid,
@@ -2602,7 +2877,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
             "support_id": paths[0]["path_id"], "relation": "supports", "weight": "0.50000",
         })
     t["analysis_claims"] = claims
-    # 같은 (claim, support_type, support_id, relation) 이 겹치면 기본키가 부딪힌다.
+    # 같은 (claim, support_type, support_id, relation)이 겹치면 기본키가 부딪힌다.
     seen_evidence: set[tuple[str, str, str, str]] = set()
     unique_evidence = []
     for row in claim_evidence:
@@ -2691,7 +2966,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     t["roadmap_item_fills"] = fills
     t["study_tracks"] = tracks
 
-    # --- 42 검증 결과 (검사 1~4 pass, 5~7 은 판정자가 없어 not_applicable)
+    # --- 42 검증 결과 (검사 1~4 pass, 5~7은 판정자가 없어 not_applicable)
     checks = (
         ("schema_validator", "A0", "pass", "info", None),
         ("source_policy_validator", "A0", "pass", "info", None),
@@ -2746,7 +3021,7 @@ PAYLOAD_KEYS: dict[str, tuple[str, ...]] = {
     ),
 }
 
-# 마이그레이션과 A1 이 넣는 기준 데이터. 조각 밖의 외래키는 이 목록 안에 있어야 한다.
+# 마이그레이션과 A1이 넣는 기준 데이터. 조각 밖의 외래키는 이 목록 안에 있어야 한다.
 BASE_JOB_ROLES = frozenset({JOB_ROLE_ID})
 BASE_PERIODS = frozenset(PERIODS)
 BASE_CLUSTERS = frozenset(CLUSTERS)
@@ -2841,7 +3116,7 @@ def check_foreign_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
         "job_role_id": BASE_JOB_ROLES,
         "period_id": BASE_PERIODS,
         "company_id": BASE_COMPANIES,
-        # `ds_demo_v1` 행은 A1 이 만든다. 조각 안에 없어도 적재 시점에는 있다.
+        # `ds_demo_v1` 행은 A1이 만든다. 조각 안에 없어도 적재 시점에는 있다.
         "dataset_version": BASE_DATASET_VERSIONS,
         "source_id": ids("sources", "source_id"),
         "snapshot_id": ids("source_snapshots", "snapshot_id"),
@@ -2867,7 +3142,7 @@ def check_foreign_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
         "metric_policy_version": BASE_METRIC_POLICIES,
         "cluster_id": BASE_CLUSTERS,
     }
-    # (테이블, 컬럼, 참조 대상 키). NULL 은 통과한다.
+    # (테이블, 컬럼, 참조 대상 키). NULL은 통과한다.
     refs: tuple[tuple[str, str, str], ...] = (
         ("sources", "company_id", "company_id"),
         ("source_snapshots", "source_id", "source_id"),
@@ -3003,7 +3278,7 @@ def check_foreign_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
 
 
 def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
-    """검사 4 — payload 가 CONTRACT 5장의 키를 전부 갖는가."""
+    """검사 4 — payload가 CONTRACT 5장의 키를 전부 갖는가."""
     problems: list[str] = []
     counts = Counter(
         (row["output_type"], row["scope_level"]) for row in tables["analysis_outputs"]
@@ -3012,7 +3287,7 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
         ("statistics", "overall"): 1,
         ("interpretation", "overall"): 1,
         ("interpretation", "cluster"): len(CLUSTER_ORDER),
-        ("interpretation", "posting"): len(RECENT_POSTINGS),
+        ("interpretation", "posting"): len(POSTINGS),
         ("strategy", "overall"): 1,
         ("strategy", "cluster"): len(CLUSTER_ORDER),
         ("roadmap", "overall"): 1,
@@ -3021,8 +3296,8 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
     for key, expected in expected_counts.items():
         if counts.get(key, 0) != expected:
             problems.append(f"analysis_outputs {key}: {counts.get(key, 0)}행 (기대 {expected})")
-    if len(tables["analysis_outputs"]) != 27:
-        problems.append(f"analysis_outputs 합계 {len(tables['analysis_outputs'])}행 (기대 27)")
+    if len(tables["analysis_outputs"]) != 52:
+        problems.append(f"analysis_outputs 합계 {len(tables['analysis_outputs'])}행 (기대 52)")
 
     for row in tables["analysis_outputs"]:
         payload = row["payload"]
@@ -3043,11 +3318,11 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
                 for k in kpi_keys if k not in payload["kpi"]
             )
             if len(payload["cluster_axes"]["axes"]) != 5:
-                problems.append(f"{row['output_id']}: cluster_axes.axes 가 5개가 아니다")
+                problems.append(f"{row['output_id']}: cluster_axes.axes가 5개가 아니다")
             recent_labels = {CLUSTERS[c] for c in RECENT_CLUSTERS}
             rows_labels = {r["cluster"] for r in payload["cluster_axes"]["rows"]}
             if rows_labels != recent_labels:
-                problems.append(f"{row['output_id']}: cluster_axes.rows 가 최근 기업군과 다르다")
+                problems.append(f"{row['output_id']}: cluster_axes.rows가 최근 기업군과 다르다")
         if row["output_type"] == "interpretation":
             for key in ("level", "cluster_tag", "posting_id"):
                 if key not in payload["scope"]:
@@ -3070,7 +3345,7 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
 
 
 def check_concepts(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
-    """검사 5 — 체크 개념 식별자와 payload 의 item_id 가 맞는가."""
+    """검사 5 — 체크 개념 식별자와 payload의 item_id가 맞는가."""
     problems: list[str] = []
     concepts = {row["concept_id"] for row in tables["checklist_concepts"]}
     items: dict[tuple[str, str], set[str]] = {}
@@ -3097,12 +3372,128 @@ def check_concepts(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
     return problems
 
 
+def check_posting_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """검사 6 — 30건의 기간·기업군·진입 구분·상태와 차원 표본을 확인한다."""
+    problems: list[str] = []
+    expected_clusters = set(CLUSTERS)
+    period_spec = {
+        RECENT: (18, "2026-01-01", "2026-06-30", {"entry_junior": 10, "experienced": 8}),
+        PRIOR: (12, "2024-03-01", "2025-11-30", {"entry_junior": 6, "experienced": 6}),
+    }
+    if len(POSTINGS) != 30 or len(tables["postings"]) != 30:
+        problems.append(f"공고 수 {len(POSTINGS)}/{len(tables['postings'])} != 30/30")
+    expected_ids = {posting_id(f"{n:02d}") for n in range(1, 31)}
+    actual_ids = {row["posting_id"] for row in tables["postings"]}
+    if actual_ids != expected_ids:
+        problems.append(f"공고 식별자 차이 {sorted(actual_ids ^ expected_ids)}")
+
+    for period, (expected_n, starts_on, ends_on, labels) in period_spec.items():
+        group = [p for p in POSTINGS if p["period"] == period]
+        if len(group) != expected_n:
+            problems.append(f"{period}: 공고 {len(group)}건 != {expected_n}건")
+        clusters = {p["cluster"] for p in group}
+        if clusters != expected_clusters:
+            problems.append(f"{period}: 기업군 차이 {sorted(clusters ^ expected_clusters)}")
+        actual_labels = {
+            label: sum(1 for p in group if p["entry_label"] == label)
+            for label in labels
+        }
+        if actual_labels != labels:
+            problems.append(f"{period}: entry_label {actual_labels} != {labels}")
+        for p in group:
+            posted_on = p["posted_at"][:10]
+            if not starts_on <= posted_on <= ends_on:
+                problems.append(f"{p['nn']}: 게시일 {p['posted_at']} 범위 밖")
+
+    recent_cluster_counts = Counter(p["cluster"] for p in RECENT_POSTINGS)
+    if set(recent_cluster_counts.values()) != {3} or set(recent_cluster_counts) != expected_clusters:
+        problems.append(f"recent 기업군 분포 {dict(recent_cluster_counts)} != 기업군별 3건")
+    prior_cluster_counts = Counter(p["cluster"] for p in PRIOR_POSTINGS)
+    if set(prior_cluster_counts.values()) != {2} or set(prior_cluster_counts) != expected_clusters:
+        problems.append(f"prev 기업군 분포 {dict(prior_cluster_counts)} != 기업군별 2건")
+
+    versions = tables["posting_versions"]
+    ongoing = [row for row in versions if row["closed_at"] is None]
+    closed = [row for row in versions if row["closed_at"] is not None]
+    if len(ongoing) != 6 or len(closed) != 24:
+        problems.append(f"공고 상태 진행 {len(ongoing)}건/마감 {len(closed)}건 != 6/24")
+    prior_ids = {posting_version_id(posting["nn"]) for posting in PRIOR_POSTINGS}
+    if any(row["posting_version_id"] in prior_ids for row in ongoing):
+        problems.append("prev 공고에 진행 중 상태가 있다")
+    for row in closed:
+        if row["closed_at"] <= row["posted_at"]:
+            problems.append(f"{row['posting_version_id']}: 마감일이 게시일 이후가 아니다")
+
+    for slug in DIM_SLUGS:
+        companies = {
+            p["company_id"] for p in POSTINGS if slug in DIMS_BY_POSTING[p["nn"]]
+        }
+        if len(companies) < 2:
+            problems.append(f"{slug}: 독립 회사 {len(companies)}곳")
+    return problems
+
+
+def check_output_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """검사 7 — 모듈 산출물 52행과 전체 공고 해석 30행이 짝을 이루는가."""
+    outputs = tables["analysis_outputs"]
+    problems: list[str] = []
+    counts = Counter(row["output_type"] for row in outputs)
+    expected = {"statistics": 1, "interpretation": 37, "strategy": 7, "roadmap": 7}
+    if len(outputs) != 52 or dict(counts) != expected:
+        problems.append(f"산출물 {len(outputs)}행, 종류별 {dict(counts)} != 52행, {expected}")
+    posting_interpretations = {
+        row["scope_id"] for row in outputs
+        if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+    }
+    posting_ids = {posting_id(p["nn"]) for p in POSTINGS}
+    if posting_interpretations != posting_ids:
+        problems.append(f"공고 해석 범위 차이 {sorted(posting_interpretations ^ posting_ids)}")
+    return problems
+
+
+def check_direct_contract_values(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """검사 8 — 출처·기간·진입 대상군·데이터셋 값을 행마다 확인한다."""
+    problems: list[str] = []
+    allowed_use_values = {
+        "statistics", "interpretation_context", "strategy", "roadmap",
+        "wiki_definition", "wiki_why_required", "wiki_depth_criteria", "wiki_prerequisites",
+        "wiki_common_misconceptions", "wiki_interview_verification", "wiki_learning_sequence",
+    }
+    for row in tables["source_assessments"]:
+        uses = set(row["allowed_uses"])
+        if not uses <= allowed_use_values:
+            problems.append(
+                f"{row['assessment_id']}: 허용되지 않은 allowed_uses {sorted(uses - allowed_use_values)}"
+            )
+        if uses != set(ALLOWED_USES):
+            problems.append(f"{row['assessment_id']}: 데모 공고 기본 allowed_uses 아님")
+        if (row["source_tier"], str(row["reliability_score"]), row["assessment_version"]) != (
+            "A", "0.95000", "sa_v1"
+        ):
+            problems.append(f"{row['assessment_id']}: 출처 평가 기본값 불일치")
+
+    for row in tables["statistics_facts"]:
+        if row["period_id"] not in {RECENT, PRIOR}:
+            problems.append(f"{row['fact_id']}: 허용되지 않은 기간 {row['period_id']}")
+        if row["metric_family"] == "entry_label_advanced_signal_rate":
+            if row["entry_segment"] != SEGMENT_ENTRY:
+                problems.append(f"{row['fact_id']}: entry_segment {row['entry_segment']}")
+    if tables.get("dataset_versions"):
+        problems.append("ai_engineer 모듈이 dataset_versions 행을 만들었다")
+    if len(tables["sources"]) != 30 or len(tables["source_snapshots"]) != 30:
+        problems.append("공고별 출처·스냅샷이 30행이 아니다")
+    return problems
+
+
 CHECKS = (
     ("1 근거 위치", check_spans),
     ("2 지표 재계산", check_numbers),
     ("3 외래키", check_foreign_keys),
     ("4 payload 키", check_payload_keys),
     ("5 체크 개념", check_concepts),
+    ("6 공고 모집단", check_posting_population),
+    ("7 산출물 모집단", check_output_population),
+    ("8 직접 계약값", check_direct_contract_values),
 )
 
 

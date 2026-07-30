@@ -1,4 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Node.js">
-  <rect width="48" height="48" rx="12" fill="#E9F6E9"/>
-  <text x="24" y="29" font-family="Segoe UI, Roboto, sans-serif" font-size="12" font-weight="800" fill="#256D25" text-anchor="middle">Node</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="12" fill="#F0FDF4"/><path d="m24 10 13 7v14l-13 7-13-7V17l13-7Z" fill="#539E43"/><path d="M18 30V18l12 12V18" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>

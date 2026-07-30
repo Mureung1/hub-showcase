@@ -4,6 +4,7 @@ import AnalysisNotice from '../components/AnalysisNotice'
 import SectionNav from '../components/SectionNav'
 import useScrollSpy from '../hooks/useScrollSpy'
 import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
+import { getHeatmapLevel, getTechIconPath } from '../data/techPresentation'
 
 const NAV_IDS = ['summary', 'kpi', 'scope', 'inflation', 'difficulty', 'tech', 'combo', 'trend', 'conditions', 'companies', 'items']
 const NAV_ITEMS = [['summary', '요약'], ['kpi', '리얼리티 KPI'], ['scope', '요구 범위 확장'], ['inflation', '필수 인플레이션'], ['difficulty', '숨은 난이도'], ['tech', '기술 빈도'], ['combo', '조합·구현 수준'], ['trend', '증감 추이'], ['conditions', '라벨 vs 현실'], ['companies', '기업군 성향'], ['items', '요구 항목 전체표']]
@@ -12,19 +13,6 @@ const NAV_ITEMS = [['summary', '요약'], ['kpi', '리얼리티 KPI'], ['scope',
 // 블록 번호와 순서는 docs/plan.md 9.2의 ①~⑩을 따른다. 데이터 출처는 각 블록 주석에 표기한다.
 // 직무는 App 이 내려주는 job prop({ job_role_id, display_name })을 쓴다. 직무 이름을 화면에 적지 않는다.
 
-// public/logos/ 에 실제로 있는 파일 이름. 여기 없는 slug 는 글자 배지로 떨어진다.
-const LOGO_FILES = new Set([
-  'api', 'aws', 'docker', 'git', 'java', 'javascript', 'jpa', 'kafka', 'kubernetes', 'linux',
-  'mysql', 'node', 'postgresql', 'python', 'react', 'redis', 'spring', 'terraform', 'typescript', 'unity',
-])
-// 파일 이름과 다른 slug 만 적는다. 직무가 늘어도 없는 slug 는 배지로 처리되므로 깨지지 않는다.
-const LOGO_ALIAS = {
-  'spring-boot': 'spring', 'spring-framework': 'spring', 'rest-api': 'api', 'restful-api': 'api',
-  'nodejs': 'node', 'node-js': 'node', 'nextjs': 'react', 'react-native': 'react',
-  'postgres': 'postgresql', 'rdb': 'mysql', 'k8s': 'kubernetes', 'ts': 'typescript', 'js': 'javascript',
-  'pytorch': 'python', 'tensorflow': 'python', 'spark': 'python', 'airflow': 'python',
-  'github-actions': 'git', 'cicd': 'git', 'ci-cd': 'git',
-}
 const BAR_CLS = { java: 'java', 'spring-boot': 'spring', mysql: 'mysql', jpa: 'jpa', git: 'git' }
 const KPI_CAPTION = {
   avg_required_skills: '공고당 평균 요구 역량 수',
@@ -37,15 +25,18 @@ const TREND_LABEL = { increase: '증가 ↗', decrease: '감소 ↘', stable: '�
 const CONFIDENCE = { high: '높음', medium: '중간', low: '낮음' }
 const SCOPE_BAR = ['', 'blue', 'green', 'amber', 'rose']
 
-// 기술 마크. 로고 파일이 있으면 SVG 를, 없으면 이름 첫 글자 배지를 보여 준다.
-// 직무마다 등장하는 기술 slug 가 다르므로 없는 slug 에서 이미지가 깨지지 않게 한다.
 function TechMark({ name, slug }) {
-  const file = LOGO_ALIAS[slug] || slug
-  if (LOGO_FILES.has(file)) {
-    return <img className="tech-logo" src={`/logos/${file}.svg`} alt="" />
-  }
-  const initial = (name || slug || '?').trim().charAt(0).toUpperCase()
-  return <span className="tech-logo tech-logo--text" aria-hidden="true">{initial}</span>
+  return <img className="tech-logo" src={getTechIconPath(slug)} alt={`${name} 아이콘`} />
+}
+
+function HeatmapCell({ cell }) {
+  const level = getHeatmapLevel(cell.pct)
+  return (
+    <td className={`hm hm--${level?.tone ?? 0}`}>
+      <span className="hm-lv">{level?.label ?? '—'}</span>
+      <span className="hm-pc">{level ? `${cell.pct}%` : '값 없음'}</span>
+    </td>
+  )
 }
 
 // 블록 7(추이)의 기울기 차트 한 열. 이전→최근 % 를 선으로 잇는다.
@@ -152,7 +143,7 @@ function StatsScreen({ go, job }) {
             </div>
           </header>
 
-          {/* 블록 1 · 리얼리티 KPI — 실데이터 */}
+          {/* 블록 1 · 리얼리티 KPI — 생성 데이터 */}
           <section className="metric-grid" id="kpi" aria-label="리얼리티 KPI">
             {Object.entries(kpi).map(([key, m]) => (
               <div className={`metric-card${m.highlight ? ' metric-card--alert' : ''}`} key={key}>
@@ -162,7 +153,7 @@ function StatsScreen({ go, job }) {
             ))}
           </section>
 
-          {/* 블록 2 · 요구 범위 확장 — 실데이터 */}
+          {/* 블록 2 · 요구 범위 확장 — 생성 데이터 */}
           <section className="section-block" id="scope">
             <div className="section-title">
               <h2>{job.display_name} 공고인데 그 일만 하지 않습니다</h2>
@@ -184,7 +175,7 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 3 · 필수 인플레이션 — 실데이터 */}
+          {/* 블록 3 · 필수 인플레이션 — 생성 데이터 */}
           <section className="section-block" id="inflation">
             <div className="section-title">
               <h2>작년의 우대가 올해의 필수가 됐습니다</h2>
@@ -211,7 +202,7 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 4 · 숨은 난이도 — 실데이터(추출 완료 필드 집계) */}
+          {/* 블록 4 · 숨은 난이도 — 생성 데이터의 추출 완료 필드 집계 */}
           <section className="section-block" id="difficulty">
             <div className="section-title">
               <h2>신입 공고에 숨어 있는 시니어급 문장들</h2>
@@ -229,7 +220,7 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 5 · 기술 빈도 — 실데이터 */}
+          {/* 블록 5 · 기술 빈도 — 생성 데이터 */}
           <section className="section-block" id="tech">
             <div className="section-title">
               <h2>단일 기술 빈도는 시작점입니다</h2>
@@ -259,11 +250,11 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 6 · 조합 — 동시 출현 실데이터 + 샘플 통계 설명 */}
+          {/* 블록 6 · 조합 — 동시 출현 집계 + 구현 수준 설명 */}
           <section className="section-block" id="combo">
             <div className="section-title">
               <h2>기술은 조합으로, 조합은 구현 수준으로 읽습니다</h2>
-              <span className="hint">동시 출현 건수는 실데이터 · 기대 수준 문구는 샘플 통계 설명</span>
+              <span className="hint">동시 출현 건수와 공고가 기대하는 구현 수준을 함께 비교</span>
             </div>
             <div className="panel">
               <div className="combination-grid">
@@ -279,7 +270,7 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 7 · 추이 — 실데이터, 차트 3개 분리 */}
+          {/* 블록 7 · 추이 — 생성 데이터, 차트 3개 분리 */}
           <section className="section-block" id="trend">
             <div className="section-title">
               <h2>늘어나는 기술과 줄어드는 기술</h2>
@@ -292,11 +283,11 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 8 · 라벨 vs 현실 — 라벨 두 열 실데이터, 현실 열은 3차 */}
+          {/* 블록 8 · 라벨 vs 현실 — 공고 라벨과 본문 요구 비교 */}
           <section className="section-block" id="conditions">
             <div className="section-title">
               <h2>공고의 라벨과 실제 요구는 다릅니다</h2>
-              <span className="hint">라벨 분포는 실데이터 · 현실 열은 3차(LLM) 연결</span>
+              <span className="hint">공고 라벨과 본문에서 확인한 실제 준비 수준을 비교</span>
             </div>
             <div className="label-grid">
               <div className="label-col">
@@ -322,39 +313,37 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 9 · 기업군 성향 — 실데이터 히트맵 (색+텍스트+숫자) */}
+          {/* 블록 9 · 기업군 성향 — 생성 데이터 히트맵 (색+텍스트+숫자) */}
           <section className="section-block" id="companies">
             <div className="section-title">
-              <h2>기업군마다 힘주는 곳이 다릅니다</h2>
-              <span className="hint">기업군 × 강조축 언급률 · 다음 단계에서 기업군을 고르면 이 행이 공고 해석 입력이 됩니다</span>
+              <h2>기업군별 강조축 · 전체 기간 30건</h2>
+              <span className="hint">최근 18건과 이전 12건을 합산한 참고용 비교 · 기업군별 n=5</span>
             </div>
             <div className="panel">
-              <table className="heatmap">
-                <thead>
-                  <tr>
-                    <th>기업군</th>
-                    {clusterAxes.axes.map((a) => <th key={a}>{a}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {clusterAxes.rows.map((row) => (
-                    <tr key={row.cluster}>
-                      <td>{row.cluster} <small>n={row.n}</small></td>
-                      {row.cells.map((c) => (
-                        <td key={c.axis} className={`hm hm--${c.level === '강' ? 3 : c.level === '중' ? 2 : c.level === '약' ? 1 : 0}`}>
-                          <span className="hm-lv">{c.level}</span>
-                          <span className="hm-pc">{c.pct}%</span>
-                        </td>
-                      ))}
+              <p className="heatmap-scroll-hint">옆으로 밀어 전체 항목 보기 →</p>
+              <div className="heatmap-scroll">
+                <table className="heatmap">
+                  <thead>
+                    <tr>
+                      <th>기업군</th>
+                      {clusterAxes.axes.map((a) => <th key={a}>{a}</th>)}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="panel-note">표본이 적은 기업군(n 표시)은 참고용입니다. 축 구성은 3b에서 에이전트가 직군별로 재구성합니다.</p>
+                  </thead>
+                  <tbody>
+                    {clusterAxes.rows.map((row) => (
+                      <tr key={row.cluster}>
+                        <td>{row.cluster} <small>n={row.n}</small></td>
+                        {row.cells.map((cell) => <HeatmapCell key={cell.axis} cell={cell} />)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="panel-note">생성 데이터의 기업군별 표본을 확보하기 위해 전체 기간을 합산했습니다. 강은 70% 이상, 중은 31~69%, 약은 30% 이하이며 값이 없을 때만 —로 표시합니다.</p>
             </div>
           </section>
 
-          {/* 블록 10 · 요구 항목 전체표 — 실데이터, 기본 접힘 */}
+          {/* 블록 10 · 요구 항목 전체표 — 생성 데이터, 기본 접힘 */}
           <section className="section-block" id="items">
             <div className="section-title">
               <h2>요구 항목 전체표</h2>
@@ -362,7 +351,7 @@ function StatsScreen({ go, job }) {
             </div>
             <div className="panel">
               <div className="fulltable-head">
-                <p>표 안을 스크롤해 전체 {items.length}개 항목을 볼 수 있습니다. 근거 원문 열은 문장 추출(3차) 연결 후 채워집니다.</p>
+                <p>표 안을 스크롤해 전체 {items.length}개 항목을 볼 수 있습니다. 각 항목의 근거 문장은 채용공고 해석 화면에서 확인할 수 있습니다.</p>
               </div>
               <div className="table-scroll">
                   <table className="req-table">

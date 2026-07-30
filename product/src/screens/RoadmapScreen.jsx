@@ -55,7 +55,7 @@ function RoadmapScreen({ go, job, checks, setChecks, scope, setScope, myPosting 
   const [status, setStatus] = useState('loading')
   const activeSection = useScrollSpy(NAV_IDS)
   // 공고 선택지는 범위와 무관한 직무 전체 목록이다. 기업군 응답에 딸려 오지 않는다.
-  const { postings, status: postingsStatus } = usePostings(jobRoleId)
+  const { postings, status: postingsStatus, retry: retryPostings } = usePostings(jobRoleId)
 
   // 붙여넣은 공고의 재조합. 서버가 하는 것과 같은 조건으로 부른다 —
   // 체크가 비어 있으면 저장된 payload 를 그대로 쓰고, 있으면 recompose 를 한 번 적용한다.
@@ -156,6 +156,7 @@ function RoadmapScreen({ go, job, checks, setChecks, scope, setScope, myPosting 
             jobLabel={job.display_name}
             postings={postings}
             postingsStatus={postingsStatus}
+            onRetryPostings={retryPostings}
             myPosting={myPosting}
             payloadScope={view?.scope}
             onSelect={changeScope}

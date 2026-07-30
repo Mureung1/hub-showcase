@@ -28,7 +28,7 @@
 | 회사 | `co_<slug>` | 기존 24개는 그대로 쓴다 |
 | 출처 | `src_demo_<job>_<nn>` | |
 | 스냅샷 | `snap_demo_<job>_<nn>` | `content_hash` 는 `raw_content` 의 SHA-256 |
-| 공고 | `dp_<job>_<nn>` | `nn` 은 `01`~`09`. **실 데이터와 겹치지 않는 `dp_` 접두사** |
+| 공고 | `dp_<job>_<nn>` | `nn` 은 `01`~`30`. **실 데이터와 겹치지 않는 `dp_` 접두사** |
 | 공고 버전 | `pv_demo_<job>_<nn>` | |
 | 요구 표현 | `mention_<job>_<nn>_<k>` | |
 | 할당 | `assign_<job>_<nn>_<k>` | |
@@ -45,7 +45,7 @@
 | Wiki 개정 | `wr_demo_<job>_<slug>_1` | |
 
 `<scope>` 는 `overall` · 기업군 `cluster_id` · 공고 `posting_id` 다.
-공고 범위는 `strategy`·`roadmap` 과 그 정규화 표에만 쓴다 (4장).
+공고 범위는 `interpretation`·`strategy`·`roadmap` 과 전략·로드맵 정규화 표에 쓴다 (4장).
 
 ## 2. 직무 아홉 종
 
@@ -63,12 +63,22 @@
 
 아홉 직무 전부 `is_active = true` 로 올린다 (B1).
 
-직무당 공고 9건. `recent` 5건은 `period_id = 'y2026'`, `prev` 4건은 `y2024_2025`.
+직무당 공고 30건. `recent` 18건은 `period_id = 'y2026'`, `prev` 12건은 `y2024_2025`.
+아홉 직무의 전체 공고 수는 270건이다.
 `posted_at` 은 recent 가 `2026-01-01`~`2026-06-30`, prev 가 `2024-03-01`~`2025-11-30` 사이다.
 두 범위는 3장의 기간 정의 안에 반드시 들어간다. 벗어나면 `statistics_facts.period_id` 가
 가리키는 기간과 공고 게시일이 어긋난다.
-기업군은 6종에 고르게 배분한다. 한 공고는 한 회사에 속하고, 승격 임계값(독립 공고 2·독립 회사 2)을
-만족하도록 같은 차원이 최소 두 회사의 공고에 나타나게 한다.
+
+두 기간 각각에서 여섯 기업군의 표본 수를 같게 둔다. recent 는 기업군마다 3건씩 총 18건,
+prev 는 기업군마다 2건씩 총 12건이다. 기업군 범위 산출물은 해당 기간 표본을 따르고,
+`cluster_axes` 만 표본 확보를 위해 두 기간을 합친 전체 30건을 사용한다. 따라서
+`cluster_axes` 의 여섯 기업군은 각각 `n=5`다.
+
+직무별 진행 중 공고는 6건, 마감 공고는 24건이다. prev 12건은 모두 마감 상태다. recent
+18건은 진행 중 6건·마감 12건이다.
+
+한 공고는 한 회사에 속하고, 승격 임계값(독립 공고 2·독립 회사 2)을 만족하도록 같은 차원이
+최소 두 회사의 공고에 나타나게 한다.
 
 ## 3. 기간
 
@@ -114,11 +124,13 @@ React → Express /api/{stats,reverse,conditions,roadmap}
 **직무당 필수 행 수**
 
 - `statistics` 1행 (overall)
-- `interpretation` 1 + 6 + 5 = 12행 (overall, 기업군 6, recent 공고 5)
-- `strategy` 1 + 6 + 5 = 12행 (overall, 기업군 6, recent 공고 5)
-- `roadmap` 1 + 6 + 5 = 12행 (overall, 기업군 6, recent 공고 5)
+- `interpretation` 1 + 6 + 30 = 37행 (overall, 기업군 6, 전체 공고 30)
+- `strategy` 1 + 6 + 30 = 37행 (overall, 기업군 6, 전체 공고 30)
+- `roadmap` 1 + 6 + 30 = 37행 (overall, 기업군 6, 전체 공고 30)
 
-합계 37행 × 9직무 = 333행.
+합계 112행 × 9직무 = 1,008행. 이 가운데 직무 조각이 만드는 것은 52행(`statistics` 1 ·
+`interpretation` 37 · `strategy` 7 · `roadmap` 7)이고, posting 범위 `strategy`·`roadmap`
+60행은 `build_demo_seed.py` 가 만든다.
 
 **posting 범위의 `strategy`·`roadmap` 파생 (B17)**
 
@@ -185,7 +197,8 @@ Express 의 폴백 규칙(posting 범위 요청을 그 공고가 속한 기업�
 라벨은 payload 안에 함께 담으므로 서버 코드에 상수를 두지 않는다 (B13 이 상수 표를 제거한다).
 
 `cluster_axes.rows[].cluster` 는 기업군 **표시명**(`company_clusters.display_name`)을 쓴다.
-`cells[].level` 은 `강`(≥60) · `중`(≥35) · `약`(≥15) · `—`(그 미만 또는 null).
+`cells[].level` 은 `강`(70~100) · `중`(31~69) · `약`(0~30)이며, `—`는
+`pct` 가 null인 결측값에만 쓴다.
 
 ### B. `interpretation` payload
 
@@ -377,6 +390,9 @@ agent/data/demo_seed/parts/user_postings/<table>.csv     A10
 ```
 
 `agent/scripts/build_demo_seed.py` 가 조각을 합쳐 `agent/data/demo_seed/<table>.csv` 를 만든다.
+병렬 전환 중 일반 빌드는 직무별 15건 또는 30건 상태만 허용한다. 최종 산출 전에는
+`python scripts/build_demo_seed.py --check --final` 로 모든 직무가 30건이고 직무별
+`analysis_outputs` 가 112행인지 검사한다.
 
 ### 9.2 형식
 
@@ -465,8 +481,8 @@ CSV 헤더의 컬럼 순서는 이 표와 정확히 같아야 한다.
 ### 10.1 `entry_label`
 
 `entry`, `junior`, `entry_junior`, `experienced`, `unspecified`.
-데모 공고는 recent 5건 중 3건이 `entry_junior`, 2건이 `experienced`.
-prev 4건 중 2건이 `entry_junior`, 2건이 `experienced`.
+데모 공고는 recent 18건 중 10건이 `entry_junior`, 8건이 `experienced`.
+prev 12건 중 6건이 `entry_junior`, 6건이 `experienced`.
 
 ### 10.2 `requiredness` · `depth_level`
 
@@ -485,8 +501,11 @@ prev 4건 중 2건이 `entry_junior`, 2건이 `experienced`.
 ### 10.5 `assessment` 기본값
 
 데모 공고 출처는 `source_type = 'job_posting'`, `source_tier = 'A'`,
-`allowed_uses = {statistics,baseline,interpretation,evidence}`, `reliability_score = 0.95000`,
-`assessment_version = 'sa_v1'`.
+`allowed_uses = {statistics,interpretation_context,strategy,roadmap}`,
+`reliability_score = 0.95000`, `assessment_version = 'sa_v1'`.
+
+값은 `0001_initial_schema.sql` 의 `allowed_uses_known` CHECK 가 허용하는 열한 개
+안에서만 고른다. 목록은 12절 2항에 있다.
 
 ## 11. 검증 게이트
 
@@ -507,13 +526,42 @@ prev 4건 중 2건이 `entry_junior`, 2건이 `experienced`.
 `evidence_count`, `independent_companies`, `source_tier_score`, `sample_status_score`,
 `entailment_score`, `contradiction_penalty`, `coverage_score`. 값은 0~1 실수.
 
-## 12. 갈래 목록
+## 12. 생성 시 반드시 지킬 것
+
+직무 조각(`scripts/demo_seed/<job>.py`)을 만들 때 아래 열 가지를 지킨다.
+
+1. 적재 순서는 `scripts/demo_seed/_csv.py` 의 `LOAD_ORDER` 가 정한다. 직무 모듈은 순서를
+   정하지 않고 `build()` 가 돌려주는 사전의 키만 채운다.
+2. `source_assessments.allowed_uses` 는 `0001_initial_schema.sql` 의 `allowed_uses_known`
+   CHECK 가 허용하는 값만 쓴다. 허용값은 `statistics`, `interpretation_context`,
+   `strategy`, `roadmap`, `wiki_definition`, `wiki_why_required`, `wiki_depth_criteria`,
+   `wiki_prerequisites`, `wiki_common_misconceptions`, `wiki_interview_verification`,
+   `wiki_learning_sequence` 다.
+3. 기간은 `0010_calendar_year_periods.sql` 이 넣는 `y2026`·`y2024_2025` 두 행이다.
+   새 `period_id` 를 만들지 않는다.
+4. `metric_family = 'entry_label_advanced_signal_rate'` 인 `statistics_facts` 행은
+   `entry_segment = 'entry_junior'` 만 저장한다. `entry_signal_rate_segment` CHECK 다.
+5. `dataset_versions` 행은 `scripts/demo_seed/backend.py` 만 만든다. `ds_demo_v1` 은
+   아홉 직무가 함께 쓰는 한 행이므로 다른 조각은 이 표를 채우지 않는다.
+6. `knowledge_nodes.node_id` 와 `knowledge_edges.edge_id` 는 `build_demo_seed.py` 가
+   `graph/identifiers.py` 의 `node_identifier`·`edge_identifier` 로 다시 계산한다.
+   모듈은 자연키 `graph_layer`·`node_type`·`ref_table`·`ref_id`·`ontology_version` 을
+   정확히 채운다.
+7. `requirement_mentions` 의 `evidence_span_start`·`evidence_span_end` 는
+   `source_chunks.text` 에서 `raw_expression` 을 실제로 찾아 계산한다.
+8. `statistics_facts` 의 `numerator`·`denominator` 는 `posting_requirement_assignments`
+   행을 다시 세어 만든다.
+9. `postings.company_id` 는 회사 카탈로그(부록 A 와 `0013`·`0014`)에 있는 법인만 쓴다.
+10. 실 데이터가 이미 가진 신원은 `load_demo_seed.py` 가 채택한다. `requirement_taxonomies`
+    의 `taxonomy_id` 와 참조 노드·엣지가 여기에 해당하며, 모듈은 계약이 정한 값을 그대로 쓴다.
+
+## 13. 갈래 목록
 
 ### 트랙 A — 데이터
 
 | 갈래 | 범위 |
 | --- | --- |
-| A1~A9 | 직무 하나. 차원·어휘 설계 → 공고 9건 본문 작성 → 표현·할당 → 지표 → 산출물 4종 → CSV 조각 |
+| A1~A9 | 직무 하나. 차원·어휘 설계 → 공고 30건 본문 작성 → 표현·할당 → 지표 → 산출물 4종 → CSV 조각 |
 | A10 | 샘플 공고 3건과 해석·전략·로드맵 결과 |
 
 ### 트랙 B — 코드
@@ -601,3 +649,11 @@ A10 은 `part` 이름으로 `user_postings` 를 쓴다.
 3. 모든 외래키 참조 대상이 같은 조각 안이나 마이그레이션 기준 데이터 안에 있다.
 4. `analysis_outputs` 의 payload 가 CONTRACT 5장의 키를 전부 갖는다.
 5. `checklist_items.concept_id` 와 payload 의 `item_id` 가 서로 맞는다.
+6. 공고가 30건이고 `recent` 18건·`prev` 12건이다. recent 는 여섯 기업군마다 3건,
+   prev 는 기업군마다 2건이며 `posted_at` 이 기간의 `starts_on`~`ends_on` 안에 있다.
+   `cluster_axes` 는 두 기간을 합산해 여섯 기업군 모두 `n=5`로 계산한다.
+   진행 중 6건은 모두 recent 이고 나머지 recent 12건과 prev 12건은 마감 상태다.
+7. `analysis_outputs` 가 52행이다. `statistics` 1 · `interpretation` 37 ·
+   `strategy` 7 · `roadmap` 7 이며, `interpretation` 의 posting 범위 30행은 전체 공고와
+   하나씩 짝을 이룬다.
+8. 12장 열 가지 가운데 모듈이 값을 직접 담는 2·3·4·5·9 를 행마다 확인한다.

@@ -109,6 +109,195 @@ assign_backend_09_8,mention_backend_09_8,tx_demo_backend,dim_backend_payment-set
 assign_backend_09_9,mention_backend_09_9,tx_demo_backend,dim_backend_caching-performance,캐시·조회 성능 개선,preferred,application,0.90000,alias_exact,verified
 assign_backend_09_10,mention_backend_09_10,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
 assign_backend_09_11,mention_backend_09_11,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,application,0.90000,alias_exact,verified
+assign_backend_10_1,mention_backend_10_1,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,responsibility,application,0.90000,alias_exact,verified
+assign_backend_10_2,mention_backend_10_2,tx_demo_backend,dim_backend_caching-performance,캐시·조회 성능 개선,responsibility,application,0.90000,alias_exact,verified
+assign_backend_10_3,mention_backend_10_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_10_4,mention_backend_10_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_10_5,mention_backend_10_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_10_6,mention_backend_10_6,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,required,application,0.90000,alias_exact,verified
+assign_backend_10_7,mention_backend_10_7,tx_demo_backend,dim_backend_message-queue,메시지 큐·이벤트 처리,preferred,application,0.90000,alias_exact,verified
+assign_backend_10_8,mention_backend_10_8,tx_demo_backend,dim_backend_container-deploy,컨테이너 기반 배포,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_10_9,mention_backend_10_9,tx_demo_backend,dim_backend_tech-documentation,기술 문서화,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_11_1,mention_backend_11_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_11_2,mention_backend_11_2,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_11_3,mention_backend_11_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_11_4,mention_backend_11_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_11_5,mention_backend_11_5,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_11_6,mention_backend_11_6,tx_demo_backend,dim_backend_transaction-integrity,트랜잭션·데이터 정합성,required,foundation,0.90000,alias_exact,verified
+assign_backend_11_7,mention_backend_11_7,tx_demo_backend,dim_backend_cloud-infra,클라우드 인프라 운영,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_11_8,mention_backend_11_8,tx_demo_backend,dim_backend_cicd-automation,CI/CD 파이프라인,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_11_9,mention_backend_11_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_12_1,mention_backend_12_1,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,responsibility,application,0.90000,alias_exact,verified
+assign_backend_12_2,mention_backend_12_2,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_12_3,mention_backend_12_3,tx_demo_backend,dim_backend_tech-documentation,기술 문서화,responsibility,application,0.90000,alias_exact,verified
+assign_backend_12_4,mention_backend_12_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_12_5,mention_backend_12_5,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,required,application,0.90000,alias_exact,verified
+assign_backend_12_6,mention_backend_12_6,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,required,foundation,0.90000,alias_exact,verified
+assign_backend_12_7,mention_backend_12_7,tx_demo_backend,dim_backend_caching-performance,캐시·조회 성능 개선,preferred,application,0.90000,alias_exact,verified
+assign_backend_12_8,mention_backend_12_8,tx_demo_backend,dim_backend_container-deploy,컨테이너 기반 배포,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_12_9,mention_backend_12_9,tx_demo_backend,dim_backend_cicd-automation,CI/CD 파이프라인,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_13_1,mention_backend_13_1,tx_demo_backend,dim_backend_payment-settlement,결제·정산 도메인 이해,responsibility,application,0.90000,alias_exact,verified
+assign_backend_13_2,mention_backend_13_2,tx_demo_backend,dim_backend_transaction-integrity,트랜잭션·데이터 정합성,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_backend_13_3,mention_backend_13_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_13_4,mention_backend_13_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_13_5,mention_backend_13_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_13_6,mention_backend_13_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,tradeoff,0.90000,alias_exact,verified
+assign_backend_13_7,mention_backend_13_7,tx_demo_backend,dim_backend_message-queue,메시지 큐·이벤트 처리,preferred,application,0.90000,alias_exact,verified
+assign_backend_13_8,mention_backend_13_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_13_9,mention_backend_13_9,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_14_1,mention_backend_14_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_14_2,mention_backend_14_2,tx_demo_backend,dim_backend_cicd-automation,CI/CD 파이프라인,responsibility,application,0.90000,alias_exact,verified
+assign_backend_14_3,mention_backend_14_3,tx_demo_backend,dim_backend_tech-documentation,기술 문서화,responsibility,application,0.90000,alias_exact,verified
+assign_backend_14_4,mention_backend_14_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_14_5,mention_backend_14_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_14_6,mention_backend_14_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_14_7,mention_backend_14_7,tx_demo_backend,dim_backend_container-deploy,컨테이너 기반 배포,preferred,application,0.90000,alias_exact,verified
+assign_backend_14_8,mention_backend_14_8,tx_demo_backend,dim_backend_cloud-infra,클라우드 인프라 운영,preferred,application,0.90000,alias_exact,verified
+assign_backend_14_9,mention_backend_14_9,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_15_1,mention_backend_15_1,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_backend_15_2,mention_backend_15_2,tx_demo_backend,dim_backend_message-queue,메시지 큐·이벤트 처리,responsibility,application,0.90000,alias_exact,verified
+assign_backend_15_3,mention_backend_15_3,tx_demo_backend,dim_backend_caching-performance,캐시·조회 성능 개선,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_backend_15_4,mention_backend_15_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_15_5,mention_backend_15_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_15_6,mention_backend_15_6,tx_demo_backend,dim_backend_transaction-integrity,트랜잭션·데이터 정합성,required,tradeoff,0.90000,alias_exact,verified
+assign_backend_15_7,mention_backend_15_7,tx_demo_backend,dim_backend_cloud-infra,클라우드 인프라 운영,preferred,application,0.90000,alias_exact,verified
+assign_backend_15_8,mention_backend_15_8,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,preferred,application,0.90000,alias_exact,verified
+assign_backend_15_9,mention_backend_15_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,application,0.90000,alias_exact,verified
+assign_backend_16_1,mention_backend_16_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_16_2,mention_backend_16_2,tx_demo_backend,dim_backend_caching-performance,캐시·조회 성능 개선,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_backend_16_3,mention_backend_16_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_16_4,mention_backend_16_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_16_5,mention_backend_16_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_16_6,mention_backend_16_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_16_7,mention_backend_16_7,tx_demo_backend,dim_backend_message-queue,메시지 큐·이벤트 처리,preferred,application,0.90000,alias_exact,verified
+assign_backend_16_8,mention_backend_16_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_16_9,mention_backend_16_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_17_1,mention_backend_17_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_17_2,mention_backend_17_2,tx_demo_backend,dim_backend_cloud-infra,클라우드 인프라 운영,responsibility,application,0.90000,alias_exact,verified
+assign_backend_17_3,mention_backend_17_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_17_4,mention_backend_17_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_17_5,mention_backend_17_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_17_6,mention_backend_17_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_17_7,mention_backend_17_7,tx_demo_backend,dim_backend_cicd-automation,CI/CD 파이프라인,preferred,application,0.90000,alias_exact,verified
+assign_backend_17_8,mention_backend_17_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_17_9,mention_backend_17_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_18_1,mention_backend_18_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_18_2,mention_backend_18_2,tx_demo_backend,dim_backend_payment-settlement,결제·정산 도메인 이해,responsibility,application,0.90000,alias_exact,verified
+assign_backend_18_3,mention_backend_18_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_18_4,mention_backend_18_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_18_5,mention_backend_18_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_18_6,mention_backend_18_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_18_7,mention_backend_18_7,tx_demo_backend,dim_backend_transaction-integrity,트랜잭션·데이터 정합성,preferred,tradeoff,0.90000,alias_exact,verified
+assign_backend_18_8,mention_backend_18_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_18_9,mention_backend_18_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_19_1,mention_backend_19_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_19_2,mention_backend_19_2,tx_demo_backend,dim_backend_tech-documentation,기술 문서화,responsibility,application,0.90000,alias_exact,verified
+assign_backend_19_3,mention_backend_19_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_19_4,mention_backend_19_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_19_5,mention_backend_19_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_19_6,mention_backend_19_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_19_7,mention_backend_19_7,tx_demo_backend,dim_backend_container-deploy,컨테이너 기반 배포,preferred,application,0.90000,alias_exact,verified
+assign_backend_19_8,mention_backend_19_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_19_9,mention_backend_19_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_20_1,mention_backend_20_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_20_2,mention_backend_20_2,tx_demo_backend,dim_backend_tech-documentation,기술 문서화,responsibility,application,0.90000,alias_exact,verified
+assign_backend_20_3,mention_backend_20_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_20_4,mention_backend_20_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_20_5,mention_backend_20_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_20_6,mention_backend_20_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_20_7,mention_backend_20_7,tx_demo_backend,dim_backend_container-deploy,컨테이너 기반 배포,preferred,application,0.90000,alias_exact,verified
+assign_backend_20_8,mention_backend_20_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_20_9,mention_backend_20_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_21_1,mention_backend_21_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_21_2,mention_backend_21_2,tx_demo_backend,dim_backend_tech-documentation,기술 문서화,responsibility,application,0.90000,alias_exact,verified
+assign_backend_21_3,mention_backend_21_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_21_4,mention_backend_21_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_21_5,mention_backend_21_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_21_6,mention_backend_21_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_21_7,mention_backend_21_7,tx_demo_backend,dim_backend_cicd-automation,CI/CD 파이프라인,preferred,application,0.90000,alias_exact,verified
+assign_backend_21_8,mention_backend_21_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_21_9,mention_backend_21_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_22_1,mention_backend_22_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_22_2,mention_backend_22_2,tx_demo_backend,dim_backend_tech-documentation,기술 문서화,responsibility,application,0.90000,alias_exact,verified
+assign_backend_22_3,mention_backend_22_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_22_4,mention_backend_22_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_22_5,mention_backend_22_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_22_6,mention_backend_22_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_22_7,mention_backend_22_7,tx_demo_backend,dim_backend_cicd-automation,CI/CD 파이프라인,preferred,application,0.90000,alias_exact,verified
+assign_backend_22_8,mention_backend_22_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_22_9,mention_backend_22_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_23_1,mention_backend_23_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_23_2,mention_backend_23_2,tx_demo_backend,dim_backend_message-queue,메시지 큐·이벤트 처리,responsibility,application,0.90000,alias_exact,verified
+assign_backend_23_3,mention_backend_23_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_23_4,mention_backend_23_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_23_5,mention_backend_23_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_23_6,mention_backend_23_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_23_7,mention_backend_23_7,tx_demo_backend,dim_backend_caching-performance,캐시·조회 성능 개선,preferred,tradeoff,0.90000,alias_exact,verified
+assign_backend_23_8,mention_backend_23_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_23_9,mention_backend_23_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_24_1,mention_backend_24_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_24_2,mention_backend_24_2,tx_demo_backend,dim_backend_message-queue,메시지 큐·이벤트 처리,responsibility,application,0.90000,alias_exact,verified
+assign_backend_24_3,mention_backend_24_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_24_4,mention_backend_24_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_24_5,mention_backend_24_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_24_6,mention_backend_24_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_24_7,mention_backend_24_7,tx_demo_backend,dim_backend_caching-performance,캐시·조회 성능 개선,preferred,tradeoff,0.90000,alias_exact,verified
+assign_backend_24_8,mention_backend_24_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_24_9,mention_backend_24_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_25_1,mention_backend_25_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_25_2,mention_backend_25_2,tx_demo_backend,dim_backend_caching-performance,캐시·조회 성능 개선,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_backend_25_3,mention_backend_25_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_25_4,mention_backend_25_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_25_5,mention_backend_25_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_25_6,mention_backend_25_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_25_7,mention_backend_25_7,tx_demo_backend,dim_backend_message-queue,메시지 큐·이벤트 처리,preferred,application,0.90000,alias_exact,verified
+assign_backend_25_8,mention_backend_25_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_25_9,mention_backend_25_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_26_1,mention_backend_26_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_26_2,mention_backend_26_2,tx_demo_backend,dim_backend_cloud-infra,클라우드 인프라 운영,responsibility,application,0.90000,alias_exact,verified
+assign_backend_26_3,mention_backend_26_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_26_4,mention_backend_26_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_26_5,mention_backend_26_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_26_6,mention_backend_26_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_26_7,mention_backend_26_7,tx_demo_backend,dim_backend_cicd-automation,CI/CD 파이프라인,preferred,application,0.90000,alias_exact,verified
+assign_backend_26_8,mention_backend_26_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_26_9,mention_backend_26_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_27_1,mention_backend_27_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_27_2,mention_backend_27_2,tx_demo_backend,dim_backend_tech-documentation,기술 문서화,responsibility,application,0.90000,alias_exact,verified
+assign_backend_27_3,mention_backend_27_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_27_4,mention_backend_27_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_27_5,mention_backend_27_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_27_6,mention_backend_27_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_27_7,mention_backend_27_7,tx_demo_backend,dim_backend_container-deploy,컨테이너 기반 배포,preferred,application,0.90000,alias_exact,verified
+assign_backend_27_8,mention_backend_27_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_27_9,mention_backend_27_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_28_1,mention_backend_28_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_28_2,mention_backend_28_2,tx_demo_backend,dim_backend_payment-settlement,결제·정산 도메인 이해,responsibility,application,0.90000,alias_exact,verified
+assign_backend_28_3,mention_backend_28_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_28_4,mention_backend_28_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_28_5,mention_backend_28_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_28_6,mention_backend_28_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_28_7,mention_backend_28_7,tx_demo_backend,dim_backend_transaction-integrity,트랜잭션·데이터 정합성,preferred,tradeoff,0.90000,alias_exact,verified
+assign_backend_28_8,mention_backend_28_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_28_9,mention_backend_28_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_29_1,mention_backend_29_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_29_2,mention_backend_29_2,tx_demo_backend,dim_backend_tech-documentation,기술 문서화,responsibility,application,0.90000,alias_exact,verified
+assign_backend_29_3,mention_backend_29_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_29_4,mention_backend_29_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_29_5,mention_backend_29_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_29_6,mention_backend_29_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_29_7,mention_backend_29_7,tx_demo_backend,dim_backend_cicd-automation,CI/CD 파이프라인,preferred,application,0.90000,alias_exact,verified
+assign_backend_29_8,mention_backend_29_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_29_9,mention_backend_29_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
+assign_backend_30_1,mention_backend_30_1,tx_demo_backend,dim_backend_service-domain-modeling,서비스 도메인 모델링,responsibility,application,0.90000,alias_exact,verified
+assign_backend_30_2,mention_backend_30_2,tx_demo_backend,dim_backend_message-queue,메시지 큐·이벤트 처리,responsibility,application,0.90000,alias_exact,verified
+assign_backend_30_3,mention_backend_30_3,tx_demo_backend,dim_backend_monitoring-incident,모니터링·장애 대응,responsibility,application,0.90000,alias_exact,verified
+assign_backend_30_4,mention_backend_30_4,tx_demo_backend,dim_backend_java-spring,Java·Spring 기반 서버 개발,required,application,0.90000,alias_exact,verified
+assign_backend_30_5,mention_backend_30_5,tx_demo_backend,dim_backend_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.90000,alias_exact,verified
+assign_backend_30_6,mention_backend_30_6,tx_demo_backend,dim_backend_rest-api-design,REST API 설계,required,application,0.90000,alias_exact,verified
+assign_backend_30_7,mention_backend_30_7,tx_demo_backend,dim_backend_caching-performance,캐시·조회 성능 개선,preferred,tradeoff,0.90000,alias_exact,verified
+assign_backend_30_8,mention_backend_30_8,tx_demo_backend,dim_backend_test-automation,테스트 코드 작성,preferred,application,0.90000,alias_exact,verified
+assign_backend_30_9,mention_backend_30_9,tx_demo_backend,dim_backend_code-review-collab,코드리뷰·협업 커뮤니케이션,preferred,foundation,0.90000,alias_exact,verified
 assign_frontend_01_1,mention_frontend_01_1,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
 assign_frontend_01_2,mention_frontend_01_2,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
 assign_frontend_01_3,mention_frontend_01_3,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
@@ -169,6 +358,150 @@ assign_frontend_09_3,mention_frontend_09_3,tx_demo_frontend,dim_frontend_typescr
 assign_frontend_09_4,mention_frontend_09_4,tx_demo_frontend,dim_frontend_frontend-testing,프론트엔드 테스트,required,application,0.90000,alias_exact,verified
 assign_frontend_09_5,mention_frontend_09_5,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,preferred,foundation,0.90000,alias_exact,verified
 assign_frontend_09_6,mention_frontend_09_6,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,foundation,0.90000,alias_exact,verified
+assign_frontend_10_1,mention_frontend_10_1,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_10_2,mention_frontend_10_2,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_10_3,mention_frontend_10_3,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_10_4,mention_frontend_10_4,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_10_5,mention_frontend_10_5,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_10_6,mention_frontend_10_6,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,required,application,0.90000,alias_exact,verified
+assign_frontend_10_7,mention_frontend_10_7,tx_demo_frontend,dim_frontend_frontend-testing,프론트엔드 테스트,preferred,application,0.90000,alias_exact,verified
+assign_frontend_10_8,mention_frontend_10_8,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,preferred,foundation,0.90000,alias_exact,verified
+assign_frontend_10_9,mention_frontend_10_9,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,application,0.90000,alias_exact,verified
+assign_frontend_11_1,mention_frontend_11_1,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_11_2,mention_frontend_11_2,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_11_3,mention_frontend_11_3,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_11_4,mention_frontend_11_4,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_11_5,mention_frontend_11_5,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,application,0.90000,alias_exact,verified
+assign_frontend_11_6,mention_frontend_11_6,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,preferred,application,0.90000,alias_exact,verified
+assign_frontend_12_1,mention_frontend_12_1,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_12_2,mention_frontend_12_2,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_12_3,mention_frontend_12_3,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_12_4,mention_frontend_12_4,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_12_5,mention_frontend_12_5,tx_demo_frontend,dim_frontend_frontend-testing,프론트엔드 테스트,required,application,0.90000,alias_exact,verified
+assign_frontend_12_6,mention_frontend_12_6,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,required,application,0.90000,alias_exact,verified
+assign_frontend_12_7,mention_frontend_12_7,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,preferred,application,0.90000,alias_exact,verified
+assign_frontend_12_8,mention_frontend_12_8,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_frontend_13_1,mention_frontend_13_1,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_13_2,mention_frontend_13_2,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_13_3,mention_frontend_13_3,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_13_4,mention_frontend_13_4,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,application,0.90000,alias_exact,verified
+assign_frontend_13_5,mention_frontend_13_5,tx_demo_frontend,dim_frontend_frontend-testing,프론트엔드 테스트,preferred,tradeoff,0.90000,alias_exact,verified
+assign_frontend_13_6,mention_frontend_13_6,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,preferred,application,0.90000,alias_exact,verified
+assign_frontend_13_7,mention_frontend_13_7,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_frontend_14_1,mention_frontend_14_1,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_14_2,mention_frontend_14_2,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_14_3,mention_frontend_14_3,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_14_4,mention_frontend_14_4,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,required,application,0.90000,alias_exact,verified
+assign_frontend_14_5,mention_frontend_14_5,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,required,application,0.90000,alias_exact,verified
+assign_frontend_14_6,mention_frontend_14_6,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,foundation,0.90000,alias_exact,verified
+assign_frontend_15_1,mention_frontend_15_1,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_15_2,mention_frontend_15_2,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_15_3,mention_frontend_15_3,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,application,0.90000,alias_exact,verified
+assign_frontend_15_4,mention_frontend_15_4,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_15_5,mention_frontend_15_5,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,application,0.90000,alias_exact,verified
+assign_frontend_15_6,mention_frontend_15_6,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,preferred,tradeoff,0.90000,alias_exact,verified
+assign_frontend_16_1,mention_frontend_16_1,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_16_2,mention_frontend_16_2,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_16_3,mention_frontend_16_3,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_16_4,mention_frontend_16_4,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_16_5,mention_frontend_16_5,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_16_6,mention_frontend_16_6,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,required,application,0.90000,alias_exact,verified
+assign_frontend_16_7,mention_frontend_16_7,tx_demo_frontend,dim_frontend_frontend-testing,프론트엔드 테스트,preferred,application,0.90000,alias_exact,verified
+assign_frontend_16_8,mention_frontend_16_8,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,preferred,foundation,0.90000,alias_exact,verified
+assign_frontend_16_9,mention_frontend_16_9,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,application,0.90000,alias_exact,verified
+assign_frontend_17_1,mention_frontend_17_1,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_17_2,mention_frontend_17_2,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_17_3,mention_frontend_17_3,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_17_4,mention_frontend_17_4,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,application,0.90000,alias_exact,verified
+assign_frontend_17_5,mention_frontend_17_5,tx_demo_frontend,dim_frontend_frontend-testing,프론트엔드 테스트,preferred,tradeoff,0.90000,alias_exact,verified
+assign_frontend_17_6,mention_frontend_17_6,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,preferred,application,0.90000,alias_exact,verified
+assign_frontend_17_7,mention_frontend_17_7,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_frontend_18_1,mention_frontend_18_1,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_18_2,mention_frontend_18_2,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_18_3,mention_frontend_18_3,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_18_4,mention_frontend_18_4,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_18_5,mention_frontend_18_5,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,application,0.90000,alias_exact,verified
+assign_frontend_18_6,mention_frontend_18_6,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,preferred,application,0.90000,alias_exact,verified
+assign_frontend_19_1,mention_frontend_19_1,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_19_2,mention_frontend_19_2,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_19_3,mention_frontend_19_3,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_19_4,mention_frontend_19_4,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_19_5,mention_frontend_19_5,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,application,0.90000,alias_exact,verified
+assign_frontend_19_6,mention_frontend_19_6,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,preferred,application,0.90000,alias_exact,verified
+assign_frontend_20_1,mention_frontend_20_1,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_20_2,mention_frontend_20_2,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_20_3,mention_frontend_20_3,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_20_4,mention_frontend_20_4,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_20_5,mention_frontend_20_5,tx_demo_frontend,dim_frontend_frontend-testing,프론트엔드 테스트,required,application,0.90000,alias_exact,verified
+assign_frontend_20_6,mention_frontend_20_6,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,required,application,0.90000,alias_exact,verified
+assign_frontend_20_7,mention_frontend_20_7,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,preferred,application,0.90000,alias_exact,verified
+assign_frontend_20_8,mention_frontend_20_8,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_frontend_21_1,mention_frontend_21_1,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_21_2,mention_frontend_21_2,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_21_3,mention_frontend_21_3,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_21_4,mention_frontend_21_4,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,required,application,0.90000,alias_exact,verified
+assign_frontend_21_5,mention_frontend_21_5,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,required,application,0.90000,alias_exact,verified
+assign_frontend_21_6,mention_frontend_21_6,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,foundation,0.90000,alias_exact,verified
+assign_frontend_22_1,mention_frontend_22_1,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_22_2,mention_frontend_22_2,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_22_3,mention_frontend_22_3,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_22_4,mention_frontend_22_4,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,required,application,0.90000,alias_exact,verified
+assign_frontend_22_5,mention_frontend_22_5,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,required,application,0.90000,alias_exact,verified
+assign_frontend_22_6,mention_frontend_22_6,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,foundation,0.90000,alias_exact,verified
+assign_frontend_23_1,mention_frontend_23_1,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_23_2,mention_frontend_23_2,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_23_3,mention_frontend_23_3,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,application,0.90000,alias_exact,verified
+assign_frontend_23_4,mention_frontend_23_4,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_23_5,mention_frontend_23_5,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,application,0.90000,alias_exact,verified
+assign_frontend_23_6,mention_frontend_23_6,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,preferred,tradeoff,0.90000,alias_exact,verified
+assign_frontend_24_1,mention_frontend_24_1,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_24_2,mention_frontend_24_2,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_24_3,mention_frontend_24_3,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,application,0.90000,alias_exact,verified
+assign_frontend_24_4,mention_frontend_24_4,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_24_5,mention_frontend_24_5,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,application,0.90000,alias_exact,verified
+assign_frontend_24_6,mention_frontend_24_6,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,preferred,tradeoff,0.90000,alias_exact,verified
+assign_frontend_25_1,mention_frontend_25_1,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_25_2,mention_frontend_25_2,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_25_3,mention_frontend_25_3,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_25_4,mention_frontend_25_4,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_25_5,mention_frontend_25_5,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_25_6,mention_frontend_25_6,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,required,application,0.90000,alias_exact,verified
+assign_frontend_25_7,mention_frontend_25_7,tx_demo_frontend,dim_frontend_frontend-testing,프론트엔드 테스트,preferred,application,0.90000,alias_exact,verified
+assign_frontend_25_8,mention_frontend_25_8,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,preferred,foundation,0.90000,alias_exact,verified
+assign_frontend_25_9,mention_frontend_25_9,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,application,0.90000,alias_exact,verified
+assign_frontend_26_1,mention_frontend_26_1,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_26_2,mention_frontend_26_2,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_26_3,mention_frontend_26_3,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_26_4,mention_frontend_26_4,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_26_5,mention_frontend_26_5,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,application,0.90000,alias_exact,verified
+assign_frontend_26_6,mention_frontend_26_6,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,preferred,application,0.90000,alias_exact,verified
+assign_frontend_27_1,mention_frontend_27_1,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_27_2,mention_frontend_27_2,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_27_3,mention_frontend_27_3,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_27_4,mention_frontend_27_4,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_27_5,mention_frontend_27_5,tx_demo_frontend,dim_frontend_frontend-testing,프론트엔드 테스트,required,application,0.90000,alias_exact,verified
+assign_frontend_27_6,mention_frontend_27_6,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,required,application,0.90000,alias_exact,verified
+assign_frontend_27_7,mention_frontend_27_7,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,preferred,application,0.90000,alias_exact,verified
+assign_frontend_27_8,mention_frontend_27_8,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_frontend_28_1,mention_frontend_28_1,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_28_2,mention_frontend_28_2,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_28_3,mention_frontend_28_3,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_28_4,mention_frontend_28_4,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,application,0.90000,alias_exact,verified
+assign_frontend_28_5,mention_frontend_28_5,tx_demo_frontend,dim_frontend_frontend-testing,프론트엔드 테스트,preferred,tradeoff,0.90000,alias_exact,verified
+assign_frontend_28_6,mention_frontend_28_6,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,preferred,application,0.90000,alias_exact,verified
+assign_frontend_28_7,mention_frontend_28_7,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_frontend_29_1,mention_frontend_29_1,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_frontend_29_2,mention_frontend_29_2,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_29_3,mention_frontend_29_3,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,foundation,0.90000,alias_exact,verified
+assign_frontend_29_4,mention_frontend_29_4,tx_demo_frontend,dim_frontend_web-accessibility,웹 접근성·웹표준,required,application,0.90000,alias_exact,verified
+assign_frontend_29_5,mention_frontend_29_5,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,required,application,0.90000,alias_exact,verified
+assign_frontend_29_6,mention_frontend_29_6,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,foundation,0.90000,alias_exact,verified
+assign_frontend_30_1,mention_frontend_30_1,tx_demo_frontend,dim_frontend_css-architecture,CSS 설계·디자인 시스템,responsibility,application,0.90000,alias_exact,verified
+assign_frontend_30_2,mention_frontend_30_2,tx_demo_frontend,dim_frontend_react-component,React 컴포넌트 개발,required,application,0.90000,alias_exact,verified
+assign_frontend_30_3,mention_frontend_30_3,tx_demo_frontend,dim_frontend_typescript-typing,TypeScript 타입 설계,required,application,0.90000,alias_exact,verified
+assign_frontend_30_4,mention_frontend_30_4,tx_demo_frontend,dim_frontend_web-performance,웹 성능 최적화,required,tradeoff,0.90000,alias_exact,verified
+assign_frontend_30_5,mention_frontend_30_5,tx_demo_frontend,dim_frontend_bundling-build,번들링·빌드 도구,preferred,application,0.90000,alias_exact,verified
+assign_frontend_30_6,mention_frontend_30_6,tx_demo_frontend,dim_frontend_state-management,상태 관리 설계,preferred,tradeoff,0.90000,alias_exact,verified
 assign_ai_engineer_01_1,mention_ai_engineer_01_1,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,responsibility,application,0.90000,alias_exact,verified
 assign_ai_engineer_01_2,mention_ai_engineer_01_2,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,responsibility,application,0.90000,alias_exact,verified
 assign_ai_engineer_01_3,mention_ai_engineer_01_3,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
@@ -205,6 +538,102 @@ assign_ai_engineer_08_3,mention_ai_engineer_08_3,tx_demo_ai_engineer,dim_ai_engi
 assign_ai_engineer_09_1,mention_ai_engineer_09_1,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
 assign_ai_engineer_09_2,mention_ai_engineer_09_2,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,preferred,application,0.90000,alias_exact,verified
 assign_ai_engineer_09_3,mention_ai_engineer_09_3,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_10_1,mention_ai_engineer_10_1,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_10_2,mention_ai_engineer_10_2,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_10_3,mention_ai_engineer_10_3,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_10_4,mention_ai_engineer_10_4,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,preferred,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_11_1,mention_ai_engineer_11_1,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_11_2,mention_ai_engineer_11_2,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_11_3,mention_ai_engineer_11_3,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_11_4,mention_ai_engineer_11_4,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_11_5,mention_ai_engineer_11_5,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,preferred,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_12_1,mention_ai_engineer_12_1,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_12_2,mention_ai_engineer_12_2,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_12_3,mention_ai_engineer_12_3,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_12_4,mention_ai_engineer_12_4,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,required,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_12_5,mention_ai_engineer_12_5,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,preferred,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_13_1,mention_ai_engineer_13_1,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_13_2,mention_ai_engineer_13_2,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_13_3,mention_ai_engineer_13_3,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_13_4,mention_ai_engineer_13_4,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_13_5,mention_ai_engineer_13_5,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_14_1,mention_ai_engineer_14_1,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_14_2,mention_ai_engineer_14_2,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_14_3,mention_ai_engineer_14_3,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_14_4,mention_ai_engineer_14_4,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_14_5,mention_ai_engineer_14_5,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,preferred,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_15_1,mention_ai_engineer_15_1,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_15_2,mention_ai_engineer_15_2,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_15_3,mention_ai_engineer_15_3,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_15_4,mention_ai_engineer_15_4,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,required,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_15_5,mention_ai_engineer_15_5,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_15_6,mention_ai_engineer_15_6,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_16_1,mention_ai_engineer_16_1,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_16_2,mention_ai_engineer_16_2,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_16_3,mention_ai_engineer_16_3,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_16_4,mention_ai_engineer_16_4,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_16_5,mention_ai_engineer_16_5,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,preferred,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_17_1,mention_ai_engineer_17_1,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_17_2,mention_ai_engineer_17_2,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_17_3,mention_ai_engineer_17_3,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_17_4,mention_ai_engineer_17_4,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,preferred,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_18_1,mention_ai_engineer_18_1,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_18_2,mention_ai_engineer_18_2,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_18_3,mention_ai_engineer_18_3,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_18_4,mention_ai_engineer_18_4,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_18_5,mention_ai_engineer_18_5,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_18_6,mention_ai_engineer_18_6,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,preferred,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_19_1,mention_ai_engineer_19_1,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_19_2,mention_ai_engineer_19_2,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_19_3,mention_ai_engineer_19_3,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,required,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_19_4,mention_ai_engineer_19_4,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,required,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_19_5,mention_ai_engineer_19_5,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_20_1,mention_ai_engineer_20_1,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_20_2,mention_ai_engineer_20_2,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_20_3,mention_ai_engineer_20_3,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,required,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_20_4,mention_ai_engineer_20_4,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,required,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_20_5,mention_ai_engineer_20_5,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_21_1,mention_ai_engineer_21_1,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_21_2,mention_ai_engineer_21_2,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,required,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_21_3,mention_ai_engineer_21_3,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_21_4,mention_ai_engineer_21_4,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_22_1,mention_ai_engineer_22_1,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_22_2,mention_ai_engineer_22_2,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,required,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_22_3,mention_ai_engineer_22_3,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_22_4,mention_ai_engineer_22_4,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_23_1,mention_ai_engineer_23_1,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_23_2,mention_ai_engineer_23_2,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_23_3,mention_ai_engineer_23_3,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,preferred,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_24_1,mention_ai_engineer_24_1,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_24_2,mention_ai_engineer_24_2,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_24_3,mention_ai_engineer_24_3,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,preferred,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_25_1,mention_ai_engineer_25_1,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_25_2,mention_ai_engineer_25_2,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_25_3,mention_ai_engineer_25_3,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_25_4,mention_ai_engineer_25_4,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_25_5,mention_ai_engineer_25_5,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,preferred,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_26_1,mention_ai_engineer_26_1,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_26_2,mention_ai_engineer_26_2,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_26_3,mention_ai_engineer_26_3,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_26_4,mention_ai_engineer_26_4,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,preferred,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_27_1,mention_ai_engineer_27_1,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_27_2,mention_ai_engineer_27_2,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_27_3,mention_ai_engineer_27_3,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_27_4,mention_ai_engineer_27_4,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_27_5,mention_ai_engineer_27_5,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_27_6,mention_ai_engineer_27_6,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,preferred,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_28_1,mention_ai_engineer_28_1,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,responsibility,application,0.90000,alias_exact,verified
+assign_ai_engineer_28_2,mention_ai_engineer_28_2,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_28_3,mention_ai_engineer_28_3,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,required,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_28_4,mention_ai_engineer_28_4,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,required,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_28_5,mention_ai_engineer_28_5,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_29_1,mention_ai_engineer_29_1,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_29_2,mention_ai_engineer_29_2,tx_demo_ai_engineer,dim_ai_engineer_data-prep,데이터 전처리·품질 관리,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_29_3,mention_ai_engineer_29_3,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,preferred,foundation,0.90000,alias_exact,verified
+assign_ai_engineer_30_1,mention_ai_engineer_30_1,tx_demo_ai_engineer,dim_ai_engineer_python,Python 구현력,required,application,0.90000,alias_exact,verified
+assign_ai_engineer_30_2,mention_ai_engineer_30_2,tx_demo_ai_engineer,dim_ai_engineer_dl-framework,딥러닝 프레임워크,required,tradeoff,0.90000,alias_exact,verified
+assign_ai_engineer_30_3,mention_ai_engineer_30_3,tx_demo_ai_engineer,dim_ai_engineer_model-serving,모델 서빙·배포,preferred,application,0.90000,alias_exact,verified
+assign_ai_engineer_30_4,mention_ai_engineer_30_4,tx_demo_ai_engineer,dim_ai_engineer_llm-app,LLM 응용·RAG,preferred,application,0.90000,alias_exact,verified
 assign_data_engineer_01_1,mention_data_engineer_01_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
 assign_data_engineer_01_2,mention_data_engineer_01_2,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,required,tradeoff,0.90000,alias_exact,verified
 assign_data_engineer_01_3,mention_data_engineer_01_3,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,required,application,0.90000,alias_exact,verified
@@ -240,6 +669,83 @@ assign_data_engineer_09_1,mention_data_engineer_09_1,tx_demo_data_engineer,dim_d
 assign_data_engineer_09_2,mention_data_engineer_09_2,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,required,application,0.90000,alias_exact,verified
 assign_data_engineer_09_3,mention_data_engineer_09_3,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,required,application,0.90000,alias_exact,verified
 assign_data_engineer_09_4,mention_data_engineer_09_4,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,preferred,foundation,0.90000,alias_exact,verified
+assign_data_engineer_10_1,mention_data_engineer_10_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_10_2,mention_data_engineer_10_2,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,required,foundation,0.90000,alias_exact,verified
+assign_data_engineer_10_3,mention_data_engineer_10_3,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,preferred,foundation,0.90000,alias_exact,verified
+assign_data_engineer_11_1,mention_data_engineer_11_1,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,required,tradeoff,0.90000,alias_exact,verified
+assign_data_engineer_11_2,mention_data_engineer_11_2,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,tradeoff,0.90000,alias_exact,verified
+assign_data_engineer_11_3,mention_data_engineer_11_3,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,required,application,0.90000,alias_exact,verified
+assign_data_engineer_12_1,mention_data_engineer_12_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_12_2,mention_data_engineer_12_2,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,required,foundation,0.90000,alias_exact,verified
+assign_data_engineer_12_3,mention_data_engineer_12_3,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,preferred,foundation,0.90000,alias_exact,verified
+assign_data_engineer_13_1,mention_data_engineer_13_1,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,required,tradeoff,0.90000,alias_exact,verified
+assign_data_engineer_13_2,mention_data_engineer_13_2,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,required,application,0.90000,alias_exact,verified
+assign_data_engineer_13_3,mention_data_engineer_13_3,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_14_1,mention_data_engineer_14_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_14_2,mention_data_engineer_14_2,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,required,foundation,0.90000,alias_exact,verified
+assign_data_engineer_14_3,mention_data_engineer_14_3,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,preferred,foundation,0.90000,alias_exact,verified
+assign_data_engineer_15_1,mention_data_engineer_15_1,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,required,tradeoff,0.90000,alias_exact,verified
+assign_data_engineer_15_2,mention_data_engineer_15_2,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,required,application,0.90000,alias_exact,verified
+assign_data_engineer_15_3,mention_data_engineer_15_3,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_16_1,mention_data_engineer_16_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_16_2,mention_data_engineer_16_2,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,required,tradeoff,0.90000,alias_exact,verified
+assign_data_engineer_16_3,mention_data_engineer_16_3,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,required,application,0.90000,alias_exact,verified
+assign_data_engineer_16_4,mention_data_engineer_16_4,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,preferred,application,0.90000,alias_exact,verified
+assign_data_engineer_16_5,mention_data_engineer_16_5,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,preferred,foundation,0.90000,alias_exact,verified
+assign_data_engineer_17_1,mention_data_engineer_17_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_17_2,mention_data_engineer_17_2,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,required,application,0.90000,alias_exact,verified
+assign_data_engineer_17_3,mention_data_engineer_17_3,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,required,tradeoff,0.90000,alias_exact,verified
+assign_data_engineer_17_4,mention_data_engineer_17_4,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,preferred,application,0.90000,alias_exact,verified
+assign_data_engineer_17_5,mention_data_engineer_17_5,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,preferred,foundation,0.90000,alias_exact,verified
+assign_data_engineer_18_1,mention_data_engineer_18_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,foundation,0.90000,alias_exact,verified
+assign_data_engineer_18_2,mention_data_engineer_18_2,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,required,application,0.90000,alias_exact,verified
+assign_data_engineer_18_3,mention_data_engineer_18_3,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,required,application,0.90000,alias_exact,verified
+assign_data_engineer_19_1,mention_data_engineer_19_1,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,responsibility,application,0.90000,alias_exact,verified
+assign_data_engineer_19_2,mention_data_engineer_19_2,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_19_3,mention_data_engineer_19_3,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,required,tradeoff,0.90000,alias_exact,verified
+assign_data_engineer_19_4,mention_data_engineer_19_4,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,preferred,application,0.90000,alias_exact,verified
+assign_data_engineer_20_1,mention_data_engineer_20_1,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,responsibility,application,0.90000,alias_exact,verified
+assign_data_engineer_20_2,mention_data_engineer_20_2,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_20_3,mention_data_engineer_20_3,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,required,tradeoff,0.90000,alias_exact,verified
+assign_data_engineer_20_4,mention_data_engineer_20_4,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,preferred,application,0.90000,alias_exact,verified
+assign_data_engineer_21_1,mention_data_engineer_21_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_21_2,mention_data_engineer_21_2,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,required,application,0.90000,alias_exact,verified
+assign_data_engineer_21_3,mention_data_engineer_21_3,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,required,application,0.90000,alias_exact,verified
+assign_data_engineer_22_1,mention_data_engineer_22_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_22_2,mention_data_engineer_22_2,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,required,application,0.90000,alias_exact,verified
+assign_data_engineer_22_3,mention_data_engineer_22_3,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,required,application,0.90000,alias_exact,verified
+assign_data_engineer_23_1,mention_data_engineer_23_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_23_2,mention_data_engineer_23_2,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,preferred,application,0.90000,alias_exact,verified
+assign_data_engineer_23_3,mention_data_engineer_23_3,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,preferred,foundation,0.90000,alias_exact,verified
+assign_data_engineer_23_4,mention_data_engineer_23_4,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,preferred,application,0.90000,alias_exact,verified
+assign_data_engineer_24_1,mention_data_engineer_24_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_24_2,mention_data_engineer_24_2,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,preferred,application,0.90000,alias_exact,verified
+assign_data_engineer_24_3,mention_data_engineer_24_3,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,preferred,foundation,0.90000,alias_exact,verified
+assign_data_engineer_24_4,mention_data_engineer_24_4,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,preferred,application,0.90000,alias_exact,verified
+assign_data_engineer_25_1,mention_data_engineer_25_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_25_2,mention_data_engineer_25_2,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,required,tradeoff,0.90000,alias_exact,verified
+assign_data_engineer_25_3,mention_data_engineer_25_3,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,required,application,0.90000,alias_exact,verified
+assign_data_engineer_25_4,mention_data_engineer_25_4,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,preferred,application,0.90000,alias_exact,verified
+assign_data_engineer_25_5,mention_data_engineer_25_5,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,preferred,foundation,0.90000,alias_exact,verified
+assign_data_engineer_26_1,mention_data_engineer_26_1,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,responsibility,application,0.90000,alias_exact,verified
+assign_data_engineer_26_2,mention_data_engineer_26_2,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_26_3,mention_data_engineer_26_3,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,required,tradeoff,0.90000,alias_exact,verified
+assign_data_engineer_26_4,mention_data_engineer_26_4,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,preferred,application,0.90000,alias_exact,verified
+assign_data_engineer_27_1,mention_data_engineer_27_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,foundation,0.90000,alias_exact,verified
+assign_data_engineer_27_2,mention_data_engineer_27_2,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,required,application,0.90000,alias_exact,verified
+assign_data_engineer_27_3,mention_data_engineer_27_3,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,required,application,0.90000,alias_exact,verified
+assign_data_engineer_28_1,mention_data_engineer_28_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_28_2,mention_data_engineer_28_2,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,required,application,0.90000,alias_exact,verified
+assign_data_engineer_28_3,mention_data_engineer_28_3,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,required,tradeoff,0.90000,alias_exact,verified
+assign_data_engineer_28_4,mention_data_engineer_28_4,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,preferred,application,0.90000,alias_exact,verified
+assign_data_engineer_28_5,mention_data_engineer_28_5,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,preferred,foundation,0.90000,alias_exact,verified
+assign_data_engineer_29_1,mention_data_engineer_29_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_29_2,mention_data_engineer_29_2,tx_demo_data_engineer,dim_data_engineer_data-warehouse,데이터 웨어하우스 모델링,required,application,0.90000,alias_exact,verified
+assign_data_engineer_29_3,mention_data_engineer_29_3,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,required,application,0.90000,alias_exact,verified
+assign_data_engineer_30_1,mention_data_engineer_30_1,tx_demo_data_engineer,dim_data_engineer_sql-analytics,SQL 집계·쿼리 최적화,required,application,0.90000,alias_exact,verified
+assign_data_engineer_30_2,mention_data_engineer_30_2,tx_demo_data_engineer,dim_data_engineer_spark-batch,분산 배치 처리,preferred,application,0.90000,alias_exact,verified
+assign_data_engineer_30_3,mention_data_engineer_30_3,tx_demo_data_engineer,dim_data_engineer_streaming-ingest,스트리밍 수집·처리,preferred,foundation,0.90000,alias_exact,verified
+assign_data_engineer_30_4,mention_data_engineer_30_4,tx_demo_data_engineer,dim_data_engineer_workflow-orchestration,워크플로 오케스트레이션,preferred,application,0.90000,alias_exact,verified
 assign_fullstack_01_1,mention_fullstack_01_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
 assign_fullstack_01_2,mention_fullstack_01_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
 assign_fullstack_01_3,mention_fullstack_01_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,application,0.92000,alias_exact,verified
@@ -278,6 +784,109 @@ assign_fullstack_09_2,mention_fullstack_09_2,tx_demo_fullstack,dim_fullstack_rea
 assign_fullstack_09_3,mention_fullstack_09_3,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,tradeoff,0.92000,alias_exact,verified
 assign_fullstack_09_4,mention_fullstack_09_4,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,preferred,application,0.92000,alias_exact,verified
 assign_fullstack_09_5,mention_fullstack_09_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_10_1,mention_fullstack_10_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_10_2,mention_fullstack_10_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_10_3,mention_fullstack_10_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,foundation,0.92000,alias_exact,verified
+assign_fullstack_10_4,mention_fullstack_10_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,preferred,foundation,0.92000,alias_exact,verified
+assign_fullstack_11_1,mention_fullstack_11_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_11_2,mention_fullstack_11_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_11_3,mention_fullstack_11_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_11_4,mention_fullstack_11_4,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,required,application,0.92000,alias_exact,verified
+assign_fullstack_11_5,mention_fullstack_11_5,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_12_1,mention_fullstack_12_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_12_2,mention_fullstack_12_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_12_3,mention_fullstack_12_3,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.92000,alias_exact,verified
+assign_fullstack_12_4,mention_fullstack_12_4,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_12_5,mention_fullstack_12_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,foundation,0.92000,alias_exact,verified
+assign_fullstack_13_1,mention_fullstack_13_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_13_2,mention_fullstack_13_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_13_3,mention_fullstack_13_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_13_4,mention_fullstack_13_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_13_5,mention_fullstack_13_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_14_1,mention_fullstack_14_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,foundation,0.92000,alias_exact,verified
+assign_fullstack_14_2,mention_fullstack_14_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,foundation,0.92000,alias_exact,verified
+assign_fullstack_14_3,mention_fullstack_14_3,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,foundation,0.92000,alias_exact,verified
+assign_fullstack_14_4,mention_fullstack_14_4,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_15_1,mention_fullstack_15_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_15_2,mention_fullstack_15_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_15_3,mention_fullstack_15_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,application,0.92000,alias_exact,verified
+assign_fullstack_15_4,mention_fullstack_15_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.92000,alias_exact,verified
+assign_fullstack_15_5,mention_fullstack_15_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_16_1,mention_fullstack_16_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_16_2,mention_fullstack_16_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_16_3,mention_fullstack_16_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,application,0.92000,alias_exact,verified
+assign_fullstack_16_4,mention_fullstack_16_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.92000,alias_exact,verified
+assign_fullstack_16_5,mention_fullstack_16_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_17_1,mention_fullstack_17_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_17_2,mention_fullstack_17_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_17_3,mention_fullstack_17_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_17_4,mention_fullstack_17_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_17_5,mention_fullstack_17_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_18_1,mention_fullstack_18_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_18_2,mention_fullstack_18_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_18_3,mention_fullstack_18_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,application,0.92000,alias_exact,verified
+assign_fullstack_18_4,mention_fullstack_18_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.92000,alias_exact,verified
+assign_fullstack_18_5,mention_fullstack_18_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_19_1,mention_fullstack_19_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_19_2,mention_fullstack_19_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_19_3,mention_fullstack_19_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,application,0.92000,alias_exact,verified
+assign_fullstack_19_4,mention_fullstack_19_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.92000,alias_exact,verified
+assign_fullstack_19_5,mention_fullstack_19_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_20_1,mention_fullstack_20_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_20_2,mention_fullstack_20_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_20_3,mention_fullstack_20_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_20_4,mention_fullstack_20_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_20_5,mention_fullstack_20_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_21_1,mention_fullstack_21_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_21_2,mention_fullstack_21_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_21_3,mention_fullstack_21_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,application,0.92000,alias_exact,verified
+assign_fullstack_21_4,mention_fullstack_21_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.92000,alias_exact,verified
+assign_fullstack_21_5,mention_fullstack_21_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_22_1,mention_fullstack_22_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_22_2,mention_fullstack_22_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_22_3,mention_fullstack_22_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_22_4,mention_fullstack_22_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_22_5,mention_fullstack_22_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_23_1,mention_fullstack_23_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_23_2,mention_fullstack_23_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_23_3,mention_fullstack_23_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,application,0.92000,alias_exact,verified
+assign_fullstack_23_4,mention_fullstack_23_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.92000,alias_exact,verified
+assign_fullstack_23_5,mention_fullstack_23_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_24_1,mention_fullstack_24_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_24_2,mention_fullstack_24_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_24_3,mention_fullstack_24_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_24_4,mention_fullstack_24_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_24_5,mention_fullstack_24_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_25_1,mention_fullstack_25_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_25_2,mention_fullstack_25_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_25_3,mention_fullstack_25_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,application,0.92000,alias_exact,verified
+assign_fullstack_25_4,mention_fullstack_25_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.92000,alias_exact,verified
+assign_fullstack_25_5,mention_fullstack_25_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_26_1,mention_fullstack_26_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_26_2,mention_fullstack_26_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_26_3,mention_fullstack_26_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_26_4,mention_fullstack_26_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_26_5,mention_fullstack_26_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_27_1,mention_fullstack_27_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_27_2,mention_fullstack_27_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_27_3,mention_fullstack_27_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,application,0.92000,alias_exact,verified
+assign_fullstack_27_4,mention_fullstack_27_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.92000,alias_exact,verified
+assign_fullstack_27_5,mention_fullstack_27_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_28_1,mention_fullstack_28_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_28_2,mention_fullstack_28_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_28_3,mention_fullstack_28_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_28_4,mention_fullstack_28_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_28_5,mention_fullstack_28_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_29_1,mention_fullstack_29_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_29_2,mention_fullstack_29_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,application,0.92000,alias_exact,verified
+assign_fullstack_29_3,mention_fullstack_29_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,application,0.92000,alias_exact,verified
+assign_fullstack_29_4,mention_fullstack_29_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,application,0.92000,alias_exact,verified
+assign_fullstack_29_5,mention_fullstack_29_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
+assign_fullstack_30_1,mention_fullstack_30_1,tx_demo_fullstack,dim_fullstack_node-typescript,Node.js·TypeScript 서버 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_30_2,mention_fullstack_30_2,tx_demo_fullstack,dim_fullstack_react-ui,React 화면 구현,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_30_3,mention_fullstack_30_3,tx_demo_fullstack,dim_fullstack_rest-api,REST API 설계·연동,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_30_4,mention_fullstack_30_4,tx_demo_fullstack,dim_fullstack_rdb-modeling,관계형 데이터베이스 모델링,required,tradeoff,0.92000,alias_exact,verified
+assign_fullstack_30_5,mention_fullstack_30_5,tx_demo_fullstack,dim_fullstack_cloud-deploy,클라우드 배포·운영,preferred,application,0.92000,alias_exact,verified
 assign_devops_01_1,mention_devops_01_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,application,0.90000,alias_exact,verified
 assign_devops_01_2,mention_devops_01_2,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),responsibility,application,0.90000,alias_exact,verified
 assign_devops_01_3,mention_devops_01_3,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,responsibility,application,0.90000,alias_exact,verified
@@ -338,6 +947,143 @@ assign_devops_09_1,mention_devops_09_1,tx_demo_devops,dim_devops_observability,�
 assign_devops_09_2,mention_devops_09_2,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,application,0.90000,alias_exact,verified
 assign_devops_09_3,mention_devops_09_3,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,application,0.90000,alias_exact,verified
 assign_devops_09_4,mention_devops_09_4,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),preferred,foundation,0.90000,alias_exact,verified
+assign_devops_10_1,mention_devops_10_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,application,0.90000,alias_exact,verified
+assign_devops_10_2,mention_devops_10_2,tx_demo_devops,dim_devops_observability,관측성·모니터링,responsibility,foundation,0.90000,alias_exact,verified
+assign_devops_10_3,mention_devops_10_3,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,application,0.90000,alias_exact,verified
+assign_devops_10_4,mention_devops_10_4,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,foundation,0.90000,alias_exact,verified
+assign_devops_10_5,mention_devops_10_5,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),preferred,foundation,0.90000,alias_exact,verified
+assign_devops_11_1,mention_devops_11_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,application,0.90000,alias_exact,verified
+assign_devops_11_2,mention_devops_11_2,tx_demo_devops,dim_devops_observability,관측성·모니터링,responsibility,application,0.90000,alias_exact,verified
+assign_devops_11_3,mention_devops_11_3,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),required,application,0.90000,alias_exact,verified
+assign_devops_11_4,mention_devops_11_4,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,application,0.90000,alias_exact,verified
+assign_devops_11_5,mention_devops_11_5,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,preferred,application,0.90000,alias_exact,verified
+assign_devops_12_1,mention_devops_12_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,application,0.90000,alias_exact,verified
+assign_devops_12_2,mention_devops_12_2,tx_demo_devops,dim_devops_observability,관측성·모니터링,responsibility,foundation,0.90000,alias_exact,verified
+assign_devops_12_3,mention_devops_12_3,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,foundation,0.90000,alias_exact,verified
+assign_devops_12_4,mention_devops_12_4,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,foundation,0.90000,alias_exact,verified
+assign_devops_12_5,mention_devops_12_5,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),preferred,foundation,0.90000,alias_exact,verified
+assign_devops_13_1,mention_devops_13_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_devops_13_2,mention_devops_13_2,tx_demo_devops,dim_devops_observability,관측성·모니터링,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_devops_13_3,mention_devops_13_3,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_13_4,mention_devops_13_4,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),required,application,0.90000,alias_exact,verified
+assign_devops_13_5,mention_devops_13_5,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_14_1,mention_devops_14_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,foundation,0.90000,alias_exact,verified
+assign_devops_14_2,mention_devops_14_2,tx_demo_devops,dim_devops_observability,관측성·모니터링,responsibility,foundation,0.90000,alias_exact,verified
+assign_devops_14_3,mention_devops_14_3,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,foundation,0.90000,alias_exact,verified
+assign_devops_14_4,mention_devops_14_4,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,foundation,0.90000,alias_exact,verified
+assign_devops_14_5,mention_devops_14_5,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),preferred,foundation,0.90000,alias_exact,verified
+assign_devops_15_1,mention_devops_15_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_devops_15_2,mention_devops_15_2,tx_demo_devops,dim_devops_observability,관측성·모니터링,responsibility,application,0.90000,alias_exact,verified
+assign_devops_15_3,mention_devops_15_3,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_15_4,mention_devops_15_4,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),required,application,0.90000,alias_exact,verified
+assign_devops_15_5,mention_devops_15_5,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,application,0.90000,alias_exact,verified
+assign_devops_16_1,mention_devops_16_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,application,0.90000,alias_exact,verified
+assign_devops_16_2,mention_devops_16_2,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,responsibility,application,0.90000,alias_exact,verified
+assign_devops_16_3,mention_devops_16_3,tx_demo_devops,dim_devops_observability,관측성·모니터링,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_devops_16_4,mention_devops_16_4,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,application,0.90000,alias_exact,verified
+assign_devops_16_5,mention_devops_16_5,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,application,0.90000,alias_exact,verified
+assign_devops_16_6,mention_devops_16_6,tx_demo_devops,dim_devops_observability,관측성·모니터링,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_16_7,mention_devops_16_7,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,application,0.90000,alias_exact,verified
+assign_devops_16_8,mention_devops_16_8,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_17_1,mention_devops_17_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_devops_17_2,mention_devops_17_2,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),responsibility,application,0.90000,alias_exact,verified
+assign_devops_17_3,mention_devops_17_3,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_devops_17_4,mention_devops_17_4,tx_demo_devops,dim_devops_observability,관측성·모니터링,responsibility,application,0.90000,alias_exact,verified
+assign_devops_17_5,mention_devops_17_5,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_17_6,mention_devops_17_6,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_17_7,mention_devops_17_7,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),required,application,0.90000,alias_exact,verified
+assign_devops_17_8,mention_devops_17_8,tx_demo_devops,dim_devops_observability,관측성·모니터링,required,application,0.90000,alias_exact,verified
+assign_devops_17_9,mention_devops_17_9,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,foundation,0.90000,alias_exact,verified
+assign_devops_17_10,mention_devops_17_10,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_17_11,mention_devops_17_11,tx_demo_devops,dim_devops_observability,관측성·모니터링,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_18_1,mention_devops_18_1,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,responsibility,application,0.90000,alias_exact,verified
+assign_devops_18_2,mention_devops_18_2,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,responsibility,application,0.90000,alias_exact,verified
+assign_devops_18_3,mention_devops_18_3,tx_demo_devops,dim_devops_observability,관측성·모니터링,responsibility,foundation,0.90000,alias_exact,verified
+assign_devops_18_4,mention_devops_18_4,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,application,0.90000,alias_exact,verified
+assign_devops_18_5,mention_devops_18_5,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_18_6,mention_devops_18_6,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),preferred,foundation,0.90000,alias_exact,verified
+assign_devops_19_1,mention_devops_19_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,application,0.90000,alias_exact,verified
+assign_devops_19_2,mention_devops_19_2,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),responsibility,application,0.90000,alias_exact,verified
+assign_devops_19_3,mention_devops_19_3,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,responsibility,application,0.90000,alias_exact,verified
+assign_devops_19_4,mention_devops_19_4,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,responsibility,application,0.90000,alias_exact,verified
+assign_devops_19_5,mention_devops_19_5,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,application,0.90000,alias_exact,verified
+assign_devops_19_6,mention_devops_19_6,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),required,application,0.90000,alias_exact,verified
+assign_devops_19_7,mention_devops_19_7,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,foundation,0.90000,alias_exact,verified
+assign_devops_19_8,mention_devops_19_8,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,application,0.90000,alias_exact,verified
+assign_devops_19_9,mention_devops_19_9,tx_demo_devops,dim_devops_observability,관측성·모니터링,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_20_1,mention_devops_20_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,application,0.90000,alias_exact,verified
+assign_devops_20_2,mention_devops_20_2,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),responsibility,application,0.90000,alias_exact,verified
+assign_devops_20_3,mention_devops_20_3,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,responsibility,application,0.90000,alias_exact,verified
+assign_devops_20_4,mention_devops_20_4,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,responsibility,application,0.90000,alias_exact,verified
+assign_devops_20_5,mention_devops_20_5,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,application,0.90000,alias_exact,verified
+assign_devops_20_6,mention_devops_20_6,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),required,application,0.90000,alias_exact,verified
+assign_devops_20_7,mention_devops_20_7,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,foundation,0.90000,alias_exact,verified
+assign_devops_20_8,mention_devops_20_8,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,application,0.90000,alias_exact,verified
+assign_devops_20_9,mention_devops_20_9,tx_demo_devops,dim_devops_observability,관측성·모니터링,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_21_1,mention_devops_21_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,application,0.90000,alias_exact,verified
+assign_devops_21_2,mention_devops_21_2,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_devops_21_3,mention_devops_21_3,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,application,0.90000,alias_exact,verified
+assign_devops_21_4,mention_devops_21_4,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_21_5,mention_devops_21_5,tx_demo_devops,dim_devops_observability,관측성·모니터링,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_21_6,mention_devops_21_6,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),preferred,foundation,0.90000,alias_exact,verified
+assign_devops_21_7,mention_devops_21_7,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_22_1,mention_devops_22_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,application,0.90000,alias_exact,verified
+assign_devops_22_2,mention_devops_22_2,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_devops_22_3,mention_devops_22_3,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,application,0.90000,alias_exact,verified
+assign_devops_22_4,mention_devops_22_4,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_22_5,mention_devops_22_5,tx_demo_devops,dim_devops_observability,관측성·모니터링,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_22_6,mention_devops_22_6,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),preferred,foundation,0.90000,alias_exact,verified
+assign_devops_22_7,mention_devops_22_7,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_23_1,mention_devops_23_1,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,foundation,0.90000,alias_exact,verified
+assign_devops_23_2,mention_devops_23_2,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,foundation,0.90000,alias_exact,verified
+assign_devops_23_3,mention_devops_23_3,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_24_1,mention_devops_24_1,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,foundation,0.90000,alias_exact,verified
+assign_devops_24_2,mention_devops_24_2,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,foundation,0.90000,alias_exact,verified
+assign_devops_24_3,mention_devops_24_3,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_25_1,mention_devops_25_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,application,0.90000,alias_exact,verified
+assign_devops_25_2,mention_devops_25_2,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,responsibility,application,0.90000,alias_exact,verified
+assign_devops_25_3,mention_devops_25_3,tx_demo_devops,dim_devops_observability,관측성·모니터링,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_devops_25_4,mention_devops_25_4,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,application,0.90000,alias_exact,verified
+assign_devops_25_5,mention_devops_25_5,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,application,0.90000,alias_exact,verified
+assign_devops_25_6,mention_devops_25_6,tx_demo_devops,dim_devops_observability,관측성·모니터링,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_25_7,mention_devops_25_7,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,application,0.90000,alias_exact,verified
+assign_devops_25_8,mention_devops_25_8,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_26_1,mention_devops_26_1,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,responsibility,application,0.90000,alias_exact,verified
+assign_devops_26_2,mention_devops_26_2,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,responsibility,application,0.90000,alias_exact,verified
+assign_devops_26_3,mention_devops_26_3,tx_demo_devops,dim_devops_observability,관측성·모니터링,responsibility,foundation,0.90000,alias_exact,verified
+assign_devops_26_4,mention_devops_26_4,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,application,0.90000,alias_exact,verified
+assign_devops_26_5,mention_devops_26_5,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_26_6,mention_devops_26_6,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),preferred,foundation,0.90000,alias_exact,verified
+assign_devops_27_1,mention_devops_27_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,application,0.90000,alias_exact,verified
+assign_devops_27_2,mention_devops_27_2,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),responsibility,application,0.90000,alias_exact,verified
+assign_devops_27_3,mention_devops_27_3,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,responsibility,application,0.90000,alias_exact,verified
+assign_devops_27_4,mention_devops_27_4,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,responsibility,application,0.90000,alias_exact,verified
+assign_devops_27_5,mention_devops_27_5,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,application,0.90000,alias_exact,verified
+assign_devops_27_6,mention_devops_27_6,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),required,application,0.90000,alias_exact,verified
+assign_devops_27_7,mention_devops_27_7,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,foundation,0.90000,alias_exact,verified
+assign_devops_27_8,mention_devops_27_8,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,application,0.90000,alias_exact,verified
+assign_devops_27_9,mention_devops_27_9,tx_demo_devops,dim_devops_observability,관측성·모니터링,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_28_1,mention_devops_28_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_devops_28_2,mention_devops_28_2,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),responsibility,application,0.90000,alias_exact,verified
+assign_devops_28_3,mention_devops_28_3,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_devops_28_4,mention_devops_28_4,tx_demo_devops,dim_devops_observability,관측성·모니터링,responsibility,application,0.90000,alias_exact,verified
+assign_devops_28_5,mention_devops_28_5,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_28_6,mention_devops_28_6,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_28_7,mention_devops_28_7,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),required,application,0.90000,alias_exact,verified
+assign_devops_28_8,mention_devops_28_8,tx_demo_devops,dim_devops_observability,관측성·모니터링,required,application,0.90000,alias_exact,verified
+assign_devops_28_9,mention_devops_28_9,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,foundation,0.90000,alias_exact,verified
+assign_devops_28_10,mention_devops_28_10,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_28_11,mention_devops_28_11,tx_demo_devops,dim_devops_observability,관측성·모니터링,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_29_1,mention_devops_29_1,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,foundation,0.90000,alias_exact,verified
+assign_devops_29_2,mention_devops_29_2,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,required,foundation,0.90000,alias_exact,verified
+assign_devops_29_3,mention_devops_29_3,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,preferred,foundation,0.90000,alias_exact,verified
+assign_devops_30_1,mention_devops_30_1,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,responsibility,application,0.90000,alias_exact,verified
+assign_devops_30_2,mention_devops_30_2,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_devops_30_3,mention_devops_30_3,tx_demo_devops,dim_devops_kubernetes,Kubernetes 클러스터 운영,required,application,0.90000,alias_exact,verified
+assign_devops_30_4,mention_devops_30_4,tx_demo_devops,dim_devops_cloud-network,클라우드 네트워크,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_30_5,mention_devops_30_5,tx_demo_devops,dim_devops_observability,관측성·모니터링,required,tradeoff,0.90000,alias_exact,verified
+assign_devops_30_6,mention_devops_30_6,tx_demo_devops,dim_devops_iac-terraform,인프라 코드화(IaC·Terraform),preferred,foundation,0.90000,alias_exact,verified
+assign_devops_30_7,mention_devops_30_7,tx_demo_devops,dim_devops_cicd-pipeline,CI/CD 파이프라인,preferred,foundation,0.90000,alias_exact,verified
 assign_mobile_01_1,mention_mobile_01_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
 assign_mobile_01_2,mention_mobile_01_2,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,responsibility,application,0.90000,alias_exact,verified
 assign_mobile_01_3,mention_mobile_01_3,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
@@ -382,6 +1128,123 @@ assign_mobile_09_1,mention_mobile_09_1,tx_demo_mobile,dim_mobile_store-release,�
 assign_mobile_09_2,mention_mobile_09_2,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
 assign_mobile_09_3,mention_mobile_09_3,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
 assign_mobile_09_4,mention_mobile_09_4,tx_demo_mobile,dim_mobile_swift-ios,Swift·iOS,preferred,foundation,0.90000,alias_exact,verified
+assign_mobile_10_1,mention_mobile_10_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_10_2,mention_mobile_10_2,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_10_3,mention_mobile_10_3,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_10_4,mention_mobile_10_4,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_10_5,mention_mobile_10_5,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_10_6,mention_mobile_10_6,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,required,application,0.90000,alias_exact,verified
+assign_mobile_10_7,mention_mobile_10_7,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,preferred,tradeoff,0.90000,alias_exact,verified
+assign_mobile_10_8,mention_mobile_10_8,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,application,0.90000,alias_exact,verified
+assign_mobile_11_1,mention_mobile_11_1,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_11_2,mention_mobile_11_2,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_11_3,mention_mobile_11_3,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_11_4,mention_mobile_11_4,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,preferred,foundation,0.90000,alias_exact,verified
+assign_mobile_12_1,mention_mobile_12_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_12_2,mention_mobile_12_2,tx_demo_mobile,dim_mobile_swift-ios,Swift·iOS,required,application,0.90000,alias_exact,verified
+assign_mobile_12_3,mention_mobile_12_3,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_12_4,mention_mobile_12_4,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,required,application,0.90000,alias_exact,verified
+assign_mobile_12_5,mention_mobile_12_5,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_12_6,mention_mobile_12_6,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,tradeoff,0.90000,alias_exact,verified
+assign_mobile_13_1,mention_mobile_13_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_13_2,mention_mobile_13_2,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_13_3,mention_mobile_13_3,tx_demo_mobile,dim_mobile_swift-ios,Swift·iOS,required,application,0.90000,alias_exact,verified
+assign_mobile_13_4,mention_mobile_13_4,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_13_5,mention_mobile_13_5,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_13_6,mention_mobile_13_6,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,preferred,tradeoff,0.90000,alias_exact,verified
+assign_mobile_13_7,mention_mobile_13_7,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,application,0.90000,alias_exact,verified
+assign_mobile_14_1,mention_mobile_14_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_14_2,mention_mobile_14_2,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_14_3,mention_mobile_14_3,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_14_4,mention_mobile_14_4,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_14_5,mention_mobile_14_5,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,foundation,0.90000,alias_exact,verified
+assign_mobile_15_1,mention_mobile_15_1,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_15_2,mention_mobile_15_2,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_15_3,mention_mobile_15_3,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,tradeoff,0.90000,alias_exact,verified
+assign_mobile_15_4,mention_mobile_15_4,tx_demo_mobile,dim_mobile_swift-ios,Swift·iOS,preferred,application,0.90000,alias_exact,verified
+assign_mobile_16_1,mention_mobile_16_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_16_2,mention_mobile_16_2,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_16_3,mention_mobile_16_3,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_16_4,mention_mobile_16_4,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_16_5,mention_mobile_16_5,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_16_6,mention_mobile_16_6,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,required,application,0.90000,alias_exact,verified
+assign_mobile_16_7,mention_mobile_16_7,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,preferred,tradeoff,0.90000,alias_exact,verified
+assign_mobile_16_8,mention_mobile_16_8,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,application,0.90000,alias_exact,verified
+assign_mobile_17_1,mention_mobile_17_1,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_17_2,mention_mobile_17_2,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_17_3,mention_mobile_17_3,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_17_4,mention_mobile_17_4,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,preferred,foundation,0.90000,alias_exact,verified
+assign_mobile_18_1,mention_mobile_18_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_18_2,mention_mobile_18_2,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_18_3,mention_mobile_18_3,tx_demo_mobile,dim_mobile_swift-ios,Swift·iOS,required,application,0.90000,alias_exact,verified
+assign_mobile_18_4,mention_mobile_18_4,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_18_5,mention_mobile_18_5,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_18_6,mention_mobile_18_6,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,preferred,tradeoff,0.90000,alias_exact,verified
+assign_mobile_18_7,mention_mobile_18_7,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,application,0.90000,alias_exact,verified
+assign_mobile_19_1,mention_mobile_19_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_19_2,mention_mobile_19_2,tx_demo_mobile,dim_mobile_swift-ios,Swift·iOS,required,application,0.90000,alias_exact,verified
+assign_mobile_19_3,mention_mobile_19_3,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_19_4,mention_mobile_19_4,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,required,application,0.90000,alias_exact,verified
+assign_mobile_19_5,mention_mobile_19_5,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_19_6,mention_mobile_19_6,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,tradeoff,0.90000,alias_exact,verified
+assign_mobile_20_1,mention_mobile_20_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_20_2,mention_mobile_20_2,tx_demo_mobile,dim_mobile_swift-ios,Swift·iOS,required,application,0.90000,alias_exact,verified
+assign_mobile_20_3,mention_mobile_20_3,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_20_4,mention_mobile_20_4,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,required,application,0.90000,alias_exact,verified
+assign_mobile_20_5,mention_mobile_20_5,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_20_6,mention_mobile_20_6,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,tradeoff,0.90000,alias_exact,verified
+assign_mobile_21_1,mention_mobile_21_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_21_2,mention_mobile_21_2,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_21_3,mention_mobile_21_3,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_21_4,mention_mobile_21_4,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_21_5,mention_mobile_21_5,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,foundation,0.90000,alias_exact,verified
+assign_mobile_22_1,mention_mobile_22_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_22_2,mention_mobile_22_2,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_22_3,mention_mobile_22_3,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_22_4,mention_mobile_22_4,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_22_5,mention_mobile_22_5,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,foundation,0.90000,alias_exact,verified
+assign_mobile_23_1,mention_mobile_23_1,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_23_2,mention_mobile_23_2,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_23_3,mention_mobile_23_3,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,tradeoff,0.90000,alias_exact,verified
+assign_mobile_23_4,mention_mobile_23_4,tx_demo_mobile,dim_mobile_swift-ios,Swift·iOS,preferred,application,0.90000,alias_exact,verified
+assign_mobile_24_1,mention_mobile_24_1,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_24_2,mention_mobile_24_2,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_24_3,mention_mobile_24_3,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,tradeoff,0.90000,alias_exact,verified
+assign_mobile_24_4,mention_mobile_24_4,tx_demo_mobile,dim_mobile_swift-ios,Swift·iOS,preferred,application,0.90000,alias_exact,verified
+assign_mobile_25_1,mention_mobile_25_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_25_2,mention_mobile_25_2,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_25_3,mention_mobile_25_3,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_25_4,mention_mobile_25_4,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_25_5,mention_mobile_25_5,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_25_6,mention_mobile_25_6,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,required,application,0.90000,alias_exact,verified
+assign_mobile_25_7,mention_mobile_25_7,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,preferred,tradeoff,0.90000,alias_exact,verified
+assign_mobile_25_8,mention_mobile_25_8,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,application,0.90000,alias_exact,verified
+assign_mobile_26_1,mention_mobile_26_1,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_26_2,mention_mobile_26_2,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_26_3,mention_mobile_26_3,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_26_4,mention_mobile_26_4,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,preferred,foundation,0.90000,alias_exact,verified
+assign_mobile_27_1,mention_mobile_27_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_27_2,mention_mobile_27_2,tx_demo_mobile,dim_mobile_swift-ios,Swift·iOS,required,application,0.90000,alias_exact,verified
+assign_mobile_27_3,mention_mobile_27_3,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_27_4,mention_mobile_27_4,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,required,application,0.90000,alias_exact,verified
+assign_mobile_27_5,mention_mobile_27_5,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_27_6,mention_mobile_27_6,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,tradeoff,0.90000,alias_exact,verified
+assign_mobile_28_1,mention_mobile_28_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_28_2,mention_mobile_28_2,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_28_3,mention_mobile_28_3,tx_demo_mobile,dim_mobile_swift-ios,Swift·iOS,required,application,0.90000,alias_exact,verified
+assign_mobile_28_4,mention_mobile_28_4,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_28_5,mention_mobile_28_5,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_28_6,mention_mobile_28_6,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,preferred,tradeoff,0.90000,alias_exact,verified
+assign_mobile_28_7,mention_mobile_28_7,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,application,0.90000,alias_exact,verified
+assign_mobile_29_1,mention_mobile_29_1,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_29_2,mention_mobile_29_2,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_29_3,mention_mobile_29_3,tx_demo_mobile,dim_mobile_app-architecture,앱 아키텍처·상태 관리,required,application,0.90000,alias_exact,verified
+assign_mobile_29_4,mention_mobile_29_4,tx_demo_mobile,dim_mobile_network-api,네트워크·API 연동,required,application,0.90000,alias_exact,verified
+assign_mobile_29_5,mention_mobile_29_5,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,preferred,foundation,0.90000,alias_exact,verified
+assign_mobile_30_1,mention_mobile_30_1,tx_demo_mobile,dim_mobile_store-release,스토어 배포·릴리스 운영,responsibility,application,0.90000,alias_exact,verified
+assign_mobile_30_2,mention_mobile_30_2,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,application,0.90000,alias_exact,verified
+assign_mobile_30_3,mention_mobile_30_3,tx_demo_mobile,dim_mobile_kotlin-android,Kotlin·안드로이드,required,tradeoff,0.90000,alias_exact,verified
+assign_mobile_30_4,mention_mobile_30_4,tx_demo_mobile,dim_mobile_swift-ios,Swift·iOS,preferred,application,0.90000,alias_exact,verified
 assign_security_01_1,mention_security_01_1,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,application,0.90000,alias_exact,verified
 assign_security_01_2,mention_security_01_2,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,application,0.90000,alias_exact,verified
 assign_security_01_3,mention_security_01_3,tx_demo_security,dim_security_network-security,네트워크 보안,required,foundation,0.90000,alias_exact,verified
@@ -438,6 +1301,135 @@ assign_security_09_5,mention_security_09_5,tx_demo_security,dim_security_privacy
 assign_security_09_6,mention_security_09_6,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,preferred,foundation,0.90000,alias_exact,verified
 assign_security_09_7,mention_security_09_7,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,preferred,foundation,0.90000,alias_exact,verified
 assign_security_09_8,mention_security_09_8,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,foundation,0.90000,alias_exact,verified
+assign_security_10_1,mention_security_10_1,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,application,0.90000,alias_exact,verified
+assign_security_10_2,mention_security_10_2,tx_demo_security,dim_security_secure-coding,시큐어 코딩,responsibility,application,0.90000,alias_exact,verified
+assign_security_10_3,mention_security_10_3,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_10_4,mention_security_10_4,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,application,0.90000,alias_exact,verified
+assign_security_10_5,mention_security_10_5,tx_demo_security,dim_security_secure-coding,시큐어 코딩,required,application,0.90000,alias_exact,verified
+assign_security_10_6,mention_security_10_6,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,preferred,foundation,0.90000,alias_exact,verified
+assign_security_10_7,mention_security_10_7,tx_demo_security,dim_security_network-security,네트워크 보안,preferred,foundation,0.90000,alias_exact,verified
+assign_security_11_1,mention_security_11_1,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_11_2,mention_security_11_2,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_11_3,mention_security_11_3,tx_demo_security,dim_security_network-security,네트워크 보안,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_11_4,mention_security_11_4,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,foundation,0.90000,alias_exact,verified
+assign_security_11_5,mention_security_11_5,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,required,foundation,0.90000,alias_exact,verified
+assign_security_11_6,mention_security_11_6,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,preferred,foundation,0.90000,alias_exact,verified
+assign_security_11_7,mention_security_11_7,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,foundation,0.90000,alias_exact,verified
+assign_security_12_1,mention_security_12_1,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,responsibility,application,0.90000,alias_exact,verified
+assign_security_12_2,mention_security_12_2,tx_demo_security,dim_security_network-security,네트워크 보안,responsibility,application,0.90000,alias_exact,verified
+assign_security_12_3,mention_security_12_3,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,required,tradeoff,0.90000,alias_exact,verified
+assign_security_12_4,mention_security_12_4,tx_demo_security,dim_security_network-security,네트워크 보안,required,application,0.90000,alias_exact,verified
+assign_security_12_5,mention_security_12_5,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,preferred,foundation,0.90000,alias_exact,verified
+assign_security_12_6,mention_security_12_6,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,foundation,0.90000,alias_exact,verified
+assign_security_13_1,mention_security_13_1,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,responsibility,application,0.90000,alias_exact,verified
+assign_security_13_2,mention_security_13_2,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_13_3,mention_security_13_3,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_13_4,mention_security_13_4,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,required,application,0.90000,alias_exact,verified
+assign_security_13_5,mention_security_13_5,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,foundation,0.90000,alias_exact,verified
+assign_security_13_6,mention_security_13_6,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,preferred,foundation,0.90000,alias_exact,verified
+assign_security_13_7,mention_security_13_7,tx_demo_security,dim_security_network-security,네트워크 보안,preferred,foundation,0.90000,alias_exact,verified
+assign_security_14_1,mention_security_14_1,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_security_14_2,mention_security_14_2,tx_demo_security,dim_security_network-security,네트워크 보안,responsibility,application,0.90000,alias_exact,verified
+assign_security_14_3,mention_security_14_3,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,application,0.90000,alias_exact,verified
+assign_security_14_4,mention_security_14_4,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,required,tradeoff,0.90000,alias_exact,verified
+assign_security_14_5,mention_security_14_5,tx_demo_security,dim_security_network-security,네트워크 보안,required,application,0.90000,alias_exact,verified
+assign_security_14_6,mention_security_14_6,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,foundation,0.90000,alias_exact,verified
+assign_security_14_7,mention_security_14_7,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,preferred,foundation,0.90000,alias_exact,verified
+assign_security_15_1,mention_security_15_1,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,responsibility,application,0.90000,alias_exact,verified
+assign_security_15_2,mention_security_15_2,tx_demo_security,dim_security_network-security,네트워크 보안,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_15_3,mention_security_15_3,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_15_4,mention_security_15_4,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,required,application,0.90000,alias_exact,verified
+assign_security_15_5,mention_security_15_5,tx_demo_security,dim_security_network-security,네트워크 보안,required,foundation,0.90000,alias_exact,verified
+assign_security_15_6,mention_security_15_6,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,foundation,0.90000,alias_exact,verified
+assign_security_15_7,mention_security_15_7,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,preferred,foundation,0.90000,alias_exact,verified
+assign_security_16_1,mention_security_16_1,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,application,0.90000,alias_exact,verified
+assign_security_16_2,mention_security_16_2,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,application,0.90000,alias_exact,verified
+assign_security_16_3,mention_security_16_3,tx_demo_security,dim_security_network-security,네트워크 보안,required,foundation,0.90000,alias_exact,verified
+assign_security_16_4,mention_security_16_4,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,foundation,0.90000,alias_exact,verified
+assign_security_16_5,mention_security_16_5,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,preferred,foundation,0.90000,alias_exact,verified
+assign_security_17_1,mention_security_17_1,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,application,0.90000,alias_exact,verified
+assign_security_17_2,mention_security_17_2,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,application,0.90000,alias_exact,verified
+assign_security_17_3,mention_security_17_3,tx_demo_security,dim_security_network-security,네트워크 보안,required,foundation,0.90000,alias_exact,verified
+assign_security_17_4,mention_security_17_4,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,foundation,0.90000,alias_exact,verified
+assign_security_17_5,mention_security_17_5,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,preferred,foundation,0.90000,alias_exact,verified
+assign_security_18_1,mention_security_18_1,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,responsibility,application,0.90000,alias_exact,verified
+assign_security_18_2,mention_security_18_2,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,required,tradeoff,0.90000,alias_exact,verified
+assign_security_18_3,mention_security_18_3,tx_demo_security,dim_security_network-security,네트워크 보안,required,application,0.90000,alias_exact,verified
+assign_security_18_4,mention_security_18_4,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,required,application,0.90000,alias_exact,verified
+assign_security_18_5,mention_security_18_5,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,application,0.90000,alias_exact,verified
+assign_security_19_1,mention_security_19_1,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_19_2,mention_security_19_2,tx_demo_security,dim_security_secure-coding,시큐어 코딩,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_19_3,mention_security_19_3,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_19_4,mention_security_19_4,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,application,0.90000,alias_exact,verified
+assign_security_19_5,mention_security_19_5,tx_demo_security,dim_security_secure-coding,시큐어 코딩,required,foundation,0.90000,alias_exact,verified
+assign_security_19_6,mention_security_19_6,tx_demo_security,dim_security_network-security,네트워크 보안,required,foundation,0.90000,alias_exact,verified
+assign_security_19_7,mention_security_19_7,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,preferred,foundation,0.90000,alias_exact,verified
+assign_security_19_8,mention_security_19_8,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,preferred,foundation,0.90000,alias_exact,verified
+assign_security_20_1,mention_security_20_1,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,responsibility,application,0.90000,alias_exact,verified
+assign_security_20_2,mention_security_20_2,tx_demo_security,dim_security_network-security,네트워크 보안,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_20_3,mention_security_20_3,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_20_4,mention_security_20_4,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,required,tradeoff,0.90000,alias_exact,verified
+assign_security_20_5,mention_security_20_5,tx_demo_security,dim_security_network-security,네트워크 보안,required,application,0.90000,alias_exact,verified
+assign_security_20_6,mention_security_20_6,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,foundation,0.90000,alias_exact,verified
+assign_security_20_7,mention_security_20_7,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,preferred,foundation,0.90000,alias_exact,verified
+assign_security_21_1,mention_security_21_1,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,responsibility,application,0.90000,alias_exact,verified
+assign_security_21_2,mention_security_21_2,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_21_3,mention_security_21_3,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,required,tradeoff,0.90000,alias_exact,verified
+assign_security_21_4,mention_security_21_4,tx_demo_security,dim_security_network-security,네트워크 보안,required,tradeoff,0.90000,alias_exact,verified
+assign_security_21_5,mention_security_21_5,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,preferred,application,0.90000,alias_exact,verified
+assign_security_21_6,mention_security_21_6,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,foundation,0.90000,alias_exact,verified
+assign_security_22_1,mention_security_22_1,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,responsibility,application,0.90000,alias_exact,verified
+assign_security_22_2,mention_security_22_2,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_22_3,mention_security_22_3,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,required,tradeoff,0.90000,alias_exact,verified
+assign_security_22_4,mention_security_22_4,tx_demo_security,dim_security_network-security,네트워크 보안,required,tradeoff,0.90000,alias_exact,verified
+assign_security_22_5,mention_security_22_5,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,preferred,application,0.90000,alias_exact,verified
+assign_security_22_6,mention_security_22_6,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,foundation,0.90000,alias_exact,verified
+assign_security_23_1,mention_security_23_1,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_23_2,mention_security_23_2,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_23_3,mention_security_23_3,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,foundation,0.90000,alias_exact,verified
+assign_security_23_4,mention_security_23_4,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,required,foundation,0.90000,alias_exact,verified
+assign_security_23_5,mention_security_23_5,tx_demo_security,dim_security_network-security,네트워크 보안,preferred,foundation,0.90000,alias_exact,verified
+assign_security_24_1,mention_security_24_1,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_24_2,mention_security_24_2,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_24_3,mention_security_24_3,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,foundation,0.90000,alias_exact,verified
+assign_security_24_4,mention_security_24_4,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,required,foundation,0.90000,alias_exact,verified
+assign_security_24_5,mention_security_24_5,tx_demo_security,dim_security_network-security,네트워크 보안,preferred,foundation,0.90000,alias_exact,verified
+assign_security_25_1,mention_security_25_1,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_25_2,mention_security_25_2,tx_demo_security,dim_security_secure-coding,시큐어 코딩,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_25_3,mention_security_25_3,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_25_4,mention_security_25_4,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,application,0.90000,alias_exact,verified
+assign_security_25_5,mention_security_25_5,tx_demo_security,dim_security_secure-coding,시큐어 코딩,required,foundation,0.90000,alias_exact,verified
+assign_security_25_6,mention_security_25_6,tx_demo_security,dim_security_network-security,네트워크 보안,required,foundation,0.90000,alias_exact,verified
+assign_security_25_7,mention_security_25_7,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,preferred,foundation,0.90000,alias_exact,verified
+assign_security_25_8,mention_security_25_8,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,preferred,foundation,0.90000,alias_exact,verified
+assign_security_26_1,mention_security_26_1,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_26_2,mention_security_26_2,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_26_3,mention_security_26_3,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,foundation,0.90000,alias_exact,verified
+assign_security_26_4,mention_security_26_4,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,required,foundation,0.90000,alias_exact,verified
+assign_security_26_5,mention_security_26_5,tx_demo_security,dim_security_network-security,네트워크 보안,preferred,foundation,0.90000,alias_exact,verified
+assign_security_27_1,mention_security_27_1,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,application,0.90000,alias_exact,verified
+assign_security_27_2,mention_security_27_2,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,application,0.90000,alias_exact,verified
+assign_security_27_3,mention_security_27_3,tx_demo_security,dim_security_network-security,네트워크 보안,required,foundation,0.90000,alias_exact,verified
+assign_security_27_4,mention_security_27_4,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,foundation,0.90000,alias_exact,verified
+assign_security_27_5,mention_security_27_5,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,preferred,foundation,0.90000,alias_exact,verified
+assign_security_28_1,mention_security_28_1,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,responsibility,application,0.90000,alias_exact,verified
+assign_security_28_2,mention_security_28_2,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,required,tradeoff,0.90000,alias_exact,verified
+assign_security_28_3,mention_security_28_3,tx_demo_security,dim_security_network-security,네트워크 보안,required,application,0.90000,alias_exact,verified
+assign_security_28_4,mention_security_28_4,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,required,application,0.90000,alias_exact,verified
+assign_security_28_5,mention_security_28_5,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,application,0.90000,alias_exact,verified
+assign_security_29_1,mention_security_29_1,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,responsibility,application,0.90000,alias_exact,verified
+assign_security_29_2,mention_security_29_2,tx_demo_security,dim_security_network-security,네트워크 보안,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_29_3,mention_security_29_3,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_29_4,mention_security_29_4,tx_demo_security,dim_security_privacy-compliance,개인정보·컴플라이언스,required,tradeoff,0.90000,alias_exact,verified
+assign_security_29_5,mention_security_29_5,tx_demo_security,dim_security_network-security,네트워크 보안,required,application,0.90000,alias_exact,verified
+assign_security_29_6,mention_security_29_6,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,required,foundation,0.90000,alias_exact,verified
+assign_security_29_7,mention_security_29_7,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,preferred,foundation,0.90000,alias_exact,verified
+assign_security_30_1,mention_security_30_1,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,responsibility,application,0.90000,alias_exact,verified
+assign_security_30_2,mention_security_30_2,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,responsibility,foundation,0.90000,alias_exact,verified
+assign_security_30_3,mention_security_30_3,tx_demo_security,dim_security_soc-siem,보안관제·SIEM,required,tradeoff,0.90000,alias_exact,verified
+assign_security_30_4,mention_security_30_4,tx_demo_security,dim_security_network-security,네트워크 보안,required,tradeoff,0.90000,alias_exact,verified
+assign_security_30_5,mention_security_30_5,tx_demo_security,dim_security_web-vuln-assessment,웹 취약점 진단,preferred,application,0.90000,alias_exact,verified
+assign_security_30_6,mention_security_30_6,tx_demo_security,dim_security_secure-coding,시큐어 코딩,preferred,foundation,0.90000,alias_exact,verified
 assign_game_client_01_1,mention_game_client_01_1,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
 assign_game_client_01_2,mention_game_client_01_2,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,application,0.90000,alias_exact,verified
 assign_game_client_01_3,mention_game_client_01_3,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
@@ -494,3 +1486,141 @@ assign_game_client_09_2,mention_game_client_09_2,tx_demo_game_client,dim_game_cl
 assign_game_client_09_3,mention_game_client_09_3,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,application,0.90000,alias_exact,verified
 assign_game_client_09_4,mention_game_client_09_4,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
 assign_game_client_09_5,mention_game_client_09_5,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_10_1,mention_game_client_10_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_10_2,mention_game_client_10_2,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_10_3,mention_game_client_10_3,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_10_4,mention_game_client_10_4,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,application,0.90000,alias_exact,verified
+assign_game_client_10_5,mention_game_client_10_5,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_10_6,mention_game_client_10_6,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_game_client_10_7,mention_game_client_10_7,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_11_1,mention_game_client_11_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_11_2,mention_game_client_11_2,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_11_3,mention_game_client_11_3,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_11_4,mention_game_client_11_4,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,foundation,0.90000,alias_exact,verified
+assign_game_client_11_5,mention_game_client_11_5,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_11_6,mention_game_client_11_6,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_11_7,mention_game_client_11_7,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_12_1,mention_game_client_12_1,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_12_2,mention_game_client_12_2,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_game_client_12_3,mention_game_client_12_3,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_12_4,mention_game_client_12_4,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,required,application,0.90000,alias_exact,verified
+assign_game_client_12_5,mention_game_client_12_5,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,application,0.90000,alias_exact,verified
+assign_game_client_12_6,mention_game_client_12_6,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_12_7,mention_game_client_12_7,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_game_client_13_1,mention_game_client_13_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_13_2,mention_game_client_13_2,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_13_3,mention_game_client_13_3,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_13_4,mention_game_client_13_4,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,foundation,0.90000,alias_exact,verified
+assign_game_client_13_5,mention_game_client_13_5,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_13_6,mention_game_client_13_6,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_13_7,mention_game_client_13_7,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_14_1,mention_game_client_14_1,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_14_2,mention_game_client_14_2,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_14_3,mention_game_client_14_3,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_game_client_14_4,mention_game_client_14_4,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,required,application,0.90000,alias_exact,verified
+assign_game_client_14_5,mention_game_client_14_5,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,required,tradeoff,0.90000,alias_exact,verified
+assign_game_client_14_6,mention_game_client_14_6,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_14_7,mention_game_client_14_7,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,application,0.90000,alias_exact,verified
+assign_game_client_15_1,mention_game_client_15_1,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_15_2,mention_game_client_15_2,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_15_3,mention_game_client_15_3,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_15_4,mention_game_client_15_4,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,required,foundation,0.90000,alias_exact,verified
+assign_game_client_15_5,mention_game_client_15_5,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_15_6,mention_game_client_15_6,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_15_7,mention_game_client_15_7,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_16_1,mention_game_client_16_1,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_16_2,mention_game_client_16_2,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_16_3,mention_game_client_16_3,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_game_client_16_4,mention_game_client_16_4,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,required,application,0.90000,alias_exact,verified
+assign_game_client_16_5,mention_game_client_16_5,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_16_6,mention_game_client_16_6,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,foundation,0.90000,alias_exact,verified
+assign_game_client_16_7,mention_game_client_16_7,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_game_client_16_8,mention_game_client_16_8,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_17_1,mention_game_client_17_1,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_17_2,mention_game_client_17_2,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_17_3,mention_game_client_17_3,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,required,foundation,0.90000,alias_exact,verified
+assign_game_client_17_4,mention_game_client_17_4,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_17_5,mention_game_client_17_5,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_18_1,mention_game_client_18_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_18_2,mention_game_client_18_2,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_18_3,mention_game_client_18_3,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,foundation,0.90000,alias_exact,verified
+assign_game_client_18_4,mention_game_client_18_4,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_18_5,mention_game_client_18_5,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,application,0.90000,alias_exact,verified
+assign_game_client_19_1,mention_game_client_19_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_19_2,mention_game_client_19_2,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_game_client_19_3,mention_game_client_19_3,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_19_4,mention_game_client_19_4,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,application,0.90000,alias_exact,verified
+assign_game_client_19_5,mention_game_client_19_5,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,required,application,0.90000,alias_exact,verified
+assign_game_client_19_6,mention_game_client_19_6,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_19_7,mention_game_client_19_7,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_20_1,mention_game_client_20_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_20_2,mention_game_client_20_2,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_game_client_20_3,mention_game_client_20_3,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_20_4,mention_game_client_20_4,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,application,0.90000,alias_exact,verified
+assign_game_client_20_5,mention_game_client_20_5,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,required,application,0.90000,alias_exact,verified
+assign_game_client_20_6,mention_game_client_20_6,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_20_7,mention_game_client_20_7,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_21_1,mention_game_client_21_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_21_2,mention_game_client_21_2,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_game_client_21_3,mention_game_client_21_3,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_21_4,mention_game_client_21_4,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,tradeoff,0.90000,alias_exact,verified
+assign_game_client_21_5,mention_game_client_21_5,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,application,0.90000,alias_exact,verified
+assign_game_client_21_6,mention_game_client_21_6,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_game_client_21_7,mention_game_client_21_7,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_22_1,mention_game_client_22_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_22_2,mention_game_client_22_2,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_game_client_22_3,mention_game_client_22_3,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_22_4,mention_game_client_22_4,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,tradeoff,0.90000,alias_exact,verified
+assign_game_client_22_5,mention_game_client_22_5,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,application,0.90000,alias_exact,verified
+assign_game_client_22_6,mention_game_client_22_6,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_game_client_22_7,mention_game_client_22_7,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_23_1,mention_game_client_23_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_23_2,mention_game_client_23_2,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_23_3,mention_game_client_23_3,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,application,0.90000,alias_exact,verified
+assign_game_client_23_4,mention_game_client_23_4,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_23_5,mention_game_client_23_5,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,application,0.90000,alias_exact,verified
+assign_game_client_23_6,mention_game_client_23_6,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,application,0.90000,alias_exact,verified
+assign_game_client_24_1,mention_game_client_24_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_24_2,mention_game_client_24_2,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_24_3,mention_game_client_24_3,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,application,0.90000,alias_exact,verified
+assign_game_client_24_4,mention_game_client_24_4,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_24_5,mention_game_client_24_5,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,application,0.90000,alias_exact,verified
+assign_game_client_24_6,mention_game_client_24_6,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,application,0.90000,alias_exact,verified
+assign_game_client_25_1,mention_game_client_25_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_25_2,mention_game_client_25_2,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_game_client_25_3,mention_game_client_25_3,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_25_4,mention_game_client_25_4,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,application,0.90000,alias_exact,verified
+assign_game_client_25_5,mention_game_client_25_5,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,required,application,0.90000,alias_exact,verified
+assign_game_client_25_6,mention_game_client_25_6,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_25_7,mention_game_client_25_7,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_26_1,mention_game_client_26_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_26_2,mention_game_client_26_2,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_26_3,mention_game_client_26_3,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,application,0.90000,alias_exact,verified
+assign_game_client_26_4,mention_game_client_26_4,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_26_5,mention_game_client_26_5,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,application,0.90000,alias_exact,verified
+assign_game_client_26_6,mention_game_client_26_6,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,application,0.90000,alias_exact,verified
+assign_game_client_27_1,mention_game_client_27_1,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_27_2,mention_game_client_27_2,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_27_3,mention_game_client_27_3,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,required,foundation,0.90000,alias_exact,verified
+assign_game_client_27_4,mention_game_client_27_4,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_27_5,mention_game_client_27_5,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_28_1,mention_game_client_28_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_28_2,mention_game_client_28_2,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,foundation,0.90000,alias_exact,verified
+assign_game_client_28_3,mention_game_client_28_3,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,foundation,0.90000,alias_exact,verified
+assign_game_client_28_4,mention_game_client_28_4,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_28_5,mention_game_client_28_5,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,application,0.90000,alias_exact,verified
+assign_game_client_29_1,mention_game_client_29_1,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_29_2,mention_game_client_29_2,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_game_client_29_3,mention_game_client_29_3,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_29_4,mention_game_client_29_4,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,tradeoff,0.90000,alias_exact,verified
+assign_game_client_29_5,mention_game_client_29_5,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,application,0.90000,alias_exact,verified
+assign_game_client_29_6,mention_game_client_29_6,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_game_client_29_7,mention_game_client_29_7,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,preferred,foundation,0.90000,alias_exact,verified
+assign_game_client_30_1,mention_game_client_30_1,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_30_2,mention_game_client_30_2,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,responsibility,application,0.90000,alias_exact,verified
+assign_game_client_30_3,mention_game_client_30_3,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,responsibility,tradeoff,0.90000,alias_exact,verified
+assign_game_client_30_4,mention_game_client_30_4,tx_demo_game_client,dim_game_client_unreal-cpp,Unreal·C++ 클라이언트 구현,required,application,0.90000,alias_exact,verified
+assign_game_client_30_5,mention_game_client_30_5,tx_demo_game_client,dim_game_client_game-math,게임 수학·물리,required,foundation,0.90000,alias_exact,verified
+assign_game_client_30_6,mention_game_client_30_6,tx_demo_game_client,dim_game_client_unity-csharp,Unity·C# 클라이언트 구현,required,foundation,0.90000,alias_exact,verified
+assign_game_client_30_7,mention_game_client_30_7,tx_demo_game_client,dim_game_client_net-sync,클라이언트 네트워크 동기화,preferred,tradeoff,0.90000,alias_exact,verified
+assign_game_client_30_8,mention_game_client_30_8,tx_demo_game_client,dim_game_client_graphics-opt,그래픽스·렌더링 최적화,preferred,foundation,0.90000,alias_exact,verified

@@ -1,4 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Terraform">
-  <rect width="48" height="48" rx="12" fill="#F1E9FB"/>
-  <text x="24" y="29" font-family="Segoe UI, Roboto, sans-serif" font-size="16" font-weight="800" fill="#5B31A0" text-anchor="middle">TF</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="12" fill="#F5F3FF"/><g fill="#7B42BC"><path d="m13 14 9 5v10l-9-5V14Z"/><path d="m24 20 9-5v10l-9 5V20Z"/><path d="m24 32 9-5v10l-9 5V32Z"/><path d="m13 27 9 5v10l-9-5V27Z"/></g></svg>

@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import csv
+import importlib
 import importlib.util
 import json
 import re
@@ -42,6 +43,18 @@ build_seed = _load("build_demo_seed")
 load_seed = _load("load_demo_seed")
 
 from scripts.demo_seed._csv import LOAD_ORDER, TABLE_COLUMNS  # noqa: E402
+
+
+# ============================================================ 히트맵 등급
+@pytest.mark.parametrize("job", build_seed.JOB_PARTS)
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    ((None, "—"), (0, "약"), (30, "약"), (31, "중"), (69, "중"), (70, "강"), (100, "강")),
+)
+def test_cluster_axis_level_boundaries(job: str, value: int | None, expected: str) -> None:
+    """결측값과 약·중·강의 경계를 모든 직무 생성기가 같은 방식으로 분류한다."""
+    module = importlib.import_module(f"scripts.demo_seed.{job}")
+    assert module.axis_level(value) == expected
 
 
 # ============================================================ 조각 목록
@@ -673,9 +686,87 @@ def _posting_interpretation() -> dict[str, Any]:
 def test_deviation_reason_quotes_the_posting_evidence() -> None:
     """편차 사유는 회사명과 근거 문장으로 다시 쓴다. 안쪽 따옴표는 겹치지 않는다."""
     reason = build_seed.deviation_reason("비바리퍼블리카", '"정합성" 문장')
-    assert reason.startswith("비바리퍼블리카 공고가 ")
+    assert reason.startswith("비바리퍼블리카 공고는 ")
+    assert "'정합성' 문장\"라고 명시합니다." in reason
     assert "기업군 기준보다 앞당겨 준비합니다." in reason
     assert reason.count('"') == 2
+
+
+def test_content_quality_rejects_empty_posting_sections_and_particle_gaps() -> None:
+    """요약·세 해석 유형 누락과 따옴표 뒤 조사 공백을 생성 단계에서 막는다."""
+    payload = _posting_interpretation()
+    payload["posting"].update(
+        {
+            "summary": {"title": "", "body": ""},
+            "baseline_notes": [],
+            "interpretations": [],
+            "signal_notes": [],
+            "unchanged_note": '"API" 를 요구합니다.',
+        }
+    )
+    tables = {
+        "analysis_outputs": [
+            {
+                "output_id": "out_demo_intp",
+                "output_type": "interpretation",
+                "scope_level": "posting",
+                "payload": payload,
+            }
+        ]
+    }
+    problems = build_seed.check_content_quality("demo", tables)
+    assert any("summary" in problem for problem in problems)
+    assert any("baseline_notes" in problem for problem in problems)
+    assert any("interpretations" in problem for problem in problems)
+    assert any("signal_notes" in problem for problem in problems)
+    assert any("조사 앞" in problem for problem in problems)
+
+
+def test_fill_matches_the_same_steps_deliverable() -> None:
+    """채워짐 라벨의 구체 역량은 같은 단계 산출물에서 확인할 수 있어야 한다."""
+    step = {
+        "title": "API 프로젝트",
+        "body": "예외 응답을 설계합니다.",
+        "deliverable": "README에 테스트 결과와 API 명세를 기록합니다.",
+    }
+    assert build_seed._fill_matches_step({"label": "테스트 작성 습관"}, step)
+    assert not build_seed._fill_matches_step({"label": "협업 문제 해결 서사"}, step)
+
+
+def test_align_roadmap_fills_updates_payload_and_normalized_row() -> None:
+    """기업군 편차 항목은 단계 과제와 정규화 산출물 양쪽에 같은 문구로 연결한다."""
+    step = {
+        "n": 2,
+        "title": "API 프로젝트",
+        "body": "예외 응답을 설계합니다.",
+        "deliverable": "API 명세",
+        "fills": [{"item_id": "cc_demo_collab", "label": "협업 결정 기록"}],
+    }
+    normalized = {
+        "scope_level": "cluster",
+        "scope_id": "startup",
+        "step_order": 2,
+        "body": step["body"],
+        "deliverable": step["deliverable"],
+    }
+    tables = {
+        "analysis_outputs": [
+            {
+                "output_type": "roadmap",
+                "scope_level": "cluster",
+                "scope_id": "startup",
+                "payload": {"project_steps": [step]},
+            }
+        ],
+        "roadmap_items": [normalized],
+    }
+
+    build_seed.align_roadmap_fills(tables)
+
+    assert build_seed._fill_matches_step(step["fills"][0], step)
+    assert "협업 결정 기록" in step["body"]
+    assert normalized["body"] == step["body"]
+    assert normalized["deliverable"] == step["deliverable"]
 
 
 def test_deviation_concepts_matches_by_dev_n_then_by_slug() -> None:
@@ -714,7 +805,7 @@ def test_derive_posting_strategy_promotes_and_keeps_every_item() -> None:
     ]
     assert [item["dev_n"] for item in payload["checklist"]] == [1, 2, None]
     assert [item["is_deviation"] for item in payload["checklist"]] == [True, True, False]
-    assert payload["checklist"][0]["reason"].startswith("비바리퍼블리카 공고가 ")
+    assert payload["checklist"][0]["reason"].startswith("비바리퍼블리카 공고는 ")
     assert payload["checklist"][2]["reason"] == "기준선"  # 편차와 무관한 항목은 그대로
     assert [concept for _, concept, _ in promoted] == ["cc_demo_tx", "cc_demo_docs"]
     # 바탕이 된 기업군 payload 는 건드리지 않는다.
@@ -734,7 +825,7 @@ def test_derive_posting_roadmap_pulls_the_deviation_step_forward() -> None:
         (1, "STEP 01 · 2주"), (2, "STEP 02 · 3주"),
     ]
     assert payload["project_steps"][0]["title"] == "트랜잭션"
-    assert payload["project_steps"][0]["reason"].startswith("비바리퍼블리카 공고가 ")
+    assert payload["project_steps"][0]["reason"].startswith("비바리퍼블리카 공고는 ")
     assert payload["project_steps"][1]["reason_title"] == "왜 이 순서인가요?"
     assert payload["scope"] == strategy["scope"]
     rows = {row["item_id"]: row for row in payload["check_rows"]}
@@ -851,11 +942,94 @@ def test_derive_posting_scopes_does_not_add_analysis_claims() -> None:
 
 
 def test_check_posting_scopes_catches_a_wrong_output_count() -> None:
-    """직무당 37행이 아니면 사유를 밝힌다."""
+    """허용된 15건·30건 전환 규모가 아니면 사유를 밝힌다."""
     parts = {"demo": _demo_part()}
     build_seed.derive_posting_scopes(parts, ["demo"])
     problems = build_seed.check_posting_scopes(parts, ["demo"])
     assert any("analysis_outputs 가 6행이다" in line for line in problems)
+
+
+def test_output_counts_follow_the_posting_scope_formula() -> None:
+    """공고 범위 수에서 직무별 산출물 수를 결정적으로 계산한다."""
+    assert build_seed.expected_output_counts(9) == {
+        "statistics": 1,
+        "interpretation": 16,
+        "strategy": 16,
+        "roadmap": 16,
+    }
+    assert build_seed.expected_output_counts(30) == {
+        "statistics": 1,
+        "interpretation": 37,
+        "strategy": 37,
+        "roadmap": 37,
+    }
+    assert build_seed.expected_output_total(9) == 49
+    assert build_seed.expected_output_total(30) == 112
+
+
+def test_transition_gate_accepts_fifteen_or_thirty_posting_states() -> None:
+    """병렬 전환 중에는 기존 15건과 목표 30건 상태만 허용한다."""
+    assert build_seed.posting_count_problem("demo", 9) is None
+    assert build_seed.posting_count_problem("demo", 30) is None
+    assert build_seed.posting_count_problem("demo", 5) == (
+        "demo: posting 범위 interpretation 이 5행이다 (전환 중 허용값 9·30)"
+    )
+    assert build_seed.posting_count_problem("demo", 30, allow_transition=False) is None
+    assert build_seed.posting_count_problem("demo", 9, allow_transition=False) == (
+        "demo: posting 범위 interpretation 이 9행이다 (최종 기대값 30)"
+    )
+    assert build_seed.parse_args(["--check", "--final"]).final is True
+
+
+def test_target_posting_inventory_has_period_cluster_and_status_balance() -> None:
+    """30건은 기간·기업군·진행 상태가 목표 분포와 정확히 맞아야 한다."""
+    versions: list[dict[str, Any]] = []
+    outputs: list[dict[str, Any]] = []
+    number = 1
+    for cluster in range(6):
+        for offset in range(3):
+            posting_id = f"dp_demo_{number:02d}"
+            versions.append(
+                {
+                    "posting_id": posting_id,
+                    "posted_at": f"2026-0{cluster + 1}-{offset + 1:02d}T10:00:00+09:00",
+                    "closed_at": r"\N" if offset == 0 else "2026-06-30T18:00:00+09:00",
+                }
+            )
+            outputs.append(
+                {
+                    "scope_level": "posting",
+                    "scope_id": posting_id,
+                    "output_type": "interpretation",
+                    "payload": {"scope": {"cluster_tag": f"cluster-{cluster}"}},
+                }
+            )
+            number += 1
+        for offset in range(2):
+            posting_id = f"dp_demo_{number:02d}"
+            versions.append(
+                {
+                    "posting_id": posting_id,
+                    "posted_at": f"2025-0{cluster + 1}-{offset + 1:02d}T10:00:00+09:00",
+                    "closed_at": "2025-11-30T18:00:00+09:00",
+                }
+            )
+            outputs.append(
+                {
+                    "scope_level": "posting",
+                    "scope_id": posting_id,
+                    "output_type": "interpretation",
+                    "payload": {"scope": {"cluster_tag": f"cluster-{cluster}"}},
+                }
+            )
+            number += 1
+
+    tables = {"posting_versions": versions, "analysis_outputs": outputs}
+    assert build_seed.check_posting_inventory("demo", tables) == []
+
+    versions[0]["closed_at"] = "2026-06-30T18:00:00+09:00"
+    problems = build_seed.check_posting_inventory("demo", tables)
+    assert any("진행 중 5건" in problem for problem in problems)
 
 
 def test_check_posting_scopes_catches_a_mismatched_check_row_set() -> None:
@@ -919,25 +1093,24 @@ def test_check_posting_scopes_catches_two_identical_payloads_in_one_cluster() ->
     reason="아직 build_demo_seed.py 를 돌리지 않았다",
 )
 def test_built_analysis_outputs_carry_posting_scoped_strategy_and_roadmap() -> None:
-    """만들어 둔 CSV 가 직무당 37행 · 전체 333행이고 공고마다 전략·로드맵이 있다."""
+    """전환 중인 실제 CSV 가 직무별 15건·30건 상태와 공고 산출물을 정확히 맞춘다."""
     csv.field_size_limit(1 << 30)
     path = AGENT_ROOT / "data" / "demo_seed" / "analysis_outputs.csv"
     with path.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
-    assert len(rows) == build_seed.OUTPUTS_PER_JOB * len(build_seed.JOB_PARTS) == 333
-
     for job in build_seed.JOB_PARTS:
         mine = [row for row in rows if row["job_role_id"] == job]
-        assert len(mine) == build_seed.OUTPUTS_PER_JOB
-        counted = {
-            output_type: len([row for row in mine if row["output_type"] == output_type])
-            for output_type in build_seed.OUTPUTS_PER_JOB_BY_TYPE
-        }
-        assert counted == build_seed.OUTPUTS_PER_JOB_BY_TYPE
-
         postings = {row["scope_id"] for row in mine
                     if row["output_type"] == "interpretation" and row["scope_level"] == "posting"}
-        assert len(postings) == 5
+        assert len(postings) in build_seed.ALLOWED_POSTING_OUTPUT_COUNTS
+        expected = build_seed.expected_output_counts(len(postings))
+        assert len(mine) == build_seed.expected_output_total(len(postings))
+        counted = {
+            output_type: len([row for row in mine if row["output_type"] == output_type])
+            for output_type in expected
+        }
+        assert counted == expected
+
         for posting_id in postings:
             strategy = json.loads(
                 next(row["payload"] for row in mine
@@ -953,6 +1126,17 @@ def test_built_analysis_outputs_carry_posting_scoped_strategy_and_roadmap() -> N
                 row["item_id"] for row in roadmap["check_rows"]
             }
             assert any(item["is_deviation"] for item in strategy["checklist"])
+
+    expected_total = sum(
+        build_seed.expected_output_total(
+            len({row["scope_id"] for row in rows
+                 if row["job_role_id"] == job
+                 and row["output_type"] == "interpretation"
+                 and row["scope_level"] == "posting"})
+        )
+        for job in build_seed.JOB_PARTS
+    )
+    assert len(rows) == expected_total
 
 
 @pytest.mark.skipif(

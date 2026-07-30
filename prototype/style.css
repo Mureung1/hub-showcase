@@ -1,5 +1,5 @@
 :root {
-  --color-bg: #F8FAFC;
+  --color-bg: #FBFAF3;
   --color-surface: #FFFFFF;
   --color-surface-soft: #F1F5F9;
   --color-border: #E2E8F0;
@@ -22,8 +22,8 @@
 
   --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
   --shadow-float: 0 18px 50px rgba(15, 23, 42, 0.12);
-  --glass-surface: rgba(255, 255, 255, 0.68);
-  --glass-border: rgba(226, 232, 240, 0.72);
+  --glass-surface: rgba(248, 246, 238, 0.92);
+  --glass-border: rgba(210, 202, 184, 0.80);
   --glass-blur: 22px;
 
   --font-sans: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
@@ -45,12 +45,12 @@ html {
 }
 
 body {
-  min-width: 320px;
+  min-width: 0;
   margin: 0;
   font-family: var(--font-sans);
   background:
-    radial-gradient(circle at 8% 0%, rgba(79, 70, 229, 0.08), transparent 26rem),
-    linear-gradient(180deg, #FFFFFF 0%, var(--color-bg) 38%);
+    radial-gradient(circle at 8% 0%, rgba(79, 70, 229, 0.07), transparent 26rem),
+    linear-gradient(180deg, #FFFDF7 0%, var(--color-bg) 38%);
   color: var(--color-text-primary);
   line-height: 1.55;
 }
@@ -68,7 +68,7 @@ a {
   align-items: center;
   justify-content: space-between;
   min-height: 72px;
-  padding: 0 28px;
+  padding: 0 max(24px, calc((100% - 1180px) / 2));
   background: var(--glass-surface);
   border-bottom: 1px solid var(--glass-border);
   box-shadow: 0 12px 34px rgba(15, 23, 42, 0.08);
@@ -86,15 +86,10 @@ a {
 
 .top-bar__mark {
   flex: 0 0 auto;
-  display: grid;
   width: 38px;
   height: 38px;
-  place-items: center;
-  border-radius: 10px;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 900;
+  display: block;
+  border-radius: 11px;
   box-shadow: 0 8px 18px rgba(79, 70, 229, 0.24);
 }
 
@@ -1201,6 +1196,19 @@ a {
     display: none;
   }
 
+  .top-bar__mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .top-bar__name {
+    font-size: 15px;
+  }
+
+  .top-bar__meta {
+    font-size: 12px;
+  }
+
   .app-shell {
     width: min(100% - 28px, 1180px);
     padding: 28px 0 48px;
@@ -1216,7 +1224,14 @@ a {
   .card-header h1,
   .report-header h1,
   .roadmap-header h1 {
-    font-size: 24px;
+    font-size: clamp(21px, 5.9vw, 23px);
+    line-height: 1.35;
+  }
+
+  .card-header p,
+  .report-header p,
+  .roadmap-header p {
+    font-size: 14px;
   }
 
   .metric-grid,
@@ -1270,5 +1285,34 @@ a {
 
   .nav-actions {
     flex-direction: column-reverse;
+  }
+}
+
+@media (max-width: 350px) {
+  .top-bar {
+    padding: 12px 14px;
+  }
+
+  .app-shell {
+    width: calc(100% - 24px);
+  }
+
+  .hero-card,
+  .job-select-card,
+  .panel {
+    padding: 18px;
+  }
+
+  .hero-card h1,
+  .card-header h1,
+  .report-header h1,
+  .roadmap-header h1 {
+    font-size: 21px;
+  }
+
+  .card-header p,
+  .report-header p,
+  .roadmap-header p {
+    font-size: 13px;
   }
 }

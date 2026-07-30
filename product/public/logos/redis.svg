@@ -1,4 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Redis">
-  <rect width="48" height="48" rx="12" fill="#FBE2E0"/>
-  <text x="24" y="29" font-family="Segoe UI, Roboto, sans-serif" font-size="11" font-weight="800" fill="#C22E24" text-anchor="middle">Redis</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="12" fill="#FFF1F2"/><path d="m24 13 13 6-13 6-13-6 13-6Z" fill="#D82C20"/><path d="m12 24 12 6 12-6m-24 6 12 6 12-6" fill="none" stroke="#D82C20" stroke-width="3" stroke-linejoin="round"/><path d="m19 19 5-2 5 2-5 2-5-2Z" fill="#fff"/></svg>

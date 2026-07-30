@@ -36,8 +36,8 @@ import importlib
 import json
 import re
 import sys
-from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections import Counter, defaultdict
+from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -535,16 +535,122 @@ DERIVED_TABLES: tuple[str, ...] = (
 )
 """파생이 행을 더하는 표. `analysis_claims` 는 늘리지 않는다."""
 
-OUTPUTS_PER_JOB = 37
-"""직무당 `analysis_outputs` 행 수. statistics 1 · interpretation 12 · strategy 12 · roadmap 12."""
+TARGET_POSTING_COUNT = 30
+TARGET_POSTING_OUTPUT_COUNT = 30
+ALLOWED_POSTING_COUNTS: frozenset[int] = frozenset({15, TARGET_POSTING_COUNT})
+ALLOWED_POSTING_OUTPUT_COUNTS: frozenset[int] = frozenset({9, TARGET_POSTING_OUTPUT_COUNT})
+"""병렬 전환 중 허용하는 기존 15건·목표 30건 상태와 공고 범위 해석 수."""
 
-OUTPUTS_PER_JOB_BY_TYPE: dict[str, int] = {
-    "statistics": 1,
-    "interpretation": 12,
-    "strategy": 12,
-    "roadmap": 12,
-}
-"""직무당 산출물 종류별 행 수. 파생 뒤 자기검사가 이 표와 맞춘다."""
+
+def expected_output_counts(posting_count: int) -> dict[str, int]:
+    """공고 범위 수에서 직무별 산출물 종류별 계약 행 수를 계산한다.
+
+    직무 조각은 overall 1행·기업군 6행을 공통으로 만들고, 대상 공고마다
+    interpretation 1행을 만든다. 합치기는 같은 공고마다 strategy·roadmap 1행씩을
+    파생하므로 세 종류의 행 수가 모두 ``7 + posting_count`` 다.
+    """
+    scoped = 7 + posting_count
+    return {
+        "statistics": 1,
+        "interpretation": scoped,
+        "strategy": scoped,
+        "roadmap": scoped,
+    }
+
+
+def expected_output_total(posting_count: int) -> int:
+    """공고 범위 수에 대응하는 직무별 `analysis_outputs` 전체 행 수."""
+    return sum(expected_output_counts(posting_count).values())
+
+
+def posting_count_problem(
+    job: str, posting_count: int, *, allow_transition: bool = True
+) -> str | None:
+    """직무별 공고 범위가 전환 중 허용 상태와 다르면 실패 사유를 낸다."""
+    allowed_counts = (
+        ALLOWED_POSTING_OUTPUT_COUNTS
+        if allow_transition
+        else frozenset({TARGET_POSTING_OUTPUT_COUNT})
+    )
+    if posting_count in allowed_counts:
+        return None
+    if not allow_transition:
+        return (
+            f"{job}: posting 범위 interpretation 이 {posting_count}행이다 "
+            f"(최종 기대값 {TARGET_POSTING_OUTPUT_COUNT})"
+        )
+    allowed = "·".join(str(value) for value in sorted(allowed_counts))
+    return (
+        f"{job}: posting 범위 interpretation 이 {posting_count}행이다 "
+        f"(전환 중 허용값 {allowed})"
+    )
+
+
+def check_posting_inventory(
+    job: str, tables: Mapping[str, Sequence[Mapping[str, Any]]]
+) -> list[str]:
+    """30건 목표 상태의 기간·기업군·진행 상태와 공고 산출물 대응을 검사한다."""
+    versions = list(tables.get("posting_versions", ()))
+    if not versions:
+        return []
+    if len(versions) not in ALLOWED_POSTING_COUNTS:
+        allowed = "·".join(str(value) for value in sorted(ALLOWED_POSTING_COUNTS))
+        return [f"{job}: 공고가 {len(versions)}건이다 (전환 중 허용값 {allowed})"]
+    if len(versions) == 15:
+        return []
+
+    recent = [
+        row
+        for row in versions
+        if "2026-01-01" <= str(row["posted_at"])[:10] <= "2026-06-30"
+    ]
+    previous = [
+        row
+        for row in versions
+        if "2024-03-01" <= str(row["posted_at"])[:10] <= "2025-11-30"
+    ]
+    def is_open(row: Mapping[str, Any]) -> bool:
+        return row.get("closed_at") in (None, "", r"\N")
+
+    open_rows = [row for row in versions if is_open(row)]
+    recent_open = [row for row in recent if is_open(row)]
+
+    problems: list[str] = []
+    expected_counts = (
+        ("recent", len(recent), 18),
+        ("prev", len(previous), 12),
+        ("진행 중", len(open_rows), 6),
+        ("마감", len(versions) - len(open_rows), 24),
+        ("recent 진행 중", len(recent_open), 6),
+        ("recent 마감", len(recent) - len(recent_open), 12),
+        ("prev 마감", sum(not is_open(row) for row in previous), 12),
+    )
+    for label, actual, expected in expected_counts:
+        if actual != expected:
+            problems.append(f"{job}: {label} {actual}건이다 ({expected}건이어야 한다)")
+
+    interpretations = {
+        str(row["scope_id"]): str(row.get("payload", {}).get("scope", {}).get("cluster_tag"))
+        for row in tables.get("analysis_outputs", ())
+        if row.get("output_type") == "interpretation" and row.get("scope_level") == "posting"
+    }
+    version_ids = {str(row["posting_id"]) for row in versions}
+    if set(interpretations) != version_ids:
+        problems.append(
+            f"{job}: 공고 30건과 posting interpretation 식별자 집합이 다르다"
+        )
+
+    for label, rows, expected_per_cluster in (
+        ("recent", recent, 3),
+        ("prev", previous, 2),
+    ):
+        clusters = Counter(interpretations.get(str(row["posting_id"])) for row in rows)
+        if len(clusters) != 6 or set(clusters.values()) != {expected_per_cluster}:
+            problems.append(
+                f"{job}: {label} 기업군 분포가 {dict(clusters)}다 "
+                f"(6개 기업군 각각 {expected_per_cluster}건이어야 한다)"
+            )
+    return problems
 
 _STEP_LABEL = re.compile(r"STEP\s*0*(\d+)")
 """`STEP 01 · 3주` 처럼 단계 번호를 품은 라벨에서 번호를 집는 무늬."""
@@ -576,7 +682,7 @@ def deviation_reason(company: str, evidence: str) -> str:
     바꾼다. 인용 부호가 겹쳐 문장이 어디서 끊기는지 읽히지 않는 일을 막는다.
     """
     quoted = str(evidence).replace('"', "'").strip()
-    return f'{company} 공고가 "{quoted}" 를 요구합니다. 기업군 기준보다 앞당겨 준비합니다.'
+    return f'{company} 공고는 "{quoted}"라고 명시합니다. 기업군 기준보다 앞당겨 준비합니다.'
 
 
 def deviation_concepts(
@@ -925,6 +1031,8 @@ def derive_posting_scopes(
 def check_posting_scopes(
     parts: Mapping[str, Mapping[str, Sequence[Mapping[str, Any]]]],
     order: Sequence[str] = JOB_PARTS,
+    *,
+    allow_transition: bool = True,
 ) -> list[str]:
     """파생 결과가 계약과 맞는지 스스로 본다. 어긋난 사유를 그대로 돌려준다."""
     problems: list[str] = []
@@ -932,17 +1040,30 @@ def check_posting_scopes(
 
     for job in jobs:
         tables = parts[job]
+        problems.extend(check_posting_inventory(job, tables))
         outputs = list(tables.get("analysis_outputs", ()))
+        posting_count = sum(
+            1
+            for row in outputs
+            if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+        )
+        count_problem = posting_count_problem(
+            job, posting_count, allow_transition=allow_transition
+        )
+        if count_problem:
+            problems.append(count_problem)
+        expected_counts = expected_output_counts(posting_count)
+        expected_total = expected_output_total(posting_count)
 
         # 1. 직무당 행 수
-        if len(outputs) != OUTPUTS_PER_JOB:
+        if len(outputs) != expected_total:
             problems.append(
-                f"{job}: analysis_outputs 가 {len(outputs)}행이다 ({OUTPUTS_PER_JOB}행이어야 한다)"
+                f"{job}: analysis_outputs 가 {len(outputs)}행이다 ({expected_total}행이어야 한다)"
             )
         counted: dict[str, int] = defaultdict(int)
         for row in outputs:
             counted[str(row["output_type"])] += 1
-        for output_type, expected in OUTPUTS_PER_JOB_BY_TYPE.items():
+        for output_type, expected in expected_counts.items():
             if counted.get(output_type, 0) != expected:
                 problems.append(
                     f"{job}: {output_type} 가 {counted.get(output_type, 0)}행이다 ({expected}행이어야 한다)"
@@ -1027,11 +1148,169 @@ def check_posting_scopes(
                 seen_keys.add(key)
 
     total = sum(len(parts[job].get("analysis_outputs", ())) for job in jobs)
-    if jobs and total != OUTPUTS_PER_JOB * len(jobs):
+    expected_grand_total = sum(
+        expected_output_total(
+            sum(
+                1
+                for row in parts[job].get("analysis_outputs", ())
+                if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+            )
+        )
+        for job in jobs
+    )
+    if jobs and total != expected_grand_total:
         problems.append(
-            f"analysis_outputs 전체가 {total}행이다 ({OUTPUTS_PER_JOB * len(jobs)}행이어야 한다)"
+            f"analysis_outputs 전체가 {total}행이다 ({expected_grand_total}행이어야 한다)"
         )
     return problems
+
+
+_QUOTE_PARTICLE_GAP = re.compile(r'["”’]\s+(?:은|는|이|가|을|를|과|와|로|으로|도|만)(?=\s|[.,!?]|$)')
+_TERM_PARTICLE_GAP = re.compile(
+    r'\b(?:API|README|Swift|React|Python|Java|Kotlin|Docker|Kubernetes)\s+'
+    r'(?:은|는|이|가|을|를|과|와|로|으로)(?=\s|[.,!?]|$)'
+)
+_PORTFOLIO_ACTION_WORDS = ("README", "비교", "전후", "재현", "테스트", "수치", "경로", "확인", "완료")
+_INTERVIEW_JUDGMENT_WORDS = ("선택", "이유", "판단", "결과", "비교", "확인", "먼저")
+_FILL_STOP_WORDS = {"기본", "심화", "경험", "항목", "역량", "프로젝트", "구현", "작성", "준비"}
+
+
+def _payload_texts(value: Any) -> Iterator[str]:
+    """중첩 payload에서 사용자에게 보이는 문자열을 순서대로 꺼낸다."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, Mapping):
+        for child in value.values():
+            yield from _payload_texts(child)
+    elif isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        for child in value:
+            yield from _payload_texts(child)
+
+
+def _filled_summary(summary: object) -> bool:
+    return (
+        isinstance(summary, Mapping)
+        and bool(str(summary.get("title", "")).strip())
+        and bool(str(summary.get("body", "")).strip())
+    )
+
+
+def _fill_matches_step(fill: Mapping[str, Any], step: Mapping[str, Any]) -> bool:
+    """채워짐 라벨의 구체어가 같은 단계 설명이나 산출물에 실제로 나타나는지 본다."""
+    label = str(fill.get("label", "")).strip()
+    haystack = " ".join(
+        str(step.get(field, "")) for field in ("title", "body", "deliverable")
+    ).casefold()
+    tokens = [
+        token.casefold()
+        for token in re.findall(r"[0-9A-Za-z가-힣]+", label)
+        if len(token) >= 2 and token not in _FILL_STOP_WORDS
+    ]
+    return bool(tokens) and any(token in haystack for token in tokens)
+
+
+def align_roadmap_fills(tables: Mapping[str, list[dict[str, Any]]]) -> None:
+    """로드맵의 ``채워짐`` 라벨을 같은 단계의 과제와 산출물에 명시한다.
+
+    기업군 편차 항목은 공통 로드맵 단계에 합성되므로 라벨과 단계 문장이 서로 다른
+    역량을 가리킬 수 있다. 이 경우 사용자가 해야 할 일과 확인 자료를 단계 안에
+    명시하고, 화면 payload와 정규화된 로드맵 행을 같은 내용으로 맞춘다.
+    """
+    normalized = {
+        (
+            str(row.get("scope_level")),
+            str(row.get("scope_id")),
+            int(row.get("step_order", 0)),
+        ): row
+        for row in tables.get("roadmap_items", ())
+    }
+    for output in tables.get("analysis_outputs", ()):
+        if output.get("output_type") != "roadmap":
+            continue
+        scope_level = str(output.get("scope_level"))
+        if scope_level not in {"overall", "cluster"}:
+            continue
+        scope_id = str(output.get("scope_id"))
+        payload = output.get("payload", {})
+        for step in payload.get("project_steps", ()):
+            unmatched = [
+                str(fill.get("label", "")).strip()
+                for fill in step.get("fills", ())
+                if str(fill.get("label", "")).strip()
+                and not _fill_matches_step(fill, step)
+            ]
+            if not unmatched:
+                continue
+            labels = " · ".join(dict.fromkeys(unmatched))
+            step["body"] = (
+                f'{str(step.get("body", "")).rstrip()} '
+                f"이 단계의 추가 완료 항목: {labels}."
+            ).strip()
+            step["deliverable"] = (
+                f'{str(step.get("deliverable", "")).rstrip()} + {labels} 확인 자료'
+            ).strip(" +")
+            row = normalized.get((scope_level, scope_id, int(step.get("n", 0))))
+            if row is not None:
+                row["body"] = step["body"]
+                row["deliverable"] = step["deliverable"]
+
+
+def check_content_quality(job: str, tables: Mapping[str, Sequence[Mapping[str, Any]]]) -> list[str]:
+    """공고 해석의 완전성과 전략·로드맵 문장의 실행 가능성을 검사한다."""
+    problems: list[str] = []
+    outputs = list(tables.get("analysis_outputs", ()))
+
+    for row in outputs:
+        output_type = str(row.get("output_type"))
+        scope_level = str(row.get("scope_level"))
+        payload = row.get("payload", {})
+        output_id = str(row.get("output_id"))
+
+        if output_type == "interpretation" and scope_level == "posting":
+            posting = payload.get("posting") if isinstance(payload, Mapping) else None
+            if not isinstance(posting, Mapping):
+                problems.append(f"{job}/{output_id}: posting 해석이 없다")
+                continue
+            if not _filled_summary(posting.get("summary")):
+                problems.append(f"{job}/{output_id}: summary 제목이나 본문이 비었다")
+            for field in ("baseline_notes", "interpretations", "signal_notes"):
+                notes = posting.get(field)
+                if not isinstance(notes, list) or not notes:
+                    problems.append(f"{job}/{output_id}: {field}가 비었다")
+
+        if output_type == "strategy" and scope_level in {"overall", "cluster"}:
+            portfolio = payload.get("portfolio", {}) if isinstance(payload, Mapping) else {}
+            for index, highlight in enumerate(portfolio.get("highlights", ()), 1):
+                tips = " ".join(str(item) for item in highlight.get("tips", ()))
+                if not any(word in tips for word in _PORTFOLIO_ACTION_WORDS):
+                    problems.append(
+                        f"{job}/{output_id}: 포트폴리오 {index}번 조언에 위치·비교·재현·완료 기준이 없다"
+                    )
+            for index, interview in enumerate(payload.get("interview", ()), 1):
+                if not interview.get("followups"):
+                    problems.append(f"{job}/{output_id}: 면접 {index}번 꼬리질문이 없다")
+                point = str(interview.get("point", ""))
+                if not any(word in point for word in _INTERVIEW_JUDGMENT_WORDS):
+                    problems.append(
+                        f"{job}/{output_id}: 면접 {index}번 답변 기준에 선택 이유·판단·결과가 없다"
+                    )
+
+        if output_type == "roadmap" and scope_level in {"overall", "cluster"}:
+            for step in payload.get("project_steps", ()):
+                for fill in step.get("fills", ()):
+                    if not _fill_matches_step(fill, step):
+                        problems.append(
+                            f"{job}/{output_id}/STEP {step.get('n')}: 채워짐 '{fill.get('label')}'이"
+                            " 단계 설명·산출물과 연결되지 않는다"
+                        )
+
+        for text in _payload_texts(payload):
+            if "전체 기준 기준" in text:
+                problems.append(f"{job}/{output_id}: '전체 기준 기준' 중복 표현이 있다")
+            if _QUOTE_PARTICLE_GAP.search(text) or _TERM_PARTICLE_GAP.search(text):
+                problems.append(f"{job}/{output_id}: 조사 앞 불필요한 공백이 있다: {text[:80]}")
+
+    return list(dict.fromkeys(problems))
 
 
 # ============================================================ 실행
@@ -1048,6 +1327,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--check",
         action="store_true",
         help="파일을 쓰지 않고 합치기와 중복 검사만 한다",
+    )
+    parser.add_argument(
+        "--final",
+        action="store_true",
+        help="15건 전환 상태를 허용하지 않고 직무별 30건·산출물 112행만 검사한다",
     )
     return parser.parse_args(argv)
 
@@ -1080,6 +1364,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         except MissingPart:
             skipped.append(part)
             continue
+        if part in JOB_PARTS:
+            align_roadmap_fills(parts[part])
         rows = sum(len(value) for value in parts[part].values())
         print(f"[읽음] {part:14s} {len(parts[part]):2d}개 표 · {rows:6d}행")
 
@@ -1102,13 +1388,28 @@ def main(argv: Sequence[str] | None = None) -> int:
                 if table != "analysis_outputs"
             )
         )
-    derived_problems = check_posting_scopes(parts, [part for part in order if part in JOB_PARTS])
+    derived_problems = check_posting_scopes(
+        parts,
+        [part for part in order if part in JOB_PARTS],
+        allow_transition=not args.final,
+    )
     if derived_problems:
         print(f"\n[실패] 공고 범위 파생 자기검사 {len(derived_problems)}건")
         for line in derived_problems[:20]:
             print(f"       {line}")
         if len(derived_problems) > 20:
             print(f"       … 외 {len(derived_problems) - 20}건")
+        return EXIT_FAILED
+
+    content_problems: list[str] = []
+    for job in (part for part in order if part in JOB_PARTS and part in parts):
+        content_problems.extend(check_content_quality(job, parts[job]))
+    if content_problems:
+        print(f"\n[실패] 콘텐츠 품질 자기검사 {len(content_problems)}건")
+        for line in content_problems[:20]:
+            print(f"       {line}")
+        if len(content_problems) > 20:
+            print(f"       … 외 {len(content_problems) - 20}건")
         return EXIT_FAILED
 
     problems = find_duplicates(parts, order)

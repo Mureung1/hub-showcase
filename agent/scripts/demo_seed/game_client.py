@@ -217,7 +217,7 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 )
 
 
-# ============================================================ 3. 채용공고 9건
+# ============================================================ 3. 채용공고 30건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
 # 주석은 recent 5건에만 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
 #   ("base", 기준선 항목명, 해설)                  → base_n
@@ -464,15 +464,15 @@ POSTINGS: tuple[dict[str, Any], ...] = (
     },
     {
         "nn": "06",
-        "company_id": "co_smilegate",
-        "company": "스마일게이트",
-        "cluster": "game",
-        "period": PRIOR,
+        "company_id": "co_channelcorp",
+        "company": "채널코퍼레이션",
+        "cluster": "b2b_saas",
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입",
         "career_label_raw": "신입",
         "edu_label_raw": "대졸 이상",
-        "posted_at": "2025-03-05T10:00:00+09:00",
+        "posted_at": "2026-05-14T10:00:00+09:00",
         "title": "온라인 게임 클라이언트 개발 신입 채용",
         "sections": (
             ("주요업무", (
@@ -492,15 +492,15 @@ POSTINGS: tuple[dict[str, Any], ...] = (
     },
     {
         "nn": "07",
-        "company_id": "co_nexonkorea",
-        "company": "넥슨코리아",
-        "cluster": "game",
-        "period": PRIOR,
+        "company_id": "co_kakaopay",
+        "company": "카카오페이",
+        "cluster": "fintech_finance",
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입 지원 가능",
         "career_label_raw": "신입·주니어",
         "edu_label_raw": "학력 무관",
-        "posted_at": "2024-11-14T10:00:00+09:00",
+        "posted_at": "2026-04-21T10:00:00+09:00",
         "title": "모바일 게임 클라이언트 개발 신입",
         "sections": (
             ("주요업무", (
@@ -523,12 +523,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_navercloud",
         "company": "네이버클라우드",
         "cluster": "b2b_saas",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력",
         "career_label_raw": "경력 3년 이상",
         "edu_label_raw": "대졸 이상",
-        "posted_at": "2025-05-20T10:00:00+09:00",
+        "posted_at": "2026-03-17T10:00:00+09:00",
         "title": "클라우드 게임 스트리밍 클라이언트 개발 (경력)",
         "sections": (
             ("주요업무", (
@@ -551,12 +551,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_kakaobank",
         "company": "카카오뱅크",
         "cluster": "fintech_finance",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력",
         "career_label_raw": "경력 3년 이상",
         "edu_label_raw": "대졸 이상",
-        "posted_at": "2024-10-02T10:00:00+09:00",
+        "posted_at": "2026-02-05T10:00:00+09:00",
         "title": "게이미피케이션 콘텐츠 클라이언트 개발 (경력)",
         "sections": (
             ("주요업무", (
@@ -577,6 +577,262 @@ POSTINGS: tuple[dict[str, Any], ...] = (
 )
 
 
+def prior_posting(
+    nn: str,
+    company_id: str,
+    company: str,
+    cluster: str,
+    entry_label: str,
+    posted_at: str,
+    title: str,
+    responsibilities: tuple[tuple[str, str | None, str, None], ...],
+    requirements: tuple[tuple[str, str | None, str, None], ...],
+    preferences: tuple[tuple[str, str | None, str, None], ...],
+    summary: str,
+) -> dict[str, Any]:
+    """이전 기간 공고의 공통 메타데이터를 한곳에서 고정한다."""
+    is_entry = entry_label == "entry_junior"
+    return {
+        "nn": nn,
+        "company_id": company_id,
+        "company": company,
+        "cluster": cluster,
+        "period": PRIOR,
+        "entry_label": entry_label,
+        "entry_label_raw": "신입·주니어" if is_entry else "경력",
+        "career_label_raw": "신입~3년" if is_entry else "경력 3년 이상",
+        "edu_label_raw": "대졸 이상(2,3년제 포함)" if is_entry else "학력 무관",
+        "posted_at": posted_at,
+        "title": title,
+        "sections": (
+            ("주요업무", responsibilities),
+            ("자격요건", requirements),
+            ("우대사항", preferences),
+        ),
+        "summary": summary,
+        "summary_ratio": "편차 2건 · 기준선 일치 3건",
+    }
+
+
+POSTINGS += (
+    prior_posting(
+        "10", "co_kakao", "카카오", "bigtech_platform", "experienced",
+        "2024-03-12T10:00:00+09:00", "인터랙티브 콘텐츠 클라이언트 개발",
+        (
+            ("실시간 인터랙티브 콘텐츠의 입력과 화면 연출을 Unity 로 구현합니다.", "unity-csharp", "application", None),
+            ("다수 사용자의 상태를 서버 이벤트와 맞춰 화면에 반영합니다.", "net-sync", "application", None),
+            ("복잡한 장면의 렌더링 비용을 프로파일링하고 개선합니다.", "graphics-opt", "application", None),
+        ),
+        (
+            ("Unity 와 C# 로 상용 콘텐츠를 개발한 경험이 있으신 분", "unity-csharp", "application", None),
+            ("벡터와 좌표 변환 등 게임 수학을 이해하시는 분", "game-math", "foundation", None),
+        ),
+        (
+            ("실시간 상태 동기화와 지연 보상을 다뤄 본 분", "net-sync", "tradeoff", None),
+            ("C++ 기반 클라이언트 개발 경험이 있으신 분", "unreal-cpp", "foundation", None),
+        ),
+        "대규모 플랫폼의 인터랙티브 콘텐츠를 구현하고 동기화할 개발자를 찾습니다.",
+    ),
+    prior_posting(
+        "11", "co_wantedlab", "원티드랩", "startup", "entry_junior",
+        "2024-06-18T10:00:00+09:00", "웹 미니게임 클라이언트 주니어",
+        (
+            ("Unity 와 C# 로 채용 캠페인용 미니게임을 구현합니다.", "unity-csharp", "foundation", None),
+            ("다양한 단말에서 안정적인 프레임을 유지하도록 리소스를 조정합니다.", "graphics-opt", "foundation", None),
+            ("게임 진행 상태를 서비스 API와 동기화합니다.", "net-sync", "foundation", None),
+        ),
+        (
+            ("Unity 로 플레이 가능한 프로젝트를 완성해 본 분", "unity-csharp", "foundation", None),
+            ("충돌과 보간에 필요한 게임 수학의 기초를 이해하는 분", "game-math", "foundation", None),
+        ),
+        (
+            ("프로파일러를 사용해 렌더링 병목을 확인해 본 분", "graphics-opt", "foundation", None),
+            ("C++ 학습 또는 언리얼 엔진 프로젝트 경험이 있는 분", "unreal-cpp", "foundation", None),
+        ),
+        "작은 팀에서 미니게임을 완성하고 서비스와 연결할 주니어를 찾습니다.",
+    ),
+    prior_posting(
+        "12", "co_sendbird", "센드버드", "b2b_saas", "experienced",
+        "2024-10-29T10:00:00+09:00", "메타버스 협업 클라이언트 개발",
+        (
+            ("언리얼 엔진으로 3D 협업 공간과 사용자 인터랙션을 구현합니다.", "unreal-cpp", "application", None),
+            ("참여자 위치와 동작을 실시간으로 동기화합니다.", "net-sync", "tradeoff", None),
+            ("다수 아바타 장면의 렌더링 부하를 프로파일링합니다.", "graphics-opt", "application", None),
+        ),
+        (
+            ("C++ 와 언리얼 엔진으로 실시간 3D 클라이언트를 개발한 분", "unreal-cpp", "application", None),
+            ("보간과 좌표 변환을 포함한 게임 수학을 이해하는 분", "game-math", "application", None),
+        ),
+        (
+            ("Unity 기반 크로스 플랫폼 개발 경험이 있으신 분", "unity-csharp", "foundation", None),
+            ("클라이언트 예측과 서버 보정을 설계해 본 분", "net-sync", "tradeoff", None),
+        ),
+        "실시간 3D 협업 공간의 화면과 참여자 상태를 안정적으로 맞출 개발자를 찾습니다.",
+    ),
+    prior_posting(
+        "13", "co_kbank", "케이뱅크", "fintech_finance", "entry_junior",
+        "2025-02-11T10:00:00+09:00", "금융 앱 게이미피케이션 클라이언트 신입",
+        (
+            ("Unity 와 C# 로 금융 학습용 게임 콘텐츠를 구현합니다.", "unity-csharp", "application", None),
+            ("퀘스트와 보상 상태를 서버 데이터와 일치시킵니다.", "net-sync", "foundation", None),
+            ("저사양 단말의 렌더링 성능과 메모리 사용량을 확인합니다.", "graphics-opt", "foundation", None),
+        ),
+        (
+            ("Unity 와 C# 로 모바일 게임을 만들어 본 분", "unity-csharp", "foundation", None),
+            ("벡터와 충돌 처리의 기본 원리를 설명할 수 있는 분", "game-math", "foundation", None),
+        ),
+        (
+            ("네트워크 상태 동기화를 학습하거나 구현해 본 분", "net-sync", "foundation", None),
+            ("C++ 또는 언리얼 엔진을 학습해 본 분", "unreal-cpp", "foundation", None),
+        ),
+        "금융 앱 안의 게임 콘텐츠를 구현하고 보상 상태를 안전하게 연결할 신입을 찾습니다.",
+    ),
+    prior_posting(
+        "14", "co_lgcns", "엘지씨엔에스", "si_enterprise", "experienced",
+        "2025-07-15T10:00:00+09:00", "산업용 시뮬레이션 클라이언트 개발",
+        (
+            ("언리얼 엔진으로 산업 설비의 3D 시뮬레이션 화면을 구현합니다.", "unreal-cpp", "application", None),
+            ("설비 좌표와 충돌 결과를 시각화하고 물리 동작을 검증합니다.", "game-math", "application", None),
+            ("대규모 모델의 렌더링 경로와 메모리 사용량을 최적화합니다.", "graphics-opt", "tradeoff", None),
+        ),
+        (
+            ("C++ 와 언리얼 엔진으로 3D 클라이언트를 개발한 분", "unreal-cpp", "application", None),
+            ("렌더링 병목을 계측하고 품질과 성능을 조정해 본 분", "graphics-opt", "tradeoff", None),
+        ),
+        (
+            ("Unity 와 C# 기반 시뮬레이션 개발 경험이 있으신 분", "unity-csharp", "foundation", None),
+            ("원격 설비 상태를 실시간 동기화해 본 분", "net-sync", "application", None),
+        ),
+        "산업 설비를 3D로 재현하고 대규모 모델의 성능을 확보할 개발자를 찾습니다.",
+    ),
+    prior_posting(
+        "15", "co_smilegate", "스마일게이트", "game", "entry_junior",
+        "2025-11-18T10:00:00+09:00", "온라인 게임 클라이언트 개발 신입",
+        (
+            ("언리얼 엔진으로 인게임 전투와 UI 기능을 구현합니다.", "unreal-cpp", "foundation", None),
+            ("서버에서 받은 캐릭터 상태를 보간해 화면에 반영합니다.", "net-sync", "application", None),
+            ("전투 장면의 프레임 저하를 프로파일링합니다.", "graphics-opt", "foundation", None),
+        ),
+        (
+            ("C++ 와 언리얼 엔진의 액터 구조를 이해하는 분", "unreal-cpp", "foundation", None),
+            ("벡터와 충돌 판정 등 3D 게임 수학의 기본기를 갖춘 분", "game-math", "foundation", None),
+        ),
+        (
+            ("Unity 와 C# 로 완성한 개인 프로젝트가 있는 분", "unity-csharp", "foundation", None),
+            ("클라이언트 예측과 서버 보정의 차이를 설명할 수 있는 분", "net-sync", "foundation", None),
+        ),
+        "게임플레이 구현의 기초와 온라인 동기화 개념을 갖춘 신입을 찾습니다.",
+    ),
+)
+
+
+def _expanded_posting(
+    nn: str,
+    source_nn: str,
+    period: str,
+    posted_at: str,
+    entry_label: str,
+) -> dict[str, Any]:
+    """기존 기업군의 요구 구성을 재사용해 16~30번 독립 표본을 만든다."""
+    source = next(posting for posting in POSTINGS if posting["nn"] == source_nn)
+    label_source = next(
+        posting for posting in POSTINGS if posting["entry_label"] == entry_label
+    )
+    return {
+        **source,
+        "nn": nn,
+        "period": period,
+        "posted_at": posted_at,
+        "entry_label": entry_label,
+        "entry_label_raw": label_source["entry_label_raw"],
+        "career_label_raw": label_source["career_label_raw"],
+        "title": f"{source['title']} (확장 표본 {nn})",
+        "summary": "",
+        "summary_ratio": "",
+    }
+
+
+POSTINGS += (
+    _expanded_posting("16", "01", RECENT, "2026-01-05T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("17", "06", RECENT, "2026-01-19T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("18", "07", RECENT, "2026-02-23T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("19", "03", RECENT, "2026-03-09T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("20", "03", RECENT, "2026-03-23T10:00:00+09:00", "experienced"),
+    _expanded_posting("21", "04", RECENT, "2026-04-13T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("22", "04", RECENT, "2026-04-27T10:00:00+09:00", "experienced"),
+    _expanded_posting("23", "05", RECENT, "2026-05-25T10:00:00+09:00", "experienced"),
+    _expanded_posting("24", "05", RECENT, "2026-06-22T10:00:00+09:00", "experienced"),
+    _expanded_posting("25", "03", PRIOR, "2024-05-13T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("26", "05", PRIOR, "2024-09-09T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("27", "06", PRIOR, "2025-02-10T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("28", "07", PRIOR, "2025-05-12T10:00:00+09:00", "experienced"),
+    _expanded_posting("29", "04", PRIOR, "2025-08-11T10:00:00+09:00", "experienced"),
+    _expanded_posting("30", "01", PRIOR, "2025-11-10T10:00:00+09:00", "experienced"),
+)
+
+_CLUSTER_READING = {
+    "game": "라이브 플레이에서 프레임과 동기화를 함께 지키는 구현 판단",
+    "bigtech_platform": "여러 기기에서 입력·화면·상태를 안정적으로 이어 가는 완성도",
+    "si_enterprise": "고정 장비의 성능 예산과 3D 동작을 수치로 맞추는 검증",
+    "startup": "작은 콘텐츠를 빠르게 완성하면서 자원 사용량을 통제하는 실행력",
+    "b2b_saas": "지연이 있는 실시간 화면에서 상태를 자연스럽게 동기화하는 설계",
+    "fintech_finance": "앱 안의 콘텐츠가 서비스 상태와 어긋나지 않게 만드는 안정성",
+}
+
+
+def _complete_posting_content(posting: dict[str, Any]) -> dict[str, Any]:
+    """빈 공고 해석을 원문·기업군·클라이언트 요구에 맞춰 완성한다."""
+    sections = [(section, list(lines)) for section, lines in posting["sections"]]
+    flat = [(si, li, section, line) for si, (section, lines) in enumerate(sections)
+            for li, line in enumerate(lines)]
+    focus_slugs = list(dict.fromkeys(
+        line[1] for _, _, _, line in flat if line[1] is not None
+    ))[:2]
+    focus = " · ".join(DIM_INFO[slug]["label"] for slug in focus_slugs)
+    period = "최근 공고" if posting["period"] == RECENT else "이전 기간 공고"
+    level = "진입 지원자" if posting["entry_label"] == "entry_junior" else "경력 지원자"
+    if not posting["summary"]:
+        responsibility = next(line[0] for _, _, section, line in flat if section == "주요업무")
+        posting["summary"] = (
+            f"{posting['company']} | {posting['title']}. {period}이며, ‘{responsibility}’를 중심 업무로 두고 {focus} 두 항목까지 확인합니다. "
+            f"{level}는 다음 역량을 실행 빌드와 측정 기록으로 보여 줘야 합니다: {_CLUSTER_READING[posting['cluster']]}."
+        )
+        posting["summary_ratio"] = "직무 공통 기대치 1건 · 숨은 의미 1건 · 회사 특징 1건"
+
+    existing = {line[3][0] for _, _, _, line in flat if line[3] is not None}
+    available = [(si, li, section, line) for si, li, section, line in flat if line[3] is None]
+    used: set[tuple[int, int]] = set()
+    for kind in ("base", "mark", "note"):
+        if kind in existing:
+            continue
+        candidates = [row for row in available if (row[0], row[1]) not in used]
+        if kind == "base":
+            target = next((row for row in candidates if row[3][1] is not None), candidates[0])
+        elif kind == "mark":
+            target = next((row for row in reversed(candidates) if row[3][1] is not None), candidates[-1])
+        else:
+            target = next((row for row in candidates if row[2] == "주요업무"), candidates[0])
+        si, li, _section, line = target
+        used.add((si, li))
+        dim_label = DIM_INFO[line[1]]["label"] if line[1] else "업무 범위"
+        if kind == "base":
+            annotation = ("base", dim_label,
+                f"‘{line[0]}’는 게임 클라이언트의 직무 공통 기대치입니다. 실행 빌드에서 해당 기능의 위치와 직접 구현한 범위를 구분해 제시하세요.")
+        elif kind == "mark":
+            annotation = ("mark", f"{posting['company']}가 확인하는 {dim_label}",
+                f"이 문장은 다음 역량을 확인합니다: {_CLUSTER_READING[posting['cluster']]}. ‘{line[0]}’에 사용한 선택과 프레임·지연 측정 결과를 함께 설명해야 합니다.",
+                "mid", f"{CLUSTERS[posting['cluster']]} 전체 기간 참고")
+        else:
+            annotation = ("note", f"{posting['company']} 업무에서 읽을 점",
+                f"‘{line[0]}’는 기능이 보이는 것뿐 아니라 플레이 조건에서 안정적으로 작동해야 한다는 뜻입니다. 재현 조건과 완료 기준을 README에 남기세요.")
+        sections[si][1][li] = (*line[:3], annotation)
+    posting["sections"] = tuple((section, tuple(lines)) for section, lines in sections)
+    return posting
+
+
+POSTINGS = tuple(_complete_posting_content(dict(posting)) for posting in POSTINGS)
+
+
 # ============================================================ 파생 구조
 def posting_id(nn: str) -> str:
     return f"dp_{JOB_ROLE_ID}_{nn}"
@@ -592,6 +848,15 @@ def source_id(nn: str) -> str:
 
 def posting_version_id(nn: str) -> str:
     return f"pv_demo_{JOB_ROLE_ID}_{nn}"
+
+
+def closed_at(posting: dict[str, Any]) -> str | None:
+    """2026년 진행 중 6건을 제외한 공고의 결정적 마감 시각."""
+    if posting["nn"] in {"01", "02", "03", "04", "05", "06"}:
+        return None
+    if posting["period"] == RECENT:
+        return "2026-07-01T18:00:00+09:00"
+    return "2025-12-01T18:00:00+09:00"
 
 
 def chunk_id(nn: str, k: int) -> str:
@@ -1065,11 +1330,11 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
 
 
 def axis_level(value: int | None) -> str:
-    if value is None or value < 15:
+    if value is None:
         return "—"
-    if value >= 60:
+    if value >= 70:
         return "강"
-    if value >= 35:
+    if value >= 31:
         return "중"
     return "약"
 
@@ -1264,11 +1529,11 @@ def build_statistics_payload() -> dict[str, Any]:
             reality.append({"tag": tag, "label": label, "pct": value})
     reality.sort(key=lambda row: -row["pct"])
 
-    # 최근 1년에 공고가 없는 기업군은 행을 만들지 않는다 (분모가 없다).
+    # 표본 확보를 위해 recent 와 prev 전체 기간을 합산한다.
     axes_rows = []
-    for cluster_id in RECENT_CLUSTERS:
-        n = cluster_n[cluster_id]
-        members = [p for p in RECENT_POSTINGS if p["cluster"] == cluster_id]
+    for cluster_id in CLUSTER_ORDER:
+        members = [p for p in POSTINGS if p["cluster"] == cluster_id]
+        n = len(members)
         cells = []
         for _axis_id, axis_label, slugs, rule in CLUSTER_AXES:
             count = sum(1 for p in members if hits(p, slugs, rule))
@@ -1698,14 +1963,14 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         "highlights": [
             {
                 "title": "플레이 영상 30초가 첫 관문입니다",
-                "body": f"{label} 기준에서도 코드보다 먼저 열리는 것은 영상입니다. 조작이 어떤 느낌인지 30초 안에 보여주고, 그 뒤에 구조 설명을 두세요.",
-                "tips": ["첫 10초에 핵심 플레이 루프", "빌드 실행 방법을 README 맨 위에"],
+                "body": f"{label}에서도 코드보다 먼저 열리는 것은 영상입니다. 조작이 어떤 느낌인지 30초 안에 보여주고, 그 뒤에 구조 설명을 두세요.",
+                "tips": ["README 최상단에 빌드 링크·조작법·30초 영상 배치", "새 PC에서 안내대로 실행해 첫 플레이 루프가 재현되면 완료"],
                 "linked_item_ids": [CONCEPT_INFO["unity-build"]["concept_id"]],
             },
             {
                 "title": "성능은 문장이 아니라 표로 씁니다",
                 "body": "최적화했다는 서술은 거의 모든 지원자가 씁니다. 기기·해상도·프레임·드로우콜을 개선 전후로 나란히 둔 표 한 장이 그 문장을 대신합니다.",
-                "tips": ["측정 기기와 조건을 함께 적기", "무엇을 포기했는지 한 줄 추가"],
+                "tips": ["성능 절에 기기·해상도·장면별 개선 전후 표 배치", "같은 장면을 다시 측정해 목표 프레임을 재현하면 완료"],
                 "linked_item_ids": [
                     CONCEPT_INFO["frame-budget"]["concept_id"],
                     CONCEPT_INFO["device-test"]["concept_id"],
@@ -1743,28 +2008,28 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "성능 검증",
             "question": "프레임이 떨어졌을 때 무엇부터 확인했나요?",
             "followups": ["CPU 와 GPU 중 어느 쪽이 병목이었나요?", "무엇을 포기하고 무엇을 지켰나요?"],
-            "point": "도구 이름이 아니라 판단 순서를 묻습니다. 계측 → 가설 → 검증의 순서로 답하면 꼬리질문이 이어져도 흔들리지 않습니다.",
+            "point": "계측 → 병목 가설 → 수정 선택 이유 → 같은 장면의 전후 수치 순서로 답하고, 포기한 품질과 지킨 목표를 꼬리질문에 연결하세요.",
             "linked_item_ids": [CONCEPT_INFO["frame-budget"]["concept_id"]],
         },
         {
             "kicker": "동기화 검증",
             "question": "네트워크가 끊겼다가 돌아오면 캐릭터를 어디에 그리나요?",
             "followups": ["예측이 틀렸을 때는 어떻게 되돌리나요?", "지연이 커지면 무엇을 먼저 포기하나요?"],
-            "point": "정답이 하나가 아닌 질문입니다. 데모에서 실제로 골라 본 선택과 그 이유가 있으면 대화가 성립합니다.",
+            "point": "보간·예측 가운데 고른 방식과 이유, 지연 주입 조건, 위치 오차와 화면 끊김이 어떻게 바뀌었는지 답하세요.",
             "linked_item_ids": [CONCEPT_INFO["netsync-demo"]["concept_id"]],
         },
         {
             "kicker": "기본기 검증",
             "question": "쿼터니언을 왜 쓰나요?",
             "followups": ["오일러각으로는 무엇이 안 되나요?", "보간은 어떻게 하나요?"],
-            "point": "기준선 항목은 깊이보다 설명의 정확함을 봅니다. 짐벌락을 한 문장으로 말할 수 있으면 충분합니다.",
+            "point": "오일러각 대신 쿼터니언을 고른 이유를 짐벌락과 보간으로 설명하고, 데모에서 회전이 안정된 결과를 연결하세요.",
             "linked_item_ids": [CONCEPT_INFO["math-solve"]["concept_id"]],
         },
         {
             "kicker": "태도 검증 · 자소서 연동",
             "question": "재현이 안 되는 버그를 만나면 어떻게 하나요?",
             "followups": ["로그를 어디에 남겼나요?", "다시 그 상황이면 무엇을 다르게 하겠어요?"],
-            "point": "라이브 서비스 팀이 가장 자주 던지는 질문입니다. 재현 절차를 기록해 둔 경험이 그대로 답이 됩니다.",
+            "point": "로그 지점을 고른 이유, 재현 조건을 좁힌 순서, 수정 뒤 같은 절차에서 버그가 사라진 결과를 답하세요.",
             "linked_item_ids": [CONCEPT_INFO["crash-story"]["concept_id"]],
         },
     ]
@@ -1777,8 +2042,8 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
 
 ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ...]], ...] = (
     (1, "STEP 01 · 3주", 3, "vhigh", "플레이 가능한 빌드 하나를 끝내기",
-     "새 프로젝트를 벌이지 말고 있는 결과물 하나를 실행 파일까지 끌고 가세요. 조작 루프와 UI, 저장까지 붙여 완성 상태로 만듭니다.",
-     "실행 파일 + 30초 플레이 영상 + README", "완성한 빌드가 없으면 다른 준비가 평가에 닿지 않습니다.",
+     "새 프로젝트를 벌이지 말고 있는 결과물 하나를 실행 파일까지 끌고 가세요. 조작 루프와 UI, 저장까지 붙이고 아트·기획과 바꾼 결정 하나를 기록합니다.",
+     "실행 파일 + 30초 플레이 영상 + README + 협업 결정 기록", "완성한 빌드가 없으면 다른 준비가 평가에 닿지 않습니다.",
      ("완성", "빌드", "플레이 영상")),
     (2, "STEP 02 · 2주", 2, "vhigh", "성능을 숫자로 만들기",
      "목표 기기와 목표 프레임을 정하고 프로파일러로 병목을 찾으세요. 드로우콜과 프레임을 개선 전후로 표에 남깁니다.",
@@ -1789,8 +2054,8 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "수학 풀이 글 + 동기화 데모 + 지연 실험 기록", "엔진이 대신해 주지 않는 부분을 다뤄 본 흔적이 변별점입니다.",
      ("게임 수학", "보간", "지연 실험")),
     (4, "STEP 04 · 2주", 2, "mid", "기업군에 맞춰 마무리하기",
-     "지원 기업군의 편차 항목을 채우고 포트폴리오의 소개 순서와 자소서의 방점을 다시 배치하세요.",
-     "편차 항목 산출물 + 기업군 맞춤 소개 순서", "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+     "지원 기업군의 편차 항목을 채우세요. 크래시 하나를 재현·수정하고, LOD 또는 셰이더 설정을 바꾼 전후 비용과 품질 선택을 기록한 뒤 소개 순서를 조정합니다.",
+     "크래시 재현·수정 기록 + LOD·셰이더 전후 비교 + 기업군 맞춤 소개 순서", "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
      ("편차 보강", "소개 순서", "문서 정리")),
 )
 
@@ -1982,7 +2247,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
             "snapshot_id": snapshot_id(nn), "title": p["title"],
             "career_label_raw": p["career_label_raw"], "edu_label_raw": p["edu_label_raw"],
             "entry_label_raw": p["entry_label_raw"], "entry_label": p["entry_label"],
-            "posted_at": p["posted_at"], "closed_at": None,
+            "posted_at": p["posted_at"], "closed_at": closed_at(p),
             "dataset_version": DATASET_VERSION,
         })
     t["sources"] = sources
@@ -2397,7 +2662,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     t["wiki_revisions"] = revisions
     t["wiki_evidence"] = wiki_evidence
 
-    # --- 33 분석 산출물 27행
+    # --- 33 분석 산출물 52행
     outputs: list[dict[str, Any]] = []
 
     def add_output(output_type: str, agent: str, scope_level: str, scope_id: str,
@@ -2425,7 +2690,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
             "interpretation", "interpretation", "cluster", cid,
             interpretation_payload("cluster", cid), cid,
         )
-    for p in RECENT_POSTINGS:
+    for p in POSTINGS:
         pid = posting_id(p["nn"])
         intp_outputs[pid] = add_output(
             "interpretation", "interpretation", "posting", pid,
@@ -3000,8 +3265,8 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
                 problems.append(f"{row['output_id']}: baseline 개수 {len(payload['baseline'])}")
             if payload["scope"]["level"] != "overall" and not 2 <= len(payload["deviations"]) <= 4:
                 problems.append(f"{row['output_id']}: deviations 개수 {len(payload['deviations'])}")
-    # CONTRACT 4장 — 직무당 statistics 1 · interpretation 12 · strategy 7 · roadmap 7.
-    expected_counts = {"statistics": 1, "interpretation": 12, "strategy": 7, "roadmap": 7}
+    # CONTRACT 4장 — 직무당 statistics 1 · interpretation 37 · strategy 7 · roadmap 7.
+    expected_counts = {"statistics": 1, "interpretation": 37, "strategy": 7, "roadmap": 7}
     for output_type, expected in expected_counts.items():
         if counts[output_type] != expected:
             problems.append(f"{output_type} 행 수 {counts[output_type]} != {expected}")
@@ -3043,12 +3308,138 @@ def check_concepts(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
     return problems
 
 
+def check_posting_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """6. 공고 수·기간·기업군·진입 구분과 차원 표본을 확인한다."""
+    problems: list[str] = []
+    period_spec = {
+        RECENT: (18, "2026-01-01", "2026-06-30", {"entry_junior": 10, "experienced": 8}),
+        PRIOR: (12, "2024-03-01", "2025-11-30", {"entry_junior": 6, "experienced": 6}),
+    }
+    if len(POSTINGS) != 30 or len(tables["postings"]) != 30:
+        problems.append(f"공고 수 {len(POSTINGS)}/{len(tables['postings'])} != 30/30")
+    expected_ids = {posting_id(f"{n:02d}") for n in range(1, 31)}
+    actual_ids = {row["posting_id"] for row in tables["postings"]}
+    if actual_ids != expected_ids:
+        problems.append(f"공고 식별자 차이 {sorted(actual_ids ^ expected_ids)}")
+
+    for period, (expected_n, starts_on, ends_on, labels) in period_spec.items():
+        group = [p for p in POSTINGS if p["period"] == period]
+        if len(group) != expected_n:
+            problems.append(f"{period}: 공고 {len(group)}건 != {expected_n}건")
+        clusters = {p["cluster"] for p in group}
+        if clusters != set(CLUSTERS):
+            problems.append(f"{period}: 기업군 차이 {sorted(clusters ^ set(CLUSTERS))}")
+        actual_labels = {
+            label: sum(1 for p in group if p["entry_label"] == label)
+            for label in labels
+        }
+        if actual_labels != labels:
+            problems.append(f"{period}: entry_label {actual_labels} != {labels}")
+        for posting in group:
+            if not starts_on <= posting["posted_at"] <= ends_on:
+                problems.append(f"{posting['nn']}: 게시일 {posting['posted_at']} 범위 밖")
+
+    recent_cluster_counts = Counter(p["cluster"] for p in RECENT_POSTINGS)
+    if set(recent_cluster_counts.values()) != {3} or set(recent_cluster_counts) != set(CLUSTERS):
+        problems.append(f"recent 기업군 분포 {dict(recent_cluster_counts)} != 기업군별 3건")
+    prior_cluster_counts = Counter(p["cluster"] for p in PRIOR_POSTINGS)
+    if set(prior_cluster_counts.values()) != {2} or set(prior_cluster_counts) != set(CLUSTERS):
+        problems.append(f"prev 기업군 분포 {dict(prior_cluster_counts)} != 기업군별 2건")
+
+    versions = tables["posting_versions"]
+    ongoing = [row for row in versions if row["closed_at"] is None]
+    closed = [row for row in versions if row["closed_at"] is not None]
+    if len(ongoing) != 6 or len(closed) != 24:
+        problems.append(f"공고 상태 진행 {len(ongoing)}건/마감 {len(closed)}건 != 6/24")
+    prior_ids = {posting_version_id(posting["nn"]) for posting in PRIOR_POSTINGS}
+    if any(row["posting_version_id"] in prior_ids for row in ongoing):
+        problems.append("prev 공고에 진행 중 상태가 있다")
+    for row in closed:
+        if row["closed_at"] <= row["posted_at"]:
+            problems.append(f"{row['posting_version_id']}: 마감일이 게시일 이후가 아니다")
+
+    for slug in DIM_SLUGS:
+        companies = {
+            p["company_id"] for p in POSTINGS if slug in DIMS_BY_POSTING[p["nn"]]
+        }
+        if len(companies) < 2:
+            problems.append(f"{slug}: 독립 회사 {len(companies)}곳")
+    return problems
+
+
+def check_output_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """7. 모듈 산출물 52행과 전체 공고 해석 30행의 범위를 확인한다."""
+    outputs = tables["analysis_outputs"]
+    problems: list[str] = []
+    counts = Counter(row["output_type"] for row in outputs)
+    expected = {"statistics": 1, "interpretation": 37, "strategy": 7, "roadmap": 7}
+    if len(outputs) != 52 or dict(counts) != expected:
+        problems.append(f"산출물 {len(outputs)}행, 종류별 {dict(counts)} != 52행, {expected}")
+    posting_interpretations = {
+        row["scope_id"] for row in outputs
+        if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+    }
+    posting_ids = {posting_id(p["nn"]) for p in POSTINGS}
+    if posting_interpretations != posting_ids:
+        problems.append(f"공고 해석 범위 차이 {sorted(posting_interpretations ^ posting_ids)}")
+    return problems
+
+
+def check_direct_contract_values(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """8. 출처·기간·대상군·데이터셋·회사 직접 입력값을 확인한다."""
+    problems: list[str] = []
+    allowed_use_values = {
+        "statistics", "interpretation_context", "strategy", "roadmap",
+        "wiki_definition", "wiki_why_required", "wiki_depth_criteria", "wiki_prerequisites",
+        "wiki_common_misconceptions", "wiki_interview_verification", "wiki_learning_sequence",
+    }
+    expected_company_clusters = {
+        "co_ncsoft": "game", "co_krafton": "game", "co_kakao": "bigtech_platform",
+        "co_samsungsds": "si_enterprise", "co_nudgehealthcare": "startup",
+        "co_channelcorp": "b2b_saas", "co_kakaopay": "fintech_finance",
+        "co_navercloud": "b2b_saas", "co_kakaobank": "fintech_finance",
+        "co_wantedlab": "startup", "co_sendbird": "b2b_saas", "co_kbank": "fintech_finance",
+        "co_lgcns": "si_enterprise", "co_smilegate": "game",
+    }
+    for row in tables["source_assessments"]:
+        uses = set(row["allowed_uses"])
+        if not uses <= allowed_use_values:
+            problems.append(f"{row['assessment_id']}: 허용되지 않은 allowed_uses {sorted(uses - allowed_use_values)}")
+        if uses != set(ALLOWED_USES):
+            problems.append(f"{row['assessment_id']}: 데모 공고 기본 allowed_uses 아님")
+        if (row["source_tier"], str(row["reliability_score"]), row["assessment_version"]) != (
+            "A", "0.95000", "sa_v1"
+        ):
+            problems.append(f"{row['assessment_id']}: 출처 평가 기본값 불일치")
+
+    for row in tables["statistics_facts"]:
+        if row["period_id"] not in {RECENT, PRIOR}:
+            problems.append(f"{row['fact_id']}: 허용되지 않은 기간 {row['period_id']}")
+        if row["metric_family"] == "entry_label_advanced_signal_rate" and row["entry_segment"] != SEGMENT_ENTRY:
+            problems.append(f"{row['fact_id']}: entry_segment {row['entry_segment']}")
+
+    if tables.get("dataset_versions"):
+        problems.append("game_client 모듈이 dataset_versions 행을 만들었다")
+    for posting in POSTINGS:
+        expected_cluster = expected_company_clusters.get(posting["company_id"])
+        if expected_cluster is None:
+            problems.append(f"{posting['nn']}: 기준 데이터에 없는 회사 {posting['company_id']}")
+        elif posting["cluster"] != expected_cluster:
+            problems.append(
+                f"{posting['nn']}: 회사 기업군 {posting['cluster']} != {expected_cluster}"
+            )
+    return problems
+
+
 CHECKS = (
     ("1 근거 위치", check_spans),
     ("2 지표 재계산", check_numbers),
     ("3 외래키", check_foreign_keys),
     ("4 payload 키", check_payload_keys),
     ("5 체크 개념", check_concepts),
+    ("6 공고 모집단", check_posting_population),
+    ("7 산출물 범위", check_output_population),
+    ("8 직접 입력 계약", check_direct_contract_values),
 )
 
 

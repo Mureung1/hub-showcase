@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CLUSTERS, DEFAULT_CLUSTER } from '../data/clusters'
+import { filterPostings, postingState, postingYear } from '../data/postingFilters'
 
 // 해석·합격 전략·준비 로드맵 세 화면의 범위 선택을 혼자 맡는 블록.
 //
@@ -23,7 +24,7 @@ import { CLUSTERS, DEFAULT_CLUSTER } from '../data/clusters'
 //   scope           지금 요청한 범위 { level, cluster_tag, posting_id }
 //   jobLabel        직무 표시명 (1단이 직무 전체일 때 문장에 쓴다)
 //   postings        직무의 공고 전체 — hooks/usePostings 가 받은 목록
-//                   [{ posting_id, company, title, posted_at, cluster_id, cluster_tag }]
+//                   [{ posting_id, company, title, posted_at, closed_at, status, cluster_id, cluster_tag }]
 //   postingsStatus  그 목록의 상태 loading | ready | empty | error
 //   myPosting       App 이 들고 있는 내가 입력한 공고 (없으면 1단의 네 번째를 감춘다)
 //   payloadScope    지금 그리고 있는 payload 의 scope — 요청과 다르면 그 사실을 밝힌다
@@ -128,21 +129,45 @@ function ClusterChips({ cluster, withAll, onPick }) {
 // 검색칸은 건수와 상관없이 늘 낸다. 짧은 목록에서 감췄더니 기업군마다 최근 공고가 한
 // 건뿐인 데이터에서는 영영 나오지 않아 공고를 찾을 길이 사라졌다.
 // 회사명·공고 제목·기업군 표시명 셋으로 걸러진다.
-function PostingPicker({ postings, postingId, clusterFilter, status, onPick }) {
+function PostingPicker({ postings, postingId, clusterFilter, status, onPick, onRetry }) {
   const [search, setSearch] = useState('')
-  const query = search.trim().toLowerCase()
-
-  // 검색 중에는 기업군 거르개를 넘어 전체에서 찾는다. 기업군 칩으로 좁혀 둔 뒤에도
-  // 검색칸 하나로 직무의 공고 전체를 다시 볼 수 있어야 하기 때문이다.
-  const scoped = clusterFilter ? postings.filter((p) => p.cluster_tag === clusterFilter) : postings
-  const filtered = query
-    ? postings.filter((p) => `${p.company} ${p.title} ${p.cluster_tag}`.toLowerCase().includes(query))
-    : scoped
+  const [periodFilter, setPeriodFilter] = useState('all')
+  const [stateFilter, setStateFilter] = useState('all')
+  const query = search.trim()
+  const filtered = filterPostings(postings, {
+    cluster: clusterFilter,
+    period: periodFilter,
+    state: stateFilter,
+    query,
+  })
+  const periodCounts = {
+    all: filterPostings(postings, { cluster: clusterFilter, state: stateFilter, query }).length,
+    recent: filterPostings(postings, { cluster: clusterFilter, period: 'recent', state: stateFilter, query }).length,
+    prior: filterPostings(postings, { cluster: clusterFilter, period: 'prior', state: stateFilter, query }).length,
+  }
+  const stateCounts = {
+    all: filterPostings(postings, { cluster: clusterFilter, period: periodFilter, query }).length,
+    open: filterPostings(postings, { cluster: clusterFilter, period: periodFilter, state: 'open', query }).length,
+    closed: filterPostings(postings, { cluster: clusterFilter, period: periodFilter, state: 'closed', query }).length,
+  }
 
   let empty = null
   if (status === 'loading') empty = '공고 목록을 불러오는 중입니다…'
-  else if (postings.length === 0) empty = NO_POSTINGS
+  else if (status === 'error') empty = '공고 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+  else if (status === 'empty' || postings.length === 0) empty = NO_POSTINGS
   else if (filtered.length === 0) empty = '조건에 맞는 공고가 없습니다.'
+
+  const filterChip = (value, selected, onClick, label) => (
+    <button
+      key={value}
+      type="button"
+      className={`posting-filter-chip${selected === value ? ' posting-filter-chip--on' : ''}`}
+      aria-pressed={selected === value}
+      onClick={() => onClick(value)}
+    >
+      {label}
+    </button>
+  )
 
   return (
     <ScopeTier label="공고">
@@ -155,13 +180,34 @@ function PostingPicker({ postings, postingId, clusterFilter, status, onPick }) {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
-        <p className="posting-count">
-          {query
-            ? `검색 결과 ${filtered.length}건 · 기업군 구분 없이 전체 ${postings.length}건에서 찾습니다`
-            : `공고 ${filtered.length}건${clusterFilter ? ` · ${clusterFilter} 기업군만` : ''}`}
+        <div className="posting-filters">
+          <div className="posting-filter" role="group" aria-label="분석 기간">
+            <span className="posting-filter__label">분석 기간</span>
+            <div className="posting-filter__chips">
+              {filterChip('all', periodFilter, setPeriodFilter, `전체 ${periodCounts.all}`)}
+              {filterChip('recent', periodFilter, setPeriodFilter, `2026년 ${periodCounts.recent}`)}
+              {filterChip('prior', periodFilter, setPeriodFilter, `2024~2025년 ${periodCounts.prior}`)}
+            </div>
+          </div>
+          <div className="posting-filter" role="group" aria-label="채용 상태">
+            <span className="posting-filter__label">채용 상태</span>
+            <div className="posting-filter__chips">
+              {filterChip('all', stateFilter, setStateFilter, `전체 ${stateCounts.all}`)}
+              {filterChip('open', stateFilter, setStateFilter, `진행 중 ${stateCounts.open}`)}
+              {filterChip('closed', stateFilter, setStateFilter, `마감 ${stateCounts.closed}`)}
+            </div>
+          </div>
+        </div>
+        <p className="posting-count" role="status" aria-live="polite">
+          {`조건에 맞는 공고 ${filtered.length}건 · 전체 ${postings.length}건`}
         </p>
         <div className="posting-list posting-list--scope">
-          {empty && <p className="posting-empty">{empty}</p>}
+          {empty && (
+            <div className={`posting-empty${status === 'error' ? ' posting-empty--error' : ''}`} role={status === 'error' ? 'alert' : 'status'}>
+              <p>{empty}</p>
+              {status === 'error' && <button type="button" className="posting-retry" onClick={onRetry}>다시 시도</button>}
+            </div>
+          )}
           {!empty && filtered.map((p) => (
             <button
               key={p.posting_id}
@@ -173,7 +219,12 @@ function PostingPicker({ postings, postingId, clusterFilter, status, onPick }) {
               <span className="co">{p.company}</span>
               <span className="ti">{p.title}</span>
               <span className="posting-cluster">{p.cluster_tag}</span>
-              <span className="dt">{p.posted_at}</span>
+              <span className="posting-row__badges">
+                <span className="posting-year">{postingYear(p) ? `${postingYear(p)}년` : '연도 미상'}</span>
+                <span className={`posting-status posting-status--${postingState(p)}`}>
+                  {postingState(p) === 'closed' ? '마감' : '진행 중'}
+                </span>
+              </span>
             </button>
           ))}
         </div>
@@ -182,7 +233,7 @@ function PostingPicker({ postings, postingId, clusterFilter, status, onPick }) {
   )
 }
 
-function ScopeSwitch({ scope, jobLabel, postings = [], postingsStatus = 'loading', myPosting, payloadScope, hint, onSelect }) {
+function ScopeSwitch({ scope, jobLabel, postings = [], postingsStatus = 'loading', onRetryPostings, myPosting, payloadScope, hint, onSelect }) {
   const kind = kindOf(scope)
   // 3단 목록을 좁히는 기업군. 범위가 아니라 목록 보기 상태라 여기 둔다.
   // 처음에는 좁히지 않는다 — 직무의 공고 전체가 바로 보여야 한다.
@@ -267,6 +318,7 @@ function ScopeSwitch({ scope, jobLabel, postings = [], postingsStatus = 'loading
           clusterFilter={clusterFilter}
           status={postingsStatus}
           onPick={pickPosting}
+          onRetry={onRetryPostings}
         />
       )}
 
@@ -274,7 +326,8 @@ function ScopeSwitch({ scope, jobLabel, postings = [], postingsStatus = 'loading
         <span className="scope-switch__now">지금 보고 있는 범위</span>
         <span>{current}</span>
       </p>
-      {noPostings && <p className="scope-switch__hint">{NO_POSTINGS}</p>}
+      {postingsStatus === 'empty' && <p className="scope-switch__hint">{NO_POSTINGS}</p>}
+      {postingsStatus === 'error' && <p className="scope-switch__hint">공고 목록 연결을 확인해 주세요.</p>}
       {kind === 'posting' && !postingId && !noPostings && (
         <p className="scope-switch__hint">공고 목록에서 하나를 고르면 그 공고 기준으로 바뀝니다.</p>
       )}

@@ -2,9 +2,9 @@
 
 ## 1. 문서 목적
 
-이 문서는 구성요소별 읽기·쓰기 범위와 네 층의 강제 수단을 정의한다. P3의 데이터베이스 role과 repository 인터페이스가 이 정의를 구현하고, 통합 테스트가 위반을 검출한다.
+이 문서는 구성요소별 읽기·쓰기 범위와 네 층의 강제 수단을 정의한다. 데이터베이스 role과 repository 인터페이스가 이 정의를 구현하고, 통합 테스트가 위반을 검출한다.
 
-구성요소의 책임과 자율성 등급은 [아키텍처](architecture.md) 4장, 테이블 정의는 [ERD](erd.md)에 있다.
+구성요소의 책임과 자율성 등급은 [아키텍처](architecture.md) 4장, 테이블 정의는 [ERD](erd.md), 계층을 나눈 이유는 [지식·저장 구조](knowledge-schema.md)에 있다. 그래프의 노드·엣지 유형은 [온톨로지 v1](ontology-v1.md)이 소유하며, 5.2의 정책은 그 유형 목록을 쓰기 경계로 쓴다.
 
 ## 2. 구성요소
 
@@ -23,10 +23,12 @@
 | 계보 기록 파이프라인 | Helper Pipeline | A0 | `cs_pipe_lineage` |
 | 검증 파이프라인 | Helper Pipeline | A0 + A1 | `cs_pipe_verify` |
 | 서빙 파이프라인 | Helper Pipeline | A0 | `cs_serving` |
-| Express | 사용자 런타임 | A0 | `cs_serving` |
+| Express | 사용자 런타임 | A0 | Supabase `service_role` |
 | 평가 실행기 | 평가 | A0 | `cs_eval_runner` |
 
-Express와 서빙 파이프라인은 같은 role을 쓴다. 둘 다 활성 버전 조회만 수행한다.
+서빙 파이프라인과 Express는 둘 다 활성 버전 조회만 수행하고 쓰기 권한을 갖지 않는다. Express는 Supabase 클라이언트로 접속하므로 `SET LOCAL ROLE` 경로를 지나지 않고 `service_role`의 `SELECT` 권한만으로 조회한다.
+
+`Component` 열거값은 role을 갖는 구성요소 열넷이며 Express는 그 밖이다. 열거값과 role의 대응은 `domain/permissions.py`의 `DB_ROLE`이다.
 
 ## 3. 쓰기 범위
 
@@ -41,7 +43,7 @@ Express와 서빙 파이프라인은 같은 role을 쓴다. 둘 다 활성 버�
 | 준비 로드맵 | `roadmap_items`, `roadmap_item_fills`, `study_tracks`, `analysis_outputs`, `user_posting_analyses`(INSERT만), `research_requests`(INSERT) |
 | 적재 | `postings`, `posting_versions`, `source_snapshots`(INSERT만), `source_observations`(INSERT만) |
 | 인덱싱 | `source_chunks`, `chunk_embeddings` |
-| 집계 | `statistics_facts`, `capability_depth_profiles`, `knowledge_edges.weight`(UPDATE만) |
+| 집계 | `statistics_facts`, `capability_depth_profiles`, `analysis_outputs`, `knowledge_edges.weight`(UPDATE만) |
 | 계보 기록 | `knowledge_nodes`·`knowledge_edges`의 Provenance 묶음과 사후 semantic 묶음, `graph_paths` |
 | 검증 | `verification_results`, `repair_orders`, `research_requests`(INSERT) |
 | 평가 실행기 | `evaluation_sets`, `evaluation_cases`, `evaluation_expected_items`, `evaluation_runs`, `evaluation_metrics`, `evaluation_failures` |
@@ -82,10 +84,15 @@ tool_calls
 | 채용공고 해석 | D0~D4, 그래프, Wiki, 기준 테이블 |
 | 합격 전략 | D0~D5의 해석 산출물, 그래프, Wiki, 기준 테이블 |
 | 준비 로드맵 | D0~D5의 해석·전략 산출물, 그래프, Wiki, 기준 테이블 |
+| 적재 | `sources`, `source_snapshots`, `postings`, `posting_versions`, 기준 테이블 |
+| 인덱싱 | `source_snapshots`, `source_chunks`, 기준 테이블 |
 | 집계 | D3a 할당, 기준 테이블, 정책 테이블 |
 | 계보 기록 | 전 산출물 테이블 |
 | 검증 | 전 테이블 |
-| 서빙·Express | `active_analysis_versions`가 가리키는 버전의 `analysis_outputs`, `statistics_facts`, `checklist_*`, `roadmap_*`, `study_tracks`, `graph_paths`, 기준 테이블 |
+| 평가 실행기 | 전 테이블 |
+| 서빙·Express | `active_analysis_versions`가 가리키는 버전의 `analysis_outputs`, `statistics_facts`, `checklist_*`, `roadmap_*`, `study_tracks`, `graph_paths`, `user_postings`, `user_posting_analyses`, 기준 테이블 |
+
+이 표는 설계 범위이며 repository 인터페이스가 강제한다. 데이터베이스 `GRANT`는 구성요소 role 전체에 `SELECT ON ALL TABLES IN SCHEMA public`을 준다. 계보 추적과 채점이 어느 상위 계층을 읽어야 할지 실행 전에 정해지지 않으므로 읽기는 role로 좁히지 않는다.
 
 Express는 활성 버전이 아닌 산출물을 조회하지 않는다. 조회 함수가 `active_analysis_versions`와의 조인을 강제한다.
 
@@ -122,6 +129,8 @@ CREATE POLICY knowledge_derived ON knowledge_edges
   );
 ```
 
+노드는 층으로만 가른다. 지식 구축은 `semantic` 노드만 만들고, 계보 기록은 `ASSIGNED_TO`의 도착점이 semantic 노드이므로 두 층의 노드를 모두 만든다. 집계는 `knowledge_edges`의 `weight` 갱신 정책 하나만 갖는다.
+
 ### 5.3 `research_requests`
 
 네 에이전트와 검증 파이프라인이 INSERT하고 오케스트레이터가 상태를 갱신한다.
@@ -150,16 +159,18 @@ GRANT INSERT ON user_posting_analyses TO
   cs_agent_interpret, cs_agent_strategy, cs_agent_roadmap;
 ```
 
-읽기는 전 구성요소와 Express에 열려 있다. Express는 조회만 하고 저장은 FastAPI 온디맨드 경로가 한다. 두 표는 통계 테이블과 외래키로 잇지 않는다. 사용자 입력이 모집단에 섞이면 직무 기준선과 지표가 오염된다.
+읽기는 전 구성요소와 Express에 열려 있다. Express는 조회만 하고 저장은 FastAPI 온디맨드 경로가 한다. 두 표가 어느 계층에도 속하지 않고 통계 모집단과 갈리는 이유는 [지식·저장 구조](knowledge-schema.md) 2장에 있다.
 
 ## 6. 강제 수단 네 층
 
-| 층 | 수단 | 검출 시점 |
-| --- | --- | --- |
-| 설계 | 3장과 4장의 범위 | 문서 검토 |
-| 코드 | 구성요소별 repository 인터페이스 | 개발 |
-| 데이터베이스 | role, `GRANT`, `CHECK`, 행 수준 정책, 트리거 | 실행 |
-| 검증 | 허용 범위 밖 쓰기가 실패하는 통합 테스트 | CI |
+| 층 | 수단 | 검출 시점 | 자리 |
+| --- | --- | --- | --- |
+| 설계 | 3장과 4장의 범위 | 문서 검토 | 이 문서 |
+| 코드 | 구성요소별 repository 인터페이스 | 개발 | `src/careersignal/domain/permissions.py`, `src/careersignal/repositories/` |
+| 데이터베이스 | role, `GRANT`, `CHECK`, 행 수준 정책, 트리거 | 실행 | `migrations/sql/0003`·`0004`·`0005`·`0006`·`0007`·`0016`·`0026` |
+| 검증 | 허용 범위 밖 쓰기가 실패하는 통합 테스트 | CI | `tests/integration/test_permissions.py`, `tests/integration/test_telemetry.py` |
+
+경로는 `agent/` 아래다.
 
 ### 6.1 코드 층
 
@@ -167,7 +178,9 @@ GRANT INSERT ON user_posting_analyses TO
 
 각 구성요소는 자기 repository 인터페이스만 주입받는다. 해석 에이전트에 `StatisticsFactRepository`의 쓰기 메서드가 주입되지 않으므로, 코드를 잘못 써도 호출할 대상이 없다.
 
-`contracts/`와 `domain/`은 저장소와 모델을 import하지 않는다. 순수 개념이 저장 구조에 묶이지 않게 한다.
+3장의 범위는 `domain/permissions.py`의 `Component`·`DB_ROLE`·`_WRITE_SCOPE`에 값으로 들어 있고, `require_write()`가 데이터베이스에 가기 전에 먼저 막는다.
+
+`contracts/`와 `domain/`은 저장소와 모델을 import하지 않는다. 순수 개념이 저장 구조에 묶이지 않게 한다. `tests/unit/test_domain_purity.py`가 이 경계를 검사한다.
 
 ### 6.2 데이터베이스 층
 
@@ -196,14 +209,7 @@ GRANT cs_agent_interpret TO <접속 사용자> WITH SET TRUE;
 
 #### 기본 권한
 
-`PUBLIC`에 대한 일괄 회수는 하지 않는다.
-
-```sql
--- 사용하지 않는다. Supabase 내부 role 연결이 끊겨 접속이 종료된다
-REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC;
-```
-
-PostgreSQL은 새 테이블의 권한을 `PUBLIC`에 부여하지 않는다. 이 문장은 얻는 것 없이 위험만 있다. 대신 다음으로 앞으로 만들 테이블의 기본값을 막고, 필요한 권한만 role에 부여한다.
+PostgreSQL은 새 테이블의 권한을 `PUBLIC`에 부여하지 않는다. 앞으로 만들 테이블의 기본값을 다음으로 막고, 필요한 권한만 role에 부여한다.
 
 ```sql
 ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM PUBLIC;
@@ -225,11 +231,11 @@ append-only 테이블은 트리거로 `UPDATE`·`DELETE`를 차단한다. 권한
 
 ### 6.3 검증 층
 
-통합 테스트가 구성요소마다 허용 범위 밖 쓰기를 시도하고 실패를 확인한다.
+통합 테스트가 구성요소마다 허용 범위 밖 쓰기를 시도하고 실패를 확인한다. 권한과 정책과 제약은 `tests/integration/test_permissions.py`, 계측 표의 append-only 트리거는 `tests/integration/test_telemetry.py`가 맡는다.
 
 | 테스트 | 기대 |
 | --- | --- |
-| 접속 사용자가 열네 role 전부로 전환 | 성공 |
+| 접속 사용자가 `DB_ROLE`의 열네 role 전부로 전환 | 성공 |
 | 해석 role이 `statistics_facts`에 INSERT | 권한 오류 |
 | 통계 role이 `analysis_claims`에 INSERT | 권한 오류 |
 | 전략 role이 `output_type = 'roadmap'`으로 INSERT | `CHECK` 위반 |
@@ -240,13 +246,9 @@ append-only 테이블은 트리거로 `UPDATE`·`DELETE`를 차단한다. 권한
 | Express role이 아무 테이블에 INSERT | 권한 오류 |
 | Express가 비활성 버전의 `analysis_outputs` 조회 | 빈 결과 |
 
-첫 항목은 나머지의 전제다. 전환이 안 되면 아래 검사들은 권한이 막아서가 아니라 전환이 실패해서 오류를 내므로, 통과 여부를 신뢰할 수 없다.
+첫 항목은 나머지의 전제다. role 전환이 성공한 상태에서만 아래 검사의 결과를 권한 판정으로 읽는다.
 
-트리거 검사는 대상 테이블에 실제 행을 넣은 뒤 변경을 시도한다. 빈 테이블에 `UPDATE`를 하면 행 단위 트리거가 발동하지 않아 검사가 통과한 것처럼 보인다.
-
-트리거 검사는 해당 변경 권한을 가진 주체로 수행한다. 권한이 없는 role로 시도하면 `GRANT`가 먼저 거부해 트리거가 실행되지 않는다. 두 층이 같은 변경을 막으므로, 권한 층만 확인하면 트리거가 없어도 검사가 통과한다. 계측 테이블의 실행 기록 두 종이 이 경우다. 구성요소에는 종료 컬럼의 `UPDATE`만 있어 다른 컬럼의 변경은 권한에서 끝난다.
-
-트리거 검사는 값이 실제로 달라지는 변경으로 수행한다. 트리거가 `IS DISTINCT FROM`으로 판정하므로 같은 값으로 덮어쓰면 예외가 나지 않는다. `now()`는 거래 시작 시각이라 같은 거래 안에서 항상 같은 값을 돌려준다.
+트리거 검사는 실제 행을 넣고, 변경 권한을 가진 주체로, 값이 달라지는 변경으로 수행한다.
 
 이 테스트 목록은 [개발 백로그](backlog.md) Phase 3의 완료 조건이다. 진행 상태는 백로그에서 관리한다.
 

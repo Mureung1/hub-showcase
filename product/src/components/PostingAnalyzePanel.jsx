@@ -22,7 +22,7 @@ export function ConfBadge({ level }) {
 
 // 개별 공고 해석 UI. 기업군 공고 상세와 사용자 입력 공고가 공유한다.
 // posting 은 interpretation payload 의 posting 객체 형태다.
-export function PostingInterpretation({ posting, jobLabel, footer }) {
+export function PostingInterpretation({ posting, footer }) {
   const [annTab, setAnnTab] = useState('deviation') // deviation | baseline | signal
 
   if (!posting) return null
@@ -46,7 +46,7 @@ export function PostingInterpretation({ posting, jobLabel, footer }) {
                   {line.note_n && <mark className="mark--signal">{line.text}<sup>{line.note_n}</sup></mark>}
                   {line.base_n && <>{line.text}<sup className="sup-base">{line.base_n}</sup></>}
                   {!line.mark_n && !line.note_n && !line.base_n && line.text}
-                  {line.base_ref && <span className="raw-base">baseline · {line.base_ref}</span>}
+                  {line.base_ref && <span className="raw-base">직무 공통 · {line.base_ref}</span>}
                 </p>
               </div>
             ))}
@@ -65,7 +65,7 @@ export function PostingInterpretation({ posting, jobLabel, footer }) {
           </div>
         )}
         <div className="ann-tabs">
-          <button type="button" className={`ann-tab ann-tab--base${annTab === 'baseline' ? ' is-on' : ''}`} onClick={() => setAnnTab('baseline')}><i className="ann-dot"></i>{jobLabel} 공통 {baselineNotes.length}</button>
+          <button type="button" className={`ann-tab ann-tab--base${annTab === 'baseline' ? ' is-on' : ''}`} onClick={() => setAnnTab('baseline')}><i className="ann-dot"></i>직무 공통 기대치 {baselineNotes.length}</button>
           <button type="button" className={`ann-tab ann-tab--sig${annTab === 'signal' ? ' is-on' : ''}`} onClick={() => setAnnTab('signal')}><i className="ann-dot"></i>숨은 의미 {signalNotes.length}</button>
           <button type="button" className={`ann-tab ann-tab--dev${annTab === 'deviation' ? ' is-on' : ''}`} onClick={() => setAnnTab('deviation')}><i className="ann-dot"></i>{posting.company} 특징 {interpretations.length}</button>
         </div>
@@ -108,7 +108,7 @@ function GeneralFallback({ fallback, jobLabel }) {
     <div className="pa-summary-grid">
       <div className="pa-card">
         <h4>{jobLabel} 공통 기대치</h4>
-        <p>공고별 해석 대신 직무 baseline 을 그대로 보여 줍니다.</p>
+        <p>공고별 해석 대신 {jobLabel} 직무 공통 기대치를 보여 줍니다.</p>
         <ul className="pa-list">
           {baseline.slice(0, 5).map((b) => (
             <li key={b.item_id}><b>{b.title}</b> — {b.desc}</li>
@@ -117,7 +117,7 @@ function GeneralFallback({ fallback, jobLabel }) {
       </div>
       <div className="pa-card">
         <h4>기업군 편차</h4>
-        <p>선택한 기업군이 baseline 위에서 더 요구하는 지점입니다.</p>
+        <p>선택한 기업군이 직무 공통 기대치보다 더 요구하는 지점입니다.</p>
         <ul className="pa-list">
           {deviations.slice(0, 5).map((d) => (
             <li key={d.item_id}><b>{d.topic}</b> — {d.deviation}</li>
@@ -276,7 +276,7 @@ function PostingAnalyzePanel({ job, jobLabel, fallback, myPosting, setMyPosting,
             지금은 새 공고를 즉시 분석할 수 없어 이 공고만의 해석은 제공하지 못합니다.{message && ` (${message})`} 대신 아래 {jobLabel} 일반 결과를 확인해 주세요.
           </p>
           {posting
-            ? <PostingInterpretation posting={posting} jobLabel={jobLabel} />
+            ? <PostingInterpretation posting={posting} />
             : <GeneralFallback fallback={fallback} jobLabel={jobLabel} />}
         </>
       )}
@@ -291,7 +291,7 @@ function PostingAnalyzePanel({ job, jobLabel, fallback, myPosting, setMyPosting,
           </div>
 
           {posting
-            ? <PostingInterpretation posting={posting} jobLabel={jobLabel} />
+            ? <PostingInterpretation posting={posting} />
             : <p className="pa-status">이 공고에서는 개별 해석 문장을 뽑지 못했습니다. 원문에 자격요건·우대사항이 들어 있는지 확인해 주세요.</p>}
 
           {(strategy || roadmap) && (

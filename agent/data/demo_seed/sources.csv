@@ -4,79 +4,268 @@ src_demo_backend_02,job_posting,https://careersignal.example/demo/backend/dp_bac
 src_demo_backend_03,job_posting,https://careersignal.example/demo/backend/dp_backend_03,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_channelcorp,2026-02-17T10:00:00+09:00
 src_demo_backend_04,job_posting,https://careersignal.example/demo/backend/dp_backend_04,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_daangn,2026-04-21T10:00:00+09:00
 src_demo_backend_05,job_posting,https://careersignal.example/demo/backend/dp_backend_05,크래프톤,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_krafton,2026-05-11T10:00:00+09:00
-src_demo_backend_06,job_posting,https://careersignal.example/demo/backend/dp_backend_06,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_samsungsds,2024-10-14T10:00:00+09:00
-src_demo_backend_07,job_posting,https://careersignal.example/demo/backend/dp_backend_07,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_kakaopay,2025-03-03T10:00:00+09:00
-src_demo_backend_08,job_posting,https://careersignal.example/demo/backend/dp_backend_08,주식회사 우아한형제들,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_woowahan,2024-11-25T10:00:00+09:00
-src_demo_backend_09,job_posting,https://careersignal.example/demo/backend/dp_backend_09,주식회사 버킷플레이스,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_bucketplace,2025-05-19T10:00:00+09:00
+src_demo_backend_06,job_posting,https://careersignal.example/demo/backend/dp_backend_06,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_samsungsds,2026-01-26T10:00:00+09:00
+src_demo_backend_07,job_posting,https://careersignal.example/demo/backend/dp_backend_07,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_kakaopay,2026-02-09T10:00:00+09:00
+src_demo_backend_08,job_posting,https://careersignal.example/demo/backend/dp_backend_08,주식회사 우아한형제들,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_woowahan,2026-04-06T10:00:00+09:00
+src_demo_backend_09,job_posting,https://careersignal.example/demo/backend/dp_backend_09,주식회사 버킷플레이스,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_bucketplace,2026-06-08T10:00:00+09:00
+src_demo_backend_10,job_posting,https://careersignal.example/demo/backend/dp_backend_10,네이버,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_naver,2024-04-15T10:00:00+09:00
+src_demo_backend_11,job_posting,https://careersignal.example/demo/backend/dp_backend_11,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_daangn,2024-08-19T10:00:00+09:00
+src_demo_backend_12,job_posting,https://careersignal.example/demo/backend/dp_backend_12,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_channelcorp,2025-01-20T10:00:00+09:00
+src_demo_backend_13,job_posting,https://careersignal.example/demo/backend/dp_backend_13,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_kakaopay,2025-04-07T10:00:00+09:00
+src_demo_backend_14,job_posting,https://careersignal.example/demo/backend/dp_backend_14,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_samsungsds,2025-07-14T10:00:00+09:00
+src_demo_backend_15,job_posting,https://careersignal.example/demo/backend/dp_backend_15,크래프톤,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_krafton,2025-10-13T10:00:00+09:00
+src_demo_backend_16,job_posting,https://careersignal.example/demo/backend/dp_backend_16,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_kakao,2026-01-05T10:00:00+09:00
+src_demo_backend_17,job_posting,https://careersignal.example/demo/backend/dp_backend_17,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_daangn,2026-01-19T10:00:00+09:00
+src_demo_backend_18,job_posting,https://careersignal.example/demo/backend/dp_backend_18,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_kakaopay,2026-02-23T10:00:00+09:00
+src_demo_backend_19,job_posting,https://careersignal.example/demo/backend/dp_backend_19,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_channelcorp,2026-03-09T10:00:00+09:00
+src_demo_backend_20,job_posting,https://careersignal.example/demo/backend/dp_backend_20,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_channelcorp,2026-03-23T10:00:00+09:00
+src_demo_backend_21,job_posting,https://careersignal.example/demo/backend/dp_backend_21,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_samsungsds,2026-04-13T10:00:00+09:00
+src_demo_backend_22,job_posting,https://careersignal.example/demo/backend/dp_backend_22,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_samsungsds,2026-04-27T10:00:00+09:00
+src_demo_backend_23,job_posting,https://careersignal.example/demo/backend/dp_backend_23,크래프톤,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_krafton,2026-05-25T10:00:00+09:00
+src_demo_backend_24,job_posting,https://careersignal.example/demo/backend/dp_backend_24,크래프톤,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_krafton,2026-06-22T10:00:00+09:00
+src_demo_backend_25,job_posting,https://careersignal.example/demo/backend/dp_backend_25,네이버,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_naver,2024-05-13T10:00:00+09:00
+src_demo_backend_26,job_posting,https://careersignal.example/demo/backend/dp_backend_26,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_daangn,2024-09-09T10:00:00+09:00
+src_demo_backend_27,job_posting,https://careersignal.example/demo/backend/dp_backend_27,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_channelcorp,2025-02-10T10:00:00+09:00
+src_demo_backend_28,job_posting,https://careersignal.example/demo/backend/dp_backend_28,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_kakaopay,2025-05-12T10:00:00+09:00
+src_demo_backend_29,job_posting,https://careersignal.example/demo/backend/dp_backend_29,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_samsungsds,2025-08-11T10:00:00+09:00
+src_demo_backend_30,job_posting,https://careersignal.example/demo/backend/dp_backend_30,크래프톤,\N,allow,생성 데이터. 실제 공고가 아니다.,{backend},co_krafton,2025-11-10T10:00:00+09:00
 src_demo_frontend_01,job_posting,https://careersignal.example/demo/frontend/dp_frontend_01,네이버,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_naver,2026-03-02T10:00:00+09:00
 src_demo_frontend_02,job_posting,https://careersignal.example/demo/frontend/dp_frontend_02,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_viva,2026-01-12T10:00:00+09:00
 src_demo_frontend_03,job_posting,https://careersignal.example/demo/frontend/dp_frontend_03,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_daangn,2026-02-16T10:00:00+09:00
 src_demo_frontend_04,job_posting,https://careersignal.example/demo/frontend/dp_frontend_04,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_channelcorp,2026-04-14T10:00:00+09:00
 src_demo_frontend_05,job_posting,https://careersignal.example/demo/frontend/dp_frontend_05,엘지씨엔에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_lgcns,2026-05-26T10:00:00+09:00
-src_demo_frontend_06,job_posting,https://careersignal.example/demo/frontend/dp_frontend_06,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_kakao,2025-03-10T10:00:00+09:00
-src_demo_frontend_07,job_posting,https://careersignal.example/demo/frontend/dp_frontend_07,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_kakaopay,2024-11-05T10:00:00+09:00
-src_demo_frontend_08,job_posting,https://careersignal.example/demo/frontend/dp_frontend_08,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_ncsoft,2025-04-18T10:00:00+09:00
-src_demo_frontend_09,job_posting,https://careersignal.example/demo/frontend/dp_frontend_09,센드버드,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_sendbird,2025-02-20T10:00:00+09:00
+src_demo_frontend_06,job_posting,https://careersignal.example/demo/frontend/dp_frontend_06,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_kakao,2026-03-10T10:00:00+09:00
+src_demo_frontend_07,job_posting,https://careersignal.example/demo/frontend/dp_frontend_07,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_kakaopay,2026-01-05T10:00:00+09:00
+src_demo_frontend_08,job_posting,https://careersignal.example/demo/frontend/dp_frontend_08,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_ncsoft,2026-04-18T10:00:00+09:00
+src_demo_frontend_09,job_posting,https://careersignal.example/demo/frontend/dp_frontend_09,센드버드,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_sendbird,2026-02-20T10:00:00+09:00
+src_demo_frontend_10,job_posting,https://careersignal.example/demo/frontend/dp_frontend_10,네이버,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_naver,2024-03-18T10:00:00+09:00
+src_demo_frontend_11,job_posting,https://careersignal.example/demo/frontend/dp_frontend_11,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_daangn,2024-07-08T10:00:00+09:00
+src_demo_frontend_12,job_posting,https://careersignal.example/demo/frontend/dp_frontend_12,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_channelcorp,2024-11-12T10:00:00+09:00
+src_demo_frontend_13,job_posting,https://careersignal.example/demo/frontend/dp_frontend_13,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_viva,2025-03-17T10:00:00+09:00
+src_demo_frontend_14,job_posting,https://careersignal.example/demo/frontend/dp_frontend_14,엘지씨엔에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_lgcns,2025-07-07T10:00:00+09:00
+src_demo_frontend_15,job_posting,https://careersignal.example/demo/frontend/dp_frontend_15,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_ncsoft,2025-11-03T10:00:00+09:00
+src_demo_frontend_16,job_posting,https://careersignal.example/demo/frontend/dp_frontend_16,네이버,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_naver,2026-01-05T10:00:00+09:00
+src_demo_frontend_17,job_posting,https://careersignal.example/demo/frontend/dp_frontend_17,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_viva,2026-01-19T10:00:00+09:00
+src_demo_frontend_18,job_posting,https://careersignal.example/demo/frontend/dp_frontend_18,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_daangn,2026-02-23T10:00:00+09:00
+src_demo_frontend_19,job_posting,https://careersignal.example/demo/frontend/dp_frontend_19,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_daangn,2026-03-09T10:00:00+09:00
+src_demo_frontend_20,job_posting,https://careersignal.example/demo/frontend/dp_frontend_20,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_channelcorp,2026-03-23T10:00:00+09:00
+src_demo_frontend_21,job_posting,https://careersignal.example/demo/frontend/dp_frontend_21,엘지씨엔에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_lgcns,2026-04-13T10:00:00+09:00
+src_demo_frontend_22,job_posting,https://careersignal.example/demo/frontend/dp_frontend_22,엘지씨엔에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_lgcns,2026-04-27T10:00:00+09:00
+src_demo_frontend_23,job_posting,https://careersignal.example/demo/frontend/dp_frontend_23,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_ncsoft,2026-05-25T10:00:00+09:00
+src_demo_frontend_24,job_posting,https://careersignal.example/demo/frontend/dp_frontend_24,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_ncsoft,2026-06-22T10:00:00+09:00
+src_demo_frontend_25,job_posting,https://careersignal.example/demo/frontend/dp_frontend_25,네이버,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_naver,2024-05-13T10:00:00+09:00
+src_demo_frontend_26,job_posting,https://careersignal.example/demo/frontend/dp_frontend_26,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_daangn,2024-09-09T10:00:00+09:00
+src_demo_frontend_27,job_posting,https://careersignal.example/demo/frontend/dp_frontend_27,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_channelcorp,2025-02-10T10:00:00+09:00
+src_demo_frontend_28,job_posting,https://careersignal.example/demo/frontend/dp_frontend_28,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_viva,2025-05-12T10:00:00+09:00
+src_demo_frontend_29,job_posting,https://careersignal.example/demo/frontend/dp_frontend_29,엘지씨엔에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_lgcns,2025-08-11T10:00:00+09:00
+src_demo_frontend_30,job_posting,https://careersignal.example/demo/frontend/dp_frontend_30,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{frontend},co_ncsoft,2025-11-10T10:00:00+09:00
 src_demo_ai_engineer_01,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_01,네이버,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_naver,2026-03-10T10:00:00+09:00
 src_demo_ai_engineer_02,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_02,업스테이지,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_upstage,2026-01-19T10:00:00+09:00
 src_demo_ai_engineer_03,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_03,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_navercloud,2026-02-24T10:00:00+09:00
 src_demo_ai_engineer_04,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_04,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_kakaobank,2026-05-12T10:00:00+09:00
 src_demo_ai_engineer_05,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_05,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_ncsoft,2026-06-09T10:00:00+09:00
-src_demo_ai_engineer_06,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_06,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_kakao,2025-02-18T10:00:00+09:00
-src_demo_ai_engineer_07,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_07,원티드랩,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_wantedlab,2025-04-08T10:00:00+09:00
-src_demo_ai_engineer_08,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_08,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_samsungsds,2024-11-12T10:00:00+09:00
-src_demo_ai_engineer_09,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_09,센드버드,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_sendbird,2025-01-20T10:00:00+09:00
+src_demo_ai_engineer_06,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_06,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_kakao,2026-02-18T10:00:00+09:00
+src_demo_ai_engineer_07,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_07,원티드랩,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_wantedlab,2026-04-08T10:00:00+09:00
+src_demo_ai_engineer_08,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_08,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_samsungsds,2026-05-26T10:00:00+09:00
+src_demo_ai_engineer_09,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_09,센드버드,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_sendbird,2026-06-23T10:00:00+09:00
+src_demo_ai_engineer_10,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_10,쿠팡,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_coupang,2025-08-19T10:00:00+09:00
+src_demo_ai_engineer_11,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_11,당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_daangn,2025-06-10T10:00:00+09:00
+src_demo_ai_engineer_12,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_12,채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_channelcorp,2025-10-14T10:00:00+09:00
+src_demo_ai_engineer_13,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_13,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_viva,2024-09-03T10:00:00+09:00
+src_demo_ai_engineer_14,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_14,엘지씨엔에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_lgcns,2024-05-21T10:00:00+09:00
+src_demo_ai_engineer_15,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_15,크래프톤,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_krafton,2025-03-25T10:00:00+09:00
+src_demo_ai_engineer_16,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_16,네이버,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_naver,2026-01-05T10:00:00+09:00
+src_demo_ai_engineer_17,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_17,업스테이지,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_upstage,2026-01-26T10:00:00+09:00
+src_demo_ai_engineer_18,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_18,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_navercloud,2026-02-16T10:00:00+09:00
+src_demo_ai_engineer_19,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_19,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_kakaobank,2026-03-09T10:00:00+09:00
+src_demo_ai_engineer_20,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_20,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_kakaobank,2026-03-30T10:00:00+09:00
+src_demo_ai_engineer_21,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_21,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_ncsoft,2026-04-20T10:00:00+09:00
+src_demo_ai_engineer_22,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_22,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_ncsoft,2026-05-11T10:00:00+09:00
+src_demo_ai_engineer_23,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_23,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_samsungsds,2026-05-25T10:00:00+09:00
+src_demo_ai_engineer_24,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_24,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_samsungsds,2026-06-22T10:00:00+09:00
+src_demo_ai_engineer_25,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_25,네이버,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_naver,2024-03-18T10:00:00+09:00
+src_demo_ai_engineer_26,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_26,업스테이지,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_upstage,2024-07-08T10:00:00+09:00
+src_demo_ai_engineer_27,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_27,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_navercloud,2024-11-12T10:00:00+09:00
+src_demo_ai_engineer_28,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_28,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_kakaobank,2025-03-17T10:00:00+09:00
+src_demo_ai_engineer_29,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_29,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_samsungsds,2025-07-07T10:00:00+09:00
+src_demo_ai_engineer_30,job_posting,https://careersignal.example/demo/ai_engineer/dp_ai_engineer_30,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{ai_engineer},co_ncsoft,2025-11-10T10:00:00+09:00
 src_demo_data_engineer_01,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_01,쿠팡,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_coupang,2026-03-10T10:00:00+09:00
 src_demo_data_engineer_02,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_02,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_viva,2026-02-09T10:00:00+09:00
 src_demo_data_engineer_03,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_03,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_navercloud,2026-01-20T10:00:00+09:00
 src_demo_data_engineer_04,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_04,업스테이지,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_upstage,2026-05-18T10:00:00+09:00
 src_demo_data_engineer_05,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_05,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_samsungsds,2026-04-06T10:00:00+09:00
-src_demo_data_engineer_06,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_06,컬리,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_kurly,2025-03-12T10:00:00+09:00
-src_demo_data_engineer_07,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_07,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_kakaopay,2024-11-20T10:00:00+09:00
-src_demo_data_engineer_08,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_08,네오플,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_neople,2025-05-08T10:00:00+09:00
-src_demo_data_engineer_09,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_09,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_channelcorp,2024-09-25T10:00:00+09:00
+src_demo_data_engineer_06,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_06,컬리,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_kurly,2026-03-12T10:00:00+09:00
+src_demo_data_engineer_07,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_07,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_kakaopay,2026-05-20T10:00:00+09:00
+src_demo_data_engineer_08,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_08,네오플,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_neople,2026-06-08T10:00:00+09:00
+src_demo_data_engineer_09,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_09,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_channelcorp,2026-02-25T10:00:00+09:00
+src_demo_data_engineer_10,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_10,업스테이지,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_upstage,2024-03-18T10:00:00+09:00
+src_demo_data_engineer_11,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_11,쿠팡,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_coupang,2024-07-22T10:00:00+09:00
+src_demo_data_engineer_12,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_12,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_navercloud,2024-11-11T10:00:00+09:00
+src_demo_data_engineer_13,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_13,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_viva,2025-03-24T10:00:00+09:00
+src_demo_data_engineer_14,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_14,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_samsungsds,2025-07-14T10:00:00+09:00
+src_demo_data_engineer_15,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_15,네오플,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_neople,2025-11-17T10:00:00+09:00
+src_demo_data_engineer_16,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_16,쿠팡,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_coupang,2026-01-05T10:00:00+09:00
+src_demo_data_engineer_17,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_17,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_viva,2026-01-19T10:00:00+09:00
+src_demo_data_engineer_18,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_18,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_navercloud,2026-02-23T10:00:00+09:00
+src_demo_data_engineer_19,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_19,업스테이지,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_upstage,2026-03-09T10:00:00+09:00
+src_demo_data_engineer_20,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_20,업스테이지,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_upstage,2026-03-23T10:00:00+09:00
+src_demo_data_engineer_21,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_21,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_samsungsds,2026-04-13T10:00:00+09:00
+src_demo_data_engineer_22,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_22,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_samsungsds,2026-04-27T10:00:00+09:00
+src_demo_data_engineer_23,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_23,네오플,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_neople,2026-05-25T10:00:00+09:00
+src_demo_data_engineer_24,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_24,네오플,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_neople,2026-06-22T10:00:00+09:00
+src_demo_data_engineer_25,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_25,쿠팡,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_coupang,2024-05-13T10:00:00+09:00
+src_demo_data_engineer_26,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_26,업스테이지,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_upstage,2024-09-09T10:00:00+09:00
+src_demo_data_engineer_27,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_27,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_navercloud,2025-02-10T10:00:00+09:00
+src_demo_data_engineer_28,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_28,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_viva,2025-05-12T10:00:00+09:00
+src_demo_data_engineer_29,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_29,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_samsungsds,2025-08-11T10:00:00+09:00
+src_demo_data_engineer_30,job_posting,https://careersignal.example/demo/data_engineer/dp_data_engineer_30,네오플,\N,allow,생성 데이터. 실제 공고가 아니다.,{data_engineer},co_neople,2025-11-10T10:00:00+09:00
 src_demo_fullstack_01,job_posting,https://seed.careersignal.invalid/fullstack/co_wantedlab/01,원티드랩,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_wantedlab,2026-02-10T09:00:00+09:00
 src_demo_fullstack_02,job_posting,https://seed.careersignal.invalid/fullstack/co_musinsa/02,무신사,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_musinsa,2026-01-20T09:00:00+09:00
 src_demo_fullstack_03,job_posting,https://seed.careersignal.invalid/fullstack/co_channelcorp/03,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_channelcorp,2026-04-14T09:00:00+09:00
 src_demo_fullstack_04,job_posting,https://seed.careersignal.invalid/fullstack/co_kakaobank/04,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_kakaobank,2026-03-11T09:00:00+09:00
 src_demo_fullstack_05,job_posting,https://seed.careersignal.invalid/fullstack/co_samsungsds/05,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_samsungsds,2026-05-08T09:00:00+09:00
-src_demo_fullstack_06,job_posting,https://seed.careersignal.invalid/fullstack/co_smilegate/06,스마일게이트,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_smilegate,2024-10-02T09:00:00+09:00
-src_demo_fullstack_07,job_posting,https://seed.careersignal.invalid/fullstack/co_daangn/07,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_daangn,2025-01-15T09:00:00+09:00
-src_demo_fullstack_08,job_posting,https://seed.careersignal.invalid/fullstack/co_navercloud/08,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_navercloud,2025-03-04T09:00:00+09:00
-src_demo_fullstack_09,job_posting,https://seed.careersignal.invalid/fullstack/co_kakaomobility/09,카카오모빌리티,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_kakaomobility,2025-05-20T09:00:00+09:00
+src_demo_fullstack_06,job_posting,https://seed.careersignal.invalid/fullstack/co_smilegate/06,스마일게이트,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_smilegate,2026-06-02T09:00:00+09:00
+src_demo_fullstack_07,job_posting,https://seed.careersignal.invalid/fullstack/co_daangn/07,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_daangn,2026-01-15T09:00:00+09:00
+src_demo_fullstack_08,job_posting,https://seed.careersignal.invalid/fullstack/co_navercloud/08,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_navercloud,2026-03-04T09:00:00+09:00
+src_demo_fullstack_09,job_posting,https://seed.careersignal.invalid/fullstack/co_kakaomobility/09,카카오모빌리티,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_kakaomobility,2026-05-20T09:00:00+09:00
+src_demo_fullstack_10,job_posting,https://seed.careersignal.invalid/fullstack/co_wantedlab/10,원티드랩,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_wantedlab,2024-03-18T09:00:00+09:00
+src_demo_fullstack_11,job_posting,https://seed.careersignal.invalid/fullstack/co_musinsa/11,무신사,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_musinsa,2024-07-08T09:00:00+09:00
+src_demo_fullstack_12,job_posting,https://seed.careersignal.invalid/fullstack/co_channelcorp/12,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_channelcorp,2024-11-12T09:00:00+09:00
+src_demo_fullstack_13,job_posting,https://seed.careersignal.invalid/fullstack/co_kakaobank/13,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_kakaobank,2025-03-17T09:00:00+09:00
+src_demo_fullstack_14,job_posting,https://seed.careersignal.invalid/fullstack/co_samsungsds/14,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_samsungsds,2025-07-07T09:00:00+09:00
+src_demo_fullstack_15,job_posting,https://seed.careersignal.invalid/fullstack/co_smilegate/15,스마일게이트,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_smilegate,2025-11-03T09:00:00+09:00
+src_demo_fullstack_16,job_posting,https://seed.careersignal.invalid/fullstack/co_daangn/16,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_daangn,2026-02-03T09:00:00+09:00
+src_demo_fullstack_17,job_posting,https://seed.careersignal.invalid/fullstack/co_kakaomobility/17,카카오모빌리티,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_kakaomobility,2026-02-24T09:00:00+09:00
+src_demo_fullstack_18,job_posting,https://seed.careersignal.invalid/fullstack/co_navercloud/18,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_navercloud,2026-03-16T09:00:00+09:00
+src_demo_fullstack_19,job_posting,https://seed.careersignal.invalid/fullstack/co_kakaobank/19,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_kakaobank,2026-01-28T09:00:00+09:00
+src_demo_fullstack_20,job_posting,https://seed.careersignal.invalid/fullstack/co_kakaobank/20,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_kakaobank,2026-05-12T09:00:00+09:00
+src_demo_fullstack_21,job_posting,https://seed.careersignal.invalid/fullstack/co_samsungsds/21,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_samsungsds,2026-02-18T09:00:00+09:00
+src_demo_fullstack_22,job_posting,https://seed.careersignal.invalid/fullstack/co_samsungsds/22,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_samsungsds,2026-05-27T09:00:00+09:00
+src_demo_fullstack_23,job_posting,https://seed.careersignal.invalid/fullstack/co_smilegate/23,스마일게이트,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_smilegate,2026-03-30T09:00:00+09:00
+src_demo_fullstack_24,job_posting,https://seed.careersignal.invalid/fullstack/co_smilegate/24,스마일게이트,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_smilegate,2026-06-15T09:00:00+09:00
+src_demo_fullstack_25,job_posting,https://seed.careersignal.invalid/fullstack/co_wantedlab/25,원티드랩,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_wantedlab,2024-05-13T09:00:00+09:00
+src_demo_fullstack_26,job_posting,https://seed.careersignal.invalid/fullstack/co_musinsa/26,무신사,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_musinsa,2024-09-23T09:00:00+09:00
+src_demo_fullstack_27,job_posting,https://seed.careersignal.invalid/fullstack/co_channelcorp/27,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_channelcorp,2025-01-20T09:00:00+09:00
+src_demo_fullstack_28,job_posting,https://seed.careersignal.invalid/fullstack/co_kakaobank/28,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_kakaobank,2025-04-21T09:00:00+09:00
+src_demo_fullstack_29,job_posting,https://seed.careersignal.invalid/fullstack/co_samsungsds/29,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_samsungsds,2025-08-11T09:00:00+09:00
+src_demo_fullstack_30,job_posting,https://seed.careersignal.invalid/fullstack/co_smilegate/30,스마일게이트,\N,allow,생성 데이터. 실제 공고가 아니다.,{fullstack},co_smilegate,2025-10-06T09:00:00+09:00
 src_demo_devops_01,job_posting,https://careersignal.example/demo/devops/dp_devops_01,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_navercloud,2026-03-10T10:00:00+09:00
 src_demo_devops_02,job_posting,https://careersignal.example/demo/devops/dp_devops_02,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_viva,2026-01-15T10:00:00+09:00
 src_demo_devops_03,job_posting,https://careersignal.example/demo/devops/dp_devops_03,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_kakao,2026-02-11T10:00:00+09:00
 src_demo_devops_04,job_posting,https://careersignal.example/demo/devops/dp_devops_04,크래프톤,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_krafton,2026-04-20T10:00:00+09:00
 src_demo_devops_05,job_posting,https://careersignal.example/demo/devops/dp_devops_05,업스테이지,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_upstage,2026-06-02T10:00:00+09:00
-src_demo_devops_06,job_posting,https://careersignal.example/demo/devops/dp_devops_06,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_samsungsds,2025-04-10T10:00:00+09:00
-src_demo_devops_07,job_posting,https://careersignal.example/demo/devops/dp_devops_07,컬리,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_kurly,2025-02-18T10:00:00+09:00
-src_demo_devops_08,job_posting,https://careersignal.example/demo/devops/dp_devops_08,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_kakaopay,2024-12-02T10:00:00+09:00
-src_demo_devops_09,job_posting,https://careersignal.example/demo/devops/dp_devops_09,큐엠아이티,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_qmit,2024-10-15T10:00:00+09:00
+src_demo_devops_06,job_posting,https://careersignal.example/demo/devops/dp_devops_06,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_samsungsds,2026-04-10T10:00:00+09:00
+src_demo_devops_07,job_posting,https://careersignal.example/demo/devops/dp_devops_07,컬리,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_kurly,2026-02-18T10:00:00+09:00
+src_demo_devops_08,job_posting,https://careersignal.example/demo/devops/dp_devops_08,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_kakaopay,2026-05-02T10:00:00+09:00
+src_demo_devops_09,job_posting,https://careersignal.example/demo/devops/dp_devops_09,큐엠아이티,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_qmit,2026-06-15T10:00:00+09:00
+src_demo_devops_10,job_posting,https://careersignal.example/demo/devops/dp_devops_10,무신사,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_musinsa,2024-03-18T10:00:00+09:00
+src_demo_devops_11,job_posting,https://careersignal.example/demo/devops/dp_devops_11,원티드랩,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_wantedlab,2024-07-08T10:00:00+09:00
+src_demo_devops_12,job_posting,https://careersignal.example/demo/devops/dp_devops_12,주식회사 채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_channelcorp,2024-11-12T10:00:00+09:00
+src_demo_devops_13,job_posting,https://careersignal.example/demo/devops/dp_devops_13,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_kakaobank,2025-03-17T10:00:00+09:00
+src_demo_devops_14,job_posting,https://careersignal.example/demo/devops/dp_devops_14,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_samsungsds,2025-07-07T10:00:00+09:00
+src_demo_devops_15,job_posting,https://careersignal.example/demo/devops/dp_devops_15,스마일게이트,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_smilegate,2025-11-03T10:00:00+09:00
+src_demo_devops_16,job_posting,https://careersignal.example/demo/devops/dp_devops_16,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_kakao,2026-01-05T10:00:00+09:00
+src_demo_devops_17,job_posting,https://careersignal.example/demo/devops/dp_devops_17,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_viva,2026-01-19T10:00:00+09:00
+src_demo_devops_18,job_posting,https://careersignal.example/demo/devops/dp_devops_18,업스테이지,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_upstage,2026-02-23T10:00:00+09:00
+src_demo_devops_19,job_posting,https://careersignal.example/demo/devops/dp_devops_19,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_navercloud,2026-03-09T10:00:00+09:00
+src_demo_devops_20,job_posting,https://careersignal.example/demo/devops/dp_devops_20,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_navercloud,2026-03-23T10:00:00+09:00
+src_demo_devops_21,job_posting,https://careersignal.example/demo/devops/dp_devops_21,크래프톤,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_krafton,2026-04-13T10:00:00+09:00
+src_demo_devops_22,job_posting,https://careersignal.example/demo/devops/dp_devops_22,크래프톤,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_krafton,2026-04-27T10:00:00+09:00
+src_demo_devops_23,job_posting,https://careersignal.example/demo/devops/dp_devops_23,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_samsungsds,2026-05-25T10:00:00+09:00
+src_demo_devops_24,job_posting,https://careersignal.example/demo/devops/dp_devops_24,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_samsungsds,2026-06-22T10:00:00+09:00
+src_demo_devops_25,job_posting,https://careersignal.example/demo/devops/dp_devops_25,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_kakao,2024-05-13T10:00:00+09:00
+src_demo_devops_26,job_posting,https://careersignal.example/demo/devops/dp_devops_26,업스테이지,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_upstage,2024-09-09T10:00:00+09:00
+src_demo_devops_27,job_posting,https://careersignal.example/demo/devops/dp_devops_27,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_navercloud,2025-02-10T10:00:00+09:00
+src_demo_devops_28,job_posting,https://careersignal.example/demo/devops/dp_devops_28,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_viva,2025-05-12T10:00:00+09:00
+src_demo_devops_29,job_posting,https://careersignal.example/demo/devops/dp_devops_29,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_samsungsds,2025-08-11T10:00:00+09:00
+src_demo_devops_30,job_posting,https://careersignal.example/demo/devops/dp_devops_30,크래프톤,\N,allow,생성 데이터. 실제 공고가 아니다.,{devops},co_krafton,2025-11-10T10:00:00+09:00
 src_demo_mobile_01,job_posting,https://careersignal.example/demo/mobile/dp_mobile_01,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_kakao,2026-03-11T10:00:00+09:00
 src_demo_mobile_02,job_posting,https://careersignal.example/demo/mobile/dp_mobile_02,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_viva,2026-01-20T10:00:00+09:00
 src_demo_mobile_03,job_posting,https://careersignal.example/demo/mobile/dp_mobile_03,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_daangn,2026-02-10T10:00:00+09:00
 src_demo_mobile_04,job_posting,https://careersignal.example/demo/mobile/dp_mobile_04,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_ncsoft,2026-04-15T10:00:00+09:00
 src_demo_mobile_05,job_posting,https://careersignal.example/demo/mobile/dp_mobile_05,센드버드,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_sendbird,2026-05-08T10:00:00+09:00
-src_demo_mobile_06,job_posting,https://careersignal.example/demo/mobile/dp_mobile_06,라인플러스,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_lineplus,2025-03-17T10:00:00+09:00
-src_demo_mobile_07,job_posting,https://careersignal.example/demo/mobile/dp_mobile_07,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_kakaobank,2024-11-12T10:00:00+09:00
-src_demo_mobile_08,job_posting,https://careersignal.example/demo/mobile/dp_mobile_08,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_samsungsds,2025-04-02T10:00:00+09:00
-src_demo_mobile_09,job_posting,https://careersignal.example/demo/mobile/dp_mobile_09,주식회사 버킷플레이스,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_bucketplace,2024-10-15T10:00:00+09:00
+src_demo_mobile_06,job_posting,https://careersignal.example/demo/mobile/dp_mobile_06,라인플러스,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_lineplus,2026-01-12T10:00:00+09:00
+src_demo_mobile_07,job_posting,https://careersignal.example/demo/mobile/dp_mobile_07,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_kakaobank,2026-02-23T10:00:00+09:00
+src_demo_mobile_08,job_posting,https://careersignal.example/demo/mobile/dp_mobile_08,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_samsungsds,2026-05-18T10:00:00+09:00
+src_demo_mobile_09,job_posting,https://careersignal.example/demo/mobile/dp_mobile_09,주식회사 버킷플레이스,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_bucketplace,2026-06-08T10:00:00+09:00
+src_demo_mobile_10,job_posting,https://careersignal.example/demo/mobile/dp_mobile_10,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_kakao,2024-03-18T10:00:00+09:00
+src_demo_mobile_11,job_posting,https://careersignal.example/demo/mobile/dp_mobile_11,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_daangn,2024-07-08T10:00:00+09:00
+src_demo_mobile_12,job_posting,https://careersignal.example/demo/mobile/dp_mobile_12,센드버드,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_sendbird,2024-11-12T10:00:00+09:00
+src_demo_mobile_13,job_posting,https://careersignal.example/demo/mobile/dp_mobile_13,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_viva,2025-03-17T10:00:00+09:00
+src_demo_mobile_14,job_posting,https://careersignal.example/demo/mobile/dp_mobile_14,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_samsungsds,2025-07-07T10:00:00+09:00
+src_demo_mobile_15,job_posting,https://careersignal.example/demo/mobile/dp_mobile_15,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_ncsoft,2025-11-03T10:00:00+09:00
+src_demo_mobile_16,job_posting,https://careersignal.example/demo/mobile/dp_mobile_16,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_kakao,2026-01-05T10:00:00+09:00
+src_demo_mobile_17,job_posting,https://careersignal.example/demo/mobile/dp_mobile_17,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_daangn,2026-01-19T10:00:00+09:00
+src_demo_mobile_18,job_posting,https://careersignal.example/demo/mobile/dp_mobile_18,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_viva,2026-02-23T10:00:00+09:00
+src_demo_mobile_19,job_posting,https://careersignal.example/demo/mobile/dp_mobile_19,센드버드,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_sendbird,2026-03-09T10:00:00+09:00
+src_demo_mobile_20,job_posting,https://careersignal.example/demo/mobile/dp_mobile_20,센드버드,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_sendbird,2026-03-23T10:00:00+09:00
+src_demo_mobile_21,job_posting,https://careersignal.example/demo/mobile/dp_mobile_21,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_samsungsds,2026-04-13T10:00:00+09:00
+src_demo_mobile_22,job_posting,https://careersignal.example/demo/mobile/dp_mobile_22,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_samsungsds,2026-04-27T10:00:00+09:00
+src_demo_mobile_23,job_posting,https://careersignal.example/demo/mobile/dp_mobile_23,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_ncsoft,2026-05-25T10:00:00+09:00
+src_demo_mobile_24,job_posting,https://careersignal.example/demo/mobile/dp_mobile_24,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_ncsoft,2026-06-22T10:00:00+09:00
+src_demo_mobile_25,job_posting,https://careersignal.example/demo/mobile/dp_mobile_25,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_kakao,2024-05-13T10:00:00+09:00
+src_demo_mobile_26,job_posting,https://careersignal.example/demo/mobile/dp_mobile_26,주식회사 당근마켓,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_daangn,2024-09-09T10:00:00+09:00
+src_demo_mobile_27,job_posting,https://careersignal.example/demo/mobile/dp_mobile_27,센드버드,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_sendbird,2025-02-10T10:00:00+09:00
+src_demo_mobile_28,job_posting,https://careersignal.example/demo/mobile/dp_mobile_28,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_viva,2025-05-12T10:00:00+09:00
+src_demo_mobile_29,job_posting,https://careersignal.example/demo/mobile/dp_mobile_29,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_samsungsds,2025-08-11T10:00:00+09:00
+src_demo_mobile_30,job_posting,https://careersignal.example/demo/mobile/dp_mobile_30,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{mobile},co_ncsoft,2025-11-10T10:00:00+09:00
 src_demo_security_01,job_posting,https://careersignal.example/demo/security/dp_security_01,이스트시큐리티,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_estsecurity,2026-02-03T10:00:00+09:00
 src_demo_security_02,job_posting,https://careersignal.example/demo/security/dp_security_02,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_kakaobank,2026-04-14T10:00:00+09:00
 src_demo_security_03,job_posting,https://careersignal.example/demo/security/dp_security_03,네이버,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_naver,2026-01-13T10:00:00+09:00
 src_demo_security_04,job_posting,https://careersignal.example/demo/security/dp_security_04,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_samsungsds,2026-03-05T10:00:00+09:00
 src_demo_security_05,job_posting,https://careersignal.example/demo/security/dp_security_05,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_ncsoft,2026-05-19T10:00:00+09:00
-src_demo_security_06,job_posting,https://careersignal.example/demo/security/dp_security_06,원티드랩,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_wantedlab,2024-10-08T10:00:00+09:00
-src_demo_security_07,job_posting,https://careersignal.example/demo/security/dp_security_07,쿠팡,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_coupang,2024-11-26T10:00:00+09:00
-src_demo_security_08,job_posting,https://careersignal.example/demo/security/dp_security_08,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_viva,2025-02-18T10:00:00+09:00
-src_demo_security_09,job_posting,https://careersignal.example/demo/security/dp_security_09,에스케이씨앤씨,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_skcnc,2025-04-22T10:00:00+09:00
+src_demo_security_06,job_posting,https://careersignal.example/demo/security/dp_security_06,원티드랩,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_wantedlab,2026-06-02T10:00:00+09:00
+src_demo_security_07,job_posting,https://careersignal.example/demo/security/dp_security_07,쿠팡,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_coupang,2026-05-07T10:00:00+09:00
+src_demo_security_08,job_posting,https://careersignal.example/demo/security/dp_security_08,비바리퍼블리카,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_viva,2026-04-02T10:00:00+09:00
+src_demo_security_09,job_posting,https://careersignal.example/demo/security/dp_security_09,에스케이씨앤씨,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_skcnc,2026-03-24T10:00:00+09:00
+src_demo_security_10,job_posting,https://careersignal.example/demo/security/dp_security_10,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_kakao,2024-03-12T10:00:00+09:00
+src_demo_security_11,job_posting,https://careersignal.example/demo/security/dp_security_11,업스테이지,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_upstage,2024-06-18T10:00:00+09:00
+src_demo_security_12,job_posting,https://careersignal.example/demo/security/dp_security_12,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_navercloud,2024-10-29T10:00:00+09:00
+src_demo_security_13,job_posting,https://careersignal.example/demo/security/dp_security_13,케이뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_kbank,2025-02-11T10:00:00+09:00
+src_demo_security_14,job_posting,https://careersignal.example/demo/security/dp_security_14,엘지씨엔에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_lgcns,2025-07-15T10:00:00+09:00
+src_demo_security_15,job_posting,https://careersignal.example/demo/security/dp_security_15,크래프톤,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_krafton,2025-11-18T10:00:00+09:00
+src_demo_security_16,job_posting,https://careersignal.example/demo/security/dp_security_16,이스트시큐리티,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_estsecurity,2026-01-05T10:00:00+09:00
+src_demo_security_17,job_posting,https://careersignal.example/demo/security/dp_security_17,이스트시큐리티,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_estsecurity,2026-01-26T10:00:00+09:00
+src_demo_security_18,job_posting,https://careersignal.example/demo/security/dp_security_18,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_kakaobank,2026-02-16T10:00:00+09:00
+src_demo_security_19,job_posting,https://careersignal.example/demo/security/dp_security_19,네이버,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_naver,2026-03-09T10:00:00+09:00
+src_demo_security_20,job_posting,https://careersignal.example/demo/security/dp_security_20,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_samsungsds,2026-03-30T10:00:00+09:00
+src_demo_security_21,job_posting,https://careersignal.example/demo/security/dp_security_21,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_ncsoft,2026-04-20T10:00:00+09:00
+src_demo_security_22,job_posting,https://careersignal.example/demo/security/dp_security_22,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_ncsoft,2026-05-11T10:00:00+09:00
+src_demo_security_23,job_posting,https://careersignal.example/demo/security/dp_security_23,원티드랩,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_wantedlab,2026-05-25T10:00:00+09:00
+src_demo_security_24,job_posting,https://careersignal.example/demo/security/dp_security_24,원티드랩,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_wantedlab,2026-06-22T10:00:00+09:00
+src_demo_security_25,job_posting,https://careersignal.example/demo/security/dp_security_25,네이버,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_naver,2024-05-13T10:00:00+09:00
+src_demo_security_26,job_posting,https://careersignal.example/demo/security/dp_security_26,원티드랩,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_wantedlab,2024-09-09T10:00:00+09:00
+src_demo_security_27,job_posting,https://careersignal.example/demo/security/dp_security_27,이스트시큐리티,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_estsecurity,2025-02-10T10:00:00+09:00
+src_demo_security_28,job_posting,https://careersignal.example/demo/security/dp_security_28,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_kakaobank,2025-05-12T10:00:00+09:00
+src_demo_security_29,job_posting,https://careersignal.example/demo/security/dp_security_29,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_samsungsds,2025-08-11T10:00:00+09:00
+src_demo_security_30,job_posting,https://careersignal.example/demo/security/dp_security_30,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{security},co_ncsoft,2025-11-10T10:00:00+09:00
 src_demo_game_client_01,job_posting,https://careersignal.example/demo/game_client/dp_game_client_01,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_ncsoft,2026-03-04T10:00:00+09:00
 src_demo_game_client_02,job_posting,https://careersignal.example/demo/game_client/dp_game_client_02,크래프톤,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_krafton,2026-01-12T10:00:00+09:00
 src_demo_game_client_03,job_posting,https://careersignal.example/demo/game_client/dp_game_client_03,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_kakao,2026-02-24T10:00:00+09:00
 src_demo_game_client_04,job_posting,https://careersignal.example/demo/game_client/dp_game_client_04,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_samsungsds,2026-04-08T10:00:00+09:00
 src_demo_game_client_05,job_posting,https://careersignal.example/demo/game_client/dp_game_client_05,넛지헬스케어,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_nudgehealthcare,2026-06-02T10:00:00+09:00
-src_demo_game_client_06,job_posting,https://careersignal.example/demo/game_client/dp_game_client_06,스마일게이트,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_smilegate,2025-03-05T10:00:00+09:00
-src_demo_game_client_07,job_posting,https://careersignal.example/demo/game_client/dp_game_client_07,넥슨코리아,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_nexonkorea,2024-11-14T10:00:00+09:00
-src_demo_game_client_08,job_posting,https://careersignal.example/demo/game_client/dp_game_client_08,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_navercloud,2025-05-20T10:00:00+09:00
-src_demo_game_client_09,job_posting,https://careersignal.example/demo/game_client/dp_game_client_09,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_kakaobank,2024-10-02T10:00:00+09:00
+src_demo_game_client_06,job_posting,https://careersignal.example/demo/game_client/dp_game_client_06,채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_channelcorp,2026-05-14T10:00:00+09:00
+src_demo_game_client_07,job_posting,https://careersignal.example/demo/game_client/dp_game_client_07,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_kakaopay,2026-04-21T10:00:00+09:00
+src_demo_game_client_08,job_posting,https://careersignal.example/demo/game_client/dp_game_client_08,네이버클라우드,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_navercloud,2026-03-17T10:00:00+09:00
+src_demo_game_client_09,job_posting,https://careersignal.example/demo/game_client/dp_game_client_09,카카오뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_kakaobank,2026-02-05T10:00:00+09:00
+src_demo_game_client_10,job_posting,https://careersignal.example/demo/game_client/dp_game_client_10,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_kakao,2024-03-12T10:00:00+09:00
+src_demo_game_client_11,job_posting,https://careersignal.example/demo/game_client/dp_game_client_11,원티드랩,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_wantedlab,2024-06-18T10:00:00+09:00
+src_demo_game_client_12,job_posting,https://careersignal.example/demo/game_client/dp_game_client_12,센드버드,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_sendbird,2024-10-29T10:00:00+09:00
+src_demo_game_client_13,job_posting,https://careersignal.example/demo/game_client/dp_game_client_13,케이뱅크,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_kbank,2025-02-11T10:00:00+09:00
+src_demo_game_client_14,job_posting,https://careersignal.example/demo/game_client/dp_game_client_14,엘지씨엔에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_lgcns,2025-07-15T10:00:00+09:00
+src_demo_game_client_15,job_posting,https://careersignal.example/demo/game_client/dp_game_client_15,스마일게이트,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_smilegate,2025-11-18T10:00:00+09:00
+src_demo_game_client_16,job_posting,https://careersignal.example/demo/game_client/dp_game_client_16,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_ncsoft,2026-01-05T10:00:00+09:00
+src_demo_game_client_17,job_posting,https://careersignal.example/demo/game_client/dp_game_client_17,채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_channelcorp,2026-01-19T10:00:00+09:00
+src_demo_game_client_18,job_posting,https://careersignal.example/demo/game_client/dp_game_client_18,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_kakaopay,2026-02-23T10:00:00+09:00
+src_demo_game_client_19,job_posting,https://careersignal.example/demo/game_client/dp_game_client_19,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_kakao,2026-03-09T10:00:00+09:00
+src_demo_game_client_20,job_posting,https://careersignal.example/demo/game_client/dp_game_client_20,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_kakao,2026-03-23T10:00:00+09:00
+src_demo_game_client_21,job_posting,https://careersignal.example/demo/game_client/dp_game_client_21,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_samsungsds,2026-04-13T10:00:00+09:00
+src_demo_game_client_22,job_posting,https://careersignal.example/demo/game_client/dp_game_client_22,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_samsungsds,2026-04-27T10:00:00+09:00
+src_demo_game_client_23,job_posting,https://careersignal.example/demo/game_client/dp_game_client_23,넛지헬스케어,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_nudgehealthcare,2026-05-25T10:00:00+09:00
+src_demo_game_client_24,job_posting,https://careersignal.example/demo/game_client/dp_game_client_24,넛지헬스케어,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_nudgehealthcare,2026-06-22T10:00:00+09:00
+src_demo_game_client_25,job_posting,https://careersignal.example/demo/game_client/dp_game_client_25,카카오,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_kakao,2024-05-13T10:00:00+09:00
+src_demo_game_client_26,job_posting,https://careersignal.example/demo/game_client/dp_game_client_26,넛지헬스케어,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_nudgehealthcare,2024-09-09T10:00:00+09:00
+src_demo_game_client_27,job_posting,https://careersignal.example/demo/game_client/dp_game_client_27,채널코퍼레이션,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_channelcorp,2025-02-10T10:00:00+09:00
+src_demo_game_client_28,job_posting,https://careersignal.example/demo/game_client/dp_game_client_28,카카오페이,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_kakaopay,2025-05-12T10:00:00+09:00
+src_demo_game_client_29,job_posting,https://careersignal.example/demo/game_client/dp_game_client_29,삼성에스디에스,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_samsungsds,2025-08-11T10:00:00+09:00
+src_demo_game_client_30,job_posting,https://careersignal.example/demo/game_client/dp_game_client_30,엔씨소프트,\N,allow,생성 데이터. 실제 공고가 아니다.,{game_client},co_ncsoft,2025-11-10T10:00:00+09:00

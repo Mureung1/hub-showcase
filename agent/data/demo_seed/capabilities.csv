@@ -13,7 +13,7 @@ cap_ai_engineer_model-training,ai_engineer,모델 학습·실험 관리,데이�
 cap_ai_engineer_serving-ops,ai_engineer,모델 서빙·운영,학습한 모델을 호출 가능한 형태로 배포하고 지연·비용·품질을 관찰하는 능력.,true
 cap_ai_engineer_llm-application,ai_engineer,LLM 응용 설계,검색 증강과 프롬프트 설계로 언어 모델을 제품 기능에 연결하는 능력.,true
 cap_data_engineer_data-modeling,data_engineer,분석용 데이터 모델링,요구를 분석 가능한 테이블로 옮기고 집계 비용을 설명하는 능력.,true
-cap_data_engineer_pipeline-engineering,data_engineer,배치 파이프라인 구축·운영,분산 배치를 짜고 DAG 로 묶어 실패까지 다루는 능력.,true
+cap_data_engineer_pipeline-engineering,data_engineer,배치 파이프라인 구축·운영,분산 배치를 짜고 DAG로 묶어 실패까지 다루는 능력.,true
 cap_data_engineer_stream-processing,data_engineer,실시간 수집·처리,이벤트 스트림을 받아 순서와 중복을 다루며 적재하는 능력.,true
 cap_fullstack_feature-delivery,fullstack,기능 하나를 화면부터 서버까지 완성하기,화면·서버·데이터를 하나의 기능으로 잇고 동작하는 상태로 만드는 능력.,true
 cap_fullstack_contract-design,fullstack,화면과 서버 사이 데이터 계약 설계하기,요청·응답 형태와 저장 구조를 정하고 양쪽이 어긋나지 않게 유지하는 능력.,true

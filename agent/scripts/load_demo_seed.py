@@ -8,6 +8,7 @@ r"""데모 시드 CSV 를 Supabase 에 적재하고 되돌리는 운영자 도�
     .\.venv\Scripts\Activate.ps1
     python scripts/load_demo_seed.py --dry-run     CSV 만 검사한다. 접속하지 않는다
     python scripts/load_demo_seed.py               적재한다
+    python scripts/load_demo_seed.py --replace     기존 시드를 한 거래에서 원자 교체한다
     python scripts/load_demo_seed.py --rollback    생성 데이터만 지운다
 
 적재는 **접속 한 번, 거래 하나**다. 표마다 `COPY ... FROM STDIN` 을 한 번씩 실행한다.
@@ -78,6 +79,24 @@ EXIT_OK = 0
 EXIT_FAILED = 1
 EXIT_ABORTED = 2
 
+REPLACE_ADVISORY_LOCK_KEY = 0x4353525F44534D4F
+"""`CSR_DSMO`를 정수로 읽은 거래 advisory lock 키."""
+
+REPLACE_LOCK_TIMEOUT = "5s"
+REPLACE_STATEMENT_TIMEOUT = "15min"
+
+
+class ReplaceBusyError(RuntimeError):
+    """다른 적재·교체가 advisory lock을 잡고 있다."""
+
+
+class ExternalSeedReferenceError(RuntimeError):
+    """적재 목록 밖의 표가 삭제 대상 시드 행을 참조한다."""
+
+
+class ReplacementVerificationError(RuntimeError):
+    """커밋 전 교체 결과가 수용 기준을 만족하지 않는다."""
+
 
 # ============================================================ 보호 목록
 PROTECTED_TABLES: frozenset[str] = frozenset(
@@ -115,6 +134,14 @@ TRIGGER_GUARDED_TABLES: tuple[str, ...] = (
 와 `0006_telemetry_triggers.sql` 의 `trg_agent_runs_completion_only` 다. 세 트리거
 모두 DELETE 에서 예외를 던지므로 되돌리기 동안만 내린다.
 """
+
+REQUIRED_GUARDED_TRIGGERS: frozenset[tuple[str, str]] = frozenset(
+    {
+        ("source_snapshots", "trg_snapshots_append_only"),
+        ("source_observations", "trg_observations_append_only"),
+        ("agent_runs", "trg_agent_runs_completion_only"),
+    }
+)
 
 
 def assert_protected_untouched() -> None:
@@ -711,6 +738,7 @@ def run_load(root: Path) -> int:
     started = time.monotonic()
     with _connect() as conn:
         with conn.cursor() as cur:
+            configure_replace_transaction(cur)
             loaded, notes = load_tables(cur, files, counts)
         conn.commit()
     total = time.monotonic() - started
@@ -756,6 +784,7 @@ def run_rollback(assume_yes: bool) -> int:
     removed: dict[str, int] = {}
     with _connect() as conn:
         with conn.cursor() as cur:
+            configure_replace_transaction(cur)
             # 1. 범위를 먼저 모은다. 삭제가 시작되면 표시를 지닌 부모가 사라진다.
             for name, query in SCOPE_TEMP_TABLES:
                 cur.execute(f"CREATE TEMP TABLE {name} ON COMMIT DROP AS {query}", params)
@@ -1000,27 +1029,606 @@ def run_preflight(root: Path) -> int:
     return EXIT_OK
 
 
+# ============================================================ 원자 교체
+_EXTERNAL_FK_QUERY = """
+SELECT child.relname,
+       c.conname,
+       parent.relname,
+       ARRAY(
+         SELECT a.attname
+         FROM unnest(c.conkey) WITH ORDINALITY AS k(attnum, ord)
+         JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum
+         ORDER BY k.ord
+       ) AS child_columns,
+       ARRAY(
+         SELECT a.attname
+         FROM unnest(c.confkey) WITH ORDINALITY AS k(attnum, ord)
+         JOIN pg_attribute a ON a.attrelid = c.confrelid AND a.attnum = k.attnum
+         ORDER BY k.ord
+       ) AS parent_columns
+FROM pg_constraint c
+JOIN pg_class child ON child.oid = c.conrelid
+JOIN pg_namespace child_ns ON child_ns.oid = child.relnamespace
+JOIN pg_class parent ON parent.oid = c.confrelid
+JOIN pg_namespace parent_ns ON parent_ns.oid = parent.relnamespace
+WHERE c.contype = 'f'
+  AND parent.relname = ANY(%s)
+  AND NOT (child.relname = ANY(%s))
+  AND child_ns.nspname = current_schema()
+  AND parent_ns.nspname = current_schema()
+ORDER BY child.relname, c.conname
+"""
+
+_ORPHAN_FK_QUERY = """
+SELECT child.relname,
+       c.conname,
+       parent.relname,
+       ARRAY(
+         SELECT a.attname
+         FROM unnest(c.conkey) WITH ORDINALITY AS k(attnum, ord)
+         JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum
+         ORDER BY k.ord
+       ) AS child_columns,
+       ARRAY(
+         SELECT a.attname
+         FROM unnest(c.confkey) WITH ORDINALITY AS k(attnum, ord)
+         JOIN pg_attribute a ON a.attrelid = c.confrelid AND a.attnum = k.attnum
+         ORDER BY k.ord
+       ) AS parent_columns
+FROM pg_constraint c
+JOIN pg_class child ON child.oid = c.conrelid
+JOIN pg_namespace child_ns ON child_ns.oid = child.relnamespace
+JOIN pg_class parent ON parent.oid = c.confrelid
+JOIN pg_namespace parent_ns ON parent_ns.oid = parent.relnamespace
+WHERE c.contype = 'f'
+  AND child.relname = ANY(%s)
+  AND child_ns.nspname = current_schema()
+  AND parent_ns.nspname = current_schema()
+ORDER BY child.relname, c.conname
+"""
+
+
+REPLACEMENT_CHECKS: tuple[tuple[str, str, Any], ...] = (
+    (
+        "dataset version",
+        "SELECT COUNT(*) = 1 FROM dataset_versions WHERE dataset_version = %(ds)s",
+        True,
+    ),
+    (
+        "posting total",
+        """SELECT COUNT(*) = 270
+           FROM posting_versions WHERE dataset_version = %(ds)s""",
+        True,
+    ),
+    (
+        "postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 30 AND MAX(n) = 30
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "recent postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 18 AND MAX(n) = 18
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s
+               AND pv.posted_at >= DATE '2026-01-01'
+               AND pv.posted_at < DATE '2026-07-01'
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "previous postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 12 AND MAX(n) = 12
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s
+               AND pv.posted_at >= DATE '2024-03-01'
+               AND pv.posted_at < DATE '2025-12-01'
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "recent cluster postings per job",
+        """SELECT COUNT(*) = 54 AND MIN(n) = 3 AND MAX(n) = 3
+           FROM (
+             SELECT p.job_role_id, m.cluster_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             JOIN company_cluster_memberships m ON m.company_id = p.company_id
+               AND pv.posted_at::date >= m.valid_from
+               AND (m.valid_to IS NULL OR pv.posted_at::date <= m.valid_to)
+             WHERE pv.dataset_version = %(ds)s
+               AND pv.posted_at >= DATE '2026-01-01'
+               AND pv.posted_at < DATE '2026-07-01'
+             GROUP BY p.job_role_id, m.cluster_id
+           ) counts""",
+        True,
+    ),
+    (
+        "previous cluster postings per job",
+        """SELECT COUNT(*) = 54 AND MIN(n) = 2 AND MAX(n) = 2
+           FROM (
+             SELECT p.job_role_id, m.cluster_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             JOIN company_cluster_memberships m ON m.company_id = p.company_id
+               AND pv.posted_at::date >= m.valid_from
+               AND (m.valid_to IS NULL OR pv.posted_at::date <= m.valid_to)
+             WHERE pv.dataset_version = %(ds)s
+               AND pv.posted_at >= DATE '2024-03-01'
+               AND pv.posted_at < DATE '2025-12-01'
+             GROUP BY p.job_role_id, m.cluster_id
+           ) counts""",
+        True,
+    ),
+    (
+        "open postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 6 AND MAX(n) = 6
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s AND pv.closed_at IS NULL
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "closed postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 24 AND MAX(n) = 24
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s AND pv.closed_at IS NOT NULL
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "recent open postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 6 AND MAX(n) = 6
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s AND pv.closed_at IS NULL
+               AND pv.posted_at >= DATE '2026-01-01'
+               AND pv.posted_at < DATE '2026-07-01'
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "recent closed postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 12 AND MAX(n) = 12
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s AND pv.closed_at IS NOT NULL
+               AND pv.posted_at >= DATE '2026-01-01'
+               AND pv.posted_at < DATE '2026-07-01'
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "previous closed postings per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 12 AND MAX(n) = 12
+           FROM (
+             SELECT p.job_role_id, COUNT(*) AS n
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             WHERE pv.dataset_version = %(ds)s AND pv.closed_at IS NOT NULL
+               AND pv.posted_at >= DATE '2024-03-01'
+               AND pv.posted_at < DATE '2025-12-01'
+             GROUP BY p.job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "analysis outputs",
+        "SELECT COUNT(*) = 1008 FROM analysis_outputs WHERE analysis_version LIKE %(an)s",
+        True,
+    ),
+    (
+        "analysis outputs per job",
+        """SELECT COUNT(*) = 9 AND MIN(n) = 112 AND MAX(n) = 112
+           FROM (
+             SELECT job_role_id, COUNT(*) AS n
+             FROM analysis_outputs
+             WHERE analysis_version LIKE %(an)s
+             GROUP BY job_role_id
+           ) counts""",
+        True,
+    ),
+    (
+        "posting scoped outputs per job",
+        """SELECT COUNT(*) = 27 AND MIN(n) = 30 AND MAX(n) = 30
+           FROM (
+             SELECT job_role_id, output_type, COUNT(*) AS n
+             FROM analysis_outputs
+             WHERE analysis_version LIKE %(an)s
+               AND scope_level = 'posting'
+               AND output_type IN ('interpretation', 'strategy', 'roadmap')
+             GROUP BY job_role_id, output_type
+           ) counts""",
+        True,
+    ),
+    (
+        "posting output coverage",
+        """SELECT NOT EXISTS (
+             SELECT p.job_role_id, p.posting_id, expected.output_type
+             FROM postings p
+             JOIN posting_versions pv ON pv.posting_id = p.posting_id
+             CROSS JOIN (
+               VALUES ('interpretation'), ('strategy'), ('roadmap')
+             ) AS expected(output_type)
+             WHERE pv.dataset_version = %(ds)s
+             EXCEPT
+             SELECT job_role_id, scope_id, output_type
+             FROM analysis_outputs
+             WHERE analysis_version LIKE %(an)s AND scope_level = 'posting'
+           )""",
+        True,
+    ),
+    (
+        "active analysis versions",
+        """SELECT COUNT(*) = 9
+           FROM active_analysis_versions WHERE analysis_version LIKE %(an)s""",
+        True,
+    ),
+)
+
+
+def _quote_identifier(identifier: str) -> str:
+    """카탈로그가 돌려준 식별자를 SQL 식별자로 안전하게 감싼다."""
+    return '"' + identifier.replace('"', '""') + '"'
+
+
+def configure_replace_transaction(cur: Any) -> None:
+    """교체 거래의 잠금 대기 한도와 중복 실행 방지 잠금을 설정한다."""
+    cur.execute(f"SET LOCAL lock_timeout = '{REPLACE_LOCK_TIMEOUT}'")
+    cur.execute(f"SET LOCAL statement_timeout = '{REPLACE_STATEMENT_TIMEOUT}'")
+    cur.execute("SELECT pg_try_advisory_xact_lock(%s)", (REPLACE_ADVISORY_LOCK_KEY,))
+    row = cur.fetchone()
+    if row is None or row[0] is not True:
+        raise ReplaceBusyError("다른 데모 시드 적재 또는 교체가 실행 중이다")
+
+
+def collect_replace_scope(cur: Any, params: Mapping[str, str]) -> None:
+    """삭제 대상 식별자를 삭제 전에 거래 임시 표에 고정한다."""
+    for name, query in SCOPE_TEMP_TABLES:
+        cur.execute(f"CREATE TEMP TABLE {name} ON COMMIT DROP AS {query}", params)
+
+
+def snapshot_protected_tables(cur: Any) -> dict[str, tuple[int, str]]:
+    """보호 표의 행 수와 전체 행 서명을 저장한다."""
+    snapshot: dict[str, tuple[int, str]] = {}
+    for table in sorted(PROTECTED_TABLES):
+        quoted = _quote_identifier(table)
+        cur.execute(
+            "SELECT COUNT(*), "
+            "COALESCE(md5(string_agg(payload, E'\\n' ORDER BY payload)), md5('')) "
+            f"FROM (SELECT row_to_json(t)::text AS payload FROM {quoted} AS t) rows"
+        )
+        row = cur.fetchone()
+        if row is None:
+            raise ReplacementVerificationError(f"보호 표 스냅샷을 읽지 못했다: {table}")
+        snapshot[table] = (int(row[0]), str(row[1]))
+    return snapshot
+
+
+def assert_protected_tables_unchanged(
+    cur: Any, before: Mapping[str, tuple[int, str]]
+) -> None:
+    """커밋 직전에 보호 표의 행 수와 식별자 포함 전체 서명이 같은지 본다."""
+    after = snapshot_protected_tables(cur)
+    changed = [table for table in sorted(before) if before[table] != after.get(table)]
+    if changed:
+        raise ReplacementVerificationError(f"보호 표가 바뀌었다: {changed}")
+
+
+def assert_no_external_seed_references(cur: Any, params: Mapping[str, str]) -> None:
+    """적재 목록 밖 외래키가 삭제 대상 행을 가리키면 삭제 전에 중단한다."""
+    cur.execute(_EXTERNAL_FK_QUERY, (list(LOAD_ORDER), list(LOAD_ORDER)))
+    references: list[str] = []
+    for child, constraint, parent, child_columns, parent_columns in cur.fetchall():
+        predicate = DELETE_PREDICATES.get(str(parent))
+        if not predicate:
+            raise ReplacementVerificationError(f"외부 FK 부모의 삭제 조건이 없다: {parent}")
+        pairs = " AND ".join(
+            f"external.{_quote_identifier(str(child_col))} = "
+            f"seed.{_quote_identifier(str(parent_col))}"
+            for child_col, parent_col in zip(child_columns, parent_columns, strict=True)
+        )
+        cur.execute(
+            f"WITH seed AS (SELECT * FROM {_quote_identifier(str(parent))} WHERE {predicate}) "
+            f"SELECT 1 FROM {_quote_identifier(str(child))} AS external "
+            f"JOIN seed ON {pairs} LIMIT 1",
+            params,
+        )
+        if cur.fetchone() is not None:
+            references.append(f"{child}.{constraint} -> {parent}")
+    if references:
+        raise ExternalSeedReferenceError(
+            "시드 밖 외래키 참조가 있어 교체하지 않는다: " + ", ".join(references)
+        )
+
+
+def guarded_trigger_states(cur: Any) -> tuple[tuple[str, str, str], ...]:
+    """보호 대상 사용자 트리거의 표·이름·활성 모드를 읽는다."""
+    cur.execute(
+        """SELECT c.relname, t.tgname, t.tgenabled
+           FROM pg_trigger t
+           JOIN pg_class c ON c.oid = t.tgrelid
+           JOIN pg_namespace n ON n.oid = c.relnamespace
+           WHERE c.relname = ANY(%s) AND n.nspname = current_schema()
+             AND NOT t.tgisinternal
+           ORDER BY c.relname, t.tgname""",
+        (list(TRIGGER_GUARDED_TABLES),),
+    )
+    return tuple((str(table), str(trigger), str(state)) for table, trigger, state in cur.fetchall())
+
+
+def assert_guarded_triggers_active(cur: Any) -> None:
+    """기존 상태가 이미 비활성이면 교체가 원인을 숨기지 않도록 중단한다."""
+    states = guarded_trigger_states(cur)
+    present = {(table, trigger) for table, trigger, _state in states}
+    missing = sorted(REQUIRED_GUARDED_TRIGGERS - present)
+    disabled = [
+        (table, trigger)
+        for table, trigger, state in states
+        if state == "D"
+    ]
+    if missing:
+        raise ReplacementVerificationError(f"필수 추가 전용 트리거가 없다: {missing}")
+    if disabled:
+        raise ReplacementVerificationError(f"교체 전부터 비활성인 트리거가 있다: {disabled}")
+
+
+def set_guarded_triggers(
+    cur: Any,
+    enabled: bool,
+    states: Sequence[tuple[str, str, str]] | None = None,
+) -> None:
+    """추가 전용 트리거를 개별로 내리고 원래 활성 모드로 복구한다."""
+    known = tuple(states) if states is not None else guarded_trigger_states(cur)
+    for table, trigger, state in known:
+        if enabled:
+            action = {"O": "ENABLE", "A": "ENABLE ALWAYS", "R": "ENABLE REPLICA"}.get(state)
+            if action is None:
+                raise ReplacementVerificationError(
+                    f"복구할 수 없는 트리거 상태다: {table}.{trigger}={state}"
+                )
+        else:
+            action = "DISABLE"
+        cur.execute(
+            f"ALTER TABLE {_quote_identifier(table)} {action} TRIGGER "
+            f"{_quote_identifier(trigger)}"
+        )
+
+
+def delete_seed_rows(cur: Any, params: Mapping[str, str]) -> dict[str, int]:
+    """고정한 범위만 FK 역순으로 집합 삭제한다."""
+    removed: dict[str, int] = {}
+    for table in DELETE_ORDER:
+        cur.execute(delete_statement(table), params)
+        if cur.rowcount:
+            removed[table] = int(cur.rowcount)
+    return removed
+
+
+def _key_conflicts(
+    cur: Any, files: Mapping[str, Path]
+) -> tuple[list[str], list[str]]:
+    """현재 거래에 남은 실 데이터와의 금지 충돌 및 허용 채택을 구분한다."""
+    conflicts: list[str] = []
+    adoptions: list[str] = []
+    adoption = plan_adoption(cur, files.get("requirement_taxonomies"))
+    for table in LOAD_ORDER:
+        path = files.get(table)
+        if path is None:
+            continue
+        cur.execute(_CONSTRAINT_QUERY, (table,))
+        for name, _contype, columns in cur.fetchall():
+            keys = effective_key_rows(table, path, columns, adoption)
+            clash = existing_keys(cur, table, columns, keys)
+            if not clash:
+                continue
+            detail = f"{table}.{name} {len(clash)}건"
+            (adoptions if table in ADOPTED_TABLES else conflicts).append(detail)
+
+        cur.execute(_PARTIAL_INDEX_QUERY, (table,))
+        for name, definition in cur.fetchall():
+            parsed = parse_partial_unique_index(definition)
+            if parsed is None:
+                conflicts.append(f"{table}.{name} 부분 유일 인덱스 조건 판독 실패")
+                continue
+            columns, conditions = parsed
+            keys = effective_key_rows(table, path, columns, adoption, conditions)
+            clash = existing_keys(
+                cur, table, columns, keys, predicate=index_predicate(definition)
+            )
+            if clash:
+                detail = f"{table}.{name} {len(clash)}건"
+                (adoptions if table in ADOPTED_TABLES else conflicts).append(detail)
+    return conflicts, adoptions
+
+
+def assert_replace_key_safety(cur: Any, files: Sequence[tuple[str, Path]]) -> None:
+    """삭제 후 남은 실 데이터와의 충돌은 막고 정본 신원 채택만 허용한다."""
+    conflicts, _adoptions = _key_conflicts(cur, dict(files))
+    if conflicts:
+        raise ReplacementVerificationError("실 데이터 키 충돌: " + ", ".join(conflicts))
+
+
+def assert_no_orphan_foreign_keys(cur: Any) -> None:
+    """적재 표가 가진 모든 FK에 고아 행이 없는지 동적으로 검사한다."""
+    cur.execute(_ORPHAN_FK_QUERY, (list(LOAD_ORDER),))
+    orphans: list[str] = []
+    for child, constraint, parent, child_columns, parent_columns in cur.fetchall():
+        present = " AND ".join(
+            f"child.{_quote_identifier(str(column))} IS NOT NULL" for column in child_columns
+        )
+        pairs = " AND ".join(
+            f"parent.{_quote_identifier(str(parent_col))} = "
+            f"child.{_quote_identifier(str(child_col))}"
+            for child_col, parent_col in zip(child_columns, parent_columns, strict=True)
+        )
+        cur.execute(
+            f"SELECT 1 FROM {_quote_identifier(str(child))} AS child "
+            f"WHERE {present} AND NOT EXISTS ("
+            f"SELECT 1 FROM {_quote_identifier(str(parent))} AS parent WHERE {pairs}) LIMIT 1"
+        )
+        if cur.fetchone() is not None:
+            orphans.append(f"{child}.{constraint}")
+    if orphans:
+        raise ReplacementVerificationError("고아 외래키가 있다: " + ", ".join(orphans))
+
+
+def verify_replacement(cur: Any, params: Mapping[str, str]) -> None:
+    """모든 COPY 뒤, 커밋 전에 최종 데이터·FK·트리거 수용 기준을 검사한다."""
+    failed: list[str] = []
+    for label, query, expected in REPLACEMENT_CHECKS:
+        cur.execute(query, params)
+        row = cur.fetchone()
+        actual = row[0] if row else None
+        if actual != expected:
+            failed.append(f"{label}: {actual!r} (기대 {expected!r})")
+    assert_no_orphan_foreign_keys(cur)
+    assert_guarded_triggers_active(cur)
+    if failed:
+        raise ReplacementVerificationError("커밋 전 검증 실패: " + "; ".join(failed))
+
+
+def replace_in_transaction(
+    cur: Any,
+    files: Sequence[tuple[str, Path]],
+    counts: Mapping[str, int],
+) -> tuple[dict[str, tuple[int, int]], list[str]]:
+    """이미 열린 한 거래 안에서 기존 시드를 새 CSV로 원자 교체한다."""
+    params = {"ds": DATASET_VERSION, "an": ANALYSIS_VERSION_PATTERN}
+    configure_replace_transaction(cur)
+    collect_replace_scope(cur, params)
+    protected = snapshot_protected_tables(cur)
+    assert_no_external_seed_references(cur, params)
+    trigger_states = guarded_trigger_states(cur)
+    present = {(table, trigger) for table, trigger, _state in trigger_states}
+    missing = sorted(REQUIRED_GUARDED_TRIGGERS - present)
+    disabled = [
+        (table, trigger) for table, trigger, state in trigger_states if state == "D"
+    ]
+    if missing or disabled:
+        raise ReplacementVerificationError(
+            f"트리거 상태가 안전하지 않다: missing={missing}, disabled={disabled}"
+        )
+
+    set_guarded_triggers(cur, enabled=False, states=trigger_states)
+    try:
+        delete_seed_rows(cur, params)
+        assert_replace_key_safety(cur, files)
+        loaded, notes = load_tables(cur, files, counts)
+    except BaseException:
+        # SQL 오류로 거래가 aborted 상태면 이 복구도 실패할 수 있다. 그 경우 거래
+        # rollback 자체가 ALTER TABLE을 되돌린다. 복구 오류로 원 예외를 가리지 않는다.
+        try:
+            set_guarded_triggers(cur, enabled=True, states=trigger_states)
+        except BaseException:
+            pass
+        raise
+    else:
+        set_guarded_triggers(cur, enabled=True, states=trigger_states)
+
+    verify_replacement(cur, params)
+    assert_protected_tables_unchanged(cur, protected)
+    return loaded, notes
+
+
+def _assert_complete_replace_files(counts: Mapping[str, int]) -> None:
+    missing = [table for table in LOAD_ORDER if table not in counts]
+    if missing:
+        raise ReplacementVerificationError(f"교체 CSV가 빠졌다: {missing}")
+
+
+def run_replace(root: Path) -> int:
+    """CSV 전수 검사 뒤 한 연결·한 거래로 교체하고 검증이 끝난 뒤에만 커밋한다."""
+    counts, problems = validate_all(root)
+    if problems:
+        print(f"[실패] CSV 검사 {len(problems)}건")
+        for line in problems[:20]:
+            print(f"       {line}")
+        return EXIT_FAILED
+    _assert_complete_replace_files(counts)
+    gaps = missing_delete_predicates()
+    if gaps:
+        raise ReplacementVerificationError(f"삭제 조건이 없는 표: {list(gaps)}")
+
+    files = csv_paths(root)
+    started = time.monotonic()
+    with _connect() as conn:
+        try:
+            with conn.cursor() as cur:
+                loaded, notes = replace_in_transaction(cur, files, counts)
+            conn.commit()
+        except BaseException:
+            conn.rollback()
+            raise
+
+    if notes:
+        print("\n[채택] 실 데이터가 이미 가진 신원에 맞췄다")
+        for line in notes:
+            print(f"  {line}")
+    inserted = sum(count for count, _ in loaded.values())
+    skipped = sum(count for _, count in loaded.values())
+    print(
+        f"\n[완료] 원자 교체 {len(loaded)}개 표 · {inserted}행 · "
+        f"건너뜀 {skipped}행 · {time.monotonic() - started:.2f}초"
+    )
+    return EXIT_OK
+
+
 # ============================================================ 실행
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="데모 시드 CSV 를 적재하거나 되돌린다. 접속 문자열은 SUPABASE_DB_URL 에서만 읽는다.",
     )
-    parser.add_argument("--dry-run", action="store_true", help="접속하지 않고 CSV 만 검사한다")
-    parser.add_argument(
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--dry-run", action="store_true", help="접속하지 않고 CSV 만 검사한다")
+    modes.add_argument(
         "--preflight",
         action="store_true",
         help="적재 전에 실 데이터와 부딪히는 키를 찾는다. 읽기만 한다",
     )
-    parser.add_argument("--rollback", action="store_true", help="생성 데이터 행만 지운다")
-    parser.add_argument("--yes", action="store_true", help="되돌리기 확인을 묻지 않는다")
+    modes.add_argument("--rollback", action="store_true", help="생성 데이터 행만 지운다")
+    modes.add_argument(
+        "--replace",
+        action="store_true",
+        help=(
+            "기존 시드를 한 거래에서 교체한다. ALTER TABLE 잠금 대기가 생길 수 있고 "
+            "제한 시간을 넘으면 전부 롤백한다"
+        ),
+    )
+    parser.add_argument("--yes", action="store_true", help="삭제·교체 확인을 묻지 않는다")
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    if args.dry_run and args.rollback:
-        print("[실패] --dry-run 과 --rollback 을 함께 줄 수 없다")
-        return EXIT_FAILED
 
     root = demo_seed_root()
     if args.dry_run:
@@ -1047,6 +1655,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         return run_preflight(root)
     if args.rollback:
         return run_rollback(args.yes)
+    if args.replace:
+        if not args.yes and not confirm(
+            "기존 데모 시드를 삭제한 뒤 같은 거래에서 새 CSV를 적재한다. "
+            "ALTER TABLE의 짧은 잠금이 생길 수 있다.",
+            DATASET_VERSION,
+        ):
+            print("[중단] 확인 문자열이 다르다. 한 줄도 지우지 않았다")
+            return EXIT_ABORTED
+        return run_replace(root)
     return run_load(root)
 
 

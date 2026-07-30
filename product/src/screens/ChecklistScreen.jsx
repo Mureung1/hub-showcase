@@ -44,7 +44,7 @@ function ChecklistScreen({ go, job, checks, setChecks, scope, setScope, myPostin
   const [status, setStatus] = useState('loading')
   const activeSection = useScrollSpy(NAV_IDS)
   // 공고 선택지는 범위와 무관한 직무 전체 목록이다. 기업군 응답에 딸려 오지 않는다.
-  const { postings, status: postingsStatus } = usePostings(jobRoleId)
+  const { postings, status: postingsStatus, retry: retryPostings } = usePostings(jobRoleId)
 
   useEffect(() => {
     if (mine) {
@@ -122,6 +122,7 @@ function ChecklistScreen({ go, job, checks, setChecks, scope, setScope, myPostin
             jobLabel={job.display_name}
             postings={postings}
             postingsStatus={postingsStatus}
+            onRetryPostings={retryPostings}
             myPosting={myPosting}
             payloadScope={view?.scope}
             onSelect={changeScope}

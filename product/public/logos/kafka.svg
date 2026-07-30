@@ -1,4 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Kafka">
-  <rect width="48" height="48" rx="12" fill="#EDEDEF"/>
-  <text x="24" y="29" font-family="Segoe UI, Roboto, sans-serif" font-size="11" font-weight="800" fill="#333338" text-anchor="middle">Kafka</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="12" fill="#F8FAFC"/><g fill="none" stroke="#111827" stroke-width="2.3"><circle cx="24" cy="24" r="4"/><circle cx="24" cy="13" r="3"/><circle cx="14" cy="30" r="3"/><circle cx="34" cy="30" r="3"/><path d="M24 16v4m-4 6-4 2m12-2 4 2"/></g></svg>

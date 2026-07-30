@@ -1,5 +1,5 @@
 :root {
-  --color-bg: #F8FAFC;
+  --color-bg: #FBFAF3;
   --color-surface: #FFFFFF;
   --color-surface-soft: #F1F5F9;
   --color-border: #E2E8F0;
@@ -22,8 +22,8 @@
 
   --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
   --shadow-float: 0 18px 50px rgba(15, 23, 42, 0.12);
-  --glass-surface: rgba(255, 255, 255, 0.68);
-  --glass-border: rgba(226, 232, 240, 0.72);
+  --glass-surface: rgba(248, 246, 238, 0.92);
+  --glass-border: rgba(210, 202, 184, 0.80);
   --glass-blur: 22px;
 
   --font-sans: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
@@ -45,12 +45,12 @@ html {
 }
 
 body {
-  min-width: 320px;
+  min-width: 0;
   margin: 0;
   font-family: var(--font-sans);
   background:
-    radial-gradient(circle at 8% 0%, rgba(79, 70, 229, 0.08), transparent 26rem),
-    linear-gradient(180deg, #FFFFFF 0%, var(--color-bg) 38%);
+    radial-gradient(circle at 8% 0%, rgba(79, 70, 229, 0.065), transparent 26rem),
+    linear-gradient(180deg, #FFFDF7 0%, var(--color-bg) 38%);
   color: var(--color-text-primary);
   line-height: 1.55;
 }
@@ -64,16 +64,21 @@ a {
   position: sticky;
   top: 0;
   z-index: 30;
+  min-height: 72px;
+  background: var(--glass-surface);
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow: 0 12px 34px rgba(70, 63, 45, 0.1);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
+}
+
+.top-bar__inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: min(1180px, calc(100% - 48px));
   min-height: 72px;
-  padding: 0 28px;
-  background: var(--glass-surface);
-  border-bottom: 1px solid var(--glass-border);
-  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.3);
+  margin: 0 auto;
 }
 
 .top-bar__brand {
@@ -81,21 +86,36 @@ a {
   align-items: center;
   gap: 12px;
   min-width: 0;
+  min-height: 44px;
   text-decoration: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
 }
 
 .top-bar__mark {
   flex: 0 0 auto;
   display: grid;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   place-items: center;
-  border-radius: 10px;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 900;
-  box-shadow: 0 8px 18px rgba(79, 70, 229, 0.24);
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.18);
+}
+
+.top-bar__mark img {
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+
+.top-bar__wordmark {
+  display: block;
+  min-width: 0;
 }
 
 .top-bar__name {
@@ -153,6 +173,12 @@ a {
   gap: 32px;
   align-items: start;
   justify-content: center;
+}
+
+.reader-layout > *,
+.page,
+.page--wide {
+  min-width: 0;
 }
 
 .page {
@@ -1148,7 +1174,7 @@ a {
 
 @media (max-width: 1040px) {
   .reader-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .floating-nav {
@@ -1157,6 +1183,8 @@ a {
     display: flex;
     gap: 6px;
     overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
     padding: 10px;
     scrollbar-width: none;
   }
@@ -1184,9 +1212,10 @@ a {
 }
 
 @media (max-width: 760px) {
-  .top-bar {
+  .top-bar__inner {
     align-items: flex-start;
     flex-direction: column;
+    width: 100%;
     gap: 10px;
     padding: 14px 18px;
   }
@@ -1216,7 +1245,15 @@ a {
   .card-header h1,
   .report-header h1,
   .roadmap-header h1 {
-    font-size: 24px;
+    font-size: 23px;
+    line-height: 1.34;
+  }
+
+  .hero-card p,
+  .card-header p,
+  .report-header p,
+  .roadmap-header p {
+    font-size: 14px;
   }
 
   .metric-grid,
@@ -1347,7 +1384,7 @@ button.view-tab { font-weight: 750; }
 .table-scroll {
   margin-top: 14px;
   max-height: 320px;
-  overflow-y: auto;
+  overflow: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
 }
@@ -1543,6 +1580,8 @@ button.view-tab { font-weight: 750; }
 .heatmap th { background: var(--color-surface-soft, #F1F5F9); font-weight: 750; font-size: 12px; color: var(--color-text-secondary); }
 .heatmap td:first-child { text-align: left; font-weight: 700; white-space: nowrap; padding-left: 10px; }
 .heatmap td:first-child small { font-weight: 450; color: var(--color-text-muted); font-size: 10.5px; }
+.heatmap-scroll-hint { display: none; }
+.heatmap-scroll { max-width: 100%; }
 .hm .hm-lv { display: block; font-size: 11px; font-weight: 750; line-height: 1.2; }
 .hm .hm-pc { display: block; font-size: 11px; opacity: 0.85; line-height: 1.2; }
 .hm--0 { background: #FFFFFF; color: var(--color-text-muted); }
@@ -1552,7 +1591,79 @@ button.view-tab { font-weight: 750; }
 
 @media (max-width: 860px) {
   .difficulty-grid { grid-template-columns: 1fr; }
-  .heatmap { font-size: 11px; }
+  .heatmap-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+  .heatmap-scroll-hint {
+    display: block;
+    margin: 0 0 10px;
+    color: var(--color-text-muted);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .heatmap {
+    min-width: 680px;
+    font-size: 11px;
+  }
+  .heatmap th:first-child,
+  .heatmap td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    box-shadow: 1px 0 0 var(--color-border);
+  }
+  .heatmap th:first-child {
+    z-index: 3;
+    background: var(--color-surface-soft, #F1F5F9);
+  }
+  .heatmap td:first-child {
+    background: var(--color-surface);
+  }
+  .req-table {
+    min-width: 720px;
+  }
+}
+
+@media (max-width: 360px) {
+  .top-bar__inner {
+    padding-inline: 14px;
+  }
+
+  .top-bar__meta {
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .app-shell {
+    width: calc(100% - 24px);
+  }
+
+  .hero-card,
+  .job-select-card,
+  .panel {
+    padding: 18px;
+  }
+
+  .hero-card h1,
+  .card-header h1,
+  .report-header h1,
+  .roadmap-header h1 {
+    font-size: 21px;
+  }
+
+  .hero-card p,
+  .card-header p,
+  .report-header p,
+  .roadmap-header p {
+    font-size: 13px;
+  }
+
+  .section-title h2 {
+    font-size: 18px;
+  }
 }
 
 /* ===== 역산 슬라이스: baseline·편차·개별 공고 ===== */
@@ -1641,6 +1752,18 @@ button.view-tab { font-weight: 750; }
 .posting-row--on { background: #EEF2FF; }
 .posting-row--on .co { color: #3730A3; }
 .posting-empty { padding: 18px; font-size: 13px; color: var(--color-text-muted); text-align: center; }
+.posting-empty p { margin: 0; }
+.posting-retry {
+  margin-top: 8px;
+  padding: 7px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-primary-dark);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
 
 .posting-layout { display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; margin-top: 14px; }
 .posting-raw {
@@ -1697,6 +1820,11 @@ button.view-tab { font-weight: 750; }
 
 /* 개별 공고: 원문·해석 같은 폭 */
 .posting-layout { grid-template-columns: 1fr 1fr; }
+.posting-layout > * { min-width: 0; }
+
+@media (max-width: 860px) {
+  .posting-layout { grid-template-columns: 1fr; }
+}
 
 /* ===== 합격 전략 슬라이스 ===== */
 
@@ -1974,6 +2102,44 @@ button.view-tab { font-weight: 750; }
 .scope-switch__postings { display: flex; flex-direction: column; gap: 6px; }
 .scope-switch__postings .posting-search { max-width: 100%; }
 .scope-switch__postings .posting-count { margin: 0; }
+.posting-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.posting-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-soft);
+}
+.posting-filter__label {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+.posting-filter__chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.posting-filter-chip {
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.posting-filter-chip:hover { color: var(--color-primary-dark); }
+.posting-filter-chip--on {
+  border-color: #C7D2FE;
+  background: var(--color-surface);
+  color: var(--color-primary-dark);
+}
 
 /* 지금 보고 있는 범위 한 줄. 고르는 자리와 읽는 자리를 선으로 나눈다. */
 .scope-switch__line {
@@ -1989,6 +2155,7 @@ button.view-tab { font-weight: 750; }
 @media (max-width: 860px) {
   .scope-switch__tier { grid-template-columns: 1fr; gap: 6px; }
   .scope-switch__tier-label { padding-top: 0; }
+  .posting-filters { grid-template-columns: 1fr; }
 }
 
 /* ── 3단 공고 목록 — 기업군에 매이지 않는 선택지 ────────────────────────
@@ -1996,7 +2163,7 @@ button.view-tab { font-weight: 750; }
    목록은 길어질 수 있어 최대 높이를 두고 그 안에서 스크롤한다.
    본문 카드와 같은 불투명 흰 면을 그대로 쓴다 — 반투명은 상단바·사이드바 몫이다. */
 .posting-list--scope { max-height: 232px; margin-top: 2px; }
-.posting-row--scope { grid-template-columns: 1fr 1.5fr auto 88px; }
+.posting-row--scope { grid-template-columns: 1fr 1.5fr auto auto; }
 .posting-cluster {
   justify-self: start;
   font-size: 11px; font-weight: 700; white-space: nowrap;
@@ -2004,8 +2171,31 @@ button.view-tab { font-weight: 750; }
   background: var(--color-primary-light); color: var(--color-primary-dark);
 }
 .posting-row--on .posting-cluster { background: var(--color-surface); }
+.posting-row__badges {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.posting-year,
+.posting-status {
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 750;
+}
+.posting-year { background: var(--color-surface-soft); color: var(--color-text-secondary); }
+.posting-status--open { background: #DCFCE7; color: #15803D; }
+.posting-status--closed { background: #F1F5F9; color: #64748B; }
+.posting-row--on .posting-year { background: var(--color-surface); }
+.posting-empty--error { color: var(--color-accent-rose); }
 
 @media (max-width: 860px) {
   .posting-row--scope { grid-template-columns: 1fr; }
   .posting-cluster { justify-self: start; }
+  .posting-row__badges { justify-content: flex-start; }
+  .scope-chip,
+  .posting-filter-chip,
+  .posting-retry { min-height: 44px; }
 }

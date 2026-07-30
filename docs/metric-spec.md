@@ -23,6 +23,8 @@ WHERE p.job_role_id = :job_role_id
 
 `job_role_id` 판정 규칙은 2.8에 있다.
 
+기간 축은 달력 연도다. `period_id`는 `y2026`과 `y2024_2025` 두 값이며 공고의 `posted_at` 날짜가 그 구간에 드는지로 가른다. 기간 정의는 [ERD](erd.md) 3.5가 소유하므로 여기에 날짜를 다시 적지 않는다. 기간을 늘릴 때 `periods`에 행을 더하고 이 문서의 수식은 그대로 둔다.
+
 `scope_level`에 따라 조건을 더한다.
 
 | `scope_level` | 추가 조건 |
@@ -101,9 +103,18 @@ upper = min(1, mid + half)
 { "method": "wilson_95", "lower": 0.412, "upper": 0.734 }
 ```
 
-정규 근사 대신 Wilson을 쓰는 이유는 분모가 작거나 비율이 0과 1에 가까울 때 구간이 정의역을 벗어나지 않기 때문이다. MVP 구간의 분모가 작으므로 이 성질이 필요하다.
+정규 근사 대신 Wilson을 쓰는 이유는 분모가 작거나 비율이 0과 1에 가까울 때 구간이 정의역을 벗어나지 않기 때문이다. 기업군과 대상군으로 나눈 범위의 분모가 작으므로 이 성질이 필요하다.
 
-`count`와 `difference`를 산출하는 measure는 불확실성을 저장하지 않고 `uncertainty`를 NULL로 둔다.
+구간을 저장하는 measure는 한 이항 분포의 비율을 산출하는 것뿐이다. 다음 넷은 `uncertainty`를 NULL로 둔다.
+
+| measure | 근거 |
+| --- | --- |
+| `count` | 비율이 아니다 |
+| `association_lift` | 비율의 비율이다 |
+| `prevalence_difference` | 서로 다른 두 모집단의 비율에서 파생한다 |
+| `prevalence_ratio` | 서로 다른 두 모집단의 비율에서 파생한다 |
+
+`temporal_delta`도 구간을 저장하지 않는다.
 
 ### 2.6 `entry_label` 정규화
 
@@ -168,15 +179,28 @@ upper = min(1, mid + half)
 
 직군 필드와 제목이 사업 영역만 가리키고 직무를 가리키지 않는 공고는 세 번째 입력으로 판정한다. 수주형 개발과 대기업 내부 시스템을 담당하는 조직의 공고가 여기에 해당한다.
 
-`backend`의 조건은 다음과 같다.
+직무와 무관하게 모집단에서 빼는 조건은 둘이다.
 
 | 판정 | 조건 |
 | --- | --- |
-| 포함 | 서버 애플리케이션, API, 데이터 저장소의 설계·구현·운영이 주 업무다 |
 | 제외 | 직무를 지정하지 않고 상시 접수하는 인재풀이다 |
 | 제외 | 업무 내용 본문이 없어 요구를 확인할 수 없다 |
 
-경계 사례는 주 업무의 비중으로 가른다. 서버 개발이 부수 업무인 공고는 넣지 않는다.
+아홉 직무의 포함 조건은 주 업무가 무엇을 만드는가로 적는다.
+
+| `job_role_id` | 주 업무 |
+| --- | --- |
+| `backend` | 서버 애플리케이션, API, 데이터 저장소의 설계·구현·운영 |
+| `frontend` | 웹 화면과 클라이언트 상태의 구현 |
+| `ai_engineer` | 모델 학습과 서빙, AI 기능의 구현 |
+| `data_engineer` | 데이터 수집·파이프라인·분석 저장소의 구축 |
+| `fullstack` | 화면과 서버의 구현을 함께 담당 |
+| `devops` | 인프라 구축, 배포 자동화, 운영 |
+| `mobile` | iOS·안드로이드 앱과 단말 기능의 구현 |
+| `security` | 보안 설계, 점검, 침해 대응 |
+| `game_client` | 게임 클라이언트와 엔진의 구현 |
+
+경계 사례는 주 업무의 비중으로 가른다. 해당 직무의 일이 부수 업무인 공고는 그 직무의 모집단에 넣지 않는다.
 
 #### 모집분야를 여럿 담은 출처
 
@@ -196,7 +220,7 @@ upper = min(1, mid + half)
 
 #### 인접 직무와 가르는 기준
 
-기술 이름으로는 가르지 못한다. 백엔드 공고에도 컨테이너와 메시지 큐가 거의 항상 나온다. 무엇을 만드는가로 가른다.
+기술 이름으로는 가르지 못한다. 백엔드 공고에도 컨테이너와 메시지 큐가 거의 항상 나오고, 프론트엔드 공고에도 배포 도구가 나온다. 무엇을 만드는가로 가른다.
 
 | 쌍 | 기준 |
 | --- | --- |
@@ -206,6 +230,11 @@ upper = min(1, mid + half)
 | `backend` ↔ `game_client` | 게임의 서버는 `backend`, 클라이언트와 엔진은 `game_client` |
 | `backend` ↔ `ai_engineer` | 모델을 호출하는 서비스를 만들면 `backend`, 모델 자체를 학습하고 서빙하면 `ai_engineer` |
 | `backend` ↔ `mobile` | 앱 화면과 단말 기능을 구현하면 `mobile` |
+| `frontend` ↔ `fullstack` | 서버 구현이 주 업무에 포함되면 `fullstack` |
+| `frontend` ↔ `mobile` | 웹 화면이면 `frontend`, 단말 앱이면 `mobile` |
+| `ai_engineer` ↔ `data_engineer` | 모델을 학습하고 서빙하면 `ai_engineer`, 모델이 쓸 데이터를 나르고 쌓으면 `data_engineer` |
+| `devops` ↔ `security` | 배포와 운영 경로를 만들면 `devops`, 보안 기준을 세우고 점검·대응하면 `security` |
+| `game_client` ↔ `frontend` | 게임 엔진 위의 화면과 입력이면 `game_client`, 웹 화면이면 `frontend` |
 
 게임의 서버를 `backend`에 두는 이유는 기업군 축이 게임사를 별도 군으로 두기 때문이다. 게임사가 요구하는 서버 수준을 다른 기업군과 대비하려면 같은 직무 모집단에 있어야 한다.
 
@@ -311,7 +340,7 @@ prevalence_difference = cluster_prevalence - baseline_prevalence
 prevalence_ratio      = cluster_prevalence / baseline_prevalence
 ```
 
-`baseline_prevalence`가 0이면 `prevalence_ratio` 행을 만들지 않는다. `prevalence_difference` 행만 저장한다.
+`baseline_prevalence`가 0이면 `prevalence_ratio` 행을 만들지 않는다. `prevalence_difference` 행만 저장한다. 직무 전체 분모가 0이면 견줄 값 자체가 없으므로 `prevalence_difference`의 `value`도 비운다.
 
 **저장 형태.** 두 measure 모두 `value`에 결과를 담고 `numerator`·`denominator`에는 **기업군 범위의 원본 카운트**를 담는다. `statistics_facts`의 `numerator`·`denominator`는 정수 카운트만 담는다는 규약을 지키기 위해서다. 직무 전체 값은 같은 분석 버전의 `posting_prevalence` 행에서 조회한다.
 
@@ -349,7 +378,9 @@ association_lift      = (|A ∩ B| / N) / ((|A| / N) × (|B| / N))
 | `conditional_b_given_a` | `n_ab` | `n_a` | Wilson 95% |
 | `association_lift` | `n_ab` | `n_total` | 없음 |
 
-`association_lift`는 비율의 비율이라 Wilson 구간이 성립하지 않는다. `numerator`·`denominator`에는 교집합 수와 모집단 수를 담고 `value`에 lift를 담는다.
+`association_lift`는 비율의 비율이라 Wilson 구간이 성립하지 않는다. `numerator`·`denominator`에는 교집합 수와 모집단 수를 담고 `value`에 lift를 담는다. `n_a`와 `n_b` 중 하나라도 0이면 독립 가정 기대 비율이 0이라 lift가 정의되지 않으므로 `value`를 비운다.
+
+`count`는 분모가 없는 것이 정의이며 `denominator`를 NULL로 둔다. `value`에 교집합 수를 담고 `sample_size`에는 모집단 크기를 담는다. 표본 판정도 분모가 아니라 이 `sample_size`로 한다. 교집합 수 하나만으로는 그 수가 몇 건 가운데 나온 것인지 알 수 없다.
 
 차원 쌍은 `dimension_id < secondary_dimension_id` 순서로 정규화해 한 쌍당 한 행만 저장한다. 방향이 있는 두 조건부 확률은 measure로 구분한다.
 
@@ -444,40 +475,59 @@ temporal_delta(base_metric, measure, scope, period_a, period_b)
 
 `dimension_metric_applicability`에 분류체계 버전별로 적용 가능 여부를 기록한다. `applicable`이 거짓인 조합은 계산하지 않으며, 계산된 행이 있으면 검증에서 차단한다.
 
-차원 쌍의 전개는 조합 폭발을 막기 위해 `posting_prevalence`가 `minimum_n` 이상인 차원끼리만 수행한다.
+차원 쌍의 전개는 조합 폭발을 막기 위해 같은 봉투의 `posting_prevalence` 분자가 `minimum_n` 이상인 차원끼리만 수행한다. 임계값은 `posting_prevalence`의 정책 행에서 읽는다. 자르는 근거가 그 지표의 결과이기 때문이다.
 
 ## 6. 정책 버전
 
-최소 표본, 억제 정책, 불확실성 방법은 `metric_policy_versions`의 행이다. 코드 상수가 아니다.
+최소 표본, 억제 정책, 불확실성 방법은 `metric_policy_versions`의 행이다. 코드 상수가 아니다. 정책 행은 family마다 하나이며 `temporal_delta`는 행을 두지 않고 `base_metric`의 행을 따른다.
 
-v1 값은 실데이터 확보 이전의 잠정값이다.
+두 임계값은 일곱 family가 같은 값을 쓴다.
 
 | 항목 | v1 | 근거 |
 | --- | --- | --- |
 | `minimum_n` | 5 | 5건 미만에서는 한 건이 20%p를 움직여 비율이 의미를 잃는다 |
 | `minimum_n_comparison` | 10 | 두 집단 비교에서 각 10건이 최소 판별 규모다 |
-| `uncertainty_method` | `wilson_95` | 소표본과 극단 비율에서 구간이 정의역을 벗어나지 않는다 |
-| `suppression_policy` | `label_low_confidence` | 숨기지 않고 낮은 신뢰도로 표시한다 |
 
-MVP 규모는 공고 18~30건이다. `overall` 범위는 `analysis_ready`가 되지만 기업군 6종으로 나누면 군당 3~5건이라 대부분 `low_confidence`나 `not_computable`이 된다. 이 상태가 정상이며 화면은 표본 수를 함께 표시한다.
+`suppression_policy`와 `uncertainty_method`는 family마다 다르다.
 
-실공고를 적재한 뒤 P13에서 분포를 확인하고 v2를 발행한다. 정책 버전이 다른 수치는 비교하지 않는다.
+| family | `suppression_policy` | `uncertainty_method` |
+| --- | --- | --- |
+| `posting_prevalence` | `label_low_confidence` | `wilson_95` |
+| `requiredness_ratio` | `label_low_confidence` | `wilson_95` |
+| `depth_distribution` | `label_low_confidence` | `wilson_95` |
+| `cluster_contrast` | `label_not_comparable` | `none` |
+| `cooccurrence` | `label_low_confidence` | `wilson_95` |
+| `scope_expansion` | `label_low_confidence` | `wilson_95` |
+| `entry_label_advanced_signal_rate` | `label_low_confidence` | `wilson_95` |
+
+`label_low_confidence`는 값을 숨기지 않고 낮은 신뢰도로 표시한다. `cluster_contrast`가 `label_not_comparable`을 쓰는 근거는 3.4의 두 분모 규칙이다. 한쪽 분모라도 미달인 값을 비교에 쓰지 않으므로 `low_confidence`를 `not_comparable`로 올려 표시한다.
+
+`uncertainty_method`는 family가 구간을 어떤 방법으로 계산하는지만 정한다. 어느 measure에 구간이 성립하는가는 2.5의 수식이 정하므로, `cooccurrence`의 방법이 `wilson_95`여도 `count`와 `association_lift`는 구간을 갖지 않는다. `cluster_contrast`는 두 measure 모두 구간이 성립하지 않아 방법이 `none`이다.
+
+기업군 6종으로 나눈 범위는 군당 분모가 `overall`의 6분의 1이라 `low_confidence`나 `not_comparable`로 남는 조합이 있다. 이 상태가 정상이며 화면은 표본 수를 함께 표시한다.
+
+정책 버전이 다른 수치는 비교하지 않는다. 임계값 재검토와 다음 정책 버전의 발행 시점은 [백로그](backlog.md)에 있다.
 
 ## 7. 검증
 
-집계 산출물은 다음을 검사한다. 판정 형식은 [에이전트 설계](agent-design.md) 9장을 따른다.
+집계 산출물은 여섯 검사로 대조한다. 표의 차례가 실행 차례다. 판정 형식은 [에이전트 설계](agent-design.md) 9장을 따른다.
 
 | 검사 | 내용 |
 | --- | --- |
-| 분모 일치 | 모집단 조건이 범위·기간 정의와 일치한다 |
+| 분모 일치 | 저장된 분모가 모집단 정의를 다시 적용해 만든 크기와 같고, 행의 범위·대상군·기간 표기가 모집단 정의와 일치한다 |
 | 중복 제거 | `posting_version_id` 단위로 중복이 제거되었다 |
-| 분자 상한 | `numerator <= denominator` |
-| 분포 합 | `depth_distribution` 세 measure의 분자 합이 분모와 같다 |
-| 표본 판정 | `sample_status`가 정책 버전의 임계값과 일치한다 |
-| 재계산 일치 | 독립 재계산 결과가 저장값과 일치한다 |
+| 표본 판정 | `sample_size`가 분모와 같고 `sample_status`가 정책 버전의 임계값으로 판정한 값과 같다 |
+| 재계산 일치 | 독립 재계산의 분자·분모·값이 저장값과 일치한다 |
 | 버전 일치 | 행의 `metric_policy_version`과 `analysis_version`이 선언한 `taxonomy_version_id`가 실행 컨텍스트와 일치한다 |
-| 적용 가능성 | 적용 불가로 표시된 조합이 계산되지 않았다 |
-| 비교 가능성 | `temporal_delta`와 `cluster_contrast`의 입력이 `analysis_ready`다 |
+| 적용 가능성 | 적용 불가로 표시된 차원·지표 조합과 전개하지 않는 대상군의 행이 계산되지 않았다 |
+
+위반이 나와도 남은 검사를 건너뛰지 않는다. 한 번의 실행이 결함 전체를 드러내야 수리 지시를 한 번에 만들 수 있다.
+
+재계산은 저장 집계와 다른 경로로 수행한다. 저장값은 2.1~2.3의 SQL이 만들고, 재계산은 집계되지 않은 원자 행에 모집단 조건·중복 제거·활성 분류체계 조건을 처음부터 다시 적용한다. 같은 질의를 두 번 실행하는 것은 대조가 아니다.
+
+`cluster_contrast`의 표본 판정은 3.4의 두 분모 규칙을 적용하며, 기업군 분모와 직무 전체 분모 중 하나라도 미달이면 `analysis_ready`가 아니다. `temporal_delta`는 입력 두 기간이 `analysis_ready`가 아니면 행 자체를 만들지 않으므로 별도의 검사 항목을 두지 않는다.
+
+`numerator <= denominator`는 `statistics_facts`의 `numerator_within` CHECK가 막고, `depth_distribution` 세 measure의 분자 합과 분모가 어긋나면 집계가 행을 만들지 않고 멈춘다. 제약 정의는 [ERD](erd.md)에 있다.
 
 `statistics_facts`는 분류체계 버전을 컬럼으로 갖지 않는다. 버전 일치 검사는 행이 속한 분석 버전의 `analysis_versions.taxonomy_version_id`를 읽는다. `metric_policy_version`은 행의 지표 family에 유효한 정책 행과 대조한다.
 

@@ -112,7 +112,7 @@ DIMENSIONS: tuple[tuple[str, str, str, str, tuple[str, ...], bool], ...] = (
         "kotlin-android",
         "technology",
         "Kotlin·안드로이드",
-        "Kotlin 으로 안드로이드 앱의 화면과 동작을 구현하는 요구. Jetpack 과 Compose 를 포함한다.",
+        "Kotlin으로 안드로이드 앱의 화면과 동작을 구현하는 요구. Jetpack과 Compose를 포함한다.",
         ("Kotlin", "안드로이드", "Android", "Jetpack Compose"),
         False,
     ),
@@ -120,7 +120,7 @@ DIMENSIONS: tuple[tuple[str, str, str, str, tuple[str, ...], bool], ...] = (
         "swift-ios",
         "technology",
         "Swift·iOS",
-        "Swift 로 iOS 앱의 화면과 동작을 구현하는 요구. UIKit 과 SwiftUI 를 포함한다.",
+        "Swift로 iOS 앱의 화면과 동작을 구현하는 요구. UIKit과 SwiftUI를 포함한다.",
         ("Swift", "iOS", "SwiftUI", "UIKit"),
         False,
     ),
@@ -136,7 +136,7 @@ DIMENSIONS: tuple[tuple[str, str, str, str, tuple[str, ...], bool], ...] = (
         "network-api",
         "technology",
         "네트워크·API 연동",
-        "서버 API 를 호출하고 비동기 흐름과 실패 응답을 다루는 요구.",
+        "서버 API를 호출하고 비동기 흐름과 실패 응답을 다루는 요구.",
         ("Retrofit", "URLSession", "REST API 연동", "비동기 처리"),
         False,
     ),
@@ -219,9 +219,9 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 )
 
 
-# ============================================================ 3. 채용공고 9건
+# ============================================================ 3. 채용공고 30건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
-# 주석은 recent 5건에만 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
+# 각 공고의 주석에서 해석 payload의 세 종류 번호가 나온다.
 #   ("base", 기준선 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
@@ -249,7 +249,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("서비스 안드로이드 앱의 신규 기능을 개발하고 운영합니다.", None, "application",
                  ("note", "만드는 일과 운영하는 일이 붙어 있습니다",
                   "개발과 운영이 분리되지 않은 팀입니다. 출시한 뒤에 무엇을 보는지까지 말할 수 있으면 대화가 이어집니다.")),
-                ("기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.", "app-architecture", "application",
+                ("기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.", "app-architecture", "application",
                  ("note", "전환 — 새로 짜는 일이 아닙니다",
                   "이미 돌아가는 화면을 깨지 않고 바꾸는 일입니다. 화면과 로직이 분리되어 있어야 가능한 작업이라 자격요건의 구조 요구가 여기서 설명됩니다.")),
                 ("백엔드 팀과 API 규격을 함께 정하고 연동합니다.", "network-api", "application",
@@ -257,13 +257,13 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "직무 외 요구로 분류되는 서버 스펙 협의가 업무에 명시되어 있습니다. 응답 구조를 놓고 의견을 낸 경험이 있으면 그대로 이야깃거리가 됩니다.")),
             )),
             ("자격요건", (
-                ("Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분", "kotlin-android", "application",
+                ("Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분", "kotlin-android", "application",
                  ("base", "Kotlin·안드로이드 구현",
                   "경험이 있으신 분의 실질은 완성해 본 사람입니다. 화면 여러 개가 이어지는 앱 하나면 이 문장은 충분히 증명됩니다.")),
                 ("MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분", "app-architecture", "application",
                  ("base", "앱 아키텍처·상태 관리",
                   "패턴 이름보다 화면이 다시 그려지는 이유를 설명할 수 있는지를 봅니다. 상태를 한 곳에서 다룬 코드면 충족됩니다.")),
-                ("Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분", "network-api", "application",
+                ("Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분", "network-api", "application",
                  ("base", "네트워크·API 연동",
                   "붙여 봤다가 아니라 로딩과 실패를 화면에 어떻게 보여줬는지가 답이 됩니다.")),
                 ("앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분", "store-release", "application",
@@ -279,7 +279,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("앱 렌더링 성능이나 메모리 사용량을 측정하고 개선해 본 경험", None, "application",
                  ("note", "성능 — 측정한 흔적을 봅니다",
                   "빨라졌다는 말보다 무엇을 어떻게 쟀는지가 필요합니다. 개선 전후 수치 한 장이면 충분합니다.")),
-                ("CI 로 앱 빌드와 배포를 자동화해 본 경험", "store-release", "application",
+                ("CI로 앱 빌드와 배포를 자동화해 본 경험", "store-release", "application",
                  ("note", "자동화 — 반복을 줄인 기록",
                   "손으로 올리던 빌드를 스크립트 하나로 바꾼 기록이면 됩니다. 배포 요구와 한 묶음으로 읽힙니다.")),
             )),
@@ -304,21 +304,21 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("금융 서비스 iOS 앱의 결제·인증 화면을 개발하고 운영합니다.", None, "application",
                  ("note", "도메인 신호 — 돈이 오가는 화면",
                   "결제 화면은 한 번 어긋나면 사용자가 돈을 잃습니다. 우대의 재시도 설계 요구가 왜 붙었는지가 이 문장에서 설명됩니다.")),
-                ("SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.", "app-architecture", "application",
+                ("SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.", "app-architecture", "application",
                  ("note", "상태를 설계한다고 적었습니다",
                   "화면을 그리는 일이 아니라 금액과 진행 단계를 어디에 둘지 정하는 일입니다. 단일 출처로 상태를 관리해 본 경험이 그대로 답이 됩니다.")),
-                ("결제 승인 API 를 연동하고 실패 흐름을 설계합니다.", "network-api", "application",
+                ("결제 승인 API를 연동하고 실패 흐름을 설계합니다.", "network-api", "application",
                  ("note", "성공보다 실패를 먼저 적었습니다",
                   "승인 실패, 시간 초과, 중복 요청이 일상인 도메인입니다. 실패 화면을 만들어 본 사람이 유리합니다.")),
             )),
             ("자격요건", (
-                ("Swift 로 iOS 앱을 개발한 경험이 있으신 분", "swift-ios", "application",
+                ("Swift로 iOS 앱을 개발한 경험이 있으신 분", "swift-ios", "application",
                  ("base", "Swift·iOS 구현",
                   "언어를 콕 집었지만 실질은 완성한 앱 하나입니다. 화면 여러 개가 이어지는 결과물이면 충족됩니다.")),
                 ("화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분", "app-architecture", "application",
                  ("base", "앱 아키텍처·상태 관리",
                   "분리해 본 경험을 묻습니다. 왜 나눴는지 한 문장으로 말할 수 있으면 기대치를 채웁니다.")),
-                ("URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분", "network-api", "application",
+                ("URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분", "network-api", "application",
                  ("base", "네트워크·API 연동",
                   "도구를 둘로 열어 둔 것은 비동기 흐름의 이해를 본다는 뜻입니다. 어느 쪽이든 로딩과 실패를 다뤄 본 코드면 됩니다.")),
             )),
@@ -356,15 +356,15 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("중고거래 앱의 새 기능을 기획 단계부터 함께 만들고 배포합니다.", None, "application",
                  ("note", "기획부터 함께합니다",
                   "받은 화면을 그리는 자리가 아닙니다. 무엇을 만들지 정하는 대화에 참여한 경험이 있으면 강합니다.")),
-                ("서버 API 를 연동해 목록·상세 화면을 구현합니다.", "network-api", "application",
+                ("서버 API를 연동해 목록·상세 화면을 구현합니다.", "network-api", "application",
                  ("note", "가장 흔한 화면이 가장 자주 나옵니다",
                   "목록과 상세는 모든 앱의 뼈대입니다. 페이지네이션과 새로고침을 어떻게 다뤘는지가 실제 질문이 됩니다.")),
             )),
             ("자격요건", (
-                ("Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분", "kotlin-android", "application",
+                ("Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분", "kotlin-android", "application",
                  ("base", "Kotlin·안드로이드 구현",
                   "만들어 본 경험이라고 낮춰 적었지만 실질은 같습니다. 완성한 앱 하나가 이 문장을 채웁니다.")),
-                ("REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분", "network-api", "application",
+                ("REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분", "network-api", "application",
                  ("base", "네트워크·API 연동",
                   "데이터를 그려 본 경험까지 적었습니다. 빈 목록과 오류 화면을 어떻게 처리했는지가 함께 준비되어야 합니다.")),
                 ("작은 기능이라도 혼자 끝까지 완성해 본 경험이 있으신 분", None, "application",
@@ -409,7 +409,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "두 스토어의 심사 주기와 버전 정책을 함께 관리하는 자리입니다. 배포 자동화 경험이 바로 쓰입니다.")),
             )),
             ("자격요건", (
-                ("Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분", "kotlin-android", "application",
+                ("Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분", "kotlin-android", "application",
                  ("base", "Kotlin·안드로이드 구현",
                   "경력 공고라 연차가 붙었습니다. 신입 기준선과 항목은 같고 기대 깊이만 다릅니다.")),
                 ("여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분", "kotlin-android", "tradeoff",
@@ -418,7 +418,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "high", "같은 직군 60%")),
             )),
             ("우대사항", (
-                ("Swift 로 iOS 앱을 함께 개발해 본 경험", "swift-ios", "application",
+                ("Swift로 iOS 앱을 함께 개발해 본 경험", "swift-ios", "application",
                  ("mark", "두 플랫폼 — 우대지만 업무에 이미 적혀 있습니다",
                   "담당업무가 두 스토어 배포를 포함하므로 우대 라벨보다 비중이 큽니다. 한쪽이 깊고 다른 쪽은 읽고 고칠 수 있는 정도면 충분합니다.",
                   "mid", "같은 직군 60%")),
@@ -444,15 +444,15 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "title": "모바일 SDK 개발자 (iOS)",
         "sections": (
             ("주요업무", (
-                ("기업 고객이 앱에 붙이는 채팅 SDK 의 iOS 버전을 개발합니다.", None, "application",
+                ("기업 고객이 앱에 붙이는 채팅 SDK의 iOS 버전을 개발합니다.", None, "application",
                  ("note", "사용자가 개발자입니다",
                   "화면이 아니라 다른 개발자가 호출하는 코드를 만듭니다. 이름과 인터페이스를 정하는 감각이 평가 대상이 됩니다.")),
                 ("공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.", "app-architecture", "application",
                  ("note", "문서가 제품의 일부입니다",
-                  "직무 외 요구로 보이는 문서 작업이 담당업무에 있습니다. README 를 공들여 쓴 경험이 그대로 근거가 됩니다.")),
+                  "직무 외 요구로 보이는 문서 작업이 담당업무에 있습니다. README를 공들여 쓴 경험이 그대로 근거가 됩니다.")),
             )),
             ("자격요건", (
-                ("Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분", "swift-ios", "application",
+                ("Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분", "swift-ios", "application",
                  ("base", "Swift·iOS 구현",
                   "앱과 라이브러리를 나란히 적었습니다. 앱 경험만 있어도 지원 가능하다는 뜻으로 읽힙니다.")),
                 ("네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분", "network-api", "application",
@@ -462,13 +462,13 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                  ("mark", "버전 호환 — 이 기업군만의 요구",
                   "고객사 앱이 이미 옛 버전을 쓰고 있어 마음대로 바꿀 수 없습니다. 무엇을 바꾸면 남의 앱이 깨지는지 아는 감각을 봅니다.",
                   "high", "같은 직군 80%")),
-                ("공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분", "app-architecture", "application",
+                ("공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분", "app-architecture", "application",
                  ("mark", "인터페이스 설계 — 구조 요구가 한 단계 위입니다",
                   "화면과 로직 분리를 넘어 남이 쓰는 경계를 정하는 일입니다. 작은 라이브러리 하나를 공개해 본 경험이면 충분히 설명됩니다.",
                   "high", "같은 직군 80%")),
             )),
             ("우대사항", (
-                ("여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험", "store-release", "tradeoff",
+                ("여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험", "store-release", "tradeoff",
                  ("mark", "하위 호환 — 라벨은 우대, 실질은 이 팀의 일상",
                   "자격요건의 버전 호환과 같은 축입니다. 바꾸지 못하는 제약 안에서 기능을 더해 본 경험을 기대한다고 읽힙니다.",
                   "mid", "같은 직군 80%")),
@@ -485,12 +485,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_lineplus",
         "company": "라인플러스",
         "cluster": "bigtech_platform",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입 지원 가능",
         "career_label_raw": "신입~2년",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2025-03-17T10:00:00+09:00",
+        "posted_at": "2026-01-12T10:00:00+09:00",
         "title": "안드로이드 개발자 신입·주니어",
         "sections": (
             ("주요업무", (
@@ -498,8 +498,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("다국어와 기기 호환을 고려해 화면을 구현합니다.", None, "application", None),
             )),
             ("자격요건", (
-                ("Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분", "kotlin-android", "application", None),
-                ("Android SDK 와 화면 생명주기를 이해하고 계신 분", None, "foundation", None),
+                ("Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분", "kotlin-android", "application", None),
+                ("Android SDK와 화면 생명주기를 이해하고 계신 분", None, "foundation", None),
             )),
             ("우대사항", (
                 ("MVVM 등 아키텍처 패턴을 적용해 본 경험", "app-architecture", "foundation", None),
@@ -514,20 +514,20 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_kakaobank",
         "company": "카카오뱅크",
         "cluster": "fintech_finance",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "entry_junior",
         "entry_label_raw": "신입/주니어",
         "career_label_raw": "경력 무관",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2024-11-12T10:00:00+09:00",
+        "posted_at": "2026-02-23T10:00:00+09:00",
         "title": "iOS 개발자 신입·주니어",
         "sections": (
             ("주요업무", (
                 ("뱅킹 iOS 앱의 계좌·이체 화면을 개발합니다.", None, "application", None),
-                ("서버 API 를 연동해 거래 흐름을 구현합니다.", "network-api", "application", None),
+                ("서버 API를 연동해 거래 흐름을 구현합니다.", "network-api", "application", None),
             )),
             ("자격요건", (
-                ("Swift 로 iOS 앱을 개발한 경험이 있으신 분", "swift-ios", "application", None),
+                ("Swift로 iOS 앱을 개발한 경험이 있으신 분", "swift-ios", "application", None),
                 ("REST API 연동 경험이 있으신 분", "network-api", "application", None),
             )),
             ("우대사항", (
@@ -543,12 +543,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_samsungsds",
         "company": "삼성에스디에스",
         "cluster": "si_enterprise",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력",
         "career_label_raw": "3년 이상",
         "edu_label_raw": "학사 이상",
-        "posted_at": "2025-04-02T10:00:00+09:00",
+        "posted_at": "2026-05-18T10:00:00+09:00",
         "title": "모바일 앱 개발자 (경력)",
         "sections": (
             ("주요업무", (
@@ -556,9 +556,9 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("설계와 개발 절차를 문서로 남깁니다.", "app-architecture", "application", None),
             )),
             ("자격요건", (
-                ("Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분", "kotlin-android", "application", None),
+                ("Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분", "kotlin-android", "application", None),
                 ("화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분", "app-architecture", "application", None),
-                ("사내 서버 API 를 연동해 본 경험이 있으신 분", "network-api", "application", None),
+                ("사내 서버 API를 연동해 본 경험이 있으신 분", "network-api", "application", None),
             )),
             ("우대사항", (
                 ("앱 배포와 사내 스토어 운영을 경험해 보신 분", "store-release", "foundation", None),
@@ -572,12 +572,12 @@ POSTINGS: tuple[dict[str, Any], ...] = (
         "company_id": "co_bucketplace",
         "company": "주식회사 버킷플레이스",
         "cluster": "startup",
-        "period": PRIOR,
+        "period": RECENT,
         "entry_label": "experienced",
         "entry_label_raw": "경력",
         "career_label_raw": "2년 이상",
         "edu_label_raw": "학력 무관",
-        "posted_at": "2024-10-15T10:00:00+09:00",
+        "posted_at": "2026-06-08T10:00:00+09:00",
         "title": "안드로이드 개발자 (경력)",
         "sections": (
             ("주요업무", (
@@ -585,17 +585,160 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("안드로이드 앱의 배포와 버전을 관리합니다.", "store-release", "application", None),
             )),
             ("자격요건", (
-                ("Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분", "kotlin-android", "application", None),
+                ("Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분", "kotlin-android", "application", None),
                 ("서버 API 연동과 비동기 처리에 익숙하신 분", "network-api", "application", None),
             )),
             ("우대사항", (
-                ("Swift 로 iOS 앱을 함께 개발해 본 경험", "swift-ios", "foundation", None),
+                ("Swift로 iOS 앱을 함께 개발해 본 경험", "swift-ios", "foundation", None),
             )),
         ),
         "summary": "",
         "summary_ratio": "",
     },
 )
+
+
+def _historical_posting(
+    nn: str,
+    source_nn: str,
+    posted_at: str,
+    entry_label: str,
+) -> dict[str, Any]:
+    """기존 공고의 요구사항 구성을 재사용해 이전 기간의 독립 표본을 만든다."""
+    source = next(posting for posting in POSTINGS if posting["nn"] == source_nn)
+    label_source = next(
+        posting for posting in POSTINGS if posting["entry_label"] == entry_label
+    )
+    return {
+        **source,
+        "nn": nn,
+        "period": PRIOR,
+        "posted_at": posted_at,
+        "entry_label": entry_label,
+        "entry_label_raw": label_source["entry_label_raw"],
+        "career_label_raw": label_source["career_label_raw"],
+        "title": f"{source['title']} (이전 기간 표본)",
+        "summary": "",
+        "summary_ratio": "",
+    }
+
+
+# 이전 기간은 여섯 기업군을 한 건씩 포함하고, 진입 가능 3건·경력 3건으로 구성한다.
+POSTINGS += (
+    _historical_posting("10", "01", "2024-03-18T10:00:00+09:00", "entry_junior"),
+    _historical_posting("11", "03", "2024-07-08T10:00:00+09:00", "entry_junior"),
+    _historical_posting("12", "05", "2024-11-12T10:00:00+09:00", "entry_junior"),
+    _historical_posting("13", "02", "2025-03-17T10:00:00+09:00", "experienced"),
+    _historical_posting("14", "08", "2025-07-07T10:00:00+09:00", "experienced"),
+    _historical_posting("15", "04", "2025-11-03T10:00:00+09:00", "experienced"),
+)
+
+
+def _expanded_posting(
+    nn: str,
+    source_nn: str,
+    period: str,
+    posted_at: str,
+    entry_label: str,
+) -> dict[str, Any]:
+    """기존 기업군의 요구 구성을 재사용해 16~30번 독립 표본을 만든다."""
+    source = next(posting for posting in POSTINGS if posting["nn"] == source_nn)
+    label_source = next(
+        posting for posting in POSTINGS if posting["entry_label"] == entry_label
+    )
+    return {
+        **source,
+        "nn": nn,
+        "period": period,
+        "posted_at": posted_at,
+        "entry_label": entry_label,
+        "entry_label_raw": label_source["entry_label_raw"],
+        "career_label_raw": label_source["career_label_raw"],
+        "title": f"{source['title']} (확장 표본 {nn})",
+        "summary": "",
+        "summary_ratio": "",
+    }
+
+
+POSTINGS += (
+    _expanded_posting("16", "01", RECENT, "2026-01-05T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("17", "03", RECENT, "2026-01-19T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("18", "02", RECENT, "2026-02-23T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("19", "05", RECENT, "2026-03-09T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("20", "05", RECENT, "2026-03-23T10:00:00+09:00", "experienced"),
+    _expanded_posting("21", "08", RECENT, "2026-04-13T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("22", "08", RECENT, "2026-04-27T10:00:00+09:00", "experienced"),
+    _expanded_posting("23", "04", RECENT, "2026-05-25T10:00:00+09:00", "experienced"),
+    _expanded_posting("24", "04", RECENT, "2026-06-22T10:00:00+09:00", "experienced"),
+    _expanded_posting("25", "01", PRIOR, "2024-05-13T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("26", "03", PRIOR, "2024-09-09T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("27", "05", PRIOR, "2025-02-10T10:00:00+09:00", "entry_junior"),
+    _expanded_posting("28", "02", PRIOR, "2025-05-12T10:00:00+09:00", "experienced"),
+    _expanded_posting("29", "08", PRIOR, "2025-08-11T10:00:00+09:00", "experienced"),
+    _expanded_posting("30", "04", PRIOR, "2025-11-10T10:00:00+09:00", "experienced"),
+)
+
+_CLUSTER_READING = {
+    "bigtech_platform": "기존 사용자를 깨뜨리지 않는 점진적 변경과 운영 안정성",
+    "startup": "기능을 끝까지 완성하고 사용자 반응까지 확인하는 실행력",
+    "b2b_saas": "외부 개발자가 쓰는 인터페이스의 호환성과 문서 품질",
+    "fintech_finance": "금액·인증 흐름에서 실패와 중복 요청을 통제하는 설계",
+    "si_enterprise": "여러 기종과 운영체제 버전에서 같은 동작을 보장하는 검증",
+    "game": "프레임·메모리 제약 아래 두 플랫폼의 사용성을 맞추는 판단",
+}
+
+
+def _complete_posting_content(posting: dict[str, Any]) -> dict[str, Any]:
+    """빈 공고 해석을 원문·기업군·요구 기술에 맞춰 완성한다."""
+    sections = [(section, list(lines)) for section, lines in posting["sections"]]
+    flat = [(si, li, section, line) for si, (section, lines) in enumerate(sections)
+            for li, line in enumerate(lines)]
+    focus_slugs = list(dict.fromkeys(
+        line[1] for _, _, _, line in flat if line[1] is not None
+    ))[:2]
+    focus = " · ".join(DIM_INFO[slug]["label"] for slug in focus_slugs)
+    period = "최근 공고" if posting["period"] == RECENT else "이전 기간 공고"
+    level = "진입 지원자" if posting["entry_label"] == "entry_junior" else "경력 지원자"
+    if not posting["summary"]:
+        responsibility = next(line[0] for _, _, section, line in flat if section == "주요업무")
+        posting["summary"] = (
+            f"{posting['company']} | {posting['title']}. {period}이며, ‘{responsibility}’를 중심 업무로 두고 {focus} 두 항목까지 확인합니다. "
+            f"{level}는 다음 역량을 보여 주는 결과물을 준비해야 합니다: {_CLUSTER_READING[posting['cluster']]}."
+        )
+        posting["summary_ratio"] = "직무 공통 기대치 1건 · 숨은 의미 1건 · 회사 특징 1건"
+
+    existing = {line[3][0] for _, _, _, line in flat if line[3] is not None}
+    available = [(si, li, section, line) for si, li, section, line in flat if line[3] is None]
+    used: set[tuple[int, int]] = set()
+    for kind in ("base", "mark", "note"):
+        if kind in existing:
+            continue
+        candidates = [row for row in available if (row[0], row[1]) not in used]
+        if kind == "base":
+            target = next((row for row in candidates if row[3][1] is not None), candidates[0])
+        elif kind == "mark":
+            target = next((row for row in reversed(candidates) if row[3][1] is not None), candidates[-1])
+        else:
+            target = next((row for row in candidates if row[2] == "주요업무"), candidates[0])
+        si, li, _section, line = target
+        used.add((si, li))
+        dim_label = DIM_INFO[line[1]]["label"] if line[1] else "업무 범위"
+        if kind == "base":
+            annotation = ("base", dim_label,
+                f"‘{line[0]}’는 모바일 개발자의 직무 공통 기대치입니다. 포트폴리오에서 해당 기능의 코드 위치와 실행 화면을 함께 제시하세요.")
+        elif kind == "mark":
+            annotation = ("mark", f"{posting['company']}가 확인하는 {dim_label}",
+                f"이 문장은 다음 역량을 확인합니다: {_CLUSTER_READING[posting['cluster']]}. ‘{line[0]}’를 구현한 선택 이유와 테스트 결과를 함께 설명해야 합니다.",
+                "mid", f"{CLUSTERS[posting['cluster']]} 전체 기간 참고")
+        else:
+            annotation = ("note", f"{posting['company']} 업무에서 읽을 점",
+                f"‘{line[0]}’는 기능 구현에서 끝나지 않고 운영 상태까지 맡는다는 뜻입니다. 실패 조건을 재현하고 확인한 결과를 남기세요.")
+        sections[si][1][li] = (*line[:3], annotation)
+    posting["sections"] = tuple((section, tuple(lines)) for section, lines in sections)
+    return posting
+
+
+POSTINGS = tuple(_complete_posting_content(dict(posting)) for posting in POSTINGS)
 
 # ============================================================ 파생 구조
 def posting_id(nn: str) -> str:
@@ -612,6 +755,15 @@ def source_id(nn: str) -> str:
 
 def posting_version_id(nn: str) -> str:
     return f"pv_demo_{JOB_ROLE_ID}_{nn}"
+
+
+def closed_at(posting: dict[str, Any]) -> str | None:
+    """2026년 진행 중 6건을 제외한 공고의 결정적 마감 시각."""
+    if posting["nn"] in {"01", "02", "03", "04", "05", "06"}:
+        return None
+    if posting["period"] == RECENT:
+        return "2026-07-01T18:00:00+09:00"
+    return "2025-12-01T18:00:00+09:00"
 
 
 def chunk_id(nn: str, k: int) -> str:
@@ -1065,11 +1217,11 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 
 
 def axis_level(value: int | None) -> str:
-    if value is None or value < 15:
+    if value is None:
         return "—"
-    if value >= 60:
+    if value >= 70:
         return "강"
-    if value >= 35:
+    if value >= 31:
         return "중"
     return "약"
 
@@ -1270,11 +1422,11 @@ def build_statistics_payload() -> dict[str, Any]:
             reality.append({"tag": tag, "label": label, "pct": value})
     reality.sort(key=lambda row: -row["pct"])
 
-    # --- cluster_axes (최근 공고가 없는 기업군은 행을 만들지 않는다)
+    # --- cluster_axes (표본 확보를 위해 recent 와 prev 전체 기간을 합산한다)
     axes_rows = []
-    for cluster_id in RECENT_CLUSTERS:
-        n = cluster_n[cluster_id]
-        members = [p for p in RECENT_POSTINGS if p["cluster"] == cluster_id]
+    for cluster_id in CLUSTER_ORDER:
+        members = [p for p in POSTINGS if p["cluster"] == cluster_id]
+        n = len(members)
         cells = []
         for _axis_id, axis_label, slugs in CLUSTER_AXES:
             count = sum(
@@ -1421,7 +1573,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
          "신입 지원이 가능하다고 적어 두고 우대에 수백만을 넣었습니다. 실무 규모의 증명이 아니라 측정과 개선의 시도를 봅니다.",
          "high", "#advanced", "performance"),
         ("app-architecture", "화면 전환", "화면과 로직 분리", "돌아가는 화면을 깨지 않고 바꾸는 설계까지",
-         '주요업무의 "기존 View 화면을 Jetpack Compose 로 점진적으로 전환" 문장',
+         '주요업무의 "기존 View 화면을 Jetpack Compose로 점진적으로 전환" 문장',
          "새로 짜는 일이 아니라 이미 있는 것을 바꾸는 일입니다. 구조가 나뉘어 있지 않으면 시작조차 못 하는 작업입니다.",
          "mid", "#items", "architecture"),
     ),
@@ -1430,8 +1582,8 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
          '자격요건의 "작은 기능이라도 혼자 끝까지 완성해 본 경험" 문장',
          "기술 스택이 아니라 끝까지 갔는가를 자격요건에 두었습니다. 규모가 작아도 사용자에게 내보낸 기록이 가장 강한 증거입니다.",
          "high", "#reality", "app-project"),
-        ("network-api", "연동", "API 를 붙여 본 경험", "빈 목록과 오류 화면까지 함께 설계하는 수준까지",
-         '자격요건의 "REST API 를 연동해 화면에 데이터를 그려 본 경험" 문장',
+        ("network-api", "연동", "API를 붙여 본 경험", "빈 목록과 오류 화면까지 함께 설계하는 수준까지",
+         '자격요건의 "REST API를 연동해 화면에 데이터를 그려 본 경험" 문장',
          "데이터를 그려 본 경험까지 적었습니다. 성공 화면만 있는 결과물로는 이 문장을 채우기 어렵습니다.",
          "mid", "#items", "network-layer"),
         ("app-architecture", "구조", "공통 기대치와 같음", "여기서는 우대 · 완성 속도가 먼저",
@@ -1445,7 +1597,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
          "고객사 앱이 이미 옛 버전을 쓰고 있어 마음대로 바꿀 수 없습니다. 무엇을 바꾸면 남이 깨지는지 아는 감각을 봅니다.",
          "high", "#advanced", "store-release"),
         ("app-architecture", "인터페이스", "화면과 로직 분리", "남이 쓰는 공개 경계를 설계하고 문서로 남기는 수준까지",
-         '자격요건의 "공개 API 를 설계하고 문서로 남겨 본 경험" 문장',
+         '자격요건의 "공개 API를 설계하고 문서로 남겨 본 경험" 문장',
          "사용자가 개발자인 제품입니다. 이름과 인자를 정하는 감각과 문서가 코드만큼 평가에 들어옵니다.",
          "high", "#items", "architecture"),
         ("swift-ios", "안정성", "iOS 앱 구현", "다른 팀이 쓰는 라이브러리 수준의 안정성까지",
@@ -1454,7 +1606,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
          "mid", "#items", "app-project"),
     ),
     "fintech_finance": (
-        ("network-api", "실패 처리", "API 를 붙여 본 경험", "지연·중복·재시도까지 설계하는 수준까지",
+        ("network-api", "실패 처리", "API를 붙여 본 경험", "지연·중복·재시도까지 설계하는 수준까지",
          '우대사항의 "결제 승인 지연과 재시도를 직접 설계해 본 경험" 문장',
          "라벨은 우대지만 주요업무의 실패 흐름 설계와 묶으면 실질 필수입니다. 같은 요청이 두 번 나가도 금액이 두 번 빠지지 않아야 합니다.",
          "high", "#advanced", "network-layer"),
@@ -1473,7 +1625,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
          "만든 사람과 운영하는 사람이 다릅니다. 남이 이어받을 수 있게 만드는 일이 요구의 핵심입니다.",
          "high", "#scope_expansion", "design-collab"),
         ("kotlin-android", "기본기", "안드로이드 앱 구현", "기기와 OS 버전 호환을 함께 검증하는 수준까지",
-         '자격요건의 "Kotlin 으로 안드로이드 앱을 개발한 경험" 문장',
+         '자격요건의 "Kotlin으로 안드로이드 앱을 개발한 경험" 문장',
          "심화보다 기본기의 확실함을 봅니다. 화려한 기능보다 여러 환경에서 똑같이 도는 앱이 유리한 기업군입니다.",
          "mid", "#items", "app-project"),
     ),
@@ -1483,7 +1635,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
          "기종마다 다르게 동작하는 문제를 다뤄 본 사람을 찾습니다. 측정 도구로 병목을 찾고 무엇을 바꿨는지 말할 수 있어야 합니다.",
          "high", "#advanced", "performance"),
         ("swift-ios", "두 플랫폼", "한 플랫폼 구현", "두 플랫폼을 함께 대응하는 수준까지",
-         '우대사항의 "Swift 로 iOS 앱을 함께 개발해 본 경험" 문장',
+         '우대사항의 "Swift로 iOS 앱을 함께 개발해 본 경험" 문장',
          "담당업무가 두 스토어 배포를 포함하므로 우대 라벨보다 비중이 큽니다. 한쪽이 깊고 다른 쪽은 읽고 고칠 수 있으면 됩니다.",
          "mid", "#items", "app-project"),
         ("store-release", "빌드", "스토어 배포", "두 스토어의 빌드와 심사 주기를 함께 관리하는 수준까지",
@@ -1703,8 +1855,8 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         "highlights": [
             {
                 "title": "출시 링크를 포트폴리오의 첫 줄로",
-                "body": f"{label} 기준에서도 저장소 링크보다 실제로 내려받아 볼 수 있는 앱 하나가 강합니다. 스토어 링크와 화면 흐름 한 장을 README 최상단에 두세요.",
-                "tips": ["출시가 어려우면 설치 파일과 시연 영상으로 대체", "버전 기록과 릴리스 노트를 함께 남기기"],
+                "body": f"{label}에서도 저장소 링크보다 실제로 내려받아 볼 수 있는 앱 하나가 강합니다. 스토어 링크와 화면 흐름 한 장을 README 최상단에 두세요.",
+                "tips": ["README 최상단에 설치 링크·지원 OS·3단계 실행 절차 배치", "새 기기에서 설치와 핵심 화면 진입이 재현되면 완료"],
                 "linked_item_ids": [
                     CONCEPT_INFO["app-project"]["concept_id"],
                     CONCEPT_INFO["store-release"]["concept_id"],
@@ -1713,7 +1865,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             {
                 "title": "성공 화면 말고 실패 화면",
                 "body": "잘 되는 화면 캡처는 모두가 냅니다. 네트워크를 끊었을 때, 응답이 늦을 때, 데이터가 없을 때의 화면을 나란히 보여주면 실패 처리 요구가 한 번에 증명됩니다.",
-                "tips": ["로딩·오류·빈 화면 세 장을 한 줄로 배치", "재시도 버튼의 동작을 한 문장으로 설명"],
+                "tips": ["README의 실패 처리 절에 로딩·오류·빈 화면과 발생 조건 배치", "네트워크 차단 전후를 재현해 중복 요청 없이 복구되면 완료"],
                 "linked_item_ids": [
                     CONCEPT_INFO["network-layer"]["concept_id"],
                     CONCEPT_INFO["crash-quality"]["concept_id"],
@@ -1751,7 +1903,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "구조 검증",
             "question": "화면과 로직을 어떻게 나눴나요?",
             "followups": ["화면이 다시 그려지는 조건은 무엇인가요?", "같은 데이터를 두 화면이 쓰면 어떻게 하나요?"],
-            "point": "패턴 이름을 외우기보다 내 앱에서 왜 그렇게 나눴는지로 답하면 꼬리질문이 두렵지 않습니다.",
+            "point": "화면과 상태를 나눈 위치, 다른 구조를 쓰지 않은 이유, 변경 뒤 테스트 결과를 차례로 답하세요. 꼬리질문에는 선택 기준과 실제 결과를 연결합니다.",
             "linked_item_ids": [
                 CONCEPT_INFO["architecture"]["concept_id"],
                 CONCEPT_INFO["compose-swiftui"]["concept_id"],
@@ -1761,7 +1913,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "실패 검증",
             "question": "네트워크가 끊기면 그 화면은 어떻게 되나요?",
             "followups": ["같은 요청이 두 번 나가면 어떻게 되나요?", "재시도는 몇 번까지, 왜 그렇게 정했나요?"],
-            "point": "실패 화면을 만들어 둔 사람은 이 질문 전체를 제가 해봤는데요로 시작할 수 있습니다.",
+            "point": "재시도 횟수와 중복 방지 방식을 고른 이유를 말하고, 네트워크 차단 실험에서 복구된 결과를 덧붙이세요.",
             "linked_item_ids": [
                 CONCEPT_INFO["network-layer"]["concept_id"],
                 CONCEPT_INFO["async-cs"]["concept_id"],
@@ -1771,7 +1923,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "운영 검증",
             "question": "출시한 뒤에 생긴 오류를 어떻게 찾았나요?",
             "followups": ["재현되지 않는 크래시는 어떻게 좁혔나요?", "다음 버전에서 같은 문제가 안 생긴다는 보장은요?"],
-            "point": "배포와 크래시 대응은 실제로 내보낸 사람만 답할 수 있는 영역이라 변별력이 큽니다.",
+            "point": "크래시 리포트에서 원인을 좁힌 순서, 해당 수정안을 고른 이유, 다음 버전에서 재발하지 않은 결과를 연결하세요.",
             "linked_item_ids": [
                 CONCEPT_INFO["store-release"]["concept_id"],
                 CONCEPT_INFO["crash-quality"]["concept_id"],
@@ -1781,7 +1933,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "태도 검증 · 자소서 연동",
             "question": "디자이너와 의견이 달랐을 때 어떻게 했나요?",
             "followups": ["상대는 그 상황을 어떻게 기억할까요?"],
-            "point": "자소서 소재는 반드시 면접에서 재검증됩니다. 사실 관계를 스스로 꼬리질문해 보세요.",
+            "point": "서로 다른 안의 판단 기준, 최종안을 고른 이유, 적용 뒤 사용자 또는 팀의 결과를 답하고 상대 관점의 꼬리질문에도 같은 사실을 유지하세요.",
             "linked_item_ids": [CONCEPT_INFO["design-collab"]["concept_id"]],
         },
     ]
@@ -1799,8 +1951,8 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "기준선 두 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
      ("화면 구성", "상태 분리", "네비게이션")),
     (2, "STEP 02 · 2주", 2, "vhigh", "서버와 붙이고 실패를 다루기",
-     "공개 API 를 붙여 목록·상세를 만들고 로딩·오류·빈 화면을 각각 설계하세요. 네트워크를 끊어 놓고 동작을 확인합니다.",
-     "실패 케이스 처리 코드 + 세 가지 화면 캡처 + 재시도 정책 한 줄",
+     "공개 API를 붙여 목록·상세를 만들고 로딩·오류·빈 화면을 각각 설계하세요. 네트워크를 끊은 뒤 재시도를 확인하고, 의도적으로 크래시를 발생시켜 추적 기록도 남기세요.",
+     "실패 처리 코드 + 세 가지 화면 캡처 + 재시도 정책 + 크래시 재현·추적 기록",
      "서버 연동 요구가 전 기업군 공통이고 실패 처리까지 묻는 문장이 늘고 있습니다.",
      ("API 연동", "실패 화면", "재시도")),
     (3, "STEP 03 · 2주", 2, "high", "스토어에 내보내고 성능을 재기",
@@ -1809,8 +1961,8 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "직무 외 요구 중 배포·릴리스가 가장 자주 나타나고, 성능은 준비한 지원자가 드뭅니다.",
      ("스토어 배포", "성능 측정", "버전 관리")),
     (4, "STEP 04 · 2주", 2, "mid", "기업군에 맞춰 마무리하기",
-     "지원 기업군의 편차 항목을 채우고 README 와 자소서의 소개 순서를 다시 배치하세요.",
-     "편차 항목 산출물 + 기업군 맞춤 소개 순서",
+     "지원 기업군의 편차 항목을 채우고 README와 자소서의 소개 순서를 다시 배치하세요. 스펙 조율에서 바뀐 결정과 선언형 UI의 상태 흐름을 별도 문서로 남기세요.",
+     "스펙 조율 결정 기록 + 선언형 UI 상태 흐름 문서 + 기업군 맞춤 소개 순서",
      "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
      ("편차 보강", "소개 순서", "문서 정리")),
 )
@@ -2005,7 +2157,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
             "snapshot_id": snapshot_id(nn), "title": p["title"],
             "career_label_raw": p["career_label_raw"], "edu_label_raw": p["edu_label_raw"],
             "entry_label_raw": p["entry_label_raw"], "entry_label": p["entry_label"],
-            "posted_at": p["posted_at"], "closed_at": None,
+            "posted_at": p["posted_at"], "closed_at": closed_at(p),
             "dataset_version": DATASET_VERSION,
         })
     t["sources"] = sources
@@ -2420,7 +2572,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     t["wiki_revisions"] = revisions
     t["wiki_evidence"] = wiki_evidence
 
-    # --- 33 분석 산출물 27행
+    # --- 33 분석 산출물 52행
     outputs: list[dict[str, Any]] = []
 
     def add_output(output_type: str, agent: str, scope_level: str, scope_id: str,
@@ -2448,7 +2600,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
             "interpretation", "interpretation", "cluster", cid,
             interpretation_payload("cluster", cid), cid,
         )
-    for p in RECENT_POSTINGS:
+    for p in POSTINGS:
         pid = posting_id(p["nn"])
         intp_outputs[pid] = add_output(
             "interpretation", "interpretation", "posting", pid,
@@ -2995,7 +3147,7 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
         ("statistics", "overall"): 1,
         ("interpretation", "overall"): 1,
         ("interpretation", "cluster"): len(CLUSTER_ORDER),
-        ("interpretation", "posting"): len(RECENT_POSTINGS),
+        ("interpretation", "posting"): len(POSTINGS),
         ("strategy", "overall"): 1,
         ("strategy", "cluster"): len(CLUSTER_ORDER),
         ("roadmap", "overall"): 1,
@@ -3004,8 +3156,8 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
     for key, expected in expected_counts.items():
         if counts.get(key, 0) != expected:
             problems.append(f"analysis_outputs {key}: {counts.get(key, 0)}행 (기대 {expected})")
-    if len(tables["analysis_outputs"]) != 27:
-        problems.append(f"analysis_outputs 합계 {len(tables['analysis_outputs'])}행 (기대 27)")
+    if len(tables["analysis_outputs"]) != 52:
+        problems.append(f"analysis_outputs 합계 {len(tables['analysis_outputs'])}행 (기대 52)")
 
     for row in tables["analysis_outputs"]:
         payload = row["payload"]
@@ -3080,12 +3232,119 @@ def check_concepts(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
     return problems
 
 
+def check_posting_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """30건 모집단의 기간·기업군·진입 구분·상태와 차원 표본 계약을 확인한다."""
+    problems: list[str] = []
+    expected_clusters = set(CLUSTER_ORDER)
+    period_spec = {
+        RECENT: (18, "2026-01-01", "2026-06-30", {"entry_junior": 10, "experienced": 8}),
+        PRIOR: (12, "2024-03-01", "2025-11-30", {"entry_junior": 6, "experienced": 6}),
+    }
+    if len(POSTINGS) != 30 or len(tables["postings"]) != 30:
+        problems.append(f"공고 수 {len(POSTINGS)}/{len(tables['postings'])} != 30/30")
+    expected_ids = {posting_id(f"{number:02d}") for number in range(1, 31)}
+    actual_ids = {row["posting_id"] for row in tables["postings"]}
+    if actual_ids != expected_ids:
+        problems.append(f"공고 식별자 차이 {sorted(actual_ids ^ expected_ids)}")
+
+    for period, (expected_n, starts_on, ends_on, labels) in period_spec.items():
+        group = [posting for posting in POSTINGS if posting["period"] == period]
+        if len(group) != expected_n:
+            problems.append(f"{period}: 공고 {len(group)}건 != {expected_n}건")
+        clusters = {posting["cluster"] for posting in group}
+        if clusters != expected_clusters:
+            problems.append(f"{period}: 기업군 차이 {sorted(clusters ^ expected_clusters)}")
+        actual_labels = {
+            label: sum(1 for posting in group if posting["entry_label"] == label)
+            for label in labels
+        }
+        if actual_labels != labels:
+            problems.append(f"{period}: entry_label {actual_labels} != {labels}")
+        for posting in group:
+            posted_date = posting["posted_at"][:10]
+            if not starts_on <= posted_date <= ends_on:
+                problems.append(f"{posting['nn']}: 게시일 {posted_date} 범위 밖")
+
+    recent_counts = Counter(posting["cluster"] for posting in RECENT_POSTINGS)
+    if set(recent_counts.values()) != {3} or set(recent_counts) != expected_clusters:
+        problems.append(f"recent 기업군 분포 {dict(recent_counts)} != 기업군별 3건")
+    prior_counts = Counter(posting["cluster"] for posting in PRIOR_POSTINGS)
+    if set(prior_counts.values()) != {2} or set(prior_counts) != expected_clusters:
+        problems.append(f"prev 기업군 분포 {dict(prior_counts)} != 기업군별 2건")
+
+    versions = tables["posting_versions"]
+    ongoing = [row for row in versions if row["closed_at"] is None]
+    closed = [row for row in versions if row["closed_at"] is not None]
+    if len(ongoing) != 6 or len(closed) != 24:
+        problems.append(f"공고 상태 진행 {len(ongoing)}건/마감 {len(closed)}건 != 6/24")
+    prior_ids = {posting_version_id(posting["nn"]) for posting in PRIOR_POSTINGS}
+    if any(row["posting_version_id"] in prior_ids for row in ongoing):
+        problems.append("prev 공고에 진행 중 상태가 있다")
+    for row in closed:
+        if row["closed_at"] <= row["posted_at"]:
+            problems.append(f"{row['posting_version_id']}: 마감일이 게시일 이후가 아니다")
+
+    for slug in DIM_SLUGS:
+        companies = {
+            posting["company_id"]
+            for posting in POSTINGS
+            if slug in DIMS_BY_POSTING[posting["nn"]]
+        }
+        if len(companies) < 2:
+            problems.append(f"{slug}: 독립 회사 {len(companies)}곳")
+    return problems
+
+
+def check_output_population(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """모듈 산출물 52행과 전체 공고 해석 30행을 확인한다."""
+    outputs = tables["analysis_outputs"]
+    problems: list[str] = []
+    counts = Counter(row["output_type"] for row in outputs)
+    expected = {"statistics": 1, "interpretation": 37, "strategy": 7, "roadmap": 7}
+    if len(outputs) != 52 or dict(counts) != expected:
+        problems.append(f"산출물 {len(outputs)}행, 종류별 {dict(counts)} != 52행, {expected}")
+    posting_interpretations = {
+        row["scope_id"] for row in outputs
+        if row["output_type"] == "interpretation" and row["scope_level"] == "posting"
+    }
+    posting_ids = {posting_id(posting["nn"]) for posting in POSTINGS}
+    if posting_interpretations != posting_ids:
+        problems.append(f"공고 해석 범위 차이 {sorted(posting_interpretations ^ posting_ids)}")
+    return problems
+
+
+def check_direct_contract_values(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
+    """직접 입력하는 출처·기간·세그먼트·데이터셋 값을 확인한다."""
+    problems: list[str] = []
+    expected_uses = set(ALLOWED_USES)
+    for row in tables["source_assessments"]:
+        if set(row["allowed_uses"]) != expected_uses:
+            problems.append(f"{row['assessment_id']}: allowed_uses 불일치")
+        if (row["source_tier"], str(row["reliability_score"]), row["assessment_version"]) != (
+            "A", "0.95000", "sa_v1"
+        ):
+            problems.append(f"{row['assessment_id']}: 출처 평가 기본값 불일치")
+    for row in tables["statistics_facts"]:
+        if row["period_id"] not in {RECENT, PRIOR}:
+            problems.append(f"{row['fact_id']}: 허용되지 않은 기간 {row['period_id']}")
+        if row["metric_family"] == "entry_label_advanced_signal_rate" and row["entry_segment"] != SEGMENT_ENTRY:
+            problems.append(f"{row['fact_id']}: entry_segment {row['entry_segment']}")
+    if tables.get("dataset_versions"):
+        problems.append("mobile 모듈은 dataset_versions 행을 만들면 안 됩니다")
+    if len(tables["sources"]) != 30 or len(tables["source_snapshots"]) != 30:
+        problems.append("공고별 출처·스냅샷이 30행이 아닙니다")
+    return problems
+
+
 CHECKS = (
     ("1 근거 위치", check_spans),
     ("2 지표 재계산", check_numbers),
     ("3 외래키", check_foreign_keys),
     ("4 payload 키", check_payload_keys),
     ("5 체크 개념", check_concepts),
+    ("6 공고 모집단", check_posting_population),
+    ("7 산출물 범위", check_output_population),
+    ("8 직접 입력 계약", check_direct_contract_values),
 )
 
 
