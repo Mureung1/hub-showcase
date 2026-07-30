@@ -111,12 +111,15 @@ export function StorePointLayers({
     const applyHover = (featureId: string) => {
       if (featureId === hoveredFeatureId || !map.getLayer(STORE_HOVER_HALO_LAYER_ID)) return;
       hoveredFeatureId = featureId;
+      canvas.style.cursor = featureId === NO_HOVERED_STORE ? "" : "pointer";
       map.setFilter(STORE_HOVER_HALO_LAYER_ID, hoverFilter(featureId, selectedFeatureId));
     };
     const handleMove = (event: MouseEvent) => {
       const bounds = canvas.getBoundingClientRect();
       const point: [number, number] = [event.clientX - bounds.left, event.clientY - bounds.top];
-      const feature = map.queryRenderedFeatures(point, { layers: [STORE_POINT_HIT_LAYER_ID] })[0];
+      const feature = map.queryRenderedFeatures(point, {
+        layers: [STORE_CATEGORY_ICON_LAYER_ID, STORE_POINT_HIT_LAYER_ID],
+      })[0];
       const featureId = feature?.properties?.featureId;
       applyHover(typeof featureId === "string" ? featureId : NO_HOVERED_STORE);
     };
@@ -127,6 +130,7 @@ export function StorePointLayers({
     return () => {
       canvas.removeEventListener("mousemove", handleMove);
       canvas.removeEventListener("mouseleave", handleLeave);
+      canvas.style.cursor = "";
     };
   }, [mapRef, selectedFeatureId, visible]);
 
@@ -226,11 +230,11 @@ export function StorePointLayers({
         type="circle"
         filter={hoverFilter(NO_HOVERED_STORE, selectedFeatureId)}
         paint={{
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 10.5, 17, 16.5],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 11.5, 17, 18.5],
           "circle-color": STORE_COLOR_EXPRESSION,
-          "circle-opacity": 0.32,
+          "circle-opacity": 0.34,
           "circle-stroke-color": "rgba(255, 255, 255, 0.98)",
-          "circle-stroke-width": 2.2,
+          "circle-stroke-width": 2.3,
           "circle-blur": 0.34,
         }}
       />
@@ -279,11 +283,11 @@ export function StorePointLayers({
             ["linear"],
             ["zoom"],
             STORE_ICON_MIN_ZOOM,
-            0.62,
+            0.72,
             17,
-            0.82,
+            0.94,
             19,
-            1,
+            1.12,
           ],
           "icon-anchor": "bottom",
           "icon-allow-overlap": true,
@@ -301,7 +305,7 @@ export function StorePointLayers({
         type="circle"
         filter={UNCLUSTERED_STORE_FILTER}
         paint={{
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 10, 17, 15],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 12, 17, 19],
           "circle-color": "#000000",
           "circle-opacity": 0.01,
         }}
