@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import * as commentsApi from './commentsApi'
 import type { CommentDto } from './commentsApi'
-import { friendPosts, friends, reactionMeta } from './data'
+import { reactionMeta } from './data'
 import * as reactionsApi from './reactionsApi'
 import type { ReactionSummary } from './reactionsApi'
-import { PixelAvatar } from './shared'
+import { PixelAvatar, getAvatarProps } from './shared'
 import type { FriendPost, ReactionKind } from './types'
 
 type FriendFeedProps = {
@@ -14,8 +14,8 @@ type FriendFeedProps = {
   onDeletePost: (postId: string) => void
 }
 
-export function FriendFeed({ myPosts, currentUserId, onDeletePost }: FriendFeedProps) {
-  // mock 친구 게시물(실제 VideoPost가 아님)은 서버에 반응을 저장할 수 없어서 로컬로만 토글한다.
+export function FriendFeed({ myPosts, friendPosts, currentUserId, onDeletePost }: FriendFeedProps) {
+  // 실제 VideoPost가 아닌 게시물(현재는 없지만 향후 목업 대비)은 서버에 반응을 저장할 수 없어서 로컬로만 토글한다.
   const [myMockReactions, setMyMockReactions] = useState<Record<string, ReactionKind | null>>({})
   const [reactionSummaries, setReactionSummaries] = useState<Record<string, ReactionSummary>>({})
   const [comments, setComments] = useState<Record<string, CommentDto[]>>({})
@@ -25,14 +25,14 @@ export function FriendFeed({ myPosts, currentUserId, onDeletePost }: FriendFeedP
   const posts = [...myPosts, ...friendPosts]
 
   useEffect(() => {
-    myPosts.forEach((post) => {
+    posts.forEach((post) => {
       if (!post.videoUrl || reactionSummaries[post.id]) return
       reactionsApi.fetchReactionSummary(post.id)
         .then((summary) => setReactionSummaries((prev) => ({ ...prev, [post.id]: summary })))
         .catch(() => {})
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myPosts])
+  }, [posts])
 
   const selectReaction = (post: FriendPost, kind: ReactionKind) => {
     if (!post.videoUrl) {
@@ -86,7 +86,6 @@ export function FriendFeed({ myPosts, currentUserId, onDeletePost }: FriendFeedP
 
       {posts.map((post) => {
         const isMine = post.friendId === 'me'
-        const friend = friends.find((item) => item.id === post.friendId)
         const summary = reactionSummaries[post.id]
         const myReaction = post.videoUrl ? summary?.myReaction ?? null : myMockReactions[post.id] ?? null
         const reactionCounts = post.videoUrl ? summary?.counts : post.reactions

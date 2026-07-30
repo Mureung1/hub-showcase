@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import * as friendsApi from './friendsApi'
 import { ROOM_FIXTURE_ICON_KEYS, SHOP_ITEM_ICON_CLASS, itemIconStyle, renderDodoMascot, renderRoomFixture } from './StaticViews'
+import { formatTimeAgo } from './timeAgo'
 import type { FriendHomeState, HomeVisitActionKind } from './types'
 
 type FriendHomeViewProps = {
@@ -10,11 +11,18 @@ type FriendHomeViewProps = {
   onBack: () => void
 }
 
+type InteractionLogEntry = {
+  id: string
+  label: string
+  createdAt: string
+}
+
 export function FriendHomeView({ friendId, friendName, onBack }: FriendHomeViewProps) {
   const [notice, setNotice] = useState(`${friendName}의 방에 놀러왔어요!`)
   const [messagePanelOpen, setMessagePanelOpen] = useState(false)
   const [messageDraft, setMessageDraft] = useState('')
   const [home, setHome] = useState<FriendHomeState | null>(null)
+  const [interactionLog, setInteractionLog] = useState<InteractionLogEntry[]>([])
 
   useEffect(() => {
     let cancelled = false
@@ -27,13 +35,14 @@ export function FriendHomeView({ friendId, friendName, onBack }: FriendHomeViewP
   const sendVisit = async (action: HomeVisitActionKind, message?: string) => {
     try {
       await friendsApi.visitFriendHome(friendId, action, message)
-      setNotice(
+      const label =
         action === 'PAT'
           ? `${friendName}의 두두를 쓰다듬어줬어요!`
           : action === 'SNACK'
             ? `${friendName}의 두두에게 간식을 줬어요!`
-            : `${friendName}에게 메시지를 남겼어요!`,
-      )
+            : `${friendName}에게 메시지를 남겼어요!`
+      setNotice(label)
+      setInteractionLog((prev) => [{ id: `${Date.now()}`, label, createdAt: new Date().toISOString() }, ...prev])
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '방문 기록을 남기지 못했어요.')
     }
@@ -110,6 +119,14 @@ export function FriendHomeView({ friendId, friendName, onBack }: FriendHomeViewP
         <button type="button" onClick={() => sendVisit('SNACK')}><i className="action-snack" />간식 주기</button>
         <button type="button" onClick={() => setMessagePanelOpen((open) => !open)}><i className="action-dress" />메시지 남기기</button>
       </div>
+
+      {interactionLog.length > 0 && (
+        <div className="friend-home-log" role="log" aria-label="이번 방문에서 한 상호작용 기록">
+          {interactionLog.map((entry) => (
+            <p key={entry.id}>{entry.label} · {formatTimeAgo(entry.createdAt)}</p>
+          ))}
+        </div>
+      )}
     </section>
   )
 }

@@ -8,6 +8,7 @@ import type { HomeManager } from './useHomeManager'
 import type { ProfileManager } from './useProfileManager'
 import { FOOD_ICON_KEYS, type RoomShopManager } from './useRoomShopManager'
 import type { DodoAppearance, FriendPost, HomeVisitActionKind } from './types'
+import { formatTimeAgo } from './timeAgo'
 
 export const SHOP_ITEM_ICON_CLASS: Record<string, string> = {
   'game-console': 'shop-item-console',
@@ -288,7 +289,7 @@ export function MyHomeView({ message, onInteract, homeManager, dodoManager, shop
                 <PixelAvatar {...getAvatarProps(visit.visitor.id)} />
                 <div>
                   <strong>{visit.visitor.name}</strong>
-                  <span>{VISIT_ACTION_LABEL[visit.action]}{visit.message ? ` · "${visit.message}"` : ''}</span>
+                  <span>{VISIT_ACTION_LABEL[visit.action]}{visit.message ? ` · "${visit.message}"` : ''} · {formatTimeAgo(visit.createdAt)}</span>
                 </div>
               </article>
             ))}
@@ -498,7 +499,7 @@ type FriendsViewProps = {
   onVisitFriendHome: (friendId: string) => void
 }
 
-export function FriendsView({ manager, myPosts, currentUserId, onDeletePost, onViewFriendCalendar, onVisitFriendHome }: FriendsViewProps) {
+export function FriendsView({ manager, myPosts, friendPosts, currentUserId, onDeletePost, onViewFriendCalendar, onVisitFriendHome }: FriendsViewProps) {
   const [requestPanelOpen, setRequestPanelOpen] = useState(false)
   const [requestIdentifier, setRequestIdentifier] = useState('')
 
@@ -517,7 +518,7 @@ export function FriendsView({ manager, myPosts, currentUserId, onDeletePost, onV
           <div className="tab-page-heading">
             <div><span>ACTIVITY</span><h2>친구 인증 피드</h2></div>
           </div>
-          <FriendFeed myPosts={myPosts} currentUserId={currentUserId} onDeletePost={onDeletePost} />
+          <FriendFeed myPosts={myPosts} friendPosts={friendPosts} currentUserId={currentUserId} onDeletePost={onDeletePost} />
         </div>
 
         <div className="friends-list-col">
@@ -746,7 +747,6 @@ export function ProfileView({ manager, onOpenGroupManager, onOpenDiary, onOpenDo
       <div className="profile-menu">
         <button type="button" onClick={onOpenDiary}><i className="profile-record" /><span><strong>나의 기록</strong><small>완료한 일정과 두두의 일기</small></span><b>›</b></button>
         <button type="button" onClick={onOpenDodoCustomize}><i className="profile-dodo" /><span><strong>내 두두 커스텀</strong><small>두두 몸 색상·눈 개수 바꾸기</small></span><b>›</b></button>
-        <button type="button"><i className="profile-lock" /><span><strong>공개 범위</strong><small>친구별 일정 공개 설정</small></span><b>›</b></button>
         <button type="button"><i className="profile-bell" /><span><strong>알림 설정</strong><small>일정과 친구 반응 알림</small></span><b>›</b></button>
         <button type="button" onClick={onOpenGroupManager}><i className="profile-group" /><span><strong>친구 및 그룹 관리</strong><small>절친·스터디·가족 등 그룹 만들기</small></span><b>›</b></button>
       </div>
