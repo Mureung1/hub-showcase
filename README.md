@@ -16,7 +16,7 @@
 ```mermaid
 graph TD
     subgraph Client [Client Side Layer]
-        ReactApp[React 19 + Vite]
+        ReactApp[React 18 + Vite]
         Router[React Router DOM]
         State[LocalStorage / State Persistence]
     end
@@ -108,7 +108,7 @@ npm run dev
 ```
 
 ### 2. 온라인 배포 접속
-👉 **[공식 Vercel 서비스 접속 주소](https://hub-opal-kappa.vercel.app)**
+👉 **[공식 Vercel 서비스 접속 주소](https://hub-ms02.vercel.app/)**
 
 ---
 
@@ -131,6 +131,11 @@ gnu-course-navigator/
 │   │   │   └── CreditAnalytics.jsx   # OCR 성적 분석 및 동적 GPA 가이드 포털
 │   │   ├── App.jsx              # 전체 라우팅 및 사용자 세션 제어
 │   │   └── index.css            # 메인 디자인 시스템 (Glassmorphism & Grid)
+├── showcase/                    # AI Agent Challenge 공식 쇼케이스 설정 폴더
+│   ├── showcase.json            # 쇼케이스 메타데이터 규격서
+│   ├── thumbnail.png            # 포털 썸네일 이미지
+│   └── screenshots/
+│       └── home.png             # 서비스 시연 스크린샷 이미지
 ├── schema.sql                   # Supabase PostgreSQL DDL 테이블 설계 스크립트
 └── README.md
 ```
