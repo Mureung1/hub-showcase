@@ -26,7 +26,7 @@
 | Backend | Node.js + Express |
 | DB | Supabase (`profiles`, `drafts` 테이블) |
 | AI | Anthropic Claude API (`claude-haiku-4-5`) |
-| 공고 데이터 | `backend/data/postings.json` 목업 10건 (실제 크롤링 연동 예정, 이슈 [#23](https://github.com/dohyeon-k/hub/issues/23)) |
+| 공고 데이터 | `backend/data/postings.json` 링커리어 실제 채용/인턴/공모전/대외활동 공고 100건 (이슈 [#23](https://github.com/dohyeon-k/hub/issues/23)) |
 | 테스트 | vitest (backend 서비스 로직 + frontend 컴포넌트), Playwright(E2E, 임시 스크립트) |
 | 인증 | 단일 계정 HTTP Basic Auth (`requireAuth` 미들웨어) |
 
@@ -234,7 +234,7 @@ sequenceDiagram
 ### 알려진 제약
 
 - 라우터 라이브러리는 쓰지 않기로 한 결정(`CLAUDE.md`)에 따라 URL 딥링크·브라우저 뒤로가기는 지원하지 않는다. 대신 새로고침하면 화면 상태가 다 날아가던 문제는 `step`/`profileId`/`jobs`/`selectedJob`/`isDraftSaved`/`authHeader`를 `sessionStorage`에 저장해뒀다가 마운트 시 복원하는 것으로 해결했다. (참고로 자소서 초안 생성 시 프론트가 `profile` 전체를 재전송하던 구조는 이슈 [#26](https://github.com/dohyeon-k/hub/issues/26)으로 개선해, 이제 서버가 `profileId`로 Supabase에서 직접 재조회한다.)
-- 공고 데이터는 아직 목업(`postings.json`)이다 — 실제 크롤링 연동은 진행 중(이슈 [#23](https://github.com/dohyeon-k/hub/issues/23)).
+- 공고 데이터(`postings.json`)는 링커리어 실제 채용/인턴/공모전/대외활동 공고 100건이다 — 자소서 문항·글자수 제한까지 실제 값 그대로 크롤링했다(이슈 [#23](https://github.com/dohyeon-k/hub/issues/23)).
 - 배포됐다 — 프론트엔드는 [Vercel](https://hub-two-rosy.vercel.app), 백엔드는 [Render](https://hub-071a.onrender.com)(이슈 [#25](https://github.com/dohyeon-k/hub/issues/25)). Render 무료 티어 특성상 일정 시간 요청이 없으면 서버가 잠들었다가 첫 요청에 재기동 지연이 있을 수 있다.
 
 ## Agent 협업 워크플로우
