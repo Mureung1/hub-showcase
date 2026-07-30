@@ -551,7 +551,7 @@
 
 .meal-sticky-cta {
   position: fixed;
-  bottom: calc(var(--bottom-nav-height) + 0.75rem);
+  bottom: calc(var(--mobile-nav-stack) + 0.75rem);
   left: 50%;
   transform: translateX(-50%);
   width: min(calc(100% - 2rem), 448px);

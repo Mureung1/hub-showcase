@@ -17,13 +17,13 @@
   max-width: none;
   margin: 0;
   padding: var(--user-pad-y) var(--user-pad-x)
-    calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--user-pad-y));
+    calc(var(--mobile-nav-stack) + var(--user-pad-y));
   box-sizing: border-box;
 }
 
 /* 모바일 앱 / 좁은 브라우저 — 기존 480px 중심 레이아웃 */
 .user-layout--mobile .user-main {
-  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom) + var(--user-pad-y));
+  padding-bottom: calc(var(--mobile-nav-stack) + var(--user-pad-y));
 }
 
 @media (min-width: 768px) {

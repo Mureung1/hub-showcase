@@ -8,4 +8,6 @@
   --safe-bottom: var(--fitcheck-safe-bottom, env(safe-area-inset-bottom, 0px));
   --safe-left: var(--fitcheck-safe-left, env(safe-area-inset-left, 0px));
   --safe-right: var(--fitcheck-safe-right, env(safe-area-inset-right, 0px));
+  --mobile-nav-stack: calc(var(--bottom-nav-height) + var(--safe-bottom));
+  --mobile-header-stack: calc(var(--header-height) + var(--safe-top));
 }
