@@ -1,4 +1,5 @@
 import {
+  AgendaSchema,
   AuthMeResponseSchema,
   ChatListResponseSchema,
   CreateChatResponseSchema,
@@ -14,6 +15,8 @@ import {
   type QuestionListResponse,
   type QuestionResponse,
   type SourceAnswer,
+  type SourceRef,
+  type Agenda,
   type QuestionStreamEvent,
 } from "@decision-log/shared";
 import { z } from "zod";
@@ -179,6 +182,47 @@ export function fetchSourceAnswers(
   );
 }
 
+// --- Agenda 실호출 (SPEC-AI-002 §12.3·§12.4) ---
+
+/** GET .../agendas — 새로고침·재진입 복원용 스냅샷(§12.3). */
+export function fetchAgendas(
+  chatId: string,
+  questionId: string,
+): Promise<ApiResult<Agenda[]>> {
+  return requestAuthed(
+    "GET",
+    `/api/chats/${chatId}/questions/${questionId}/agendas`,
+    z.array(AgendaSchema),
+  );
+}
+
+/**
+ * PATCH .../agendas/:agendaId — 사용자 판단(§12.4).
+ *
+ * `accept`는 **출처만** 보낸다 — 내용은 서버가 원본에서 되읽는다. 클라이언트가 보낸
+ * 본문을 근거로 저장하면 위조된 근거가 노트에 남는다.
+ */
+export type AgendaPatchBody =
+  | { action: "accept"; sourceRef: SourceRef; userNote?: string | null }
+  | { action: "compose"; content: string; userNote?: string | null }
+  | { action: "reject"; userNote?: string | null }
+  | { action: "recheck"; recheckRequest?: string | null }
+  | { action: "retry_recheck"; recheckRequest?: string | null };
+
+export function patchAgenda(
+  chatId: string,
+  questionId: string,
+  agendaId: string,
+  body: AgendaPatchBody,
+): Promise<ApiResult<Agenda>> {
+  return requestAuthed(
+    "PATCH",
+    `/api/chats/${chatId}/questions/${questionId}/agendas/${agendaId}`,
+    AgendaSchema,
+    body,
+  );
+}
+
 /** SSE 스트림 소비 결과 — done을 받았는지까지 호출부가 알아야 화해(reconcile)를 판단한다. */
 export type SourceAnswerStreamResult =
   | { ok: true; done: boolean }
@@ -264,7 +308,11 @@ export async function streamSourceAnswers(
         console.error("[sourceAnswers] SSE 이벤트가 계약을 만족하지 않습니다.");
         continue;
       }
-      if (parsed.data.type === "source_answer.done") sawDone = true;
+      // §12.2 종료 판정 — 특정 이벤트 이름을 하드코딩하지 않는다.
+      // "스트림 닫힘 + 마지막 *.done 스냅샷 있음 → 정상 종료"이므로 `.done`으로 끝나는
+      // 이벤트면 무엇이든 스냅샷으로 친다. SPEC-AI-003이 final_answer.done을 더해도
+      // 이 로직은 그대로다.
+      if (parsed.data.type.endsWith(".done")) sawDone = true;
       onEvent(parsed.data);
     }
   };

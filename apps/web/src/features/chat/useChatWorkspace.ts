@@ -21,8 +21,11 @@ import {
   markQuestionCompleted,
   ApiStorageError,
   type StoredChat,
+  loadAgendas,
   loadSourceAnswers,
+  patchAgenda,
   startSourceAnswers,
+  type AgendaPatchBody,
 } from "../../lib/apiStorageAdapter";
 import type { SourceAnswerEvent } from "./scenarios";
 import type { MockAgendaTemplate } from "./mockData";
@@ -436,6 +439,20 @@ export function useChatWorkspace() {
    * 실제 SourceAnswer 배열은 succeeded일 때 structuredContent가 있어야 계약을 만족하므로,
    * 스트리밍 중에는 이 파생 상태만 갱신하고 배열은 done 시점에 한 번에 반영한다.
    */
+  /**
+   * Manager 진행 표시(§12.2). 화면 전용이며 저장하지 않는다.
+   * 이것이 없으면 `source_answer.done` 이후 쟁점이 나올 때까지 화면이 비어 있다.
+   */
+  const [managerProgress, setManagerProgress] = useState<
+    Record<
+      string,
+      {
+        stage: "classify" | "leftover" | "finalize" | "judge";
+        done: number | null;
+        total: number | null;
+      }
+    >
+  >({});
   const [liveStatuses, setLiveStatuses] = useState<
     Record<string, Partial<Record<Provider, SourceAnswerStatus>>>
   >({});
@@ -852,9 +869,6 @@ export function useChatWorkspace() {
           ...chat,
           questions: chat.questions.map((question) => {
             if (question.id !== questionId) return question;
-            const startsReview =
-              allSettled && !allFailed && question.status === "processing";
-
             // 3사 전멸(6.2): 고정 문구를 FinalAnswer로 만들고 같은 문구를 노트로도 저장한다.
             // 완료 조건은 FinalAnswer + DecisionNote 둘 다이므로 노트 없이 completed로 가지 않는다.
             if (allFailed && question.finalAnswer === null) {
@@ -889,23 +903,178 @@ export function useChatWorkspace() {
               };
             }
 
+            // ⚠️ 서버 경로는 여기서 Agenda를 만들지 않는다(§12.5).
+            // Manager가 SSE(agenda.*)로 보내주며, 그것을 applyAgendas 가 단독으로 받는다.
+            // 여기서 Mock을 만들면 잠시 뒤 서버 값으로 덮여 화면이 두 번 바뀐다.
+            // 상태 전이도 Agenda가 확정된 뒤 applyAgendas 가 판단한다.
             return {
               ...question,
               sourceAnswers,
-              agendas: startsReview
-                ? buildMockAgendas(
-                    sourceAnswers,
-                    getActiveScenario().agendaTemplates,
-                    questionId,
-                  )
-                : question.agendas,
-              status: startsReview ? "review_required" : question.status,
               updatedAt: nowIso(),
             };
           }),
         };
       });
 
+      return {
+        ...prev,
+        chats,
+        decisionNotes: createdNote
+          ? [...prev.decisionNotes, createdNote]
+          : prev.decisionNotes,
+      };
+    });
+  }
+
+  /**
+   * 서버 경로의 사용자 판단(§12.4). PATCH 결과 Agenda를 그대로 반영한다.
+   *
+   * 낙관적 갱신을 하지 않는 이유: `selectedContent`·`selectedSourceRef`는 서버가 §9.2
+   * 규칙표대로 채우고 `accept`의 내용은 **서버가 원문에서 되읽는다.** 화면에서 미리
+   * 만들어 두면 서버 값과 어긋난 상태가 남고, 그것이 그대로 DecisionNote에 실린다.
+   */
+  async function resolveAgendaOnServer(
+    chatId: string,
+    questionId: string,
+    agendaId: string,
+    body: AgendaPatchBody,
+  ): Promise<void> {
+    const updated = await patchAgenda(chatId, questionId, agendaId, body);
+    applyJudgedAgenda(chatId, questionId, updated);
+  }
+
+  /**
+   * 서버 경로의 재검토 요청·재시도(§10).
+   *
+   * 실패해도 상태를 되돌리지 않는다 — 서버가 `recheck_requested`를 유지하므로(§10.6)
+   * 화면에서 임의로 `conflicted`로 돌리면 서버와 어긋나고 [다시 시도] 버튼이 사라진다.
+   * 실패 후 현재 상태는 GET으로 화해한다.
+   */
+  async function requestRecheckOnServer(
+    chatId: string,
+    questionId: string,
+    agendaId: string,
+    recheckRequest: string,
+    retry: boolean,
+  ): Promise<void> {
+    const trimmed = recheckRequest.trim();
+    try {
+      const updated = await patchAgenda(chatId, questionId, agendaId, {
+        action: retry ? "retry_recheck" : "recheck",
+        recheckRequest: trimmed.length > 0 ? trimmed : null,
+      });
+      applyJudgedAgenda(chatId, questionId, updated);
+    } catch (error) {
+      console.error(
+        "[agendas] 재검토 실패:",
+        error instanceof ApiStorageError
+          ? `${error.code}: ${error.message}`
+          : error,
+      );
+      // 서버가 recheck_requested 를 유지하고 있다. 그 상태를 그대로 가져와 [다시 시도]를 남긴다.
+      try {
+        applyAgendas(chatId, questionId, await loadAgendas(chatId, questionId));
+      } catch {
+        /* 화해까지 실패하면 다음 갱신에 맡긴다 */
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * 판정된 쟁점 한 건을 교체한다(§12.2 조기 표시).
+   * 교체 후 마감 판단은 `applyAgendas`가 하도록 넘긴다 — 규칙을 두 곳에 두지 않는다.
+   */
+  function applyJudgedAgenda(
+    chatId: string,
+    questionId: string,
+    judged: Agenda,
+  ) {
+    // 병합만 정의하고 마감 판단은 applyAgendas 에 맡긴다 — 규칙을 두 곳에 두지 않는다.
+    applyAgendas(chatId, questionId, (prev) =>
+      prev.some((a) => a.id === judged.id)
+        ? prev.map((a) => (a.id === judged.id ? judged : a))
+        : [...prev, judged],
+    );
+  }
+
+  /**
+   * **Agenda 집합이 갱신되는 단 하나의 지점** (§12.5·§12.1).
+   *
+   * 공급원이 서버(SSE `agenda.*` / GET 복원)든 `?scenario=` Mock이든, Agenda가 정해지면
+   * 반드시 여기를 지난다. 세 곳에서 각각 "scenario면 Mock, 아니면 서버"로 분기하면
+   * 반드시 어긋나므로, 공급원 판단은 호출부가 하고 **마감 규칙은 여기 하나만 둔다.**
+   *
+   * 마감 규칙(§12.1): 전부 `passed`/`rejected`면 FinalAnswer·DecisionNote를 만들고
+   * `completed`로 전이한다. **충돌 0건 경로가 여기로 뚫려 있어야 한다** — 사용자가 누를
+   * 것이 없으면 사용자 행동이 트리거가 될 수 없어 Question이 `review_required`에 갇힌다.
+   * 그래서 "사용자 행동"이 아니라 "Agenda 집합 갱신"에 매달아 둔다(T-019.1 회귀).
+   */
+  function applyAgendas(
+    chatId: string,
+    questionId: string,
+    next: Agenda[] | ((prev: Agenda[]) => Agenda[]),
+  ) {
+    setState((prev) => {
+      let createdNote: DecisionNote | null = null;
+      const chats = prev.chats.map((chat) => {
+        if (chat.id !== chatId) return chat;
+        return {
+          ...chat,
+          questions: chat.questions.map((question) => {
+            if (question.id !== questionId) return question;
+            if (question.status === "completed") return question;
+
+            const agendas =
+              typeof next === "function" ? next(question.agendas) : next;
+
+            const allFinal =
+              agendas.length > 0 &&
+              agendas.every(
+                (agenda) =>
+                  agenda.status === "passed" || agenda.status === "rejected",
+              );
+
+            if (!allFinal) {
+              // 아직 판단할 것이 남았다. 충돌이 하나라도 있으면 사용자 판단을 기다린다.
+              const hasConflict = agendas.some(
+                (agenda) => agenda.status === "conflicted",
+              );
+              return {
+                ...question,
+                agendas,
+                status: hasConflict
+                  ? ("review_required" as const)
+                  : question.status,
+                updatedAt: nowIso(),
+              };
+            }
+
+            // 전부 마감됨 → FinalAnswer·DecisionNote 생성 후 완료(여전히 브라우저 Mock).
+            const settledQuestion = { ...question, agendas };
+            const finalAnswer = buildMockFinalAnswer(
+              agendas,
+              question.sourceAnswers,
+              questionId,
+            );
+            createdNote = buildMockDecisionNote(
+              chat.id,
+              chat.title,
+              settledQuestion,
+              agendas,
+              finalAnswer,
+            );
+            const now = nowIso();
+            return {
+              ...settledQuestion,
+              finalAnswer,
+              status: "completed" as const,
+              completedAt: now,
+              updatedAt: now,
+            };
+          }),
+        };
+      });
       return {
         ...prev,
         chats,
@@ -963,6 +1132,7 @@ export function useChatWorkspace() {
   async function runLiveSourceAnswers(chatId: string, questionId: string) {
     const context = buildContext(chatId);
     let applied = false;
+    let agendasApplied = false;
 
     try {
       const { done } = await startSourceAnswers(
@@ -985,7 +1155,34 @@ export function useChatWorkspace() {
             applied = true;
             return;
           }
-          // agenda.* 이벤트는 아직 서버가 보내지 않으며 소비도 T-019.4 범위다. 지금은 무시.
+          // --- Manager 구간 (§12.2) ---
+          if (event.type === "agenda.progress") {
+            // 결과가 아니라 경과다. 저장하지 않고 진행 표시에만 쓴다.
+            setManagerProgress((prev) => ({
+              ...prev,
+              [questionId]: {
+                stage: event.stage,
+                done: event.done,
+                total: event.total,
+              },
+            }));
+            return;
+          }
+          if (event.type === "agenda.created") {
+            // draft 목록. 아직 판정 전이므로 마감 판단은 일어나지 않는다.
+            applyAgendas(chatId, questionId, event.agendas);
+            return;
+          }
+          if (event.type === "agenda.judged") {
+            // **판정되는 대로 한 건씩 교체한다.** 모아두면 조기 표시가 사라진다.
+            applyJudgedAgenda(chatId, questionId, event.agenda);
+            return;
+          }
+          if (event.type === "agenda.done") {
+            applyAgendas(chatId, questionId, event.agendas);
+            agendasApplied = true;
+            return;
+          }
         },
       );
 
@@ -993,6 +1190,18 @@ export function useChatWorkspace() {
       if (!done && !applied) {
         const snapshot = await loadSourceAnswers(chatId, questionId);
         applyServerSnapshot(chatId, questionId, snapshot);
+      }
+      // §12.2 — Agenda 쪽 최종 스냅샷을 못 받았으면 GET으로 화해한다.
+      // 특정 이벤트 이름이 아니라 "스냅샷을 받았는가"로 판단한다.
+      if (!agendasApplied) {
+        try {
+          applyAgendas(chatId, questionId, await loadAgendas(chatId, questionId));
+        } catch (error) {
+          console.error(
+            "[agendas] 스냅샷 화해 실패:",
+            error instanceof Error ? error.message : error,
+          );
+        }
       }
     } catch (error) {
       console.error(
@@ -1008,6 +1217,11 @@ export function useChatWorkspace() {
       }
     } finally {
       setLiveStatuses((prev) => {
+        const next = { ...prev };
+        delete next[questionId];
+        return next;
+      });
+      setManagerProgress((prev) => {
         const next = { ...prev };
         delete next[questionId];
         return next;
@@ -1241,9 +1455,16 @@ export function useChatWorkspace() {
     mockValidationError,
     /** live SSE 진행 상태(questionId → provider → status) — 로딩 말풍선 점등용 */
     liveStatuses,
+    /** Manager 진행 표시(questionId → 단계·N/M). 무음 구간을 없앤다(§12.2) */
+    managerProgress,
+    /** 서버 Agenda를 쓰는가 — UI가 Mock 경로와 서버 경로를 가르는 유일한 신호 */
+    serverBacked,
     submitQuestion,
     resolveAgenda,
     requestRecheck,
+    /** 서버 경로 전용(§12.4). Mock 경로는 resolveAgenda 를 그대로 쓴다 */
+    resolveAgendaOnServer,
+    requestRecheckOnServer,
     selectChat,
     startNewChat,
   };
