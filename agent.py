@@ -101,24 +101,42 @@ class LegalAIAgent:
         if person_match and not any(w in person_match.group(1) for w in ["본인", "제가", "내가", "사장", "주인"]):
             person = person_match.group(1)
 
-        # 🚀 [대폭 개선] 키워드 기반 사건 유형 분류망 확장
+        # 🚀 [대폭 개선] 키워드 기반 사건 유형 분류망 완전체 확장
         case_type = "기타 손해배상 및 부당이득 반환"
+        
+        # 1. 돈 관련 (대여금, 매매대금, 공사/용역대금)
         if any(w in text for w in ["빌려", "대여", "돈 안", "떼였", "못 받", "차용", "갚", "이자"]): 
             case_type = "대여금 반환 청구"
+        elif any(w in text for w in ["계약금", "가계약", "매매", "중도금", "잔금", "위약금", "물건 샀"]): 
+            case_type = "매매대금 및 계약금 반환 청구"
+        elif any(w in text for w in ["공사", "인테리어", "하도급", "결제", "용역", "납품", "대금"]): 
+            case_type = "공사대금 및 용역대금 청구"
+            
+        # 2. 부동산 관련 (임대차, 명도)
         elif any(w in text for w in ["보증금", "전세", "방 빼", "계약 만료", "안 돌려", "집주인", "임대차"]): 
             case_type = "임대차 보증금 반환"
         elif any(w in text for w in ["월세", "차임", "연체", "명도", "나가라", "미납", "세입자", "비워"]): 
             case_type = "차임(월세) 연체 및 명도 소송"
+            
+        # 3. 손해배상 (일반, 교통사고, 이웃, 지식재산권)
         elif any(w in text for w in ["다쳤", "사고", "치료비", "입원", "폭행", "상해", "때렸", "맞았", "교통사고", "합의금"]): 
             case_type = "손해배상 청구 (불법행위/신체상해)"
         elif any(w in text for w in ["욕", "악플", "모욕", "명예훼손", "허위사실", "소문", "댓글", "게시판"]): 
             case_type = "명예훼손 및 모욕 위자료 청구"
-        elif any(w in text for w in ["사기", "보이스피싱", "속았", "먹튀", "환불", "중고나라", "당근", "사기꾼"]): 
-            case_type = "사기 피해에 따른 부당이득 반환 및 손해배상"
-        elif any(w in text for w in ["이혼", "바람", "외도", "상간", "양육비", "재산분할", "불륜"]): 
-            case_type = "이혼 및 위자료 청구"
         elif any(w in text for w in ["소음", "층간", "시끄러", "발망치", "윗집", "아랫집", "누수", "물새"]): 
             case_type = "이웃분쟁 (층간소음/누수) 손해배상"
+        elif any(w in text for w in ["도용", "표절", "상표", "저작권", "특허", "베꼈", "디자인"]): 
+            case_type = "지식재산권 침해 금지 및 손해배상"
+            
+        # 4. 사기/부당이득
+        elif any(w in text for w in ["사기", "보이스피싱", "속았", "먹튀", "환불", "중고나라", "당근", "사기꾼"]): 
+            case_type = "사기 피해에 따른 부당이득 반환 및 손해배상"
+            
+        # 5. 가사/상속/노동
+        elif any(w in text for w in ["이혼", "바람", "외도", "상간", "양육비", "재산분할", "불륜"]): 
+            case_type = "이혼 및 위자료 청구"
+        elif any(w in text for w in ["상속", "유산", "유류분", "기여분", "재산 물려", "돌아가셨"]): 
+            case_type = "상속재산분할 및 유류분 반환 청구"
         elif any(w in text for w in ["임금", "퇴직금", "월급", "수당", "노동청", "해고", "알바", "사장님"]): 
             case_type = "임금 및 퇴직금 체불 진정"
 

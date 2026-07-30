@@ -24,19 +24,22 @@ const getUserId = () => {
 };
 const USER_ID = getUserId();
 
-// 🚀 [추가됨] 사건 유형 카테고리 목록
+// 🚀 백엔드 분류망 확장에 맞춘 카테고리 리스트 업데이트 (직접 입력 항목 제거)
 const CASE_TYPES = [
   "대여금 반환 청구",
+  "매매대금 및 계약금 반환 청구",
+  "공사대금 및 용역대금 청구",
   "임대차 보증금 반환",
   "차임(월세) 연체 및 명도 소송",
   "손해배상 청구 (불법행위/신체상해)",
   "명예훼손 및 모욕 위자료 청구",
+  "지식재산권 침해 금지 및 손해배상",
   "사기 피해에 따른 부당이득 반환 및 손해배상",
   "이혼 및 위자료 청구",
+  "상속재산분할 및 유류분 반환 청구",
   "이웃분쟁 (층간소음/누수) 손해배상",
   "임금 및 퇴직금 체불 진정",
-  "기타 손해배상 및 부당이득 반환",
-  "직접 입력"
+  "기타 손해배상 및 부당이득 반환"
 ];
 
 const Particles = tsparticlesReact.default || tsparticlesReact.Particles || tsparticlesReact;
@@ -345,35 +348,20 @@ function App() {
                     <input placeholder="원고 (본인)" value={manualForm.sender_name} onChange={e => setManualForm({...manualForm, sender_name: e.target.value})} style={inputStyle} />
                     <input placeholder="피고 (상대방)" value={manualForm.receiver_name} onChange={e => setManualForm({...manualForm, receiver_name: e.target.value})} style={inputStyle} />
                     
-                    {/* 🚀 [수정됨] 드롭다운(객관식) + 텍스트 인풋(주관식) 하이브리드 UI */}
-                    <div style={{ gridColumn: isMobile ? 'auto' : '1 / -1', display: 'flex', gap: '10px', flexDirection: isMobile ? 'column' : 'row' }}>
-                      <select 
-                        value={CASE_TYPES.includes(manualForm.title) ? manualForm.title : (manualForm.title ? "직접 입력" : "")} 
-                        onChange={e => {
-                          if (e.target.value === "직접 입력") {
-                            setManualForm({...manualForm, title: " "}); // 직접 입력을 위해 공백 문자로 상태 변경
-                          } else {
-                            setManualForm({...manualForm, title: e.target.value});
-                          }
-                        }} 
-                        style={{...inputStyle, flex: 1, cursor: 'pointer', WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none', backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23E2EAF8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem top 50%', backgroundSize: '0.65rem auto'}}
-                      >
-                        <option value="" disabled>사건 유형을 선택하세요</option>
+                    {/* 🚀 [수정됨] HTML5 Native <datalist>를 활용한 완벽한 하이브리드 UI */}
+                    <div style={{ gridColumn: isMobile ? 'auto' : '1 / -1' }}>
+                      <input 
+                        list="case-types" 
+                        placeholder="사건 유형 선택 또는 직접 입력 (예: 대여금)" 
+                        value={manualForm.title} 
+                        onChange={e => setManualForm({...manualForm, title: e.target.value})} 
+                        style={{...inputStyle, width: '100%', cursor: 'text'}} 
+                      />
+                      <datalist id="case-types">
                         {CASE_TYPES.map(type => (
-                          <option key={type} value={type}>{type}</option>
+                          <option key={type} value={type} />
                         ))}
-                      </select>
-
-                      {/* 드롭다운 목록에 없는 값이 들어오면(AI가 넣었거나, 직접 입력 선택 시) 인풋 박스 표시 */}
-                      {(!CASE_TYPES.includes(manualForm.title) && manualForm.title !== "") && (
-                        <input 
-                          placeholder="사건 유형을 직접 입력하세요 (예: 대여금)" 
-                          value={manualForm.title.trim()} 
-                          onChange={e => setManualForm({...manualForm, title: e.target.value})} 
-                          style={{...inputStyle, flex: 1}} 
-                          autoFocus
-                        />
-                      )}
+                      </datalist>
                     </div>
                     
                     <textarea placeholder="핵심 사실관계 (수정 가능)" value={manualForm.facts} onChange={e => setManualForm({...manualForm, facts: e.target.value})} style={{...inputStyle, gridColumn: isMobile ? 'auto' : '1 / -1', height: '100px'}} />
