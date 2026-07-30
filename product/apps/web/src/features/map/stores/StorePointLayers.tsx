@@ -47,7 +47,7 @@ const STORE_COLOR_EXPRESSION: ExpressionSpecification = [
 const NO_SELECTED_STORE = "__localtwin-no-selected-store__";
 const NO_HOVERED_STORE = "__localtwin-no-hovered-store__";
 const STORE_ICON_MIN_ZOOM = 15.25;
-const UNCLUSTERED_STORE_FILTER: FilterSpecification = ["!", ["has", "point_count"]];
+const UNCLUSTERED_STORE_FILTER: ExpressionSpecification = ["!", ["has", "point_count"]];
 
 const CLUSTER_COLOR_EXPRESSION: ExpressionSpecification = [
   "step",
@@ -87,7 +87,7 @@ function hoverFilter(featureId: string, selectedFeatureId: string): FilterSpecif
     UNCLUSTERED_STORE_FILTER,
     ["==", ["get", "featureId"], featureId],
     ["!=", ["get", "featureId"], selectedFeatureId],
-  ];
+  ] as unknown as FilterSpecification;
 }
 
 export function StorePointLayers({
@@ -111,10 +111,7 @@ export function StorePointLayers({
     const applyHover = (featureId: string) => {
       if (featureId === hoveredFeatureId || !map.getLayer(STORE_HOVER_HALO_LAYER_ID)) return;
       hoveredFeatureId = featureId;
-      map.setFilter(
-        STORE_HOVER_HALO_LAYER_ID,
-        hoverFilter(featureId, selectedFeatureId),
-      );
+      map.setFilter(STORE_HOVER_HALO_LAYER_ID, hoverFilter(featureId, selectedFeatureId));
     };
     const handleMove = (event: MouseEvent) => {
       const bounds = canvas.getBoundingClientRect();
