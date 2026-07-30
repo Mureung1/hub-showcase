@@ -36,6 +36,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     }
 
     (req as any).user = user;
+    (req as any).token = token;
     next();
   } catch (error: any) {
     console.error('❌ Authentication middleware error:', error.message || error);
