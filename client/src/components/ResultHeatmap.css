@@ -1,0 +1,95 @@
+.result-grid-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-section);
+}
+
+.result-grid {
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.result-grid th,
+.result-grid td {
+  padding: var(--space-1);
+  text-align: center;
+}
+
+.result-grid thead th {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+}
+
+.result-grid thead th:not(.result-grid__corner) {
+  width: 44px;
+}
+
+.result-grid__date,
+.result-grid__weekday {
+  display: block;
+  white-space: nowrap;
+  font-size: var(--font-size-caption);
+  line-height: 1.3;
+}
+
+.result-grid__weekday {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+
+.result-grid tbody th {
+  position: sticky;
+  left: 0;
+  width: 36px;
+  background: var(--color-bg-section);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.result-grid__corner {
+  position: sticky;
+  left: 0;
+  width: 36px;
+  background: var(--color-bg-section);
+}
+
+.result-cell {
+  width: 36px;
+  height: 36px;
+  border: none;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.result-cell:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* claude: 0단계는 무채색, 1~5단계는 --color-primary-500(#3182F6, rgb(49,130,246))의 불투명도를 점점 올려서 명도/채도로만 구분(design.md 규칙 - 새 색상 값 추가 안 함), 5단계만 --color-primary-600으로 최고 채도. */
+.result-cell--heat-0 {
+  background: var(--color-bg-muted);
+}
+
+.result-cell--heat-1 {
+  background: rgba(49, 130, 246, 0.16);
+}
+
+.result-cell--heat-2 {
+  background: rgba(49, 130, 246, 0.36);
+}
+
+.result-cell--heat-3 {
+  background: rgba(49, 130, 246, 0.6);
+}
+
+.result-cell--heat-4 {
+  background: rgba(49, 130, 246, 0.82);
+}
+
+.result-cell--heat-5 {
+  background: var(--color-primary-600);
+}

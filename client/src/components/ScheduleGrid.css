@@ -1,0 +1,92 @@
+.schedule-grid-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-section);
+}
+
+.schedule-grid {
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.schedule-grid th,
+.schedule-grid td {
+  padding: var(--space-1);
+  text-align: center;
+}
+
+.schedule-grid thead th {
+  overflow: hidden;
+  color: var(--color-text-secondary);
+}
+
+.schedule-grid thead th:not(.schedule-grid__corner) {
+  width: 44px;
+}
+
+.schedule-grid__date,
+.schedule-grid__weekday {
+  display: block;
+  white-space: nowrap;
+  font-size: var(--font-size-caption);
+  line-height: 1.3;
+}
+
+.schedule-grid__weekday {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+
+.schedule-grid tbody th {
+  position: sticky;
+  left: 0;
+  width: 36px;
+  background: var(--color-bg-section);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.schedule-grid__corner {
+  position: sticky;
+  left: 0;
+  width: 36px;
+  background: var(--color-bg-section);
+}
+
+.schedule-cell {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-muted);
+  cursor: pointer;
+  padding: 0;
+  /* claude: 롱프레스 드래그 선택과 브라우저 자체 텍스트 선택/콜아웃이 충돌하는 문제 - user-select/-webkit-touch-callout은
+     처음부터 CSS로 고정해야 한다(JS로 나중에 바꿔도 이미 시작된 터치엔 적용 안 됨).
+     claude: touch-action은 pan-y로 둔다(세로 스크롤은 항상 브라우저가 100% 네이티브로 처리 - "짧게 터치+이동=스크롤"
+     요구사항 그대로 유지). 롱프레스가 확정된 뒤(ScheduleGrid.tsx의 dragging=true)에만 네이티브 touchmove의
+     preventDefault로 그 순간의 스크롤 시도를 막는다 - JS가 scrollBy 등으로 스크롤 값을 직접 계산/흉내내지는
+     않으므로, 예전에 iOS에서 네이티브 스크롤과 우리 JS가 서로 밀고 당기며 화면이 진동하던 부작용은 재발하지 않는다
+     (코드리뷰 문서 참고 - 그 부작용은 항상 JS가 scrollBy를 부를 때만 생겼음). */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: pan-y;
+}
+
+.schedule-cell--available {
+  background: var(--color-primary-50);
+  box-shadow: inset 0 0 0 1px var(--color-primary-500);
+}
+
+.schedule-cell--preferred {
+  background: var(--color-primary-500);
+}
+
+.schedule-cell:disabled {
+  background: var(--color-bg-subtle);
+  opacity: 0.5;
+  cursor: not-allowed;
+}

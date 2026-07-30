@@ -1,0 +1,26 @@
+{
+  "services": {
+    "frontend": {
+      "root": "client/",
+      "framework": "vite",
+      "buildCommand": "npm --prefix .. run build -w shared && npm run build",
+      "outputDirectory": "dist",
+      "rewrites": [
+        {
+          "source": "/(.*)",
+          "destination": "/index.html"
+        }
+      ]
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://prefertime.onrender.com/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": { "service": "frontend" }
+    }
+  ]
+}

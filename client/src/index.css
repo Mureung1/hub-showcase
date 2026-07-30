@@ -1,0 +1,286 @@
+:root {
+  /* ===== Font ===== */
+  --font-family-base: "Pretendard", -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  /* ===== Color: 주색(Primary) ===== */
+  --color-primary-50: #E8F3FF;
+  --color-primary-500: #3182F6;
+  --color-primary-600: #1B64DA;
+  --color-primary: var(--color-primary-500);
+  --color-primary-hover: var(--color-primary-600);
+  --color-primary-light: var(--color-primary-50);
+
+  /* ===== Color: 시맨틱 ===== */
+  --color-success: #18A5A5;
+  --color-danger: #F04452;
+  --color-warning: #FFB020;
+
+  /* ===== Color: 배경 ===== */
+  --color-bg-page: #FFFFFF;
+  --color-bg-section: #F9FAFB;
+  --color-bg-subtle: #F5F6F8;
+  --color-bg-muted: #F2F4F6;
+  --color-bg-surface: #FFFFFF;
+
+  /* ===== Color: 글자 ===== */
+  --color-text-strong: #191F28;
+  --color-text-primary: #333D4B;
+  --color-text-secondary: #4E5968;
+  --color-text-tertiary: #6B7684;
+  --color-text-muted: #8B95A1;
+  --color-text-disabled: #B0B8C1;
+  --color-text-inverse: #FFFFFF;
+
+  /* ===== Color: 테두리 ===== */
+  --color-border-subtle: #E5E8EB;
+  --color-border-muted: #D1D6DB;
+
+  /* ===== 모서리(Radius) ===== */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
+
+  /* ===== 여백(Spacing) ===== */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  --card-padding: var(--space-6);
+  --card-gap: var(--space-4);
+  --grid-gap: var(--space-6);
+  --section-padding-y: 120px;
+  --section-padding-y-lg: 170px;
+  --container-max: 1140px;
+  --container-padding-mobile: 24px;
+  --container-padding-desktop: 48px;
+
+  /* ===== Typography scale ===== */
+  --font-size-caption: 13px;
+  --font-size-nav: 15px;
+  --font-size-body: 16px;
+  --font-size-body-lg: 20px;
+  --font-size-title-sm: 24px;
+  --font-size-title-md: 32px;
+  --font-size-title-lg: 48px;
+  --font-size-display: 72px;
+
+  --line-height-tight: 1.2;
+  --line-height-base: 1.5;
+  --line-height-comfy: 1.6;
+  --line-height-display: 1.3;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  --font-weight-heavy: 800;
+
+  /* ===== 컴포넌트 크기 ===== */
+  --nav-height: 60px;
+  --button-height-sm: 44px;
+  --button-height-md: 52px;
+  --button-height-lg: 74px;
+
+  /* ===== 카드 스타일 ===== */
+  --card-bg: var(--color-bg-surface);
+  --card-border: none;
+  --card-radius: var(--radius-lg);
+  --card-shadow: 0 8px 24px rgba(0, 19, 43, 0.08);
+  --card-shadow-floating: 0 16px 48px rgba(0, 19, 43, 0.14);
+  --card-shadow-pressed: 0 2px 8px rgba(0, 19, 43, 0.08);
+
+  /* ===== Motion ===== */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 260ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family-base);
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+input {
+  height: var(--button-height-sm);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+  padding: 0 var(--space-4);
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+}
+
+button,
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--button-height-sm);
+  padding: 0 var(--space-5);
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-family: inherit;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-body);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.button--secondary {
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-muted);
+  box-shadow: var(--card-shadow);
+}
+
+.button--danger {
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+}
+
+.field-error {
+  color: var(--color-danger);
+  font-size: var(--font-size-caption);
+  margin: 0;
+}
+
+.picker-trigger {
+  width: 100%;
+  height: var(--button-height-sm);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted);
+  padding: 0 var(--space-4);
+  font-family: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.picker-trigger--empty {
+  color: var(--color-text-disabled);
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: auto;
+}
+
+.field-with-hint {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field-with-hint label {
+  margin-bottom: 0;
+}
+
+.page-stack {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 420px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ===== 대시보드 공용(관리자/참여자) ===== */
+.dashboard-page.page-stack {
+  gap: var(--space-8);
+}
+
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.dashboard-header__title {
+  font-size: var(--font-size-title-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-strong);
+}
+
+.dashboard-header__period {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dashboard-section__label {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+}
+
+.dashboard-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-body);
+  color: var(--color-text-primary);
+}
+
+.dashboard-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ===== 화면/모달 전환 트랜지션 유틸 ===== */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.transition-fade-in {
+  animation: fade-in var(--duration-base) var(--ease-out);
+}
+
+.transition-slide-up {
+  animation: slide-up var(--duration-base) var(--ease-out);
+}

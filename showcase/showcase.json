@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "title": "선호도 기반 약속 시간 조율 서비스",
+  "summary": "가능한 시간뿐 아니라 선호하는 시간까지 함께 모아, 모두에게 가장 만족스러운 약속 시간을 찾아주는 모바일 웹 서비스입니다.",
+  "githubUser": "Ladea1224(신주하)",
+  "demoUrl": "https://hub-git-subtask-ladea1225.vercel.app/",
+  "thumbnail": "thumbnail.webp",
+  "screenshots": [
+    "screenshots/01-home.webp",
+    "screenshots/02-create-form.webp",
+    "screenshots/03-date-picker.webp",
+    "screenshots/04-create-form-filled.webp",
+    "screenshots/05-appointment-created.webp",
+    "screenshots/06-admin-dashboard.webp",
+    "screenshots/07-select-available-times.webp",
+    "screenshots/08-select-preferred-times.webp",
+    "screenshots/09-submit-confirm.webp",
+    "screenshots/10-close-voting-confirm.webp",
+    "screenshots/11-result-heatmap.webp"
+  ],
+  "problem": "여럿이 약속을 잡을 때 기존 도구는 '가능한 시간'만 모으기 때문에, 다들 가능하지만 아무도 내키지 않는 시간이 정해지곤 합니다.",
+  "targetUsers": [
+    "여러 명의 일정을 맞춰 모임을 잡아야 하는 모임 주최자",
+    "약속 시간 후보 중 자신의 사정과 선호를 함께 알리고 싶은 참여자"
+  ],
+  "features": [
+    "약속 제목, 날짜·시간 범위, 인원수를 입력해 약속을 만들고 공유 링크를 받습니다.",
+    "참여자는 링크로 들어와 이름과 4자리 비밀번호만으로 참여합니다.",
+    "30분 단위 그리드에서 가능한 시간을 먼저 고르고, 그중 더 선호하는 시간을 2단계로 표시합니다.",
+    "관리자 대시보드에서 응답 진행률과 참여자별 응답 여부를 확인하고 투표를 마감합니다.",
+    "마감 후 결과를 히트맵으로 보여주고, 가능 인원과 선호 인원을 함께 반영해 시간대 순위를 매깁니다."
+  ],
+  "featureTags": [
+    "약속 생성·링크 공유",
+    "가능/선호 2단계 시간 선택",
+    "응답 현황 대시보드",
+    "결과 히트맵"
+  ],
+  "techStack": [
+    "React",
+    "TypeScript",
+    "Express",
+    "Supabase(PostgreSQL)",
+    "Vite",
+    "zod",
+    "TanStack Query",
+    "Vitest"
+  ],
+  "techHighlights": [
+    "화면과 서버가 주고받는 데이터 형식을 shared 폴더에 정의해 두고 양쪽이 함께 씁니다. 한쪽만 고쳐서 생기는 오류를 막았습니다.",
+    "선호 시간은 반드시 가능한 시간 안에서만 고를 수 있게 화면과 서버 양쪽에서 검사합니다.",
+    "결과 집계를 화면이 아닌 데이터베이스에서 처리해, 응답이 많아져도 숫자가 어긋나지 않게 했습니다.",
+    "결과 화면은 가능한 인원이 많은 시간부터, 같으면 선호 인원이 많은 시간부터 5단계 색으로 보여줍니다.",
+    "Agent 2개와 Skill 3개를 정해두고 작업 분해부터 구현, 동작 확인, 커밋까지 같은 순서로 반복했습니다."
+  ],
+  "developmentWithAI": "어떤 문제를 풀지와 화면·기능의 기준을 정하고, 프로젝트 규칙(CLAUDE.md)과 작업 원칙·디자인·커밋 규칙을 Skill로 문서화했습니다. AI는 그 규칙 위에서 요구사항을 작업 단위로 쪼개고 구현 초안을 만들었습니다. 저는 결과를 직접 실행하고 테스트를 돌려 확인한 뒤, 코드 리뷰를 거쳐 고칠 부분을 지정하고 반영했습니다.",
+  "agent": {
+    "summary": "작업 분해 → 구현 → 동작 검증 → 커밋까지 각 단계에 맞는 Agent와 Skill을 정의해 두고, 매번 같은 규칙으로 반복했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "feature-slice Agent",
+        "purpose": "기능 하나를 커밋 단위 작업으로 쪼개고 구현 순서를 정합니다. 코드는 건드리지 않고 계획만 냅니다."
+      },
+      {
+        "type": "agent",
+        "name": "verify-feature Agent",
+        "purpose": "테스트 실행과 실제 서버 기동을 모두 시도해 기능이 의도대로 동작하는지 근거와 함께 보고합니다. 코드는 수정하지 않습니다."
+      },
+      {
+        "type": "skill",
+        "name": "work-principles Skill",
+        "purpose": "any 타입 금지, 최소 변경, 요청과 무관한 수정 금지 같은 코딩 작업 원칙을 적용합니다."
+      },
+      {
+        "type": "skill",
+        "name": "design Skill",
+        "purpose": "확정된 CSS 변수와 스타일 규칙을 그대로 적용해 UI를 만듭니다."
+      },
+      {
+        "type": "skill",
+        "name": "commit-push Skill",
+        "purpose": "커밋 메시지·브랜치 명명 규칙을 지키고, push 전에 키·환경 변수 유출 여부를 확인합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "기획 문서에서 만들 기능 정하기",
+          "feature-slice Agent로 작업 단위 분해",
+          "type/short-description 브랜치 생성",
+          "shared의 zod 스키마로 API 계약 먼저 정의",
+          "work-principles·design Skill 규칙에 맞춰 서버·클라이언트 구현",
+          "verify-feature Agent로 테스트 실행과 실제 동작 확인",
+          "commit-push Skill 규칙으로 커밋·push"
+        ]
+      },
+      {
+        "name": "코드 리뷰 Workflow",
+        "steps": [
+          "변경사항 파악 후 리뷰 순서 정하기",
+          "AI 코드 리뷰로 문제 지점과 근거 확인",
+          "고칠 항목을 직접 선별해 반영",
+          "리뷰에서 사라지는 학습용 주석은 별도 문서에 보존"
+        ]
+      }
+    ]
+  }
+}

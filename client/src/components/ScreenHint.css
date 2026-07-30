@@ -1,0 +1,11 @@
+.screen-hint {
+  margin: 0;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-comfy);
+  white-space: pre-line;
+}
+
+.screen-hint--center {
+  text-align: center;
+}
