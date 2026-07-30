@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 
-import { isValidGithubId, isValidUuid, isValidPreferences } from '../../src/utils/validators.js';
+import {
+    isValidGithubId,
+    isValidUuid,
+    isValidRepoFullName,
+    isValidIssueNumber,
+    isValidPreferences,
+} from '../../src/utils/validators.js';
 
 describe('isValidGithubId', () => {
     it('영숫자·하이픈으로 된 정상 GitHub 아이디를 허용한다', () => {
@@ -38,6 +44,50 @@ describe('isValidUuid', () => {
         expect(isValidUuid('not-a-uuid')).toBe(false);
         expect(isValidUuid('7f9c3b2a-1d4e-4f6a-9b8c')).toBe(false);
         expect(isValidUuid(undefined)).toBe(false);
+    });
+});
+
+describe('isValidRepoFullName', () => {
+    it('owner/repo 형식을 허용한다 (점·하이픈 포함 이름도)', () => {
+        expect(isValidRepoFullName('facebook/react')).toBe(true);
+        expect(isValidRepoFullName('vercel/next.js')).toBe(true);
+        expect(isValidRepoFullName('my-org/my-repo')).toBe(true);
+    });
+
+    it('슬래시가 없거나 2개 이상인 값은 거부한다', () => {
+        // githubService.fetchIssueBody가 split('/')로 owner/repo를 분해하므로 형식이 어긋나면 엉뚱한 경로를 호출한다
+        expect(isValidRepoFullName('react')).toBe(false);
+        expect(isValidRepoFullName('facebook/react/issues')).toBe(false);
+        expect(isValidRepoFullName('/react')).toBe(false);
+        expect(isValidRepoFullName('facebook/')).toBe(false);
+    });
+
+    it('문자열이 아닌 값·빈 문자열을 거부한다', () => {
+        expect(isValidRepoFullName('')).toBe(false);
+        expect(isValidRepoFullName(undefined)).toBe(false);
+        expect(isValidRepoFullName(null)).toBe(false);
+        expect(isValidRepoFullName(['facebook', 'react'])).toBe(false);
+    });
+});
+
+describe('isValidIssueNumber', () => {
+    it('1 이상의 정수를 허용한다', () => {
+        expect(isValidIssueNumber(1)).toBe(true);
+        expect(isValidIssueNumber(31337)).toBe(true);
+    });
+
+    it('0·음수·소수·정수 아닌 값을 거부한다', () => {
+        expect(isValidIssueNumber(0)).toBe(false);
+        expect(isValidIssueNumber(-1)).toBe(false);
+        expect(isValidIssueNumber(1.5)).toBe(false);
+        expect(isValidIssueNumber(NaN)).toBe(false);
+        expect(isValidIssueNumber(Infinity)).toBe(false);
+    });
+
+    it('숫자로 보이는 문자열도 거부한다 (JSON 본문에서 문자열로 넘어오는 경우)', () => {
+        expect(isValidIssueNumber('1')).toBe(false);
+        expect(isValidIssueNumber(undefined)).toBe(false);
+        expect(isValidIssueNumber(null)).toBe(false);
     });
 });
 
