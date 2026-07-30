@@ -20,8 +20,40 @@ type SceneWorkspaceProps = {
   restoreFocusExternally: boolean;
 };
 
+type SceneDemoAsset = {
+  id: string;
+  label: string;
+  splatUrl: string;
+  videoUrl: string;
+};
+
 const DEMO_SPLAT_URL =
   import.meta.env.VITE_SCENE_DEMO_ASSET_URL ?? "https://sparkjs.dev/assets/splats/butterfly.spz";
+
+const SCENE_DEMO_ASSETS: SceneDemoAsset[] = [
+  {
+    id: "jongmyo",
+    label: "종묘",
+    splatUrl: `${import.meta.env.BASE_URL}splats/jongmyo.ply`,
+    videoUrl: `${import.meta.env.BASE_URL}videos/jongmyo.mp4`,
+  },
+  {
+    id: "gwanpyeong",
+    label: "관평동 거리",
+    splatUrl: `${import.meta.env.BASE_URL}splats/Gwanpyeong-dong.ply`,
+    videoUrl: `${import.meta.env.BASE_URL}videos/Gwanpyeong-dong.mp4`,
+  },
+];
+
+async function assetExists(url: string) {
+  try {
+    const response = await fetch(url, { method: "HEAD", cache: "no-store" });
+    const contentType = response.headers.get("content-type");
+    return response.ok && !contentType?.includes("text/html");
+  } catch {
+    return false;
+  }
+}
 
 export function SceneWorkspace({ onClose, restoreFocusExternally }: SceneWorkspaceProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -151,25 +183,89 @@ export function SceneWorkspace({ onClose, restoreFocusExternally }: SceneWorkspa
 }
 
 function SceneDemoContent() {
+  const [availableAssets, setAvailableAssets] = useState<SceneDemoAsset[]>([]);
+  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
+  const [availableVideos, setAvailableVideos] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.all(
+      SCENE_DEMO_ASSETS.map(async (asset) => ({
+        asset,
+        hasSplat: await assetExists(asset.splatUrl),
+        hasVideo: await assetExists(asset.videoUrl),
+      })),
+    ).then((results) => {
+      if (cancelled) return;
+      const splatAssets = results.filter((result) => result.hasSplat).map((result) => result.asset);
+      setAvailableAssets(splatAssets);
+      setSelectedAssetId((current) => current ?? splatAssets[0]?.id ?? null);
+      setAvailableVideos(new Set(results.filter((result) => result.hasVideo).map((result) => result.asset.id)));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selectedAsset = availableAssets.find((asset) => asset.id === selectedAssetId);
+  const viewerAssetUrl = selectedAsset?.splatUrl ?? DEMO_SPLAT_URL;
+
   return (
     <>
+      {availableAssets.length > 0 && (
+        <div className="scene-mode-tabs" role="tablist" aria-label="3DGS 장면 선택">
+          {availableAssets.map((asset) => (
+            <button
+              key={asset.id}
+              type="button"
+              role="tab"
+              aria-selected={asset.id === selectedAssetId}
+              className={asset.id === selectedAssetId ? "is-selected" : ""}
+              onClick={() => setSelectedAssetId(asset.id)}
+            >
+              {asset.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="scene-demo-viewer">
-        <SplatViewer assetUrl={DEMO_SPLAT_URL} />
-        <span>Spark 공식 SPZ 샘플 · LocalTwin 촬영 결과가 아닙니다.</span>
+        <SplatViewer key={viewerAssetUrl} assetUrl={viewerAssetUrl} />
+        <span>
+          {selectedAsset
+            ? `${selectedAsset.label} · 마우스로 회전하고 휠로 확대할 수 있습니다.`
+            : "Spark 공식 SPZ 샘플 · LocalTwin 촬영 결과가 아닙니다."}
+        </span>
       </div>
+
       <div className="scene-modal-content scene-demo-content">
         <div className="scene-demo-summary">
           <b>마우스로 회전하고 휠로 확대해 보세요.</b>
-          <p>
-            실제 점포 촬영본도 같은 viewer에서 열리며, 완성 asset만 바꾸고 조작 방식은 유지됩니다.
-          </p>
+          <p>로컬 PLY 파일이 있으면 해당 장면을 불러오고, 없으면 기본 Spark 샘플을 표시합니다.</p>
         </div>
+
+        {selectedAsset && availableVideos.has(selectedAsset.id) && (
+          <div className="scene-storage-grid" aria-label="3DGS 렌더 영상">
+            <article>
+              <Play size={18} />
+              <div>
+                <b>{selectedAsset.label} 렌더 영상</b>
+                <a href={selectedAsset.videoUrl} target="_blank" rel="noreferrer">
+                  새 창에서 보기
+                </a>
+              </div>
+            </article>
+          </div>
+        )}
+
         <div className="scene-storage-grid">
           <article>
             <HardDrive size={18} />
             <div>
               <b>현재 로컬 저장</b>
-              <code>product/data/scenes/jobs/&lt;job-id&gt;/asset/scene.ply</code>
+              <code>product/apps/web/public/splats/*.ply</code>
             </div>
           </article>
           <article>
@@ -242,10 +338,7 @@ function SceneCreateContent({
             </div>
             <label>
               <span>장면 이름</span>
-              <input
-                value={sceneName}
-                onChange={(event) => onSceneNameChange(event.target.value)}
-              />
+              <input value={sceneName} onChange={(event) => onSceneNameChange(event.target.value)} />
             </label>
             <label>
               <span>촬영 형식</span>
