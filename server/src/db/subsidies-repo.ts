@@ -80,8 +80,33 @@ function paginate(items: Subsidy[], page: number, limit: number): PagedResult {
 /** PostgREST가 .range() 없이는 최대 1000행까지만 반환하므로, 페이지 단위로 순회해 전부 가져온다 */
 const PAGE_SIZE = 1000
 
+/**
+ * loadAll() 결과 캐시 (이슈 #109) — TTL 60초.
+ * 크롤러는 하루 1회(`.github/workflows/crawler.yml`)만 테이블을 갱신하므로 훨씬 길게 잡아도
+ * 무방하지만, 너무 길면 "방금 갱신된 데이터가 안 보인다"는 체감 지연이 생길 수 있어 60초로
+ * 절충했다. `/api/match`·`/api/subsidies`가 loadAll()을 공유하므로 캐시도 여기 한 곳에만 둔다.
+ * 캐시는 항상 원본 Subsidy[]만 보관하고, 필터링/정렬(match/findAll)은 매 호출마다 새로 수행한다
+ * — profile마다 결과가 달라지는 필터링된 결과는 절대 캐싱하지 않는다.
+ * Supabase 에러로 FALLBACK을 반환한 경우는 캐싱하지 않는다 — 다음 요청에서 재시도할 수 있도록.
+ * 여러 요청이 동시에 cold-cache 상태로 들어와 각자 Supabase를 중복 호출하는 케이스는 이번
+ * 이슈 범위 밖 (단순 TTL 캐시로 충분, 동시 중복 조회 방지는 별도 이슈로 미룸).
+ */
+const CACHE_TTL_MS = 60_000
+let cache: { data: Subsidy[]; fetchedAt: number } | null = null
+
+/** 테스트 전용: 모듈 스코프 캐시를 초기화한다. 프로덕션 코드에서는 호출하지 않는다. */
+export function __resetLoadAllCacheForTests(): void {
+  cache = null
+}
+
 /** Supabase에서 전체 row를 읽어 Subsidy[]로 변환. 실패 시 fallback 반환 */
 async function loadAll(): Promise<Subsidy[]> {
+  if (cache && performance.now() - cache.fetchedAt < CACHE_TTL_MS) {
+    console.log(`[timing] loadAll: cache hit (age=${(performance.now() - cache.fetchedAt).toFixed(1)}ms), supabase 조회 생략`)
+    return cache.data
+  }
+  console.log('[timing] loadAll: cache miss, supabase 조회 시작')
+
   const startedAt = performance.now()
   const rows: SubsidyRow[] = []
   let from = 0
@@ -116,6 +141,7 @@ async function loadAll(): Promise<Subsidy[]> {
   )
   console.log(`[timing] loadAll: total (${roundTrips} round trip(s)) took ${(performance.now() - startedAt).toFixed(1)}ms`)
 
+  cache = { data: mapped, fetchedAt: performance.now() }
   return mapped
 }
 
