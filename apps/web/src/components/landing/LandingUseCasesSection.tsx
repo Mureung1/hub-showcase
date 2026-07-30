@@ -4,30 +4,28 @@ const useCases = [
   {
     label: "취업 준비생",
     title: "팀플 3개 했는데 뭘 썼다고 해야 하죠?",
-    description:
-      "내 GitHub ID로 커밋·PR만 골라내 실제로 만진 파일을 보여줍니다.",
   },
   {
     label: "부트캠프 수료생",
     title: "수료 프로젝트가 다 비슷해 보여요",
-    description:
-      "같은 과제 안에서도 내가 맡은 모듈과 리뷰 이력을 문장으로 남깁니다.",
   },
   {
     label: "팀 프로젝트 정리",
     title: "누가 뭘 했는지 기억이 안 나요",
-    description: "저장소 기록을 뒤져 역할 분담을 자동으로 정리해 줍니다.",
   },
   {
     label: "이직 준비",
     title: "경력 기술서 쓸 시간이 없어요",
-    description: "저장소만 붙이면 초안이 나옵니다. 다듬는 것은 내 몫입니다.",
   },
 ] as const;
 
 export function LandingUseCasesSection() {
   return (
-    <section className="bg-white" aria-labelledby="landing-use-cases-title">
+    <section
+      className="scroll-mt-[var(--header-height)] bg-white"
+      id="features"
+      aria-labelledby="landing-use-cases-title"
+    >
       <div className="ptop-landing-container px-5 pb-[84px] pt-4 md:px-10">
         <ScrollReveal className="mb-[34px] text-center">
           <h2
@@ -42,23 +40,20 @@ export function LandingUseCasesSection() {
         </ScrollReveal>
 
         <ScrollReveal
-          className="mb-[26px] grid gap-4 md:grid-cols-4"
+          className="mb-[26px] grid gap-1 md:grid-cols-4"
           delay={80}
         >
           {useCases.map((useCase) => (
             <div
-              className="flex min-h-[300px] flex-col rounded-[18px] border border-[rgba(20,35,28,0.12)] bg-white px-[26px] pb-[30px] pt-[28px] shadow-[0_8px_24px_rgba(20,35,28,0.05)]"
+              className="flex min-h-[170px] flex-col rounded-[18px] border border-[rgba(20,35,28,0.12)] bg-white px-6 pb-6 pt-6 shadow-[0_8px_24px_rgba(20,35,28,0.05)] md:min-h-[170px] md:px-7 md:pb-7 md:pt-7"
               key={useCase.label}
             >
               <span className="self-start rounded-full bg-[#E4F7EC] px-3.5 py-2 text-[12px] font-bold leading-none text-[#0F7A4E]">
                 {useCase.label}
               </span>
-              <h3 className="m-0 mt-7 text-[clamp(1.25rem,2vw,1rem)] font-extrabold leading-[1.45] tracking-[-0.035em] text-[#14231C] [word-break:keep-all]">
+              <h3 className="m-0 mt-auto text-[clamp(1.25rem,2vw,1.2rem)] font-bold leading-[1.4] tracking-[-0.035em] text-[#14231C] [word-break:keep-all]">
                 “{useCase.title}”
               </h3>
-              <p className="m-0 mt-7 text-[15px] font-medium leading-[1.75] text-[#4A5A53] [word-break:keep-all]">
-                {useCase.description}
-              </p>
             </div>
           ))}
         </ScrollReveal>
