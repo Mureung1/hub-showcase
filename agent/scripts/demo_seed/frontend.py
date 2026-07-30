@@ -1253,11 +1253,11 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 
 
 def axis_level(value: int | None) -> str:
-    if value is None or value < 15:
+    if value is None:
         return "—"
-    if value >= 60:
+    if value >= 70:
         return "강"
-    if value >= 35:
+    if value >= 31:
         return "중"
     return "약"
 
@@ -1459,13 +1459,11 @@ def build_statistics_payload() -> dict[str, Any]:
             reality.append({"tag": tag, "label": label, "pct": value})
     reality.sort(key=lambda row: -row["pct"])
 
-    # --- cluster_axes
+    # --- cluster_axes (표본 확보를 위해 recent 와 prev 전체 기간을 합산한다)
     axes_rows = []
     for cluster_id in CLUSTER_ORDER:
-        n = cluster_n.get(cluster_id, 0)
-        if not n:
-            continue
-        members = [p for p in RECENT_POSTINGS if p["cluster"] == cluster_id]
+        members = [p for p in POSTINGS if p["cluster"] == cluster_id]
+        n = len(members)
         cells = []
         for _axis_id, axis_label, slugs in CLUSTER_AXES:
             count = sum(

@@ -1,4 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Unity">
-  <rect width="48" height="48" rx="12" fill="#E9EBEE"/>
-  <text x="24" y="29" font-family="Segoe UI, Roboto, sans-serif" font-size="11" font-weight="800" fill="#222C37" text-anchor="middle">Unity</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="12" fill="#F1F5F9"/><path d="m30 12 7 12-7 12H16l-7-12 7-12h14Zm-3 6h-8l-4 6 4 6h8l4-6-4-6Zm0 0-3 6 3 6m-12-6h9" fill="none" stroke="#111827" stroke-width="2.5" stroke-linejoin="round"/></svg>

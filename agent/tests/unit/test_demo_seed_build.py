@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import csv
+import importlib
 import importlib.util
 import json
 import re
@@ -42,6 +43,18 @@ build_seed = _load("build_demo_seed")
 load_seed = _load("load_demo_seed")
 
 from scripts.demo_seed._csv import LOAD_ORDER, TABLE_COLUMNS  # noqa: E402
+
+
+# ============================================================ 히트맵 등급
+@pytest.mark.parametrize("job", build_seed.JOB_PARTS)
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    ((None, "—"), (0, "약"), (30, "약"), (31, "중"), (69, "중"), (70, "강"), (100, "강")),
+)
+def test_cluster_axis_level_boundaries(job: str, value: int | None, expected: str) -> None:
+    """결측값과 약·중·강의 경계를 모든 직무 생성기가 같은 방식으로 분류한다."""
+    module = importlib.import_module(f"scripts.demo_seed.{job}")
+    assert module.axis_level(value) == expected
 
 
 # ============================================================ 조각 목록

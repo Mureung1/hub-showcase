@@ -71,7 +71,18 @@ def test_final_outputs_have_112_rows_per_job_and_keep_statistics_sections() -> N
         assert required_sections <= statistics.keys(), job
         assert statistics["meta"]["snapshots"]["recent"]["n"] == 18, job
         assert statistics["meta"]["snapshots"]["prev"]["n"] == 12, job
-        assert [row["n"] for row in statistics["cluster_axes"]["rows"]] == [3] * 6, job
+        cluster_rows = statistics["cluster_axes"]["rows"]
+        assert [row["n"] for row in cluster_rows] == [5] * 6, job
+        for cluster in cluster_rows:
+            for cell in cluster["cells"]:
+                value = cell["pct"]
+                expected = (
+                    "—" if value is None
+                    else "약" if value <= 30
+                    else "중" if value <= 69
+                    else "강"
+                )
+                assert cell["level"] == expected, (job, cluster["cluster"], cell)
 
 
 def test_small_cluster_statistics_are_marked_low_confidence() -> None:

@@ -70,8 +70,9 @@
 가리키는 기간과 공고 게시일이 어긋난다.
 
 두 기간 각각에서 여섯 기업군의 표본 수를 같게 둔다. recent 는 기업군마다 3건씩 총 18건,
-prev 는 기업군마다 2건씩 총 12건이다. 기업군 범위 산출물과 `cluster_axes` 는 기업군마다
-같은 표본 기반에서 비교한다.
+prev 는 기업군마다 2건씩 총 12건이다. 기업군 범위 산출물은 해당 기간 표본을 따르고,
+`cluster_axes` 만 표본 확보를 위해 두 기간을 합친 전체 30건을 사용한다. 따라서
+`cluster_axes` 의 여섯 기업군은 각각 `n=5`다.
 
 직무별 진행 중 공고는 6건, 마감 공고는 24건이다. prev 12건은 모두 마감 상태다. recent
 18건은 진행 중 6건·마감 12건이다.
@@ -196,7 +197,8 @@ Express 의 폴백 규칙(posting 범위 요청을 그 공고가 속한 기업�
 라벨은 payload 안에 함께 담으므로 서버 코드에 상수를 두지 않는다 (B13 이 상수 표를 제거한다).
 
 `cluster_axes.rows[].cluster` 는 기업군 **표시명**(`company_clusters.display_name`)을 쓴다.
-`cells[].level` 은 `강`(≥60) · `중`(≥35) · `약`(≥15) · `—`(그 미만 또는 null).
+`cells[].level` 은 `강`(70~100) · `중`(31~69) · `약`(0~30)이며, `—`는
+`pct` 가 null인 결측값에만 쓴다.
 
 ### B. `interpretation` payload
 
@@ -649,6 +651,7 @@ A10 은 `part` 이름으로 `user_postings` 를 쓴다.
 5. `checklist_items.concept_id` 와 payload 의 `item_id` 가 서로 맞는다.
 6. 공고가 30건이고 `recent` 18건·`prev` 12건이다. recent 는 여섯 기업군마다 3건,
    prev 는 기업군마다 2건이며 `posted_at` 이 기간의 `starts_on`~`ends_on` 안에 있다.
+   `cluster_axes` 는 두 기간을 합산해 여섯 기업군 모두 `n=5`로 계산한다.
    진행 중 6건은 모두 recent 이고 나머지 recent 12건과 prev 12건은 마감 상태다.
 7. `analysis_outputs` 가 52행이다. `statistics` 1 · `interpretation` 37 ·
    `strategy` 7 · `roadmap` 7 이며, `interpretation` 의 posting 범위 30행은 전체 공고와
