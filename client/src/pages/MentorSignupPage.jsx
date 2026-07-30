@@ -93,7 +93,6 @@ function MentorSignupPage() {
       state: {
         account: {
           name: formData.get("name"),
-          nickname: formData.get("nickname"),
           password: formData.get("password"),
           email,
         },
@@ -137,19 +136,6 @@ function MentorSignupPage() {
                   defaultValue={savedAccount?.name ?? ""}
                   name="name"
                   placeholder="이름을 입력해 주세요"
-                  required
-                  type="text"
-                />
-              </label>
-
-              <label className="mentor-field-group">
-                <span className="mentor-field-label">닉네임 <span aria-hidden="true">*</span></span>
-                <input
-                  autoComplete="nickname"
-                  className="field"
-                  defaultValue={savedAccount?.nickname ?? ""}
-                  name="nickname"
-                  placeholder="서비스에서 사용할 닉네임을 입력해 주세요"
                   required
                   type="text"
                 />

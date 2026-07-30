@@ -19,7 +19,7 @@ const authenticate = async (req, res, next) => {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, role, name, nickname')
+    .select('id, role, name, mentor_list_onboarded_at, questionnaire_onboarded_at')
     .eq('id', userData.user.id)
     .single();
 
@@ -32,7 +32,8 @@ const authenticate = async (req, res, next) => {
     email: userData.user.email,
     role: profile.role,
     name: profile.name,
-    nickname: profile.nickname,
+    mentorListOnboardedAt: profile.mentor_list_onboarded_at,
+    questionnaireOnboardedAt: profile.questionnaire_onboarded_at,
   };
   req.token = token;
 

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-function MentorCard({ mentor, selected = false, onSelect }) {
+function MentorCard({ mentor, selected = false, onSelect, isOnboardingTarget = false }) {
   const detailPath = `/mentee/mentors/${mentor.id}`;
 
   return (
@@ -8,9 +8,10 @@ function MentorCard({ mentor, selected = false, onSelect }) {
       className={`card mentor-card${selected ? " mentor-card-selected" : ""}`}
       id={`mentor-card-${mentor.id}`}
       tabIndex="-1"
+      data-onboarding={isOnboardingTarget ? "mentor-card" : undefined}
     >
       <div className="mentor-card-header">
-        <label className="mentor-select-control">
+        <label className="mentor-select-control" data-onboarding={isOnboardingTarget ? "mentor-select" : undefined}>
           <input
             className="mentor-select-input"
             type="checkbox"
@@ -68,7 +69,11 @@ function MentorCard({ mentor, selected = false, onSelect }) {
           </div>
         </dl>
 
-        <Link className="button button-soft mentor-detail-button" to={detailPath}>
+        <Link
+          className="button button-soft mentor-detail-button"
+          to={detailPath}
+          data-onboarding={isOnboardingTarget ? "mentor-detail" : undefined}
+        >
           프로필 상세 보기
         </Link>
       </div>

@@ -37,7 +37,6 @@ const validPayload = {
   email: 'mentee@example.com',
   password: 'password123',
   name: '홍길동',
-  nickname: '길동',
   school: '서울대학교',
   major: '컴퓨터공학',
   grade: '2',
@@ -66,7 +65,6 @@ describe('POST /api/auth/signup/mentee (integration)', () => {
           email: validPayload.email,
           role: 'mentee',
           name: validPayload.name,
-          nickname: validPayload.nickname,
         },
       },
     });
@@ -106,7 +104,6 @@ const validMentorPayload = {
   email: 'mentor@example.com',
   password: 'password123',
   name: '김민준',
-  nickname: '민준',
   school: '서울대학교',
   major: '컴퓨터공학',
   academicStatus: '박사과정',
@@ -143,7 +140,6 @@ describe('POST /api/auth/signup/mentor (integration)', () => {
           email: validMentorPayload.email,
           role: 'mentor',
           name: validMentorPayload.name,
-          nickname: validMentorPayload.nickname,
         },
       },
     });
@@ -194,7 +190,7 @@ describe('POST /api/auth/login (integration)', () => {
     });
     mockSupabase.from.mockReturnValue(
       buildProfilesQuery({
-        data: { id: 'user-1', role: 'mentee', name: '홍길동', nickname: '길동' },
+        data: { id: 'user-1', role: 'mentee', name: '홍길동' },
         error: null,
       }),
     );
@@ -214,7 +210,6 @@ describe('POST /api/auth/login (integration)', () => {
           email: 'mentee@example.com',
           role: 'mentee',
           name: '홍길동',
-          nickname: '길동',
         },
       },
     });

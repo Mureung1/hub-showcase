@@ -66,6 +66,7 @@ function MentorSearchFilter({
           aria-controls="mentor-filter-panel"
           aria-label="상세 필터 열기"
           className={`mentor-filter-toggle${isOpen ? " mentor-filter-toggle-active" : ""}`}
+          data-onboarding="filter"
           onClick={onToggle}
           type="button"
         >

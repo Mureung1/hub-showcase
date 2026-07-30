@@ -7,7 +7,6 @@ const toApiProfile = (user, menteeProfile) => ({
   id: user.id,
   email: user.email,
   name: user.name,
-  nickname: user.nickname,
   school: menteeProfile.school,
   major: menteeProfile.major,
   grade: menteeProfile.grade,
@@ -39,10 +38,6 @@ const updateMyProfile = async (user, payload = {}) => {
 
   if (payload.name !== undefined) {
     profileUpdate.name = requireString(payload.name, 'name');
-  }
-
-  if (payload.nickname !== undefined) {
-    profileUpdate.nickname = requireString(payload.nickname, 'nickname');
   }
 
   const updatedEmail = await updateAccountCredentials(user.id, {
@@ -96,7 +91,6 @@ const updateMyProfile = async (user, payload = {}) => {
       ...user,
       email: updatedEmail ?? user.email,
       name: profileUpdate.name ?? user.name,
-      nickname: profileUpdate.nickname ?? user.nickname,
     },
     menteeProfile,
   );

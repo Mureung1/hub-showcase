@@ -89,6 +89,7 @@ Authorization: Bearer <access-token>
 |---|---|---|---|
 | `GET` | `/api/mentees/me` | 멘티 | 내 멘티 프로필 조회 |
 | `PATCH` | `/api/mentees/me` | 멘티 | 내 멘티 프로필 수정 |
+| `PATCH` | `/api/mentees/me/onboarding` | 멘티 | 온보딩 코치마크 열람 완료 처리 |
 | `GET` | `/api/mentors` | 멘티 | 멘토 프로필 목록·검색 |
 | `GET` | `/api/mentors/me` | 멘토 | 내 멘토 프로필 조회 |
 | `PATCH` | `/api/mentors/me` | 멘토 | 내 멘토 프로필 수정 |
@@ -123,7 +124,6 @@ Authorization: Bearer <access-token>
   "email": "mentee@example.com",
   "password": "example-password",
   "name": "백승주",
-  "nickname": "진로탐색중",
   "school": "서울대학교",
   "major": "재료공학",
   "grade": "4",
@@ -148,8 +148,7 @@ Authorization: Bearer <access-token>
       "id": "user-uuid",
       "email": "mentee@example.com",
       "role": "mentee",
-      "name": "백승주",
-      "nickname": "진로탐색중"
+      "name": "백승주"
     }
   }
 }
@@ -166,7 +165,6 @@ Authorization: Bearer <access-token>
   "email": "mentor@example.com",
   "password": "example-password",
   "name": "김OO",
-  "nickname": "나노멘토",
   "school": "KAIST",
   "major": "재료공학",
   "academicStatus": "박사과정",
@@ -221,8 +219,7 @@ Authorization: Bearer <access-token>
       "id": "user-uuid",
       "email": "mentor@example.com",
       "role": "mentor",
-      "name": "김OO",
-      "nickname": "나노멘토"
+      "name": "김OO"
     }
   }
 }
@@ -248,8 +245,7 @@ Authorization: Bearer <access-token>
     "id": "user-uuid",
     "email": "mentor@example.com",
     "role": "mentor",
-    "name": "김OO",
-    "nickname": "나노멘토"
+    "name": "김OO"
   }
 }
 ```
@@ -268,7 +264,6 @@ Authorization: Bearer <access-token>
     "id": "mentee-uuid",
     "email": "mentee@example.com",
     "name": "백승주",
-    "nickname": "진로탐색중",
     "school": "서울대학교",
     "major": "재료공학",
     "grade": "4",
@@ -286,7 +281,6 @@ Authorization: Bearer <access-token>
 ```json
 {
   "name": "백승주",
-  "nickname": "대학원준비중",
   "school": "서울대학교",
   "major": "재료공학",
   "grade": "4",
@@ -297,6 +291,33 @@ Authorization: Bearer <access-token>
 ```
 
 모든 필드는 선택적으로 전달할 수 있다. `email`/`password`도 이 요청 본문에 함께 넣어 변경한다 (별도의 이메일·비밀번호 전용 엔드포인트는 없다). 이메일 중복 시 `409 EMAIL_ALREADY_EXISTS`, 형식/길이 검증 실패 시 `400 VALIDATION_ERROR`를 반환한다.
+
+### 5.2.1 온보딩 코치마크 열람 완료 처리
+
+`PATCH /api/mentees/me/onboarding`
+
+요청 본문:
+
+```json
+{
+  "tour": "mentorList"
+}
+```
+
+`tour`는 `mentorList`(멘토 목록 6스텝 투어) 또는 `questionnaire`(사전 질문지 1스텝 투어) 중 하나여야 한다. 유효하지 않으면 `400 VALIDATION_ERROR`를 반환한다.
+
+응답 `200`:
+
+```json
+{
+  "data": {
+    "mentorListOnboardedAt": "2026-07-30T12:00:00.000Z",
+    "questionnaireOnboardedAt": null
+  }
+}
+```
+
+로그인 응답(`POST /api/auth/login`)과 `GET /api/auth/me`의 `user` 객체에도 `mentorListOnboardedAt`, `questionnaireOnboardedAt` 필드가 포함된다(둘 다 아직 완료 전이면 `null`).
 
 ### 5.3 멘토 목록 조회
 
@@ -327,7 +348,6 @@ GET /api/mentors?query=AI&counselingField=취업
     {
       "id": "mentor-uuid",
       "name": "이OO",
-      "nickname": "AI멘토",
       "school": "KAIST",
       "major": "전산학",
       "academicStatus": "석사과정",
@@ -356,7 +376,6 @@ GET /api/mentors?query=AI&counselingField=취업
   "data": {
     "id": "mentor-uuid",
     "name": "김OO",
-    "nickname": "나노멘토",
     "school": "KAIST",
     "major": "재료공학",
     "academicStatus": "박사과정",
@@ -389,7 +408,6 @@ Express 라우트에서는 `/:mentorId`보다 `/me`를 먼저 선언해야 한�
 
 ```json
 {
-  "nickname": "나노멘토",
   "school": "KAIST",
   "major": "재료공학",
   "academicStatus": "박사과정",
@@ -764,7 +782,7 @@ curl -X POST "http://localhost:4000/api/applications/$APPLICATION_ID/messages" \
 }
 ```
 
-`senderName`은 `nickname`이 아니라 `profiles.name`이다.
+`senderName`은 `profiles.name`이다.
 
 ### 8.3 메시지 읽음 처리
 
