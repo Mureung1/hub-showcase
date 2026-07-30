@@ -139,7 +139,7 @@ function WorkspacePage() {
         notes={
           <DecisionNotesPanel
             notes={decisionNotes}
-            activeChatId={activeChat?.id ?? null}
+            chat={activeChat ?? null}
             onNavigateToQuestion={handleNavigateToQuestion}
           />
         }
