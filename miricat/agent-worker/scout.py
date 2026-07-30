@@ -1,6 +1,8 @@
 """정해진 게시판(sources.py)에서 공지 목록을 긁어온다. (MIRI-13)"""
 
 import re
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import requests
 from bs4 import BeautifulSoup
 
@@ -51,8 +53,39 @@ def _topis_fetch_body(source, seq):
     return " ".join(text.split())
 
 
+_daegu_cache = {}   # 대구도 목록 JSON에 본문(bodyNote)이 같이 온다
+
+
+def _daegu_fetch_list(source):
+    """대구 BIS 전용: 내부 JSON API 3개(공지 C·정류소 조정 A·우회운행 detourList)를 합쳐 수집."""
+    base = "https://businfo.daegu.go.kr:8095/dbms_web_api"
+    boards = [("C", f"{base}/boardC"), ("A", f"{base}/boardA"), ("D", f"{base}/detourList")]
+    items = []
+    for tag, url in boards:
+        try:
+            rows = requests.get(url, headers=HEADERS, timeout=10,
+                                verify=source.get("verify_ssl", True)).json().get("body", [])
+        except Exception:
+            continue                     # 게시판 하나 죽어도 나머지는 수집
+        for row in rows[:MAX_ITEMS_PER_RUN]:
+            seq = f"{tag}{row.get('no')}"          # 게시판 구분 + 글번호 = 합성 id
+            _daegu_cache[seq] = row
+            items.append((seq, " ".join((row.get("ttle") or "").split())))
+    return items[:MAX_ITEMS_PER_RUN * 2]           # 게시판 3개 합산이라 상한 완화
+
+
+def _daegu_fetch_body(source, seq):
+    row = _daegu_cache.get(str(seq))
+    if not row:
+        return ""
+    import html as _html
+    text = re.sub(r"<[^>]+>", " ", row.get("bodyNote") or "")
+    return " ".join(_html.unescape(text).split())
+
+
 # 표준(HTML+정규식) 틀을 못 따르는 소스들의 전용 페처 (목록 함수, 본문 함수)
 FETCHERS = {
+    "daegu": (_daegu_fetch_list, _daegu_fetch_body),
     "gbis_route_change": (_gbis_fetch_list, _gbis_fetch_body),
     "topis": (_topis_fetch_list, _topis_fetch_body),
 }
@@ -63,11 +96,12 @@ def fetch_list(source):
     custom = FETCHERS.get(source.get("fetcher"))
     if custom:
         return custom[0](source)
-    resp = requests.get(source["list_url"], headers=HEADERS, timeout=10)
+    resp = requests.get(source["list_url"], headers=HEADERS, timeout=10,
+                        verify=source.get("verify_ssl", True))   # 제주 등 중간 인증서 누락 사이트 예외
     resp.encoding = resp.apparent_encoding      # 인코딩 자동 감지 (한글 깨짐 방지)
 
     items = re.findall(source["list_pattern"], resp.text)
-    items = [(seq, " ".join(title.split())) for seq, title in items]   # 제목의 개행·탭 정리
+    items = [(seq, " ".join(title.replace("&nbsp;", " ").split())) for seq, title in items]   # 제목의 개행·탭·&nbsp; 정리
 
     # 교통 공지만 통과 (시정 소식·공모전 섞인 게시판용) — title_filter 없으면 전부 통과
     title_filter = source.get("title_filter")
@@ -83,7 +117,8 @@ def fetch_body(source, seq):
         return custom[1](source, seq)
 
     url = source["view_url"].format(id=seq)      # ① 틀에 글번호 끼우기
-    resp = requests.get(url, headers=HEADERS, timeout=10)
+    resp = requests.get(url, headers=HEADERS, timeout=10,
+                        verify=source.get("verify_ssl", True))
     resp.encoding = resp.apparent_encoding
 
     soup = BeautifulSoup(resp.text, "html.parser")  # ② HTML 파싱

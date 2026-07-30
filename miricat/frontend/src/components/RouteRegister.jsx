@@ -134,7 +134,7 @@ export default function RouteRegister({ onSaved }) {
             )}
             {saved.check && !saved.check.covered && (
               <p style={{ color: "#C98A00" }}>
-                📍 도로 돌발상황은 전국을 확인해요. 다만 이 지역 버스 게시판은 아직 감시 전이에요 (현재 서울·경기·대전·세종·광주·부산).
+                📍 도로 돌발상황은 전국을 확인해요. 다만 이 지역 버스 게시판은 아직 감시 전이에요 (현재 서울·경기·대전·세종·대구·광주·부산·제주).
               </p>
             )}
           </div>

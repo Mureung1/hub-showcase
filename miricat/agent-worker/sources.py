@@ -64,6 +64,31 @@ SOURCES = [
                 "상세는 원래 POST(fnView)지만 GET ?B_IDX= 도 동작 확인.",
     },
     {
+        "id": "jeju_bus",
+        "name": "제주 버스정보시스템 공지사항",
+        "active": True,                     # 2026-07-30 검증 (정적 HTML, 상세 GET 동작)
+        "list_url": "https://bus.jeju.go.kr/notice/list",
+        "list_pattern": r"goDetail\('(\d+)'\)[^>]*>\s*<span[^>]*>\s*([^<]{5,70})",
+        "view_url": "https://bus.jeju.go.kr/notice/detail?noticeId={id}",
+        "body_selector": ".notice_detail_info",
+        "verify_ssl": False,                # 서버가 중간 인증서를 안 내려줌 — 검증 예외
+        "note": "제주 BIS 공지 — 감차·우회·안내 게시판. 결행 전용 게시판(/busCancellationInfo)은 "
+                "글이 결행 당일에만 올라와 공지 게시판만 수집.",
+    },
+    {
+        "id": "daegu_bus",
+        "name": "대구 버스정보시스템 공지",
+        "active": True,                     # 2026-07-30 검증 (내부 JSON API — 본문 동봉)
+        "fetcher": "daegu",
+        "list_url": "https://businfo.daegu.go.kr:8095/dbms_web_api/boardC",   # 대표 URL(기록용)
+        "list_pattern": None,
+        "view_url": "https://businfo.daegu.go.kr/",   # 원문 링크는 메인(게시판이 SPA 내부)
+        "verify_ssl": False,
+        "note": "브라우저 네트워크 추적으로 내부 API 발굴(:8095/dbms_web_api). 공지(boardC)·"
+                "정류소 조정(boardA)·우회운행(detourList) 3보드 병합 수집. 저상버스 대체(boardB)는 "
+                "차량 단위 일일 소음이라 제외.",
+    },
+    {
         "id": "seoul_topis",
         "name": "서울 TOPIS 교통소식",
         "active": True,                     # 2026-07-28 검증 완료 (JSON 목록+본문 동봉·원문 링크 렌더)
