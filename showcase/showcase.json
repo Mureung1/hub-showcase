@@ -3,7 +3,7 @@
   "title": "Civil Litigation Evolutionary AI Agent",
   "summary": "Vector DB와 주간 백그라운드 파이프라인을 통한 최신 판례/법령 동적 연동, 그리고 사용자들의 멀티 유저 피드백 루프를 통해 스스로 진화하는 '자기 주도형 법률 AI 에이전트' 플랫폼입니다.",
   "githubUser": "dntfndjnh",
-  "demoUrl": "",
+  "demoUrl": "https://legal-ai-frontend-git-n182-dntfndjnh1.vercel.app/",
   "demoVideoUrl": "https://drive.google.com/file/d/1JFXsN0rTEf6RpEikRTFNyoQLEIcSttLw/view",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
