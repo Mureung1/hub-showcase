@@ -3,7 +3,7 @@
   "title": "SmartFF",
   "summary": "GS25 편의점 점주의 발주 의사결정을 돕는 AI 데이터 분석 대시보드입니다.",
   "githubUser": "YunTaeYong(윤태용)",
-  "demoUrl": "",
+  "demoUrl": "https://smartfffrontend.vercel.app/",
   "demoVideoUrl": "https://youtu.be/R2YufLjmPsY",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
