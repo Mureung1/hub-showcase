@@ -149,15 +149,15 @@ export function patchCampaign(
  * og:title에 `@계정 on Instagram: …`이 나오는지로 봐야 한다:
  *   curl -s -A "Mozilla/5.0" https://www.instagram.com/p/<코드>/ | grep 'og:title'
  */
+// 2026-07-30 @cafe_kimsajang 실게시분 4건. 각 게시물의 캡션이 아래 SCENARIOS[key]의
+// copy·promo와 같은 내용이라, 데모에서 날씨를 바꾸면 열리는 글도 같이 바뀐다.
+// og:title로 4건 모두 실존·문구 일치 확인 (이전 값 DbSE6HDkmpB는 없는 게시물이라
+// 링크가 깨져 있었는데 200이 와서 못 알아챘다 — 그래서 위 curl 방식으로 확인한다).
 const DEMO_IG_PERMALINKS: Record<ScenarioKey, string> = {
-  // 2026-07-27 실게시분(WeatherPilot이 만든 흐린 날 문구). 이전 값 DbSE6HDkmpB는
-  // 계정에 없는 게시물이라 데모에서 링크가 깨져 있었다(200이 와서 못 알아챘다).
-  rain: "https://www.instagram.com/p/DbSzcwRiaQ8/",
-  // TODO(데모 전): 맑음·한파·폭염 문구로 각각 실게시 후 permalink를 넣는다.
-  //   지금은 빈 값이라 이 세 시나리오는 "복사 후 게시" 폴백으로 뜬다(링크 깨짐보다 낫다).
-  sunny: "",
-  cold: "",
-  heat: "",
+  rain: "https://www.instagram.com/p/DbXynt0kn-i/",
+  sunny: "https://www.instagram.com/p/DbXrbvBEnR0/",
+  cold: "https://www.instagram.com/p/DbU_jhXiXxH/",
+  heat: "https://www.instagram.com/p/DbSzcwRiaQ8/",
 };
 
 /** 실연동은 서버 permalink를 쓴다. MOCK만 위 표에서 시나리오별로 고른다. */
