@@ -18,6 +18,13 @@ dist-ssr
 # Environment variables
 .env
 
+# APK 릴리스 서명 키. android/.gitignore에도 같은 규칙이 있지만, 저장소 어디에 두더라도
+# 걸리도록 루트에서 한 번 더 막는다 — 이 키는 유출되면 남이 우리 앱 이름으로 업데이트를
+# 배포할 수 있고, 잃어버리면 우리가 업데이트를 못 한다(양쪽 다 복구 불가).
+*.jks
+*.keystore
+keystore.properties
+
 # scripts/generate-sample-csv.mjs가 만드는 CSV 테스트 파일(필요할 때 다시 생성하면 되므로 커밋하지 않음)
 scripts/sample-*.csv
 
