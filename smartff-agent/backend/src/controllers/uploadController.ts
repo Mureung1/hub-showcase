@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { createUpload, listUploads, deleteUpload, updateUploadStatus } from '../services/uploadService';
-import { processSalesWasteUpload, buildSalesWasteFilename } from '../services/uploadAutomationService';
+import { processSalesWasteUpload, buildSalesWasteFilename, salesWasteFileExists } from '../services/uploadAutomationService';
 import { PRODUCT_CATEGORIES } from '../constants/productCategories';
 
 // UploadRecord.status에 쓰이는 값 — DB 컬럼은 자유 문자열이라 타입 강제는 없음
@@ -41,7 +41,13 @@ export async function createUploadHandler(req: Request, res: Response): Promise<
       const record = await updateUploadStatus(pendingRecord.id, STATUS_BY_RESULT[result.status]);
 
       if (result.status === 'waiting') {
-        res.status(202).json({ success: true, data: record, missingFiles: result.missingFiles, parseStats: result.parseStats });
+        res.status(202).json({
+          success: true,
+          data: record,
+          missingFiles: result.missingFiles,
+          parseStats: result.parseStats,
+          parseError: result.parseError,
+        });
         return;
       }
 
@@ -50,7 +56,7 @@ export async function createUploadHandler(req: Request, res: Response): Promise<
         return;
       }
 
-      res.status(201).json({ success: true, data: record, parseStats: result.parseStats });
+      res.status(201).json({ success: true, data: record, parseStats: result.parseStats, parseError: result.parseError });
       return;
     }
 
@@ -90,6 +96,25 @@ export async function listUploadsHandler(req: Request, res: Response): Promise<v
       error: error instanceof Error ? error.message : 'Internal server error',
     });
   }
+}
+
+export function checkExistingHandler(req: Request, res: Response): void {
+  const { category, productCategory, month } = req.query;
+  const monthNum = parseInt(String(month), 10);
+
+  if (
+    !isAutomatedCategory(String(category)) ||
+    !(PRODUCT_CATEGORIES as readonly string[]).includes(String(productCategory)) ||
+    isNaN(monthNum) ||
+    monthNum < 1 ||
+    monthNum > 12
+  ) {
+    res.status(400).json({ success: false, error: 'category, productCategory, month are required' });
+    return;
+  }
+
+  const exists = salesWasteFileExists(category as AutomatedCategory, String(productCategory), monthNum);
+  res.status(200).json({ success: true, exists });
 }
 
 export async function deleteUploadHandler(req: Request, res: Response): Promise<void> {

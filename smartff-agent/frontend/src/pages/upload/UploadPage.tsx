@@ -126,6 +126,11 @@ export default function UploadPage() {
     sales: null,
     waste: null,
   });
+  // 파서 자체가 실패했을 때(python3/pandas 미설치 등) 원인을 사용자에게 보여주기 위한 상태
+  const [parseErrors, setParseErrors] = useState<Record<'sales' | 'waste', string | null>>({
+    sales: null,
+    waste: null,
+  });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -233,6 +238,26 @@ export default function UploadPage() {
       return;
     }
 
+    const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+    // 같은 카테고리+월+상품군 파일이 이미 있으면 조용히 덮어쓰지 않고 먼저 확인받는다
+    if (automated) {
+      try {
+        const checkResponse = await fetch(
+          `${BASE_URL}/api/uploads/check-existing?category=${uploadType.category}&productCategory=${encodeURIComponent(productCategory as string)}&month=${month}`
+        );
+        const checkJson = (await checkResponse.json()) as { success: boolean; exists?: boolean };
+        if (checkJson.exists) {
+          const confirmed = window.confirm(
+            `${month}월 ${productCategory} ${uploadType.name} 데이터가 이미 있습니다. 덮어쓰시겠습니까?`
+          );
+          if (!confirmed) return;
+        }
+      } catch {
+        // 확인 요청 자체가 실패해도 업로드는 막지 않는다 — 안전장치일 뿐 핵심 흐름은 아님
+      }
+    }
+
     try {
       setUiState((prev) => ({
         ...prev,
@@ -243,8 +268,6 @@ export default function UploadPage() {
           info: null,
         },
       }));
-
-      const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
       let response: Response;
       if (automated) {
@@ -275,14 +298,18 @@ export default function UploadPage() {
         error?: string;
         missingFiles?: string[];
         parseStats?: ParseStat;
+        parseError?: string;
       };
 
       if (response.status === 202) {
         if (json.data) {
           setUploads((prev) => [json.data!, ...prev]);
         }
-        if (json.parseStats && (uploadType.category === 'sales' || uploadType.category === 'waste')) {
-          setParseStats((prev) => ({ ...prev, [uploadType.category]: json.parseStats! }));
+        if (uploadType.category === 'sales' || uploadType.category === 'waste') {
+          if (json.parseStats) {
+            setParseStats((prev) => ({ ...prev, [uploadType.category]: json.parseStats! }));
+          }
+          setParseErrors((prev) => ({ ...prev, [uploadType.category]: json.parseError || null }));
         }
         fileObjectsRef.current[id] = null;
         setUiState((prev) => ({
@@ -305,8 +332,11 @@ export default function UploadPage() {
         setUploads((prev) => [json.data!, ...prev]);
       }
 
-      if (json.parseStats && (uploadType.category === 'sales' || uploadType.category === 'waste')) {
-        setParseStats((prev) => ({ ...prev, [uploadType.category]: json.parseStats! }));
+      if (uploadType.category === 'sales' || uploadType.category === 'waste') {
+        if (json.parseStats) {
+          setParseStats((prev) => ({ ...prev, [uploadType.category]: json.parseStats! }));
+        }
+        setParseErrors((prev) => ({ ...prev, [uploadType.category]: json.parseError || null }));
       }
 
       fileObjectsRef.current[id] = null;
@@ -757,39 +787,43 @@ export default function UploadPage() {
             ] as { name: string; kind: 'sales' | 'waste' | null }[]
           ).map((row) => {
             const stat = row.kind ? parseStats[row.kind] : null;
+            const parseError = row.kind ? parseErrors[row.kind] : null;
             const isUnsupported = UNSUPPORTED_VALIDATION_NAMES.includes(row.name);
             // 인식된 상품이 하나도 없으면(양식이 다르거나 손상된 파일) 성공이 아니라 경고로 표시
             const hasSkipped = stat ? stat.skipped_rows > 0 || stat.valid_rows === 0 : false;
+            const hasError = !isUnsupported && !!parseError;
 
             return (
               <div
                 key={row.name}
                 style={{
                   background: colors.bgCard,
-                  border: `1px solid ${colors.borderColor}`,
+                  border: `1px solid ${hasError ? colors.danger : colors.borderColor}`,
                   borderRadius: '12px',
                   padding: '20px',
                   boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  {!isUnsupported && stat && (
-                    <span style={{ color: hasSkipped ? colors.warning : colors.success, fontWeight: '600' }}>
-                      {hasSkipped ? '⚠' : '✓'}
+                  {!isUnsupported && (hasError || stat) && (
+                    <span style={{ color: hasError ? colors.danger : hasSkipped ? colors.warning : colors.success, fontWeight: '600' }}>
+                      {hasError ? '✕' : hasSkipped ? '⚠' : '✓'}
                     </span>
                   )}
                   <span style={{ fontSize: '13px', fontWeight: '600', color: colors.textPrimary }}>
                     {row.name}
                   </span>
                 </div>
-                <p style={{ fontSize: '12px', color: colors.textSecondary, margin: '0' }}>
+                <p style={{ fontSize: '12px', color: hasError ? colors.danger : colors.textSecondary, margin: '0' }}>
                   {isUnsupported
                     ? '자동 검증 미지원 (파서 없음)'
-                    : stat
-                      ? stat.valid_rows === 0
-                        ? `${stat.filename}: 인식된 상품이 없습니다. 파일 양식을 확인하세요.`
-                        : `${stat.filename}: ${stat.valid_rows}개 상품 정상 인식${stat.skipped_rows > 0 ? `, ${stat.skipped_rows}개 실패` : ''}`
-                      : '이번 세션에 업로드된 데이터가 없습니다.'}
+                    : hasError
+                      ? `파서 실행 실패: ${parseError}`
+                      : stat
+                        ? stat.valid_rows === 0
+                          ? `${stat.filename}: 인식된 상품이 없습니다. 파일 양식을 확인하세요.`
+                          : `${stat.filename}: ${stat.valid_rows}개 상품 정상 인식${stat.skipped_rows > 0 ? `, ${stat.skipped_rows}개 실패` : ''}`
+                        : '이번 세션에 업로드된 데이터가 없습니다.'}
                 </p>
               </div>
             );
