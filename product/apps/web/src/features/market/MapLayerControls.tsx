@@ -41,16 +41,16 @@ export function MapLayerControls({
         type="button"
         className={storesVisible ? "layer-option active" : "layer-option"}
         aria-pressed={storesVisible}
-        title="2026년 6월 점포 위치 스냅샷을 표시합니다. 선택한 분석 분기와 기준 시점이 다릅니다."
+        title="2026년 6월 원천 스냅샷에 등록된 점포 위치입니다. 실시간 영업 여부가 아니며 선택한 분석 분기와 기준 시점이 다릅니다."
         onClick={() => onStoresVisibleChange(!storesVisible)}
       >
-        <Store size={15} /> 점포 위치 <small>2026.06</small>
+        <Store size={15} /> 점포 위치 <small>2026.06 스냅샷</small>
       </button>
       <button
         type="button"
         className={layer === "density" ? "layer-option active" : "layer-option"}
         aria-pressed={layer === "density"}
-        title="2026년 6월 점포 위치에서 선택 업종이 상대적으로 모인 정도를 표시합니다."
+        title="2026년 6월 점포 원천 스냅샷에서 선택 업종이 상대적으로 모인 정도를 표시합니다."
         onClick={() => onLayerChange("density")}
       >
         <Layers3 size={15} /> 업종 밀도
@@ -59,10 +59,10 @@ export function MapLayerControls({
         type="button"
         className={layer === "demand" ? "layer-option active" : "layer-option"}
         aria-pressed={layer === "demand"}
-        title="선택 분기 길단위인구를 시간대끼리 비교한 상대값입니다. 실제 보행 위치나 이동 경로가 아닙니다."
+        title="선택 분기의 유동인구를 시간대끼리 비교한 상대값입니다. 서울시 길단위인구 기반 추정치이며 실제 보행 위치나 이동 경로가 아닙니다."
         onClick={() => onLayerChange("demand")}
       >
-        <Users size={15} /> 시간대 상대 수요
+        <Users size={15} /> 유동인구
       </button>
       <button type="button" className="layer-option" disabled title="DATA-011 연결 예정">
         <Users size={15} /> 인구 밀도 <small>준비 중</small>
