@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   defaultWindowPetPlacementDrafts,
   getRuntimeWindowPetPlacementProfileId,
+  getRuntimeWindowPetPlacementProfileIdForReviewSet,
   readWindowPetPlacementProfile,
   resolveWindowPetLayerZIndex,
   readWindowPetPlacementDrafts,
@@ -44,6 +45,16 @@ describe("window pet placements", () => {
   it("uses pet and stage scoped runtime placement profile ids", () => {
     expect(getRuntimeWindowPetPlacementProfileId("pink-manager", "stage-2")).toBe("runtime:pink-manager:stage-2:canonical");
     expect(getRuntimeWindowPetPlacementProfileId("glass-frog", "stage-2")).toBe("runtime:glass-frog:stage-2:canonical");
+  });
+
+  it("maps review sets to the canonical runtime placement profile for the same pet and stage", () => {
+    expect(
+      getRuntimeWindowPetPlacementProfileIdForReviewSet({
+        id: "pink-manager-stage-2-production-candidates",
+        petId: "pink-manager",
+        stage: "stage-2",
+      }),
+    ).toBe("runtime:pink-manager:stage-2:canonical");
   });
 
   it("reads v2 placement profiles without mixing managers", () => {
@@ -155,7 +166,7 @@ describe("window pet placements", () => {
     expect(savedProfile.drafts.hanging.bottom.offsetY).toBe(-77);
   });
 
-  it("resolves runtime placement from the saved active edge before the fixed runtime slot edge", () => {
+  it("resolves runtime placement from the saved active edge chosen in the review tool", () => {
     const profile = {
       activeEdges: {
         hanging: "bottom",

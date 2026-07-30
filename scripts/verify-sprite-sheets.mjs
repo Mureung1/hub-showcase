@@ -19,6 +19,12 @@ const canonicalStage2PetIds = [
   "glass-frog",
 ];
 
+const promotedStage2CandidatePetIds = [
+  "costasiella-kuroshimae",
+  "fried-egg-jellyfish",
+  "sea-bunny-slug",
+];
+
 const candidateSheets = [
   {
     petId: "pink-manager",
@@ -29,8 +35,20 @@ const candidateSheets = [
     loop: true,
     playbackFrames: [0, 1, 2, 3],
     anchor: "float x=32 y=58",
-    folder: "pink-manager-stage-1-production-candidates",
-    filename: "pink-manager-stage-1-idle-sheet-v4.png",
+    folder: "pink-manager-stage-1",
+    filename: "pink-manager-stage-1-idle-sheet.png",
+  },
+  {
+    petId: "pink-manager",
+    stage: "stage-2",
+    state: "watching",
+    frameCount: 4,
+    fps: 5,
+    loop: true,
+    playbackFrames: [0, 1, 2, 3],
+    anchor: "float x=32 y=58",
+    folder: "pink-manager-stage-2-production-candidates",
+    filename: "pink-manager-stage-2-watching-sheet-v1.png",
   },
 ];
 
@@ -46,6 +64,13 @@ const motionSpecs = [
   { state: "walk", frameCount: 6, fps: 7, loop: true, playbackFrames: [0, 1, 0, 2, 0, 3, 0, 4, 0, 5] },
   { state: "climbing", frameCount: 6, fps: 8, loop: true, playbackFrames: [0, 1, 2, 3, 4, 5, 4, 3] },
 ];
+
+function promotedStage2CandidateVersion(petId, state) {
+  if ((petId === "costasiella-kuroshimae" || petId === "sea-bunny-slug") && (state === "hanging" || state === "climbing")) {
+    return "v2";
+  }
+  return "v1";
+}
 
 function readPngSize(path) {
   const buffer = readFileSync(path);
@@ -291,6 +316,18 @@ for (const petId of canonicalStage2PetIds) {
       petId,
       ...motion,
       anchor: motion.state === "hanging" || motion.state === "climbing" ? "top-grip x=32 y=5" : motion.state === "hiding" ? "peek-edge x=4 y=32" : "float x=32 y=58",
+    });
+  }
+}
+
+for (const petId of promotedStage2CandidatePetIds) {
+  for (const motion of motionSpecs) {
+    verifySheet({
+      petId,
+      ...motion,
+      anchor: motion.state === "hanging" || motion.state === "climbing" ? "top-grip x=32 y=5" : motion.state === "hiding" ? "peek-edge x=4 y=32" : "float x=32 y=58",
+      folder: `${petId}-stage-2-production-candidates`,
+      filename: `${petId}-stage-2-${motion.state}-sheet-${promotedStage2CandidateVersion(petId, motion.state)}.png`,
     });
   }
 }

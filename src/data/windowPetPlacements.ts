@@ -56,6 +56,7 @@ export interface WindowPetRuntimeSlot {
 
 export const windowPetPlacementStorageKey = "manager-xp.window-pet-placement.v1";
 export const windowPetPlacementStorageKeyV2 = "manager-xp.window-pet-placement.v2";
+export const windowPetRuntimeBaseSpriteSize = 96;
 
 export const defaultWindowPetPlacementDrafts: WindowPetPlacementDraftsByMotion = {
   hanging: {
@@ -125,6 +126,14 @@ export function resolveWindowPetPosition(input: WindowPetPositionInput) {
 
 export function getRuntimeWindowPetPlacementProfileId(petId: PetId, stage: PetStageId): WindowPetPlacementProfileId {
   return `runtime:${petId}:${stage}:canonical`;
+}
+
+export function getRuntimeWindowPetPlacementProfileIdForReviewSet(reviewSet: {
+  id: string;
+  petId: PetId;
+  stage: PetStageId;
+}): WindowPetPlacementProfileId {
+  return getRuntimeWindowPetPlacementProfileId(reviewSet.petId, reviewSet.stage);
 }
 
 export function getReviewWindowPetPlacementProfileId(reviewSetId: string): WindowPetPlacementProfileId {

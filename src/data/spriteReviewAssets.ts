@@ -29,6 +29,7 @@ export interface SpriteReviewSet {
 }
 
 const pinkManagerCanonicalPath = "/assets/lumi/pink-manager-stage-2";
+const pinkManagerStage1CanonicalPath = "/assets/lumi/pink-manager-stage-1";
 const pinkManagerStage1CandidatePath = "/assets/lumi/pink-manager-stage-1-production-candidates";
 const pinkManagerCandidatePath = "/assets/lumi/pink-manager-stage-2-production-candidates";
 const glassFrogCanonicalPath = "/assets/lumi/glass-frog-stage-2";
@@ -137,9 +138,28 @@ const specs: readonly SpriteReviewSpec[] = [
     playbackFrames: [{ frame: 0 }, { frame: 1 }, { frame: 2 }, { frame: 3 }, { frame: 4 }, { frame: 5 }, { frame: 4 }, { frame: 3 }],
     notes: "Check rear-view readability, alternating grip rhythm, and ladder-free UI compatibility.",
   },
+  {
+    state: "watching",
+    frameCount: 4,
+    fps: 5,
+    loop: true,
+    anchor: floatAnchor,
+    notes: "Check that the pet reads as calmly watching Pixel TV without moving through the UI frame.",
+  },
 ];
 
 export const spriteReviewSets = [
+  {
+    id: "pink-manager-stage-1-canonical",
+    label: "Pink Manager Stage 1 - Canonical Idle",
+    description:
+      "Baby pink manager Stage 1 canonical idle sheet derived from the accepted Stage 2 idle sheet. Stage 1 intentionally exposes idle only while interaction motions stay locked.",
+    petId: "pink-manager",
+    stage: "stage-1",
+    path: pinkManagerStage1CanonicalPath,
+    states: ["idle"],
+    fileForState: (state: PetMotionState) => `pink-manager-stage-1-${state}-sheet.png`,
+  },
   {
     id: "pink-manager-stage-1-production-candidates",
     label: "Pink Manager Stage 1 - Idle Candidate",
@@ -149,7 +169,7 @@ export const spriteReviewSets = [
     stage: "stage-1",
     path: pinkManagerStage1CandidatePath,
     states: ["idle"],
-    fileForState: (state: PetMotionState) => `pink-manager-stage-1-${state}-sheet-v4.png`,
+    fileForState: (state: PetMotionState) => `pink-manager-stage-1-${state}-sheet-v5.png`,
   },
   {
     id: "pink-manager-stage-2-canonical",
@@ -171,6 +191,16 @@ export const spriteReviewSets = [
       if (state === "focused" || state === "jump") return `pink-manager-stage-2-${state}-sheet-v4.png`;
       return `pink-manager-stage-2-${state}-sheet-v3.png`;
     },
+  },
+  {
+    id: "pink-manager-stage-2-watching-candidate",
+    label: "Pink Manager Stage 2 - Watching Candidate",
+    description: "Single Pixel TV watching candidate kept separate from canonical runtime motions until review.",
+    petId: "pink-manager",
+    stage: "stage-2",
+    path: pinkManagerCandidatePath,
+    states: ["watching"],
+    fileForState: (state: PetMotionState) => `pink-manager-stage-2-${state}-sheet-v1.png`,
   },
   {
     id: "glass-frog-stage-2-canonical",
