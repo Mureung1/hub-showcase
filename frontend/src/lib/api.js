@@ -84,11 +84,11 @@ export function fetchMyMatches() {
   return request('/api/matches')
 }
 
-// 매칭 상태 전이 (opened/dismissed)
-export function patchMatch(matchId, status) {
+// 매칭 상태 전이 (opened/dismissed). dismissed일 때 feedback_reason/feedback_text를 함께 보낼 수 있다.
+export function patchMatch(matchId, status, feedback = {}) {
   return request(`/api/matches/${matchId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, ...feedback }),
   })
 }
 

@@ -23,6 +23,9 @@ const RECOMMENDATION_POLL_MS = 30_000
 // not_ready만 "아직 더 기다려야 함"이라 폴링을 계속한다.
 const TERMINAL_REASON_CODES = new Set(['support_needed', 'no_candidates', 'not_found', 'tagging_pending'])
 
+// FeedbackModal의 사유 칩과 동일한 목록 — 프리셋 선택인지 직접 쓴 텍스트인지 구분하는 데 쓴다.
+const FEEDBACK_REASONS = new Set(['주제가 안 맞았어요', '이미 아는 이야기', '마음이 가지 않았어요'])
+
 // 아직 결정(답장/스쳐가기) 안 난 매칭 상태 — 새로고침 복원 대상.
 const UNRESOLVED_MATCH_STATUSES = new Set(['recommended', 'opened'])
 
@@ -297,6 +300,12 @@ export function AppStateProvider({ children }) {
       navigate('/main')
     },
     sendFeedback: () => {
+      const matchId = state.recommendation?.match_id
+      const value = state.feedback?.trim()
+      if (matchId && value) {
+        const feedback = FEEDBACK_REASONS.has(value) ? { feedback_reason: value } : { feedback_text: value }
+        patchMatch(matchId, 'dismissed', feedback).catch(() => {})
+      }
       showToast('의견 고마워요. 다음 추천에 반영할게요.')
       dispatch({ type: 'RESET_AFTER_SEND' })
       navigate('/main')
