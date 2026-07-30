@@ -143,7 +143,7 @@ function StatsScreen({ go, job }) {
             </div>
           </header>
 
-          {/* 블록 1 · 리얼리티 KPI — 실데이터 */}
+          {/* 블록 1 · 리얼리티 KPI — 생성 데이터 */}
           <section className="metric-grid" id="kpi" aria-label="리얼리티 KPI">
             {Object.entries(kpi).map(([key, m]) => (
               <div className={`metric-card${m.highlight ? ' metric-card--alert' : ''}`} key={key}>
@@ -153,7 +153,7 @@ function StatsScreen({ go, job }) {
             ))}
           </section>
 
-          {/* 블록 2 · 요구 범위 확장 — 실데이터 */}
+          {/* 블록 2 · 요구 범위 확장 — 생성 데이터 */}
           <section className="section-block" id="scope">
             <div className="section-title">
               <h2>{job.display_name} 공고인데 그 일만 하지 않습니다</h2>
@@ -175,7 +175,7 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 3 · 필수 인플레이션 — 실데이터 */}
+          {/* 블록 3 · 필수 인플레이션 — 생성 데이터 */}
           <section className="section-block" id="inflation">
             <div className="section-title">
               <h2>작년의 우대가 올해의 필수가 됐습니다</h2>
@@ -202,7 +202,7 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 4 · 숨은 난이도 — 실데이터(추출 완료 필드 집계) */}
+          {/* 블록 4 · 숨은 난이도 — 생성 데이터의 추출 완료 필드 집계 */}
           <section className="section-block" id="difficulty">
             <div className="section-title">
               <h2>신입 공고에 숨어 있는 시니어급 문장들</h2>
@@ -220,7 +220,7 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 5 · 기술 빈도 — 실데이터 */}
+          {/* 블록 5 · 기술 빈도 — 생성 데이터 */}
           <section className="section-block" id="tech">
             <div className="section-title">
               <h2>단일 기술 빈도는 시작점입니다</h2>
@@ -250,11 +250,11 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 6 · 조합 — 동시 출현 실데이터 + 샘플 통계 설명 */}
+          {/* 블록 6 · 조합 — 동시 출현 집계 + 구현 수준 설명 */}
           <section className="section-block" id="combo">
             <div className="section-title">
               <h2>기술은 조합으로, 조합은 구현 수준으로 읽습니다</h2>
-              <span className="hint">동시 출현 건수는 실데이터 · 기대 수준 문구는 샘플 통계 설명</span>
+              <span className="hint">동시 출현 건수와 공고가 기대하는 구현 수준을 함께 비교</span>
             </div>
             <div className="panel">
               <div className="combination-grid">
@@ -270,7 +270,7 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 7 · 추이 — 실데이터, 차트 3개 분리 */}
+          {/* 블록 7 · 추이 — 생성 데이터, 차트 3개 분리 */}
           <section className="section-block" id="trend">
             <div className="section-title">
               <h2>늘어나는 기술과 줄어드는 기술</h2>
@@ -283,11 +283,11 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 8 · 라벨 vs 현실 — 라벨 두 열 실데이터, 현실 열은 3차 */}
+          {/* 블록 8 · 라벨 vs 현실 — 공고 라벨과 본문 요구 비교 */}
           <section className="section-block" id="conditions">
             <div className="section-title">
               <h2>공고의 라벨과 실제 요구는 다릅니다</h2>
-              <span className="hint">라벨 분포는 실데이터 · 현실 열은 3차(LLM) 연결</span>
+              <span className="hint">공고 라벨과 본문에서 확인한 실제 준비 수준을 비교</span>
             </div>
             <div className="label-grid">
               <div className="label-col">
@@ -313,7 +313,7 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 9 · 기업군 성향 — 실데이터 히트맵 (색+텍스트+숫자) */}
+          {/* 블록 9 · 기업군 성향 — 생성 데이터 히트맵 (색+텍스트+숫자) */}
           <section className="section-block" id="companies">
             <div className="section-title">
               <h2>기업군별 강조축 · 전체 기간 30건</h2>
@@ -343,7 +343,7 @@ function StatsScreen({ go, job }) {
             </div>
           </section>
 
-          {/* 블록 10 · 요구 항목 전체표 — 실데이터, 기본 접힘 */}
+          {/* 블록 10 · 요구 항목 전체표 — 생성 데이터, 기본 접힘 */}
           <section className="section-block" id="items">
             <div className="section-title">
               <h2>요구 항목 전체표</h2>
@@ -351,7 +351,7 @@ function StatsScreen({ go, job }) {
             </div>
             <div className="panel">
               <div className="fulltable-head">
-                <p>표 안을 스크롤해 전체 {items.length}개 항목을 볼 수 있습니다. 근거 원문 열은 문장 추출(3차) 연결 후 채워집니다.</p>
+                <p>표 안을 스크롤해 전체 {items.length}개 항목을 볼 수 있습니다. 각 항목의 근거 문장은 채용공고 해석 화면에서 확인할 수 있습니다.</p>
               </div>
               <div className="table-scroll">
                   <table className="req-table">
