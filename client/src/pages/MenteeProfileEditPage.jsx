@@ -45,7 +45,6 @@ function MenteeProfileEditPage() {
 
     const payload = {
       name: profile.name,
-      nickname: profile.nickname,
       email: profile.email,
       school: profile.school,
       major: profile.major,
@@ -114,11 +113,6 @@ function MenteeProfileEditPage() {
             <label className="signup-field-group">
               <span className="signup-field-label">이름</span>
               <input className="field" name="name" onChange={handleChange} required value={profile.name} />
-            </label>
-
-            <label className="signup-field-group">
-              <span className="signup-field-label">닉네임</span>
-              <input className="field" name="nickname" onChange={handleChange} required value={profile.nickname} />
             </label>
 
             <label className="signup-field-group">

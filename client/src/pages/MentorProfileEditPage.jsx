@@ -242,7 +242,6 @@ function MentorProfileEditPage() {
         const profile = response.data;
         setPersonalInformation({
           name: profile.name,
-          nickname: profile.nickname,
           email: profile.email,
           password: "",
         });
@@ -290,7 +289,6 @@ function MentorProfileEditPage() {
 
     const payload = {
       name: personalInformation.name,
-      nickname: personalInformation.nickname,
       email: personalInformation.email,
       school: profileFields.school,
       major: profileFields.major,
@@ -318,7 +316,6 @@ function MentorProfileEditPage() {
       const profile = response.data;
       setPersonalInformation({
         name: profile.name,
-        nickname: profile.nickname,
         email: profile.email,
         password: "",
       });
@@ -392,11 +389,6 @@ function MentorProfileEditPage() {
               <label className="mentor-field-group">
                 <span className="mentor-field-label">이름</span>
                 <input className="field" name="name" onChange={handlePersonalChange} required value={personalInformation.name} />
-              </label>
-
-              <label className="mentor-field-group">
-                <span className="mentor-field-label">닉네임</span>
-                <input className="field" name="nickname" onChange={handlePersonalChange} required value={personalInformation.nickname} />
               </label>
 
               <label className="mentor-field-group">

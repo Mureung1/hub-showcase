@@ -38,7 +38,6 @@ const signupMentee = async (verifiedUser, payload) => {
   const email = verifiedUser.email;
   const password = requirePassword(payload?.password);
   const name = requireString(payload?.name, 'name');
-  const nickname = requireString(payload?.nickname, 'nickname');
   const school = requireString(payload?.school, 'school');
   const major = requireString(payload?.major, 'major');
   const grade = requireString(payload?.grade, 'grade');
@@ -62,7 +61,6 @@ const signupMentee = async (verifiedUser, payload) => {
       id: verifiedUser.id,
       role: 'mentee',
       name,
-      nickname,
     });
     if (profileError) throw profileError;
 
@@ -84,7 +82,6 @@ const signupMentee = async (verifiedUser, payload) => {
     email,
     role: 'mentee',
     name,
-    nickname,
   };
 };
 
@@ -92,7 +89,6 @@ const signupMentor = async (verifiedUser, payload) => {
   const email = verifiedUser.email;
   const password = requirePassword(payload?.password);
   const name = requireString(payload?.name, 'name');
-  const nickname = requireString(payload?.nickname, 'nickname');
   const school = requireString(payload?.school, 'school');
   const major = requireString(payload?.major, 'major');
   const academicStatus = requireString(payload?.academicStatus, 'academicStatus');
@@ -135,7 +131,6 @@ const signupMentor = async (verifiedUser, payload) => {
       id: verifiedUser.id,
       role: 'mentor',
       name,
-      nickname,
     });
     if (profileError) throw profileError;
 
@@ -165,7 +160,6 @@ const signupMentor = async (verifiedUser, payload) => {
     email,
     role: 'mentor',
     name,
-    nickname,
   };
 };
 
@@ -181,7 +175,7 @@ const login = async (payload) => {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, role, name, nickname, mentor_list_onboarded_at, questionnaire_onboarded_at')
+    .select('id, role, name, mentor_list_onboarded_at, questionnaire_onboarded_at')
     .eq('id', data.user.id)
     .single();
 
@@ -198,7 +192,6 @@ const login = async (payload) => {
       email: data.user.email,
       role: profile.role,
       name: profile.name,
-      nickname: profile.nickname,
       mentorListOnboardedAt: profile.mentor_list_onboarded_at,
       questionnaireOnboardedAt: profile.questionnaire_onboarded_at,
     },

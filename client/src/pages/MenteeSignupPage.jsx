@@ -109,7 +109,6 @@ function MenteeSignupPage() {
         email,
         password,
         name: formData.get("name"),
-        nickname: formData.get("nickname"),
         school: formData.get("school"),
         major: formData.get("major"),
         grade: formData.get("grade"),
@@ -150,11 +149,6 @@ function MenteeSignupPage() {
             <label className="signup-field-group">
               <span className="signup-field-label">이름 <span aria-hidden="true">*</span></span>
               <input className="field" type="text" name="name" autoComplete="name" placeholder="이름을 입력해 주세요" required />
-            </label>
-
-            <label className="signup-field-group">
-              <span className="signup-field-label">닉네임 <span aria-hidden="true">*</span></span>
-              <input className="field" type="text" name="nickname" autoComplete="nickname" placeholder="서비스에서 사용할 닉네임을 입력해 주세요" required />
             </label>
 
             <label className="signup-field-group">

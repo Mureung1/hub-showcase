@@ -1,11 +1,10 @@
 const { supabase } = require('../db/supabase');
 
-const SELECT_FIELDS = '*, profiles(name, nickname)';
+const SELECT_FIELDS = '*, profiles(name)';
 
 const toSummary = (row) => ({
   id: row.user_id,
   name: row.profiles.name,
-  nickname: row.profiles.nickname,
   school: row.school,
   major: row.major,
   academicStatus: row.academic_status,

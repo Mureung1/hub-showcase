@@ -124,7 +124,6 @@ Authorization: Bearer <access-token>
   "email": "mentee@example.com",
   "password": "example-password",
   "name": "백승주",
-  "nickname": "진로탐색중",
   "school": "서울대학교",
   "major": "재료공학",
   "grade": "4",
@@ -149,8 +148,7 @@ Authorization: Bearer <access-token>
       "id": "user-uuid",
       "email": "mentee@example.com",
       "role": "mentee",
-      "name": "백승주",
-      "nickname": "진로탐색중"
+      "name": "백승주"
     }
   }
 }
@@ -167,7 +165,6 @@ Authorization: Bearer <access-token>
   "email": "mentor@example.com",
   "password": "example-password",
   "name": "김OO",
-  "nickname": "나노멘토",
   "school": "KAIST",
   "major": "재료공학",
   "academicStatus": "박사과정",
@@ -222,8 +219,7 @@ Authorization: Bearer <access-token>
       "id": "user-uuid",
       "email": "mentor@example.com",
       "role": "mentor",
-      "name": "김OO",
-      "nickname": "나노멘토"
+      "name": "김OO"
     }
   }
 }
@@ -249,8 +245,7 @@ Authorization: Bearer <access-token>
     "id": "user-uuid",
     "email": "mentor@example.com",
     "role": "mentor",
-    "name": "김OO",
-    "nickname": "나노멘토"
+    "name": "김OO"
   }
 }
 ```
@@ -269,7 +264,6 @@ Authorization: Bearer <access-token>
     "id": "mentee-uuid",
     "email": "mentee@example.com",
     "name": "백승주",
-    "nickname": "진로탐색중",
     "school": "서울대학교",
     "major": "재료공학",
     "grade": "4",
@@ -287,7 +281,6 @@ Authorization: Bearer <access-token>
 ```json
 {
   "name": "백승주",
-  "nickname": "대학원준비중",
   "school": "서울대학교",
   "major": "재료공학",
   "grade": "4",
@@ -355,7 +348,6 @@ GET /api/mentors?query=AI&counselingField=취업
     {
       "id": "mentor-uuid",
       "name": "이OO",
-      "nickname": "AI멘토",
       "school": "KAIST",
       "major": "전산학",
       "academicStatus": "석사과정",
@@ -384,7 +376,6 @@ GET /api/mentors?query=AI&counselingField=취업
   "data": {
     "id": "mentor-uuid",
     "name": "김OO",
-    "nickname": "나노멘토",
     "school": "KAIST",
     "major": "재료공학",
     "academicStatus": "박사과정",
@@ -417,7 +408,6 @@ Express 라우트에서는 `/:mentorId`보다 `/me`를 먼저 선언해야 한�
 
 ```json
 {
-  "nickname": "나노멘토",
   "school": "KAIST",
   "major": "재료공학",
   "academicStatus": "박사과정",
@@ -792,7 +782,7 @@ curl -X POST "http://localhost:4000/api/applications/$APPLICATION_ID/messages" \
 }
 ```
 
-`senderName`은 `nickname`이 아니라 `profiles.name`이다.
+`senderName`은 `profiles.name`이다.
 
 ### 8.3 메시지 읽음 처리
 

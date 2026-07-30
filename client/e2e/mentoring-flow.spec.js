@@ -8,7 +8,6 @@ const menteeCredentials = {
   email: `mentee-${runId}@e2e.test`,
   password: 'password123',
   name: '테스트멘티',
-  nickname: '멘티',
   school: '서울대학교',
   major: '컴퓨터공학',
   grade: '2',
@@ -19,7 +18,6 @@ const mentorSignupPayload = (index) => ({
   email: `mentor${index}-${runId}@e2e.test`,
   password: 'password123',
   name: `이멘토${index}`,
-  nickname: `멘토${index}`,
   school: '서울대학교',
   major: '컴퓨터공학',
   academicStatus: '박사과정',
@@ -70,7 +68,6 @@ test.describe.serial('멘티-멘토 면담 신청 전체 흐름', () => {
     await menteePage.waitForURL('**/signup/mentee');
 
     await menteePage.locator('input[name="name"]').fill(menteeCredentials.name);
-    await menteePage.locator('input[name="nickname"]').fill(menteeCredentials.nickname);
     await menteePage.locator('input[name="password"]').fill(menteeCredentials.password);
     await menteePage.locator('input[name="email"]').fill(menteeCredentials.email);
     await menteePage.locator('input[name="school"]').fill(menteeCredentials.school);

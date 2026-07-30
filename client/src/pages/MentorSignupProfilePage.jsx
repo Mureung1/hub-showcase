@@ -89,7 +89,7 @@ function MentorSignupProfilePage() {
   const navigate = useNavigate();
   const accountInfo = location.state?.account ?? null;
   const hasAccountInfo = Boolean(
-    accountInfo?.email && accountInfo?.password && accountInfo?.name && accountInfo?.nickname,
+    accountInfo?.email && accountInfo?.password && accountInfo?.name,
   );
 
   const [isSignupComplete, setIsSignupComplete] = useState(false);
@@ -188,7 +188,6 @@ function MentorSignupProfilePage() {
         email: accountInfo.email,
         password: accountInfo.password,
         name: accountInfo.name,
-        nickname: accountInfo.nickname,
         school: formData.get("school"),
         major,
         academicStatus,
