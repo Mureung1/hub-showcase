@@ -1,57 +1,183 @@
-# 🎵 SWIM
+# SWIM
 
 > **One Day. One Song. One Memory.**
 
-SWIM은 하루를 대표하는 음악 한 곡과 짧은 감정을 기록하는 **Music Diary SNS**입니다.
+SWIM은 하루를 대표하는 음악 한 곡과 짧은 감정을 기록하고, 음악을 통해 다른 사람의 하루를 알아가는 **음악 다이어리 SNS**입니다.
 
-사진이나 긴 글 대신 음악으로 하루를 표현하고, 시간이 지나며 나만의 음악 다이어리를 만들어가는 서비스를 목표로 합니다.
+음악 추천이나 스트리밍보다 사람의 기억과 감정에 집중합니다. Spotify는 음악 검색과 외부 감상, 월간 기록의 플레이리스트 내보내기를 위한 도구로 사용합니다.
 
----
+![SWIM 프로젝트 썸네일](showcase/thumbnail.webp)
 
-# 📖 프로젝트 소개
+## 배포 및 시연
 
-## 프로젝트 개요
+| 구분 | 주소·상태 |
+|---|---|
+| Frontend | Vercel 배포 설정 문서화 — 공개 URL 및 배포 상태 확인 필요 |
+| Backend | [Render API](https://swim-scy0.onrender.com) |
+| Health Check | [`GET /health`](https://swim-scy0.onrender.com/health) 응답 확인 |
+| Demo Video | [Google Drive에서 보기](https://drive.google.com/file/d/1MmuMuZEwLBEagwL7WjqxmIBOhFn5Ak8E/view?usp=drive_link) |
 
-기존 SNS는 사진이나 긴 글을 중심으로 기록하는 경우가 많습니다.
-SWIM은 **음악을 중심으로 하루를 기록하는 새로운 방식의 SNS**를 제공합니다.
+현재 저장소에서 확인할 수 있는 배포 검증 근거는 Render의 `/health` 응답입니다. 타입 검사, 자동 테스트와 프로덕션 빌드는 로컬에서 통과했습니다.
 
-사용자는 하루를 가장 잘 표현하는 노래를 선택하고,
-짧은 감정을 함께 기록하여 자신의 Music Card를 생성합니다.
+Vercel 공개 URL은 아직 저장소에 기록하지 않았으며, 배포 환경의 브라우저 전체 흐름도 최종 검증 전입니다. URL을 공개할 때는 `showcase/showcase.json`의 `demoUrl`과 위 표에 같은 주소를 추가하고 다음 항목을 실제 환경에서 확인해야 합니다.
 
-기록은 데이터베이스에 저장되며, 언제든 다시 확인할 수 있습니다.
+- 회원가입·로그인·세션 유지와 음악 기록 저장·조회
+- 두 계정의 사용자 검색·팔로우·피드·좋아요 상태 분리
+- 원격 Supabase RLS의 다른 사용자 데이터 쓰기 차단
+- Spotify 계정 연결과 Monthly Recap 플레이리스트 내보내기
+- 라이트·다크·시스템 테마와 데스크톱·모바일 화면
+- 브라우저 Console·Network 오류와 민감정보 비노출
 
-### MVP 목표
+## 프로젝트가 해결하는 문제
 
-- 이메일 회원가입·로그인·세션 유지
-- Spotify 음악 검색과 외부 감상 링크
-- 하루 한 곡과 감정 기록 저장·조회
-- 닉네임 기반 사용자 검색
+기존 SNS는 사진이나 긴 글을 중심으로 하루를 기록하기 때문에 꾸준히 작성하기 어렵고, 다른 사람에게 보여주기 위한 표현에 부담을 느끼기 쉽습니다.
+
+SWIM은 기록 단위를 **하루 한 곡과 한 줄의 감정**으로 줄였습니다. 사용자는 오늘을 가장 잘 표현하는 노래를 선택하고, 시간이 지난 뒤 날짜순 음악 다이어리와 Monthly Recap으로 자신의 하루를 다시 돌아볼 수 있습니다.
+
+## 핵심 사용자 흐름
+
+```text
+회원가입·로그인
+→ Spotify 음악 검색
+→ 오늘의 음악 선택
+→ 감정 한 줄 작성
+→ 음악 기록 저장
+→ 내 음악 다이어리 확인
+→ 닉네임으로 사용자 검색
+→ 공개 프로필과 음악 다이어리 확인
+→ 팔로우·좋아요
+→ 팔로잉 피드 확인
+→ Monthly Recap
+→ Spotify 비공개 플레이리스트 내보내기
+```
+
+## 주요 기능
+
+### 하루 한 곡 기록
+
+- Spotify 트랙 검색과 선택
+- 앨범 이미지, 곡명, 아티스트, 앨범 정보 저장
+- 짧은 감정 기록
+- 사용자별 하루 한 건 중복 방지
+- Spotify 외부 감상 링크
+
+### 사람을 중심으로 한 음악 SNS
+
+- 고유 닉네임 기반 사용자 검색
+- 공개 프로필과 오늘의 기록
+- 날짜순 공개 음악 다이어리
 - 팔로우·언팔로우
-- 팔로잉 음악 피드
-- 사용자별 좋아요·좋아요 취소
+- 팔로잉 사용자의 최신 음악 기록 피드
+- 음악 기록을 함께 기억한 인원과 닉네임 목록
 
-현재 버전은 위 사용자 흐름과 Monthly Recap, 월간 기록의 Spotify 비공개 플레이리스트 내보내기까지 포트폴리오로 시연할 수 있습니다. 댓글, 알림과 DM은 포함하지 않습니다.
+### Monthly Recap과 Spotify
 
----
+- 월별 기록 일수와 음악 타임라인
+- 자주 함께한 아티스트
+- 그달의 첫 음악과 마지막 음악
+- Spotify 사용자 계정 연결
+- 해당 월의 기록을 Spotify 비공개 플레이리스트로 내보내기
+- 같은 연월의 플레이리스트 중복 생성 방지
 
-# 🚀 실행 방법
+### 사용자 경험
 
-## 1. 프로젝트 클론
+- 라이트·다크·시스템 테마
+- 테마 선택값의 브라우저 저장
+- 로딩·빈 상태·오류·재시도 상태 구분
+- 공개 프로필 URL 직접 접근, 새로고침과 뒤로 가기 지원
+- 앨범 이미지와 감정 기록을 중심으로 한 카드 기반 UI
+
+## 화면
+
+| 로그인 | 메인 |
+|---|---|
+| ![SWIM 로그인 화면](showcase/Screenshots/login.webp) | ![SWIM 메인 화면](showcase/Screenshots/main.webp) |
+
+## 기술 스택
+
+| 영역 | 기술 |
+|---|---|
+| Frontend | React 19, TypeScript, Vite, CSS |
+| Backend | Node.js, Express 5, REST API |
+| Database·Auth | Supabase, PostgreSQL, Supabase Auth, RLS |
+| Music API | Spotify Web API |
+| Test | Vitest, Testing Library, Node Test Runner |
+| Deploy | Vercel, Render |
+| Version Control | Git, GitHub |
+
+## 아키텍처
+
+```text
+Browser
+├─ Supabase Auth ───────────────→ 회원가입·로그인·세션
+└─ React on Vercel
+   └─ Bearer Token
+      └─ Express on Render
+         ├─ Supabase PostgreSQL → 기록·프로필·관계·Recap
+         └─ Spotify Web API
+            ├─ Client Credentials → 음악 검색
+            └─ User OAuth         → 비공개 플레이리스트
+```
+
+Express 내부에서는 다음 책임 분리를 유지합니다.
+
+```text
+Route
+→ Controller
+→ Service
+→ Supabase 또는 Spotify Web API
+```
+
+React는 Spotify Web API를 직접 호출하지 않습니다. Spotify Client ID, Client Secret, 사용자 OAuth token과 Supabase Service Role Key는 Render 서버 환경에서만 사용합니다.
+
+### 인증 구분
+
+| 목적 | 인증 방식 |
+|---|---|
+| SWIM 회원가입·로그인 | Supabase Auth |
+| Spotify 음악 검색 | Express의 Client Credentials Flow |
+| Spotify 플레이리스트 생성 | Authorization Code Flow |
+
+Spotify 사용자 token은 AES-256-GCM으로 암호화해 서버 전용 테이블에 저장합니다. 브라우저와 일반 Supabase 사용자는 OAuth state, access token과 refresh token을 직접 읽을 수 없습니다.
+
+### 데이터 모델
+
+| 테이블 | 역할 | 주요 제약 |
+|---|---|---|
+| `profiles` | 공개 닉네임·소개·아바타 | Auth 사용자와 1:1, 정규화 닉네임 고유 |
+| `music_records` | 하루 음악 기록 | `(user_id, record_date)` 고유 |
+| `follows` | 사용자 팔로우 관계 | `(follower_id, following_id)` 복합 키, 자기 팔로우 방지 |
+| `likes` | 사용자별 음악 기록 좋아요 | `(user_id, record_id)` 복합 키 |
+| `spotify_oauth_states` | 일회용 OAuth state hash | 10분 만료, 서버 전용 |
+| `spotify_connections` | 암호화된 Spotify 사용자 token | 사용자별 한 건, 서버 전용 |
+| `spotify_playlist_exports` | 월별 플레이리스트 내보내기 | 사용자·연·월 복합 키 |
+
+### 보안 원칙
+
+- Express가 Supabase access token을 검증하고 요청 사용자를 확정합니다.
+- 음악 기록의 `user_id`, 팔로우의 `follower_id`, 좋아요의 `user_id`를 요청 본문에서 신뢰하지 않습니다.
+- RLS로 자신의 기록 생성·수정·삭제와 자신의 관계 변경만 허용합니다.
+- 공개 API에는 다른 사용자의 이메일과 Auth UUID를 반환하지 않습니다.
+- 좋아요 전체 수는 원본 관계를 노출하지 않는 제한된 RPC로 집계합니다.
+- Spotify OAuth 테이블은 `anon`, `authenticated` 권한을 회수하고 Service Role만 사용합니다.
+
+상세 구조는 [Architecture 문서](docs/architecture.md)에서 확인할 수 있습니다.
+
+## 로컬 실행
+
+### 1. 저장소와 의존성 준비
 
 ```bash
 git clone https://github.com/lkslks4511/SWIM.git
 cd SWIM
-```
-
-## 2. 의존성 설치
-
-```bash
 npm install
 ```
 
-## 3. 환경 변수 설정
+### 2. 환경변수 설정
 
-Frontend
+루트의 `.env.example`을 참고해 `.env`를 생성합니다.
+
+Frontend:
 
 ```env
 VITE_API_BASE_URL=http://localhost:3000
@@ -59,391 +185,218 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-public-anon-key
 ```
 
-`VITE_SUPABASE_ANON_KEY`는 공개 anon key만 사용합니다. `SUPABASE_SERVICE_ROLE_KEY`는 브라우저 환경변수에 넣지 않습니다.
-
-Backend
+Backend:
 
 ```env
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-public-anon-key
+SUPABASE_SERVICE_ROLE_KEY=server-only-service-role-key
 
-SPOTIFY_CLIENT_ID=
-SPOTIFY_CLIENT_SECRET=
+SPOTIFY_CLIENT_ID=spotify-client-id
+SPOTIFY_CLIENT_SECRET=server-only-spotify-client-secret
 SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/api/spotify/callback
-SPOTIFY_TOKEN_ENCRYPTION_KEY=
+SPOTIFY_TOKEN_ENCRYPTION_KEY=base64-encoded-32-byte-key
+
 APP_FRONTEND_URL=http://localhost:5173
+APP_TIME_ZONE=Asia/Seoul
 ```
 
-`SPOTIFY_TOKEN_ENCRYPTION_KEY`는 `openssl rand -base64 32`처럼 생성한 32바이트 base64 값을 사용합니다. 실제 값과 Service Role Key는 서버 환경에만 두며 브라우저의 `VITE_` 환경변수로 만들지 않습니다. 암호화 키를 바꾸면 기존 Spotify 연결 토큰을 복호화할 수 없으므로 사용자의 재연결이 필요합니다.
+`APP_TIME_ZONE`은 선택 항목이며, 설정하지 않으면 서버가 `Asia/Seoul`을 기본값으로 사용합니다.
 
-Spotify Developer Dashboard에도 `SPOTIFY_REDIRECT_URI`와 완전히 같은 callback URL을 등록해야 합니다.
+`VITE_SUPABASE_ANON_KEY`는 브라우저에서 사용하는 공개 anon key입니다. `SUPABASE_SERVICE_ROLE_KEY`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_TOKEN_ENCRYPTION_KEY`는 `VITE_` 환경변수로 만들거나 Git에 커밋하면 안 됩니다.
 
-회원가입 전에 Supabase SQL Editor에서 `server/supabase/profiles.sql`을 실행해 `profiles` 테이블과 Auth 사용자 생성 트리거를 적용합니다. 새 사용자의 닉네임은 Auth 메타데이터에서 전달되며, 트리거가 Auth 사용자와 동일한 ID의 프로필을 한 건 생성합니다.
+`SPOTIFY_TOKEN_ENCRYPTION_KEY`는 32바이트 base64 값이어야 합니다. 예:
 
-이후 `server/supabase/follows.sql`, `server/supabase/music_records.sql`, `server/supabase/likes.sql`, `server/supabase/spotify_connections.sql` 순서로 실행합니다. `follows` 테이블이 먼저 있어야 음악 기록의 팔로잉 조회 RLS 정책을 적용할 수 있고, `music_records` 테이블이 있어야 좋아요 외래키를 생성할 수 있습니다. Spotify 연결 테이블은 RLS와 권한 회수로 브라우저 접근을 차단하고 서버 Service Role에서만 사용합니다.
+```bash
+openssl rand -base64 32
+```
 
-## 4. Backend 실행
+Spotify Developer Dashboard에는 `SPOTIFY_REDIRECT_URI`와 완전히 같은 callback URL을 등록해야 합니다.
+
+### 3. Supabase SQL 적용
+
+Supabase SQL Editor에서 다음 순서로 적용합니다.
+
+```text
+server/supabase/profiles.sql
+→ server/supabase/migrations/20260724_nickname_identity.sql
+→ server/supabase/follows.sql
+→ server/supabase/music_records.sql
+→ server/supabase/likes.sql
+→ server/supabase/spotify_connections.sql
+```
+
+닉네임 마이그레이션과 음악 기록 고유 제약을 적용하기 전에는 기존 중복 데이터를 확인해야 합니다. SQL은 기존 중복 데이터를 임의로 삭제하지 않습니다.
+
+### 4. 애플리케이션 실행
+
+터미널 두 개에서 각각 실행합니다.
 
 ```bash
 npm run server
 ```
 
-API는 기본적으로 `http://localhost:3000`에서 실행됩니다. 루트 경로는 API를 제공하지 않으므로 서버 상태는 `GET http://localhost:3000/health`에서 확인합니다.
-
-## 5. Frontend 실행
-
 ```bash
 npm run dev
 ```
 
-프런트엔드는 기본적으로 `http://localhost:5173`에서 실행됩니다.
+| 서비스 | 로컬 주소 |
+|---|---|
+| Frontend | `http://localhost:5173` |
+| Backend | `http://localhost:3000` |
+| Health Check | `http://localhost:3000/health` |
 
----
+## 배포
 
-# 🛠️ 기술 스택
+### Vercel Frontend
 
-## Frontend
+| 설정 | 값 |
+|---|---|
+| Framework Preset | Vite |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+| Install Command | `npm install` |
+| Production Branch | `main` |
 
-- React
-- TypeScript
-- Vite
-- CSS
+Vercel 환경변수:
 
-### 화면 테마
+```env
+VITE_API_BASE_URL=https://swim-scy0.onrender.com
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
+```
 
-화면 오른쪽 위에서 `라이트`, `다크`, `시스템` 테마를 선택할 수 있습니다. 선택값은 로그인 정보와 분리된 브라우저 `localStorage`의 `swim-theme` 키에 저장됩니다. 첫 방문 또는 `시스템` 선택 시 운영체제의 `prefers-color-scheme`을 따르며, 운영체제 설정이 실행 중 바뀌면 화면에도 반영됩니다. 저장소 접근이 차단되거나 잘못된 값이 있어도 시스템 테마로 안전하게 실행됩니다.
+### Render Backend
 
-## Backend
+| 설정 | 값 |
+|---|---|
+| Service Type | Web Service |
+| Build Command | `npm install` |
+| Start Command | `npm run server` |
+| Production Branch | `main` |
+| Health Check Path | `/health` |
 
-- Node.js
-- Express.js
-- JavaScript ES Modules
+Render에는 앞에서 설명한 Backend 환경변수를 모두 등록하고, 다음 항목은 운영 주소와 값으로 설정합니다.
 
-## Database
+```env
+SPOTIFY_REDIRECT_URI=https://swim-scy0.onrender.com/api/spotify/callback
+APP_FRONTEND_URL=https://your-vercel-domain.vercel.app
+APP_TIME_ZONE=Asia/Seoul
+```
 
-- PostgreSQL
-- Supabase Database
-- Supabase Auth
-- Row Level Security
+환경변수를 변경하면 해당 서비스를 다시 배포해야 합니다. Spotify Developer Dashboard의 Redirect URI도 Render callback 주소와 일치해야 합니다.
 
-## External API
+### 현재 배포 제한사항
 
-- Spotify Web API
+- Express는 아직 `cors()` 기본 설정을 사용하므로 배포 환경의 CORS origin allowlist가 적용되지 않았습니다.
+- 최신 SQL과 RLS가 원격 Supabase에서 실제로 동작하는지 두 계정으로 검증해야 합니다.
+- Vercel 공개 URL에서 회원가입부터 Spotify 플레이리스트 내보내기까지 브라우저 E2E 검증이 필요합니다.
+- 데스크톱·모바일의 라이트·다크·시스템 테마와 Console·Network 결과가 아직 수동 검증되지 않았습니다.
 
-## Version Control
+## API 요약
 
-- Git
-- GitHub
-
----
-
-# 📌 API 정리
-
-## Music Record API
-
-| 기능 | Method | URL |
-|------|--------|-----|
-| 내 음악 기록 조회 | GET | `/api/music-records` |
-| 내 음악 기록 생성 | POST | `/api/music-records` |
-두 요청 모두 다음 인증 헤더가 필요합니다.
+모든 보호 API는 다음 헤더를 사용합니다.
 
 ```http
 Authorization: Bearer <supabase-access-token>
 ```
 
-### POST Request
-
-```json
-{
-  "songTitle": "Ditto",
-  "artistName": "NewJeans",
-  "emotionText": "오늘 하루를 위로받은 기분"
-}
-```
-
-`userId`는 요청 본문으로 받지 않습니다. 서버가 검증한 access token의 사용자 ID만 `music_records.user_id`로 저장합니다.
-
-### Response
-
-```json
-{
-  "data": {
-    "id": 1,
-    "userId": "auth-user-id",
-    "songTitle": "Ditto",
-    "artistName": "NewJeans",
-    "emotionText": "오늘 하루를 위로받은 기분",
-    "recordDate": "2026-07-23",
-    "liked": false,
-    "likeCount": 0,
-    "author": {
-      "id": "auth-user-id",
-      "nickname": "고요한수영",
-      "avatarUrl": null
-    }
-  }
-}
-```
-
-토큰이 없거나 유효하지 않으면 `401 UNAUTHORIZED`를 반환합니다.
-
----
-
-## User and Follow API
-
-| 기능 | Method | URL |
-|------|--------|-----|
-| 다른 사용자 목록·닉네임 검색 | GET | `/api/users?q={nickname}` |
-| 공개 프로필 조회 | GET | `/api/users/{nickname}` |
-| 공개 음악 다이어리 조회 | GET | `/api/users/{nickname}/music-records?cursor=` |
-| 팔로우 | POST | `/api/follows` |
-| 언팔로우 | DELETE | `/api/follows/{followingNickname}` |
-| 팔로잉 음악 피드 | GET | `/api/feed` |
-| 음악 기록 좋아요 | POST | `/api/music-records/{recordId}/likes` |
-| 음악 기록 좋아요 취소 | DELETE | `/api/music-records/{recordId}/likes` |
-| 함께 기억한 사용자 조회 | GET | `/api/music-records/{recordId}/likes?cursor=` |
-
-위 API는 모두 Supabase access token이 필요합니다. 공개 프로필 응답은 닉네임, 소개, 아바타, 본인 여부와 현재 사용자의 팔로우 상태만 포함하며 Auth UUID와 이메일은 반환하지 않습니다. 팔로우 요청 본문은 다음과 같습니다.
-
-공개 음악 다이어리는 오늘의 기록과 지난 기록을 분리하고 지난 기록을 20건씩 반환합니다. 다음 페이지 커서는 마지막 기록의 날짜·생성 시각·기록 ID를 기준으로 하므로 조회 도중 새 기록이 추가되어도 기존 페이지 경계를 유지합니다. 로그인 사용자는 팔로우 여부와 관계없이 공개 다이어리를 읽을 수 있지만, 음악 기록 생성은 계속 자신의 사용자 ID로만 허용됩니다. 응답에는 작성자의 공개 닉네임과 아바타만 포함되며 Auth UUID와 이메일은 반환하지 않습니다.
-
-검색 결과와 팔로잉 피드에서 작성자의 닉네임·아바타를 선택하면 URL에 `?profile={nickname}`이 반영됩니다. 이 URL은 직접 접근과 새로고침을 지원하며 브라우저 뒤로 가기와 화면의 돌아가기 버튼이 프로필 상태를 함께 갱신합니다. 공개 프로필에서도 팔로우·언팔로우와 음악 기록 좋아요·취소를 사용할 수 있으며 서버가 확정한 상태와 인원수만 화면에 반영합니다.
-
-SWIM은 하루 한 곡을 기록하므로 `(user_id, record_date)` 조합은 중복될 수 없습니다. 같은 날 두 번째 기록을 생성하면 `409 MUSIC_RECORD_ALREADY_EXISTS`를 반환합니다. `music_records.sql` 적용 전에는 아래 조회로 기존 중복 데이터를 확인해야 하며, SQL은 중복 데이터를 자동 삭제하거나 변경하지 않습니다.
-
-```sql
-select user_id, record_date, count(*)
-from public.music_records
-where user_id is not null
-group by user_id, record_date
-having count(*) > 1;
-```
-
-```json
-{
-  "followingNickname": "잔잔한파도"
-}
-```
-
-`follower_id`는 요청값으로 받지 않고 서버가 검증한 현재 사용자 ID만 사용합니다. 검색 및 팔로우 API는 Auth UUID를 브라우저에 반환하지 않으며, 공개 닉네임을 서버에서 내부 프로필 ID로 변환합니다. 중복 팔로우와 이미 해제된 관계의 언팔로우는 현재 상태를 반환하는 멱등 요청으로 처리합니다.
-
-```json
-{
-  "data": {
-    "followingNickname": "잔잔한파도",
-    "isFollowing": true
-  }
-}
-```
-
-`follows` 테이블의 복합 기본 키는 중복 관계를 방지하고, RLS는 인증 사용자가 자신의 팔로우 관계만 생성하거나 삭제하도록 제한합니다.
-
-`GET /api/feed`는 현재 사용자가 팔로우한 사람들의 음악 기록만 최신순으로 반환합니다. 공개 응답에는 Auth UUID를 포함하지 않으며 작성자의 닉네임과 아바타만 제공합니다. `meta.followingCount`로 팔로우한 사람이 없는 상태와 팔로우한 사람에게 아직 기록이 없는 상태를 구분할 수 있습니다.
-
-음악 기록과 피드 응답의 `liked`는 현재 인증 사용자의 좋아요 상태만 나타내며 `likeCount`는 기록을 기억한 전체 인원수입니다. 원본 좋아요 관계는 반환하지 않습니다. 제한된 DB 집계 함수는 인증 사용자가 읽는 공개 음악 기록의 숫자만 제공하며, `likes` SELECT RLS는 사용자가 자신의 좋아요 행만 직접 읽도록 제한합니다. `(user_id, record_id)` 복합 기본 키는 중복 관계를 막습니다.
-
-좋아요 생성과 취소는 요청 본문에서 사용자 ID를 받지 않고 검증된 access token의 사용자만 사용합니다. 생성은 멱등 UPSERT로 처리하며 같은 요청을 반복해도 관계는 한 건만 유지됩니다. 존재하지 않거나 현재 사용자가 읽을 수 없는 기록은 `404 MUSIC_RECORD_NOT_FOUND`로 응답합니다.
-
-```json
-{
-  "data": {
-    "recordId": "7",
-    "liked": true,
-    "likeCount": 3
-  }
-}
-```
-
-함께 기억한 사용자 조회는 기본 20명씩 공개 닉네임과 아바타만 반환합니다. `nextCursor`가 있으면 같은 API의 `cursor` 쿼리로 전달해 다음 페이지를 조회합니다. 커서는 공개 닉네임 기준이며 Auth UUID, 이메일, 내부 사용자 식별자는 응답하지 않습니다.
-
-```json
-{
-  "data": {
-    "recordId": "7",
-    "likeCount": 21,
-    "users": [
-      {
-        "nickname": "잔잔한파도",
-        "avatarUrl": null
-      }
-    ],
-    "nextCursor": "opaque-cursor"
-  }
-}
-```
-
-```json
-{
-  "data": [
-    {
-      "id": 7,
-      "spotifyTrackId": "spotify-track-id",
-      "songTitle": "Ditto",
-      "artistName": "NewJeans",
-      "albumName": "OMG",
-      "albumImageUrl": "https://example.com/album.jpg",
-      "externalUrl": "https://open.spotify.com/track/spotify-track-id",
-      "emotionText": "오늘을 천천히 흘려보낸 마음",
-      "recordDate": "2026-07-27",
-      "liked": true,
-      "likeCount": 3,
-      "author": {
-        "nickname": "잔잔한파도",
-        "avatarUrl": null
-      }
-    }
-  ],
-  "meta": {
-    "followingCount": 1
-  }
-}
-```
-
----
-
-## Monthly Recap API
-
-| 기능 | Method | URL |
-|------|--------|-----|
-| 로그인 사용자의 월간 기록 집계 | GET | `/api/recaps/monthly?year={YYYY}&month={1-12}` |
-
-Supabase access token이 필요합니다. `year`는 네 자리 연도, `month`는 1부터 12까지의 정수 문자열로 전달합니다. 응답은 해당 사용자의 기록만 사용하며 사용자 ID와 이메일은 포함하지 않습니다. `topArtists`는 기록 횟수 내림차순으로 최대 세 명을 반환하고, 동률은 아티스트 이름 순으로 정렬합니다.
-
-```json
-{
-  "data": {
-    "year": 2026,
-    "month": 7,
-    "recordCount": 3,
-    "recordDays": 3,
-    "topArtists": [
-      {
-        "artistName": "NewJeans",
-        "recordCount": 2
-      }
-    ],
-    "firstRecord": {
-      "id": 1,
-      "spotifyTrackId": "spotify-track-id",
-      "songTitle": "Ditto",
-      "artistName": "NewJeans",
-      "albumName": "OMG",
-      "albumImageUrl": "https://example.com/album.jpg",
-      "externalUrl": "https://open.spotify.com/track/spotify-track-id",
-      "emotionText": "조용히 시작한 달",
-      "recordDate": "2026-07-01"
-    },
-    "lastRecord": {
-      "id": 3,
-      "spotifyTrackId": "spotify-track-id-3",
-      "songTitle": "밤편지",
-      "artistName": "아이유",
-      "albumName": "Palette",
-      "albumImageUrl": null,
-      "externalUrl": null,
-      "emotionText": "한 달을 천천히 닫는 마음",
-      "recordDate": "2026-07-31"
-    },
-    "tracks": [
-      {
-        "id": 1,
-        "spotifyTrackId": "spotify-track-id",
-        "songTitle": "Ditto",
-        "artistName": "NewJeans",
-        "albumName": "OMG",
-        "albumImageUrl": "https://example.com/album.jpg",
-        "externalUrl": "https://open.spotify.com/track/spotify-track-id",
-        "emotionText": "조용히 시작한 달",
-        "recordDate": "2026-07-01"
-      }
-    ]
-  }
-}
-```
-
-기록이 없는 달은 `recordCount`, `recordDays`가 0이고 `topArtists`, `tracks`가 빈 배열이며 첫 기록과 마지막 기록은 `null`입니다. 잘못된 연·월은 `400 INVALID_RECAP_MONTH`로 처리합니다.
-
-로그인 홈의 `한 달의 음악 일기`에서 월을 선택하면 대표 앨범 이미지, 기록 일수, 자주 함께한 아티스트, 첫 음악과 마지막 음악, 날짜순 음악 타임라인을 확인할 수 있습니다. 월 변경 중 이전 요청은 취소하며 로딩, 빈 달, 실패와 재시도 상태를 구분합니다.
-
-## Spotify API
-
-| 기능 | Method | URL | 설명 |
-|------|--------|-----|------|
-| 노래 검색 | GET | `/api/spotify/search?q={keyword}` | 2자 이상의 Spotify 트랙 검색 |
-
-### Spotify 사용자 계정 연결 API
-
-| 기능 | Method | URL | SWIM 인증 |
+| Method | Path | 역할 | 인증 |
 |---|---|---|---|
-| 연결 URL 생성 | GET | `/api/spotify/connect` | 필요 |
-| Spotify callback | GET | `/api/spotify/callback` | 일회용 state |
-| 연결 상태 조회 | GET | `/api/spotify/connection` | 필요 |
-| 연결 해제 | DELETE | `/api/spotify/connection` | 필요 |
-| Recap 플레이리스트 내보내기 | POST | `/api/spotify/playlists` | 필요 |
+| GET | `/health` | 서버 상태 확인 | 불필요 |
+| GET | `/api/spotify/search?q=` | Spotify 트랙 검색 | 불필요 |
+| GET | `/api/music-records` | 내 음악 기록 조회 | 필요 |
+| POST | `/api/music-records` | 오늘의 음악 기록 생성 | 필요 |
+| GET | `/api/users?q=` | 닉네임 기반 사용자 검색 | 필요 |
+| GET | `/api/users/{nickname}` | 공개 프로필 조회 | 필요 |
+| GET | `/api/users/{nickname}/music-records?cursor=` | 공개 음악 다이어리 조회 | 필요 |
+| POST | `/api/follows` | 팔로우 | 필요 |
+| DELETE | `/api/follows/{nickname}` | 언팔로우 | 필요 |
+| GET | `/api/feed` | 팔로잉 음악 피드 | 필요 |
+| GET | `/api/music-records/{id}/likes?cursor=` | 함께 기억한 사용자 조회 | 필요 |
+| POST | `/api/music-records/{id}/likes` | 좋아요 | 필요 |
+| DELETE | `/api/music-records/{id}/likes` | 좋아요 취소 | 필요 |
+| GET | `/api/recaps/monthly?year=&month=` | Monthly Recap | 필요 |
+| GET | `/api/spotify/connect` | Spotify 연결 URL 생성 | 필요 |
+| GET | `/api/spotify/callback` | Spotify OAuth callback | 일회용 state |
+| GET | `/api/spotify/connection` | Spotify 연결 상태 | 필요 |
+| DELETE | `/api/spotify/connection` | Spotify 연결 해제 | 필요 |
+| POST | `/api/spotify/playlists` | 월간 비공개 플레이리스트 내보내기 | 필요 |
 
-`GET /api/spotify/connect`는 `playlist-modify-private` scope만 요청하는 Spotify authorize URL을 반환합니다. callback은 10분 동안 유효한 일회용 state를 소비하고 성공하면 `APP_FRONTEND_URL?spotify=connected`, 취소나 실패 시 `?spotify=error&reason=...`으로 이동합니다.
+## 프로젝트 구조
 
-Access Token과 Refresh Token은 AES-256-GCM으로 암호화되어 서버 전용 테이블에 저장됩니다. 연결 상태 API에는 표시 이름, scope와 만료 시각만 포함되고 Spotify token과 내부 사용자 ID는 반환하지 않습니다. 만료된 access token은 서버에서 refresh token으로 갱신하며 연결 해제는 저장된 token을 삭제합니다.
-
-`POST /api/spotify/playlists`는 `{ "year": 2026, "month": 7 }` 형식으로 요청합니다. 인증 사용자의 해당 월 기록 중 Spotify 트랙 ID가 있는 곡을 날짜별 기록 순서대로 비공개 플레이리스트에 추가합니다. 같은 곡을 여러 날 기록했다면 각 날짜의 기억을 유지하며, 곡은 최대 100개씩 나누어 전송합니다. 같은 사용자의 같은 연월은 저장된 Spotify 링크를 반환해 중복 생성을 막습니다. 곡 추가가 중간에 실패하면 생성 직후 저장한 playlist ID로 같은 플레이리스트의 내용을 교체해 복구합니다.
-
-### 검색 응답 예시
-
-```json
-[
-  {
-    "spotifyTrackId": "spotify_track_id",
-    "title": "Ditto",
-    "artistName": "NewJeans",
-    "albumName": "OMG",
-    "albumImageUrl": "https://...",
-    "externalUrl": "https://open.spotify.com/track/..."
-  }
-]
-```
-
----
-
-# 📂 프로젝트 구조
-
-```
+```text
 SWIM
-├── config                 # Vite·TypeScript 설정
-├── docs                   # 아키텍처와 QA 기록
-├── server
-│   ├── controllers        # HTTP 입력·응답 처리
-│   ├── lib                # Supabase 클라이언트
-│   ├── middleware         # Bearer 토큰 인증
-│   ├── routes             # Express 경로
-│   ├── services           # DB·Spotify 로직
-│   ├── supabase           # 테이블·RLS SQL
-│   ├── app.js
-│   └── server.js
-├── src
-│   ├── components         # React 화면 컴포넌트
-│   ├── lib                # 브라우저 Supabase 클라이언트
-│   ├── services           # 프런트 API·인증 서비스
-│   ├── styles             # 전역 CSS
-│   ├── types              # 공유 TypeScript 타입
-│   ├── utils              # 날짜 등 유틸리티
-│   ├── validation         # 입력 검증
-│   └── App.tsx
-├── AGENTS.md
-└── README.md
+├─ config/                 # Vite·TypeScript 설정
+├─ docs/                   # Architecture·QA 문서
+├─ server/
+│  ├─ controllers/        # HTTP 입력·응답
+│  ├─ lib/                # Supabase 클라이언트
+│  ├─ middleware/         # Bearer token 인증
+│  ├─ routes/             # Express API 경로
+│  ├─ services/           # DB·Spotify 비즈니스 로직
+│  ├─ supabase/           # 테이블·RLS·마이그레이션 SQL
+│  ├─ app.js
+│  └─ server.js
+├─ showcase/              # 썸네일·화면·포트폴리오 메타데이터
+├─ src/
+│  ├─ components/         # React 화면 컴포넌트
+│  ├─ lib/                # 브라우저 Supabase 클라이언트
+│  ├─ services/           # 프론트 API·인증 서비스
+│  ├─ styles/             # 전역 CSS와 테마 토큰
+│  ├─ types/              # 공유 TypeScript 타입
+│  ├─ utils/              # 날짜 유틸리티
+│  └─ validation/         # 입력 검증
+├─ .env.example
+├─ AGENTS.md
+├─ package.json
+└─ README.md
 ```
 
----
-
-# ✅ 검증과 문서
-
-- [아키텍처와 보안 흐름](docs/architecture.md)
-- [통합 QA 실행 기록과 수동 검증 절차](docs/qa-report.md)
-
-자동 검증은 다음 명령으로 실행합니다.
+## 테스트와 검증
 
 ```bash
 npm run typecheck
 npm test
 npm run build
 ```
+
+2026-07-30 기준:
+
+- TypeScript 타입 검사 통과
+- Vitest 프론트엔드 테스트 143개 통과
+- Node 서버 테스트 98개 통과
+- Vite 프로덕션 빌드 통과
+- Render `/health` 응답 확인
+
+자동 테스트는 인증, 입력 검증, 하루 한 기록, 닉네임 검색, 팔로우, 피드, 좋아요, 공개 프로필, Monthly Recap, Spotify OAuth, 플레이리스트 복구·중복 방지와 테마 저장·전환을 포함합니다.
+
+배포 환경의 두 계정 사용자 흐름, 원격 RLS, Spotify 실제 플레이리스트, 테마 시각 검증은 아직 완료되지 않았습니다. 상세 재현 절차와 `BLOCKED` 상태는 [QA 문서](docs/qa-report.md)에 기록되어 있습니다.
+
+## MVP 범위
+
+### 구현
+
+- 회원가입·로그인·로그아웃·세션 유지
+- 음악 검색·선택·기록·조회
+- 공개 프로필·사용자 검색
+- 팔로우·언팔로우·팔로잉 피드
+- 좋아요·좋아요 사용자 목록
+- Monthly Recap
+- Spotify 비공개 플레이리스트 내보내기
+- 라이트·다크·시스템 테마
+
+### 제외
+
+- 댓글
+- 알림
+- DM과 실시간 채팅
+- 공개·협업 Spotify 플레이리스트
+- AI 감정 분석과 복잡한 추천 알고리즘
+- 관리자 페이지
+
+## 문서
+
+- [Architecture](docs/architecture.md)
+- [Integration QA](docs/qa-report.md)
+- [Weekly Plan](weekly-plan.md)
