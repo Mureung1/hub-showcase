@@ -3,6 +3,7 @@ import type { MarketStore } from "../../market/types";
 
 export const STORE_POINT_SOURCE_ID = "localtwin-store-points";
 export const STORE_POINT_LAYER_ID = "localtwin-store-points-visible";
+export const STORE_CATEGORY_ICON_LAYER_ID = "localtwin-store-category-icons";
 export const STORE_POINT_HIT_LAYER_ID = "localtwin-store-points-hit";
 export const STORE_SELECTED_HALO_LAYER_ID = "localtwin-store-selected-halo";
 export const STORE_SELECTED_POINT_LAYER_ID = "localtwin-store-selected-point";
