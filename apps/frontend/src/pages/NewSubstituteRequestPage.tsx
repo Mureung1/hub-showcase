@@ -1,4 +1,4 @@
-import { endOfMonth, format, startOfMonth } from "date-fns";
+import { addMonths, endOfMonth, format, startOfMonth } from "date-fns";
 import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { useMe } from "../features/auth";
@@ -25,8 +25,9 @@ export function NewSubstituteRequestPage() {
   const selectedStore = me?.stores.find((store) => store.id === selectedStoreId);
   const isWorker = selectedStore?.role === "WORKER";
   const currentMonth = startOfMonth(new Date());
+  const nextMonth = addMonths(currentMonth, 1);
   const fromDate = format(currentMonth, "yyyy-MM-dd");
-  const toDate = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+  const toDate = format(endOfMonth(nextMonth), "yyyy-MM-dd");
   const todayKey = format(new Date(), "yyyy-MM-dd");
   const { data, error, isLoading } = useSchedules(selectedStoreId, fromDate, toDate, Boolean(isWorker));
   const createSubstituteRequestMutation = useCreateSubstituteRequest(selectedStoreId);
@@ -122,7 +123,9 @@ export function NewSubstituteRequestPage() {
         </div>
         <div className="month-status">
           <span>{selectedStore.name}</span>
-          <strong>{format(currentMonth, "yyyy년 M월")}</strong>
+          <strong>
+            {format(currentMonth, "yyyy년 M월")} - {format(nextMonth, "M월")}
+          </strong>
         </div>
       </section>
 
