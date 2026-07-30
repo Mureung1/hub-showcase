@@ -1,4 +1,22 @@
-export const MAX_ALL_NOTICES_PER_SOURCE = 10;
+export const DEFAULT_ALL_NOTICES_PER_SOURCE = 10;
+export const MIN_ALL_NOTICES_PER_SOURCE = 1;
+export const MAX_ALL_NOTICES_PER_SOURCE = 50;
+
+export function normalizeAllNoticesPerSource(value) {
+  if (typeof value === "string" && !value.trim()) {
+    return DEFAULT_ALL_NOTICES_PER_SOURCE;
+  }
+
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return DEFAULT_ALL_NOTICES_PER_SOURCE;
+  }
+
+  return Math.min(
+    MAX_ALL_NOTICES_PER_SOURCE,
+    Math.max(MIN_ALL_NOTICES_PER_SOURCE, Math.round(numericValue)),
+  );
+}
 
 function publishedTime(link) {
   const value = String(link?.publishedAt ?? "").trim();

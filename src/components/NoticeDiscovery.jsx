@@ -7,7 +7,7 @@ function formatPublishedAt(value) {
   return value.replaceAll("-", ".");
 }
 
-export default function NoticeDiscovery({ onSelectCandidate }) {
+export default function NoticeDiscovery({ accessToken }) {
   const [sources, setSources] = useState([]);
   const [sourceId, setSourceId] = useState("");
   const [keyword, setKeyword] = useState("");
@@ -51,7 +51,7 @@ export default function NoticeDiscovery({ onSelectCandidate }) {
     setItems(null);
 
     try {
-      const response = await discoverNotices({ keyword, sourceId });
+      const response = await discoverNotices({ keyword, sourceId }, accessToken);
       const candidates = Array.isArray(response.items) ? response.items : [];
       setItems(candidates);
       if (response.cached) setNoticeMessage("최근 탐색 결과를 표시하고 있습니다.");
@@ -62,10 +62,6 @@ export default function NoticeDiscovery({ onSelectCandidate }) {
     }
   }
 
-  function handleSelect(candidate) {
-    onSelectCandidate(candidate, selectedSource);
-    setNoticeMessage("분석 입력란에 링크를 채웠습니다. 원문 본문을 붙여넣은 뒤 분석하세요.");
-  }
 
   return (
     <section className="notice-discovery-panel" aria-labelledby="notice-discovery-title">
@@ -110,7 +106,7 @@ export default function NoticeDiscovery({ onSelectCandidate }) {
       </form>
 
       {selectedSource && !selectedSource.supportsDetailExtraction ? (
-        <p className="notice-discovery-detail-note">선택한 출처는 목록 정보만 지원합니다. 분석하려면 원문 본문을 붙여넣어 주세요.</p>
+        <p className="notice-discovery-detail-note">선택한 출처는 목록 정보만 제공합니다. 상세 공지는 원문 링크에서 확인하세요.</p>
       ) : null}
       {noticeMessage ? <p className="notice-message">{noticeMessage}</p> : null}
       {errorMessage ? <p className="notice-message is-error" role="alert">{errorMessage}</p> : null}
@@ -132,7 +128,6 @@ export default function NoticeDiscovery({ onSelectCandidate }) {
               </div>
               <div className="notice-candidate-actions">
                 <a href={candidate.url} target="_blank" rel="noreferrer">원문 보기</a>
-                <button type="button" className="compact-button" onClick={() => handleSelect(candidate)}>분석 화면으로</button>
               </div>
             </li>
           ))}

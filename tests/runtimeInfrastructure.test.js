@@ -11,6 +11,9 @@ const ENV_KEYS = [
   "ANALYZE_RATE_LIMIT_MAX",
   "ANALYZE_RATE_LIMIT_WINDOW_MS",
   "HOST",
+  "HTML_FETCH_RATE_LIMIT_ENABLED",
+  "HTML_FETCH_RATE_LIMIT_MAX",
+  "HTML_FETCH_RATE_LIMIT_WINDOW_MS",
   "NODE_ENV",
   "PORT",
   "PUBLIC_URL",
@@ -40,6 +43,7 @@ test("기본 런타임은 외부에 바인딩하거나 frontend를 제공하지 
 
     assert.equal(config.host, "127.0.0.1");
     assert.equal(config.analyzeRateLimitEnabled, false);
+    assert.equal(config.htmlFetchRateLimitEnabled, false);
     assert.equal(config.serveClient, false);
     assert.equal(config.trustProxy, false);
     assert.ok(config.allowedOrigins.includes("http://127.0.0.1:5173"));
@@ -58,6 +62,7 @@ test("production 환경은 명시한 도메인과 단일 frontend 제공 설정�
 
     assert.equal(config.host, "0.0.0.0");
     assert.equal(config.analyzeRateLimitEnabled, true);
+    assert.equal(config.htmlFetchRateLimitEnabled, true);
     assert.equal(config.serveClient, true);
     assert.equal(config.publicUrl, "https://example.kr");
     assert.equal(config.trustProxy, true);

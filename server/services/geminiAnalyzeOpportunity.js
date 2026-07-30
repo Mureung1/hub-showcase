@@ -4,7 +4,7 @@ import {
   providerAnalysisSchema,
   analyzeResponseSchema,
 } from "../schemas/analyzeSchemas.js";
-import { createTasks } from "./createTasks.js";
+
 import { normalizeAnalysisResult } from "../../src/utils/normalizeAnalysisResult.js";
 
 const DEFAULT_GEMINI_MODEL = "gemini-3-flash-preview";
@@ -166,6 +166,7 @@ function createAnalyzeRequest({ model, profile, rawText, url }) {
     contents: JSON.stringify(
       {
         profile,
+        referenceDate: new Date().toISOString().slice(0, 10),
         rawText,
         sourceUrl: url || null,
       },
@@ -188,15 +189,19 @@ function createAnalyzeRequest({ model, profile, rawText, url }) {
 8. 마감일은 확실한 경우에만 YYYY-MM-DD로 변환한다.
 9. 연도가 없거나 날짜가 모호하면 임의의 연도를 생성하지 않는다.
 10. JSON Schema 이외의 형식이나 설명 문장을 출력하지 않는다.
-11. mode는 gemini로 설정하고 tasks는 빈 배열로 반환해도 된다.
-12. 모든 사용자-facing 문자열은 한국어로 작성한다.
-13. 공고에 사용자의 regions에 없는 오프라인 장소나 필수 방문 일정이 있으면 참여 가능 여부를 missingInfo와 nextActions에 기록한다.
-14. profile이 null이면 사용자 적합성을 추측하거나 판정하지 말고 opportunity의 핵심 정보와 원문 evidence 추출에 집중한다.
-15. profile이 null이면 match는 insufficient_info, score는 null, matchedReasons와 disqualifyingReasons는 빈 배열로 반환한다.
-16. 가장 먼저 실제 신청 주체를 판별한다. 공고 작성 기관, 사업 수혜자, 협력 기관과 실제 신청자를 혼동하지 않는다.
-17. 지원 대상이 기업, 사업자, 법인, 소상공인 등으로 제한되면 opportunity.target에 원문 대상을 정확히 기록하고 eligibility에 required=true인 필수 조건을 추가한다.
-18. 기업 전용 공고에 학생 프로필이 들어오면 match.status는 not_eligible, score는 0으로 반환하고 기업 대상이라는 원문 근거를 disqualifyingReasons에 기록한다.
-19. 제목이나 본문에 기업이 언급되어도 실제 모집 대상이 대학생, 재학생, 청년 또는 개인이면 기업 전용으로 판정하지 않는다.`,
+11. tasks에는 이 공고를 실제로 준비하기 위한 구체적인 태스크 2~6개를 반환한다. 공고문에 나온 제출 서류, 참가 방식, 필수 조건, 면접·발표·교육 일정, 확인이 필요한 조건을 근거로 선택한다.
+12. 모든 태스크 제목에는 실제 서류명, 조건명 또는 일정명을 포함한다. 공고 근거가 없는 일반 태스크를 반복하지 않는다.
+13. dueDate는 공고문에 명시된 날짜 또는 확실한 마감일을 기준으로 한 준비 일정일 때만 YYYY-MM-DD로 넣는다. 날짜를 알 수 없으면 null로 둔다.
+14. 마감일과 핵심 준비 내용이 모두 불명확하면 마감일 확인처럼 확인이 필요한 태스크만 반환한다.
+15. mode는 gemini로 설정하고, tasks의 status는 todo로 반환한다.
+16. 모든 사용자-facing 문자열은 한국어로 작성한다.
+17. 공고에 사용자의 regions에 없는 오프라인 장소나 필수 방문 일정이 있으면 참여 가능 여부를 missingInfo와 nextActions에 기록한다.
+18. profile이 null이면 사용자 적합성을 추측하거나 판정하지 말고 opportunity의 핵심 정보와 원문 evidence 추출에 집중한다.
+19. profile이 null이면 match는 insufficient_info, score는 null, matchedReasons와 disqualifyingReasons는 빈 배열로 반환한다.
+20. 가장 먼저 실제 신청 주체를 판별한다. 공고 작성 기관, 사업 수혜자, 협력 기관과 실제 신청자를 혼동하지 않는다.
+21. 지원 대상이 기업, 사업자, 법인, 소상공인 등으로 제한되면 opportunity.target에 원문 대상을 정확히 기록하고 eligibility에 required=true인 필수 조건을 추가한다.
+22. 기업 전용 공고에 학생 프로필이 들어오면 match.status는 not_eligible, score는 0으로 반환하고 기업 대상이라는 원문 근거를 disqualifyingReasons에 기록한다.
+23. 제목이나 본문에 기업이 언급되어도 실제 모집 대상이 대학생, 재학생, 청년 또는 개인이면 기업 전용으로 판정하지 않는다.`,
       temperature: 0.2,
       responseMimeType: "application/json",
       responseSchema: geminiAnalyzeResponseSchema,
@@ -224,7 +229,6 @@ async function runGeminiAnalysisWithModel({ client, model, profile, rawText, url
   const normalized = normalizeAnalysisResult({
     ...normalizedProviderResult,
     mode: "gemini",
-    tasks: createTasks(normalizedProviderResult.opportunity, normalizedProviderResult.match),
   });
 
   return analyzeResponseSchema.parse(normalized);

@@ -76,7 +76,7 @@ function RecommendationCard({ item, isSaved, onSave }) {
   );
 }
 
-export default function SiteRecommendations({ onAddSource, profile, savedSources = [], settings = null }) {
+export default function SiteRecommendations({ accessToken, onAddSource, profile, savedSources = [], settings = null }) {
   const [sites, setSites] = useState([]);
   const [desiredInformation, setDesiredInformation] = useState([]);
   const [keyword, setKeyword] = useState("");
@@ -149,7 +149,7 @@ export default function SiteRecommendations({ onAddSource, profile, savedSources
         profile,
         settings,
         trackedSiteIds: nextSavedSourceSiteIds,
-      });
+      }, accessToken);
       if (requestId !== recommendationRequestIdRef.current) return;
       setResult(response);
       if (!response.recommendations?.length) {

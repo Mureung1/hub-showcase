@@ -35,6 +35,7 @@ test("last scan result persists links but excludes source HTML", () => {
   const storage = createMemoryStorage();
   const scan = {
     allLinks: [notice, { ...notice, id: "notice-duplicate" }],
+    allNoticesPerSource: 25,
     failedSources: [],
     fetchedAt: "2026-07-20T09:00:00.000Z",
     isBatch: true,
@@ -69,6 +70,7 @@ test("last scan result persists links but excludes source HTML", () => {
   const restored = readLastScanResult(storage);
 
   assert.equal(persisted.allLinks.length, 1);
+  assert.equal(restored.allNoticesPerSource, 25);
   assert.equal("html" in persisted.sourceResults[0].source, false);
   assert.equal(restored.latestLinks[0].url, notice.url);
   assert.equal(restored.latestLinks[0].publishedAt, "2026-07-20");
@@ -91,6 +93,7 @@ test("scoped scan history keeps each account's records separate", () => {
 
   accountA.writeLastScanResult({
     allLinks: [{ title: "A 계정 공지", url: "https://example.com/notices/a" }],
+    allNoticesPerSource: 5,
     fetchedAt: "2026-07-27T09:00:00.000Z",
   }, storage);
   accountA.writeNoticeHistory(targetUrl, ["https://example.com/notices/a"], storage);
@@ -100,12 +103,15 @@ test("scoped scan history keeps each account's records separate", () => {
 
   accountB.writeLastScanResult({
     allLinks: [{ title: "B 계정 공지", url: "https://example.com/notices/b" }],
+    allNoticesPerSource: 20,
     fetchedAt: "2026-07-27T10:00:00.000Z",
   }, storage);
   accountB.writeNoticeHistory(targetUrl, ["https://example.com/notices/b"], storage);
 
   assert.equal(accountA.readLastScanResult(storage).allLinks[0].title, "A 계정 공지");
   assert.equal(accountB.readLastScanResult(storage).allLinks[0].title, "B 계정 공지");
+  assert.equal(accountA.readLastScanResult(storage).allNoticesPerSource, 5);
+  assert.equal(accountB.readLastScanResult(storage).allNoticesPerSource, 20);
   assert.deepEqual(accountA.readNoticeHistory(targetUrl, [], storage), ["https://example.com/notices/a"]);
   assert.deepEqual(accountB.readNoticeHistory(targetUrl, [], storage), ["https://example.com/notices/b"]);
 });

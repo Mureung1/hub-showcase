@@ -29,26 +29,23 @@ export async function getNoticeSources() {
   return readJsonResponse(response);
 }
 
-export async function discoverNotices({ sourceId, keyword = "", limit = 20 }) {
+export async function discoverNotices({ sourceId, keyword = "", limit = 20 }, accessToken) {
   const query = new URLSearchParams({
     sourceId,
     keyword,
     limit: String(limit),
   });
   const response = await fetch(buildApiUrl(`/api/discover?${query.toString()}`), {
-    headers: { Accept: "application/json" },
+    headers: createAuthorizationHeaders(accessToken),
   });
 
   return readJsonResponse(response);
 }
 
-export async function analyzeOpportunity(payload) {
+export async function analyzeOpportunity(payload, accessToken) {
   const response = await fetch(buildApiUrl("/api/analyze"), {
     method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
+    headers: createAuthorizationHeaders(accessToken, true),
     body: JSON.stringify(payload),
   });
 
@@ -93,10 +90,10 @@ export async function getRecommendationSites() {
   return readJsonResponse(response);
 }
 
-export async function recommendSites(payload) {
+export async function recommendSites(payload, accessToken) {
   const response = await fetch(buildApiUrl("/api/recommend-sites"), {
     method: "POST",
-    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    headers: createAuthorizationHeaders(accessToken, true),
     body: JSON.stringify(payload),
   });
   return readJsonResponse(response);

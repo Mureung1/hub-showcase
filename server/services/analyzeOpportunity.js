@@ -7,6 +7,7 @@ import { analyzeResponseSchema } from "../schemas/analyzeSchemas.js";
 import { normalizeAnalysisResult } from "../../src/utils/normalizeAnalysisResult.js";
 import { matchOpportunity } from "../../src/services/matchOpportunity.js";
 import { createTasks } from "./createTasks.js";
+import { sortTasksByUpcomingDate } from "../../src/utils/taskSchedule.js";
 import {
   getFriendlyOpenAIError,
   openaiAnalyzeOpportunity,
@@ -118,7 +119,10 @@ function finalizeAnalysisResult(result, profile, rawText = "") {
     opportunity: normalizedResult.opportunity,
     sourceText: rawText,
   });
-  const tasks = createTasks(normalizedResult.opportunity, match);
+  const generatedTasks = normalizedResult.mode === "gemini" ? normalizedResult.tasks : [];
+  const tasks = sortTasksByUpcomingDate(
+    generatedTasks.length ? generatedTasks : createTasks(normalizedResult.opportunity, match),
+  );
 
   return analyzeResponseSchema.parse(normalizeAnalysisResult({
     ...normalizedResult,

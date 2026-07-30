@@ -812,15 +812,20 @@ export function createProxyRequestUrls(targetUrl, apiBaseUrl = getConfiguredApiB
   ];
 }
 
-async function loadWebsiteHtmlThroughProxy(targetUrl, fetchImpl) {
+export function createProxyRequestHeaders(accessToken) {
+  return {
+    Accept: "text/html,application/xhtml+xml",
+    ...(accessToken ? { Authorization: "Bearer " + accessToken } : {}),
+  };
+}
+
+async function loadWebsiteHtmlThroughProxy(targetUrl, fetchImpl, accessToken) {
   let lastError = null;
 
   for (const requestUrl of createProxyRequestUrls(targetUrl)) {
     try {
       const proxyResponse = await fetchImpl(requestUrl, {
-        headers: {
-          Accept: "text/html,application/xhtml+xml",
-        },
+        headers: createProxyRequestHeaders(accessToken),
       });
       const isLocalProxy = proxyResponse.headers.get("X-Opportunity-Agent-Proxy") === "html-fetch-proxy";
 
@@ -837,7 +842,7 @@ async function loadWebsiteHtmlThroughProxy(targetUrl, fetchImpl) {
   throw lastError || new Error("로컬 HTML 프록시가 응답하지 않았습니다.");
 }
 
-export async function loadWebsiteHtml(url, fetchImpl = globalThis.fetch) {
+export async function loadWebsiteHtml(url, fetchImpl = globalThis.fetch, accessToken) {
   const targetUrl = resolveTargetUrl(url);
 
   if (!targetUrl) {
@@ -849,13 +854,14 @@ export async function loadWebsiteHtml(url, fetchImpl = globalThis.fetch) {
   }
 
   try {
-    return await loadWebsiteHtmlThroughProxy(targetUrl, fetchImpl);
+    return await loadWebsiteHtmlThroughProxy(targetUrl, fetchImpl, accessToken);
   } catch (error) {
     throw new Error(formatProxyConnectionError(error));
   }
 }
 
 export async function runNoticeLinkScan({
+  accessToken,
   fetchImpl,
   html,
   knownUrls = [],
@@ -870,7 +876,7 @@ export async function runNoticeLinkScan({
   }
 
   const websiteDocument = sourceMode === "live"
-    ? await loadWebsiteHtml(resolvedTargetUrl, fetchImpl)
+    ? await loadWebsiteHtml(resolvedTargetUrl, fetchImpl, accessToken)
     : { finalUrl: resolvedTargetUrl, html: String(html ?? "") };
   const contentBaseUrl = websiteDocument.finalUrl || resolvedTargetUrl;
   const allLinks = extractPostLinksFromHtml(websiteDocument.html, {
