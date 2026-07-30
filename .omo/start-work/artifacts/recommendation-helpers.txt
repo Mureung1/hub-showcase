@@ -1,0 +1,31 @@
+Recommendation helpers verification
+Date: 2026-07-29
+
+Focused automated test
+Command:
+  node --test src/services/freeShippingTarget.test.js src/services/groupBuyRecommendations.test.js
+Result:
+  PASS (6 tests, 0 failures)
+
+Direct import QA
+Inputs:
+  calculateFreeShippingTarget({
+    unitPrice: 15000,
+    perPersonQuantity: 1,
+    freeShippingThreshold: 50000
+  })
+Result:
+  4
+
+Recommendation probe:
+  Query: " protein, shake! "
+  Exact IDs: ["exact"]
+  Recommendation IDs: ["related"]
+  Closed item excluded: yes
+
+Edge probes:
+  Malformed numeric input returned null.
+  Malformed collection/query returned independent empty arrays.
+  Repeated calls returned identical results.
+  Source item array remained unchanged.
+  Temporary assets: none created.

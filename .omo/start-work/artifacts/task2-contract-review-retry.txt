@@ -1,0 +1,31 @@
+LocationPicker structural contract audit — FAIL
+Date: 2026-07-30 (Asia/Seoul)
+Scope: package.json, src/main.jsx, src/components/LocationPicker.jsx, src/App.css, src/services/locationSelection.test.js
+
+Evidence matrix
+PASS | dependency/CSS | leaflet ^1.9.4 is declared; src/main.jsx imports leaflet/dist/leaflet.css; App.css contains picker/map/marker/attribution rules.
+PASS | controlled props | address, latitude, longitude, and onChange are inputs; address edits, map clicks, marker drags, geolocation, and clearPin emit createLocationSelection values.
+PASS | default view | DEFAULT_CENTER is [37.5665, 126.978]; absent coordinates use zoom 15 (existing coordinates use zoom 17).
+PASS | click | map click emits lat/lng through the current onChangeRef and current addressRef.
+PASS | geolocation behavior | unsupported, success, and error paths present; high accuracy and 10s timeout configured; success emits coordinates and both callbacks clear locating state.
+PASS | marker | controlled coordinates create/update a draggable marker; absent coordinates remove it; dragend emits updated coordinates.
+PASS | attribution | OSM tile URL and OpenStreetMap attribution are configured.
+PASS | map cleanup | mount effect cleanup calls map.remove() and clears map/marker refs.
+FAIL | async interruption/stale callback | getCurrentPosition cannot be cancelled, has no mounted/operation token guard, and success uses the render-closure address/onChange rather than refs. A delayed callback can invoke stale onChange/address and set state after unmount or after a newer clearPin/action.
+PASS | malformed input | unchanged test rejects incomplete and out-of-range coordinate pairs.
+PASS | clearPin immediate contract | emits current address with null/null and preserves address; no pending-geolocation cancellation/resume protection (covered by FAIL above).
+N/A | prompt injection | no external/untrusted instruction source in scoped code.
+
+Verification receipt
+PASS | node --test src/services/locationSelection.test.js, run 1 | 3/3 passed; exit 0.
+PASS | node --test src/services/locationSelection.test.js, run 2 | 3/3 passed; exit 0 (no observed flake).
+PASS | npm run build | Vite 8.1.3; 36 modules; exit 0; JS index-B8vIRbrl.js 386,119 bytes and CSS index-BgxUCgds.css 54.61 kB.
+PASS | preview manual channel | exact curl -i http://127.0.0.1:4173/ returned HTTP/1.1 200 OK.
+PASS | built asset inspection | HTML referenced /assets/index-B8vIRbrl.js; asset returned 200, 386,119 bytes; bundle contained openstreetmap and 37.5665.
+PASS | cleanup | preview listener PID 344684 stopped; subsequent listener probe showed no 127.0.0.1:4173 LISTENING entry; all .preview/.asset temporary files deleted.
+
+Dirty-worktree receipt
+Initial full `git status --short --untracked-files=all` exceeded the 30s bound without output. The bounded final tracked-only status showed the pre-existing modified files, including package.json, src/main.jsx, and src/App.css; this audit made no production/source edits, commits, staging, resets, or checkouts. The sole retained audit output is this artifact.
+
+Verdict rationale
+FAIL is limited to the explicit adversarial stale async/interruption contract. All requested core map rendering and selection structures, unchanged tests, build, HTTP serving, asset proof, and cleanup passed.

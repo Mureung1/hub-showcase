@@ -1,0 +1,246 @@
+{"kind":"deck","id":"pr/cjodjs","name":"Deck"}
+{"kind":"layout","layoutId":"0614aaec-79aa-4c31-808f-b297f8647e35","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"6f5ec2bc-7ecb-4b22-9e51-6e5c675cf444","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/4v3y6j","slide":1,"title":"CAMPUSCART · AI AGENT CHALLENGE","textShapes":8}
+{"kind":"textbox","id":"sh/4ry1kzal","slide":1,"text":"CAMPUSCART · AI AGENT CHALLENGE","textPreview":"CAMPUSCART · AI AGENT CHALLENGE","textChars":31,"textLines":1,"bbox":[64,28,500,22]}
+{"kind":"textbox","id":"sh/jqpkbu90","slide":1,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[1160,665,56,20]}
+{"kind":"textbox","id":"sh/ipgjipsf","slide":1,"text":"2주차 데모 발표","textPreview":"2주차 데모 발표","textChars":9,"textLines":1,"bbox":[72,90,360,28]}
+{"kind":"textbox","id":"sh/ho729kru","slide":1,"text":"CampusCart","textPreview":"CampusCart","textChars":10,"textLines":1,"bbox":[72,145,760,96]}
+{"kind":"textbox","id":"sh/wne1gfa9","slide":1,"text":"캠퍼스 공동구매의 참여부터\n공동 수령지 확정까지","textPreview":"캠퍼스 공동구매의 참여부터 | 공동 수령지 확정까지","textChars":26,"textLines":2,"bbox":[72,250,760,118]}
+{"kind":"textbox","id":"sh/vm5k7u9o","slide":1,"text":"필요한 만큼 함께 사고, 모두에게 가까운 곳에서 받는 서비스","textPreview":"필요한 만큼 함께 사고, 모두에게 가까운 곳에서 받는 서비스","textChars":33,"textLines":1,"bbox":[72,390,780,42]}
+{"kind":"shape","id":"sh/u1wjeps3","slide":1,"bbox":[885,105,300,300]}
+{"kind":"shape","id":"sh/90n25kry","slide":1,"bbox":[940,150,190,190]}
+{"kind":"textbox","id":"sh/8ze1cfad","slide":1,"text":"C","textPreview":"C","textChars":1,"textLines":1,"bbox":[940,148,190,190]}
+{"kind":"textbox","id":"sh/u9sfqt0f","slide":1,"text":"발표자 이시우  ·  2026.07.16","textPreview":"발표자 이시우  ·  2026.07.16","textChars":22,"textLines":1,"bbox":[72,625,500,24]}
+{"kind":"notes","id":"nt/4v3y6j","slide":1,"text":""}
+{"kind":"slide","id":"sl/w76hjt","slide":2,"title":"CAMPUSCART · AI AGENT CHALLENGE","textShapes":15}
+{"kind":"textbox","id":"sh/0fe5072l","slide":2,"text":"CAMPUSCART · AI AGENT CHALLENGE","textPreview":"CAMPUSCART · AI AGENT CHALLENGE","textChars":31,"textLines":1,"bbox":[64,28,500,22]}
+{"kind":"textbox","id":"sh/fe5or210","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1160,665,56,20]}
+{"kind":"textbox","id":"sh/edwnyxkf","slide":2,"text":"PROBLEM","textPreview":"PROBLEM","textChars":7,"textLines":1,"bbox":[64,72,460,24]}
+{"kind":"textbox","id":"sh/pk76xcj2","slide":2,"text":"공동구매는 싸지만, 조율이 더 어렵습니다","textPreview":"공동구매는 싸지만, 조율이 더 어렵습니다","textChars":22,"textLines":1,"bbox":[64,102,1120,62]}
+{"kind":"textbox","id":"sh/oje5472x","slide":2,"text":"상품을 고르는 것보다 사람·수량·장소를 맞추는 과정이 더 오래 걸립니다.","textPreview":"상품을 고르는 것보다 사람·수량·장소를 맞추는 과정이 더 오래 걸립니다.","textChars":40,"textLines":1,"bbox":[64,165,1080,38]}
+{"kind":"textbox","id":"sh/ni5ov21c","slide":2,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[74,235,60,42]}
+{"kind":"shape","id":"sh/2hwn2xkr","slide":2,"bbox":[142,255,84,4]}
+{"kind":"textbox","id":"sh/5o3ml8jy","slide":2,"text":"수량과 금액","textPreview":"수량과 금액","textChars":6,"textLines":1,"bbox":[250,231,250,38]}
+{"kind":"textbox","id":"sh/4nu5s32d","slide":2,"text":"몇 개를 살지, 배송비를 어떻게 나눌지 매번 다시 계산","textPreview":"몇 개를 살지, 배송비를 어떻게 나눌지 매번 다시 계산","textChars":30,"textLines":1,"bbox":[510,233,660,60]}
+{"kind":"textbox","id":"sh/qtwv2p4z","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[74,365,60,42]}
+{"kind":"shape","id":"sh/bu5wbu5k","slide":2,"bbox":[142,385,84,4]}
+{"kind":"textbox","id":"sh/cved4zm5","slide":2,"text":"권한과 신뢰","textPreview":"권한과 신뢰","textChars":6,"textLines":1,"bbox":[250,361,250,38]}
+{"kind":"textbox","id":"sh/dwned4nq","slide":2,"text":"누가 개설했고 누가 참여했는지 구분되지 않으면 수정과 투표가 흔들림","textPreview":"누가 개설했고 누가 참여했는지 구분되지 않으면 수정과 투표가 흔들림","textChars":37,"textLines":1,"bbox":[510,363,660,60]}
+{"kind":"textbox","id":"sh/yxgv694b","slide":2,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[74,495,60,42]}
+{"kind":"shape","id":"sh/zypwfe5w","slide":2,"bbox":[142,515,84,4]}
+{"kind":"textbox","id":"sh/0jyd8zm1","slide":2,"text":"수령 장소","textPreview":"수령 장소","textChars":5,"textLines":1,"bbox":[250,491,250,38]}
+{"kind":"textbox","id":"sh/lk7eh4nm","slide":2,"text":"한 사람이 정한 장소가 모든 참여자에게 공평하지 않음","textPreview":"한 사람이 정한 장소가 모든 참여자에게 공평하지 않음","textChars":29,"textLines":1,"bbox":[510,493,660,60]}
+{"kind":"shape","id":"sh/mlgva947","slide":2,"bbox":[64,610,1152,54]}
+{"kind":"textbox","id":"sh/nmpwje5s","slide":2,"text":"해결해야 할 핵심은 ‘구매’가 아니라 참여 이후의 의사결정 흐름입니다.","textPreview":"해결해야 할 핵심은 ‘구매’가 아니라 참여 이후의 의사결정 흐름입니다.","textChars":39,"textLines":1,"bbox":[88,619,1100,34]}
+{"kind":"notes","id":"nt/w76hjt","slide":2,"text":""}
+{"kind":"slide","id":"sl/uwllao","slide":3,"title":"CAMPUSCART · AI AGENT CHALLENGE","textShapes":24}
+{"kind":"textbox","id":"sh/658vqd8n","slide":3,"text":"CAMPUSCART · AI AGENT CHALLENGE","textPreview":"CAMPUSCART · AI AGENT CHALLENGE","textChars":31,"textLines":1,"bbox":[64,28,500,22]}
+{"kind":"textbox","id":"sh/t8zuls7e","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1160,665,56,20]}
+{"kind":"textbox","id":"sh/87qdsn6t","slide":3,"text":"CORE CONCEPT","textPreview":"CORE CONCEPT","textChars":12,"textLines":1,"bbox":[64,72,460,24]}
+{"kind":"textbox","id":"sh/j2xcfipc","slide":3,"text":"한 번의 참여가 최종 수령까지 이어집니다","textPreview":"한 번의 참여가 최종 수령까지 이어집니다","textChars":22,"textLines":1,"bbox":[64,102,1120,62]}
+{"kind":"textbox","id":"sh/y1obmd8r","slide":3,"text":"화면에서 시작한 선택이 서버 상태와 다음 단계에 계속 반영됩니다.","textPreview":"화면에서 시작한 선택이 서버 상태와 다음 단계에 계속 반영됩니다.","textChars":36,"textLines":1,"bbox":[64,165,1080,38]}
+{"kind":"shape","id":"sh/l4zuh872","slide":3,"bbox":[209,340,52,3]}
+{"kind":"textbox","id":"sh/k36donqh","slide":3,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[212,316,46,42]}
+{"kind":"shape","id":"sh/bexcbyp0","slide":3,"bbox":[64,270,146,150]}
+{"kind":"textbox","id":"sh/adobit8f","slide":3,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[82,287,60,24]}
+{"kind":"textbox","id":"sh/43idkf2p","slide":3,"text":"상세 확인","textPreview":"상세 확인","textChars":5,"textLines":1,"bbox":[80,332,114,52]}
+{"kind":"shape","id":"sh/poretk3a","slide":3,"bbox":[399,340,52,3]}
+{"kind":"textbox","id":"sh/210vi5kj","slide":3,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[402,316,46,42]}
+{"kind":"shape","id":"sh/329wral4","slide":3,"bbox":[254,270,146,150]}
+{"kind":"textbox","id":"sh/gzydgv2t","slide":3,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[272,287,60,24]}
+{"kind":"textbox","id":"sh/h0rup03e","slide":3,"text":"수량 선택","textPreview":"수량 선택","textChars":5,"textLines":1,"bbox":[270,332,114,52]}
+{"kind":"shape","id":"sh/uxgvelkn","slide":3,"bbox":[589,340,52,3]}
+{"kind":"textbox","id":"sh/fypcnql8","slide":3,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[592,316,46,42]}
+{"kind":"shape","id":"sh/0v2dsz2x","slide":3,"bbox":[444,270,146,150]}
+{"kind":"textbox","id":"sh/1wbe14ji","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[462,287,60,24]}
+{"kind":"textbox","id":"sh/90nmp07a","slide":3,"text":"금액 계산","textPreview":"금액 계산","textChars":5,"textLines":1,"bbox":[460,332,114,52]}
+{"kind":"shape","id":"sh/oze5wvqp","slide":3,"bbox":[779,340,52,3]}
+{"kind":"textbox","id":"sh/ny54nqpk","slide":3,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[782,316,46,42]}
+{"kind":"shape","id":"sh/mxw3ul8z","slide":3,"bbox":[634,270,146,150]}
+{"kind":"textbox","id":"sh/1cnmlg7e","slide":3,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[652,287,60,24]}
+{"kind":"textbox","id":"sh/0belsbqt","slide":3,"text":"출발지 제출","textPreview":"출발지 제출","textChars":6,"textLines":1,"bbox":[650,332,114,52]}
+{"kind":"shape","id":"sh/za54jqp8","slide":3,"bbox":[969,340,52,3]}
+{"kind":"textbox","id":"sh/e9w3ql8n","slide":3,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[972,316,46,42]}
+{"kind":"shape","id":"sh/d83mhg72","slide":3,"bbox":[824,270,146,150]}
+{"kind":"textbox","id":"sh/c7ulobqx","slide":3,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[842,287,60,24]}
+{"kind":"textbox","id":"sh/idsjihof","slide":3,"text":"장소 투표","textPreview":"장소 투표","textChars":5,"textLines":1,"bbox":[840,332,114,52]}
+{"kind":"shape","id":"sh/3e1krm50","slide":3,"bbox":[1014,270,146,150]}
+{"kind":"textbox","id":"sh/4fa1kr6l","slide":3,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1032,287,60,24]}
+{"kind":"textbox","id":"sh/5gj2tcn6","slide":3,"text":"수령지 확정","textPreview":"수령지 확정","textChars":6,"textLines":1,"bbox":[1030,332,114,52]}
+{"kind":"textbox","id":"sh/u98jexoj","slide":3,"text":"참여자 위치가 바뀌면 후보가 다시 계산되고, 모집 완료 후 참여자만 한 표를 행사합니다.","textPreview":"참여자 위치가 바뀌면 후보가 다시 계산되고, 모집 완료 후 참여자만 한 표를 행사합니다.","textChars":49,"textLines":1,"bbox":[150,485,980,42]}
+{"kind":"textbox","id":"sh/va10n254","slide":3,"text":"최종 장소 확정 전에는 결제 단계로 넘어갈 수 없습니다.","textPreview":"최종 장소 확정 전에는 결제 단계로 넘어갈 수 없습니다.","textChars":31,"textLines":1,"bbox":[260,535,760,32]}
+{"kind":"notes","id":"nt/uwllao","slide":3,"text":""}
+{"kind":"slide","id":"sl/4cuz3e","slide":4,"title":"CAMPUSCART · AI AGENT CHALLENGE","textShapes":15}
+{"kind":"textbox","id":"sh/ozm5cjid","slide":4,"text":"CAMPUSCART · AI AGENT CHALLENGE","textPreview":"CAMPUSCART · AI AGENT CHALLENGE","textChars":31,"textLines":1,"bbox":[64,28,500,22]}
+{"kind":"textbox","id":"sh/3yd4jeh8","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1160,665,56,20]}
+{"kind":"textbox","id":"sh/2x43a90n","slide":4,"text":"STACK & ARCHITECTURE","textPreview":"STACK & ARCHITECTURE","textChars":20,"textLines":1,"bbox":[64,72,460,24]}
+{"kind":"textbox","id":"sh/dofmpoza","slide":4,"text":"화면과 서버 사이의 수직슬라이스를 먼저 완성했습니다","textPreview":"화면과 서버 사이의 수직슬라이스를 먼저 완성했습니다","textChars":28,"textLines":1,"bbox":[64,102,1120,62]}
+{"kind":"textbox","id":"sh/cn65g3ip","slide":4,"text":"React 화면 → Express REST API → 저장소 → 다시 조회하는 한 바퀴입니다.","textPreview":"React 화면 → Express REST API → 저장소 → 다시 조회하는 한 바퀴입니다.","textChars":52,"textLines":1,"bbox":[64,165,1080,38]}
+{"kind":"shape","id":"sh/b2d4nyh4","slide":4,"bbox":[90,250,300,170]}
+{"kind":"shape","id":"sh/q14net0j","slide":4,"bbox":[90,250,10,170]}
+{"kind":"textbox","id":"sh/tsbmd4jq","slide":4,"text":"React + Vite","textPreview":"React + Vite","textChars":12,"textLines":1,"bbox":[124,280,240,42]}
+{"kind":"textbox","id":"sh/s72l4zil","slide":4,"text":"Frontend","textPreview":"Frontend","textChars":8,"textLines":1,"bbox":[124,333,240,30]}
+{"kind":"textbox","id":"sh/6l0fy90z","slide":4,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[408,302,70,50]}
+{"kind":"shape","id":"sh/rmtw7ehk","slide":4,"bbox":[480,250,300,170]}
+{"kind":"shape","id":"sh/sn2x0zi5","slide":4,"bbox":[480,250,10,170]}
+{"kind":"textbox","id":"sh/tobe94zq","slide":4,"text":"Express + Zod","textPreview":"Express + Zod","textChars":13,"textLines":1,"bbox":[514,280,240,42]}
+{"kind":"textbox","id":"sh/epkf290b","slide":4,"text":"REST API","textPreview":"REST API","textChars":8,"textLines":1,"bbox":[514,333,240,30]}
+{"kind":"textbox","id":"sh/fqtwbehg","slide":4,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[798,302,70,50]}
+{"kind":"shape","id":"sh/gr2x4ji1","slide":4,"bbox":[870,250,300,170]}
+{"kind":"shape","id":"sh/1sbedozm","slide":4,"bbox":[870,250,10,170]}
+{"kind":"textbox","id":"sh/2t4f6t07","slide":4,"text":"Local demo store","textPreview":"Local demo store","textChars":16,"textLines":1,"bbox":[904,280,240,42]}
+{"kind":"textbox","id":"sh/3udgfyhs","slide":4,"text":"Data layer","textPreview":"Data layer","textChars":10,"textLines":1,"bbox":[904,333,240,30]}
+{"kind":"shape","id":"sh/zidwnyx0","slide":4,"bbox":[90,470,1080,95]}
+{"kind":"textbox","id":"sh/yx4vutwf","slide":4,"text":"POST 참여  →  위치 기반 후보 재계산  →  GET 상세 갱신  →  투표·확정","textPreview":"POST 참여  →  위치 기반 후보 재계산  →  GET 상세 갱신  →  투표·확정","textChars":48,"textLines":1,"bbox":[120,487,1020,34]}
+{"kind":"textbox","id":"sh/lkfep8fq","slide":4,"text":"현재 발표 환경은 로컬 메모리 저장소입니다. Supabase 영속화와 Auth/RLS는 다음 단계로 분리했습니다.","textPreview":"현재 발표 환경은 로컬 메모리 저장소입니다. Supabase 영속화와 Auth/RLS는 다음 단계로 분리했습니다.","textChars":63,"textLines":1,"bbox":[120,528,1020,24]}
+{"kind":"notes","id":"nt/4cuz3e","slide":4,"text":""}
+{"kind":"slide","id":"sl/ze103k","slide":5,"title":"CAMPUSCART · AI AGENT CHALLENGE","textShapes":9}
+{"kind":"textbox","id":"sh/orix8jyd","slide":5,"text":"CAMPUSCART · AI AGENT CHALLENGE","textPreview":"CAMPUSCART · AI AGENT CHALLENGE","textChars":31,"textLines":1,"bbox":[64,28,500,22]}
+{"kind":"textbox","id":"sh/nqpwfex8","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1160,665,56,20]}
+{"kind":"textbox","id":"sh/mpgv69gn","slide":5,"text":"DEMO 01","textPreview":"DEMO 01","textChars":7,"textLines":1,"bbox":[64,72,460,24]}
+{"kind":"textbox","id":"sh/xgrelofa","slide":5,"text":"홈에서 모집을 찾고 상세로 들어갑니다","textPreview":"홈에서 모집을 찾고 상세로 들어갑니다","textChars":20,"textLines":1,"bbox":[64,102,1120,62]}
+{"kind":"textbox","id":"sh/wfixcjyp","slide":5,"text":"검색·정렬·찜·내 활동을 거쳐 핵심 참여 화면으로 연결됩니다.","textPreview":"검색·정렬·찜·내 활동을 거쳐 핵심 참여 화면으로 연결됩니다.","textChars":34,"textLines":1,"bbox":[64,165,1080,38]}
+{"kind":"shape","id":"sh/be9wjex4","slide":5,"bbox":[64,220,555,350]}
+{"kind":"shape","id":"sh/at0fa9gj","slide":5,"bbox":[661,220,555,350]}
+{"kind":"textbox","id":"sh/2hsbutcn","slide":5,"text":"① 서비스 진입","textPreview":"① 서비스 진입","textChars":8,"textLines":1,"bbox":[78,542,260,28]}
+{"kind":"textbox","id":"sh/ni1snyd8","slide":5,"text":"② 모집 탐색","textPreview":"② 모집 탐색","textChars":7,"textLines":1,"bbox":[675,542,260,28]}
+{"kind":"textbox","id":"sh/ojatw3ut","slide":5,"text":"인기 모집과 카테고리 확인","textPreview":"인기 모집과 카테고리 확인","textChars":14,"textLines":1,"bbox":[78,581,527,28]}
+{"kind":"textbox","id":"sh/pkjap8ve","slide":5,"text":"다른 사람 모집은 상세·장소 찾기만 가능","textPreview":"다른 사람 모집은 상세·장소 찾기만 가능","textChars":22,"textLines":1,"bbox":[675,581,527,28]}
+{"kind":"image","id":"im/47udk36d","slide":5,"name":"","geometry":"roundRect","alt":"홈 화면","bbox":[78,234,527,296]}
+{"kind":"image","id":"im/583ud8ny","slide":5,"name":"","geometry":"roundRect","alt":"공동구매 목록","bbox":[675,234,527,296]}
+{"kind":"notes","id":"nt/ze103k","slide":5,"text":""}
+{"kind":"slide","id":"sl/igzunv","slide":6,"title":"CAMPUSCART · AI AGENT CHALLENGE","textShapes":12}
+{"kind":"textbox","id":"sh/1cjq1ova","slide":6,"text":"CAMPUSCART · AI AGENT CHALLENGE","textPreview":"CAMPUSCART · AI AGENT CHALLENGE","textChars":31,"textLines":1,"bbox":[64,28,500,22]}
+{"kind":"textbox","id":"sh/eps7q9cz","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1160,665,56,20]}
+{"kind":"textbox","id":"sh/fq18zedk","slide":6,"text":"DEMO 02 · CORE","textPreview":"DEMO 02 · CORE","textChars":14,"textLines":1,"bbox":[64,72,460,24]}
+{"kind":"textbox","id":"sh/ofapwju1","slide":6,"text":"수량을 고르면 결제 예정 금액이 즉시 계산됩니다","textPreview":"수량을 고르면 결제 예정 금액이 즉시 계산됩니다","textChars":26,"textLines":1,"bbox":[64,102,1120,62]}
+{"kind":"textbox","id":"sh/pgjq5ovm","slide":6,"text":"참여 시 수량과 출발 위치가 함께 저장되고, 동일 사용자의 중복 참여는 차단됩니다.","textPreview":"참여 시 수량과 출발 위치가 함께 저장되고, 동일 사용자의 중복 참여는 차단됩니다.","textChars":46,"textLines":1,"bbox":[64,165,1080,38]}
+{"kind":"shape","id":"sh/ne183edg","slide":6,"bbox":[860,235,340,92]}
+{"kind":"textbox","id":"sh/4jqpkzex","slide":6,"text":"1,450원 × 수량","textPreview":"1,450원 × 수량","textChars":11,"textLines":1,"bbox":[884,247,290,28]}
+{"kind":"textbox","id":"sh/5kzqt4v2","slide":6,"text":"상품 금액","textPreview":"상품 금액","textChars":5,"textLines":1,"bbox":[884,283,290,22]}
+{"kind":"shape","id":"sh/pgralg3m","slide":6,"bbox":[860,351,340,92]}
+{"kind":"textbox","id":"sh/ofitcb21","slide":6,"text":"배송비 ÷ 목표 인원","textPreview":"배송비 ÷ 목표 인원","textChars":11,"textLines":1,"bbox":[884,363,290,28]}
+{"kind":"textbox","id":"sh/3epsj6lg","slide":6,"text":"분담 금액","textPreview":"분담 금액","textChars":5,"textLines":1,"bbox":[884,399,290,22]}
+{"kind":"shape","id":"sh/2dgba1kb","slide":6,"bbox":[860,467,340,92]}
+{"kind":"textbox","id":"sh/dkrap0jy","slide":6,"text":"POST /join","textPreview":"POST /join","textChars":10,"textLines":1,"bbox":[884,479,290,28]}
+{"kind":"textbox","id":"sh/cjitgv2d","slide":6,"text":"수량 + 출발 위치 저장","textPreview":"수량 + 출발 위치 저장","textChars":13,"textLines":1,"bbox":[884,515,290,22]}
+{"kind":"textbox","id":"sh/bi9snq1s","slide":6,"text":"예시: 1개 참여 시 1,450원 + 배송비 375원 = 1,825원","textPreview":"예시: 1개 참여 시 1,450원 + 배송비 375원 = 1,825원","textChars":38,"textLines":1,"bbox":[860,592,340,46]}
+{"kind":"image","id":"im/jatgbyhs","slide":6,"name":"","geometry":"roundRect","alt":"공동구매 상세","bbox":[64,215,760,425]}
+{"kind":"notes","id":"nt/igzunv","slide":6,"text":""}
+{"kind":"slide","id":"sl/3pz30l","slide":7,"title":"CAMPUSCART · AI AGENT CHALLENGE","textShapes":13}
+{"kind":"textbox","id":"sh/qts3a50f","slide":7,"text":"CAMPUSCART · AI AGENT CHALLENGE","textPreview":"CAMPUSCART · AI AGENT CHALLENGE","textChars":31,"textLines":1,"bbox":[64,28,500,22]}
+{"kind":"textbox","id":"sh/dw3ml0jq","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1160,665,56,20]}
+{"kind":"textbox","id":"sh/svalcfi5","slide":7,"text":"PICKUP ALGORITHM","textPreview":"PICKUP ALGORITHM","textChars":16,"textLines":1,"bbox":[64,72,460,24]}
+{"kind":"textbox","id":"sh/jq14fq1o","slide":7,"text":"고정된 네 곳이 아니라, 참여자 위치로 후보를 다시 계산합니다","textPreview":"고정된 네 곳이 아니라, 참여자 위치로 후보를 다시 계산합니다","textChars":34,"textLines":1,"bbox":[64,102,1120,62]}
+{"kind":"textbox","id":"sh/ips36l03","slide":7,"text":"각 후보까지의 평균 이동 거리가 짧은 순서로 공동 수령지를 추천합니다.","textPreview":"각 후보까지의 평균 이동 거리가 짧은 순서로 공동 수령지를 추천합니다.","textChars":39,"textLines":1,"bbox":[64,165,1080,38]}
+{"kind":"shape","id":"sh/5sjmh0ju","slide":7,"bbox":[64,225,410,118]}
+{"kind":"textbox","id":"sh/4ral8vi9","slide":7,"text":"평균 이동 점수","textPreview":"평균 이동 점수","textChars":8,"textLines":1,"bbox":[88,241,360,26]}
+{"kind":"textbox","id":"sh/v2h4bq1s","slide":7,"text":"Σ 참여자별 거리 ÷ 참여자 수","textPreview":"Σ 참여자별 거리 ÷ 참여자 수","textChars":17,"textLines":1,"bbox":[88,280,360,38]}
+{"kind":"shape","id":"sh/u1832l07","slide":7,"bbox":[64,375,410,56]}
+{"kind":"textbox","id":"sh/ovapsvml","slide":7,"text":"A","textPreview":"A","textChars":1,"textLines":1,"bbox":[82,383,38,38]}
+{"kind":"textbox","id":"sh/9gj61036","slide":7,"text":"출발 위치 수집","textPreview":"출발 위치 수집","textChars":8,"textLines":1,"bbox":[132,383,315,38]}
+{"kind":"shape","id":"sh/mt87ql4f","slide":7,"bbox":[64,451,410,56]}
+{"kind":"textbox","id":"sh/nu1ozql0","slide":7,"text":"B","textPreview":"B","textChars":1,"textLines":1,"bbox":[82,459,38,38]}
+{"kind":"textbox","id":"sh/0rqpobmp","slide":7,"text":"후보별 거리 계산","textPreview":"후보별 거리 계산","textChars":9,"textLines":1,"bbox":[132,459,315,38]}
+{"kind":"shape","id":"sh/1sz6xg3u","slide":7,"bbox":[64,527,410,56]}
+{"kind":"textbox","id":"sh/ep87m14j","slide":7,"text":"C","textPreview":"C","textChars":1,"textLines":1,"bbox":[82,535,38,38]}
+{"kind":"textbox","id":"sh/zqhov654","slide":7,"text":"상위 3곳 추천","textPreview":"상위 3곳 추천","textChars":8,"textLines":1,"bbox":[132,535,315,38]}
+{"kind":"image","id":"im/nml4n2t4","slide":7,"name":"","geometry":"roundRect","alt":"수령 장소 계산","bbox":[520,218,696,410]}
+{"kind":"notes","id":"nt/3pz30l","slide":7,"text":""}
+{"kind":"slide","id":"sl/hfusbl","slide":8,"title":"CAMPUSCART · AI AGENT CHALLENGE","textShapes":16}
+{"kind":"textbox","id":"sh/q5w3ad0z","slide":8,"text":"CAMPUSCART · AI AGENT CHALLENGE","textPreview":"CAMPUSCART · AI AGENT CHALLENGE","textChars":31,"textLines":1,"bbox":[64,28,500,22]}
+{"kind":"textbox","id":"sh/d8nml8za","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1160,665,56,20]}
+{"kind":"textbox","id":"sh/c7elcnip","slide":8,"text":"GUARDRAILS","textPreview":"GUARDRAILS","textChars":10,"textLines":1,"bbox":[64,76,300,24]}
+{"kind":"textbox","id":"sh/3254fyh8","slide":8,"text":"기능보다 먼저, 결과가 흔들리지 않게 막았습니다","textPreview":"기능보다 먼저, 결과가 흔들리지 않게 막았습니다","textChars":26,"textLines":1,"bbox":[64,112,1120,58]}
+{"kind":"shape","id":"sh/i1w36t0n","slide":8,"bbox":[64,220,530,155]}
+{"kind":"textbox","id":"sh/54nmh8ze","slide":8,"text":"403","textPreview":"403","textChars":3,"textLines":1,"bbox":[88,238,190,24]}
+{"kind":"textbox","id":"sh/43el83it","slide":8,"text":"권한","textPreview":"권한","textChars":2,"textLines":1,"bbox":[88,270,470,34]}
+{"kind":"textbox","id":"sh/nyp4r2hc","slide":8,"text":"남이 만든 모집 수정·삭제·단계 변경 차단","textPreview":"남이 만든 모집 수정·삭제·단계 변경 차단","textChars":23,"textLines":1,"bbox":[88,311,470,46]}
+{"kind":"shape","id":"sh/mxg3ix0r","slide":8,"bbox":[634,220,530,155]}
+{"kind":"textbox","id":"sh/c3a9of6h","slide":8,"text":"409","textPreview":"409","textChars":3,"textLines":1,"bbox":[658,238,190,24]}
+{"kind":"textbox","id":"sh/x4jaxk72","slide":8,"text":"중복 참여","textPreview":"중복 참여","textChars":5,"textLines":1,"bbox":[658,270,470,34]}
+{"kind":"textbox","id":"sh/a18rmp8b","slide":8,"text":"한 사용자가 인원을 반복해서 올리지 못함","textPreview":"한 사용자가 인원을 반복해서 올리지 못함","textChars":22,"textLines":1,"bbox":[658,311,470,46]}
+{"kind":"shape","id":"sh/b21svupw","slide":8,"bbox":[64,415,530,155]}
+{"kind":"textbox","id":"sh/ozq9kfq5","slide":8,"text":"1 USER 1 VOTE","textPreview":"1 USER 1 VOTE","textChars":13,"textLines":1,"bbox":[88,433,190,24]}
+{"kind":"textbox","id":"sh/p0zatk7q","slide":8,"text":"투표","textPreview":"투표","textChars":2,"textLines":1,"bbox":[88,465,470,34]}
+{"kind":"textbox","id":"sh/2x8ri58f","slide":8,"text":"참여자만 한 표, 선택 변경 시 기존 표 감소","textPreview":"참여자만 한 표, 선택 변경 시 기존 표 감소","textChars":25,"textLines":1,"bbox":[88,506,470,46]}
+{"kind":"shape","id":"sh/nyhsrap0","slide":8,"bbox":[634,415,530,155]}
+{"kind":"textbox","id":"sh/0bq9gvq9","slide":8,"text":"FINALIZE","textPreview":"FINALIZE","textChars":8,"textLines":1,"bbox":[658,433,190,24]}
+{"kind":"textbox","id":"sh/1czap07u","slide":8,"text":"단계 전환","textPreview":"단계 전환","textChars":5,"textLines":1,"bbox":[658,465,470,34]}
+{"kind":"textbox","id":"sh/hg7yxcv6","slide":8,"text":"수령 장소 확정 전 결제 대기 진입 차단","textPreview":"수령 장소 확정 전 결제 대기 진입 차단","textChars":22,"textLines":1,"bbox":[658,506,470,46]}
+{"kind":"notes","id":"nt/hfusbl","slide":8,"text":""}
+{"kind":"slide","id":"sl/qq1u0m","slide":9,"title":"CAMPUSCART · AI AGENT CHALLENGE","textShapes":13}
+{"kind":"textbox","id":"sh/be5gjixo","slide":9,"text":"CAMPUSCART · AI AGENT CHALLENGE","textPreview":"CAMPUSCART · AI AGENT CHALLENGE","textChars":31,"textLines":1,"bbox":[64,28,500,22]}
+{"kind":"textbox","id":"sh/cfexsnet","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1160,665,56,20]}
+{"kind":"textbox","id":"sh/xgnylsfe","slide":9,"text":"TRIAL & ERROR","textPreview":"TRIAL & ERROR","textChars":13,"textLines":1,"bbox":[64,72,460,24]}
+{"kind":"textbox","id":"sh/yhwfuxwz","slide":9,"text":"‘장소 선택’에서 ‘공동 의사결정’으로 다시 설계했습니다","textPreview":"‘장소 선택’에서 ‘공동 의사결정’으로 다시 설계했습니다","textChars":31,"textLines":1,"bbox":[64,102,1120,62]}
+{"kind":"shape","id":"sh/zi5gn2xk","slide":9,"bbox":[64,205,520,350]}
+{"kind":"textbox","id":"sh/kjexw7e5","slide":9,"text":"BEFORE","textPreview":"BEFORE","textChars":6,"textLines":1,"bbox":[90,228,120,22]}
+{"kind":"textbox","id":"sh/l4nypsfq","slide":9,"text":"고정된 네 장소","textPreview":"고정된 네 장소","textChars":8,"textLines":1,"bbox":[90,266,420,42]}
+{"kind":"textbox","id":"sh/elsfitwv","slide":9,"text":"• 참여자 위치와 무관\n• 누구나 반복 투표 가능\n• 다른 사람 모집도 수정·삭제 노출","textPreview":"• 참여자 위치와 무관 | • 누구나 반복 투표 가능 | • 다른 사람 모집도 수정·삭제 노출","textChars":48,"textLines":3,"bbox":[90,330,420,145]}
+{"kind":"textbox","id":"sh/fmlwbyxg","slide":9,"text":"기능은 있었지만 서비스 규칙이 없었습니다.","textPreview":"기능은 있었지만 서비스 규칙이 없었습니다.","textChars":23,"textLines":1,"bbox":[90,500,420,30]}
+{"kind":"textbox","id":"sh/fy5o7atc","slide":9,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[588,335,92,54]}
+{"kind":"shape","id":"sh/exwne5cr","slide":9,"bbox":[680,205,536,350]}
+{"kind":"textbox","id":"sh/1kn69kbi","slide":9,"text":"AFTER","textPreview":"AFTER","textChars":5,"textLines":1,"bbox":[706,228,120,22]}
+{"kind":"textbox","id":"sh/gze5gfux","slide":9,"text":"위치 계산 + 투표 + 확정","textPreview":"위치 계산 + 투표 + 확정","textChars":15,"textLines":1,"bbox":[706,266,460,42]}
+{"kind":"textbox","id":"sh/rul43atg","slide":9,"text":"• 참여자 출발지로 후보 재계산\n• 한 사람당 한 번 참여·한 표\n• 개설자만 최종 장소와 단계 확정","textPreview":"• 참여자 출발지로 후보 재계산 | • 한 사람당 한 번 참여·한 표 | • 개설자만 최종 장소와 단계 확정","textChars":56,"textLines":3,"bbox":[706,330,460,145]}
+{"kind":"textbox","id":"sh/6tcna5cv","slide":9,"text":"화면 규칙을 서버 제약으로 다시 고정했습니다.","textPreview":"화면 규칙을 서버 제약으로 다시 고정했습니다.","textChars":25,"textLines":1,"bbox":[706,500,460,30]}
+{"kind":"notes","id":"nt/qq1u0m","slide":9,"text":""}
+{"kind":"slide","id":"sl/12k5o9","slide":10,"title":"CAMPUSCART · AI AGENT CHALLENGE","textShapes":23}
+{"kind":"textbox","id":"sh/fi5kzeds","slide":10,"text":"CAMPUSCART · AI AGENT CHALLENGE","textPreview":"CAMPUSCART · AI AGENT CHALLENGE","textChars":31,"textLines":1,"bbox":[64,28,500,22]}
+{"kind":"textbox","id":"sh/0jelsjud","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1160,665,56,20]}
+{"kind":"textbox","id":"sh/1kn21ovy","slide":10,"text":"VERIFICATION AGENT","textPreview":"VERIFICATION AGENT","textChars":18,"textLines":1,"bbox":[64,72,460,24]}
+{"kind":"textbox","id":"sh/6tcjm9cb","slide":10,"text":"기능 검증 Agent가 실제 API 상태를 다시 확인했습니다","textPreview":"기능 검증 Agent가 실제 API 상태를 다시 확인했습니다","textChars":33,"textLines":1,"bbox":[64,102,1120,62]}
+{"kind":"textbox","id":"sh/ru5kvedw","slide":10,"text":"요구사항 일치·실행 QA·코드 품질·보안·기존 맥락의 다섯 관점으로 검토했습니다.","textPreview":"요구사항 일치·실행 QA·코드 품질·보안·기존 맥락의 다섯 관점으로 검토했습니다.","textChars":45,"textLines":1,"bbox":[64,165,1080,38]}
+{"kind":"shape","id":"sh/sve1oju1","slide":10,"bbox":[64,274,1152,1]}
+{"kind":"textbox","id":"sh/tgn2x4vm","slide":10,"text":"동적 후보","textPreview":"동적 후보","textChars":5,"textLines":1,"bbox":[76,220,210,46]}
+{"kind":"textbox","id":"sh/ipcjipcz","slide":10,"text":"참여 위치 변경 후 후보 목록 변경","textPreview":"참여 위치 변경 후 후보 목록 변경","textChars":19,"textLines":1,"bbox":[300,220,720,46]}
+{"kind":"shape","id":"sh/jqlkrudk","slide":10,"bbox":[1060,227,120,32]}
+{"kind":"textbox","id":"sh/rq9gnex4","slide":10,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[1060,227,120,32]}
+{"kind":"shape","id":"sh/qp0fe9wz","slide":10,"bbox":[64,340,1152,1]}
+{"kind":"textbox","id":"sh/dsrypofa","slide":10,"text":"중복 참여","textPreview":"중복 참여","textChars":5,"textLines":1,"bbox":[76,286,210,46]}
+{"kind":"textbox","id":"sh/crihgjep","slide":10,"text":"동일 사용자 두 번째 참여","textPreview":"동일 사용자 두 번째 참여","textChars":14,"textLines":1,"bbox":[300,286,720,46]}
+{"kind":"shape","id":"sh/zu9gryxg","slide":10,"bbox":[1060,293,120,32]}
+{"kind":"textbox","id":"sh/et0zitwv","slide":10,"text":"409","textPreview":"409","textChars":3,"textLines":1,"bbox":[1060,293,120,32]}
+{"kind":"shape","id":"sh/1wbyt8fm","slide":10,"bbox":[64,406,1152,1]}
+{"kind":"textbox","id":"sh/0v2hk3e1","slide":10,"text":"비참여 투표","textPreview":"비참여 투표","textChars":6,"textLines":1,"bbox":[76,352,210,46]}
+{"kind":"textbox","id":"sh/fypgfuxw","slide":10,"text":"참여하지 않은 사용자 투표","textPreview":"참여하지 않은 사용자 투표","textChars":14,"textLines":1,"bbox":[300,352,720,46]}
+{"kind":"shape","id":"sh/uxgfmpwr","slide":10,"bbox":[1060,359,120,32]}
+{"kind":"textbox","id":"sh/ipora1kb","slide":10,"text":"403","textPreview":"403","textChars":3,"textLines":1,"bbox":[1060,359,120,32]}
+{"kind":"shape","id":"sh/jqxs36lw","slide":10,"bbox":[64,472,1152,1]}
+{"kind":"textbox","id":"sh/4r6tcb2h","slide":10,"text":"투표 변경","textPreview":"투표 변경","textChars":5,"textLines":1,"bbox":[76,418,210,46]}
+{"kind":"textbox","id":"sh/5sza5g32","slide":10,"text":"기존 후보 1→0, 새 후보 0→1","textPreview":"기존 후보 1→0, 새 후보 0→1","textChars":19,"textLines":1,"bbox":[300,418,720,46]}
+{"kind":"shape","id":"sh/u1or6hkf","slide":10,"bbox":[1060,425,120,32]}
+{"kind":"textbox","id":"sh/v2xszml0","slide":10,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[1060,425,120,32]}
+{"kind":"shape","id":"sh/w3698r25","slide":10,"bbox":[64,538,1152,1]}
+{"kind":"textbox","id":"sh/hofa1w3q","slide":10,"text":"단계 잠금","textPreview":"단계 잠금","textChars":5,"textLines":1,"bbox":[76,484,210,46]}
+{"kind":"textbox","id":"sh/mx4r2hk3","slide":10,"text":"장소 확정 전 결제 대기 진입","textPreview":"장소 확정 전 결제 대기 진입","textChars":16,"textLines":1,"bbox":[300,484,720,46]}
+{"kind":"shape","id":"sh/7ydsvmlo","slide":10,"bbox":[1060,491,120,32]}
+{"kind":"textbox","id":"sh/ps3uhkn6","slide":10,"text":"409","textPreview":"409","textChars":3,"textLines":1,"bbox":[1060,491,120,32]}
+{"kind":"shape","id":"sh/orud8fml","slide":10,"bbox":[64,604,1152,1]}
+{"kind":"textbox","id":"sh/3q1cfa50","slide":10,"text":"최종 확정","textPreview":"최종 확정","textChars":5,"textLines":1,"bbox":[76,550,210,46]}
+{"kind":"textbox","id":"sh/2psv654v","slide":10,"text":"최다 득표 장소가 pickupLocation에 반영","textPreview":"최다 득표 장소가 pickupLocation에 반영","textChars":28,"textLines":1,"bbox":[300,550,720,46]}
+{"kind":"shape","id":"sh/1ojud0na","slide":10,"bbox":[1060,557,120,32]}
+{"kind":"textbox","id":"sh/gnad4fmp","slide":10,"text":"PASS","textPreview":"PASS","textChars":4,"textLines":1,"bbox":[1060,557,120,32]}
+{"kind":"notes","id":"nt/12k5o9","slide":10,"text":""}
+{"kind":"slide","id":"sl/t549eq","slide":11,"title":"CAMPUSCART · AI AGENT CHALLENGE","textShapes":17}
+{"kind":"textbox","id":"sh/0zipovqx","slide":11,"text":"CAMPUSCART · AI AGENT CHALLENGE","textPreview":"CAMPUSCART · AI AGENT CHALLENGE","textChars":31,"textLines":1,"bbox":[64,28,500,22]}
+{"kind":"textbox","id":"sh/ze9ovq9c","slide":11,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[1160,665,56,20]}
+{"kind":"textbox","id":"sh/ed07ml8r","slide":11,"text":"MISSION CHECK","textPreview":"MISSION CHECK","textChars":13,"textLines":1,"bbox":[64,72,300,24]}
+{"kind":"textbox","id":"sh/94bq10re","slide":11,"text":"한 바퀴는 완성했고, 영속화는 다음 차례입니다","textPreview":"한 바퀴는 완성했고, 영속화는 다음 차례입니다","textChars":25,"textLines":1,"bbox":[64,108,1120,60]}
+{"kind":"textbox","id":"sh/832psvqt","slide":11,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[80,205,44,44]}
+{"kind":"textbox","id":"sh/n2t8zq98","slide":11,"text":"Express REST CRUD","textPreview":"Express REST CRUD","textChars":17,"textLines":1,"bbox":[145,205,300,34]}
+{"kind":"textbox","id":"sh/m1k7ql8n","slide":11,"text":"생성·조회·수정·삭제와 참여 흐름","textPreview":"생성·조회·수정·삭제와 참여 흐름","textChars":18,"textLines":1,"bbox":[470,205,650,34]}
+{"kind":"textbox","id":"sh/x8vq50ra","slide":11,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[80,289,44,44]}
+{"kind":"textbox","id":"sh/w7mpwfq5","slide":11,"text":"첫 수직슬라이스","textPreview":"첫 수직슬라이스","textChars":8,"textLines":1,"bbox":[145,289,300,34]}
+{"kind":"textbox","id":"sh/6xofyh8v","slide":11,"text":"화면 요청 → 서버 처리 → 상태 반영","textPreview":"화면 요청 → 서버 처리 → 상태 반영","textChars":21,"textLines":1,"bbox":[470,289,650,34]}
+{"kind":"textbox","id":"sh/ryxg7mpg","slide":11,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[80,373,44,44]}
+{"kind":"textbox","id":"sh/szqx0rql","slide":11,"text":"기능 검증 Agent","textPreview":"기능 검증 Agent","textChars":11,"textLines":1,"bbox":[145,373,300,34]}
+{"kind":"textbox","id":"sh/t0zy9w76","slide":11,"text":"5개 관점 재검토와 API 실측","textPreview":"5개 관점 재검토와 API 실측","textChars":17,"textLines":1,"bbox":[470,373,650,34]}
+{"kind":"textbox","id":"sh/e18f218r","slide":11,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[80,457,44,44]}
+{"kind":"textbox","id":"sh/f2hgbmpc","slide":11,"text":"Supabase 연결","textPreview":"Supabase 연결","textChars":11,"textLines":1,"bbox":[145,457,300,34]}
+{"kind":"textbox","id":"sh/gnqx4rqx","slide":11,"text":"Auth·RLS·영속 저장으로 교체 예정","textPreview":"Auth·RLS·영속 저장으로 교체 예정","textChars":22,"textLines":1,"bbox":[470,457,650,34]}
+{"kind":"shape","id":"sh/1ozydw7i","slide":11,"bbox":[64,570,1152,72]}
+{"kind":"textbox","id":"sh/a54fqx8n","slide":11,"text":"다음 주: Supabase Auth + RLS · DB 트랜잭션 · 실제 캠퍼스 좌표 연동","textPreview":"다음 주: Supabase Auth + RLS · DB 트랜잭션 · 실제 캠퍼스 좌표 연동","textChars":50,"textLines":1,"bbox":[90,584,1100,42]}
+{"kind":"notes","id":"nt/t549eq","slide":11,"text":""}

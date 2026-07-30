@@ -29,13 +29,78 @@ function trustedHostname(hostname, trustedHosts) {
 export function isTrustedProductUrl(input, trustedHosts = TRUSTED_PRODUCT_HOSTS) {
   try {
     const url = new URL(input);
-    return url.protocol === "https:"
-      && !url.username
-      && !url.password
-      && !url.port
-      && trustedHostname(url.hostname.toLowerCase(), trustedHosts);
+    const hostname = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+    if (!["http:", "https:"].includes(url.protocol)
+      || url.username
+      || url.password
+      || url.port
+      || !hostname
+      || hostname === "localhost"
+      || hostname.endsWith(".localhost")) return false;
+    if (isIP(hostname)) {
+      try {
+        assertPublicAddress(hostname);
+      } catch {
+        return false;
+      }
+    }
+    return trustedHosts === TRUSTED_PRODUCT_HOSTS || trustedHostname(hostname, trustedHosts);
   } catch {
     return false;
+  }
+}
+
+export function isAllowedProductImage(input) {
+  if (isTrustedProductUrl(input)) return true;
+  return typeof input === "string"
+    && input.length <= 700_000
+    && /^data:image\/(?:png|jpeg|webp);base64,[a-z\d+/=\s]+$/i.test(input);
+}
+
+export function productPreviewFallback(input) {
+  try {
+    const url = new URL(input);
+    if (!isTrustedProductUrl(url.href)) return null;
+    const hostname = url.hostname.toLowerCase();
+    const isCoupangProduct = trustedHostname(hostname, ["coupang.com"])
+      && url.pathname.startsWith("/vp/products/");
+    const isNaverBrandProduct = hostname === "brand.naver.com"
+      && /^\/[^/]+\/products\/[^/]+/.test(url.pathname);
+    const queryTitle = (
+      isCoupangProduct
+        ? url.searchParams.get("q")
+        : isNaverBrandProduct
+          ? url.searchParams.get("n_query")
+          : ["q", "query", "keyword", "search", "product", "productName", "name", "title"]
+              .map((key) => url.searchParams.get(key))
+              .find(Boolean)
+    )?.trim().slice(0, 80);
+    const pathTitle = decodeURIComponent(url.pathname)
+      .split("/")
+      .filter(Boolean)
+      .reverse()
+      .find((segment) => /[a-z가-힣]/i.test(segment))
+      ?.replace(/\.[a-z\d]{2,5}$/i, "")
+      .replace(/[-_+]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 80);
+    const title = queryTitle || pathTitle;
+    if (!title) return null;
+    const warning = isCoupangProduct
+      ? "쿠팡이 이미지와 가격 자동 조회를 제한해 상품명만 채웠어요."
+      : isNaverBrandProduct
+        ? "네이버가 이미지와 가격 자동 조회를 제한해 상품명만 채웠어요."
+        : "이 사이트는 자동 조회가 제한되어 상품명만 채웠어요.";
+    return {
+      url: url.href,
+      title,
+      image: null,
+      price: null,
+      warnings: [warning],
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -147,9 +212,8 @@ export async function validateProductUrl(input, options = {}) {
       assertPublicAddress(typeof result === "string" ? result : result.address);
     }
   }
-  const trustedHosts = options.trustedHosts ?? TRUSTED_PRODUCT_HOSTS;
-  const testHostname = Boolean(options.lookup) && hostname.endsWith(".example");
-  if (!testHostname && !trustedHostname(hostname, trustedHosts)) {
+  const trustedHosts = options.trustedHosts;
+  if (trustedHosts && !trustedHostname(hostname, trustedHosts)) {
     throw new Error("This shopping site is not supported for automatic preview.");
   }
   return url;

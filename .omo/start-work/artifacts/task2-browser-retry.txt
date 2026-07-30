@@ -1,0 +1,35 @@
+Task 2 LocationPicker browser QA retry
+Date: 2026-07-30 (Asia/Seoul)
+Result: BLOCKED — browser unavailable
+
+Browser evidence
+- Browser skill was loaded and followed.
+- Runtime initialization succeeded.
+- Default browser selection returned: "No browser is available".
+- Required bootstrap troubleshooting guidance was read.
+- A single browser discovery call returned an empty list: [].
+- Therefore no Chrome or in-app Browser tab/context could be opened or controlled.
+
+Required scenarios (not executable; no PASS claim)
+- Map click / coordinate state change: BLOCKED
+- Draggable marker: BLOCKED
+- Address-only entry ("중앙도서관 북문"): BLOCKED
+- Clear/cancel then reselect/resume: BLOCKED
+- Geolocation denial fallback and enabled address input: BLOCKED
+- OpenStreetMap attribution visibility: BLOCKED
+- DOM-state verification: BLOCKED
+- Screenshot: NOT CAPTURED because no browser surface existed
+
+Artifact paths
+- Report: .omo/start-work/artifacts/task2-browser-retry.txt
+- Requested screenshot: .omo/start-work/artifacts/task2-browser-retry.png (not created; browser unavailable)
+
+Cleanup receipt
+- Browser contexts/tabs created: none
+- Browser contexts/tabs closed: none
+- Services started: none
+- PID/port registered: none
+- PID/port stopped: none
+- Temporary files created: none
+- Source/test files edited: none
+- Only this required QA artifact was created.

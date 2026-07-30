@@ -37,3 +37,22 @@ export function findPickupCandidates(participants) {
 
   return [...ranked, ...withoutCoordinates].slice(0, 3);
 }
+
+export function findPickupCandidateDetails(participants) {
+  const uniqueByName = new Map(
+    participants
+      .filter((participant) => participant.startLocation)
+      .map((participant) => [participant.startLocation, participant]),
+  );
+
+  return findPickupCandidates(participants).map((name) => {
+    const candidate = uniqueByName.get(name);
+    const hasCoordinates = Number.isFinite(candidate?.latitude)
+      && Number.isFinite(candidate?.longitude);
+    return {
+      name,
+      latitude: hasCoordinates ? Number(candidate.latitude.toFixed(3)) : null,
+      longitude: hasCoordinates ? Number(candidate.longitude.toFixed(3)) : null,
+    };
+  });
+}

@@ -1,0 +1,138 @@
+﻿import { useMemo, useState } from "react";
+import { previewProduct } from "../services/groupBuysApi";
+import { calculateFreeShippingTarget } from "../services/freeShippingTarget";
+import ProductImage from "./ProductImage";
+
+const initialForm = {
+  name: "",
+  category: "?앺솢",
+  targetPeople: 6,
+  deadline: "?댁씪 ?ㅽ썑 6??,
+  pickupLocation: "",
+  unitPrice: 5000,
+  shippingFee: 0,
+  productUrl: "",
+  imageUrl: "",
+  freeShippingThreshold: "",
+  perPersonQuantity: 1,
+};
+
+function GroupBuyEditor({ editingItem, initialName = "", isSaving, onCancel, onSave }) {
+  const [form, setForm] = useState(() => {
+    const values = { ...initialForm, name: initialName, ...editingItem };
+    return {
+      ...values,
+      productUrl: values.productUrl ?? "",
+      imageUrl: values.imageUrl ?? "",
+      freeShippingThreshold: values.freeShippingThreshold ?? "",
+      perPersonQuantity: values.perPersonQuantity ?? 1,
+    };
+  });
+  const [previewState, setPreviewState] = useState({ status: "idle", message: "" });
+  const suggestedTarget = useMemo(() => calculateFreeShippingTarget({
+    unitPrice: Number(form.unitPrice),
+    perPersonQuantity: Number(form.perPersonQuantity),
+    freeShippingThreshold: Number(form.freeShippingThreshold),
+  }), [form.freeShippingThreshold, form.perPersonQuantity, form.unitPrice]);
+
+  function change(event) {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  async function loadProduct() {
+    if (!form.productUrl.trim()) {
+      setPreviewState({ status: "error", message: "?곹뭹 留곹겕瑜?癒쇱? ?낅젰??二쇱꽭??" });
+      return;
+    }
+    setPreviewState({ status: "loading", message: "?곹뭹 ?뺣낫瑜??뺤씤?섍퀬 ?덉뼱??" });
+    try {
+      const product = await previewProduct(form.productUrl.trim());
+      setForm((current) => ({
+        ...current,
+        productUrl: product.sourceUrl || current.productUrl,
+        name: product.title || current.name,
+        imageUrl: product.imageUrl || current.imageUrl,
+        unitPrice: product.unitPrice || current.unitPrice,
+      }));
+      setPreviewState({ status: "success", message: "遺덈윭???댁슜? ?먯쑀濡?쾶 ?섏젙?????덉뼱??" });
+    } catch (error) {
+      setPreviewState({ status: "error", message: `${error.message} 吏곸젒 ?낅젰?댁꽌 怨꾩냽 ?묒꽦?????덉뼱??` });
+    }
+  }
+
+  function submit(event) {
+    event.preventDefault();
+    onSave({
+      ...form,
+      name: form.name.trim(),
+      productUrl: String(form.productUrl ?? "").trim() || null,
+      imageUrl: String(form.imageUrl ?? "").trim() || null,
+      targetPeople: Number(form.targetPeople),
+      unitPrice: Number(form.unitPrice),
+      shippingFee: Number(form.shippingFee),
+      freeShippingThreshold: form.freeShippingThreshold === "" ? null : Number(form.freeShippingThreshold),
+      perPersonQuantity: Number(form.perPersonQuantity),
+    });
+  }
+
+  return (
+    <aside className="editor-panel link-editor">
+      <div className="panel-heading">
+        <div><span className="kicker">{editingItem ? "EDIT" : "NEW"}</span><h2>{editingItem ? "怨듬룞援щℓ ?섏젙" : "??怨듬룞援щℓ"}</h2></div>
+        <button aria-label="?묒꽦 痍⑥냼" className="icon-button" type="button" onClick={onCancel}>횞</button>
+      </div>
+      <form className="editor-form" onSubmit={submit}>
+        <section className="link-import">
+          <div>
+            <strong>?곹뭹 留곹겕濡?鍮좊Ⅴ寃??묒꽦?섍린</strong>
+            <p>留곹겕瑜?遺숈뿬 ?ｌ쑝硫??곹뭹紐? ?대?吏, 媛寃⑹쓣 媛?ν븳 留뚰겮 梨꾩썙?쒕젮??</p>
+          </div>
+          <div className="link-input-row">
+            <input aria-label="?곹뭹 留곹겕" name="productUrl" placeholder="https://..." type="url" value={form.productUrl} onChange={change} />
+            <button type="button" disabled={previewState.status === "loading"} onClick={loadProduct}>
+              {previewState.status === "loading" ? "遺덈윭?ㅻ뒗 以? : "?곹뭹 ?뺣낫 遺덈윭?ㅺ린"}
+            </button>
+          </div>
+          {previewState.message && <p className={`preview-message ${previewState.status}`}>{previewState.message}</p>}
+        </section>
+
+        <div className="product-form-grid">
+          <ProductImage category={form.category} className="editor-product-image" imageUrl={form.imageUrl} name={form.name || "?곹뭹"} />
+          <div className="product-fields">
+            <label>?곹뭹紐?input name="name" required maxLength="80" placeholder="?? ?⑤갚吏??먯씠?? value={form.name} onChange={change} /></label>
+            <label>????대?吏 二쇱냼<input name="imageUrl" type="url" placeholder="?먮룞 ?낅젰?섍굅??吏곸젒 ?ｌ쓣 ???덉뼱?? value={form.imageUrl} onChange={change} /></label>
+          </div>
+        </div>
+
+        <div className="field-row">
+          <label>移댄뀒怨좊━<select name="category" value={form.category} onChange={change}>{["?앺솢", "?앺뭹", "媛꾩떇", "臾멸뎄", "湲고?"].map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label>?곹뭹 ?④?<input name="unitPrice" type="number" min="100" required value={form.unitPrice} onChange={change} /></label>
+        </div>
+        <div className="field-row three">
+          <label>1?몃떦 ?섎웾<input name="perPersonQuantity" type="number" min="1" max="100" required value={form.perPersonQuantity} onChange={change} /></label>
+          <label>臾대즺諛곗넚 湲곗?<input name="freeShippingThreshold" type="number" min="0" placeholder="?? 50000" value={form.freeShippingThreshold ?? ""} onChange={change} /></label>
+          <label>珥?諛곗넚鍮?input name="shippingFee" type="number" min="0" required value={form.shippingFee} onChange={change} /></label>
+        </div>
+
+        {suggestedTarget && (
+          <div className="shipping-suggestion">
+            <div><span>臾대즺諛곗넚 留욎땄 異붿쿇</span><strong>理쒖냼 {suggestedTarget}紐낆씠 紐⑥씠硫?臾대즺諛곗넚 湲덉븸???섏뼱??</strong><small>{Number(form.unitPrice).toLocaleString()}??횞 {form.perPersonQuantity}媛?횞 {suggestedTarget}紐?/small></div>
+            <button type="button" onClick={() => setForm((current) => ({ ...current, targetPeople: suggestedTarget, shippingFee: 0 }))}>{suggestedTarget}紐낆쑝濡??곸슜</button>
+          </div>
+        )}
+
+        <div className="field-row">
+          <label>紐⑺몴 ?몄썝<input name="targetPeople" type="number" min="2" max="50" required value={form.targetPeople} onChange={change} /></label>
+          <label>留덇컧 ?쒓컙<input name="deadline" required value={form.deadline} onChange={change} /></label>
+        </div>
+        <label>泥?異쒕컻 ?꾩튂<input name="pickupLocation" required maxLength="80" placeholder="?? ?곕━ ?숆탳 遺곷Ц" value={form.pickupLocation} onChange={change} /></label>
+        <button className="primary-button" type="submit" disabled={isSaving}>{isSaving ? "??ν븯??以?.." : editingItem ? "蹂寃쎌궗????? : "怨듬룞援щℓ 留뚮뱾湲?}</button>
+        <p className="form-note">李몄뿬?먮뱾??異쒕컻 ?꾩튂媛 紐⑥씠硫?紐⑤몢?먭쾶 ?명븳 ?섎졊 ?μ냼 ?꾨낫瑜??뺥븷 ???덉뼱??</p>
+      </form>
+    </aside>
+  );
+}
+
+export default GroupBuyEditor;
+

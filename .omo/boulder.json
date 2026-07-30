@@ -1,0 +1,30 @@
+{
+  "schema_version": 2,
+  "active_work_id": "map-location-picker",
+  "works": {
+    "campuscart-first-deployment": {
+      "work_id": "campuscart-first-deployment",
+      "active_plan": ".omo/plans/campuscart-first-deployment.md",
+      "plan_name": "campuscart-first-deployment",
+      "session_ids": ["codex:campuscart-first-deployment-20260728"],
+      "status": "paused",
+      "worktree_path": null
+    },
+    "link-driven-group-buy": {
+      "work_id": "link-driven-group-buy",
+      "active_plan": ".omo/plans/link-driven-group-buy.md",
+      "plan_name": "link-driven-group-buy",
+      "session_ids": ["codex:link-driven-group-buy-20260729"],
+      "status": "paused",
+      "worktree_path": null
+    },
+    "map-location-picker": {
+      "work_id": "map-location-picker",
+      "active_plan": ".omo/plans/map-location-picker.md",
+      "plan_name": "map-location-picker",
+      "session_ids": ["codex:019f69dc-c440-7fe3-b9c2-fad07f559e82"],
+      "status": "active",
+      "worktree_path": null
+    }
+  }
+}

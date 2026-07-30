@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { findPickupCandidates, hasCompleteCoordinatePair } from "./location-candidates.js";
+import { findPickupCandidateDetails, findPickupCandidates, hasCompleteCoordinatePair } from "./location-candidates.js";
 
 test("Given coordinates, when only one value is present, then the pair is rejected", () => {
   assert.equal(hasCompleteCoordinatePair({ latitude: 35.1, longitude: null }), false);
@@ -60,5 +60,19 @@ test("Given an owner location without coordinates, when participant coordinates 
     "참여자 A",
     "참여자 B",
     "개설자 출발 위치",
+  ]);
+});
+
+test("map candidate details follow vote order and lower coordinate precision", () => {
+  const participants = [
+    { startLocation: "북문 카페", latitude: 35.10004, longitude: 128.10004 },
+    { startLocation: "중앙역", latitude: 35.10106, longitude: 128.10106 },
+    { startLocation: "직접 입력 장소", latitude: null, longitude: null },
+  ];
+
+  assert.deepEqual(findPickupCandidateDetails(participants), [
+    { name: "북문 카페", latitude: 35.1, longitude: 128.1 },
+    { name: "중앙역", latitude: 35.101, longitude: 128.101 },
+    { name: "직접 입력 장소", latitude: null, longitude: null },
   ]);
 });

@@ -1,0 +1,1 @@
+﻿status=200 body={"status":"ok","storage":"supabase","label":"Supabase 저장소"}

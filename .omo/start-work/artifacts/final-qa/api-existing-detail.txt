@@ -1,0 +1,2 @@
+﻿id=54e6a279-dad1-40f0-aac5-83267fd9617b status=200
+{"groupBuy":{"id":"54e6a279-dad1-40f0-aac5-83267fd9617b","name":"아몬드브리즈","category":"식품","targetPeople":2,"currentPeople":2,"deadline":"내일 오후 6시","finalPickup":null,"pickupLocation":"참여 후 공개","status":"closed","hostName":"슈슈","unitPrice":5000,"shippingFee":3000,"stage":"정산 완료","createdAt":"2026-07-24T05:41:31.283644+00:00","participants":[],"votes":{},"pickupCandidates":[],"isOwner":false,"userJoined":false,"userQuantity":null,"userVote":null}}

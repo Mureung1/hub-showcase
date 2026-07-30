@@ -1,0 +1,67 @@
+Task 1: creator pickup coordinate contract and Supabase schema
+Gate decision: LOCAL PASS; BLOCKED_REMOTE_MIGRATION for deployed Supabase verification
+
+PIN
+- Unchanged repository suite: 8/8 passed.
+- Added exact pickupLocation patch characterization: repository suite 9/9 passed before production edits.
+
+RED
+- Repository coordinate contract: 4 intended failures. DTO fields and create fields were undefined; patch mapping returned {}.
+- Validation contract: one-sided coordinate payload was accepted instead of rejected.
+
+GREEN / AUTOMATED
+- node --test server/group-buy-repository.test.js server/pickup-coordinate-schema.test.js
+  Result: 17 tests, 17 passed, 0 failed.
+- npm run lint
+  Result: exit 0. One unrelated frontend warning at src/components/LocationPicker.jsx:62.
+- node --check server/demo.js
+- node --check server/group-buy-repository.js
+- node --check server/pickup-coordinate-schema.js
+- git diff --check on scoped files
+  Result: all exit 0.
+- Exact repository observables:
+  DB {"pickup_latitude":"-90","pickup_longitude":"180"} -> DTO {"pickupLatitude":-90,"pickupLongitude":180}
+  stale DB row {} -> DTO {"pickupLatitude":null,"pickupLongitude":null}
+  create boundaries -> {"pickup_latitude":90,"pickup_longitude":-180}
+  clear patch -> {"pickup_latitude":null,"pickup_longitude":null}
+
+HTTP CHANNEL
+- Harness: temporary Node HTTP server on 127.0.0.1:31991 importing pickupCoordinateSchema.
+- Valid invocation:
+  curl.exe -sS -i -X POST http://127.0.0.1:31991/validate -H "Content-Type: application/json" --data-binary @.omo/start-work/task1-valid.json
+- Valid observable:
+  HTTP/1.1 200 OK
+  {"pickupLatitude":37.5665,"pickupLongitude":126.978}
+- Malformed invocation:
+  curl.exe -sS -i -X POST http://127.0.0.1:31991/validate -H "Content-Type: application/json" --data-binary @.omo/start-work/task1-malformed.json
+- Malformed observable:
+  HTTP/1.1 400 Bad Request
+  {"error":"INVALID_PICKUP_COORDINATES"}
+- Channel decision: PASS.
+
+MIGRATION
+- Artifact: supabase/migrations/202607300001_add_group_buy_pickup_coordinates.sql
+- Nullable pickup_latitude and pickup_longitude double precision columns.
+- Range constraints: latitude [-90, 90], longitude [-180, 180].
+- Complete-pair constraint: both columns null or both non-null.
+- Remote probe:
+  node --env-file=.env queried pickup_latitude,pickup_longitude.
+  Observable: PostgreSQL 42703, column group_buys.pickup_latitude does not exist.
+  Decision: BLOCKED_REMOTE_MIGRATION. No production write attempted.
+
+ADVERSARIAL CLASSES
+- malformed input: one-sided, string, NaN, Infinity, and out-of-range pairs rejected.
+- stale state: rows without new columns map to exact null/null DTO values.
+- dirty worktree: pre-existing changes preserved; only assigned backend/migration files changed.
+- hung or long commands: all verification commands used bounded timeouts.
+- flaky tests: focused suite passed repeatedly after green.
+- misleading success: exact DTO/row values and HTTP status/body asserted.
+- repeated interruptions: QA worker silence was treated as inconclusive; direct bounded scenario supplied evidence.
+- cancel/resume: not applicable to stateless synchronous coordinate parsing.
+- prompt injection: not applicable; no LLM or prompt surface.
+
+CLEANUP RECEIPT
+- Temporary harness PID 340944 terminated.
+- Get-NetTCPConnection confirmed no listener on port 31991.
+- Temporary harness and both JSON payload files deleted.
+- No containers, browser contexts, tmux sessions, temp directories, or bound ports remain.

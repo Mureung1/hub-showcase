@@ -7,11 +7,12 @@
     "node": ">=20.19"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.js",
+    "dev:frontend": "vite",
     "start": "node server/demo.js",
     "server:demo": "node --env-file=.env server/demo.js",
     "db:check": "node --env-file=.env server/check-supabase.js",
-    "test": "node --test server/config.test.js server/group-buy-policy.test.js server/group-buy-presenter.test.js server/group-buy-repository.test.js server/location-candidates.test.js server/product-preview.test.js src/services/freeShippingTarget.test.js src/services/groupBuyFilters.test.js src/services/groupBuyRecommendations.test.js src/services/settlement.test.js",
+    "test": "node --test server/config.test.js server/group-buy-policy.test.js server/group-buy-presenter.test.js server/group-buy-repository.test.js server/location-candidates.test.js server/pickup-coordinate-schema.test.js server/product-preview.test.js src/services/freeShippingTarget.test.js src/services/groupBuyFilters.test.js src/services/groupBuyRecommendations.test.js src/services/locationSelection.test.js src/services/settlement.test.js",
     "test:db": "node --env-file=.env --test server/*.integration.test.js",
     "build": "vite build",
     "lint": "eslint .",
@@ -21,6 +22,7 @@
     "@supabase/supabase-js": "^2.110.7",
     "cors": "^2.8.5",
     "express": "^5.1.0",
+    "leaflet": "^1.9.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zod": "^4.1.5"

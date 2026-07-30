@@ -1,0 +1,125 @@
+Task 2 Leaflet LocationPicker contract audit
+Date: 2026-07-30 Asia/Seoul
+Scope: package.json/package-lock.json, src/main.jsx, src/components/LocationPicker.jsx,
+       src/services/locationSelection.js, src/services/locationSelection.test.js, src/App.css
+Edits: none to scoped/production/plan/ledger files. This report is the only created artifact.
+
+OVERALL: PASS on the requested acceptance behaviors, with verification caveat:
+the exact lint command did not complete within the required 30-second bound and is therefore
+not a green quality gate. No acceptance behavior was found missing by structural review.
+
+PASS/FAIL EVIDENCE MATRIX
+
+1. PASS — dependency and CSS integration
+   - package.json:25 declares leaflet ^1.9.4.
+   - package-lock.json:14 locks the root dependency; package-lock.json:2146-2149 records
+     node_modules/leaflet version 1.9.4 and its registry artifact.
+   - src/main.jsx:4 imports leaflet/dist/leaflet.css.
+   - src/App.css:117 defines the picker/map/pin/attribution styles and src/App.css:118
+     provides the responsive map layout.
+   - npm run build emitted dist/assets/index-BgxUCgds.css (54.61 kB) and
+     dist/assets/index-B8uX0XHG.js (385.94 kB). Inspection of the built CSS found
+     Leaflet selectors (.leaflet-container/.leaflet-control-attribution) plus .location-map.
+
+2. PASS — controlled props
+   - src/components/LocationPicker.jsx:11-18 receives address, latitude, longitude, onChange,
+     label, and inputId as props.
+   - src/components/LocationPicker.jsx:138-145 binds input value={address} and delegates edits.
+   - src/components/LocationPicker.jsx:114-115 creates the complete next selection through
+     onChange rather than owning address/coordinates internally.
+   - src/components/LocationPicker.jsx:66-88 synchronizes marker/view from latitude/longitude.
+
+3. PASS — default Seoul center and zoom 15
+   - src/components/LocationPicker.jsx:5 sets [37.5665, 126.978].
+   - src/components/LocationPicker.jsx:36-43 uses that fallback and zoom 15 when no complete
+     initial coordinate pair exists (existing coordinates use zoom 17).
+
+4. PASS — map click updates marker coordinates through controlled state
+   - src/components/LocationPicker.jsx:48-55 handles Leaflet click and emits the clicked
+     latlng through createLocationSelection/onChange.
+   - src/components/LocationPicker.jsx:66-88 observes the resulting props, creates or moves
+     the marker, and recenters the map.
+   - src/components/LocationPicker.jsx:28-30 keeps the click handler's address/onChange refs
+     current, avoiding a stale mount-time closure for map clicks.
+
+5. PASS — geolocation success moves selection/map
+   - src/components/LocationPicker.jsx:90-112 requests current position.
+   - src/components/LocationPicker.jsx:97-104 emits coordinates and clears locating state.
+   - src/components/LocationPicker.jsx:66-88 then moves/creates the marker and view from the
+     controlled prop update.
+   Caveat: the asynchronous callback at lines 97-104 captures address/onChange from the
+   render that initiated the request rather than using the refs at lines 22-30. If those
+   props change during the request, the response can overwrite newer address state.
+
+6. PASS — denial/unavailable fallback
+   - src/components/LocationPicker.jsx:91-94 reports unavailable geolocation and leaves the
+     map/manual address path usable.
+   - src/components/LocationPicker.jsx:106-109 reports denial/error and clears the disabled
+     locating state; map click and address input remain available.
+
+7. PASS — attribution
+   - src/components/LocationPicker.jsx:44-47 configures OpenStreetMap tiles with explicit
+     copyright/contributor attribution.
+   - src/App.css:117 only changes attribution font size; it does not hide attribution.
+
+8. PASS — Leaflet cleanup
+   - src/components/LocationPicker.jsx:59-63 calls map.remove() on effect cleanup and clears
+     map/marker refs. This removes Leaflet listeners and supports React StrictMode remounts.
+   Caveat: the zero-delay invalidateSize timer at line 57 is not retained/cancelled, and an
+   in-flight geolocation callback is not cancellable; neither negates the explicit Leaflet
+   map cleanup criterion, but both are interruption hardening opportunities.
+
+9. PASS — clear/cancel pin path
+   - src/components/LocationPicker.jsx:118-120 emits null/null coordinates while retaining
+     address.
+   - src/components/LocationPicker.jsx:69-72 removes the marker when controlled coordinates
+     clear.
+   - src/services/locationSelection.test.js:6-11 characterizes address-only selection.
+
+10. PASS — malformed coordinates rejected
+    - src/services/locationSelection.js:3-12 accepts only null/null or a complete finite,
+      in-range latitude/longitude pair and throws otherwise.
+    - src/services/locationSelection.test.js:22-25 exercises incomplete and out-of-range
+      coordinates.
+
+AUTOMATED VERIFICATION (exact commands; all bounded to 30 seconds)
+
+A. `node --test src/services/locationSelection.test.js`
+   Exit: 0
+   Result: tests 3, pass 3, fail 0, duration_ms 152.0358.
+   Includes typed address/no coordinates, complete map pair, incomplete/out-of-range rejection.
+
+B. `node --test src/services/locationSelection.test.js`
+   Exit: 0
+   Result: tests 3, pass 3, fail 0, duration_ms 317.0301.
+   Second consecutive green run; no observed flake.
+
+C. `npm run lint`
+   Exit: 124 (runner timeout)
+   Result: timed out after 34130 ms with no command output. This is FAIL/INCONCLUSIVE as a
+   quality gate, not evidence of lint success. Follow-up process inspection showed the
+   eslint process naturally exited; no process was killed.
+
+D. `npm run build`
+   Exit: 0
+   Result: Vite 8.1.3, 36 modules transformed, built in 560 ms.
+   Outputs: dist/index.html 0.46 kB; CSS 54.61 kB; JS 385.94 kB.
+
+MANUAL QA
+Not run. Vite preview was not started, so the conditional exact curl check did not apply.
+No port/PID cleanup was necessary.
+
+DIRTY WORKTREE RECEIPT
+- Before audit: worktree already dirty, including modified package.json/package-lock.json,
+  src/main.jsx, src/App.css and untracked LocationPicker/locationSelection files, plus unrelated
+  user changes. These were preserved.
+- After audit: the same pre-existing scoped and unrelated statuses remained. The only intentional
+  addition from this audit is this required artifact.
+- Build refreshed the existing ignored dist output; git status did not list dist.
+
+CLEANUP RECEIPT
+- No preview server started.
+- No port opened.
+- No temporary files created.
+- No lingering audit-started eslint process observed after timeout.
+- No production, plan, ledger, or commit changes made.

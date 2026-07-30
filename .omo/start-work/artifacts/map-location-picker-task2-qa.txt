@@ -1,0 +1,42 @@
+Task 2: Leaflet LocationPicker
+
+PIN/RED/GREEN
+- RED: locationSelection import failed before helper implementation.
+- GREEN: node --test src/services/locationSelection.test.js => 5/5 pass.
+- Privacy RED: OSM disclosure constant missing; GREEN after notice added.
+- Stale callback RED: request activity helper missing; GREEN after request-id and unmount guards added.
+
+Automated
+- npm test => 57/57 pass before final focused additions.
+- npm run lint => pass.
+- npm run build => pass.
+- final focused test => 5/5 pass.
+
+Browser channel
+- Chrome at http://127.0.0.1:5173/group-buys/new rendered a 584x280 Leaflet map with OSM tiles and no page errors.
+- Map click changed marker count 0 -> 1 and displayed coordinates.
+- Clear changed marker count 1 -> 0; address-only value remained usable.
+- Join detail page repeated map click, clear, and address-only flow successfully.
+- Authenticated persistence is intentionally reserved for Task 5 after remote migration.
+
+Structural verification added after browser run
+- marker uses draggable:true and dragend updates controlled coordinates.
+- map.remove() cleanup exists.
+- stale/unmounted geolocation callbacks are ignored.
+- OSM attribution and third-party tile-request privacy notice are visible.
+
+Adversarial classes
+- malformed input: partial/out-of-range coordinate pairs rejected.
+- cancel/resume: clear and reselect behavior verified.
+- stale state: request id and mounted guard tested.
+- dirty worktree: unrelated user changes preserved.
+- hung commands: timed-out parallel wrappers were not counted; focused bounded command passed.
+- flaky tests: focused suite repeated successfully.
+- misleading success: DOM marker count and coordinate text were asserted.
+- repeated interruptions: inconclusive workers were replaced with direct evidence.
+- prompt injection: N/A, no LLM input surface.
+
+Cleanup
+- QA browser context was closed by the QA worker.
+- No new persistent PID, port, container, tmux session, temp directory, or temporary script remains.
+- Existing user dev servers were preserved.

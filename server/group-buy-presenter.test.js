@@ -17,6 +17,7 @@ const groupBuy = {
     },
   ],
   pickupCandidates: ["참여자의 출발 위치"],
+  pickupCandidateDetails: [{ name: "참여자의 출발 위치", latitude: 35.15049, longitude: 128.10049 }],
   pickupLocation: "참여자의 출발 위치",
   finalPickup: "참여자의 출발 위치",
   votes: { "참여자의 출발 위치": 1 },
@@ -29,6 +30,7 @@ test("a public response hides participant details and stable user identifiers", 
   assert.equal("ownerId" in result, false);
   assert.deepEqual(result.participants, []);
   assert.deepEqual(result.pickupCandidates, []);
+  assert.deepEqual(result.pickupCandidateDetails, []);
   assert.deepEqual(result.votes, {});
   assert.equal(result.pickupLocation, "참여 후 공개");
   assert.equal(result.finalPickup, null);
@@ -47,6 +49,9 @@ test("a participant can see member details without stable user identifiers", () 
     },
   ]);
   assert.deepEqual(result.pickupCandidates, ["참여자의 출발 위치"]);
+  assert.deepEqual(result.pickupCandidateDetails, [
+    { name: "참여자의 출발 위치", latitude: 35.15, longitude: 128.1 },
+  ]);
   assert.equal(result.pickupLocation, "참여자의 출발 위치");
   assert.equal(result.finalPickup, "참여자의 출발 위치");
   assert.equal(result.userJoined, true);
@@ -69,4 +74,19 @@ test("product metadata remains public without exposing private participation fie
   assert.equal(result.perPersonQuantity, 3);
   assert.deepEqual(result.participants, []);
   assert.equal("ownerId" in result, false);
+});
+
+test("raw creator coordinates are hidden from members but available for owner editing", () => {
+  const item = {
+    ...groupBuy,
+    pickupLatitude: 37.5665,
+    pickupLongitude: 126.978,
+  };
+  const memberResult = presentGroupBuy(item, "member-1");
+  const ownerResult = presentGroupBuy(item, "owner-1");
+
+  assert.equal(Object.hasOwn(memberResult, "pickupLatitude"), false);
+  assert.equal(Object.hasOwn(memberResult, "pickupLongitude"), false);
+  assert.equal(ownerResult.pickupLatitude, 37.5665);
+  assert.equal(ownerResult.pickupLongitude, 126.978);
 });

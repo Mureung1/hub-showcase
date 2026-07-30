@@ -1,0 +1,140 @@
+﻿import { useEffect, useMemo, useState } from "react";
+import GroupBuyEditor from "../components/GroupBuyEditor";
+import ProductImage from "../components/ProductImage";
+import { deleteGroupBuy, getGroupBuys, updateGroupBuy } from "../services/groupBuysApi";
+import { matchesGroupBuyFilter } from "../services/groupBuyFilters";
+import { getGroupBuySearchResults } from "../services/groupBuyRecommendations";
+
+const filters = [["all", "?꾩껜"], ["open", "紐⑥쭛 以?], ["mine", "??李몄뿬"], ["saved", "李?]];
+
+function storedIds(key) {
+  try { return JSON.parse(localStorage.getItem(key) ?? "[]"); } catch { return []; }
+}
+
+function sortItems(items, sort) {
+  return [...items].sort((a, b) => sort === "popular"
+    ? (b.currentPeople / b.targetPeople) - (a.currentPeople / a.targetPeople)
+    : new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function GroupBuysPage({ onNavigate, user }) {
+  const [items, setItems] = useState([]);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [sort, setSort] = useState("recent");
+  const [editingItem, setEditingItem] = useState(null);
+  const [savedIds, setSavedIds] = useState(() => storedIds("campus-cart-saved"));
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function load() {
+    setIsLoading(true);
+    try { setItems(await getGroupBuys()); setError(""); }
+    catch (requestError) { setError(requestError.message); }
+    finally { setIsLoading(false); }
+  }
+
+  useEffect(() => {
+    getGroupBuys()
+      .then(setItems)
+      .catch((requestError) => setError(requestError.message))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const metrics = useMemo(() => ({
+    open: items.filter((item) => item.status === "open").length,
+    people: items.reduce((sum, item) => sum + item.currentPeople, 0),
+    almost: items.filter((item) => item.status === "open" && item.currentPeople / item.targetPeople >= .7).length,
+  }), [items]);
+
+  const search = useMemo(() => getGroupBuySearchResults(items, query), [items, query]);
+  const baseItems = query.trim() ? search.exact : items;
+  const visibleItems = useMemo(() => sortItems(
+    baseItems.filter((item) => matchesGroupBuyFilter(item, filter, savedIds)),
+    sort,
+  ), [baseItems, filter, savedIds, sort]);
+
+  function startNewGroupBuy() {
+    sessionStorage.setItem("campus-cart-draft-name", query.trim());
+    onNavigate("/group-buys/new");
+  }
+
+  async function save(input) {
+    if (!user) { onNavigate("/login"); return; }
+    setIsSaving(true);
+    try {
+      await updateGroupBuy(editingItem.id, input);
+      setEditingItem(null);
+      await load();
+    } catch (requestError) { setError(requestError.message); }
+    finally { setIsSaving(false); }
+  }
+
+  function toggleSaved(item) {
+    const next = savedIds.includes(item.id) ? savedIds.filter((id) => id !== item.id) : [...savedIds, item.id];
+    setSavedIds(next);
+    localStorage.setItem("campus-cart-saved", JSON.stringify(next));
+  }
+
+  async function remove(item) {
+    if (!window.confirm(`'${item.name}' 怨듬룞援щℓ瑜???젣?좉퉴??`)) return;
+    try { await deleteGroupBuy(item.id); await load(); }
+    catch (requestError) { setError(requestError.message); }
+  }
+
+  return (
+    <main className="workspace">
+      <section className="home-hero">
+        <div className="hero-copy"><span className="kicker">CAMPUS GROUP BUY</span><h1>媛숈씠 ?щ㈃,<br /><em>?앺솢??媛踰쇱썙?몄슂.</em></h1><p>?곕━ ?숆탳?먯꽌 ?꾩슂??臾쇨굔???④퍡 ?ш퀬, 紐⑤몢?먭쾶 媛源뚯슫 怨녹뿉???명븯寃?諛쏆븘蹂댁꽭??</p><button className="hero-button" type="button" onClick={() => document.getElementById("product-search")?.focus()}>?곹뭹 寃?됲븯湲?<span>??/span></button></div>
+        <div className="hero-board"><span className="board-label">?ㅻ뒛??罹좏띁??/span><div className="metric-main"><strong>{metrics.open}</strong><span>吏湲?紐⑥쭛 以?/span></div><div className="metric-pair"><div><strong>{metrics.people}</strong><span>?④퍡?섎뒗 ?щ엺</span></div><div><strong>{metrics.almost}</strong><span>留덇컧 ?꾨컯</span></div></div><p>?꾩슂??臾쇨굔???녿떎硫?吏곸젒 紐⑥쭛???쒖옉??蹂댁꽭??</p></div>
+      </section>
+
+      {error && <div className="error-banner"><span>紐⑸줉??遺덈윭?ㅼ? 紐삵뻽?댁슂.</span><button type="button" onClick={load}>?ㅼ떆 ?쒕룄</button></div>}
+
+      <section className="group-buy-search-section">
+        <span className="kicker">FIND A PRODUCT</span>
+        <h2>臾댁뾿???④퍡 ?ш퀬 ?띕굹??</h2>
+        <div className="large-search">
+          <span aria-hidden="true">??/span>
+          <input id="product-search" value={query} onChange={(event) => { setQuery(event.target.value); setFilter("all"); }} placeholder="?곹뭹紐낆쓣 ?ш쾶 寃?됲빐 蹂댁꽭?? ?? ?⑤갚吏??먯씠?? />
+          {query && <button aria-label="寃?됱뼱 吏?곌린" type="button" onClick={() => setQuery("")}>횞</button>}
+        </div>
+        <p>?대? 紐⑥쭛 以묒씤 鍮꾩듂???곹뭹??癒쇱? 異붿쿇???쒕젮??</p>
+      </section>
+
+      {query.trim() && (
+        <section className="recommendation-section">
+          <div className="list-heading"><div><span className="kicker">SMART MATCH</span><strong>鍮꾩듂??怨듬룞援щℓ 異붿쿇</strong></div><span>{search.recommendations.length}媛?/span></div>
+          {search.recommendations.length > 0
+            ? <div className="recommendation-grid">{search.recommendations.map((item) => <RecommendationCard item={item} key={item.id} onNavigate={onNavigate} />)}</div>
+            : <p className="no-recommendation">?꾩쭅 鍮꾩듂??紐⑥쭛???놁뼱?? ?꾨옒?먯꽌 ??怨듬룞援щℓ瑜?留뚮뱾 ???덉뼱??</p>}
+        </section>
+      )}
+
+      <section className="section-intro"><div><span className="kicker">DISCOVER</span><h2>{query.trim() ? `'${query.trim()}' 寃??寃곌낵` : "吏湲??④퍡 ?ш퀬 ?덉뼱??}</h2></div></section>
+      <div className={`workspace-grid${editingItem ? "" : " single"}`}>
+        <section className="list-panel">
+          <div className="toolbar"><div className="filter-tabs wide">{filters.map(([value, label]) => <button className={filter === value ? "active" : ""} type="button" key={value} onClick={() => setFilter(value)}>{label}{value === "saved" && savedIds.length > 0 ? ` ${savedIds.length}` : ""}</button>)}</div><select className="sort-select" value={sort} onChange={(event) => setSort(event.target.value)} aria-label="?뺣젹"><option value="recent">?덈줈 ?깅줉????/option><option value="popular">?ъ꽦瑜??믪? ??/option></select></div>
+          <div className="list-heading"><strong>怨듬룞援щℓ 紐⑸줉</strong><span>{visibleItems.length}媛?/span></div>
+          {isLoading ? <div className="empty-panel">怨듬룞援щℓ瑜?遺덈윭?ㅻ뒗 以?..</div> : visibleItems.length === 0 ? <div className="empty-panel"><strong>{error ? "紐⑸줉???뺤씤?????ㅼ떆 寃?됲빐 二쇱꽭??" : query.trim() ? `'${query.trim()}' 怨듬룞援щℓ媛 ?놁뼱??` : "?꾩옱 議곌굔??留욌뒗 怨듬룞援щℓ媛 ?놁뼱??"}</strong><span>{query.trim() ? "異붿쿇諛쏆쓣 紐⑥쭛???녿떎硫?吏곸젒 ??湲??留뚮뱾??蹂댁꽭??" : "寃?됱뼱???꾪꽣瑜?諛붽퓭蹂댁꽭??"}</span></div> : <div className="group-list">{visibleItems.map((item) => <GroupBuyRow item={item} key={item.id} onDelete={remove} onEdit={setEditingItem} onNavigate={onNavigate} onSave={toggleSaved} saved={savedIds.includes(item.id)} />)}</div>}
+          {!error && <div className="create-cta"><div><strong>{query.trim() ? "?먰븯??紐⑥쭛???녿굹??" : "李얜뒗 ?곹뭹???꾩쭅 ?녿굹??"}</strong><span>?곹뭹 留곹겕瑜?遺숈뿬 ?ｌ쑝硫???湲????鍮좊Ⅴ寃??묒꽦?????덉뼱??</span></div><button className="primary-button" type="button" onClick={startNewGroupBuy}>??怨듬룞援щℓ 留뚮뱾湲?/button></div>}
+        </section>
+        {editingItem && <div id="edit-group-buy"><GroupBuyEditor editingItem={editingItem} isSaving={isSaving} onCancel={() => setEditingItem(null)} onSave={save} /></div>}
+      </div>
+    </main>
+  );
+}
+
+function RecommendationCard({ item, onNavigate }) {
+  const percent = Math.min(100, Math.round((item.currentPeople / item.targetPeople) * 100));
+  return <button className="recommendation-card" type="button" onClick={() => onNavigate(`/group-buys/${item.id}`)}><ProductImage category={item.category} imageUrl={item.imageUrl} name={item.name} /><div><span>{item.category} 쨌 {percent}% ?ъ꽦</span><strong>{item.name}</strong><small>{item.currentPeople}/{item.targetPeople}紐?李몄뿬 以?/small></div><b>李몄뿬?섍린 ??/b></button>;
+}
+
+function GroupBuyRow({ item, onDelete, onEdit, onNavigate, onSave, saved }) {
+  const percent = Math.min(100, Math.round((item.currentPeople / item.targetPeople) * 100));
+  return <article className={`group-row ${item.isOwner ? "owned" : ""}`}><ProductImage category={item.category} className="row-product-image" imageUrl={item.imageUrl} name={item.name} /><div className="group-row-content"><div className="row-top"><span className={`state-chip ${item.status}`}>{item.status === "open" ? "紐⑥쭛 以? : "留덇컧"}</span><span>{item.category}</span><span className="host-label">{item.isOwner ? "?닿? 媛쒖꽕" : item.hostName}</span><button className={`save-button ${saved ? "saved" : ""}`} type="button" aria-label={saved ? "李??댁젣" : "李쒗븯湲?} onClick={() => onSave(item)}>{saved ? "?? : "??}</button></div><h2>{item.name}</h2><p>{item.pickupLocation} 쨌 {item.deadline}</p><div className="progress-line"><span style={{ width: `${percent}%` }} /></div><div className="progress-copy"><strong>{item.currentPeople}/{item.targetPeople}紐?/strong><span>{percent}% ?ъ꽦</span></div><div className="row-actions"><button type="button" onClick={() => onNavigate(`/group-buys/${item.id}`)}>?곸꽭 蹂닿린</button>{item.isOwner && <><button type="button" onClick={() => onEdit(item)}>紐⑥쭛 ?섏젙</button><button className="danger" type="button" onClick={() => onDelete(item)}>紐⑥쭛 ??젣</button></>}</div></div></article>;
+}
+
+export default GroupBuysPage;
+

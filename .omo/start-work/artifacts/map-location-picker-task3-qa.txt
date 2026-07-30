@@ -1,0 +1,54 @@
+Task 3 Phase A — PIN and RED evidence
+Date: 2026-07-30 Asia/Seoul
+Scope: no production edits; added src/services/groupBuysApi.test.js only.
+
+CURRENT GAPS
+1. GroupBuyEditor renders LocationPicker and hydrates pickupLatitude/pickupLongitude from editingItem, but its create/edit submit button is disabled only by isSaving. It does not disable for a trimmed pickupLocation shorter than 2 characters.
+2. GroupBuyDetailPage renders LocationPicker, disables join below 2 trimmed characters, and sends the correct startLocation/latitude/longitude field names.
+3. groupBuysApi forwards create/update/join inputs without boundary normalization. Address-only payloads can omit coordinate keys, incomplete pairs remain incomplete, coordinate-only payloads are sent, and 0/1/81-character addresses are not rejected client-side.
+
+PIN COMMAND (hard bound 15 seconds)
+node --test --test-name-pattern='^PIN:' src/services/groupBuysApi.test.js
+Exit: 0
+Exact summary:
+tests 1
+suites 0
+pass 1
+fail 0
+cancelled 0
+skipped 0
+todo 0
+duration_ms 237.2437
+Observable assertion: POST http://localhost:3001/api/group-buys; method POST; parsed body exactly equals {name:"핀 테스트",pickupLocation:"중앙도서관 북문",pickupLatitude:37.58234,pickupLongitude:127.01021}; response exactly {id:"pinned"}.
+
+RED COMMAND (hard bound 15 seconds)
+node --test --test-name-pattern='^RED:' src/services/groupBuysApi.test.js
+Exit: 1 (expected RED)
+Exact summary:
+tests 4
+suites 0
+pass 0
+fail 4
+cancelled 0
+skipped 0
+todo 0
+duration_ms 195.5311
+Exact failure observables:
+1. Address-only create: pickupLatitude actual undefined, expected null.
+2. Incomplete join pair: latitude actual 37.58234, expected null; longitude was null.
+3. Coordinate-only create: Missing expected rejection; request was not blocked.
+4. 0/1/81-character address boundary: Missing expected rejection on the first malformed input.
+
+ULTRAQA PHASE A
+- malformed input: RED covers 0, 1, and 81-character create addresses, coordinate-only create, and an incomplete join coordinate pair.
+- dirty worktree: pre-existing modifications in the three production files were preserved. Phase A added only src/services/groupBuysApi.test.js and this evidence artifact.
+- hung command bounds: both focused commands used a 15-second Start-Job/Wait-Job hard bound. Neither timed out. An earlier unbounded attempt was interrupted by the parent before output and produced no accepted evidence.
+- misleading success: assertions inspect parsed outgoing request bodies and request counts, not source-text presence.
+- cancel/resume, stale-state browser behavior, flaky GREEN repeats, repeated interruptions recovery, and real browser/network checks: deferred by named dependency on the GREEN implementation.
+- prompt injection: not applicable; these UI/API flows expose no LLM surface.
+
+MANUAL QA
+Deferred by named dependency on Phase B GREEN implementation. No browser context was created.
+
+CLEANUP
+No services, browser contexts, PIDs, ports, temporary scripts, payloads, downloads, or directories were created. Nothing required teardown.

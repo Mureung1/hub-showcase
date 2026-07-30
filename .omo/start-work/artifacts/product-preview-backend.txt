@@ -1,0 +1,33 @@
+Product preview backend QA
+Date: 2026-07-29
+
+Focused automated verification
+Command: node --test server/product-preview.test.js
+Result: PASS (7 tests, 0 failures)
+
+Static verification
+Command: npx eslint server/product-preview.js server/product-preview.test.js
+Result: PASS (exit 0, no diagnostics)
+
+Manual fixture-backed surface QA
+Command:
+node --input-type=module --eval "import {fetchProductPreview} from './server/product-preview.js'; const lookup=async()=>[{address:'93.184.216.34',family:4}]; const fetchImpl=async()=>new Response('<title>Fixture Mug</title>',{headers:{'content-type':'text/html'}}); const got=await fetchProductPreview('https://fixture.example/mug',{lookup,fetchImpl}); console.log(got.title==='Fixture Mug'?'PASS':'FAIL',JSON.stringify(got));"
+Observable: PASS {"url":"https://fixture.example/mug","title":"Fixture Mug","image":null,"price":null,"warnings":[]}
+Result: PASS
+
+Security and fault probes covered by the focused suite
+- malformed URL and malformed JSON-LD: PASS
+- redirect to private/loopback destination: PASS
+- timeout: PASS
+- 1 MiB body cap: PASS
+- disallowed content type: PASS
+- redirect limit and validation at every hop: PASS
+- credentials, nonstandard ports, localhost, private/link-local/reserved IPv4 and IPv6: PASS
+
+Other ultraqa classes
+- browser/UI interaction: N/A (server-only parsing/fetch module)
+- database persistence/migrations: N/A
+- accessibility/visual regression: N/A
+- real external network behavior: N/A (dependency-injected fixture fetch required; no network used)
+
+Temporary assets: none created.

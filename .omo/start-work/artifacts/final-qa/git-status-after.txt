@@ -1,0 +1,35 @@
+﻿ M package.json
+ M server/demo.js
+ M server/group-buy-policy.js
+ M server/group-buy-policy.test.js
+ M server/group-buy-presenter.js
+ M server/group-buy-presenter.test.js
+ M server/group-buy-repository.js
+ M server/group-buy-repository.test.js
+ M src/App.css
+ M src/App.jsx
+ M src/components/GroupBuyEditor.jsx
+ M src/components/Header.jsx
+ D src/components/Hero.jsx
+ D src/components/ProductCard.jsx
+ D src/data/mockData.js
+ M src/navigation.js
+ M src/pages/GroupBuyDetailPage.jsx
+ M src/pages/GroupBuysPage.jsx
+ M src/pages/HomePage.jsx
+ D src/pages/PickupPage.jsx
+ M src/services/groupBuysApi.js
+?? .omo/
+?? outputs/
+?? server/location-candidates.js
+?? server/location-candidates.test.js
+?? server/product-preview.js
+?? server/product-preview.test.js
+?? src/components/ProductImage.jsx
+?? src/pages/GroupBuyCreatePage.jsx
+?? src/services/freeShippingTarget.js
+?? src/services/freeShippingTarget.test.js
+?? src/services/groupBuyRecommendations.js
+?? src/services/groupBuyRecommendations.test.js
+?? supabase/migrations/202607290001_flexible_participant_locations.sql
+?? supabase/migrations/202607290002_product_metadata_and_shipping_target.sql

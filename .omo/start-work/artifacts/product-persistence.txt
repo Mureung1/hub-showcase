@@ -1,0 +1,39 @@
+Product persistence verification
+Date: 2026-07-29
+
+Scope
+- Added nullable product_url and image_url database columns.
+- Added nullable, non-negative free_shipping_threshold.
+- Added per_person_quantity with default 1 and range 1..100.
+- Extended group-buy create, row-to-DTO, and patch mappings.
+- Confirmed metadata remains public while participant privacy is preserved.
+- Confirmed stale rows map nullable metadata to null and per-person quantity to 1.
+
+Automated verification
+Command:
+node --test server/group-buy-repository.test.js server/group-buy-presenter.test.js
+
+Result:
+PASS (11 tests, 0 failures)
+
+Manual QA
+Literal Node ESM import exercised create mapping, row mapping, patch mapping,
+presentation privacy, a stale row, zero free-shipping threshold, and a malformed
+per_person_quantity row.
+
+Result:
+PASS product persistence mapping/presentation; malformed row preserved for DB-boundary rejection
+
+Boundary note
+The JavaScript mapper faithfully maps database rows and does not duplicate database
+validation. The migration rejects per_person_quantity outside 1..100 and rejects a
+negative free_shipping_threshold. Existing malformed rows are therefore observable
+rather than silently coerced; missing legacy per_person_quantity maps to the schema
+default of 1.
+
+Worktree note
+The worktree contained pre-existing concurrent changes, including changes in the
+owned JavaScript files. Those changes were preserved.
+
+UltraQA
+Remaining UltraQA scenarios: N/A.
