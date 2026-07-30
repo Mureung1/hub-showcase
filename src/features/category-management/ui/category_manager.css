@@ -1,3 +1,11 @@
+div.ui-modal.category-manager[role='dialog'] {
+  width: min(560px, calc(100vw - var(--spacing-8)));
+  min-width: 0;
+  max-width: calc(100vw - var(--spacing-8));
+  height: auto;
+  max-height: calc(100dvh - var(--spacing-8));
+}
+
 .category-manager__list-view,
 .category-manager__editor,
 .category-manager__delete-confirmation {

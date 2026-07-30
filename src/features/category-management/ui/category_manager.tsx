@@ -171,6 +171,7 @@ export function CategoryManager({
 
   return (
     <Modal
+      className="category-manager"
       description={getDescription(mode)}
       footer={getFooter()}
       onOpenChange={handleOpenChange}
