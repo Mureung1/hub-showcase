@@ -58,6 +58,11 @@ export function imminentIds(fridge) {
   return Object.keys(fridge).filter((id) => fridge[id].imminent && fridgeAvailable(fridge, id));
 }
 
+// "임박(imminent)"과 "만료"는 다르다 — imminent는 D-2 이하라 아직 먹을 수 있는 것까지 포함하지만,
+// 이건 기한이 이미 지나 버려야 하는 것만 가린다. store.js formatDday가 기한을 넘긴 날짜에만
+// 'D+'를 붙이므로('D-0'은 아직 오늘까지 유효) 접두사 하나로 판정할 수 있다.
+export const isExpired = (expiryLabel) => expiryLabel?.startsWith('D+');
+
 // "약간"·"적당량"처럼 정량화되지 않은 표현 — 배수를 곱해도 의미가 없어서(예: "2약간")
 // formatAmtText에서 원문 그대로 통과시키는 데 쓴다. fetchRecipes.js도 같은 목록을 써서
 // 이런 줄을 "숫자·쉼표 없는 헤더 줄"로 오인해 통째로 버리지 않게 한다.

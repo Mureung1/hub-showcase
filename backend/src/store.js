@@ -3,7 +3,7 @@ import { ingredientMap, calcExpiryDate } from './data/ingredients.js';
 import { recipeOrder, recipes } from './data/recipes.js';
 import { dayLabels, resolvePrice, resolvePackSize } from './data/mealPrices.js';
 import {
-  ingHave, ingName, recipeHasImminentBadge, imminentIds, parseAmt, formatAmtText, extractUnit,
+  ingHave, ingName, recipeHasImminentBadge, imminentIds, isExpired, parseAmt, formatAmtText, extractUnit,
   getMissingInfo, generateImminentRescueSet, generateIngredientShareSet, estimateBuyCost, mergeMissingMaps,
   selectImminentGreedy, shortlistCandidates, searchMinPurchaseCombo3, lowStockIdsOf, selectPantryCleanupRecipe,
   isPantryOrVague, normalizeIngredientKey, calculateRecipeDifficulty, isMeal, isSideDish, CONTINUOUS_UNITS
@@ -235,6 +235,21 @@ export async function deleteFridgeItem(id) {
   }
   _dynamicSetsCache = null; // 냉장고 변경 시 세트 캐시 무효화
   return true;
+}
+
+// 유통기한이 지난 구매 내역만 골라 한 번에 버린다. 프론트가 updateFridgeItem(deleteItemIndex)로
+// 하나씩 지우면 안 되는 이유: fetchFridge의 select에 order가 없어 행 순서가 보장되지 않는데,
+// 여러 건을 지우는 동안 인덱스가 밀리면 멀쩡한 내역을 지울 수 있다 — 여기서 dbId로 지운다.
+export async function discardExpiredItems() {
+  const view = await buildFridgeView();
+  const expired = Object.values(view).flatMap((f) =>
+    (f.items ?? []).filter((it) => isExpired(it.expiry)).map((it) => ({ id: f.id, dbId: it.dbId })));
+
+  for (const { dbId } of expired) {
+    if (supabase && dbId) await supabase.from('fridge_items').delete().eq('id', dbId);
+  }
+  if (expired.length) _dynamicSetsCache = null; // 냉장고 변경 시 세트 캐시 무효화
+  return { discarded: expired.map((e) => e.id) };
 }
 
 // Clova OCR 크레덴셜이 없거나(로컬 개발) 실제 인식이 실패했을 때 쓰는 기존 데모 로직.

@@ -100,3 +100,55 @@ describe('DELETE /api/fridge/:id', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('POST /api/fridge/discard-expired', () => {
+  // 시드(initialFridge)엔 기한이 지난 내역이 없어서 'D+' 행을 따로 붙여 넣는다.
+  // egg는 시드에 멀쩡한 D-18 내역이 이미 있어 만료/정상이 섞인 재료가 되고(→ 내역 단위로 지우는지 확인),
+  // carrot은 시드에 없어 만료 내역만 가진 재료가 된다(→ 재료째 사라지는지 확인).
+  const expiredRows = [
+    { id: 900, ingredient_id: 'egg', qty_amount: 4, qty_unit: '알', purchased: '7/1', expiry: 'D+3', imminent: true },
+    { id: 901, ingredient_id: 'carrot', qty_amount: 1, qty_unit: '개', purchased: '7/2', expiry: 'D+1', imminent: true },
+  ];
+
+  beforeEach(() => {
+    mockSupabaseClient.reset([...seedRows, ...expiredRows]);
+  });
+
+  test('기한이 지난 내역만 지우고, 같은 재료의 멀쩡한 내역은 남긴다', async () => {
+    const res = await request(app).post('/api/fridge/discard-expired');
+    expect(res.status).toBe(200);
+    expect(res.body.discarded.sort()).toEqual(['carrot', 'egg']);
+
+    const rows = mockSupabaseClient.getRows();
+    expect(rows.some((r) => r.expiry?.startsWith('D+'))).toBe(false);
+    expect(rows.filter((r) => r.ingredient_id === 'egg')).toHaveLength(1);
+  });
+
+  test('버린 뒤 재조회하면 만료 내역만 사라지고 멀쩡한 내역은 남아 있다', async () => {
+    await request(app).post('/api/fridge/discard-expired');
+
+    const getRes = await request(app).get('/api/fridge');
+    expect(getRes.body.carrot).toBeUndefined();
+    expect(getRes.body.egg.items).toHaveLength(1);
+    expect(getRes.body.egg.items[0].expiry).toBe('D-18');
+  });
+
+  test("'D-0'(오늘까지 유효)은 만료로 보지 않는다", async () => {
+    mockSupabaseClient.reset([
+      { id: 910, ingredient_id: 'tofu', qty_amount: 1, qty_unit: '모', purchased: '7/20', expiry: 'D-0', imminent: true },
+    ]);
+
+    const res = await request(app).post('/api/fridge/discard-expired');
+    expect(res.body.discarded).toHaveLength(0);
+    expect(mockSupabaseClient.getRows()).toHaveLength(1);
+  });
+
+  test('버릴 게 없으면 빈 목록을 돌려주고 냉장고를 건드리지 않는다', async () => {
+    mockSupabaseClient.reset(seedRows);
+
+    const res = await request(app).post('/api/fridge/discard-expired');
+    expect(res.status).toBe(200);
+    expect(res.body.discarded).toEqual([]);
+    expect(mockSupabaseClient.getRows()).toHaveLength(seedRows.length);
+  });
+});

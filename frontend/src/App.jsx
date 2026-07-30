@@ -3,6 +3,7 @@ import RoughenFilter from './components/RoughenFilter';
 import BottomTabBar from './components/BottomTabBar';
 import IngredientSheet from './components/IngredientSheet';
 import TipSheet from './components/TipSheet';
+import ExpiredSheet from './components/ExpiredSheet';
 
 import Home from './pages/Home';
 import Fridge from './pages/Fridge';
@@ -62,6 +63,8 @@ export default function App() {
         <Screen />
         <IngredientSheet />
         <TipSheet />
+        {/* 다른 시트와 z-index가 같아, 경고가 가려지지 않도록 뒤에 둬서 위에 쌓이게 한다 */}
+        <ExpiredSheet />
         <BottomTabBar />
       </div>
     </AppProvider>
