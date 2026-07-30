@@ -27,23 +27,27 @@ function generateTurnId() {
 // POST /api/sessions — 새 세션 시작
 // ─────────────────────────────────────────────────────────────────────────────
 router.post('/', async (req, res) => {
-  const { spaceId, domain = 'kitchen_odor' } = req.body;
+  const { spaceId, domain = 'kitchen_odor', deviceId } = req.body;
 
   if (!spaceId) {
     return res.status(400).json({ error: 'spaceId is required' });
   }
+
+  // deviceId 없으면 익명 처리 (하위 호환)
+  const device = deviceId || 'anonymous';
 
   try {
     // KB 로드
     const kb = await loadKB(domain);
 
     // ─────────────────────────────────────────────────────────────
-    // 세션 간 기억: 같은 space의 과거 final_cause 조회
+    // 세션 간 기억: 같은 space + device의 과거 final_cause 조회
     // ─────────────────────────────────────────────────────────────
     const { data: pastSessions } = await supabase
       .from('sessions')
       .select('final_cause')
       .eq('space_id', spaceId)
+      .eq('device_id', device)
       .not('final_cause', 'is', null);
 
     const history = (pastSessions || []).map(s => s.final_cause);
@@ -62,6 +66,7 @@ router.post('/', async (req, res) => {
       .insert({
         id: sessionId,
         space_id: spaceId,
+        device_id: device,
         source: 'api',
         status: 'active',
       });
@@ -271,21 +276,25 @@ router.post('/:id/turns', async (req, res) => {
 // GET /api/sessions/history — 과거 이력 조회
 // ─────────────────────────────────────────────────────────────────────────────
 router.get('/history', async (req, res) => {
-  const { space } = req.query;
+  const { space, device } = req.query;
 
   if (!space) {
     return res.status(400).json({ error: 'space query parameter is required' });
   }
 
+  // device 없으면 익명 처리 (하위 호환)
+  const deviceId = device || 'anonymous';
+
   try {
     // KB 로드 (label, solution 조회용)
     const kb = await loadKB('kitchen_odor');
 
-    // 같은 space의 종료된 세션 조회 (final_cause가 있는 것만)
+    // 같은 space + device의 종료된 세션 조회 (final_cause가 있는 것만)
     const { data: sessions, error } = await supabase
       .from('sessions')
       .select('id, created_at, final_cause')
       .eq('space_id', space)
+      .eq('device_id', deviceId)
       .not('final_cause', 'is', null)
       .order('created_at', { ascending: false });
 

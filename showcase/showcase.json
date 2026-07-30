@@ -3,7 +3,7 @@
   "title": "자취방 청결관리사",
   "summary": "베이지안 추론 기반 자취방 악취 진단 시스템. LLM이 확률을 계산하지 않고, 순수 함수 엔진이 판단한다.",
   "githubUser": "khy",
-  "demoUrl": "",
+  "demoUrl": "https://hub-sigma-flax.vercel.app/",
   "demoVideoUrl": "https://drive.google.com/file/d/1adXXzDfOD_JkFSoyerpiMp2gp65MWUCR/view?usp=sharing",
   "thumbnail": "thumbnail.png",
   "screenshots": [
@@ -21,7 +21,8 @@
     "턴제 질문으로 악취 원인 추론",
     "베이지안 확률 갱신으로 정확도 향상",
     "신뢰도는 라벨로 표시 (유력/가능/낮음)",
-    "가정 기반 진단 시 시각적 경고"
+    "가정 기반 진단 시 시각적 경고",
+    "디바이스별 세션 분리 (로그인 없이 개인화)"
   ],
   "featureTags": [
     "원인진단",
@@ -33,12 +34,15 @@
     "Vite",
     "Express",
     "Supabase",
-    "Node.js"
+    "Node.js",
+    "Vercel",
+    "Render"
   ],
   "techHighlights": [
     "베이지안 추론 엔진 (순수 함수, LLM 무관)",
     "정보이득(IG) 기반 질문 선택",
-    "KB(지식베이스) 기반 진단"
+    "KB(지식베이스) 기반 진단",
+    "Vercel(FE) + Render(BE) + Supabase(DB) 풀스택 배포"
   ],
   "developmentWithAI": "Claude Code를 사용하여 TDD 방식으로 엔진 함수 테스트 작성, FE-BE 연결, 디자인 시스템 적용까지 진행. CLAUDE.md에 불변식을 정의하여 AI가 규칙을 어기지 않도록 가드레일 설정.",
   "agent": {
