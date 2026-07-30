@@ -7,9 +7,14 @@
   "demoVideoUrl": "https://photos.icloud.com/shared/album/06fPpKuI6vX9GBLu8DrCRgNHA",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
+    "screenshots/landing.webp",
     "screenshots/home.webp",
     "screenshots/courses.webp",
-    "screenshots/map.webp"
+    "screenshots/course-detail.webp",
+    "screenshots/meals.webp",
+    "screenshots/map.webp",
+    "screenshots/gym-detail.webp",
+    "screenshots/consultation.webp"
   ],
   "problem": "오프라인 PT는 비용이 높고, 소상공인 헬스장은 신규 회원 유치가 어렵습니다. 입문자는 혼자 운동·식단을 체계적으로 관리하기 힘들고, 전문 관리가 필요할 때 주변 헬스장을 찾기도 어렵습니다.",
   "targetUsers": [

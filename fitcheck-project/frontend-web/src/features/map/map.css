@@ -2,10 +2,10 @@
 .map-page {
   position: relative;
   margin: calc(var(--user-pad-y) * -1) calc(var(--user-pad-x) * -1)
-    calc((var(--bottom-nav-height) + var(--user-pad-y)) * -1);
+    calc((var(--mobile-nav-stack) + var(--user-pad-y)) * -1);
   width: calc(100% + 2 * var(--user-pad-x));
-  height: calc(100svh - var(--header-height) - var(--bottom-nav-height));
-  max-height: calc(100svh - var(--header-height) - var(--bottom-nav-height));
+  height: calc(100svh - var(--mobile-header-stack) - var(--mobile-nav-stack));
+  max-height: calc(100svh - var(--mobile-header-stack) - var(--mobile-nav-stack));
   overflow: hidden;
   background: var(--bg-elevated);
 }
@@ -117,7 +117,7 @@
   justify-content: flex-end;
   gap: 0.5rem;
   padding: 1.25rem;
-  padding-bottom: calc(170px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(170px + var(--safe-bottom));
   background:
     linear-gradient(160deg, rgba(229, 9, 20, 0.16), transparent 55%),
     color-mix(in srgb, var(--bg-elevated) 88%, transparent);
@@ -487,8 +487,8 @@
 @media (min-width: 768px) {
   .map-page {
     margin-bottom: calc((var(--user-pad-y) + 0.5rem) * -1);
-    height: calc(100svh - var(--header-height));
-    max-height: calc(100svh - var(--header-height));
+    height: calc(100svh - var(--mobile-header-stack));
+    max-height: calc(100svh - var(--mobile-header-stack));
   }
 
   .gym-sheet {
@@ -511,7 +511,7 @@
 .map-loading-overlay {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--bottom-nav-height) + 1.5rem);
+  bottom: calc(var(--mobile-nav-stack) + 1.5rem);
   z-index: 20;
   display: flex;
   align-items: center;

@@ -50,8 +50,10 @@ export default function UserHeader() {
         </nav>
 
         <div className="user-header-profile">
-          <span className="avatar avatar-sm avatar-accent">{initial}</span>
-          <span className="user-header-name">{label}</span>
+          <NavLink to="/user/account" className="user-header-profile-link">
+            <span className="avatar avatar-sm avatar-accent">{initial}</span>
+            <span className="user-header-name">{label}</span>
+          </NavLink>
           <button
             type="button"
             className="user-header-logout"

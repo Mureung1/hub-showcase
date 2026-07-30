@@ -2,6 +2,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
+  padding-top: var(--safe-top);
   background: rgba(250, 250, 248, 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -98,6 +99,19 @@
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
+}
+
+.user-header-profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--radius-sm);
+}
+
+.user-header-profile-link:hover .user-header-name {
+  color: var(--text-primary);
 }
 
 .user-header-name {

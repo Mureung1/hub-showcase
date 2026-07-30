@@ -6,20 +6,23 @@
 > 웹 기능 진행도: [../frontend-web/README.md](../frontend-web/README.md)  
 > Monorepo · 배포: [../docs/README.md](../docs/README.md)
 
-## 현재 진행도 (2026-07)
+## 현재 진행도 (2026-07-30)
 
 | 항목 | 상태 | 비고 |
 |------|------|------|
 | Expo + WebView 기본 셸 | ✅ | `App.js` 단일 WebView |
-| frontend-web URL 로드 | ✅ | `EXPO_PUBLIC_WEB_APP_URL` |
+| frontend-web URL 로드 | ✅ | `EXPO_PUBLIC_WEB_APP_URL` → `/user` 자동 진입 |
+| Safe Area (노치·홈 인디케이터) | ✅ | `react-native-safe-area-context` → WebView에 `--fitcheck-safe-*` CSS 주입 |
+| 모바일 UI 겹침 방지 | ✅ | frontend-web `safe-area.css`와 연동 — 헤더·하단 네비·지도·식단 CTA |
 | 뒤로가기 제스처 | ✅ | `allowsBackForwardNavigationGestures` |
 | Geolocation (WebView) | ✅ | `/user/map` GPS 테스트 가능 |
-| Vercel 배포본 연동 | ✅ | Auth·식단·상담 등 frontend-web 기능 그대로 사용 |
+| Vercel 배포본 연동 | ✅ | Auth(이중 로그인·비밀번호 재설정)·식단·상담 등 웹 기능 그대로 사용 |
 | 네이티브 전용 UI / Push | ❌ | 미구현 |
 | 앱스토어 빌드 (EAS) | ❌ | 미진행 |
 
-**요약:** 모바일 앱은 **웹 배포본(Vercel) 또는 로컬 dev를 감싸는 래퍼** 단계입니다.  
-신규 기능은 **frontend-web**에서 개발하면 WebView에 자동 반영됩니다.
+**요약:** 모바일 앱은 **웹 배포본(Vercel) 또는 로컬 dev를 감싸는 래퍼**입니다.  
+Safe Area는 네이티브에서 측정해 WebView DOM에 주입하고, 레이아웃은 **frontend-web**에서 처리합니다.  
+신규 기능은 frontend-web에서 개발하면 WebView에 자동 반영됩니다.
 
 ---
 
@@ -95,8 +98,16 @@ NCP Maps **Web Service URL**에 사용 origin을 등록하세요 (`localhost:517
 4. 파란 마커가 GPS 위치로 이동하는지 확인  
    (권한 거부 시 서면 목업 좌표로 폴백)
 
+## Safe Area 동작
+
+1. `SafeAreaProvider` + `useSafeAreaInsets()`로 OS inset 측정  
+2. WebView 로드·inset 변경 시 `injectJavaScript`로 `--fitcheck-safe-top/bottom/left/right` 설정  
+3. frontend-web `index.html`의 `viewport-fit=cover` + `safe-area.css`가 헤더·하단 네비에 적용  
+
+Vercel에 frontend-web 최신 빌드가 배포되어 있어야 Safe Area UI가 실기기에서 반영됩니다.
+
 ## 다음 단계 (예상)
 
-1. Vercel 배포 URL 안정화 (SPA rewrite 확인)  
-2. 스플래시 · 앱 아이콘  
-3. (선택) EAS Build, 딥링크, 푸시 알림  
+1. 스플래시 · 앱 아이콘  
+2. (선택) EAS Build, 딥링크, 푸시 알림  
+3. (선택) OAuth/비밀번호 재설정 딥링크를 WebView에서 처리  

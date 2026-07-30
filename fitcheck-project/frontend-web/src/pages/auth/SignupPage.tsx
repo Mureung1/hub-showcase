@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { updateMyProfile } from '../../services/profileApi';
 import { getSupabaseClient } from '../../services/supabaseClient';
+import { formatAuthError, isDuplicateSignup } from '../../utils/authHelpers';
 import './auth.css';
 
 export default function SignupPage() {
@@ -63,7 +64,14 @@ export default function SignupPage() {
       });
 
       if (error) {
-        setMessage(error.message);
+        setMessage(formatAuthError(error.message));
+        return;
+      }
+
+      if (isDuplicateSignup(data.user)) {
+        setMessage(
+          '이미 가입된 이메일입니다. Google로 가입하셨다면 Google 로그인을 이용하거나, 비밀번호 찾기로 이메일 로그인을 설정해 주세요.',
+        );
         return;
       }
 
@@ -154,6 +162,8 @@ export default function SignupPage() {
 
         <p className="auth-footer">
           이미 계정이 있으신가요? <Link to="/login">로그인</Link>
+          {' · '}
+          <Link to="/forgot-password">비밀번호 찾기</Link>
         </p>
       </div>
     </div>

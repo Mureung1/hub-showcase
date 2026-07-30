@@ -7,6 +7,8 @@ import UserLayout from './components/user/UserLayout';
 import LandingPage from './pages/landing/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import AuthCallbackPage from './pages/auth/AuthCallbackPage';
 import UserHomePage from './pages/user/HomePage';
 import UserCoursesPage from './pages/user/CoursesPage';
@@ -14,6 +16,7 @@ import UserCourseDetailPage from './pages/user/CourseDetailPage';
 import UserMealsPage from './pages/user/MealsPage';
 import UserMapPage from './pages/user/MapPage';
 import UserGymDetailPage from './pages/user/GymDetailPage';
+import AccountPage from './pages/user/AccountPage';
 import DashboardPage from './pages/trainer/DashboardPage';
 import MembersPage from './pages/trainer/MembersPage';
 import ConsultInboxPage from './pages/trainer/ConsultInboxPage';
@@ -32,6 +35,8 @@ function App() {
 
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
             <Route element={<ProtectedRoute />}>
@@ -42,6 +47,7 @@ function App() {
                 <Route path="meals" element={<UserMealsPage />} />
                 <Route path="map" element={<UserMapPage />} />
                 <Route path="gym/:id" element={<UserGymDetailPage />} />
+                <Route path="account" element={<AccountPage />} />
               </Route>
             </Route>
 

@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { getSupabaseClient } from '../../services/supabaseClient';
+import { formatAuthError } from '../../utils/authHelpers';
 import { getAuthRedirectUrl } from '../../utils/authRedirect';
 import './auth.css';
 
@@ -73,7 +74,7 @@ export default function LoginPage() {
       });
 
       if (error) {
-        setMessage(error.message);
+        setMessage(formatAuthError(error.message));
         return;
       }
 
@@ -141,7 +142,12 @@ export default function LoginPage() {
             />
           </label>
           <label className="auth-field">
-            <span>비밀번호</span>
+            <span className="auth-field-label-row">
+              <span>비밀번호</span>
+              <Link to="/forgot-password" className="auth-inline-link">
+                비밀번호 찾기
+              </Link>
+            </span>
             <input
               type="password"
               autoComplete="current-password"

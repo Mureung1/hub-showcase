@@ -1,0 +1,13 @@
+/* Safe area tokens — WebView injects --fitcheck-safe-* ; mobile Safari uses env() */
+:root {
+  --fitcheck-safe-top: 0px;
+  --fitcheck-safe-bottom: 0px;
+  --fitcheck-safe-left: 0px;
+  --fitcheck-safe-right: 0px;
+  --safe-top: var(--fitcheck-safe-top, env(safe-area-inset-top, 0px));
+  --safe-bottom: var(--fitcheck-safe-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--fitcheck-safe-left, env(safe-area-inset-left, 0px));
+  --safe-right: var(--fitcheck-safe-right, env(safe-area-inset-right, 0px));
+  --mobile-nav-stack: calc(var(--bottom-nav-height) + var(--safe-bottom));
+  --mobile-header-stack: calc(var(--header-height) + var(--safe-top));
+}

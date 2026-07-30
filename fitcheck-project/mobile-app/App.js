@@ -1,5 +1,7 @@
+import { useEffect, useMemo, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 const BASE_WEB_URL =
@@ -15,20 +17,32 @@ function resolveWebAppUrl(baseUrl) {
 
 const WEB_APP_URL = resolveWebAppUrl(BASE_WEB_URL);
 
-const INJECT_APP_FLAG = `
-  window.__FITCHECK_APP__ = true;
-  true;
-`;
+function buildSafeAreaScript(insets) {
+  return `(function(){var r=document.documentElement;r.style.setProperty('--fitcheck-safe-top','${insets.top}px');r.style.setProperty('--fitcheck-safe-bottom','${insets.bottom}px');r.style.setProperty('--fitcheck-safe-left','${insets.left}px');r.style.setProperty('--fitcheck-safe-right','${insets.right}px');r.classList.add('fitcheck-app');window.__FITCHECK_APP__=true;})();true;`;
+}
 
-export default function App() {
+function FitCheckWebView() {
+  const insets = useSafeAreaInsets();
+  const webViewRef = useRef(null);
+  const safeAreaScript = useMemo(() => buildSafeAreaScript(insets), [insets]);
+
+  useEffect(() => {
+    webViewRef.current?.injectJavaScript(safeAreaScript);
+  }, [safeAreaScript]);
+
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
       <WebView
+        ref={webViewRef}
         source={{ uri: WEB_APP_URL }}
         style={styles.webview}
         applicationNameForUserAgent="FitCheckApp/1.0"
-        injectedJavaScriptBeforeContentLoaded={INJECT_APP_FLAG}
+        injectedJavaScriptBeforeContentLoaded="window.__FITCHECK_APP__=true;true;"
+        injectedJavaScript={safeAreaScript}
+        onLoadEnd={() => {
+          webViewRef.current?.injectJavaScript(safeAreaScript);
+        }}
         allowsBackForwardNavigationGestures
         geolocationEnabled
         javaScriptEnabled
@@ -36,17 +50,27 @@ export default function App() {
         mixedContentMode="always"
         originWhitelist={['*']}
         startInLoadingState
+        contentInsetAdjustmentBehavior="never"
       />
     </View>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <FitCheckWebView />
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#fafaf8',
   },
   webview: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
 });
