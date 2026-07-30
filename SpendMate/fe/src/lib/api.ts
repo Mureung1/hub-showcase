@@ -223,6 +223,27 @@ export async function getRecentExpenses(limit = 20): Promise<RecentExpense[]> {
   return res.json()
 }
 
+export async function updateExpense(
+  id: number, amount: number, category: string, memo: string, spentAt: string
+): Promise<RecentExpense> {
+  const res = await apiFetch(`/api/expenses/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount, category, memo, spentAt }),
+  })
+  if (!res.ok) {
+    throw new Error('지출 수정에 실패했어요.')
+  }
+  return res.json()
+}
+
+export async function deleteExpense(id: number): Promise<void> {
+  const res = await apiFetch(`/api/expenses/${id}`, { method: 'DELETE' })
+  if (!res.ok) {
+    throw new Error('지출 삭제에 실패했어요.')
+  }
+}
+
 export interface DailySpend {
   day: number
   amount: number
@@ -308,6 +329,10 @@ export async function login(email: string, password: string): Promise<AuthUser> 
     throw new Error(await authErrorMessage(res, '로그인에 실패했어요.'))
   }
   return res.json()
+}
+
+export async function logout(): Promise<void> {
+  await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
 }
 
 /** 새로고침 시 세션이 아직 살아있는지 확인. 로그인 안 된 상태면 null을 반환한다 (에러를 던지지 않음). */

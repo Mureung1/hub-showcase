@@ -102,4 +102,11 @@ public class Expense {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
+    public void updateManual(Integer amount, Category category, String memo, LocalDateTime spentAt) {
+        this.amount = amount;
+        this.category = category;
+        this.itemName = memo;
+        this.spentAt = spentAt;
+    }
 }

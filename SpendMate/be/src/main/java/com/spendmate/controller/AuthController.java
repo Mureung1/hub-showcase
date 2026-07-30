@@ -3,6 +3,7 @@ package com.spendmate.controller;
 import com.spendmate.config.CurrentUser;
 import com.spendmate.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -52,6 +53,15 @@ public class AuthController {
     @PatchMapping("/api/auth/me")
     public ResponseEntity<AuthService.LoginResponse> updateMe(@CurrentUser Long userId, @RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(authService.updateProfile(userId, request.email(), request.nickname()));
+    }
+
+    @PostMapping("/api/auth/logout")
+    public ResponseEntity<Void> logout(HttpServletRequest httpRequest) {
+        HttpSession session = httpRequest.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        return ResponseEntity.ok().build();
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

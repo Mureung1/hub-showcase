@@ -37,6 +37,27 @@ body {
   scrollbar-width: none;
 }
 
+.phone-frame {
+  width: 393px;
+  height: 852px;
+  border-radius: 44px;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.25), 0 0 0 10px #1A1D27;
+}
+
+/* 실제 폰에서 열었을 때는 데스크톱용 목업 프레임(둥근 테두리+그림자)을 벗고 화면을 꽉 채운다 */
+@media (max-width: 480px) {
+  .phone-frame-wrapper {
+    min-height: 100dvh;
+    padding: 0;
+  }
+  .phone-frame {
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }

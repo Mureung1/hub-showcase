@@ -6,9 +6,10 @@ import AICoachScreen, { INITIAL_COACH_MESSAGES, type Message } from './screens/A
 import AddExpenseScreen from './screens/AddExpenseScreen'
 import MyPageScreen from './screens/MyPageScreen'
 import AuthScreen from './screens/AuthScreen'
-import { getCurrentUser, type AuthUser } from './lib/api'
+import { getCurrentUser, logout, type AuthUser } from './lib/api'
 
 type Tab = 'home' | 'stats' | 'add' | 'coach' | 'mypage'
+export type MyPageIntent = 'survival' | 'subscriptions' | null
 
 export default function App() {
   const [authed, setAuthed] = useState(false)
@@ -19,6 +20,7 @@ export default function App() {
   const [survivalModeOff, setSurvivalModeOff] = useState(false)
   const [coachMessages, setCoachMessages] = useState<Message[]>(INITIAL_COACH_MESSAGES)
   const [hasUnreadCoachMessage, setHasUnreadCoachMessage] = useState(false)
+  const [mypageIntent, setMypageIntent] = useState<MyPageIntent>(null)
 
   // 새로고침해도 세션이 살아있으면 로그인 화면으로 안 튕기도록 마운트 시 한 번 확인한다 (#60).
   useEffect(() => {
@@ -52,43 +54,32 @@ export default function App() {
     if (activeTab !== 'coach') setHasUnreadCoachMessage(true)
   }
 
+  // 홈 화면의 생존모드/구독 카드에서 마이페이지로 넘어갈 때, 어느 패널을 열어둘지 같이 전달한다.
+  const goToMyPage = (intent: MyPageIntent) => {
+    setMypageIntent(intent)
+    setActiveTab('mypage')
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    setCurrentUser(null)
+    setAuthed(false)
+    setActiveTab('home')
+    setCoachMessages(INITIAL_COACH_MESSAGES)
+  }
+
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="phone-frame-wrapper flex items-center justify-center min-h-screen">
       <div
+        className="phone-frame"
         style={{
-          width: 393,
-          height: 852,
           background: 'var(--background)',
-          borderRadius: 44,
           overflow: 'hidden',
           position: 'relative',
-          boxShadow: '0 40px 100px rgba(0,0,0,0.25), 0 0 0 10px #1A1D27',
           display: 'flex',
           flexDirection: 'column',
         }}
       >
-        {/* Status Bar */}
-        <div
-          style={{
-            height: 50,
-            background: 'var(--background)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingLeft: 28,
-            paddingRight: 24,
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--foreground)' }}>9:41</span>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <div style={{ width: 18, height: 12, border: '1.5px solid var(--foreground)', borderRadius: 3, position: 'relative' }}>
-              <div style={{ position: 'absolute', top: 2, left: 2, right: 3, bottom: 2, background: 'var(--foreground)', borderRadius: 1 }} />
-              <div style={{ position: 'absolute', top: 3, right: -4, width: 2, height: 6, background: 'var(--foreground)', borderRadius: 1 }} />
-            </div>
-          </div>
-        </div>
-
         {/* Screen Content */}
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }} className="no-scrollbar">
           {checkingSession ? (
@@ -101,6 +92,10 @@ export default function App() {
                 <HomeScreen
                   survivalModeOff={survivalModeOff}
                   onGoToSettings={() => setActiveTab('mypage')}
+                  onGoToStats={() => setActiveTab('stats')}
+                  onGoToCoach={() => { setHasUnreadCoachMessage(false); setActiveTab('coach') }}
+                  onGoToSurvival={() => goToMyPage('survival')}
+                  onGoToSubscriptions={() => goToMyPage('subscriptions')}
                   user={currentUser}
                 />
               )}
@@ -115,6 +110,9 @@ export default function App() {
                   onToggleSurvivalMode={() => setSurvivalModeOff((v) => !v)}
                   user={currentUser}
                   onUserUpdated={setCurrentUser}
+                  openIntent={mypageIntent}
+                  onIntentHandled={() => setMypageIntent(null)}
+                  onLogout={handleLogout}
                 />
               )}
             </>

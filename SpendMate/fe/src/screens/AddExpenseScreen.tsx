@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Camera, Image, PenLine, ChevronRight, Check, Coffee, ShoppingCart, Utensils, Car, Package, Zap, Upload, Plus, Trash2, AlertCircle } from 'lucide-react'
+import { X, Camera, Image, PenLine, ChevronRight, Check, Coffee, ShoppingCart, Utensils, Car, Package, Zap, Bike, Upload, Plus, Trash2, AlertCircle } from 'lucide-react'
 import { uploadReceipt, confirmReceipt, createManualExpense, type UploadResult, type ExpenseDraft } from '../lib/api'
 import { CATEGORY_META, getCategoryMeta } from '../lib/categoryMeta'
 
@@ -12,7 +12,7 @@ const BASE_CATEGORIES = [
   { name: '외식', icon: Utensils, color: '#4F8EF7', bg: '#EBF2FF', backendCategory: 'OTHER' },
   { name: '카페', icon: Coffee, color: '#6F4E37', bg: '#FFF3E0', backendCategory: 'CAFE' },
   { name: '식료품', icon: ShoppingCart, color: '#FF6B6B', bg: '#FFF0F0', backendCategory: 'MART' },
-  { name: '편의점', icon: Package, color: '#9B8FFF', bg: '#F0EFFF', backendCategory: 'CONVENIENCE_STORE' },
+  { name: '배달', icon: Bike, color: '#00C4B3', bg: '#E8F8F6', backendCategory: 'DELIVERY' },
   { name: '교통', icon: Car, color: '#FFC857', bg: '#FFF8E8', backendCategory: 'OTHER' },
   { name: '구독', icon: Zap, color: '#6ED6C8', bg: '#E8F8F6', backendCategory: 'OTHER' },
 ]
