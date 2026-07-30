@@ -5,7 +5,7 @@
 ## 결과물
 
 - Figma 프레임: [02 · Problem & Solution](https://www.figma.com/design/D2Zlcjyy5ThP80AU0YqVAx?node-id=12-2)
-- PNG: `outputs/video-assets/02-problem-solution.png`
+- 최종 영상: [`n091-park-changhyun-project-introduction.mp4`](../../project-introduction-video/n091-park-changhyun-project-introduction.mp4)
 - 해상도: 1920×1080
 - 비율: 16:9
 
