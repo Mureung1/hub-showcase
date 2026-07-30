@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import { apiClient } from '../api/client'
 import logo from '../assets/logo.svg'
 import loginBg from '../assets/illustrations/login-bg.png'
 import './SignupPage.css'
@@ -23,7 +23,7 @@ export default function SignupPage() {
 
   const handleCheckId = async () => {
     try {
-      const response = await axios.post('http://localhost:4000/api/auth/check-username', {
+      const response = await apiClient.post('/auth/check-username', {
         username: id,
       })
       if (response.data.available) {
@@ -45,7 +45,7 @@ export default function SignupPage() {
 
   const handleSignup = async () => {
     try {
-      const response = await axios.post('http://localhost:4000/api/auth/signup', {
+      const response = await apiClient.post('/auth/signup', {
         username: id,
         password,
         passwordConfirm,

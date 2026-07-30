@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import { apiClient } from '../api/client'
 import { useAuthStore } from '../store/authStore'
 import logo from '../assets/logo.svg'
 import loginBg from '../assets/illustrations/login-bg.png'
@@ -17,7 +17,7 @@ export default function LoginPage() {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://localhost:4000/api/auth/login', {
+      const response = await apiClient.post('/auth/login', {
         username: id,
         password,
       })
