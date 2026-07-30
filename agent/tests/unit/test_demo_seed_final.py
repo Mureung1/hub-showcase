@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import importlib
 import json
 from collections import Counter, defaultdict
 from datetime import datetime
@@ -78,11 +79,39 @@ def test_final_outputs_have_112_rows_per_job_and_keep_statistics_sections() -> N
                 value = cell["pct"]
                 expected = (
                     "—" if value is None
-                    else "약" if value <= 30
-                    else "중" if value <= 69
+                    else "약" if value <= 20
+                    else "중" if value <= 79
                     else "강"
                 )
                 assert cell["level"] == expected, (job, cluster["cluster"], cell)
+
+
+def test_all_job_parts_use_the_same_heatmap_boundaries() -> None:
+    for job in build_seed.JOB_PARTS:
+        module = importlib.import_module(f"scripts.demo_seed.{job}")
+        assert module.axis_level(None) == "—", job
+        assert module.axis_level(20) == "약", job
+        assert module.axis_level(21) == "중", job
+        assert module.axis_level(79) == "중", job
+        assert module.axis_level(80) == "강", job
+
+
+def test_generated_user_copy_uses_poster_terms() -> None:
+    exposed_tables = (
+        "analysis_claims",
+        "analysis_outputs",
+        "checklist_items",
+        "roadmap_items",
+        "user_posting_analyses",
+        "wiki_revisions",
+    )
+    forbidden = ("기준선", "베이스라인", "편차")
+    for table in exposed_tables:
+        for row in _rows(table):
+            text = " ".join(row.values())
+            for phrase in forbidden:
+                assert phrase not in text, (table, phrase)
+            assert "추가 요구 · 추가 요구" not in text, table
 
 
 def test_small_cluster_statistics_are_marked_low_confidence() -> None:

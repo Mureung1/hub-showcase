@@ -29,7 +29,7 @@
           <h1>공고가 반복하는 문장 뒤에서, 이 회사·기업군이 유독 원하는 지점을 되짚습니다.</h1>
           <p>
             전체는 직무 공통 기대치를 보여 주고, 기업군·개별 공고는 그 기준보다
-            더 높거나 추가로 요구되는 부분을 편차로 강조합니다.
+            더 높거나 추가로 요구되는 부분을 직무 공통 기대치와의 차이로 강조합니다.
           </p>
           <div class="view-tabs" role="list" aria-label="채용공고 해석 뷰">
             <span class="view-tab is-current">직무 공통 기대치</span>
@@ -41,7 +41,7 @@
         <section class="section-block" id="view-all">
           <div class="section-title">
             <h2>전체 · 백엔드 신입 공통 기대치</h2>
-            <span class="hint">회사와 무관한 기준선</span>
+            <span class="hint">회사와 무관하게 반복되는 직무 전반 기대치</span>
           </div>
           <div class="panel">
             <div class="requirement-list">
@@ -68,7 +68,7 @@
         <section class="section-block" id="view-cluster">
           <div class="section-title">
             <h2>기업군 · 핀테크·금융이 직무 공통 기대치보다 더 요구하는 것</h2>
-            <span class="hint">편차 항목만 펼침 · 직무 공통 기대치와 동일한 항목은 접힘</span>
+            <span class="hint">공통 기대치보다 더 요구하는 항목만 펼침 · 동일한 항목은 접힘</span>
           </div>
           <div class="insight-grid">
             <article class="insight-card">
@@ -78,7 +78,7 @@
               </div>
               <div class="insight-levels">
                 <div><span class="insight-label">직무 공통</span> 트랜잭션 개념 이해</div>
-                <div><span class="insight-label insight-label--diff">편차</span> 동시성·롤백·정합성 보장까지</div>
+                <div><span class="insight-label insight-label--diff">더 요구</span> 동시성·롤백·정합성 보장까지</div>
               </div>
               <p class="insight-evidence">근거: "결제·정산의 정확성" 반복 문장 · 회사 기술 블로그</p>
               <div class="insight-foot"><span class="ratio-pill">같은 직군 27%</span></div>
@@ -90,7 +90,7 @@
               </div>
               <div class="insight-levels">
                 <div><span class="insight-label">직무 공통</span> 공통 항목에 없음</div>
-                <div><span class="insight-label insight-label--diff">편차</span> 신규 · 인증·인가·민감정보 암호화</div>
+                <div><span class="insight-label insight-label--diff">추가 요구</span> 신규 · 인증·인가·민감정보 암호화</div>
               </div>
               <p class="insight-evidence">근거: 회사 보안 정책·기술 블로그 (공고 문장은 간접적)</p>
               <div class="insight-foot"><span class="ratio-pill">같은 직군 22%</span></div>
@@ -102,7 +102,7 @@
               </div>
               <div class="insight-levels">
                 <div><span class="insight-label">직무 공통</span> 성능 고려</div>
-                <div><span class="insight-label insight-label--diff">편차</span> 대량 트래픽·데이터 처리 경험</div>
+                <div><span class="insight-label insight-label--diff">더 요구</span> 대량 트래픽·데이터 처리 경험</div>
               </div>
               <p class="insight-evidence">근거: "일 수백만 건 거래" 문장</p>
               <div class="insight-foot"><span class="ratio-pill">같은 직군 18%</span></div>
@@ -113,19 +113,19 @@
         <section class="section-block" id="view-posting">
           <div class="section-title">
             <h2>개별 공고 · A 핀테크사 백엔드 공고</h2>
-            <span class="hint">공고 원문 + 편차 해석</span>
+            <span class="hint">공고 원문 + 공통 기대치와의 차이 해석</span>
           </div>
           <div class="panel">
             <div class="posting-quote">
               <blockquote>"대용량 트랜잭션을 안전하게 처리한 경험", "장애 상황에서도 데이터 정합성 유지"</blockquote>
               <p class="posting-interpret">
                 <strong>해석 ·</strong> 직무 공통 기대치의 '트랜잭션 이해'를 넘어 동시성·정합성 심화를 요구합니다.
-                롤백·재처리 설계 경험을 보여줄 수 있으면 이 공고의 핵심 편차를 정면으로 채웁니다.
+                롤백·재처리 설계 경험을 보여줄 수 있으면 이 공고의 핵심 추가 요구를 정면으로 채웁니다.
                 <span class="confidence confidence--high">신뢰도 높음 · 근거 문장 명확</span>
               </p>
             </div>
             <p class="panel-note">
-              CRUD·Git 같은 직무 공통 항목은 편차가 없어 접어 두었습니다. 이 공고에서 실제로 갈리는 지점은 트랜잭션 정합성입니다.
+              CRUD·Git 같은 직무 공통 항목은 차이가 없어 접어 두었습니다. 이 공고에서 실제로 갈리는 지점은 트랜잭션 정합성입니다.
             </p>
           </div>
         </section>
@@ -139,7 +139,7 @@
       <aside class="floating-nav" aria-label="채용공고 해석 목차">
         <p class="floating-nav__label">공고 해석</p>
         <a class="is-current" href="#view-all"><span class="dot"></span>직무 공통 기대치</a>
-        <a href="#view-cluster"><span class="dot"></span>기업군 편차</a>
+        <a href="#view-cluster"><span class="dot"></span>공통 기대치와의 차이</a>
         <a href="#view-posting"><span class="dot"></span>개별 공고</a>
       </aside>
     </main>

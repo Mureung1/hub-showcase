@@ -222,7 +222,7 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 # ============================================================ 3. 채용공고 30건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
 # 각 공고의 주석에서 해석 payload의 세 종류 번호가 나온다.
-#   ("base", 기준선 항목명, 해설)                  → base_n
+#   ("base", 직무 공통 기대치 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
 SECTION_REQUIREDNESS = {
@@ -284,8 +284,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "손으로 올리던 빌드를 스크립트 하나로 바꾼 기록이면 됩니다. 배포 요구와 한 묶음으로 읽힙니다.")),
             )),
         ),
-        "summary": "화면을 만드는 사람보다 이미 돌아가는 앱을 깨지 않고 바꾸는 사람을 찾습니다. 기준선 항목은 대체로 공통 기대치 그대로이고, 배포 경험과 사용자 규모 감각이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 3건",
+        "summary": "화면을 만드는 사람보다 이미 돌아가는 앱을 깨지 않고 바꾸는 사람을 찾습니다. 직무 공통 기대치 항목은 대체로 공통 기대치 그대로이고, 배포 경험과 사용자 규모 감각이 이 공고의 실질 변별점입니다.",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "02",
@@ -336,8 +336,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "mid", "같은 직군 80%")),
             )),
         ),
-        "summary": "화면을 예쁘게 만드는 사람보다 금액이 어긋나지 않게 지키는 사람을 찾습니다. 기준선 세 항목은 공통 기대치 그대로이고, 실패·재시도 설계가 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 3건",
+        "summary": "화면을 예쁘게 만드는 사람보다 금액이 어긋나지 않게 지키는 사람을 찾습니다. 직무 공통 기대치 세 항목은 공통 기대치 그대로이고, 실패·재시도 설계가 이 공고의 실질 변별점입니다.",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "03",
@@ -384,8 +384,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "리뷰를 읽고 무엇을 바꿨는지 한 문장으로 말할 수 있으면 이 문장은 채워집니다.")),
             )),
         ),
-        "summary": "잘 아는 사람보다 끝까지 만들어 내보내는 사람을 찾습니다. 기준선 항목의 요구 수준은 공통 기대치와 같고, 완성과 출시의 오너십이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 1건 · 기준선 일치 3건",
+        "summary": "잘 아는 사람보다 끝까지 만들어 내보내는 사람을 찾습니다. 직무 공통 기대치 항목의 요구 수준은 공통 기대치와 같고, 완성과 출시의 오너십이 이 공고의 실질 변별점입니다.",
+        "summary_ratio": "추가 요구 1건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "04",
@@ -411,7 +411,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             ("자격요건", (
                 ("Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분", "kotlin-android", "application",
                  ("base", "Kotlin·안드로이드 구현",
-                  "경력 공고라 연차가 붙었습니다. 신입 기준선과 항목은 같고 기대 깊이만 다릅니다.")),
+                  "경력 공고라 연차가 붙었습니다. 신입 직무 공통 기대치과 항목은 같고 기대 깊이만 다릅니다.")),
                 ("여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분", "kotlin-android", "tradeoff",
                  ("mark", "성능 — 이 기업군이 유독 앞세우는 요구",
                   "기종마다 다르게 동작하는 문제를 다뤄 본 사람을 찾습니다. 측정 도구로 병목을 찾고 무엇을 바꿨는지 설명할 수 있어야 합니다.",
@@ -428,7 +428,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "앱을 만들 줄 아는 사람보다 여러 기종에서 똑같이 동작하게 만드는 사람을 찾습니다. 성능 최적화와 두 플랫폼 대응이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 1건",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 1건",
     },
     {
         "nn": "05",
@@ -478,7 +478,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "앱을 만드는 사람보다 남이 쓰는 코드를 책임지는 사람을 찾습니다. 버전 호환과 인터페이스 설계가 이 공고의 실질 변별점이고, 문서 작업이 담당업무에 포함됩니다.",
-        "summary_ratio": "편차 3건 · 기준선 일치 2건",
+        "summary_ratio": "추가 요구 3건 · 직무 공통 기대치 일치 2건",
     },
     {
         "nn": "06",
@@ -1219,9 +1219,9 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 def axis_level(value: int | None) -> str:
     if value is None:
         return "—"
-    if value >= 70:
+    if value >= 80:
         return "강"
-    if value >= 31:
+    if value >= 21:
         return "중"
     return "약"
 
@@ -1557,11 +1557,11 @@ UNCHANGED_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("crash-quality", "크래시 대응·품질",
      "오류를 추적하는 습관은 기업군과 무관하게 동일합니다. 준비했다면 어디에나 통합니다."),
     ("spec-collab", "디자인·기획 스펙 조율",
-     "스펙을 함께 정하는 요구는 공통입니다. 심화는 다른 편차 항목이 담당합니다."),
+     "스펙을 함께 정하는 요구는 공통입니다. 심화는 다른 추가 요구 항목이 담당합니다."),
 )
 
-# 기업군별 편차.
-# (차원 slug, 주제, 기준선, 편차, 근거, 해석, 신뢰도, 근거 블록, 체크 개념 slug)
+# 기업군별 추가 요구.
+# (차원 slug, 주제, 직무 공통 기대치, 추가 요구, 근거, 해석, 신뢰도, 근거 블록, 체크 개념 slug)
 CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
     "bigtech_platform": (
         ("store-release", "배포", "스토어에 한 번 올려 본 경험", "버전 관리와 단계 배포까지 다루는 수준까지",
@@ -1760,13 +1760,13 @@ def interpretation_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
 # (slug, 제목, 부제, 이유, 증명 산출물, 채널, kind, 기본 필수 여부)
 CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...] = (
     ("app-project", "한 플랫폼 앱 완성", "화면·입력·네비게이션이 이어지는 앱 하나",
-     "기준선 · 최근 공고 전량이 한 플랫폼의 완성 경험을 요구합니다", "스토어 링크 또는 저장소 + 화면 흐름 설명",
+     "직무 공통 기대치 · 최근 공고 전량이 한 플랫폼의 완성 경험을 요구합니다", "스토어 링크 또는 저장소 + 화면 흐름 설명",
      ("portfolio",), "project", True),
     ("architecture", "MVVM·상태 분리 구조", "화면과 로직을 나눈 근거",
-     "기준선 · 구조 요구가 우대에서 자격요건으로 올라오는 흐름입니다", "구조 다이어그램 + 상태 관리 코드",
+     "직무 공통 기대치 · 구조 요구가 우대에서 자격요건으로 올라오는 흐름입니다", "구조 다이어그램 + 상태 관리 코드",
      ("portfolio", "interview"), "project", True),
     ("network-layer", "네트워크 계층과 실패 처리", "로딩·오류·빈 화면까지",
-     "기준선 · 서버 연동 요구가 전 기업군 공통입니다", "실패 케이스 처리 코드 + 화면 캡처",
+     "직무 공통 기대치 · 서버 연동 요구가 전 기업군 공통입니다", "실패 케이스 처리 코드 + 화면 캡처",
      ("portfolio", "interview"), "project", True),
     ("store-release", "스토어 배포 경험", "등록·심사·버전 관리",
      "직무 외 요구 중 배포·릴리스가 가장 자주 나타납니다", "출시 링크 + 버전 기록과 릴리스 노트",
@@ -1775,10 +1775,10 @@ CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...]
      "심화 신호 중 성능 문장이 가장 자주 나타납니다", "측정 도구 결과 + 개선 전후 수치",
      ("portfolio", "interview"), "project", True),
     ("crash-quality", "크래시 추적·안정성", "출시 뒤 오류를 좁힌 기록",
-     "기준선 · 운영을 함께 맡기는 팀에서 반복됩니다", "크래시 리포트 + 원인과 수정 기록",
+     "직무 공통 기대치 · 운영을 함께 맡기는 팀에서 반복됩니다", "크래시 리포트 + 원인과 수정 기록",
      ("portfolio",), "project", False),
     ("design-collab", "디자인·기획 스펙 조율 서사", "무엇을 만들지 함께 정한 경험",
-     "기준선 · 스펙을 함께 정하는 요구가 전 기업군 공통입니다", "논의 기록 + 바뀐 결정과 이유",
+     "직무 공통 기대치 · 스펙을 함께 정하는 요구가 전 기업군 공통입니다", "논의 기록 + 바뀐 결정과 이유",
      ("essay",), "story", True),
     ("platform-internals", "플랫폼 동작 원리", "생명주기·화면 갱신·메모리",
      "기본기의 정확성을 검증하는 면접 단골 주제입니다", "동작 흐름 정리 노트 + 내 코드와 연결한 예시",
@@ -1812,7 +1812,7 @@ INTRO_ORDERS: tuple[tuple[str, tuple[str, ...]], ...] = (
 
 
 def cluster_concepts(cluster_id: str) -> tuple[str, ...]:
-    """기업군 편차가 가리키는 체크 개념. 순서가 편차 번호다."""
+    """기업군별 추가 요구가 가리키는 체크 개념. 순서가 추가 요구 번호다."""
     return tuple(entry[8] for entry in CLUSTER_DEVIATIONS[cluster_id])
 
 
@@ -1835,7 +1835,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "item_id": info["concept_id"],
             "title": info["title"], "subtitle": info["subtitle"],
             "reason": (
-                f"편차 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
+                f"추가 요구 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
             ),
             "evidence_needed": info["evidence_needed"],
             "channels": list(info["channels"]),
@@ -1948,7 +1948,7 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
     (1, "STEP 01 · 3주", 3, "vhigh", "한 플랫폼으로 앱 하나를 끝까지 완성하기",
      "예제 따라 만들기를 멈추고 화면 서너 개가 이어지는 앱을 직접 설계해 완성하세요. 화면과 로직을 나누는 구조를 처음부터 넣습니다.",
      "저장소 + 화면 흐름도 + 구조 설명 문서",
-     "기준선 두 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+     "직무 공통 기대치 두 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
      ("화면 구성", "상태 분리", "네비게이션")),
     (2, "STEP 02 · 2주", 2, "vhigh", "서버와 붙이고 실패를 다루기",
      "공개 API를 붙여 목록·상세를 만들고 로딩·오류·빈 화면을 각각 설계하세요. 네트워크를 끊은 뒤 재시도를 확인하고, 의도적으로 크래시를 발생시켜 추적 기록도 남기세요.",
@@ -1961,10 +1961,10 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "직무 외 요구 중 배포·릴리스가 가장 자주 나타나고, 성능은 준비한 지원자가 드뭅니다.",
      ("스토어 배포", "성능 측정", "버전 관리")),
     (4, "STEP 04 · 2주", 2, "mid", "기업군에 맞춰 마무리하기",
-     "지원 기업군의 편차 항목을 채우고 README와 자소서의 소개 순서를 다시 배치하세요. 스펙 조율에서 바뀐 결정과 선언형 UI의 상태 흐름을 별도 문서로 남기세요.",
+     "지원 기업군의 추가 요구 항목을 채우고 README와 자소서의 소개 순서를 다시 배치하세요. 스펙 조율에서 바뀐 결정과 선언형 UI의 상태 흐름을 별도 문서로 남기세요.",
      "스펙 조율 결정 기록 + 선언형 UI 상태 흐름 문서 + 기업군 맞춤 소개 순서",
      "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
-     ("편차 보강", "소개 순서", "문서 정리")),
+     ("추가 요구 보강", "소개 순서", "문서 정리")),
 )
 
 STEP_FILLS: tuple[tuple[str, ...], ...] = (
@@ -2003,7 +2003,7 @@ def roadmap_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         info = CONCEPT_INFO[slug]
         if slug in devs:
             kind = "dev"
-            text = f"{info['title']} (편차 {devs.index(slug) + 1})"
+            text = f"{info['title']} (추가 요구 {devs.index(slug) + 1})"
         elif info["kind"] == "study":
             kind, text = "study", f"{info['title']} (학습)"
         else:

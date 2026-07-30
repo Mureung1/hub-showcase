@@ -5,6 +5,7 @@
 // 화면은 이 코드를 보고 빈 화면 대신 "아직 준비되지 않은 직무" 안내를 띄운다.
 
 import { apiUrl } from '../data/api'
+import { normalizeUserFacingCopy } from '../data/userFacingCopy'
 
 export const NO_ACTIVE_ANALYSIS = 'NO_ACTIVE_ANALYSIS'
 export const UNSUPPORTED_JOB = 'UNSUPPORTED_JOB'
@@ -19,7 +20,7 @@ export function isJobNotReady(code) {
 export async function fetchJson(path, options) {
   const res = await fetch(apiUrl(path), options)
   // 본문이 비었거나 JSON 이 아닐 수도 있다. 그 경우는 null 로 두고 상태 코드만 쓴다.
-  const body = await res.json().catch(() => null)
+  const body = normalizeUserFacingCopy(await res.json().catch(() => null))
   if (!res.ok) {
     const error = new Error(body?.error?.message || `HTTP ${res.status}`)
     error.code = body?.error?.code || `HTTP_${res.status}`

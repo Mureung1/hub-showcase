@@ -146,7 +146,7 @@ function ChecklistScreen({ go, job, checks, setChecks, scope, setScope, myPostin
               <section className="section-block" id="checklist">
                 <div className="section-title">
                   <h2>합격 전략 체크리스트</h2>
-                  <span className="hint">공고 편차 항목은 배경 강조 · 보유 칸을 눌러 체크</span>
+                  <span className="hint">공통 기대치보다 더 요구하는 항목은 배경 강조 · 보유 칸을 눌러 체크</span>
                 </div>
                 <div className="panel panel--table">
                   <table className="check-table">
@@ -159,7 +159,7 @@ function ChecklistScreen({ go, job, checks, setChecks, scope, setScope, myPostin
                           <td className="check-item">
                             <b>{c.title}
                               <span className={`kind-tag kind-tag--${c.kind}`}>{{ project: '프로젝트', story: '서사', study: '학습' }[c.kind] || c.kind}</span>
-                              {c.is_deviation && <span className="dev-tag">공고 편차 {['①', '②', '③'][c.dev_n - 1] || ''}</span>}
+                              {c.is_deviation && <span className="dev-tag">추가 요구 {['①', '②', '③'][c.dev_n - 1] || ''}</span>}
                               {!c.required && <span className="dev-tag dev-tag--pref">우대</span>}
                             </b>
                             {c.subtitle}
@@ -225,7 +225,7 @@ function ChecklistScreen({ go, job, checks, setChecks, scope, setScope, myPostin
                 <div className="strategy-grid">
                   {view.essay.map((e, i) => (
                     <div className="strategy-card" key={i}>
-                      <span className="kicker kicker--essay">소재 {i + 1} · {e.kind === 'deviation' ? '편차 연결형' : '보유 소재 다듬기'}</span>
+                      <span className="kicker kicker--essay">소재 {i + 1} · {e.kind === 'deviation' ? '추가 요구 연결형' : '보유 소재 다듬기'}</span>
                       <h3>{e.title}</h3>
                       <p>{e.body}</p>
                       {e.narrative && (
@@ -247,7 +247,7 @@ function ChecklistScreen({ go, job, checks, setChecks, scope, setScope, myPostin
               <section className="section-block" id="interview">
                 <div className="section-title">
                   <h2>면접 전략</h2>
-                  <span className="hint">편차 항목은 꼬리질문으로 검증됩니다 — 두 번째 답을 준비</span>
+                  <span className="hint">추가 요구 항목은 꼬리질문으로 확인됩니다 — 선택 이유와 결과까지 두 번째 답을 준비</span>
                 </div>
                 <div className="strategy-grid">
                   {view.interview.map((q, i) => (

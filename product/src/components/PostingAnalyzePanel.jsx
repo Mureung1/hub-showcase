@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { apiUrl } from '../data/api'
+import { normalizeUserFacingCopy } from '../data/userFacingCopy'
 import './posting-analyze.css'
 
 // 내 공고 직접 분석 패널.
@@ -116,7 +117,7 @@ function GeneralFallback({ fallback, jobLabel }) {
         </ul>
       </div>
       <div className="pa-card">
-        <h4>기업군 편차</h4>
+        <h4>직무 공통 기대치와의 차이</h4>
         <p>선택한 기업군이 직무 공통 기대치보다 더 요구하는 지점입니다.</p>
         <ul className="pa-list">
           {deviations.slice(0, 5).map((d) => (
@@ -138,7 +139,7 @@ async function analyzePosting(rawText, job, signal) {
     signal,
   })
   // 본문이 비었거나 JSON 이 아닐 수도 있다. 그 경우는 null 로 두고 상태 코드만 쓴다.
-  const json = await res.json().catch(() => null)
+  const json = normalizeUserFacingCopy(await res.json().catch(() => null))
   return { ok: res.ok, httpStatus: res.status, json }
 }
 

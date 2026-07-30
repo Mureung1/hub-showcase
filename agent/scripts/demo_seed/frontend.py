@@ -259,7 +259,7 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 # ============================================================ 3. 채용공고 30건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
 # 주석은 recent 5건에만 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
-#   ("base", 기준선 항목명, 해설)                  → base_n
+#   ("base", 직무 공통 기대치 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
 SECTION_REQUIREDNESS = {
@@ -326,8 +326,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("전형 일정은 지원자 상황에 따라 조율될 수 있습니다.", None, "foundation", None),
             )),
         ),
-        "summary": "화면을 만들 줄 아는 사람 다음의 조건을 봅니다. 기준선 항목은 대체로 공통 기대치 그대로이고, 성능 측정과 상태 흐름 설계, 테스트 습관이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 3건 · 기준선 일치 4건",
+        "summary": "화면을 만들 줄 아는 사람 다음의 조건을 봅니다. 직무 공통 기대치 항목은 대체로 공통 기대치 그대로이고, 성능 측정과 상태 흐름 설계, 테스트 습관이 이 공고의 실질 변별점입니다.",
+        "summary_ratio": "추가 요구 3건 · 직무 공통 기대치 일치 4건",
     },
     {
         "nn": "02",
@@ -382,8 +382,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("서류 전형 → 과제 전형 → 기술 면접 → 최종 면접", None, "foundation", None),
             )),
         ),
-        "summary": "값이 틀리지 않는 화면을 만들 사람을 찾습니다. 기준선은 공통 기대치와 같고, 상태·예외 설계와 테스트, 접근성 세 축이 이 공고의 변별점입니다.",
-        "summary_ratio": "편차 3건 · 기준선 일치 3건",
+        "summary": "값이 틀리지 않는 화면을 만들 사람을 찾습니다. 직무 공통 기대치은 공통 기대치와 같고, 상태·예외 설계와 테스트, 접근성 세 축이 이 공고의 변별점입니다.",
+        "summary_ratio": "추가 요구 3건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "03",
@@ -437,8 +437,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("서류 전형 → 인터뷰 2회 → 처우 협의", None, "foundation", None),
             )),
         ),
-        "summary": "끝까지 만들어 본 사람을 찾습니다. 기준선 항목의 요구 수준은 오히려 낮은 편이고, 없는 것을 직접 만든 경험(빌드 설정·스타일 체계)이 이 공고의 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 3건",
+        "summary": "끝까지 만들어 본 사람을 찾습니다. 직무 공통 기대치 항목의 요구 수준은 오히려 낮은 편이고, 없는 것을 직접 만든 경험(빌드 설정·스타일 체계)이 이 공고의 변별점입니다.",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "04",
@@ -493,8 +493,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("서류 전형 → 실무 인터뷰 → 컬처 인터뷰 → 처우 협의", None, "foundation", None),
             )),
         ),
-        "summary": "제품을 오래 유지할 사람을 찾습니다. 기준선은 그대로 통하되 실시간 상태 동기화와 테스트 운영, 번들 관리가 이 공고의 추가 요구입니다.",
-        "summary_ratio": "편차 3건 · 기준선 일치 5건",
+        "summary": "제품을 오래 유지할 사람을 찾습니다. 직무 공통 기대치은 그대로 통하되 실시간 상태 동기화와 테스트 운영, 번들 관리가 이 공고의 추가 요구입니다.",
+        "summary_ratio": "추가 요구 3건 · 직무 공통 기대치 일치 5건",
     },
     {
         "nn": "05",
@@ -548,8 +548,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                 ("서류 전형 → 인적성 → 기술 면접 → 임원 면접", None, "foundation", None),
             )),
         ),
-        "summary": "정해진 기준을 정확히 지킬 사람을 찾습니다. 기준선 항목의 요구 수준은 평이하지만 접근성 인증과 스타일 규칙 문서화가 이 공고의 실질 관문입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 4건",
+        "summary": "정해진 기준을 정확히 지킬 사람을 찾습니다. 직무 공통 기대치 항목의 요구 수준은 평이하지만 접근성 인증과 스타일 규칙 문서화가 이 공고의 실질 관문입니다.",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 4건",
     },
     {
         "nn": "06",
@@ -1255,9 +1255,9 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 def axis_level(value: int | None) -> str:
     if value is None:
         return "—"
-    if value >= 70:
+    if value >= 80:
         return "강"
-    if value >= 31:
+    if value >= 21:
         return "중"
     return "약"
 
@@ -1584,10 +1584,10 @@ BASELINE_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("frontend-testing", "테스트로 회귀 막기",
      "컴포넌트와 사용자 흐름을 자동 검증해 다른 화면이 깨지는 것을 막는 습관입니다. 우대에서 자격요건으로 올라오는 흐름이 뚜렷합니다."),
     ("bundling-build", "빌드·번들 관리",
-     "번들러 설정과 산출물 크기를 다루는 능력입니다. 기준선의 경계선에 걸쳐 있고 조직 규모에 따라 요구 수준이 갈립니다."),
+     "번들러 설정과 산출물 크기를 다루는 능력입니다. 직무 공통 기대치의 경계선에 걸쳐 있고 조직 규모에 따라 요구 수준이 갈립니다."),
 )
 
-# 편차가 아닌 항목의 해설. 기업군마다 편차 목록을 빼고 앞에서 네 개를 쓴다.
+# 추가 요구가 아닌 항목의 해설. 기업군마다 추가 요구 목록을 빼고 앞에서 네 개를 쓴다.
 UNCHANGED_NOTES: dict[str, tuple[str, str]] = {
     "react-component": ("React 컴포넌트로 화면 완성",
                         "이 기업군도 요구 수준은 공통 기대치와 같습니다. 차별화 지점이 아니라 전제 조건입니다."),
@@ -1596,7 +1596,7 @@ UNCHANGED_NOTES: dict[str, tuple[str, str]] = {
     "state-management": ("상태 관리 흐름 설계",
                          "상태 관리 요구 자체는 공통 기대치 그대로입니다. 도구를 하나 깊게 써 본 경험이면 충족됩니다."),
     "css-architecture": ("CSS 설계·컴포넌트 체계",
-                         "스타일 구조화 요구는 공통 수준입니다. 심화는 다른 편차 항목이 담당합니다."),
+                         "스타일 구조화 요구는 공통 수준입니다. 심화는 다른 추가 요구 항목이 담당합니다."),
     "web-performance": ("성능 측정과 개선",
                         "성능 요구가 특별히 높지 않습니다. 측정해 본 기록 한 장이면 이 기업군에서는 충분합니다."),
     "web-accessibility": ("웹 접근성·웹표준 준수",
@@ -1607,7 +1607,7 @@ UNCHANGED_NOTES: dict[str, tuple[str, str]] = {
                        "빌드 도구 요구는 공통 수준입니다. 설정 파일을 읽고 고쳐 본 경험이면 충족됩니다."),
 }
 
-# (slug, 주제, 기준선, 편차, 근거, 해설, 신뢰도, 통계 앵커, 체크 개념 slug)
+# (slug, 주제, 직무 공통 기대치, 추가 요구, 근거, 해설, 신뢰도, 통계 앵커, 체크 개념 slug)
 CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
     "bigtech_platform": (
         ("web-performance", "성능", "성능을 고려한 구현", "지표 측정과 개선 전후 비교까지",
@@ -1710,7 +1710,7 @@ def baseline_rows() -> list[dict[str, Any]]:
 
 
 def unchanged_rows(cluster_id: str | None) -> list[dict[str, Any]]:
-    """편차로 잡히지 않은 기준선 항목. 편차와 같은 항목을 두 번 말하지 않는다."""
+    """추가 요구로 잡히지 않은 직무 공통 기대치 항목. 추가 요구와 같은 항목을 두 번 말하지 않는다."""
     devs = () if cluster_id is None else tuple(e[0] for e in CLUSTER_DEVIATIONS[cluster_id])
     rows = []
     for slug, _title, _desc in BASELINE_ITEMS:
@@ -1867,10 +1867,10 @@ def interpretation_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
 # (slug, 제목, 부제, 이유, 증명 산출물, 채널, kind, 기본 필수 여부)
 CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...] = (
     ("spa-project", "React 화면 프로젝트 완성", "배포까지 끌고 간 서비스 화면 하나",
-     "기준선 · 최근 공고 전량이 React 화면 개발을 요구합니다", "배포 URL + README + 커밋 기록",
+     "직무 공통 기대치 · 최근 공고 전량이 React 화면 개발을 요구합니다", "배포 URL + README + 커밋 기록",
      ("portfolio",), "project", True),
     ("ts-typing", "TypeScript 타입 설계 경험", "데이터 모양을 타입으로 적기",
-     "기준선 · 타입 사용이 선택이 아니라 전제로 적힙니다", "도메인 타입 정의 코드 + 왜 그 구조인지 메모",
+     "직무 공통 기대치 · 타입 사용이 선택이 아니라 전제로 적힙니다", "도메인 타입 정의 코드 + 왜 그 구조인지 메모",
      ("portfolio", "interview"), "project", True),
     ("state-design", "상태·데이터 흐름 설계", "서버 데이터와 화면 상태의 경계 정하기",
      "상태 흐름 설계는 기업군마다 요구 수준이 가장 크게 갈립니다", "상태 흐름도 + 로딩·에러·재시도 처리 코드",
@@ -1891,7 +1891,7 @@ CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...]
      "조직 규모에 따라 직접 구성해야 하는 기업군이 있습니다", "번들 분석 리포트 + 설정 변경 근거",
      ("portfolio",), "project", False),
     ("collab-story", "디자이너·기획 협업 서사", "시안과 현실 사이를 조율한 경험",
-     "기준선 · 화면 작업은 언제나 남과 맞물립니다", "문제 → 조율 → 결과 서술 준비",
+     "직무 공통 기대치 · 화면 작업은 언제나 남과 맞물립니다", "문제 → 조율 → 결과 서술 준비",
      ("essay",), "story", True),
     ("release-story", "배포하고 고쳐 본 오너십 서사", "내 화면을 끝까지 책임진 경험",
      "완성과 개선의 반복을 요구하는 공고가 늘고 있습니다", "배포 후 피드백 → 개선 기록",
@@ -1928,7 +1928,7 @@ INTRO_ORDERS: tuple[tuple[str, tuple[str, ...]], ...] = (
 
 
 def cluster_concepts(cluster_id: str) -> tuple[str, ...]:
-    """기업군 편차가 가리키는 체크 개념. 순서가 편차 번호다."""
+    """기업군별 추가 요구가 가리키는 체크 개념. 순서가 추가 요구 번호다."""
     return tuple(entry[8] for entry in CLUSTER_DEVIATIONS[cluster_id])
 
 
@@ -1951,7 +1951,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "item_id": info["concept_id"],
             "title": info["title"], "subtitle": info["subtitle"],
             "reason": (
-                f"편차 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
+                f"추가 요구 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
             ),
             "evidence_needed": info["evidence_needed"],
             "channels": list(info["channels"]),
@@ -2059,7 +2059,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
 ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ...]], ...] = (
     (1, "STEP 01 · 3주", 3, "vhigh", "서비스 화면 하나를 배포까지 완성하기",
      "새 프로젝트를 벌이지 말고 만들던 화면 하나를 배포까지 끌고 가세요. 컴포넌트 경계와 타입 정의를 함께 정리합니다.",
-     "배포 URL + 컴포넌트 구조 설명 + 도메인 타입 정의", "기준선 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+     "배포 URL + 컴포넌트 구조 설명 + 도메인 타입 정의", "직무 공통 기대치 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
      ("컴포넌트 설계", "타입 정의", "배포")),
     (2, "STEP 02 · 2주", 2, "vhigh", "보이지 않는 상태 채우기",
      "로딩·빈 상태·에러·재시도 화면을 만들고 상태 흐름도를 그리세요. 공통 스타일 규칙과 컴포넌트 경계도 같은 문서에 표시해 여러 상태에서 일관되게 적용되는지 확인합니다.",
@@ -2070,9 +2070,9 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "측정 리포트 + 개선 전후 비교 + 점검 체크리스트", "규모를 경험하지 못해도 측정과 시도는 보여줄 수 있습니다.",
      ("성능 측정", "접근성 점검", "지표 비교")),
     (4, "STEP 04 · 2주", 2, "mid", "기업군에 맞춰 마무리하기",
-     "지원 기업군의 편차 항목을 채우고 배포 뒤 피드백과 개선 결과를 정리하세요. 디자이너·기획과 합의한 기록을 연결한 뒤 README와 자소서의 소개 순서를 다시 배치합니다.",
-     "편차 항목 산출물 + 배포 후 개선 기록 + 협업 합의 기록 + 기업군 맞춤 소개 순서", "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
-     ("편차 보강", "소개 순서", "문서 정리")),
+     "지원 기업군의 추가 요구 항목을 채우고 배포 뒤 피드백과 개선 결과를 정리하세요. 디자이너·기획과 합의한 기록을 연결한 뒤 README와 자소서의 소개 순서를 다시 배치합니다.",
+     "추가 요구 항목 산출물 + 배포 후 개선 기록 + 협업 합의 기록 + 기업군 맞춤 소개 순서", "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+     ("추가 요구 보강", "소개 순서", "문서 정리")),
 )
 
 STEP_FILLS: tuple[tuple[str, ...], ...] = (
@@ -2111,7 +2111,7 @@ def roadmap_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         info = CONCEPT_INFO[slug]
         if slug in devs:
             kind = "dev"
-            text = f"{info['title']} (편차 {devs.index(slug) + 1})"
+            text = f"{info['title']} (추가 요구 {devs.index(slug) + 1})"
         elif info["kind"] == "study":
             kind, text = "study", f"{info['title']} (학습)"
         else:
@@ -2130,7 +2130,7 @@ def roadmap_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
                 added_dev = dev_slug
         if added_dev:
             dev_info = CONCEPT_INFO[added_dev]
-            body = f"{body} 기업군 편차인 {dev_info['title']} 작업도 이 단계의 결과물에 연결합니다."
+            body = f"{body} 기업군별 추가 요구인 {dev_info['title']} 작업도 이 단계의 결과물에 연결합니다."
             deliverable = f"{deliverable} + {dev_info['evidence_needed']}"
         step_text = f"{title} {body} {deliverable}"
         missing_titles = [CONCEPT_INFO[slug]["title"] for slug in slugs
@@ -2196,7 +2196,7 @@ WIKI: dict[str, dict[str, Any]] = {
         "sequence": ["화면 하나 완성", "공통 컴포넌트 추출", "스타일 규칙 정리", "배포"],
     },
     "state-data-flow": {
-        "why": "상태 흐름 설계는 기업군마다 요구 수준이 가장 크게 갈리는 항목이고, 편차로 잡히는 빈도가 가장 높습니다.",
+        "why": "상태 흐름 설계는 기업군마다 요구 수준이 가장 크게 갈리는 항목이고, 추가 요구로 잡히는 빈도가 가장 높습니다.",
         "depth": {"foundation": "상태 관리 도구를 하나 써 본다",
                   "application": "서버 데이터와 화면 상태의 경계를 정한다",
                   "tradeoff": "실시간 동기화와 충돌·재시도까지 설계한다"},

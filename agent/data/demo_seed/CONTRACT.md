@@ -111,15 +111,15 @@ React → Express /api/{stats,reverse,conditions,roadmap}
 | `output_type` | `produced_by_agent` | `scope_level` | `scope_id` | payload |
 | --- | --- | --- | --- | --- |
 | `statistics` | `aggregation` | `overall` | `<job_role_id>` | 5절 A |
-| `interpretation` | `interpretation` | `overall` | `<job_role_id>` | 5절 B (기준선만) |
-| `interpretation` | `interpretation` | `cluster` | `<cluster_id>` | 5절 B (기준선 + 편차) |
-| `interpretation` | `interpretation` | `posting` | `<posting_id>` | 5절 B (기준선 + 편차 + posting) |
+| `interpretation` | `interpretation` | `overall` | `<job_role_id>` | 5절 B (직무 공통 기대치만) |
+| `interpretation` | `interpretation` | `cluster` | `<cluster_id>` | 5절 B (직무 공통 기대치 + 추가 요구) |
+| `interpretation` | `interpretation` | `posting` | `<posting_id>` | 5절 B (직무 공통 기대치 + 추가 요구 + posting) |
 | `strategy` | `strategy` | `overall` | `<job_role_id>` | 5절 C |
 | `strategy` | `strategy` | `cluster` | `<cluster_id>` | 5절 C |
-| `strategy` | `strategy` | `posting` | `<posting_id>` | 5절 C (기업군 바탕 + 공고 편차) |
+| `strategy` | `strategy` | `posting` | `<posting_id>` | 5절 C (기업군 바탕 + 공고별 추가 요구) |
 | `roadmap` | `roadmap` | `overall` | `<job_role_id>` | 5절 D |
 | `roadmap` | `roadmap` | `cluster` | `<cluster_id>` | 5절 D |
-| `roadmap` | `roadmap` | `posting` | `<posting_id>` | 5절 D (기업군 바탕 + 공고 편차) |
+| `roadmap` | `roadmap` | `posting` | `<posting_id>` | 5절 D (기업군 바탕 + 공고별 추가 요구) |
 
 **직무당 필수 행 수**
 
@@ -139,10 +139,10 @@ React → Express /api/{stats,reverse,conditions,roadmap}
 달라진다. 재료는 그 공고가 속한 기업군의 전략·로드맵 payload(바탕), 그 공고
 `interpretation` payload 의 `deviations`(차별점), 그 공고의 회사명·제목이다.
 
-- `strategy` 는 기업군 payload 를 복사한 뒤 편차에 해당하는 체크리스트 항목을 앞으로
-  끌어올리고 `is_deviation`·`dev_n` 을 그 공고 해석에 맞춘다. 편차 항목의 `reason` 은 그
-  공고를 근거로 다시 쓴다. 편차와 무관한 항목은 그대로 두며 항목을 지우지 않는다.
-- `roadmap` 은 편차를 채우는 단계를 앞으로 당기고 `n` 과 `phase` 의 `STEP nn` 을 다시 매긴다.
+- `strategy` 는 기업군 payload 를 복사한 뒤 추가 요구에 해당하는 체크리스트 항목을 앞으로
+  끌어올리고 `is_deviation`·`dev_n` 을 그 공고 해석에 맞춘다. 추가 요구 항목의 `reason` 은 그
+  공고를 근거로 다시 쓴다. 추가 요구와 무관한 항목은 그대로 두며 항목을 지우지 않는다.
+- `roadmap` 은 추가 요구를 채우는 단계를 앞으로 당기고 `n` 과 `phase` 의 `STEP nn` 을 다시 매긴다.
   `check_rows` 의 `item_id` 집합은 같은 공고 `strategy` 의 `checklist[].item_id` 집합과 같고
   `source_step` 은 새 단계 번호를 가리킨다.
 - `scope` 는 `{"level":"posting","cluster_tag":"<기업군 표시명>","posting_id":"<dp_...>"}`.
@@ -197,7 +197,7 @@ Express 의 폴백 규칙(posting 범위 요청을 그 공고가 속한 기업�
 라벨은 payload 안에 함께 담으므로 서버 코드에 상수를 두지 않는다 (B13 이 상수 표를 제거한다).
 
 `cluster_axes.rows[].cluster` 는 기업군 **표시명**(`company_clusters.display_name`)을 쓴다.
-`cells[].level` 은 `강`(70~100) · `중`(31~69) · `약`(0~30)이며, `—`는
+`cells[].level` 은 `강`(80~100) · `중`(21~79) · `약`(0~20)이며, `—`는
 `pct` 가 null인 결측값에만 쓴다.
 
 ### B. `interpretation` payload
