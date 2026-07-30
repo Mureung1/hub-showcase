@@ -46,17 +46,17 @@
     "agentTools": [
     {
       "type": "agent",
-      "name": "기획 Agent",
+      "name": "J",
       "purpose": "서비스 아이디어를 요구사항으로 정리하고 구현 우선순위를 계획합니다."
     },
     {
       "type": "skill",
-      "name": "개발 Skill",
+      "name": "행동대장",
       "purpose": "기획한 기능을 구현하기 위한 코드 초안과 구현 방향을 제공합니다."
     },
     {
       "type": "skill",
-      "name": "리뷰 Skill",
+      "name": "비평가",
       "purpose": "구현한 기능을 점검하고 개선 사항과 테스트 포인트를 확인합니다."
     }
   ],
