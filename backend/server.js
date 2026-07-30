@@ -165,7 +165,10 @@ const emailTransporter = nodemailer.createTransport({
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
-  }
+  },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000
 });
 
 app.post('/api/auth/send-code', async (req, res) => {
@@ -513,12 +516,15 @@ app.post('/api/restaurants/recommend', async (req, res) => {
   const { foodCategory, selectedTime, members } = req.body;
   const apiKey = process.env.GEMINI_API_KEY;
 
+  const category = foodCategory || '맛있는';
+  const time = selectedTime || '점심';
+
   if (!apiKey) {
     console.warn('⚠️ GEMINI_API_KEY is not set. Using mock recommendation.');
     return res.json({
       success: true,
-      recommendation: `참여자 중 컴퓨터공학과 학생이 있고 ${selectedTime} 시간대이므로, 두뇌 회전을 위해 당분과 단백질이 풍부한 ${foodCategory} 요리를 강력하게 추천합니다! 특별히 캠퍼스 명물 초밥 세트나 돼지불백 정식이 좋은 선택이 될 것입니다.`,
-      recommendedMenu: `${foodCategory} 스페셜 세트`
+      recommendation: `참여자들의 공강 시간인 ${time}에 딱 맞는 ${category} 요리를 추천합니다! 캠퍼스 명물 초밥 세트나 돼지불백 정식이 좋은 선택이 될 것입니다.`,
+      recommendedMenu: `${category} 스페셜 세트`
     });
   }
 
@@ -553,8 +559,8 @@ app.post('/api/restaurants/recommend', async (req, res) => {
     console.error('Error with Gemini API:', error.message);
     res.json({
       success: true,
-      recommendation: `참여자 중 컴퓨터공학과 학생이 있고 ${selectedTime} 시간대이므로, 두뇌 회전을 위해 당분과 단백질이 풍부한 ${foodCategory} 요리를 강력하게 추천합니다! 특별히 캠퍼스 명물 초밥 세트나 돼지불백 정식이 좋은 선택이 될 것입니다.`,
-      recommendedMenu: `${foodCategory} 스페셜 세트`
+      recommendation: `참여자들의 공강 시간인 ${time}에 딱 맞는 ${category} 요리를 추천합니다! 캠퍼스 명물 초밥 세트나 돼지불백 정식이 좋은 선택이 될 것입니다.`,
+      recommendedMenu: `${category} 스페셜 세트`
     });
   }
 });
@@ -857,6 +863,10 @@ app.post('/api/rooms/:id/confirm', async (req, res) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
