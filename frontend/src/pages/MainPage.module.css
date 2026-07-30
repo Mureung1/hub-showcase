@@ -55,6 +55,11 @@
   text-decoration: underline;
   cursor: pointer;
   font-size: 13px;
+  transition: color 0.15s ease;
+}
+
+.replyCancel:hover {
+  color: var(--color-accent-terracotta);
 }
 
 .letter {
@@ -155,6 +160,16 @@
   align-items: center;
   justify-content: center;
   font-size: 22px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sendBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 -4px 8px rgba(0, 0, 0, 0.15), 0 8px 18px rgba(27, 28, 26, 0.2);
+}
+
+.sendBtn:active {
+  transform: translateY(0) scale(0.94);
 }
 
 .pageFooter {
