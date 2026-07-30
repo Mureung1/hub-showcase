@@ -11,6 +11,7 @@
 - [AI Agent 부스 전시 포스터](booth-exhibition-poster/n091-park-changhyun-ai-agent.pdf)
 - [프로젝트 소개 부스 전시 포스터](booth-exhibition-poster/n091-park-changhyun-project-introduction.pdf)
 - [데모데이 발표 가이드](docs/DEMO_DAY_PRESENTATION_GUIDE.md)
+- [데모데이 발표 가이드 PDF](output/pdf/n091-demo-day-presentation-guide.pdf)
 - [AI와 함께 개발한 과정](docs/AI_DEVELOPMENT_WORKFLOW.md)
 - [개발 환경 및 협업 가이드](docs/DEVELOPMENT_GUIDE.md)
 
