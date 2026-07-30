@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
@@ -139,16 +138,10 @@ class EmptyView extends StatelessWidget {
 
 /// 무언가 실패한 상태. 빈 상태와 **시각적으로 명확히 다르다**(에러 색 + 경고 아이콘 + 재시도).
 class ErrorView extends StatelessWidget {
-  const ErrorView({
-    super.key,
-    required this.message,
-    this.onRetry,
-    this.retryLabel = '다시 시도',
-  });
+  const ErrorView({super.key, required this.message, this.onRetry});
 
   final String message;
   final VoidCallback? onRetry;
-  final String retryLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -159,12 +152,9 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Symbols.error,
-              size: 48,
-              color: theme.colorScheme.error,
-              fill: 1,
-            ),
+            // 채운 경고 글리프. Material Icons는 `Icons.error`가 곧 채움이고
+            // 외곽선은 `Icons.error_outline`이라 이름으로 갈린다.
+            Icon(Icons.error, size: 48, color: theme.colorScheme.error),
             AppSpacing.gapMd,
             Text(
               message,
@@ -177,28 +167,12 @@ class ErrorView extends StatelessWidget {
               AppSpacing.gapLg,
               OutlinedButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(Symbols.refresh),
-                label: Text(retryLabel),
+                icon: const Icon(Icons.refresh),
+                label: const Text('다시 시도'),
               ),
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// 화면 중앙 스피너. 스켈레톤을 그리기 애매한 짧은 로딩에 쓴다.
-class LoadingView extends StatelessWidget {
-  const LoadingView({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: SizedBox(
-        width: 32,
-        height: 32,
-        child: CircularProgressIndicator(strokeWidth: 3),
       ),
     );
   }

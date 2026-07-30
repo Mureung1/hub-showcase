@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/app_spacing.dart';
 import 'quest_card.dart' show kQuestCardTrailingBox;
@@ -42,7 +41,7 @@ class QuestActionsMenu extends StatelessWidget {
     return PopupMenuButton<int>(
       tooltip: tooltip ?? '더보기',
       icon: Icon(
-        Symbols.more_vert,
+        Icons.more_vert,
         size: _iconSize,
         color: theme.colorScheme.onSurfaceVariant,
       ),
@@ -85,7 +84,7 @@ class QuestActionsMenu extends StatelessWidget {
 
 /// 완료 토글(26)보다 한 단계 작게 — 주요 행동이 아니라 보조 진입점이다.
 ///
-/// 정본(24:171)의 `Symbols.more_vert` 프레임은 26이지만, `⋮`는 점 세 개라 같은
+/// 정본(24:171)의 `more_vert` 프레임은 26이지만, `⋮`는 점 세 개라 같은
 /// 크기여도 무게가 다르다. 여기서 정하는 건 **글리프 크기뿐**이고, 오른쪽 세로축은
 /// 박스([kQuestCardTrailingBox])가 잡으므로 완료 토글과 중심이 어긋나지 않는다.
 const double _iconSize = 22;

@@ -58,7 +58,6 @@ abstract final class AppColors {
   static const onErrorContainer = Color(0xFF93000A);
 
   // 표면 · 중립 (라이트)
-  static const background = Color(0xFFF8F9FF);
   static const surface = Color(0xFFF8F9FF);
   static const surfaceContainerLowest = Color(0xFFFFFFFF);
   static const surfaceContainerLow = Color(0xFFEFF4FF);
@@ -68,6 +67,31 @@ abstract final class AppColors {
   static const onSurfaceVariant = Color(0xFF3D4A3D);
   static const outline = Color(0xFF6D7B6C);
   static const outlineVariant = Color(0xFFBCCBB9);
+
+  /// 다크 전용 밝은 블루 — 어두운 면 **위에 얹는** AI·정보·링크 전경.
+  ///
+  /// **왜 필요했나.** 다크 스킴은 그린을 밝게 뒤집었지만([inversePrimary])
+  /// 블루에는 대응하는 밝은 단이 없어 `secondary`가 `#2170e4`(L\* 48.9)에 머물렀다.
+  /// 그 값은 다크의 어떤 면 위에서도 AA에 못 미친다 — 화면 `#0b1c30` 3.68:1 ·
+  /// 카드 `#13263d` 3.28:1 · `surfaceContainer` 2.75:1 · `surfaceContainerHigh`
+  /// 2.47:1. 아웃라인/텍스트 버튼 전경까지 전역으로 걸려 있던 결함이다.
+  ///
+  /// 값은 [secondary](`#0058be`) 색상의 M3 tone-80이다(새 색을 지어낸 것이 아니라
+  /// 같은 hue를 다크용 밝기로 올린 것). 대비: 카드 9.01:1 · `surfaceContainerHigh`
+  /// 6.79:1 · 화면 10.11:1.
+  ///
+  /// ⚠️ **라이트에는 쓰지 않는다.** 라이트 `secondary`는 정본 `#0058be` 그대로다.
+  static const darkSecondary = Color(0xFF9FCAFF);
+
+  /// [darkSecondary]로 꽉 채운 면 위에 얹는 글자(tone-20). 대비 7.77:1.
+  ///
+  /// 지금 앱에는 "밝은 블루로 채운 면"이 없어 실사용처가 없지만, 슬롯을 흰색으로
+  /// 남겨 두면 나중에 `secondary` 채움을 만든 사람이 **흰 글자 on 밝은 블루**
+  /// (1.70:1)를 얻는다. 쌍은 항상 같이 뒤집는다.
+  ///
+  /// ⚠️ 이 값은 `secondaryContainer`(다크에서도 어두운 `#0058be`) 위에 쓰면 안
+  /// 된다 — 1.97:1이다. 채운 배지의 글리프는 `onSecondaryContainer`(흰색, 6.69:1)다.
+  static const darkOnSecondary = Color(0xFF003060);
 
   // 표면 · 중립 (다크)
   static const darkSurface = Color(0xFF0B1C30);
@@ -127,4 +151,39 @@ abstract final class AppColors {
       offset: Offset(0, 8),
     ),
   ];
+}
+
+/// 라이트·다크에서 **다른 슬롯을 가리켜야 하는 색 역할**.
+///
+/// `ColorScheme`의 슬롯 하나로는 표현되지 않지만, 위젯마다 `brightness`를 물어
+/// 분기하면 같은 판단이 여러 파일로 복제된다(복제하면 반드시 어긋난다). 역할을
+/// 여기 한 곳에 두고 위젯은 이름만 부른다.
+extension AppSurfaceRoles on ColorScheme {
+  /// 카드·다이얼로그·시트 **면 위에 얹히는 보더 없는 안쪽 박스**의 채움.
+  ///
+  /// 정본(라이트)은 흰 면(`surfaceContainerLowest`) 위 `surfaceContainerLow`
+  /// (`#eff4ff`)다 — 두 값의 L\* 차가 3.6이라 보더 없이도 박스가 읽힌다.
+  ///
+  /// ⚠️ 다크는 같은 슬롯 쌍의 L\* 차가 **2.8**(`#13263D` ↔ `#172C46`)뿐이라 박스가
+  /// 면에 붙어 사라진다. 그래서 다크에서만 한 단 더 올린다(`#213A5B`, L\* 차 9.3).
+  /// 라이트 렌더는 바뀌지 않는다.
+  ///
+  /// 보더를 두르는 대신 채움을 올리는 이유: 라이트 정본이 "보더 없는 틴트 박스"라
+  /// 다크에만 선이 생기면 두 테마의 형태가 갈린다. 색만 바꾸면 형태는 같다.
+  Color get insetSurface => brightness == Brightness.dark
+      ? surfaceContainerHigh
+      : surfaceContainerLow;
+
+  /// 본문 위에 얹히는 **옅은 틴트 패널**(안내 박스 · AI 진입점 카드)의 채움.
+  ///
+  /// 라이트는 정본 변수 `tint/aiSurface`([AppColors.secondarySurface] `#e6eef9`)다.
+  /// 다크에는 정본이 없다 — 그 라이트 전용 값을 그대로 쓰면 어두운 화면에 흰 판이
+  /// 뜨고, 그 위의 `onSurface`(다크=밝음) 본문이 **대비 1.01:1**로 사라진다.
+  /// 새 HEX를 짓지 않고 중립 램프의 가장 높은 단을 쓴다(`#213A5B`): 화면
+  /// (`surface` `#0B1C30`)과 L\* 14.1, 카드(`surfaceContainerLowest` `#13263D`)와
+  /// L\* 9.3 떨어져 셋이 서로 구분되고 본문 대비는 9.77:1이 된다.
+  Color get tintPanelSurface =>
+      brightness == Brightness.dark
+      ? surfaceContainerHigh
+      : AppColors.secondarySurface;
 }

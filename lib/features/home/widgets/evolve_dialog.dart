@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/growth_rules.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -103,11 +102,7 @@ class _EvolveDialogState extends State<EvolveDialog>
               ),
             ),
             AppSpacing.gapWSm,
-            Icon(
-              Symbols.arrow_forward,
-              size: 28,
-              color: scheme.onSurfaceVariant,
-            ),
+            Icon(Icons.arrow_forward, size: 28, color: scheme.onSurfaceVariant),
             AppSpacing.gapWSm,
             // 새 캐릭터는 튕겨 나온다 — 가장 강한 강조.
             AnimatedBuilder(

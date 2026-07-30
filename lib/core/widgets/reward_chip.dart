@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../constants/reward_rules.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../theme/reward_colors.dart';
@@ -50,17 +48,21 @@ class RewardChip extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _RewardPart(
-          icon: Symbols.monetization_on,
+          // 채운 코인. Material Icons는 기본형이 채움이라 `fill` 축이 필요 없다
+          // (Material Symbols 시절엔 `fill: 1`을 줬다).
+          icon: Icons.monetization_on,
           label: '+${reward.coin}',
           color: coinColor,
           iconSize: iconSize,
           textStyle: textStyle,
         ),
         _RewardPart(
-          icon: Symbols.star,
+          icon: Icons.star,
           label: 'XP +${reward.xp}',
           // XP는 성장이라 그린. 노랑은 코인 쪽만 쓴다.
-          color: AppColors.primary,
+          // 상수가 아니라 **스킴**을 쓴다 — 다크는 이 슬롯이 밝은 그린(`#4ae176`)으로
+          // 뒤집혀 있어 어두운 카드 위에서 읽힌다(상수 `#006e2f`는 2.38:1).
+          color: theme.colorScheme.primary,
           iconSize: iconSize,
           textStyle: textStyle,
         ),
@@ -95,7 +97,9 @@ class _RewardPart extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: iconSize, fill: 1, color: color),
+        // 채움 여부는 호출부가 고른 아이콘 이름으로 정해진다(Material Icons는
+        // 채움/외곽선이 별개 글리프라 `fill` 축이 없다).
+        Icon(icon, size: iconSize, color: color),
         const SizedBox(width: 2),
         Text(label, style: textStyle?.copyWith(color: color)),
       ],

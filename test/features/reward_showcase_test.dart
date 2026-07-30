@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:one_step/core/constants/reward_rules.dart';
 import 'package:one_step/core/theme/app_theme.dart';
 import 'package:one_step/core/widgets/reward_showcase.dart';
@@ -54,7 +53,7 @@ void main() {
     expect(fontSize, isNotNull, reason: '코인 숫자에 fontSize가 없으면 크기를 비교할 수 없다.');
 
     final iconSize = tester
-        .widget<Icon>(find.byIcon(Symbols.monetization_on))
+        .widget<Icon>(find.byIcon(Icons.monetization_on))
         .size;
     expect(iconSize, isNotNull, reason: '코인 아이콘 크기가 지정돼 있지 않다.');
 

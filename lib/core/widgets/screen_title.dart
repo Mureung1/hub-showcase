@@ -56,7 +56,7 @@ class ScreenTitle extends StatelessWidget {
   ///
   /// 하위 화면을 뺀 이유(사용자 결정, 2026-07-29): 뒤로가기 버튼이 이미 앞자리를
   /// 쓰고 있어 마크까지 넣으면 제목 폭이 더 줄고, 가장 긴 제목(「멈춘 퀘스트 다시
-  /// 나누기」)이 [FittedBox]로 더 작아진다. `placeholder_screen`도 같은 이유로 뺐다.
+  /// 나누기」)이 [FittedBox]로 더 작아진다.
   final bool leadingMark;
 
   final bool _inAppBar;

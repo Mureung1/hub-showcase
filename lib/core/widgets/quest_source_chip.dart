@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../models/quest_source.dart';
 import '../theme/app_radius.dart';
@@ -46,7 +45,8 @@ class QuestSourceChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            _isAi ? Symbols.auto_awesome : Symbols.edit,
+            // 외곽선 글리프(예전 `Symbols`는 fill 미지정이 곧 외곽선이었다).
+            _isAi ? Icons.auto_awesome_outlined : Icons.edit_outlined,
             size: _iconSize,
             color: colors.foreground,
           ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/dialog_art.dart';
 import '../../../core/constants/reward_rules.dart';
@@ -61,7 +60,7 @@ class StreakBonusDialog extends StatelessWidget {
       insetPadding: kCelebrationDialogInset,
       children: [
         // 불꽃 배지 — 완료 연출의 트로피 배지와 **같은 규격**([CelebrationBadge]).
-        // 폴백 🔥는 정본이 이 자리에 세워 둔 `Symbols.local_fire_department`와
+        // 폴백 🔥는 정본이 이 자리에 세워 둔 `Icons.local_fire_department`와
         // 같은 뜻이다.
         const CelebrationBadge(
           asset: DialogArt.streak,
@@ -93,7 +92,7 @@ class StreakBonusDialog extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Symbols.info, size: 16, fill: 1, color: scheme.secondary),
+            Icon(Icons.info, size: 16, color: scheme.secondary),
             AppSpacing.gapWXs,
             Flexible(
               child: Text(

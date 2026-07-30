@@ -6,8 +6,6 @@
 ///
 /// 문서화된 스키마: `docs/firestore-schema.md`
 abstract final class FirestorePaths {
-  static const users = 'users';
-
   static String user(String uid) => 'users/$uid';
 
   /// 사용자가 입력한 큰 목표 (2주차 AI 분해의 원본).
@@ -43,12 +41,9 @@ abstract final class FirestorePaths {
   /// 같은 문서를 자연스럽게 덮어쓴다. 이미지를 quest·achievement 문서가 아니라
   /// 여기 따로 두는 이유: 목록 조회 때마다 이미지 바이트가 딸려오면 읽기 비용이
   /// 폭증한다. 별도 문서로 떼어 두면 사진이 필요한 화면에서만 읽는다.
+  /// ⚠️ Storage 객체 경로가 아니라 **Firestore 문서 경로**다. 앱은 Storage를 쓰지
+  /// 않는다(`firebase_storage` 의존성 자체가 없다). 언젠가 Storage(Blaze)를
+  /// 도입한다면 대응 경로는 `storage.rules`에 이미 적혀 있다.
   static String proofDoc(String uid, String questId) =>
       'users/$uid/proofs/$questId';
-
-  /// ⚠️ Storage(Blaze) 업로드용 경로. **현재 미사용.**
-  /// 3주차 사진 인증은 Storage를 쓰지 않고 [proofDoc]의 Firestore 문서에 base64로
-  /// 저장한다. Storage(유료 플랜)를 도입하는 날을 위해 경로만 남겨 둔다.
-  static String proof(String uid, String fileName) =>
-      'users/$uid/proofs/$fileName';
 }

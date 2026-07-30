@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/proof_rules.dart';
 import '../../../core/error/app_failure.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/kst_date.dart';
@@ -304,7 +304,7 @@ class _AchievementDetailSheetState extends State<AchievementDetailSheet> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: _enterEdit,
-            icon: const Icon(Symbols.edit),
+            icon: const Icon(Icons.edit_outlined),
             label: const Text('수정'),
           ),
         ),
@@ -420,7 +420,8 @@ class _MemoBox extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
+        // 보더 없는 박스 — 다크에서 시트 면과 붙지 않도록 한 단 올린다.
+        color: scheme.insetSurface,
         borderRadius: AppRadius.mdAll,
       ),
       child: Text(memo, style: theme.textTheme.bodyMedium),
@@ -474,7 +475,7 @@ class _EditPhoto extends StatelessWidget {
                         dimension: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Symbols.photo_camera),
+                    : const Icon(Icons.photo_camera_outlined),
                 label: Text(picking ? '사진 여는 중…' : '사진 바꾸기'),
               ),
             ),
@@ -485,7 +486,7 @@ class _EditPhoto extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: picking ? null : onRemove,
-                  icon: const Icon(Symbols.delete),
+                  icon: const Icon(Icons.delete_outlined),
                   label: const Text('제거'),
                 ),
               ),
@@ -516,7 +517,7 @@ class _CompletedDate extends StatelessWidget {
     final scheme = theme.colorScheme;
 
     return Text(
-      '${_formatKstDate(completedAt)} 완료',
+      '${kstDateLabel(completedAt)} 완료',
       style: theme.textTheme.labelSmall?.copyWith(
         color: scheme.onSurfaceVariant,
       ),
@@ -557,7 +558,8 @@ class _PhotoPlaceholder extends StatelessWidget {
       height: 120,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
+        // 보더 없는 플레이스홀더 — 다크에서 시트 면과 붙지 않도록 한 단 올린다.
+        color: scheme.insetSurface,
         borderRadius: AppRadius.mdAll,
       ),
       child: Text(
@@ -582,15 +584,6 @@ class _LoadingSpinner extends StatelessWidget {
       child: CircularProgressIndicator(strokeWidth: 2),
     );
   }
-}
-
-/// 완료 날짜를 KST 벽시계 기준 `yyyy년 M월 d일`로 표시한다.
-///
-/// 저장된 `completedAt`은 UTC 순간이라 그대로 읽으면 자정 근처 완료가 하루 어긋난다.
-/// 앱의 하루 경계가 KST인 것과 맞춘다([kKstOffset] 단일 정의처를 인용).
-String _formatKstDate(DateTime instant) {
-  final kst = instant.toUtc().add(kKstOffset);
-  return '${kst.year}년 ${kst.month}월 ${kst.day}일';
 }
 
 /// 보관함 카드 상세 시트를 띄운다.

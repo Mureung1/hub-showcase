@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/constants/decompose_limits.dart';
 import '../../core/constants/empty_art.dart';
@@ -260,10 +259,12 @@ class _RedecomposeCard extends StatelessWidget {
                   color: scheme.secondaryContainer,
                   borderRadius: AppRadius.mdAll,
                 ),
+                // 채움이 `secondaryContainer`이므로 글리프는 짝인
+                // `onSecondaryContainer`다(다크 `onSecondary`는 밝은 블루의
+                // 짝으로 뒤집혀 이 자리에 쓰면 어두운 글리프가 된다).
                 child: Icon(
-                  Symbols.alt_route,
-                  fill: 1,
-                  color: scheme.onSecondary,
+                  Icons.alt_route,
+                  color: scheme.onSecondaryContainer,
                 ),
               ),
               AppSpacing.gapWMd,
@@ -302,25 +303,31 @@ class _RedecomposeCard extends StatelessWidget {
                 AppSpacing.gapXs,
                 Text(target.questTitle, style: theme.textTheme.bodyLarge),
                 // 원본 목표(Figma 「ORIGINAL GOAL」 자리). AI 맥락 라벨이라 블루인데,
-                // 실측값은 `secondary`(#0058be)가 아니라 한 단 밝은
-                // [AppColors.secondaryContainer](#2170e4)다. 다크에서는
-                // `scheme.secondary`가 마침 같은 값이라 이 상수를 그대로 써도 지금 화면이
-                // 바뀌지 않는다(다크 사양을 새로 추정하지 않는다).
+                // 라이트 실측값은 `secondary`(#0058be)가 아니라 한 단 밝은
+                // [AppColors.secondaryContainer](#2170e4)다.
+                //
+                // ⚠️ **다크는 그 상수를 쓸 수 없다.** 이 줄이 얹히는 면이 다크에서
+                // `surfaceContainerHigh`(#213A5B)라 #2170e4의 대비가 2.47:1까지
+                // 떨어진다(라이트 면 #DCE9FF 위에서는 4.68:1). 다크는 스킴의 밝은
+                // 블루([AppColors.darkSecondary])로 받는다 — 6.79:1이고 색 역할은
+                // 그대로 블루다.
                 if (goalText != null) ...[
                   AppSpacing.gapSm,
                   Row(
                     children: [
-                      const Icon(
-                        Symbols.target,
+                      Icon(
+                        // Figma 정본의 과녁(`Symbols.target`) 대역. Material
+                        // Icons에 `target`이 없어 가장 가까운 동심원 글리프다.
+                        Icons.track_changes,
                         size: _contextIconSize,
-                        color: AppColors.secondaryContainer,
+                        color: _goalTextColor(theme),
                       ),
                       AppSpacing.gapWXs,
                       Expanded(
                         child: Text(
                           goalText,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: AppColors.secondaryContainer,
+                            color: _goalTextColor(theme),
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -340,6 +347,13 @@ class _RedecomposeCard extends StatelessWidget {
 
 /// bodySmall과 눈높이를 맞춘 맥락 아이콘 크기.
 const double _contextIconSize = 14;
+
+/// 「나눌 퀘스트」 박스 안 원본 목표 줄의 색. 라이트는 정본 실측 상수, 다크는
+/// 스킴의 밝은 블루다(사유는 사용처 주석).
+Color _goalTextColor(ThemeData theme) =>
+    theme.brightness == Brightness.dark
+    ? theme.colorScheme.secondary
+    : AppColors.secondaryContainer;
 
 /// 입력 카드 — 정본 Redesign 페이지 `103:470` AIChallengeSection.
 /// 블루 AI 배지 + 제목 + 설명 + 입력 필드(+카운터) + 블루 그라디언트 분해 버튼.
@@ -394,10 +408,12 @@ class _AiChallengeSection extends StatelessWidget {
                   color: scheme.secondaryContainer,
                   borderRadius: AppRadius.mdAll,
                 ),
+                // 위 배지와 같은 규칙 — 채움 `secondaryContainer`의 짝은
+                // `onSecondaryContainer`다.
+                // 채운 ✦. Material Icons는 기본형이 채움이다.
                 child: Icon(
-                  Symbols.auto_awesome,
-                  fill: 1,
-                  color: scheme.onSecondary,
+                  Icons.auto_awesome,
+                  color: scheme.onSecondaryContainer,
                 ),
               ),
               AppSpacing.gapWMd,
@@ -428,7 +444,8 @@ class _AiChallengeSection extends StatelessWidget {
             },
             decoration: InputDecoration(
               hintText: '예: 공모전 지원하기',
-              prefixIcon: const Icon(Symbols.target, size: _inputIconSize),
+              // 과녁 대역 — 위 목표 줄과 같은 이유로 `track_changes`다.
+              prefixIcon: const Icon(Icons.track_changes, size: _inputIconSize),
               // 공백만 입력일 때만 이유를 노출한다. 색은 테마 error(빨강)를 그대로 —
               // 노랑은 보상 전용이라 여기 쓰지 않는다(one-step-design 색 역할).
               errorText: isWhitespaceOnly ? '공백만으로는 분해할 수 없어요' : null,
@@ -440,7 +457,7 @@ class _AiChallengeSection extends StatelessWidget {
             onPressed: canSubmit ? onSubmit : null,
             // AI 재요청이라 🔵 블루. 등록(그린)과 색으로 역할이 갈린다.
             style: GradientButtonStyle.ai,
-            icon: Symbols.refresh,
+            icon: Icons.refresh,
             label: '분해하기',
             // 분해 중: 버튼 자리에 스피너 + 잠금. 요청은 한 번만 나간다.
             busy: isDecomposing,
@@ -465,7 +482,7 @@ class _SplitNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const NoticeBox(
-      icon: Symbols.alt_route,
+      icon: Icons.alt_route,
       message: 'AI가 목표를 분석해 오늘 할 수 있는 퀘스트로 나눠줘요.',
     );
   }
@@ -706,7 +723,7 @@ class _RegisterButton extends StatelessWidget {
       style: GradientButtonStyle.growth,
       // 정본 `98:1284`의 `✓`. 옆 버튼(✦ = AI에게 다시 맡긴다)과 아이콘만 봐도
       // "확정한다 / 다시 나눈다"가 갈린다 — 색에만 기대지 않는다.
-      icon: Symbols.check,
+      icon: Icons.check,
       label: '등록하기',
       busy: isSaving,
     );
@@ -745,7 +762,9 @@ class _RegenerateButton extends StatelessWidget {
       // 라벨이 이미 말하고 있고, 이 버튼이 실제로 하는 일은 재시도가 아니라
       // **AI에게 다시 맡기는 것**이라 AI 글리프가 옆의 ✓(내가 확정한다)와 대비된다.
       // 입력 카드의 「분해하기」는 정본 `50:456` 그대로 ↻를 유지한다.
-      icon: Symbols.auto_awesome,
+      // 외곽선 ✦ — [GradientButton]은 채움을 지정하지 않으므로 AI 홍보 카드의
+      // 「분해하기」와 **같은 글리프**를 쓴다(예전 Symbols에서도 둘 다 fill 0이었다).
+      icon: Icons.auto_awesome_outlined,
       // 「다시 AI로 나누기」는 반쪽 폭·큰 글꼴 배율에서 한 줄에 못 들어간다.
       // GradientButton이 라벨을 Flexible로 감싸 접어 준다.
       label: isTemplate ? '다시 AI로 나누기' : '다시 나누기',
@@ -872,7 +891,7 @@ class _FallbackBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const NoticeBox(
-      icon: Symbols.info,
+      icon: Icons.info,
       message: 'AI 연결이 잠시 원활하지 않아 대표 템플릿으로 준비했어요. 아래에서 다시 AI로 나눠볼 수 있어요.',
       alert: true,
     );

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/analytics/analytics_logger.dart';
 import '../../core/constants/empty_art.dart';
@@ -298,7 +297,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
       actions.add(
         QuestMenuAction(
           label: '여기서 막혔어요',
-          icon: Symbols.pause_circle,
+          icon: Icons.pause_circle_outlined,
           onSelected: () => _setStatus(quest, QuestStatus.stuck),
         ),
       );
@@ -306,7 +305,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
       actions.add(
         QuestMenuAction(
           label: '다시 진행할게요',
-          icon: Symbols.undo,
+          icon: Icons.undo,
           onSelected: () => _setStatus(quest, QuestStatus.todo),
         ),
       );
@@ -315,7 +314,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
         actions.add(
           QuestMenuAction(
             label: '더 작게 나누기',
-            icon: Symbols.alt_route,
+            icon: Icons.alt_route,
             onSelected: () => _openRedecompose(quest, group),
           ),
         );
@@ -326,7 +325,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
     actions.add(
       QuestMenuAction(
         label: '제목·난이도 수정',
-        icon: Symbols.edit,
+        icon: Icons.edit_outlined,
         onSelected: () => _editQuest(quest),
       ),
     );
@@ -335,7 +334,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
     actions.add(
       QuestMenuAction(
         label: '삭제',
-        icon: Symbols.delete,
+        icon: Icons.delete_outlined,
         onSelected: () => _deleteQuest(quest, group),
       ),
     );
@@ -464,7 +463,7 @@ class _QuestListScreenState extends ConsumerState<QuestListScreen>
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.go('/quest/new'),
-        icon: const Icon(Symbols.add),
+        icon: const Icon(Icons.add),
         label: const Text('퀘스트 등록'),
       ),
       body: SafeArea(
@@ -657,12 +656,8 @@ class _DailyCapNotice extends ConsumerWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              Symbols.info,
-              size: 18,
-              fill: 1,
-              color: theme.colorScheme.secondary,
-            ),
+            // 채운 안내 글리프. Material Icons는 `Icons.info`가 곧 채움이다.
+            Icon(Icons.info, size: 18, color: theme.colorScheme.secondary),
             AppSpacing.gapWSm,
             Expanded(
               child: Text(

@@ -19,8 +19,15 @@ import '../theme/app_spacing.dart';
 /// 눈에 띄게 작아 보인다(글리프는 폰트 메트릭상 실제 잉크가 더 크게 찍힌다).
 /// `AiPromoCard`가 12px 라벨 옆 `✦`를 16으로 환산한 것과 같은 규칙이다.
 ///
-/// ⚠️ **다크 사양이 정본에 없다.** 배경은 `AiPromoCard`와 마찬가지로 불투명 상수를
-/// 그대로 쓴다 — 다크 값을 임의로 추정하지 않는다.
+/// ⚠️ **다크 사양이 정본에 없다.** 예전에는 라이트 전용 불투명 상수를 다크에도
+/// 그대로 썼는데, 어두운 화면에 흰 판이 뜨고 그 위의 `onSurface`(다크=밝음) 본문이
+/// **대비 1.01:1**로 사라졌다. 지금은 배경만 [AppSurfaceRoles.tintPanelSurface]로
+/// 받는다 — 새 HEX를 짓지 않고 기존 다크 중립 슬롯을 가리킨다(본문 9.77:1).
+///
+/// 아이콘 홀더는 그대로 둔다. 다크에서 홀더는 `surfaceContainerLowest`(`#13263D`)
+/// **어두운 원**이 되고 그 위 블루 글리프가 3.28:1이라 그래픽 기준(3:1)을 넘는다 —
+/// 홀더가 패널보다 어두워지면서 라이트의 "얹힌 칩" 인상이 "파인 칩"으로 바뀌지만,
+/// 흰 원을 다크에 그대로 두는 쪽이 훨씬 튄다.
 class NoticeBox extends StatelessWidget {
   const NoticeBox({
     super.key,
@@ -58,8 +65,10 @@ class NoticeBox extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: AppSpacing.cardPaddingLg,
-      decoration: const BoxDecoration(
-        color: AppColors.secondarySurface,
+      decoration: BoxDecoration(
+        // 라이트는 정본 `tint/aiSurface`([AppColors.secondarySurface]) 그대로,
+        // 다크만 중립 램프로 받는다([AppSurfaceRoles.tintPanelSurface]).
+        color: scheme.tintPanelSurface,
         borderRadius: AppRadius.lgAll,
       ),
       child: Row(
@@ -78,11 +87,17 @@ class NoticeBox extends StatelessWidget {
               boxShadow: alert ? null : AppColors.noticeIconShadow,
             ),
             child: Center(
+              // 채움 여부는 호출부가 고른 아이콘 이름이 정한다(Material Icons에는
+              // `fill` 축이 없다 — 예전 Material Symbols는 `fill: 1`을 줬다).
               child: Icon(
                 icon,
                 size: _iconSize,
-                fill: 1,
-                color: alert ? scheme.onSecondary : scheme.secondary,
+                // 채운 홀더 위 글리프는 **`onSecondaryContainer`**다(채움이
+                // `secondaryContainer`이므로). 예전에는 `onSecondary`를 썼는데
+                // 라이트에서 두 값이 우연히 같은 흰색이라 티가 나지 않았을 뿐이다 —
+                // 다크 `onSecondary`가 밝은 블루의 짝(#003060)으로 뒤집히면서
+                // 어두운 글리프 on 어두운 블루(1.4:1)가 될 자리였다.
+                color: alert ? scheme.onSecondaryContainer : scheme.secondary,
               ),
             ),
           ),

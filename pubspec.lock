@@ -113,14 +113,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.5+4"
-  cupertino_icons:
-    dependency: "direct main"
-    description:
-      name: cupertino_icons
-      sha256: "41e005c33bd814be4d3096aff55b1908d419fde52ca656c8c47719ec745873cd"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.9"
   fake_async:
     dependency: transitive
     description:
@@ -210,13 +202,13 @@ packages:
     source: hosted
     version: "7.0.1"
   firebase_core_web:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: firebase_core_web
-      sha256: "30ba3ae56f5beb2cea836033201570612c911661889f815eca73b6056c7b55bf"
+      sha256: "5ad1be848692ec148f2d6a8ad2a3838cb852ea5f3c9e6479a7afce479e1854f8"
       url: "https://pub.dev"
     source: hosted
-    version: "3.9.0"
+    version: "3.8.0"
   firebase_messaging:
     dependency: "direct main"
     description:
@@ -241,30 +233,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.2.0"
-  firebase_storage:
-    dependency: "direct main"
-    description:
-      name: firebase_storage
-      sha256: "540a2eb9b622ad7a173809a215ba3b2ba2a7a56a88d35dd7d9f392abeec45dbf"
-      url: "https://pub.dev"
-    source: hosted
-    version: "13.4.2"
-  firebase_storage_platform_interface:
-    dependency: transitive
-    description:
-      name: firebase_storage_platform_interface
-      sha256: f5fd1181f6cc7dcf7ea85fddb8ce32a0e8ebf09a1dfe3c70c4ae7e540cb57be3
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.0.2"
-  firebase_storage_web:
-    dependency: transitive
-    description:
-      name: firebase_storage_web
-      sha256: a4387d657b09dfa1bcd52d3a1ba276b5a22b3f5dffa9fce8a0e0bd8aa734d43f
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.11.8"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -472,14 +440,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.11.1"
-  material_symbols_icons:
-    dependency: "direct main"
-    description:
-      name: material_symbols_icons
-      sha256: "49c532dd0b74544e9d8d93ec0f821d52ec532e7c9263c889ebe71b1be4f34ba7"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.2951.0"
   meta:
     dependency: transitive
     description:

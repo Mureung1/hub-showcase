@@ -42,7 +42,6 @@ abstract final class AppSpacing {
   static const SizedBox gapSmd = SizedBox(height: smd);
   static const SizedBox gapMd = SizedBox(height: md);
   static const SizedBox gapLg = SizedBox(height: lg);
-  static const SizedBox gapXl = SizedBox(height: xl);
 
   /// 본문 블록(히어로·이름·XP·통계·액션·목록) 사이 간격.
   static const SizedBox gapBlock = SizedBox(height: screenH);

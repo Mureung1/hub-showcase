@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../constants/reward_rules.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
 import 'reward_chip.dart';
@@ -60,7 +61,10 @@ class RewardShowcase extends StatelessWidget {
         vertical: AppSpacing.md,
       ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
+        // 보더 없는 보상 카드 — 다크 다이얼로그 면(`#13263D`)과 L* 차가 2.8뿐이라
+        // 축하 연출의 주인공 카드가 배경에 녹아 있었다
+        // ([AppSurfaceRoles.insetSurface]가 다크에서만 한 단 올린다).
+        color: theme.colorScheme.insetSurface,
         borderRadius: AppRadius.mdAll,
       ),
       child: Center(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -165,7 +164,7 @@ class QuestDraftCard extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  icon: const Icon(Symbols.close),
+                  icon: const Icon(Icons.close),
                 ),
             ],
           ),
@@ -266,7 +265,7 @@ class _ReDecomposeButton extends StatelessWidget {
       onPressed: onPressed,
       tooltip: '더 작게 나누기',
       iconSize: _actionIconSize,
-      icon: const Icon(Symbols.replay),
+      icon: const Icon(Icons.replay),
       style: IconButton.styleFrom(
         backgroundColor: scheme.surfaceContainer,
         foregroundColor: scheme.secondary,
@@ -319,7 +318,7 @@ class _DifficultyControl extends StatelessWidget {
             // 접힌다(평상시 배율에서는 잔여 폭이 남아 아무 변화가 없다).
             Flexible(child: DifficultyPill(difficulty: card.draft.difficulty)),
             Icon(
-              Symbols.arrow_drop_down,
+              Icons.arrow_drop_down,
               size: 18,
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -361,7 +360,8 @@ class _JustSplitChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Symbols.auto_awesome, fill: 1, size: 12, color: scheme.secondary),
+          // 채운 ✦. Material Icons는 `Icons.auto_awesome`이 곧 채움이다.
+          Icon(Icons.auto_awesome, size: 12, color: scheme.secondary),
           AppSpacing.gapWXs,
           // 큰 글꼴 배율에서 라벨이 카드 폭을 넘지 않게 접힐 여지를 준다.
           Flexible(
@@ -408,7 +408,7 @@ class _EditableTitle extends StatelessWidget {
               width: _actionButtonSize,
               child: Center(
                 child: Icon(
-                  Symbols.edit,
+                  Icons.edit_outlined,
                   size: 18,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
