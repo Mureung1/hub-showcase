@@ -225,7 +225,7 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 # ============================================================ 3. 채용공고 30건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
 # 주석은 recent 5건에만 붙는다. 해석 payload의 세 종류 번호가 여기서 나온다.
-#   ("base", 기준선 항목명, 해설)                  → base_n
+#   ("base", 직무 공통 기대치 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
 SECTION_REQUIREDNESS = {
@@ -291,8 +291,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "자원을 만드는 일과 줄이는 일이 같은 팀에 있습니다. 미사용 자원을 정리한 기록 한 줄이면 대화의 입구가 됩니다.")),
             )),
         ),
-        "summary": "클러스터를 다뤄 본 사람보다 같은 구성을 반복해 세울 수 있게 코드로 남기는 사람을 찾습니다. 기준선 항목은 대체로 공통 기대치 그대로이고, IaC 모듈화와 고객사 네트워크 격리 두 축이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 5건",
+        "summary": "클러스터를 다뤄 본 사람보다 같은 구성을 반복해 세울 수 있게 코드로 남기는 사람을 찾습니다. 직무 공통 기대치 항목은 대체로 공통 기대치 그대로이고, IaC 모듈화와 고객사 네트워크 격리 두 축이 이 공고의 실질 변별점입니다.",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 5건",
     },
     {
         "nn": "02",
@@ -320,7 +320,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             ("자격요건", (
                 ("Kubernetes 클러스터 운영과 트래픽 급증 상황의 스케일링을 설계해 본 경험", "kubernetes", "tradeoff",
                  ("base", "컨테이너 오케스트레이션 운영",
-                  "기준선의 클러스터 운영에 급증 상황이 붙었습니다. 오토스케일링 설정의 근거와 한계를 말할 수 있는 수준까지가 이 문장의 실질입니다.")),
+                  "직무 공통 기대치의 클러스터 운영에 급증 상황이 붙었습니다. 오토스케일링 설정의 근거와 한계를 말할 수 있는 수준까지가 이 문장의 실질입니다.")),
                 ("무중단 배포 파이프라인을 설계하고 운영한 경험", "cicd-pipeline", "tradeoff",
                  ("mark", "배포 — 파이프라인 구성이 아니라 무중단 전략",
                   "결제가 도는 중에 배포가 나갑니다. 카나리·블루그린 중 무엇을 왜 골랐고 롤백 판정을 무엇으로 하는지까지가 기대 수준입니다.",
@@ -348,7 +348,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "장애가 나면 돈이 멈추는 서비스를 맡깁니다. 클러스터 운영과 IaC는 공통 기대치 그대로이고, 무중단 배포 전략과 규제에 맞춘 접근 통제가 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 3건 · 기준선 일치 4건",
+        "summary_ratio": "추가 요구 3건 · 직무 공통 기대치 일치 4건",
     },
     {
         "nn": "03",
@@ -401,7 +401,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "여러 개발팀이 함께 쓰는 배포 판을 만드는 자리입니다. 클러스터와 파이프라인은 공통 기대치이고, 알림·SLO 설계와 규모에 대한 이해가 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 5건",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 5건",
     },
     {
         "nn": "04",
@@ -436,7 +436,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "high", "같은 직군 80%")),
                 ("지표·경보 체계를 직접 설계하고 온콜을 운영해 본 경험", "observability", "tradeoff",
                  ("base", "지표·로그 기반 관측",
-                  "기준선의 관측 요구에 설계와 운영이 붙었습니다. 무엇을 알림으로 올리고 무엇을 대시보드에만 둘지 고른 기준이 답이 됩니다.")),
+                  "직무 공통 기대치의 관측 요구에 설계와 운영이 붙었습니다. 무엇을 알림으로 올리고 무엇을 대시보드에만 둘지 고른 기준이 답이 됩니다.")),
             )),
             ("우대사항", (
                 ("Terraform으로 게임 서버 인프라를 코드화해 본 경험", "iac-terraform", "foundation",
@@ -451,7 +451,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "몰리는 순간을 견디는 인프라를 맡깁니다. 클러스터 운영과 관측은 공통 기대치 위에 있고, 글로벌 지연 설계와 상태를 가진 워크로드 운영이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 3건",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "05",
@@ -501,7 +501,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "이미 있는 판을 운영하는 자리가 아니라 아직 없는 판을 세우는 자리입니다. 파이프라인과 리눅스 기본기는 공통 기대치이고, 혼자 인프라를 코드로 세우는 일과 관측 체계를 처음 만드는 일이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 4건",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 4건",
     },
     {
         "nn": "06",
@@ -1364,9 +1364,9 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 def axis_level(value: int | None) -> str:
     if value is None:
         return "—"
-    if value >= 70:
+    if value >= 100:
         return "강"
-    if value >= 31:
+    if value >= 21:
         return "중"
     return "약"
 
@@ -1669,8 +1669,8 @@ UNCHANGED_ITEMS: tuple[tuple[str, str, str], ...] = (
      "변경을 저장소에 남기는 습관은 어느 기업군에서도 같은 무게로 읽힙니다."),
 )
 
-# 기업군별 편차. 순서가 편차 번호이며 recent 공고의 노랑 표시 순서와 맞춘다.
-# (차원 slug, 주제, 기준선, 편차, 근거, 해석, 신뢰도, 근거 블록, 체크 개념)
+# 기업군별 추가 요구. 순서가 추가 요구 번호이며 recent 공고의 노랑 표시 순서와 맞춘다.
+# (차원 slug, 주제, 직무 공통 기대치, 추가 요구, 근거, 해석, 신뢰도, 근거 블록, 체크 개념)
 CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
     "bigtech_platform": (
         ("observability", "관측성", "지표를 수집하고 대시보드를 본다",
@@ -1681,7 +1681,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
         ("kubernetes", "클러스터 규모", "클러스터에 서비스를 올려 본다",
          "노드가 늘어날 때의 병목과 멀티 클러스터 운영까지 이해한다",
          '"대규모 트래픽 환경의 배포" 문장이 신입 자격요건에 있음',
-         "신입에게 실무 규모의 증명을 요구하는 것은 아닙니다. 규모가 커질 때 무엇이 먼저 한계에 닿는지 설명할 수 있으면 이 편차를 받습니다.",
+         "신입에게 실무 규모의 증명을 요구하는 것은 아닙니다. 규모가 커질 때 무엇이 먼저 한계에 닿는지 설명할 수 있으면 이 추가 요구를 받습니다.",
          "mid", "#difficulty", "multi-cluster"),
     ),
     "fintech_finance": (
@@ -1908,16 +1908,16 @@ def interpretation_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
 # (slug, 제목, 부제, 이유, 증명 산출물, 채널, kind, 기본 필수 여부)
 CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...] = (
     ("k8s-deploy", "Kubernetes 배포 실습", "매니페스트로 직접 올린 서비스 하나",
-     "기준선 · 최근 공고 전량이 클러스터 운영을 요구합니다", "클러스터에 올린 서비스 + 매니페스트 저장소",
+     "직무 공통 기대치 · 최근 공고 전량이 클러스터 운영을 요구합니다", "클러스터에 올린 서비스 + 매니페스트 저장소",
      ("portfolio", "interview"), "project", True),
     ("cicd-pipeline", "CI/CD 파이프라인 구축", "빌드부터 배포까지 한 번에",
-     "기준선 · 최근 공고 전량이 파이프라인 경험을 묻습니다", "워크플로 파일 + 실행 이력 + 실패 처리 기록",
+     "직무 공통 기대치 · 최근 공고 전량이 파이프라인 경험을 묻습니다", "워크플로 파일 + 실행 이력 + 실패 처리 기록",
      ("portfolio",), "project", True),
     ("iac-terraform", "인프라 코드화", "같은 환경을 코드로 두 번 세우기",
      "인프라를 코드로 관리하는 요구가 1년 새 뚜렷하게 늘었습니다", "Terraform 저장소 + 모듈 구조 설명 문서",
      ("portfolio", "interview"), "project", True),
     ("observability-stack", "관측 스택 구성", "지표·로그·알림을 직접 세우기",
-     "기준선 · 관측 요구가 우대에서 자격요건으로 이동 중입니다", "대시보드 + 알림 규칙 + 지표 선택 근거",
+     "직무 공통 기대치 · 관측 요구가 우대에서 자격요건으로 이동 중입니다", "대시보드 + 알림 규칙 + 지표 선택 근거",
      ("portfolio", "interview"), "project", True),
     ("network-design", "네트워크 구성 설계 기록", "요청 경로를 그림으로 남기기",
      "직무 경계 밖 요구 중 네트워크 운영이 가장 자주 나타납니다", "네트워크 구성도 + 서브넷·보안그룹 설계 근거",
@@ -1941,10 +1941,10 @@ CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...]
      "절차와 산출물을 함께 보는 기업군이 있습니다", "릴리스 절차서 + 변경 이력 정리",
      ("portfolio",), "project", False),
     ("incident-retro", "장애 대응·회고 서사", "장애를 겪고 재발을 막은 경험",
-     "기준선 · 장애 대응 절차 이해가 전 기업군 공통입니다", "장애 재현·복구 기록 + 회고 글",
+     "직무 공통 기대치 · 장애 대응 절차 이해가 전 기업군 공통입니다", "장애 재현·복구 기록 + 회고 글",
      ("essay", "interview"), "story", True),
     ("collab-ops", "개발팀 협업 서사", "요청을 받아 판을 고친 경험",
-     "기준선 · 배포 요청과 문의 대응이 업무로 명시됩니다", "협업 문제 → 해결 → 배움 서술 준비",
+     "직무 공통 기대치 · 배포 요청과 문의 대응이 업무로 명시됩니다", "협업 문제 → 해결 → 배움 서술 준비",
      ("essay",), "story", True),
     ("k8s-internals", "쿠버네티스 동작 원리", "스케줄링·컨트롤러·네트워크 모델",
      "면접이 써 봤다와 어떻게 도는지 안다를 구분합니다", "동작 흐름 그림 + 내 클러스터 사례 연결",
@@ -1953,7 +1953,7 @@ CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...]
      "IaC 요구의 이론 바탕이며 꼬리질문의 단골입니다", "상태 파일과 드리프트 정리 노트",
      ("interview",), "study", True),
     ("sre-slo", "SRE·SLO와 장애 대응 이론", "가용성 목표와 에러 버짓",
-     "관측 편차의 면접 대비가 여기서 완성됩니다", "SLO·에러 버짓 개념 정리 + 적용 사례",
+     "관측 추가 요구의 면접 대비가 여기서 완성됩니다", "SLO·에러 버짓 개념 정리 + 적용 사례",
      ("interview",), "study", True),
 )
 
@@ -1978,7 +1978,7 @@ INTRO_ORDERS: tuple[tuple[str, tuple[str, ...]], ...] = (
 
 
 def cluster_concepts(cluster_id: str) -> tuple[str, ...]:
-    """기업군 편차가 가리키는 체크 개념. 순서가 편차 번호다."""
+    """기업군별 추가 요구가 가리키는 체크 개념. 순서가 추가 요구 번호다."""
     return tuple(entry[8] for entry in CLUSTER_DEVIATIONS[cluster_id])
 
 
@@ -1997,7 +1997,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "item_id": info["concept_id"],
             "title": info["title"], "subtitle": info["subtitle"],
             "reason": (
-                f"편차 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
+                f"추가 요구 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
             ),
             "evidence_needed": info["evidence_needed"],
             "channels": list(info["channels"]),
@@ -2122,10 +2122,10 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "관측 요구가 우대에서 자격요건으로 이동 중이고, 장애를 겪은 기록은 신입 사이에서 가장 희소한 산출물입니다.",
      ("지표 선택", "알림 임계값", "장애 재현")),
     (4, "STEP 04 · 2주", 2, "mid", "협업 결정과 배포 절차를 기업군에 맞춰 마무리하기",
-     "개발팀과 합의한 운영 결정 하나를 기록하고 배포·되돌리기 절차를 README에 적으세요. 지원 기업군의 편차 항목이 있으면 같은 문서의 첫 번째 사례로 배치합니다.",
-     "운영 결정 기록 + 배포·되돌리기 절차가 있는 README + 기업군 편차 항목 산출물",
+     "개발팀과 합의한 운영 결정 하나를 기록하고 배포·되돌리기 절차를 README에 적으세요. 지원 기업군의 추가 요구 항목이 있으면 같은 문서의 첫 번째 사례로 배치합니다.",
+     "운영 결정 기록 + 배포·되돌리기 절차가 있는 README + 기업군별 추가 요구 항목 산출물",
      "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
-     ("협업 결정", "배포 문서", "편차 보강")),
+     ("협업 결정", "배포 문서", "추가 요구 보강")),
 )
 
 STEP_FILLS: tuple[tuple[str, ...], ...] = (
@@ -2146,7 +2146,7 @@ STUDY_TRACKS: tuple[tuple[str, str, str, str, str, str, tuple[str, ...]], ...] =
      ("iac-idempotency",)),
     ("reliability-operations", "상시 · 주 3~4시간", "high", "SRE·SLO와 장애 대응 이론",
      "가용성 목표를 숫자로 정하는 법, 에러 버짓이 배포 결정에 쓰이는 방식, 알림이 지켜야 할 조건까지. 책 전체가 아니라 면접 단골 주제 중심으로.",
-     "관측 편차가 여러 기업군에서 최상위입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
+     "관측 추가 요구가 여러 기업군에서 최상위입니다. 전 기간에 얇게 깔리는 것이 효율적입니다.",
      ("sre-slo",)),
 )
 
@@ -2164,7 +2164,7 @@ def roadmap_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         info = CONCEPT_INFO[slug]
         if slug in devs:
             kind = "dev"
-            text = f"{info['title']} (편차 {devs.index(slug) + 1})"
+            text = f"{info['title']} (추가 요구 {devs.index(slug) + 1})"
         elif info["kind"] == "study":
             kind, text = "study", f"{info['title']} (학습)"
         else:

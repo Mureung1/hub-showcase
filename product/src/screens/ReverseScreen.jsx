@@ -11,14 +11,14 @@ import { fetchJson, isJobNotReady } from '../hooks/apiFetch'
 import { DEFAULT_CLUSTER } from '../data/clusters'
 
 // 03 채용공고 해석 화면.
-// 네 섹션(직무 공통 기대치 / 기업군 편차 / 개별 공고 / 내 공고 직접 분석)을 항상 표시한다.
+// 네 섹션(직무 공통 기대치 / 기업군이 더 요구하는 것 / 개별 공고 / 내 공고 직접 분석)을 항상 표시한다.
 // 데이터는 POST /api/reverse 실통신(저장된 활성 결과 + DB 공고 목록)으로 받는다.
 // 직무는 App 이 내려주는 job prop({ job_role_id, display_name })을 쓴다.
 // 범위를 고르는 자리는 맨 위 ScopeSwitch 하나뿐이다 — 기업군 칩과 공고 목록도 그 안에 있다.
 // 공고 목록은 기업군 응답이 아니라 hooks/usePostings(직무 전체)가 받아 그 블록으로 넘긴다.
 
 const NAV_IDS = ['baseline', 'cluster', 'posting', 'my-posting']
-const NAV_ITEMS = [['baseline', '직무 공통 기대치'], ['cluster', '기업군 편차'], ['posting', '개별 공고 해석'], ['my-posting', '내 공고 직접 분석']]
+const NAV_ITEMS = [['baseline', '직무 공통 기대치'], ['cluster', '공통 기대치와의 차이'], ['posting', '개별 공고 해석'], ['my-posting', '내 공고 직접 분석']]
 
 function fetchReverse(jobRoleId, scope, signal) {
   return fetchJson('/api/reverse', {
@@ -69,7 +69,7 @@ function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
   const changeScope = (next) => {
     const nextCluster = next.cluster_tag || DEFAULT_CLUSTER
     const nextPostingId = next.level === 'posting' ? next.posting_id : null
-    // 기업군이 바뀌면 지금 그리고 있는 편차·공고 목록은 다른 기업군의 것이 된다.
+    // 기업군이 바뀌면 지금 그리고 있는 차이·공고 목록은 다른 기업군의 것이 된다.
     if (nextCluster !== cluster) setStatus('loading')
     setDetail(null)
     setDetailScope(null)
@@ -110,7 +110,7 @@ function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
       <main className="app-shell reader-layout">
         <article className="page page--wide">
           <header className="report-header" id="top">
-            <span className="eyebrow">채용공고 통계 기반 · 직무 공통 기대치 대비 편차 해석</span>
+            <span className="eyebrow">채용공고 통계 기반 · 직무 공통 기대치와 비교한 추가 요구</span>
             <h1>공고가 반복하는 문장 뒤에서, 이 회사·기업군이 유독 원하는 지점을 되짚습니다.</h1>
             <p>직무 전체에서는 공통 기대치를, 기업군·개별 공고에서는 그보다 더 높거나 새롭게 요구하는 항목을 근거·신뢰도와 함께 보여 줍니다.</p>
           </header>
@@ -135,7 +135,7 @@ function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
               <section className="section-block" id="baseline">
                 <div className="section-title">
                   <h2>{jobLabel} 신입 공통 기대치</h2>
-                  <span className="hint">회사와 무관한 기준선 · 통계 근거 병기</span>
+                  <span className="hint">회사와 무관하게 반복되는 직무 전반 기대치 · 통계 근거 병기</span>
                 </div>
                 <div className="baseline-grid">
                   {data.baseline.map((b) => (
@@ -153,7 +153,7 @@ function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
                 </div>
               </section>
 
-              {/* 섹션 2 · 기업군 편차 */}
+              {/* 섹션 2 · 직무 공통 기대치와의 차이 */}
               <section className="section-block" id="cluster">
                 <div className="section-title">
                   <h2>{cluster} 기업군이 직무 공통 기대치보다 더 요구하는 것</h2>
@@ -165,7 +165,7 @@ function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
                       <div className="dev-head"><h3>{d.topic}</h3><ConfBadge level={d.confidence} /></div>
                       <div className="dev-levels">
                         <div className="lv"><span className="lv-label">직무 공통</span><span>{d.baseline}</span></div>
-                        <div className="lv"><span className="lv-label lv-label--diff">{d.baseline === '공통 항목에 없음' ? '신규 +' : '편차 ↑'}</span><span><b>{d.deviation}</b></span></div>
+                        <div className="lv"><span className="lv-label lv-label--diff">{d.baseline === '공통 항목에 없음' ? '신규 +' : '더 요구 ↑'}</span><span><b>{d.deviation}</b></span></div>
                       </div>
                       <p className="dev-evidence">{d.evidence}</p>
                       <p className="dev-desc">{d.explanation}</p>
@@ -178,13 +178,13 @@ function ReverseScreen({ go, scope, setScope, job, myPosting, setMyPosting }) {
                 </div>
                 {data.unchanged.length > 0 && (
                   <>
-                    <div className="section-title section-title--sub"><h2 className="subhead">편차 없음 — 직무 공통 기대치 그대로 적용</h2></div>
+                    <div className="section-title section-title--sub"><h2 className="subhead">공통 기대치와 차이 없음 — 직무 공통 기대치 그대로 적용</h2></div>
                     <div className="baseline-grid">
                       {data.unchanged.map((u) => (
                         <div className="baseline-card baseline-card--muted" key={u.item_id}>
                           <h3>{u.title}</h3>
                           <p>{u.note}</p>
-                          <div className="baseline-stat"><span className="stat-pill">편차 없음</span></div>
+                          <div className="baseline-stat"><span className="stat-pill">차이 없음</span></div>
                         </div>
                       ))}
                     </div>

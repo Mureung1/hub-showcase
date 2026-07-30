@@ -8,11 +8,12 @@
 
 ```css
 :root {
-  --color-bg: #FBFAF3;
-  --color-surface: #FFFFFF;
-  --color-surface-soft: #F1F5F9;
-  --color-border: #E2E8F0;
-  --color-border-strong: #CBD5E1;
+  --color-bg: #ECF5FF;
+  --color-surface: rgba(255, 255, 255, 0.88);
+  --color-surface-solid: #FFFFFF;
+  --color-surface-soft: rgba(238, 246, 255, 0.86);
+  --color-border: rgba(178, 204, 230, 0.68);
+  --color-border-strong: rgba(150, 183, 215, 0.82);
   --color-text-primary: #111827;
   --color-text-secondary: #64748B;
   --color-text-muted: #94A3B8;
@@ -29,11 +30,15 @@
   --radius-md: 12px;
   --radius-lg: 18px;
 
-  --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 14px 38px rgba(58, 91, 132, 0.11);
   --shadow-float: 0 18px 50px rgba(15, 23, 42, 0.12);
-  --glass-surface: rgba(248, 246, 238, 0.92);
-  --glass-border: rgba(210, 202, 184, 0.80);
-  --glass-blur: 22px;
+  --color-topbar: #171A46;
+  --color-topbar-text: #FFFFFF;
+  --color-topbar-muted: #C9CCE3;
+  --glass-surface: rgba(255, 255, 255, 0.76);
+  --glass-surface-strong: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.92);
+  --glass-blur: 18px;
 
   --font-sans: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
 }
@@ -56,8 +61,11 @@
 
 ## 구성 요소 규칙
 
-- `.top-bar`, `.floating-nav`: 글래스 배경, 테두리, 블러를 사용한다.
-- `.panel`, `.metric-card`, `.source-card`, `.roadmap-card`, `.job-select-card`, `.notice-card`, `.scope-switch`: 불투명 흰색 카드와 `--shadow-card`를 사용한다.
+- `.top-bar`: 짙은 인디고 배경과 흰색 워드마크를 사용해 앱의 전역 내비게이션을 본문과 분리한다.
+- `.floating-nav`: 반투명 흰색 글래스 배경, 테두리, 블러를 사용한다.
+- `.panel`, `.metric-card`, `.source-card`, `.roadmap-card`, `.job-select-card`, `.notice-card`, `.scope-switch`와 통계 그래프·세부 정보 카드는 반투명 흰색, 흰색 테두리, 블러와 `--shadow-card`를 결합한 공통 글래스 재질을 사용한다.
+- 직무 선택 미리보기는 인디고·블루 계열의 저채도 면색으로 통일한다. 통계 분석·합격 전략·준비 로드맵의 상단 KPI 카드는 같은 블루 글래스 면을 사용하고, 상태 차이는 숫자·배지·그래프의 의미색으로 표시한다.
+- 표와 긴 공고 원문은 `--glass-surface-strong`을 사용해 일반 본문 카드보다 불투명하게 표시한다.
 - `.metric-grid`: 지표 카드를 한 줄에 5개 배치하며, 변형 `.metric-grid--4`는 4개 열을 사용한다.
 - `.combination-grid`: 함께 요구되는 기술 조합 3개를 비교한다.
 - `.split-grid`: 필수 요구사항과 우대사항을 나란히 보여 준다.

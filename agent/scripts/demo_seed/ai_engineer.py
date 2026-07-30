@@ -224,7 +224,7 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 # ============================================================ 3. 채용공고 15건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
 # 주석은 상세 해석이 필요한 공고에 붙는다. 해석 payload의 세 종류 번호가 여기서 나온다.
-#   ("base", 기준선 항목명, 해설)                  → base_n
+#   ("base", 직무 공통 기대치 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
 SECTION_REQUIREDNESS = {
@@ -282,8 +282,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "최적화 실무를 기대하기보다 학습 한 번에 얼마가 드는지 재 본 적이 있는지를 봅니다.")),
             )),
         ),
-        "summary": "모델을 잘 쓰는 사람보다 데이터를 직접 만들고 결과를 숫자로 말하는 사람을 찾습니다. 기준선 항목은 대체로 공통 기대치 그대로이고, 대규모 데이터 감각이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 1건 · 기준선 일치 3건",
+        "summary": "모델을 잘 쓰는 사람보다 데이터를 직접 만들고 결과를 숫자로 말하는 사람을 찾습니다. 직무 공통 기대치 항목은 대체로 공통 기대치 그대로이고, 대규모 데이터 감각이 이 공고의 실질 변별점입니다.",
+        "summary_ratio": "추가 요구 1건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "02",
@@ -335,7 +335,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "모델을 학습시키는 사람이 아니라 제품이 되게 만드는 사람을 찾습니다. LLM 응용이 우대가 아니라 자격요건에 있는 것이 이 공고의 가장 뚜렷한 신호입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 3건",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "03",
@@ -387,7 +387,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "모델을 만드는 사람보다 모델을 서비스로 돌리는 사람을 찾습니다. 서빙이 우대가 아니라 자격요건에 있고, 전처리에도 코드로 라는 단서가 붙었습니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 3건",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "04",
@@ -439,7 +439,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "모델을 만드는 능력보다 돈이 걸린 판단을 계속 맞게 유지하는 능력을 봅니다. 데이터 피처 설계와 운영 모니터링 두 축이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 2건",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 2건",
     },
     {
         "nn": "05",
@@ -491,7 +491,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "모델을 쓰는 사람이 아니라 학습 구조를 열어 고칠 수 있는 사람을 찾습니다. 프레임워크 내부 이해와 실시간 서빙이 이 공고의 두 축입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 3건",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 3건",
     },
     {
         "nn": "06",
@@ -1312,9 +1312,9 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 def axis_level(value: int | None) -> str:
     if value is None:
         return "—"
-    if value >= 70:
+    if value >= 100:
         return "강"
-    if value >= 31:
+    if value >= 21:
         return "중"
     return "약"
 
@@ -1629,7 +1629,7 @@ BASELINE_ITEMS: tuple[tuple[str, str | None, str, str], ...] = (
     ("dl-framework", "dl-framework", "딥러닝 프레임워크",
      "학습 루프와 손실 계산을 다루는 능력입니다. 도구 이름보다 학습이 왜 안 되는지 들여다본 경험을 봅니다."),
     ("data-prep", "data-prep", "데이터 전처리·품질 관리",
-     "정리된 데이터셋이 주어지지 않는 일입니다. 다시 돌릴 수 있는 전처리 코드가 기대치의 기준선입니다."),
+     "정리된 데이터셋이 주어지지 않는 일입니다. 다시 돌릴 수 있는 전처리 코드가 기대치의 직무 공통 기대치입니다."),
     ("model-serving", "model-serving", "모델 서빙·배포",
      "학습 결과를 호출 가능한 형태로 감싸 본 경험입니다. 직무 외 요구로 분류되지만 등장 빈도는 기본기에 가깝습니다."),
     ("llm-app", "llm-app", "LLM 응용·RAG",
@@ -1650,11 +1650,11 @@ UNCHANGED_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("exp-repro", "실험 기록·재현성",
      "설정과 결과를 남기는 습관은 기업군과 무관하게 동일합니다. 준비했다면 어디에나 통합니다."),
     ("collab-share", "협업·결과 공유",
-     "설명하고 공유하는 요구는 공통입니다. 심화는 다른 편차 항목이 담당합니다."),
+     "설명하고 공유하는 요구는 공통입니다. 심화는 다른 추가 요구 항목이 담당합니다."),
 )
 
-# 기업군별 편차.
-# (차원 slug, 주제, 기준선, 편차, 근거, 해석, 신뢰도, 근거 블록, 체크 개념 slug)
+# 기업군별 추가 요구.
+# (차원 slug, 주제, 직무 공통 기대치, 추가 요구, 근거, 해석, 신뢰도, 근거 블록, 체크 개념 slug)
 CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
     "bigtech_platform": (
         ("data-prep", "데이터 규모", "다시 돌릴 수 있는 전처리 코드", "대규모 데이터에서 무엇이 먼저 무너지는지 아는 수준까지",
@@ -1900,10 +1900,10 @@ def interpretation_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
 # (slug, 제목, 부제, 이유, 증명 산출물, 채널, kind, 기본 필수 여부)
 CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...] = (
     ("python-data", "데이터 처리 파이프라인", "수집·정제·저장까지 이어지는 코드",
-     "기준선 · 최근 공고 전량이 Python 구현력을 요구합니다", "저장소 링크 + 처리 단계 설명 문서",
+     "직무 공통 기대치 · 최근 공고 전량이 Python 구현력을 요구합니다", "저장소 링크 + 처리 단계 설명 문서",
      ("portfolio",), "project", True),
     ("dl-training", "모델 학습·평가 루프 구현", "학습부터 점수 산출까지 한 벌",
-     "기준선 · 프레임워크 요구가 전 기업군 공통입니다", "학습 스크립트 + 평가 결과표",
+     "직무 공통 기대치 · 프레임워크 요구가 전 기업군 공통입니다", "학습 스크립트 + 평가 결과표",
      ("portfolio", "interview"), "project", True),
     ("eval-harness", "평가 세트와 정량 비교", "버전별 점수를 한 표로",
      "지표로 말하는 능력이 신입 사이에서 가장 희소합니다", "평가 세트 파일 + 버전별 점수 비교표",
@@ -1915,13 +1915,13 @@ CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...]
      "LLM 응용을 자격요건으로 올린 기업군이 있습니다", "질의응답 파이프라인 + 검색 설정 비교 기록",
      ("portfolio", "interview"), "project", True),
     ("exp-repro", "실험 기록·재현성", "설정과 결과를 함께 남기기",
-     "기준선 · 우대와 자격요건 양쪽에서 반복됩니다", "실험 로그 + 재현 절차 문서",
+     "직무 공통 기대치 · 우대와 자격요건 양쪽에서 반복됩니다", "실험 로그 + 재현 절차 문서",
      ("portfolio",), "project", True),
     ("infra-cost", "지연·비용 측정", "요청당 시간과 자원 사용량 기록",
      "추론 지연을 묻는 문장이 서빙 중심 기업군에서 반복됩니다", "지연·자원 사용량 측정 표",
      ("portfolio",), "project", False),
     ("git-collab", "협업·결과 공유 서사", "다른 직군에 설명해 본 경험",
-     "기준선 · 설명하고 공유하는 요구가 전 기업군 공통입니다", "PR 기록 + 공유 문서와 피드백 반영",
+     "직무 공통 기대치 · 설명하고 공유하는 요구가 전 기업군 공통입니다", "PR 기록 + 공유 문서와 피드백 반영",
      ("essay",), "story", True),
     ("ml-basics", "머신러닝 기본 개념", "학습·검증·과적합 어휘의 정확한 사용",
      "기본기의 정확성을 검증하는 기업군이 있습니다", "개념 정리 노트 + 내 실험과 연결한 예시",
@@ -1955,7 +1955,7 @@ INTRO_ORDERS: tuple[tuple[str, tuple[str, ...]], ...] = (
 
 
 def cluster_concepts(cluster_id: str) -> tuple[str, ...]:
-    """기업군 편차가 가리키는 체크 개념. 순서가 편차 번호다."""
+    """기업군별 추가 요구가 가리키는 체크 개념. 순서가 추가 요구 번호다."""
     return tuple(entry[8] for entry in CLUSTER_DEVIATIONS[cluster_id])
 
 
@@ -1978,7 +1978,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "item_id": info["concept_id"],
             "title": info["title"], "subtitle": info["subtitle"],
             "reason": (
-                f"편차 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
+                f"추가 요구 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
             ),
             "evidence_needed": info["evidence_needed"],
             "channels": list(info["channels"]),
@@ -2088,7 +2088,7 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
     (1, "STEP 01 · 3주", 3, "vhigh", "데이터를 직접 만들어 모델 하나를 학습시키기",
      "정리된 데이터셋을 내려받지 말고 원본을 수집해 정제하고, 그 데이터로 모델을 학습해 점수를 뽑는 데까지 이어 보세요.",
      "저장소 + 전처리 단계 문서 + 학습·평가 스크립트",
-     "기준선 두 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
+     "직무 공통 기대치 두 항목이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
      ("데이터 수집", "전처리", "학습 루프")),
     (2, "STEP 02 · 2주", 2, "vhigh", "평가 세트를 만들고 점수로 비교하기",
      "실제 데이터에서 평가 문항을 뽑아 정답 근거를 기록하고, 설정을 바꿔 가며 버전별 점수를 한 표로 비교하세요.",
@@ -2101,10 +2101,10 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "직무 외 요구 가운데 서빙·인프라가 가장 자주 나타납니다.",
      ("서빙 API", "지연 측정", "비용 감각")),
     (4, "STEP 04 · 2주", 2, "mid", "RAG 품질과 협업 문서를 기업군에 맞춰 마무리하기",
-     "검색 실패 사례를 모아 RAG 품질을 한 차례 개선하고, 재현 명령과 협업 규칙을 README에 적으세요. 지원 기업군의 편차 항목이 있으면 같은 문서의 첫 번째 사례로 배치합니다.",
-     "검색 실패 사례·변경 전후 품질 비교표 + 실행 명령·협업 규칙이 있는 README + 편차 항목 산출물",
+     "검색 실패 사례를 모아 RAG 품질을 한 차례 개선하고, 재현 명령과 협업 규칙을 README에 적으세요. 지원 기업군의 추가 요구 항목이 있으면 같은 문서의 첫 번째 사례로 배치합니다.",
+     "검색 실패 사례·변경 전후 품질 비교표 + 실행 명령·협업 규칙이 있는 README + 추가 요구 항목 산출물",
      "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
-     ("RAG 품질", "협업 규칙", "편차 보강")),
+     ("RAG 품질", "협업 규칙", "추가 요구 보강")),
 )
 
 STEP_FILLS: tuple[tuple[str, ...], ...] = (
@@ -2143,7 +2143,7 @@ def roadmap_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         info = CONCEPT_INFO[slug]
         if slug in devs:
             kind = "dev"
-            text = f"{info['title']} (편차 {devs.index(slug) + 1})"
+            text = f"{info['title']} (추가 요구 {devs.index(slug) + 1})"
         elif info["kind"] == "study":
             kind, text = "study", f"{info['title']} (학습)"
         else:

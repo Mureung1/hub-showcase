@@ -253,7 +253,7 @@ function RoadmapScreen({ go, job, checks, setChecks, scope, setScope, myPosting 
                         </button>
                         <span className="mc-name">
                           {r.title}
-                          {r.is_deviation && <i className="mc-tag mc-tag--dev">편차 {['①', '②', '③'][r.dev_n - 1] || ''}</i>}
+                          {r.is_deviation && <i className="mc-tag mc-tag--dev">추가 요구 {['①', '②', '③'][r.dev_n - 1] || ''}</i>}
                           <i className={`mc-tag${r.kind === 'study' ? ' mc-tag--study' : ''}`}>{KIND_LABEL[r.kind] || r.kind}</i>
                           {!r.required && <i className="mc-tag">우대</i>}
                           {changed && <i className="mc-tag mc-tag--new">변경됨</i>}

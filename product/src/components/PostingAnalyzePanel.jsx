@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { apiUrl } from '../data/api'
+import { getPostingLinePresentation } from '../data/postingAnnotations'
+import { normalizeUserFacingCopy } from '../data/userFacingCopy'
 import './posting-analyze.css'
 
 // 내 공고 직접 분석 패널.
@@ -38,18 +40,28 @@ export function PostingInterpretation({ posting, footer }) {
         {(posting.raw_sections || []).map((sec) => (
           <div key={sec.section}>
             <h5>{sec.section}</h5>
-            {sec.lines.map((line, i) => (
-              <div className="raw-line" key={i}>
-                <p>
-                  ·{' '}
-                  {line.mark_n && <mark className="mark--dev">{line.text}<sup>{line.mark_n}</sup></mark>}
-                  {line.note_n && <mark className="mark--signal">{line.text}<sup>{line.note_n}</sup></mark>}
-                  {line.base_n && <>{line.text}<sup className="sup-base">{line.base_n}</sup></>}
-                  {!line.mark_n && !line.note_n && !line.base_n && line.text}
-                  {line.base_ref && <span className="raw-base">직무 공통 · {line.base_ref}</span>}
-                </p>
-              </div>
-            ))}
+            {sec.lines.map((line, i) => {
+              const presentation = getPostingLinePresentation(line, annTab)
+              const annotatedText = (
+                <>
+                  {line.text}
+                  {presentation.annotations.map((annotation) => (
+                    <sup className={annotation.supClass} key={annotation.type}>{annotation.number}</sup>
+                  ))}
+                </>
+              )
+              return (
+                <div className="raw-line" key={i}>
+                  <p>
+                    ·{' '}
+                    {presentation.markClass
+                      ? <mark className={presentation.markClass}>{annotatedText}</mark>
+                      : annotatedText}
+                    {line.base_ref && <span className="raw-base">직무 공통 · {line.base_ref}</span>}
+                  </p>
+                </div>
+              )
+            })}
           </div>
         ))}
       </div>
@@ -116,7 +128,7 @@ function GeneralFallback({ fallback, jobLabel }) {
         </ul>
       </div>
       <div className="pa-card">
-        <h4>기업군 편차</h4>
+        <h4>직무 공통 기대치와의 차이</h4>
         <p>선택한 기업군이 직무 공통 기대치보다 더 요구하는 지점입니다.</p>
         <ul className="pa-list">
           {deviations.slice(0, 5).map((d) => (
@@ -138,7 +150,7 @@ async function analyzePosting(rawText, job, signal) {
     signal,
   })
   // 본문이 비었거나 JSON 이 아닐 수도 있다. 그 경우는 null 로 두고 상태 코드만 쓴다.
-  const json = await res.json().catch(() => null)
+  const json = normalizeUserFacingCopy(await res.json().catch(() => null))
   return { ok: res.ok, httpStatus: res.status, json }
 }
 

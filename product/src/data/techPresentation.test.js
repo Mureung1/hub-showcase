@@ -5,10 +5,9 @@ import { DEMO_TECH_SLUGS, getHeatmapLevel, getTechIconPath } from './techPresent
 
 test('히트맵 경계값을 퍼센트로 분류한다', () => {
   assert.deepEqual(getHeatmapLevel(0), { label: '약', tone: 1 })
-  assert.deepEqual(getHeatmapLevel(30), { label: '약', tone: 1 })
-  assert.deepEqual(getHeatmapLevel(31), { label: '중', tone: 2 })
-  assert.deepEqual(getHeatmapLevel(69), { label: '중', tone: 2 })
-  assert.deepEqual(getHeatmapLevel(70), { label: '강', tone: 3 })
+  assert.deepEqual(getHeatmapLevel(20), { label: '약', tone: 1 })
+  assert.deepEqual(getHeatmapLevel(21), { label: '중', tone: 2 })
+  assert.deepEqual(getHeatmapLevel(99), { label: '중', tone: 2 })
   assert.deepEqual(getHeatmapLevel(100), { label: '강', tone: 3 })
 })
 

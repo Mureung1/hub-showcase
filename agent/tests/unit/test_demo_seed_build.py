@@ -49,7 +49,7 @@ from scripts.demo_seed._csv import LOAD_ORDER, TABLE_COLUMNS  # noqa: E402
 @pytest.mark.parametrize("job", build_seed.JOB_PARTS)
 @pytest.mark.parametrize(
     ("value", "expected"),
-    ((None, "—"), (0, "약"), (30, "약"), (31, "중"), (69, "중"), (70, "강"), (100, "강")),
+    ((None, "—"), (0, "약"), (20, "약"), (21, "중"), (99, "중"), (100, "강")),
 )
 def test_cluster_axis_level_boundaries(job: str, value: int | None, expected: str) -> None:
     """결측값과 약·중·강의 경계를 모든 직무 생성기가 같은 방식으로 분류한다."""

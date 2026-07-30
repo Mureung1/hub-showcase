@@ -220,7 +220,7 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 # ============================================================ 3. 채용공고 30건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
 # 주석은 recent 5건에만 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
-#   ("base", 기준선 항목명, 해설)                  → base_n
+#   ("base", 직무 공통 기대치 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
 SECTION_REQUIREDNESS = {
@@ -277,8 +277,8 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "관심이라는 말이 붙었지만 주요업무는 개선안 제안을 시킵니다. 드로우콜을 실제로 줄여 본 기록 한 건이면 우대를 넘어섭니다.")),
             )),
         ),
-        "summary": "엔진 위에서 기능을 붙여 본 사람 가운데 프레임과 동기화를 함께 말할 수 있는 지원자를 찾습니다. 기준선 항목은 공통 기대치 그대로이고, 성능 계측과 넷코드 두 축이 이 공고의 실질 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 4건",
+        "summary": "엔진 위에서 기능을 붙여 본 사람 가운데 프레임과 동기화를 함께 말할 수 있는 지원자를 찾습니다. 직무 공통 기대치 항목은 공통 기대치 그대로이고, 성능 계측과 넷코드 두 축이 이 공고의 실질 변별점입니다.",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 4건",
     },
     {
         "nn": "02",
@@ -327,7 +327,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "장르가 요구하는 조작감과 동기화를 함께 이해하는 지원자를 찾습니다. 넷코드가 우대가 아니라 자격요건에 올라와 있다는 점이 이 공고를 다른 공고와 가르는 지점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 4건",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 4건",
     },
     {
         "nn": "03",
@@ -372,7 +372,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "모바일 저사양 환경에서 목표 프레임을 지키는 일이 이 공고의 중심입니다. 엔진 구현 기본기 위에 기기별 성능 수치를 말할 수 있는 준비가 붙으면 강한 지원이 됩니다.",
-        "summary_ratio": "편차 1건 · 기준선 일치 4건",
+        "summary_ratio": "추가 요구 1건 · 직무 공통 기대치 일치 4건",
     },
     {
         "nn": "04",
@@ -402,7 +402,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             ("자격요건", (
                 ("Unity 와 C# 로 상용 제품을 개발한 3년 이상의 경력을 갖춘 분", "unity-csharp", "tradeoff",
                  ("base", "엔진으로 완성한 플레이 빌드",
-                  "경력 공고라 완성이 아니라 상용을 요구합니다. 신입 기준선의 상한선이 어디인지 보여주는 문장입니다.")),
+                  "경력 공고라 완성이 아니라 상용을 요구합니다. 신입 직무 공통 기대치의 상한선이 어디인지 보여주는 문장입니다.")),
                 ("좌표계 변환과 회전 표현 등 3D 수학을 실무에서 다뤄 본 경험이 있는 분", "game-math", "application",
                  ("base", "벡터·쿼터니언 등 게임 수학",
                   "실무에서라는 단서가 붙었습니다. 개념 설명을 넘어 좌표계가 뒤틀린 버그를 잡아 본 이야기가 필요합니다.")),
@@ -418,7 +418,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "게임이 아닌 산업 도메인이지만 요구하는 클라이언트 역량은 같습니다. 고정된 현장 장비에서 성능을 맞춘 경험과 3D 수학의 실무 적용이 변별점입니다.",
-        "summary_ratio": "편차 2건 · 기준선 일치 4건",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 4건",
     },
     {
         "nn": "05",
@@ -460,7 +460,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
             )),
         ),
         "summary": "작은 콘텐츠를 빠르게 완성하면서도 기기 자원을 아끼는 판단을 함께 요구합니다. 프레임을 올리는 최적화가 아니라 자원을 덜 쓰는 최적화가 이 팀의 언어입니다.",
-        "summary_ratio": "편차 1건 · 기준선 일치 4건",
+        "summary_ratio": "추가 요구 1건 · 직무 공통 기대치 일치 4건",
     },
     {
         "nn": "06",
@@ -610,7 +610,7 @@ def prior_posting(
             ("우대사항", preferences),
         ),
         "summary": summary,
-        "summary_ratio": "편차 2건 · 기준선 일치 3건",
+        "summary_ratio": "추가 요구 2건 · 직무 공통 기대치 일치 3건",
     }
 
 
@@ -1332,9 +1332,9 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...], str], ...] = (
 def axis_level(value: int | None) -> str:
     if value is None:
         return "—"
-    if value >= 70:
+    if value >= 100:
         return "강"
-    if value >= 31:
+    if value >= 21:
         return "중"
     return "약"
 
@@ -1359,7 +1359,7 @@ def required_pct(slug: str, period: str = RECENT) -> int | None:
 
 
 def group_pct(slugs: tuple[str, ...], period: str = RECENT) -> int | None:
-    """여러 차원 가운데 하나라도 등장한 공고의 비율. 기준선 항목 표시에 쓴다."""
+    """여러 차원 가운데 하나라도 등장한 공고의 비율. 직무 공통 기대치 항목 표시에 쓴다."""
     rows = population("overall", JOB_ROLE_ID, SEGMENT_ALL, period)
     if not rows:
         return None
@@ -1666,12 +1666,12 @@ UNCHANGED_ITEMS: tuple[tuple[str, str, str], ...] = (
     ("game-math", "벡터·쿼터니언 등 게임 수학",
      "움직임의 수학은 전 기업군이 같은 수준으로 묻습니다. 준비했다면 어디에나 통합니다."),
     ("unity-csharp", "엔진으로 완성한 플레이 빌드",
-     "엔진 구현 기본기는 공통 기대치 그대로입니다. 심화는 성능·동기화 편차가 담당합니다."),
+     "엔진 구현 기본기는 공통 기대치 그대로입니다. 심화는 성능·동기화 추가 요구가 담당합니다."),
     ("profiling-habit", "계측으로 병목을 찾는 습관",
      "계측 습관 자체는 어느 기업군에서도 같은 무게로 읽힙니다. 더 요구하지도, 덜 보지도 않습니다."),
 )
 
-# 기업군별 편차. (차원 slug, 주제, 기준선, 편차, 근거, 해석, 신뢰도, 근거 블록, 체크 개념)
+# 기업군별 추가 요구. (차원 slug, 주제, 직무 공통 기대치, 추가 요구, 근거, 해석, 신뢰도, 근거 블록, 체크 개념)
 CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
     "game": (
         ("net-sync", "넷코드", "서버 상태 동기화 이해", "예측·보정과 지연 보상 구현까지",
@@ -1712,7 +1712,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
          "high", "#items", "math-solve"),
         ("unity-csharp", "제품 범위", "완성한 빌드", "상용 제품 개발 경력까지",
          '"상용 제품을 개발한 3년 이상의 경력" 문장',
-         "경력 공고라 기준선의 상한이 높습니다. 신입 지원자에게는 이 기업군의 다른 공고를 함께 보는 편이 정확합니다.",
+         "경력 공고라 직무 공통 기대치의 상한이 높습니다. 신입 지원자에게는 이 기업군의 다른 공고를 함께 보는 편이 정확합니다.",
          "mid", "#labels", "unity-build"),
     ),
     "startup": (
@@ -1869,13 +1869,13 @@ def interpretation_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
 # (slug, 제목, 부제, 이유, 증명 산출물, 채널, kind, 기본 필수 여부)
 CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...] = (
     ("unity-build", "Unity 로 완성한 플레이 빌드", "화면·입력·로직을 붙인 결과물 하나",
-     "기준선 · 최근 공고 전량이 완성한 빌드를 전제로 합니다", "실행 파일 또는 스토어 링크 + 플레이 영상",
+     "직무 공통 기대치 · 최근 공고 전량이 완성한 빌드를 전제로 합니다", "실행 파일 또는 스토어 링크 + 플레이 영상",
      ("portfolio",), "project", True),
     ("unreal-gameplay", "Unreal C++ 게임플레이 기능", "액터·컴포넌트로 만든 기능 하나",
      "콘솔·PC 장르 공고가 C++ 구현 경험을 자격요건에 둡니다", "C++ 소스 + 기능 설명 문서",
      ("portfolio", "interview"), "project", False),
     ("frame-budget", "프레임 예산 계측·개선", "프로파일러로 병목을 찾고 줄이기",
-     "기준선 · 성능 축은 모든 기업군 공고에 등장합니다", "개선 전후 프레임·드로우콜 수치 비교표",
+     "직무 공통 기대치 · 성능 축은 모든 기업군 공고에 등장합니다", "개선 전후 프레임·드로우콜 수치 비교표",
      ("portfolio", "interview"), "project", True),
     ("shader-cost", "셰이더·LOD 비용 조정", "품질을 어디까지 포기할지 정하기",
      "고정 하드웨어를 쓰는 기업군의 변별점입니다", "LOD·셰이더 설정 변경 기록 + 근거 메모",
@@ -1884,7 +1884,7 @@ CONCEPTS: tuple[tuple[str, str, str, str, str, tuple[str, ...], str, bool], ...]
      "모바일·생활 앱 기업군은 기기별 수치를 묻습니다", "기기별 프레임·발열·용량 측정표",
      ("portfolio", "interview"), "project", True),
     ("math-solve", "게임 수학으로 푼 문제", "좌표 변환·회전·충돌 사례",
-     "기준선 · 움직임의 수학은 전 기업군 공통 요구입니다", "문제 상황과 수식 풀이를 담은 글",
+     "직무 공통 기대치 · 움직임의 수학은 전 기업군 공통 요구입니다", "문제 상황과 수식 풀이를 담은 글",
      ("portfolio", "interview"), "project", True),
     ("netsync-demo", "2인 동기화 데모", "보간·예측을 직접 구현한 결과물",
      "넷코드를 자격요건에 두는 기업군이 있습니다", "동기화 데모 + 지연 주입 실험 기록",
@@ -1924,7 +1924,7 @@ INTRO_ORDERS: tuple[tuple[str, tuple[str, ...]], ...] = (
 
 
 def cluster_concepts(cluster_id: str) -> tuple[str, ...]:
-    """기업군 편차가 가리키는 체크 개념. 순서가 편차 번호다."""
+    """기업군별 추가 요구가 가리키는 체크 개념. 순서가 추가 요구 번호다."""
     return tuple(entry[8] for entry in CLUSTER_DEVIATIONS[cluster_id])
 
 
@@ -1943,7 +1943,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "item_id": info["concept_id"],
             "title": info["title"], "subtitle": info["subtitle"],
             "reason": (
-                f"편차 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
+                f"추가 요구 {devs.index(slug) + 1} · {info['reason']}" if is_dev else info["reason"]
             ),
             "evidence_needed": info["evidence_needed"],
             "channels": list(info["channels"]),
@@ -2054,9 +2054,9 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "수학 풀이 글 + 동기화 데모 + 지연 실험 기록", "엔진이 대신해 주지 않는 부분을 다뤄 본 흔적이 변별점입니다.",
      ("게임 수학", "보간", "지연 실험")),
     (4, "STEP 04 · 2주", 2, "mid", "기업군에 맞춰 마무리하기",
-     "지원 기업군의 편차 항목을 채우세요. 크래시 하나를 재현·수정하고, LOD 또는 셰이더 설정을 바꾼 전후 비용과 품질 선택을 기록한 뒤 소개 순서를 조정합니다.",
+     "지원 기업군의 추가 요구 항목을 채우세요. 크래시 하나를 재현·수정하고, LOD 또는 셰이더 설정을 바꾼 전후 비용과 품질 선택을 기록한 뒤 소개 순서를 조정합니다.",
      "크래시 재현·수정 기록 + LOD·셰이더 전후 비교 + 기업군 맞춤 소개 순서", "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
-     ("편차 보강", "소개 순서", "문서 정리")),
+     ("추가 요구 보강", "소개 순서", "문서 정리")),
 )
 
 STEP_FILLS: tuple[tuple[str, ...], ...] = (
@@ -2093,7 +2093,7 @@ def roadmap_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         info = CONCEPT_INFO[slug]
         if slug in devs:
             kind = "dev"
-            text = f"{info['title']} (편차 {devs.index(slug) + 1})"
+            text = f"{info['title']} (추가 요구 {devs.index(slug) + 1})"
         elif info["kind"] == "study":
             kind, text = "study", f"{info['title']} (학습)"
         else:

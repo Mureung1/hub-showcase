@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-labelledby="title desc">
   <title id="title">CareerSignal</title>
-  <desc id="desc">기준선 위로 선명해지는 채용 신호</desc>
+  <desc id="desc">직무 공통 기대치와 추가 요구를 보여 주는 채용 신호</desc>
   <rect width="40" height="40" rx="11" fill="#4F46E5"/>
   <path d="M8 27.5h24" stroke="#C7D2FE" stroke-width="2" stroke-linecap="round"/>
   <path d="M9 23.5l5-4 4 2.5 6-8 7 4" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
