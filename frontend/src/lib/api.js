@@ -78,14 +78,10 @@ export function refreshRecommendation(letterId) {
   return request(`/api/letters/${letterId}/recommendations/refresh`, { method: 'POST' })
 }
 
-// 저장소 '받은 편지' 탭 목록 조회 (내가 source인 매칭들)
+// 내 매칭 목록 조회. 저장소 "받은 편지" 탭은 없앴지만, 로그인 직후 미해결 추천이 있는지
+// 확인해 새로고침에도 추천 결정 화면을 복원하는 용도로 재사용한다(AppStateContext).
 export function fetchMyMatches() {
   return request('/api/matches')
-}
-
-// 저장소 '받은 편지' 상세 조회
-export function fetchMatchById(id) {
-  return request(`/api/matches/${id}`)
 }
 
 // 매칭 상태 전이 (opened/dismissed)

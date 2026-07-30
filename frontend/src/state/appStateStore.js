@@ -12,13 +12,14 @@ export const initialState = {
   opened: false,
   replying: false,
   toast: '',
-  tab: 'mine', // 'mine' | 'received' | 'linked'
+  tab: 'mine', // 'mine' | 'linked'
   waitSecs: WAIT_SECS_INITIAL,
   showFeedback: false,
   feedback: '',
   currentLetterId: null, // 방금 보낸 편지의 id — 추천 조회/생성 API에 쓴다
   recommendation: null, // 백엔드가 준 추천 응답 {has_match, match_id, matched_letter, reason, ...} 또는 {has_match:false, reason_code}
-  replyTargetMatchId: null, // 지금 답장 중인 matchId — RecommendPage든 저장소(받은 편지) 상세든 어디서 답장을 시작했든 sendReply가 이 값 하나만 본다
+  replyTargetMatchId: null, // 지금 답장 중인 matchId — 추천 편지에 대한 첫 답장(스레드 시작)일 때만 채워진다
+  replyTargetLetterId: null, // 지금 답장 중인 letterId — 이미 시작된 스레드에 이어 답장할 때 채워진다(matchId와 배타적)
 }
 
 export function reducer(state, action) {
@@ -60,10 +61,21 @@ export function reducer(state, action) {
       return { ...state, opened: false }
     case 'UNFOLD':
       return { ...state, opened: true }
+    // 로그인 직후/새로고침 시 서버에 아직 미해결(recommended/opened) 매칭이 남아있으면
+    // 이 액션으로 복원한다 — 봉투 unfold 애니메이션 없이 곧장 열린 상태로 보여준다.
+    case 'RESTORE_PENDING_MATCH':
+      return { ...state, phase: 'arrived', opened: true, recommendation: action.value }
+    // 로그인 직후/새로고침 시 아직 24h 대기 중인 편지가 남아있으면 이 액션으로 복원한다 —
+    // waitSecs는 서버의 실제 경과 시간으로 계산된 값이라 화면표시용 카운트다운이 정확해진다.
+    case 'RESTORE_WAITING':
+      return { ...state, phase: 'waiting', currentLetterId: action.currentLetterId, waitSecs: action.waitSecs }
     case 'START_REPLY':
-      return { ...state, replying: true, opened: false, replyTargetMatchId: action.matchId }
+      return { ...state, replying: true, opened: false, replyTargetMatchId: action.matchId, replyTargetLetterId: null }
+    // 이미 시작된 스레드(이어진 편지)에 이어 답장할 때 — /main의 답장 모드를 그대로 재사용한다.
+    case 'START_REPLY_THREAD':
+      return { ...state, replying: true, opened: false, replyTargetMatchId: null, replyTargetLetterId: action.letterId }
     case 'CANCEL_REPLY':
-      return { ...state, replying: false, replyTargetMatchId: null }
+      return { ...state, replying: false, replyTargetMatchId: null, replyTargetLetterId: null }
     case 'SHOW_FEEDBACK':
       return { ...state, showFeedback: true }
     case 'SET_FEEDBACK':
@@ -87,6 +99,7 @@ export function reducer(state, action) {
         currentLetterId: null,
         recommendation: null,
         replyTargetMatchId: null,
+        replyTargetLetterId: null,
       }
     default:
       return state

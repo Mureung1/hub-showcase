@@ -62,30 +62,6 @@
   color: var(--color-accent-terracotta);
 }
 
-.letter {
-  background: var(--color-paper-white);
-  border-radius: 3px;
-  box-shadow: 0 20px 50px rgba(27, 28, 26, 0.06);
-  padding: 32px 40px 28px;
-}
-
-.meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--color-muted-gray);
-  margin-bottom: 20px;
-}
-
-.serial {
-  font-family: var(--font-wordmark);
-}
-
-.metaSep {
-  color: var(--color-cool-gray);
-}
-
 .titleInput {
   display: block;
   width: 100%;
@@ -104,33 +80,6 @@
   font-style: italic;
   font-size: 13px;
   color: var(--color-hint-gray);
-}
-
-.body {
-  display: block;
-  width: 100%;
-  height: 360px;
-  border: none;
-  outline: none;
-  resize: none;
-  font-family: var(--letter-font);
-  font-size: 18px;
-  line-height: 32px;
-  letter-spacing: -0.01em;
-  color: var(--color-body-slate);
-  caret-color: var(--color-primary-teal);
-  background-image: linear-gradient(rgba(192, 200, 202, 0.55) 1px, transparent 1px);
-  background-size: 100% 32px;
-  padding: 0;
-}
-
-.footer {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--color-border-warm);
 }
 
 .autosave {

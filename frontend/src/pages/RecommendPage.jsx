@@ -1,16 +1,60 @@
+import { useRef, useState } from 'react'
+import { motion } from 'motion/react'
 import { useAppState } from '../state/useAppState'
 import Envelope from '../components/Envelope'
+import paper from '../styles/letterPaper.module.css'
 import styles from './RecommendPage.module.css'
 
 export default function RecommendPage() {
   const { state, actions } = useAppState()
+  const [opening, setOpening] = useState(false)
+  const unfolded = useRef(false) // onAnimationComplete 중복 호출 방지
 
   if (!state.opened) {
     return (
       <div className={styles.wrap}>
         <h1 className={styles.title}>낯선 이의 편지</h1>
-        <Envelope variant="basic" onClick={actions.unfold} width={190} height={130} label="편지 펼치기" />
-        <p className={styles.hint}>봉투를 눌러 펼치기</p>
+        <div className={styles.envelopeStage}>
+          <motion.div
+            className={styles.envelopeLayer}
+            animate={
+              opening
+                ? { rotate: [0, -6, 6, -3, 0], opacity: 0, scale: 0.85, y: 8 }
+                : { rotate: 0, opacity: 1, scale: 1, y: 0 }
+            }
+            transition={{ duration: 0.5 }}
+          >
+            <Envelope
+              variant="basic"
+              onClick={() => !opening && setOpening(true)}
+              width={190}
+              height={130}
+              label="편지 펼치기"
+            />
+          </motion.div>
+
+          <motion.div
+            className={styles.paperLayer}
+            initial={false}
+            animate={
+              opening
+                ? { opacity: 1, y: -18, scale: 1 }
+                : { opacity: 0, y: 24, scale: 0.5 }
+            }
+            transition={{ duration: 0.5, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            onAnimationComplete={() => {
+              if (opening && !unfolded.current) {
+                unfolded.current = true
+                actions.unfold()
+              }
+            }}
+          >
+            <span className={styles.paperLine} />
+            <span className={styles.paperLine} />
+            <span className={styles.paperLine} />
+          </motion.div>
+        </div>
+        <p className={styles.hint}>{opening ? '편지를 펼치는 중...' : '봉투를 눌러 펼치기'}</p>
       </div>
     )
   }
@@ -55,30 +99,32 @@ export default function RecommendPage() {
   }
 
   return (
-    <div className={styles.opened}>
-      <div className={styles.left}>
+    <motion.div
+      className={styles.opened}
+      initial={{ opacity: 0, y: 16, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <article className={paper.paper}>
         <div className={styles.aiBanner}>
           <span className="msymf">auto_awesome</span>
           {recommendation.reason}
         </div>
 
-        <article className={styles.letter}>
-          <p className={styles.letterBody}>{recommendation.matched_letter.body}</p>
-        </article>
-      </div>
+        <p className={paper.body}>{recommendation.matched_letter.body}</p>
 
-      <aside className={styles.right}>
-        <h3 className={styles.replyPrompt}>이 편지에, 어떻게 답할까요?</h3>
-        <button type="button" className={styles.btnPrimary} onClick={actions.startReply}>
-          답장 쓰기
-        </button>
-        <button type="button" className={styles.btnOutline} onClick={actions.passBy}>
-          스쳐 가기
-        </button>
-        <button type="button" className={styles.btnOutline} onClick={actions.refreshRecommendation}>
-          다른 편지 보기
-        </button>
-      </aside>
-    </div>
+        <footer className={`${paper.footer} ${styles.decisionFooter}`}>
+          <button type="button" className={styles.btnPrimary} onClick={actions.startReply}>
+            답장 쓰기
+          </button>
+          <button type="button" className={styles.btnOutline} onClick={actions.passBy}>
+            스쳐 가기
+          </button>
+          <button type="button" className={styles.btnOutline} onClick={actions.refreshRecommendation}>
+            다른 편지 보기
+          </button>
+        </footer>
+      </article>
+    </motion.div>
   )
 }

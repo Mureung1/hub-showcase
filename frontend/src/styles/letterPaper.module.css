@@ -1,0 +1,78 @@
+/*
+ * 편지지 공용 스타일.
+ * MainPage(작성/답장), RecommendPage(추천 결정), LetterDetailPage(내가 쓴 편지·이어진 편지)가
+ * 전부 이 클래스들로 "편지지 한 장" 룩을 공유한다. 배너·버튼 등 화면별로 다른 부분은
+ * 각 페이지 자체 CSS 모듈에 남겨둔다.
+ */
+
+.paper {
+  background: var(--color-paper-white);
+  border-radius: 3px;
+  box-shadow: 0 20px 50px rgba(27, 28, 26, 0.06);
+  padding: 32px 40px 28px;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-muted-gray);
+  margin-bottom: 20px;
+}
+
+.serial {
+  font-family: var(--font-wordmark);
+}
+
+.metaSep {
+  color: var(--color-cool-gray);
+}
+
+.letterTitle {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--color-ink);
+  margin: 0 0 16px;
+}
+
+/* 읽기전용 본문 — 추천 편지, 저장소 상세, 스레드 메시지 */
+.body {
+  font-family: var(--letter-font);
+  font-size: 18px;
+  line-height: 32px;
+  letter-spacing: -0.01em;
+  color: var(--color-body-slate);
+  white-space: pre-line;
+  margin: 0;
+}
+
+/* 편집용 본문 — 작성/답장 화면의 textarea (고정 높이 + 줄무늬 배경 + 캐럿) */
+.bodyEditable {
+  display: block;
+  width: 100%;
+  height: 360px;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: var(--letter-font);
+  font-size: 18px;
+  line-height: 32px;
+  letter-spacing: -0.01em;
+  color: var(--color-body-slate);
+  caret-color: var(--color-primary-teal);
+  background-image: linear-gradient(rgba(192, 200, 202, 0.55) 1px, transparent 1px);
+  background-size: 100% 32px;
+  padding: 0;
+}
+
+/* 편지지 하단 액션 줄 — 발송 버튼, 결정 버튼 등 */
+.footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-warm);
+}

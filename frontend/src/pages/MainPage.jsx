@@ -1,5 +1,6 @@
 import { useAppState } from '../state/useAppState'
 import { charCount, dateStr, SERIAL_NO } from '../lib/format'
+import paper from '../styles/letterPaper.module.css'
 import styles from './MainPage.module.css'
 
 // "직접 쓰는 편지"라는 취지로 붙여넣기를 막아둔 것 — 매칭 품질 테스트 때만
@@ -35,13 +36,13 @@ export default function MainPage() {
         </div>
       )}
 
-      <article className={styles.letter}>
-        <div className={styles.meta}>
+      <article className={paper.paper}>
+        <div className={paper.meta}>
           <span className="msym">mail</span>
-          <span className={styles.serial}>{SERIAL_NO}</span>
-          <span className={styles.metaSep}>·</span>
+          <span className={paper.serial}>{SERIAL_NO}</span>
+          <span className={paper.metaSep}>·</span>
           <span>{dateStr()}</span>
-          <span className={styles.metaSep}>·</span>
+          <span className={paper.metaSep}>·</span>
           <span>Seoul, South Korea</span>
         </div>
 
@@ -55,7 +56,7 @@ export default function MainPage() {
         {!state.title && <p className={styles.noTitleHint}>없어도 괜찮아요.</p>}
 
         <textarea
-          className={styles.body}
+          className={paper.bodyEditable}
           placeholder="친애하는 누군가에게…"
           value={state.letter}
           onChange={(e) => actions.setLetter(e.target.value)}
@@ -64,7 +65,7 @@ export default function MainPage() {
           }}
         />
 
-        <footer className={styles.footer}>
+        <footer className={paper.footer}>
           <span className={styles.autosave}>
             <span className="msymf">check_circle</span>
             자동 저장됨

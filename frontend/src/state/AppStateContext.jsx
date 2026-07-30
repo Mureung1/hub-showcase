@@ -3,12 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import {
   createLetter,
   createRecommendation,
+  fetchMyLetters,
+  fetchMyMatches,
   refreshRecommendation as apiRefreshRecommendation,
   patchMatch,
   replyToMatch,
+  replyToThreadLetter,
 } from '../lib/api'
 import { supabase } from '../lib/supabaseClient'
 import { validateLetterContent, MIN_LETTER_LENGTH } from '../lib/validateLetter'
+import { WAIT_SECS_INITIAL } from '../lib/format'
 import { AppStateContext, TOAST_DURATION_MS, initialState, reducer } from './appStateStore'
 
 // GET current 대신 POST(멱등)로 폴링한다 — 24h 전엔 DB 조회 한 번으로 바로 not_ready가
@@ -18,6 +22,9 @@ const RECOMMENDATION_POLL_MS = 30_000
 // 백엔드가 has_match:false를 주더라도 "확정된 결과"로 취급해 대기 화면을 끝낼 사유들.
 // not_ready만 "아직 더 기다려야 함"이라 폴링을 계속한다.
 const TERMINAL_REASON_CODES = new Set(['support_needed', 'no_candidates', 'not_found', 'tagging_pending'])
+
+// 아직 결정(답장/스쳐가기) 안 난 매칭 상태 — 새로고침 복원 대상.
+const UNRESOLVED_MATCH_STATUSES = new Set(['recommended', 'opened'])
 
 export function AppStateProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState)
@@ -29,6 +36,7 @@ export function AppStateProvider({ children }) {
   // 모르는 상태이므로(새로고침 직후 등) 라우트 보호에서 섣불리 리다이렉트하지 않는다.
   const [user, setUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const restoreChecked = useRef(false) // 로그인 1회당 미해결 추천 복원 확인은 한 번만
 
   useEffect(() => {
     supabase.auth
@@ -45,6 +53,69 @@ export function AppStateProvider({ children }) {
 
     return () => subscription.subscription.unsubscribe()
   }, [])
+
+  // 로그인 상태가 되는 시점(새로고침으로 세션 복원 포함)에 두 가지를 순서대로 확인한다.
+  // 1) 미해결(recommended/opened) 매칭이 있으면 봉투 클릭 없이 곧장 추천 결정 화면을 복원.
+  // 2) 없으면 24h 대기 중인 편지가 있는지 확인해서 대기 화면(폴링 포함)을 복원.
+  // 새로고침하거나 사이트를 나갔다 들어와도 진행 중이던 화면이 그대로 유지되게 하기 위함.
+  useEffect(() => {
+    if (!user) {
+      restoreChecked.current = false
+      return
+    }
+    if (restoreChecked.current) return
+    restoreChecked.current = true
+
+    fetchMyMatches()
+      .then((matches) => {
+        const pending = matches.find((m) => UNRESOLVED_MATCH_STATUSES.has(m.status))
+        if (pending) {
+          dispatch({
+            type: 'RESTORE_PENDING_MATCH',
+            value: {
+              has_match: true,
+              match_id: pending.match_id,
+              matched_letter: pending.matched_letter,
+              reason: pending.reason,
+            },
+          })
+          if (pending.status === 'recommended') {
+            patchMatch(pending.match_id, 'opened').catch(() => {})
+          }
+          navigate('/recommend')
+          return
+        }
+
+        // 미해결 매칭이 없다 — 24h 대기가 아직 안 끝난 편지가 있는지 확인한다.
+        // 답장 편지(recipientId 있음)는 모음소행이 아니라 매칭 대상이 아니므로 제외한다
+        // (countPoolLetters와 동일한 기준 — recipientId: null만 모음소 편지).
+        return fetchMyLetters().then((letters) => {
+          const latest = letters.find((l) => !l.recipientId) // createdAt desc라 첫 매치가 최신
+          if (!latest) return
+
+          return createRecommendation(latest.id).then((result) => {
+            // 이 편지는 이미 답장했거나 스쳐 갔음(최종 결정 완료) — 복원할 게 없으니 그대로 둔다.
+            // 여기서 걸러주지 않으면 아래 not_ready 분기로 빠져 이미 끝난 편지의 대기 화면을
+            // 잘못 복원해버린다(실제로 겪은 버그: 답장 후 새로고침하면 새 추천이 계속 도착).
+            if (result.reason_code === 'already_resolved') return
+            if (result.has_match || TERMINAL_REASON_CODES.has(result.reason_code)) {
+              dispatch({ type: 'RESTORE_PENDING_MATCH', value: result })
+              navigate('/recommend')
+              return
+            }
+            // not_ready — 아직 24h가 안 지났다. 경과 시간만큼 뺀 카운트다운으로 대기 화면 복원.
+            const elapsedSecs = Math.floor((Date.now() - new Date(latest.createdAt).getTime()) / 1000)
+            dispatch({
+              type: 'RESTORE_WAITING',
+              currentLetterId: latest.id,
+              waitSecs: Math.max(0, WAIT_SECS_INITIAL - elapsedSecs),
+            })
+            navigate('/sent')
+          })
+        })
+      })
+      .catch(() => {})
+  }, [user, navigate])
 
   const showToast = useCallback((message) => {
     dispatch({ type: 'SET_TOAST', value: message })
@@ -159,15 +230,14 @@ export function AppStateProvider({ children }) {
         patchMatch(state.recommendation.match_id, 'opened').catch(() => {})
       }
     },
-    // RecommendPage(방금 받은 추천)에서 답장을 시작하는 경로.
+    // RecommendPage(방금 받은 추천 또는 새로고침으로 복원된 추천)에서 첫 답장을 시작하는 경로.
     startReply: () => {
       dispatch({ type: 'START_REPLY', matchId: state.recommendation?.match_id ?? null })
       navigate('/main')
     },
-    // 저장소 "받은 편지" 상세 화면 등, 세션에 남아있는 recommendation 없이도 matchId만 알면
-    // 답장을 시작할 수 있는 경로. 새로고침/재로그인 후 예전 미해결 추천을 처리할 때 필요하다.
-    startReplyToMatch: (matchId) => {
-      dispatch({ type: 'START_REPLY', matchId })
+    // 저장소 "이어진 편지"에서 스레드에 이어 답장할 때 — /main의 답장 모드를 그대로 재사용한다.
+    startReplyToThread: (letterId) => {
+      dispatch({ type: 'START_REPLY_THREAD', letterId })
       navigate('/main')
     },
     cancelReply: () => dispatch({ type: 'CANCEL_REPLY' }),
@@ -185,11 +255,18 @@ export function AppStateProvider({ children }) {
       }
       if (sending.current) return
       sending.current = true
+      // 스레드 답장 완료 후에는 해당 스레드 화면으로 돌아가 보여주기 위해 미리 읽어둔다
+      // (RESET_AFTER_SEND가 replyTargetLetterId를 지워버리기 전에).
+      const threadLetterId = state.replyTargetLetterId
       try {
-        await replyToMatch(state.replyTargetMatchId, { title: state.title, content: state.letter })
+        if (state.replyTargetMatchId) {
+          await replyToMatch(state.replyTargetMatchId, { title: state.title, content: state.letter })
+        } else {
+          await replyToThreadLetter(threadLetterId, { title: state.title, content: state.letter })
+        }
         showToast('답장을 보냈어요. 8시간 뒤 상대에게 전달돼요.')
         dispatch({ type: 'RESET_AFTER_SEND' })
-        navigate('/main')
+        navigate(threadLetterId ? `/storage/linked/${threadLetterId}` : '/main')
       } catch (err) {
         showToast(err.message || '답장을 보내지 못했어요. 잠시 후 다시 시도해주세요.')
       } finally {
@@ -213,17 +290,6 @@ export function AppStateProvider({ children }) {
         patchMatch(state.recommendation.match_id, 'dismissed').catch(() => {})
       }
       dispatch({ type: 'SHOW_FEEDBACK' })
-    },
-    // 저장소 "받은 편지" 상세에서 바로 스쳐 가기 — RecommendPage의 피드백 모달 흐름과 달리
-    // 지금 작성 중일 수 있는 편지(state.letter/title)를 건드리지 않는 독립적인 처리다.
-    dismissMatchById: async (matchId) => {
-      try {
-        await patchMatch(matchId, 'dismissed')
-        showToast('스쳐 갔어요.')
-        navigate('/storage')
-      } catch (err) {
-        showToast(err.message || '처리하지 못했어요. 잠시 후 다시 시도해주세요.')
-      }
     },
     setFeedback: (value) => dispatch({ type: 'SET_FEEDBACK', value }),
     closeFeedback: () => {

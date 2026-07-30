@@ -70,17 +70,6 @@ input::placeholder {
   }
 }
 
-@keyframes unfoldp {
-  0% {
-    opacity: 0;
-    transform: translateY(24px) scale(0.97);
-  }
-  100% {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 @keyframes floatp {
   0%,
   100% {
