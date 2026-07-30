@@ -173,7 +173,8 @@ app.get('/api/notices', async (req, res) => {
     .select('id, source, source_url, title, extraction, collected_at')
     .neq('source', 'its_incident')   // 도로 돌발(수십 건)은 목록에서 제외 — 경보·리포트로만 드러남
     .order('collected_at', { ascending: false })
-    .limit(20);
+    .limit(200);   // 감시 게시판 13곳 × 최근 몇 건 = 60여 건 + 여유. 프론트가 지역·경로로 다시 좁힌다
+                   // (20이면 마지막 순찰 소스가 목록을 독점해 다른 지역 공지가 밀려남)
   if (error) return res.status(500).json({ error: error.message });
   res.json({ notices: data });
 });

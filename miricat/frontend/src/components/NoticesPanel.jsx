@@ -1,7 +1,7 @@
 import { api } from "../lib/api";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { SOURCE_LABEL, fmtDate, matchNotice, routeTokens } from "../lib/matching";
+import { SOURCE_LABEL, fmtDate, matchNotice, routeTokens, sameRegion } from "../lib/matching";
 
 function Chips({ items, color, hits }) {
   if (!items || items.length === 0) return null;
@@ -114,7 +114,9 @@ export default function NoticesPanel({ routes = [] }) {
   // 선택 경로 기준으로 각 공지에 매칭 결과를 붙이고 경보/확인함으로 가른다
   const withHits = notices.map((n) => ({ n, hits: matchNotice(n, selected) }));
   const alerts = withHits.filter((x) => x.hits.size > 0);
-  const clears = withHits.filter((x) => x.hits.size === 0);
+  // "확인함"은 내 경로 지역 게시판 것만 — 대전 경로에 제주·부산 공지까지 쌓이는 노이즈 방지.
+  // (경보와 같은 지역 게이팅. 좌표 없는 옛 경로는 sameRegion이 보수적으로 전부 통과시킨다.)
+  const clears = withHits.filter((x) => x.hits.size === 0 && sameRegion(selected, x.n.source));
 
   return (
     <div style={{ marginTop: 32 }}>
