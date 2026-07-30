@@ -30,12 +30,17 @@ const OUTPUT_PATH = path.join(__dirname, '..', 'server', 'data', 'foodDB.json')
 const FOOD_API_URL = 'https://api.data.go.kr/openapi/tn_pubr_public_nutri_food_info_api'
 const PAGE_SIZE = 1000
 
-// 우선순위(중복 이름 발견 시 먼저 오는 출처의 레코드를 채택): 학교·기관 급식 출처(5·6·7)를 최우선한다.
-// 처음엔 "실험실 실측(분석함량) > 재료량 산출" 순으로 잡았으나, 6주차 §1 정확도 테스트에서 원인을
-// 추적한 결과 진짜 문제는 영양성분 값이 아니라 foodSize(1회 제공량)였다 — 외식(3)/가정식(1) 출처는
-// 식당·가정 기준 제공량이라 "탕"류 등에서 학교 급식 트레이 1인분보다 훨씬 크게(예: 연포탕 1000g)
-// 잡혀 있고, 이게 최악 오차 사례들의 공통 원인이었다. 급식·기관 출처는 애초에 학생 1인 트레이
-// 기준으로 산출된 데이터라 이 문제가 없다 — 그래서 도메인이 일치하는 급식 출처를 최우선으로 바꿨다.
+// 수집 순서 — **이제 이 순서는 "대표값(하위 호환 필드)을 어느 출처로 채울지"만 정한다.**
+// 어떤 출처도 버리지 않고 item.variants[]에 전부 보존하며, 실제 선택은 조회 시점에
+// server/nutrition/foodLookup.js의 ORIGIN_PREFERENCE가 맥락(식당/급식)에 따라 한다.
+//
+// 이력: 처음엔 "실험실 실측(분석함량) > 재료량 산출" 순이었는데, 6주차 §1 정확도 테스트에서
+// 진짜 문제가 영양성분 값이 아니라 foodSize(1회 제공량)임을 확인하고(외식 출처는 "연포탕 1000g"처럼
+// 급식 트레이 1인분보다 훨씬 크게 잡혀 있었다) 급식 출처를 최우선으로 뒤집었다. 그런데 그 순간
+// **dedup이 외식 레코드를 통째로 버리고 있었기 때문에**, 제공량 문제를 고치려다 영양밀도까지 급식
+// 기준으로 갈아치우는 부작용이 생겼다(김치찌개 19kcal/100g, 돼지갈비구이 132 vs 외식 294).
+// 지금은 둘을 분리한다 — 제공량은 servingWeight.js가 역할별 절대 범위로 거르고, 영양밀도는
+// 맥락에 맞는 출처를 고른다.
 const ORIGIN_PRIORITY = ['6', '5', '7', '3', '1', '4', '2']
 const ORIGIN_NAMES = {
   1: '가정식(분석함량)',
@@ -64,6 +69,18 @@ function parseServingGram(foodSize) {
 
 function parseBaseUnit(nutConSrtrQua) {
   return typeof nutConSrtrQua === 'string' && /ml/i.test(nutConSrtrQua) ? 'ml' : 'g'
+}
+
+// nutConSrtrQua(영양성분 함량 기준량)의 **숫자값**. 예전엔 이 필드에서 'ml' 여부만 보고 수치는
+// 무조건 100g당이라고 가정했는데, 원격 경로(server/proxy.js의 parseBaseQuantity)는 이 값을 파싱해
+// 100 기준으로 환산하고 있었다 — 로컬 스냅샷만 검증이 없어서, 기준량이 100이 아닌 레코드가 섞이면
+// 그만큼 그대로 틀린 값이 박힌다. 여기서 파싱해 100 기준으로 정규화한다.
+function parseBaseQuantityValue(nutConSrtrQua) {
+  if (typeof nutConSrtrQua !== 'string') return null
+  const match = nutConSrtrQua.trim().match(/([\d.]+)/)
+  if (!match) return null
+  const value = Number(match[1])
+  return Number.isFinite(value) && value > 0 ? value : null
 }
 
 async function fetchOrigin(apiKey, originCd) {
@@ -124,9 +141,14 @@ async function main() {
   }
 
   const aliasMap = buildAliasMap()
-  const byName = new Map() // normalizeFoodName(name) -> item (먼저 채택된 출처 우선순위 유지, 이후 출처는 건너뜀)
+  // normalizeFoodName(name) -> item. 같은 이름의 **출처별 변형을 전부 보존**한다(item.variants).
+  // 예전엔 여기서 먼저 온 출처 하나만 남기고 나머지를 버렸는데, ORIGIN_PRIORITY가 급식 우선이라
+  // 한국인이 가장 많이 먹는 메뉴의 외식 수치가 통째로 사라졌다 — "돼지갈비 73kcal"의 원인 중 하나다.
+  const byName = new Map()
   const originCounts = {}
   let skippedNoCalories = 0
+  let skippedNoBaseQuantity = 0
+  let variantCount = 0
 
   for (const originCd of ORIGIN_PRIORITY) {
     const rawItems = await fetchOrigin(apiKey, originCd)
@@ -137,48 +159,86 @@ async function main() {
       const name = (raw.foodNm || '').trim()
       if (!name) continue
       const key = normalizeFoodName(name)
-      if (!key || byName.has(key)) continue // 이미 더 높은 우선순위 출처에서 채택됨
+      if (!key) continue
+
+      // 기준량이 100이 아닌 레코드는 그대로 두면 그 배수만큼 틀린다 — 100 기준으로 환산한다.
+      const baseQuantity = parseBaseQuantityValue(raw.nutConSrtrQua)
+      if (baseQuantity === null) {
+        skippedNoBaseQuantity += 1
+        continue
+      }
+      const toPer100 = (v) => {
+        const n = toNumber(v)
+        return n === null ? null : Math.round((n * 100) / baseQuantity * 100) / 100
+      }
 
       const nutrients = {
-        calories: toNumber(raw.enerc),
-        protein: toNumber(raw.prot),
-        carbs: toNumber(raw.chocdf),
-        fat: toNumber(raw.fatce),
-        fiber: toNumber(raw.fibtg),
-        sodium: toNumber(raw.nat),
+        calories: toPer100(raw.enerc),
+        protein: toPer100(raw.prot),
+        carbs: toPer100(raw.chocdf),
+        fat: toPer100(raw.fatce),
+        fiber: toPer100(raw.fibtg),
+        sodium: toPer100(raw.nat),
       }
       if (nutrients.calories === null) {
         skippedNoCalories += 1
         continue // 칼로리 없는 레코드는 정밀 엔진의 기준값으로 못 씀
       }
 
+      const variant = {
+        originCode: originCd,
+        servingGram: parseServingGram(raw.foodSize),
+        nutrientsPer100: nutrients,
+      }
+
+      const existing = byName.get(key)
+      if (existing) {
+        // 같은 출처가 여러 건이면 첫 건만(같은 출처 안의 중복은 예전과 동일하게 무시).
+        if (existing.variants.some((v) => v.originCode === originCd)) continue
+        existing.variants.push(variant)
+        variantCount += 1
+        continue
+      }
+
+      // 첫 등장(= ORIGIN_PRIORITY상 가장 앞선 출처)이 대표값이 된다 — 기존 필드 모양 그대로라
+      // variants를 모르는 소비자도 예전과 똑같이 동작한다(하위 호환).
       byName.set(key, {
         id: raw.foodCd || key,
         name,
         aliases: aliasMap.get(name) ?? [],
         category: classifyMenuRole(name).role,
-        servingGram: parseServingGram(raw.foodSize),
+        // matched=false면 category는 DEFAULT_ROLE('side')일 뿐 실제로 근거가 없다 — 소비처가
+        // "역할을 안다"와 "몰라서 기본값을 채웠다"를 구분할 수 있도록 별도로 보존한다(리뷰에서 발견:
+        // 이 구분이 없어 급식 중량 계산이 미분류 음식을 전부 반찬 50g으로 오판했다).
+        categoryMatched: classifyMenuRole(name).matched,
+        servingGram: variant.servingGram,
         baseUnit: parseBaseUnit(raw.nutConSrtrQua),
         nutrientsPer100: nutrients,
         origin: { code: originCd, name: ORIGIN_NAMES[originCd] },
+        variants: [variant],
       })
+      variantCount += 1
     }
   }
 
   const items = [...byName.values()].sort((a, b) => a.name.localeCompare(b.name, 'ko'))
 
   const output = {
-    version: 1,
+    version: 2, // v2 = 출처별 variants[] 보존
     generatedAt: new Date().toISOString().slice(0, 10),
     source: '식약처 전국통합식품영양성분정보(음식) OpenAPI — api.data.go.kr/openapi/tn_pubr_public_nutri_food_info_api',
     originCounts,
     itemCount: items.length,
+    variantCount,
     items,
   }
 
   writeFileSync(OUTPUT_PATH, JSON.stringify(output, null, 2) + '\n')
-  console.log(`\n총 ${items.length}종 저장 → ${path.relative(process.cwd(), OUTPUT_PATH)}`)
-  console.log(`(칼로리 없어 제외: ${skippedNoCalories}건)`)
+  console.log(`\n총 ${items.length}종 / 출처변형 ${variantCount}건 저장 → ${path.relative(process.cwd(), OUTPUT_PATH)}`)
+  console.log(`(칼로리 없어 제외: ${skippedNoCalories}건, 기준량 파싱 실패로 제외: ${skippedNoBaseQuantity}건)`)
+
+  const multi = items.filter((i) => i.variants.length > 1).length
+  console.log(`출처가 2개 이상인 음식: ${multi}종 — 이만큼이 예전 빌드에서 통째로 버려지던 데이터다`)
 
   const categoryBreakdown = {}
   for (const item of items) categoryBreakdown[item.category] = (categoryBreakdown[item.category] || 0) + 1
