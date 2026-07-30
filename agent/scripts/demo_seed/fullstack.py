@@ -1141,6 +1141,16 @@ def promoted_dims() -> list[str]:
     return out
 
 
+def axis_level(value: int | None) -> str:
+    if value is None:
+        return "—"
+    if value >= 70:
+        return "강"
+    if value >= 31:
+        return "중"
+    return "약"
+
+
 def build_statistics_payload() -> dict[str, Any]:
     n_recent, n_prev = len(RECENT), len(PREV)
     promoted = promoted_dims()
@@ -1240,19 +1250,14 @@ def build_statistics_payload() -> dict[str, Any]:
         reality.append({"tag": tag, "label": label, "pct": pct(count, n_recent)})
     reality.sort(key=lambda r: -r["pct"])
 
-    def level_of(value: int | None) -> str:
-        if value is None or value < 15:
-            return "—"
-        return "강" if value >= 60 else "중" if value >= 35 else "약"
-
     cluster_rows = []
-    for cluster in RECENT_CLUSTERS:  # recent 가 덮지 못한 기업군은 넣지 않는다.
-        group = [p for p in RECENT if p["cluster"] == cluster]
+    for cluster in ALL_CLUSTERS:  # 표본 확보를 위해 recent 와 prev 전체 기간을 합산한다.
+        group = [p for p in POSTINGS if p["cluster"] == cluster]
         cells = []
         for axis, axis_label in AXIS_LABELS.items():
             hit = sum(1 for p in group if axis in p["axis_mentions"])
             value = pct(hit, len(group))
-            cells.append({"axis": axis_label, "pct": value, "level": level_of(value)})
+            cells.append({"axis": axis_label, "pct": value, "level": axis_level(value)})
         cluster_rows.append({"cluster": CLUSTER_DISPLAY[cluster], "n": len(group), "cells": cells})
 
     tech_freq = []

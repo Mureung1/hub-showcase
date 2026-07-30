@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import stats from './stats.js'
 
-const { aggregate } = stats
+const { aggregate, heatmapLevel } = stats
 
 // 폴백 집계는 라벨 표를 인자로 받는다. 서버 코드에 백엔드 상수를 두지 않는다.
 const LABELS = {
@@ -45,6 +45,45 @@ describe('채용공고별 기술 빈도 집계', () => {
     expect(item.freq_by_cluster).toEqual({ 플랫폼: 100 })
     expect(item.support).toEqual({ n_overall: 1, n_by_cluster: { 플랫폼: 1 } })
     expect(item.evidence.map((evidence) => evidence.posting_id)).toEqual(['R001'])
+  })
+})
+
+describe('기업군 히트맵', () => {
+  test.each([
+    [null, '—'],
+    [0, '약'],
+    [30, '약'],
+    [31, '중'],
+    [69, '중'],
+    [70, '강'],
+    [100, '강'],
+  ])('%s%%를 %s으로 분류한다', (value, expected) => {
+    expect(heatmapLevel(value)).toBe(expected)
+  })
+
+  test('최근 3건과 이전 2건을 합쳐 기업군 표본 n=5로 집계한다', () => {
+    const postings = [
+      ...Array.from({ length: 3 }, (_, index) => makePosting({
+        posting_id: `R00${index + 1}`,
+        snapshot: 'recent',
+        axis_mentions: index < 2 ? ['performance'] : [],
+      })),
+      ...Array.from({ length: 2 }, (_, index) => makePosting({
+        posting_id: `P00${index + 1}`,
+        snapshot: 'prev',
+        axis_mentions: index === 0 ? ['performance'] : [],
+      })),
+    ]
+
+    const result = aggregate(postings, { job: 'backend', labels: LABELS })
+
+    expect(result.cluster_axes.rows).toEqual([
+      {
+        cluster: '플랫폼',
+        n: 5,
+        cells: [{ axis: '성능·트래픽', pct: 60, level: '중' }],
+      },
+    ])
   })
 })
 

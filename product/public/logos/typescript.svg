@@ -1,4 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="TypeScript">
-  <rect width="48" height="48" rx="12" fill="#E7EFFA"/>
-  <text x="24" y="29" font-family="Segoe UI, Roboto, sans-serif" font-size="16" font-weight="800" fill="#2563EB" text-anchor="middle">TS</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="12" fill="#3178C6"/><path d="M12 17h15v4h-5v15h-5V21h-5v-4Zm16 14c2 1 5 2 6 1 1 0 1-1 0-2l-3-1c-4-1-5-3-5-6 0-4 3-6 7-6 3 0 5 1 7 2l-2 4c-2-1-4-2-5-2s-2 1-1 2l3 1c4 1 5 3 5 6 0 4-3 6-7 6-3 0-6-1-7-2l2-3Z" fill="#fff"/></svg>

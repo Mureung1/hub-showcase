@@ -8,7 +8,8 @@
 // 이 함수는 backend 가 아닌 직무를 받으면 빈 배열과 0% 를 내지 않고 오류를 던진다.
 //
 // 계약 정의(검증에서 확정한 규칙):
-// - 모든 % 의 분모는 recent 스냅샷 공고 수 (freq_by_cluster만 해당 기업군 공고 수)
+// - 모든 % 의 분모는 recent 스냅샷 공고 수
+//   (freq_by_cluster는 recent 기업군 공고 수, cluster_axes는 전체 기간 기업군 공고 수)
 // - avg_required_skills = 공고당 skills[] 개수 평균(필수+우대 포함)
 // - entry_label_gap_pct 분모 = '신입가능' 라벨 공고
 // - 우대→필수 이동 판정 = prev 필수율 <40% 이고 (recent−prev) ≥ +20%p, 양쪽 표본 n≥3
@@ -22,6 +23,13 @@ const REQUIRED_LABEL_KEYS = ['out_tags', 'advanced_types', 'combos', 'reality_la
 
 function pct(n, d) {
   return d === 0 ? null : Math.round((n / d) * 100)
+}
+
+function heatmapLevel(value) {
+  if (value === null) return '—'
+  if (value <= 30) return '약'
+  if (value < 70) return '중'
+  return '강'
 }
 
 // 스냅샷 하나에서 스킬별로 [등장 수 / 필수 수 / 기업군별 수 / 등장 공고 id]를 센다
@@ -89,6 +97,11 @@ function aggregate(postings, options = {}) {
 
   const clusterN = {}
   for (const p of recent) clusterN[p.cluster_tag] = (clusterN[p.cluster_tag] || 0) + 1
+
+  // 기업군 히트맵은 표본을 확보하기 위해 최근·이전 기간을 합산한다.
+  // 다른 통계의 기간 비교와 기업군 빈도는 위 recent 기반 clusterN을 유지한다.
+  const clusterAxesN = {}
+  for (const p of postings) clusterAxesN[p.cluster_tag] = (clusterAxesN[p.cluster_tag] || 0) + 1
 
   // --- 우대→필수 이동 항목 (KPI ④, 블록 3의 씨앗) ---
   const promoted = [...R.keys()].filter((slug) => {
@@ -264,16 +277,15 @@ function aggregate(postings, options = {}) {
     .sort((a, b) => b.pct - a.pct)
 
   // --- cluster_axes (블록 9) — 기업군 × 강조축 히트맵 ---
-  const level = (v) => (v === null || v < 15 ? '—' : v >= 60 ? '강' : v >= 35 ? '중' : '약')
   const cluster_axes = {
     axes: Object.values(labels.axis_labels),
-    rows: Object.keys(clusterN).map((cluster) => ({
+    rows: Object.keys(clusterAxesN).map((cluster) => ({
       cluster,
-      n: clusterN[cluster],
+      n: clusterAxesN[cluster],
       cells: Object.keys(labels.axis_labels).map((axis) => {
-        const count = recent.filter((p) => p.cluster_tag === cluster && p.axis_mentions.includes(axis)).length
-        const v = pct(count, clusterN[cluster])
-        return { axis: labels.axis_labels[axis], pct: v, level: level(v) }
+        const count = postings.filter((p) => p.cluster_tag === cluster && p.axis_mentions.includes(axis)).length
+        const v = pct(count, clusterAxesN[cluster])
+        return { axis: labels.axis_labels[axis], pct: v, level: heatmapLevel(v) }
       }),
     })),
   }
@@ -306,4 +318,4 @@ function aggregate(postings, options = {}) {
   }
 }
 
-module.exports = { aggregate, FALLBACK_JOB }
+module.exports = { aggregate, heatmapLevel, FALLBACK_JOB }
