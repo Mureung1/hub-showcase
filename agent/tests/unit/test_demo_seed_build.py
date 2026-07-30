@@ -686,9 +686,87 @@ def _posting_interpretation() -> dict[str, Any]:
 def test_deviation_reason_quotes_the_posting_evidence() -> None:
     """편차 사유는 회사명과 근거 문장으로 다시 쓴다. 안쪽 따옴표는 겹치지 않는다."""
     reason = build_seed.deviation_reason("비바리퍼블리카", '"정합성" 문장')
-    assert reason.startswith("비바리퍼블리카 공고가 ")
+    assert reason.startswith("비바리퍼블리카 공고는 ")
+    assert "'정합성' 문장\"라고 명시합니다." in reason
     assert "기업군 기준보다 앞당겨 준비합니다." in reason
     assert reason.count('"') == 2
+
+
+def test_content_quality_rejects_empty_posting_sections_and_particle_gaps() -> None:
+    """요약·세 해석 유형 누락과 따옴표 뒤 조사 공백을 생성 단계에서 막는다."""
+    payload = _posting_interpretation()
+    payload["posting"].update(
+        {
+            "summary": {"title": "", "body": ""},
+            "baseline_notes": [],
+            "interpretations": [],
+            "signal_notes": [],
+            "unchanged_note": '"API" 를 요구합니다.',
+        }
+    )
+    tables = {
+        "analysis_outputs": [
+            {
+                "output_id": "out_demo_intp",
+                "output_type": "interpretation",
+                "scope_level": "posting",
+                "payload": payload,
+            }
+        ]
+    }
+    problems = build_seed.check_content_quality("demo", tables)
+    assert any("summary" in problem for problem in problems)
+    assert any("baseline_notes" in problem for problem in problems)
+    assert any("interpretations" in problem for problem in problems)
+    assert any("signal_notes" in problem for problem in problems)
+    assert any("조사 앞" in problem for problem in problems)
+
+
+def test_fill_matches_the_same_steps_deliverable() -> None:
+    """채워짐 라벨의 구체 역량은 같은 단계 산출물에서 확인할 수 있어야 한다."""
+    step = {
+        "title": "API 프로젝트",
+        "body": "예외 응답을 설계합니다.",
+        "deliverable": "README에 테스트 결과와 API 명세를 기록합니다.",
+    }
+    assert build_seed._fill_matches_step({"label": "테스트 작성 습관"}, step)
+    assert not build_seed._fill_matches_step({"label": "협업 문제 해결 서사"}, step)
+
+
+def test_align_roadmap_fills_updates_payload_and_normalized_row() -> None:
+    """기업군 편차 항목은 단계 과제와 정규화 산출물 양쪽에 같은 문구로 연결한다."""
+    step = {
+        "n": 2,
+        "title": "API 프로젝트",
+        "body": "예외 응답을 설계합니다.",
+        "deliverable": "API 명세",
+        "fills": [{"item_id": "cc_demo_collab", "label": "협업 결정 기록"}],
+    }
+    normalized = {
+        "scope_level": "cluster",
+        "scope_id": "startup",
+        "step_order": 2,
+        "body": step["body"],
+        "deliverable": step["deliverable"],
+    }
+    tables = {
+        "analysis_outputs": [
+            {
+                "output_type": "roadmap",
+                "scope_level": "cluster",
+                "scope_id": "startup",
+                "payload": {"project_steps": [step]},
+            }
+        ],
+        "roadmap_items": [normalized],
+    }
+
+    build_seed.align_roadmap_fills(tables)
+
+    assert build_seed._fill_matches_step(step["fills"][0], step)
+    assert "협업 결정 기록" in step["body"]
+    assert normalized["body"] == step["body"]
+    assert normalized["deliverable"] == step["deliverable"]
 
 
 def test_deviation_concepts_matches_by_dev_n_then_by_slug() -> None:
@@ -727,7 +805,7 @@ def test_derive_posting_strategy_promotes_and_keeps_every_item() -> None:
     ]
     assert [item["dev_n"] for item in payload["checklist"]] == [1, 2, None]
     assert [item["is_deviation"] for item in payload["checklist"]] == [True, True, False]
-    assert payload["checklist"][0]["reason"].startswith("비바리퍼블리카 공고가 ")
+    assert payload["checklist"][0]["reason"].startswith("비바리퍼블리카 공고는 ")
     assert payload["checklist"][2]["reason"] == "기준선"  # 편차와 무관한 항목은 그대로
     assert [concept for _, concept, _ in promoted] == ["cc_demo_tx", "cc_demo_docs"]
     # 바탕이 된 기업군 payload 는 건드리지 않는다.
@@ -747,7 +825,7 @@ def test_derive_posting_roadmap_pulls_the_deviation_step_forward() -> None:
         (1, "STEP 01 · 2주"), (2, "STEP 02 · 3주"),
     ]
     assert payload["project_steps"][0]["title"] == "트랜잭션"
-    assert payload["project_steps"][0]["reason"].startswith("비바리퍼블리카 공고가 ")
+    assert payload["project_steps"][0]["reason"].startswith("비바리퍼블리카 공고는 ")
     assert payload["project_steps"][1]["reason_title"] == "왜 이 순서인가요?"
     assert payload["scope"] == strategy["scope"]
     rows = {row["item_id"]: row for row in payload["check_rows"]}

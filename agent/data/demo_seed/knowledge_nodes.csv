@@ -2012,167 +2012,167 @@ node_12aeacb2799915d75214f0eb,provenance,Chunk,source_chunks,chunk_demo_mobile_2
 node_3e52a07a3a367b50fe130452,provenance,Chunk,source_chunks,chunk_demo_mobile_30_1,엔씨소프트 · 주요업무,v1,ds_demo_v1,\N,an_demo_mobile
 node_efa6c08d62a955d32c0e80c5,provenance,Chunk,source_chunks,chunk_demo_mobile_30_2,엔씨소프트 · 자격요건,v1,ds_demo_v1,\N,an_demo_mobile
 node_baf401eac21949e8db3d7a7d,provenance,Chunk,source_chunks,chunk_demo_mobile_30_3,엔씨소프트 · 우대사항,v1,ds_demo_v1,\N,an_demo_mobile
-node_43a5561d9fa60ddfbb3ec268,provenance,RequirementMention,requirement_mentions,mention_mobile_01_1,기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_43a5561d9fa60ddfbb3ec268,provenance,RequirementMention,requirement_mentions,mention_mobile_01_1,기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.,v1,ds_demo_v1,\N,an_demo_mobile
 node_effd96b718ca346e087a716a,provenance,RequirementMention,requirement_mentions,mention_mobile_01_2,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_60d61098a8681053a312843a,provenance,RequirementMention,requirement_mentions,mention_mobile_01_3,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_60d61098a8681053a312843a,provenance,RequirementMention,requirement_mentions,mention_mobile_01_3,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_b288ae2a4e8ee375e5b27380,provenance,RequirementMention,requirement_mentions,mention_mobile_01_4,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_48f78f6a2ac58d3711cae15c,provenance,RequirementMention,requirement_mentions,mention_mobile_01_5,Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_48f78f6a2ac58d3711cae15c,provenance,RequirementMention,requirement_mentions,mention_mobile_01_5,Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_3b04bbd12fb71b493859c586,provenance,RequirementMention,requirement_mentions,mention_mobile_01_6,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_1e80be1bacccb26cfd81fab5,provenance,RequirementMention,requirement_mentions,mention_mobile_01_7,월간 사용자 수백만 규모의 앱을 운영해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_0037be4db30336ee2514b088,provenance,RequirementMention,requirement_mentions,mention_mobile_01_8,CI 로 앱 빌드와 배포를 자동화해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_2afe0ddd663c1074cbf44467,provenance,RequirementMention,requirement_mentions,mention_mobile_02_1,SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_793e4485ea6e7d8ecda6efe3,provenance,RequirementMention,requirement_mentions,mention_mobile_02_2,결제 승인 API 를 연동하고 실패 흐름을 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_c748a420c19737e6ffbdef24,provenance,RequirementMention,requirement_mentions,mention_mobile_02_3,Swift 로 iOS 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_0037be4db30336ee2514b088,provenance,RequirementMention,requirement_mentions,mention_mobile_01_8,CI로 앱 빌드와 배포를 자동화해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_2afe0ddd663c1074cbf44467,provenance,RequirementMention,requirement_mentions,mention_mobile_02_1,SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_793e4485ea6e7d8ecda6efe3,provenance,RequirementMention,requirement_mentions,mention_mobile_02_2,결제 승인 API를 연동하고 실패 흐름을 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_c748a420c19737e6ffbdef24,provenance,RequirementMention,requirement_mentions,mention_mobile_02_3,Swift로 iOS 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_eac3a3261693f6b452c660ff,provenance,RequirementMention,requirement_mentions,mention_mobile_02_4,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_8b6c404b1eaa099acbe7beb9,provenance,RequirementMention,requirement_mentions,mention_mobile_02_5,URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_8b6c404b1eaa099acbe7beb9,provenance,RequirementMention,requirement_mentions,mention_mobile_02_5,URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_27dce6bc31863bebe26505c1,provenance,RequirementMention,requirement_mentions,mention_mobile_02_6,결제 승인 지연과 재시도를 직접 설계해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_fd2f6500948437cbfd1b396b,provenance,RequirementMention,requirement_mentions,mention_mobile_02_7,앱을 스토어에 배포하고 심사 반려에 대응해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_65f7893b77d3210c5736d2ed,provenance,RequirementMention,requirement_mentions,mention_mobile_03_1,서버 API 를 연동해 목록·상세 화면을 구현합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_7ceac7954fdc6325f539a73c,provenance,RequirementMention,requirement_mentions,mention_mobile_03_2,Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_efcf2d0a474fcefe4cd8571e,provenance,RequirementMention,requirement_mentions,mention_mobile_03_3,REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_65f7893b77d3210c5736d2ed,provenance,RequirementMention,requirement_mentions,mention_mobile_03_1,서버 API를 연동해 목록·상세 화면을 구현합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_7ceac7954fdc6325f539a73c,provenance,RequirementMention,requirement_mentions,mention_mobile_03_2,Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_efcf2d0a474fcefe4cd8571e,provenance,RequirementMention,requirement_mentions,mention_mobile_03_3,REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_f47d552926b3fa54ab158ffb,provenance,RequirementMention,requirement_mentions,mention_mobile_03_4,화면과 로직을 분리하는 구조를 고민해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_ccd7305e0987ac06c9bdb4a0,provenance,RequirementMention,requirement_mentions,mention_mobile_04_1,안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_cc0e43dc97fdeb09a6e4d6fb,provenance,RequirementMention,requirement_mentions,mention_mobile_04_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_cc0e43dc97fdeb09a6e4d6fb,provenance,RequirementMention,requirement_mentions,mention_mobile_04_2,Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_221b8da439e4ed67b8ae9ed2,provenance,RequirementMention,requirement_mentions,mention_mobile_04_3,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_5792d1e1a0643976ee880b8b,provenance,RequirementMention,requirement_mentions,mention_mobile_04_4,Swift 로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_5792d1e1a0643976ee880b8b,provenance,RequirementMention,requirement_mentions,mention_mobile_04_4,Swift로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_9b95a179b7826a7ca3694d9b,provenance,RequirementMention,requirement_mentions,mention_mobile_05_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_b71c8ad9ee3c236cb8d2c312,provenance,RequirementMention,requirement_mentions,mention_mobile_05_2,Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_b71c8ad9ee3c236cb8d2c312,provenance,RequirementMention,requirement_mentions,mention_mobile_05_2,Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_6c777a00d49845b2f7fa773b,provenance,RequirementMention,requirement_mentions,mention_mobile_05_3,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_1fe908fa966c0f4515500bb8,provenance,RequirementMention,requirement_mentions,mention_mobile_05_4,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_04d1fcb52c286c85e7ba995c,provenance,RequirementMention,requirement_mentions,mention_mobile_05_5,공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_37fa1436851d6e310bdb74cb,provenance,RequirementMention,requirement_mentions,mention_mobile_05_6,여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_bec8a60bb5e76765671816db,provenance,RequirementMention,requirement_mentions,mention_mobile_06_1,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_04d1fcb52c286c85e7ba995c,provenance,RequirementMention,requirement_mentions,mention_mobile_05_5,공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_37fa1436851d6e310bdb74cb,provenance,RequirementMention,requirement_mentions,mention_mobile_05_6,여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_bec8a60bb5e76765671816db,provenance,RequirementMention,requirement_mentions,mention_mobile_06_1,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_c2732148c7ebf31dde790b19,provenance,RequirementMention,requirement_mentions,mention_mobile_06_2,MVVM 등 아키텍처 패턴을 적용해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_546dd4cba8996c9a1779272b,provenance,RequirementMention,requirement_mentions,mention_mobile_06_3,앱을 스토어에 배포해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_91016e9298cab3e6acc29f02,provenance,RequirementMention,requirement_mentions,mention_mobile_07_1,서버 API 를 연동해 거래 흐름을 구현합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_f1a59352be8ac4392420b97e,provenance,RequirementMention,requirement_mentions,mention_mobile_07_2,Swift 로 iOS 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_91016e9298cab3e6acc29f02,provenance,RequirementMention,requirement_mentions,mention_mobile_07_1,서버 API를 연동해 거래 흐름을 구현합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_f1a59352be8ac4392420b97e,provenance,RequirementMention,requirement_mentions,mention_mobile_07_2,Swift로 iOS 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_4b6fc918f62cf9c0990f10b8,provenance,RequirementMention,requirement_mentions,mention_mobile_07_3,REST API 연동 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_75f598a42ec4aa2ce79b8852,provenance,RequirementMention,requirement_mentions,mention_mobile_08_1,설계와 개발 절차를 문서로 남깁니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_576c43119a4c63e6985181fa,provenance,RequirementMention,requirement_mentions,mention_mobile_08_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_576c43119a4c63e6985181fa,provenance,RequirementMention,requirement_mentions,mention_mobile_08_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_c1284278497b727db5586323,provenance,RequirementMention,requirement_mentions,mention_mobile_08_3,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_e4cd5c5eadc2a1c6510e7cba,provenance,RequirementMention,requirement_mentions,mention_mobile_08_4,사내 서버 API 를 연동해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_e4cd5c5eadc2a1c6510e7cba,provenance,RequirementMention,requirement_mentions,mention_mobile_08_4,사내 서버 API를 연동해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_ee1688e44f76aaf3545f1c35,provenance,RequirementMention,requirement_mentions,mention_mobile_08_5,앱 배포와 사내 스토어 운영을 경험해 보신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_2e86904dce082ffe5cafb03f,provenance,RequirementMention,requirement_mentions,mention_mobile_09_1,안드로이드 앱의 배포와 버전을 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_d0542ee07616570401fd11ab,provenance,RequirementMention,requirement_mentions,mention_mobile_09_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_d0542ee07616570401fd11ab,provenance,RequirementMention,requirement_mentions,mention_mobile_09_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_024f049537d5fe3414aa0f5e,provenance,RequirementMention,requirement_mentions,mention_mobile_09_3,서버 API 연동과 비동기 처리에 익숙하신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_59e147844615a83e6c7d829a,provenance,RequirementMention,requirement_mentions,mention_mobile_09_4,Swift 로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_1d4532fd5b87038f44a5cf05,provenance,RequirementMention,requirement_mentions,mention_mobile_10_1,기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_59e147844615a83e6c7d829a,provenance,RequirementMention,requirement_mentions,mention_mobile_09_4,Swift로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_1d4532fd5b87038f44a5cf05,provenance,RequirementMention,requirement_mentions,mention_mobile_10_1,기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.,v1,ds_demo_v1,\N,an_demo_mobile
 node_67960bda637eea099d2ffa36,provenance,RequirementMention,requirement_mentions,mention_mobile_10_2,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_2eab9949d3f6be8e5f7417c4,provenance,RequirementMention,requirement_mentions,mention_mobile_10_3,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_2eab9949d3f6be8e5f7417c4,provenance,RequirementMention,requirement_mentions,mention_mobile_10_3,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_215763733b87f93a74490149,provenance,RequirementMention,requirement_mentions,mention_mobile_10_4,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_d7a741ceebef91e82d10fa17,provenance,RequirementMention,requirement_mentions,mention_mobile_10_5,Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_d7a741ceebef91e82d10fa17,provenance,RequirementMention,requirement_mentions,mention_mobile_10_5,Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_3e4ef14c512e7cbec6444249,provenance,RequirementMention,requirement_mentions,mention_mobile_10_6,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_b5bd6264814ed8bff40a8d70,provenance,RequirementMention,requirement_mentions,mention_mobile_10_7,월간 사용자 수백만 규모의 앱을 운영해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_8aa7816e9f25e4a0d0119691,provenance,RequirementMention,requirement_mentions,mention_mobile_10_8,CI 로 앱 빌드와 배포를 자동화해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_e15ca3ee2d7b4c8ccf9eb33a,provenance,RequirementMention,requirement_mentions,mention_mobile_11_1,서버 API 를 연동해 목록·상세 화면을 구현합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_43e75bce6fc2db654cefd6c0,provenance,RequirementMention,requirement_mentions,mention_mobile_11_2,Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_0ab17145e2b8e9460b97b977,provenance,RequirementMention,requirement_mentions,mention_mobile_11_3,REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_8aa7816e9f25e4a0d0119691,provenance,RequirementMention,requirement_mentions,mention_mobile_10_8,CI로 앱 빌드와 배포를 자동화해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_e15ca3ee2d7b4c8ccf9eb33a,provenance,RequirementMention,requirement_mentions,mention_mobile_11_1,서버 API를 연동해 목록·상세 화면을 구현합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_43e75bce6fc2db654cefd6c0,provenance,RequirementMention,requirement_mentions,mention_mobile_11_2,Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_0ab17145e2b8e9460b97b977,provenance,RequirementMention,requirement_mentions,mention_mobile_11_3,REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_2ced52ad12e52ad970982800,provenance,RequirementMention,requirement_mentions,mention_mobile_11_4,화면과 로직을 분리하는 구조를 고민해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_01a8c24ffba3ec365a58c11c,provenance,RequirementMention,requirement_mentions,mention_mobile_12_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_a3981b9b5373a44070161852,provenance,RequirementMention,requirement_mentions,mention_mobile_12_2,Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_a3981b9b5373a44070161852,provenance,RequirementMention,requirement_mentions,mention_mobile_12_2,Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_1715818c58022943af45bdc7,provenance,RequirementMention,requirement_mentions,mention_mobile_12_3,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_d09786f2b1236ae50fdabc76,provenance,RequirementMention,requirement_mentions,mention_mobile_12_4,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_3cc5c589f5fe2a4573424e5e,provenance,RequirementMention,requirement_mentions,mention_mobile_12_5,공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_2b46d2d51126b7eac9710a39,provenance,RequirementMention,requirement_mentions,mention_mobile_12_6,여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_e43de7d18950d7339d6c02d2,provenance,RequirementMention,requirement_mentions,mention_mobile_13_1,SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_48300b776bd5e6c6a5f7f912,provenance,RequirementMention,requirement_mentions,mention_mobile_13_2,결제 승인 API 를 연동하고 실패 흐름을 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_cfa630d6fab1a97b427a4749,provenance,RequirementMention,requirement_mentions,mention_mobile_13_3,Swift 로 iOS 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_3cc5c589f5fe2a4573424e5e,provenance,RequirementMention,requirement_mentions,mention_mobile_12_5,공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_2b46d2d51126b7eac9710a39,provenance,RequirementMention,requirement_mentions,mention_mobile_12_6,여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_e43de7d18950d7339d6c02d2,provenance,RequirementMention,requirement_mentions,mention_mobile_13_1,SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_48300b776bd5e6c6a5f7f912,provenance,RequirementMention,requirement_mentions,mention_mobile_13_2,결제 승인 API를 연동하고 실패 흐름을 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_cfa630d6fab1a97b427a4749,provenance,RequirementMention,requirement_mentions,mention_mobile_13_3,Swift로 iOS 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_89891e99e3ec1f2b0e7dc911,provenance,RequirementMention,requirement_mentions,mention_mobile_13_4,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_e3e2cc56f9767d66c9dc8d00,provenance,RequirementMention,requirement_mentions,mention_mobile_13_5,URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_e3e2cc56f9767d66c9dc8d00,provenance,RequirementMention,requirement_mentions,mention_mobile_13_5,URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_8be78e7f8ef5542b1124307b,provenance,RequirementMention,requirement_mentions,mention_mobile_13_6,결제 승인 지연과 재시도를 직접 설계해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_894663708ac0156a58ca5d81,provenance,RequirementMention,requirement_mentions,mention_mobile_13_7,앱을 스토어에 배포하고 심사 반려에 대응해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_6831405143538831f74e80a4,provenance,RequirementMention,requirement_mentions,mention_mobile_14_1,설계와 개발 절차를 문서로 남깁니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_257de2e89563ecaaab417092,provenance,RequirementMention,requirement_mentions,mention_mobile_14_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_257de2e89563ecaaab417092,provenance,RequirementMention,requirement_mentions,mention_mobile_14_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_5cda09ac85e3d345a0c30578,provenance,RequirementMention,requirement_mentions,mention_mobile_14_3,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_70af2aaea0bd4fa0a44df4ee,provenance,RequirementMention,requirement_mentions,mention_mobile_14_4,사내 서버 API 를 연동해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_70af2aaea0bd4fa0a44df4ee,provenance,RequirementMention,requirement_mentions,mention_mobile_14_4,사내 서버 API를 연동해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_0bef50ecea777a9d2565bc42,provenance,RequirementMention,requirement_mentions,mention_mobile_14_5,앱 배포와 사내 스토어 운영을 경험해 보신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_82f43c25dfce1bf5c62d10fd,provenance,RequirementMention,requirement_mentions,mention_mobile_15_1,안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_9432ee66738fe6504216756e,provenance,RequirementMention,requirement_mentions,mention_mobile_15_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_9432ee66738fe6504216756e,provenance,RequirementMention,requirement_mentions,mention_mobile_15_2,Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_914263103cacd2c435e3f2e0,provenance,RequirementMention,requirement_mentions,mention_mobile_15_3,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_2042f2cfddce832149a04d3a,provenance,RequirementMention,requirement_mentions,mention_mobile_15_4,Swift 로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_779b417f90479db0b1c06597,provenance,RequirementMention,requirement_mentions,mention_mobile_16_1,기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_2042f2cfddce832149a04d3a,provenance,RequirementMention,requirement_mentions,mention_mobile_15_4,Swift로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_779b417f90479db0b1c06597,provenance,RequirementMention,requirement_mentions,mention_mobile_16_1,기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.,v1,ds_demo_v1,\N,an_demo_mobile
 node_460d6045e35f91cdfecfeada,provenance,RequirementMention,requirement_mentions,mention_mobile_16_2,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_bebf83a0f55f38c6114eb378,provenance,RequirementMention,requirement_mentions,mention_mobile_16_3,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_bebf83a0f55f38c6114eb378,provenance,RequirementMention,requirement_mentions,mention_mobile_16_3,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_8409a337748b275c25eb48a1,provenance,RequirementMention,requirement_mentions,mention_mobile_16_4,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_aef5568380c51417ea3f0a74,provenance,RequirementMention,requirement_mentions,mention_mobile_16_5,Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_aef5568380c51417ea3f0a74,provenance,RequirementMention,requirement_mentions,mention_mobile_16_5,Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_b26d98ced821b5f438fcb2fa,provenance,RequirementMention,requirement_mentions,mention_mobile_16_6,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_036b947f38097664584bb116,provenance,RequirementMention,requirement_mentions,mention_mobile_16_7,월간 사용자 수백만 규모의 앱을 운영해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_6e4778f4f003a2ad07907bdb,provenance,RequirementMention,requirement_mentions,mention_mobile_16_8,CI 로 앱 빌드와 배포를 자동화해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_78a00d6cccf809d25857dbc1,provenance,RequirementMention,requirement_mentions,mention_mobile_17_1,서버 API 를 연동해 목록·상세 화면을 구현합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_f0faf8d19686b2c97b18d3b6,provenance,RequirementMention,requirement_mentions,mention_mobile_17_2,Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_0b7934b74edfb90c5e1a2509,provenance,RequirementMention,requirement_mentions,mention_mobile_17_3,REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_6e4778f4f003a2ad07907bdb,provenance,RequirementMention,requirement_mentions,mention_mobile_16_8,CI로 앱 빌드와 배포를 자동화해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_78a00d6cccf809d25857dbc1,provenance,RequirementMention,requirement_mentions,mention_mobile_17_1,서버 API를 연동해 목록·상세 화면을 구현합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_f0faf8d19686b2c97b18d3b6,provenance,RequirementMention,requirement_mentions,mention_mobile_17_2,Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_0b7934b74edfb90c5e1a2509,provenance,RequirementMention,requirement_mentions,mention_mobile_17_3,REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_db5b1a3cc0326fa80d176897,provenance,RequirementMention,requirement_mentions,mention_mobile_17_4,화면과 로직을 분리하는 구조를 고민해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_5cce1109daa0e422b69702e4,provenance,RequirementMention,requirement_mentions,mention_mobile_18_1,SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_0057f007772f9968931407e8,provenance,RequirementMention,requirement_mentions,mention_mobile_18_2,결제 승인 API 를 연동하고 실패 흐름을 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_f719358c704aa1c455d0aa3c,provenance,RequirementMention,requirement_mentions,mention_mobile_18_3,Swift 로 iOS 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_5cce1109daa0e422b69702e4,provenance,RequirementMention,requirement_mentions,mention_mobile_18_1,SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_0057f007772f9968931407e8,provenance,RequirementMention,requirement_mentions,mention_mobile_18_2,결제 승인 API를 연동하고 실패 흐름을 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_f719358c704aa1c455d0aa3c,provenance,RequirementMention,requirement_mentions,mention_mobile_18_3,Swift로 iOS 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_4ca674c240c340f52440a7c8,provenance,RequirementMention,requirement_mentions,mention_mobile_18_4,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_82664f751784975eb73a3d96,provenance,RequirementMention,requirement_mentions,mention_mobile_18_5,URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_82664f751784975eb73a3d96,provenance,RequirementMention,requirement_mentions,mention_mobile_18_5,URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_c2173e0878be83ef761c4237,provenance,RequirementMention,requirement_mentions,mention_mobile_18_6,결제 승인 지연과 재시도를 직접 설계해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_dc0c5b6215be179cd8d8dc96,provenance,RequirementMention,requirement_mentions,mention_mobile_18_7,앱을 스토어에 배포하고 심사 반려에 대응해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_f7f444ab7659930ecac7c478,provenance,RequirementMention,requirement_mentions,mention_mobile_19_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_ec91a2d61773619ff4d31f87,provenance,RequirementMention,requirement_mentions,mention_mobile_19_2,Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_ec91a2d61773619ff4d31f87,provenance,RequirementMention,requirement_mentions,mention_mobile_19_2,Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_550f4dae51f35dd33f9c0505,provenance,RequirementMention,requirement_mentions,mention_mobile_19_3,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_ed677deaa3c46f6b812b370c,provenance,RequirementMention,requirement_mentions,mention_mobile_19_4,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_768b390f8d5bf4c22817ecbe,provenance,RequirementMention,requirement_mentions,mention_mobile_19_5,공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_8b6dd175b1461fec80c67c96,provenance,RequirementMention,requirement_mentions,mention_mobile_19_6,여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_768b390f8d5bf4c22817ecbe,provenance,RequirementMention,requirement_mentions,mention_mobile_19_5,공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_8b6dd175b1461fec80c67c96,provenance,RequirementMention,requirement_mentions,mention_mobile_19_6,여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_4881ec7473ce4ffb62ebb8a5,provenance,RequirementMention,requirement_mentions,mention_mobile_20_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_d431e78e5fa5d74725872fa0,provenance,RequirementMention,requirement_mentions,mention_mobile_20_2,Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_d431e78e5fa5d74725872fa0,provenance,RequirementMention,requirement_mentions,mention_mobile_20_2,Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_c59536bcc5864618122ff97b,provenance,RequirementMention,requirement_mentions,mention_mobile_20_3,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_42d95327897286edc8f74f6b,provenance,RequirementMention,requirement_mentions,mention_mobile_20_4,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_529ab080c34252398292035d,provenance,RequirementMention,requirement_mentions,mention_mobile_20_5,공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_dd3bf68cb61e7337a00c19f1,provenance,RequirementMention,requirement_mentions,mention_mobile_20_6,여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_529ab080c34252398292035d,provenance,RequirementMention,requirement_mentions,mention_mobile_20_5,공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_dd3bf68cb61e7337a00c19f1,provenance,RequirementMention,requirement_mentions,mention_mobile_20_6,여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_62942532c2c4634555d400ff,provenance,RequirementMention,requirement_mentions,mention_mobile_21_1,설계와 개발 절차를 문서로 남깁니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_34944cf6328c664f972c8c5f,provenance,RequirementMention,requirement_mentions,mention_mobile_21_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_34944cf6328c664f972c8c5f,provenance,RequirementMention,requirement_mentions,mention_mobile_21_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_0a7eedbe5d1d40afbc7fd97e,provenance,RequirementMention,requirement_mentions,mention_mobile_21_3,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_552baffb0efd8341b7a753be,provenance,RequirementMention,requirement_mentions,mention_mobile_21_4,사내 서버 API 를 연동해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_552baffb0efd8341b7a753be,provenance,RequirementMention,requirement_mentions,mention_mobile_21_4,사내 서버 API를 연동해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_df99abb422e5b7fd7cb64628,provenance,RequirementMention,requirement_mentions,mention_mobile_21_5,앱 배포와 사내 스토어 운영을 경험해 보신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_a605b804ffee26b336fdb8b7,provenance,RequirementMention,requirement_mentions,mention_mobile_22_1,설계와 개발 절차를 문서로 남깁니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_ad8651ca4c31889b695a15a2,provenance,RequirementMention,requirement_mentions,mention_mobile_22_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_ad8651ca4c31889b695a15a2,provenance,RequirementMention,requirement_mentions,mention_mobile_22_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_dc99303b8124dbced1b63222,provenance,RequirementMention,requirement_mentions,mention_mobile_22_3,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_ca192c8eac966f819d5bb1f7,provenance,RequirementMention,requirement_mentions,mention_mobile_22_4,사내 서버 API 를 연동해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_ca192c8eac966f819d5bb1f7,provenance,RequirementMention,requirement_mentions,mention_mobile_22_4,사내 서버 API를 연동해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_b289f2cf4f8ed9c31177de61,provenance,RequirementMention,requirement_mentions,mention_mobile_22_5,앱 배포와 사내 스토어 운영을 경험해 보신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_912800601bb50fb112742f84,provenance,RequirementMention,requirement_mentions,mention_mobile_23_1,안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_5e5e7ff75ae02ebf0b4f01d0,provenance,RequirementMention,requirement_mentions,mention_mobile_23_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_5e5e7ff75ae02ebf0b4f01d0,provenance,RequirementMention,requirement_mentions,mention_mobile_23_2,Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_0470f7706e9bf76de2a7db9b,provenance,RequirementMention,requirement_mentions,mention_mobile_23_3,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_ac4c39bad94af8db3e7389bb,provenance,RequirementMention,requirement_mentions,mention_mobile_23_4,Swift 로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_ac4c39bad94af8db3e7389bb,provenance,RequirementMention,requirement_mentions,mention_mobile_23_4,Swift로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_bc4d1554d63c0c8f19e9fc69,provenance,RequirementMention,requirement_mentions,mention_mobile_24_1,안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_c8f1c1e5ace3712449787918,provenance,RequirementMention,requirement_mentions,mention_mobile_24_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_c8f1c1e5ace3712449787918,provenance,RequirementMention,requirement_mentions,mention_mobile_24_2,Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_9b5496fbd659c3e581df703e,provenance,RequirementMention,requirement_mentions,mention_mobile_24_3,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_317bbce6d57724b513a51d95,provenance,RequirementMention,requirement_mentions,mention_mobile_24_4,Swift 로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_6f58fad371f8797c747dcffe,provenance,RequirementMention,requirement_mentions,mention_mobile_25_1,기존 View 화면을 Jetpack Compose 로 점진적으로 전환합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_317bbce6d57724b513a51d95,provenance,RequirementMention,requirement_mentions,mention_mobile_24_4,Swift로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_6f58fad371f8797c747dcffe,provenance,RequirementMention,requirement_mentions,mention_mobile_25_1,기존 View 화면을 Jetpack Compose로 점진적으로 전환합니다.,v1,ds_demo_v1,\N,an_demo_mobile
 node_5f2a1a676c64ef2e75c7eaae,provenance,RequirementMention,requirement_mentions,mention_mobile_25_2,백엔드 팀과 API 규격을 함께 정하고 연동합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_f111bd3c95a7a1386dd8d46a,provenance,RequirementMention,requirement_mentions,mention_mobile_25_3,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_f111bd3c95a7a1386dd8d46a,provenance,RequirementMention,requirement_mentions,mention_mobile_25_3,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_775049d6f49914b2542a3492,provenance,RequirementMention,requirement_mentions,mention_mobile_25_4,MVVM 등으로 화면과 상태를 분리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_6c8bf33bf397f422e56ad296,provenance,RequirementMention,requirement_mentions,mention_mobile_25_5,Retrofit 등으로 REST API 를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_6c8bf33bf397f422e56ad296,provenance,RequirementMention,requirement_mentions,mention_mobile_25_5,Retrofit 등으로 REST API를 연동하고 비동기 처리를 다뤄 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_bbf8e7e48d179a7b7cd5b8b8,provenance,RequirementMention,requirement_mentions,mention_mobile_25_6,앱을 스토어에 배포하고 버전을 관리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_665e5e42dfb321de914d6a11,provenance,RequirementMention,requirement_mentions,mention_mobile_25_7,월간 사용자 수백만 규모의 앱을 운영해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_4a34fd0b0674baac6e94afc0,provenance,RequirementMention,requirement_mentions,mention_mobile_25_8,CI 로 앱 빌드와 배포를 자동화해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_cf0acadc0c1f827f17c47c73,provenance,RequirementMention,requirement_mentions,mention_mobile_26_1,서버 API 를 연동해 목록·상세 화면을 구현합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_137984d69686196200e3d3b2,provenance,RequirementMention,requirement_mentions,mention_mobile_26_2,Kotlin 으로 안드로이드 앱을 만들어 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_9baa2e44cec07046df8c35c9,provenance,RequirementMention,requirement_mentions,mention_mobile_26_3,REST API 를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_4a34fd0b0674baac6e94afc0,provenance,RequirementMention,requirement_mentions,mention_mobile_25_8,CI로 앱 빌드와 배포를 자동화해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_cf0acadc0c1f827f17c47c73,provenance,RequirementMention,requirement_mentions,mention_mobile_26_1,서버 API를 연동해 목록·상세 화면을 구현합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_137984d69686196200e3d3b2,provenance,RequirementMention,requirement_mentions,mention_mobile_26_2,Kotlin으로 안드로이드 앱을 만들어 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_9baa2e44cec07046df8c35c9,provenance,RequirementMention,requirement_mentions,mention_mobile_26_3,REST API를 연동해 화면에 데이터를 그려 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_ab5162758aa108d97007e127,provenance,RequirementMention,requirement_mentions,mention_mobile_26_4,화면과 로직을 분리하는 구조를 고민해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_29b023a604777a199ae0d754,provenance,RequirementMention,requirement_mentions,mention_mobile_27_1,공개 인터페이스를 설계하고 문서와 예제를 함께 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_e65f7d0f378d123969a1df88,provenance,RequirementMention,requirement_mentions,mention_mobile_27_2,Swift 로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_e65f7d0f378d123969a1df88,provenance,RequirementMention,requirement_mentions,mention_mobile_27_2,Swift로 iOS 앱 또는 라이브러리를 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_eab88bbdbf134c42d29430eb,provenance,RequirementMention,requirement_mentions,mention_mobile_27_3,네트워크 통신과 재연결 처리를 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_63af38751870f7bb2fcf6d0d,provenance,RequirementMention,requirement_mentions,mention_mobile_27_4,SDK 배포와 버전 호환성을 관리해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_eb0b34135c798b997be5e750,provenance,RequirementMention,requirement_mentions,mention_mobile_27_5,공개 API 를 설계하고 문서로 남겨 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_031cfe5033c450a7070444fe,provenance,RequirementMention,requirement_mentions,mention_mobile_27_6,여러 앱에 배포되는 SDK 의 하위 호환을 유지해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
-node_2a6adb30d020c62c8bb1f594,provenance,RequirementMention,requirement_mentions,mention_mobile_28_1,SwiftUI 로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_e4774cf468d3f0649a7c02b0,provenance,RequirementMention,requirement_mentions,mention_mobile_28_2,결제 승인 API 를 연동하고 실패 흐름을 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_068799517549baad826f361d,provenance,RequirementMention,requirement_mentions,mention_mobile_28_3,Swift 로 iOS 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_eb0b34135c798b997be5e750,provenance,RequirementMention,requirement_mentions,mention_mobile_27_5,공개 API를 설계하고 문서로 남겨 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_031cfe5033c450a7070444fe,provenance,RequirementMention,requirement_mentions,mention_mobile_27_6,여러 앱에 배포되는 SDK의 하위 호환을 유지해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_2a6adb30d020c62c8bb1f594,provenance,RequirementMention,requirement_mentions,mention_mobile_28_1,SwiftUI로 신규 화면을 구현하고 화면 상태 구조를 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_e4774cf468d3f0649a7c02b0,provenance,RequirementMention,requirement_mentions,mention_mobile_28_2,결제 승인 API를 연동하고 실패 흐름을 설계합니다.,v1,ds_demo_v1,\N,an_demo_mobile
+node_068799517549baad826f361d,provenance,RequirementMention,requirement_mentions,mention_mobile_28_3,Swift로 iOS 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_74ffcb9862021a8828b75eda,provenance,RequirementMention,requirement_mentions,mention_mobile_28_4,화면과 비즈니스 로직을 분리하는 구조를 적용해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_ff13a58e696f52d1660d6e1c,provenance,RequirementMention,requirement_mentions,mention_mobile_28_5,URLSession 또는 async/await 로 서버 통신을 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_ff13a58e696f52d1660d6e1c,provenance,RequirementMention,requirement_mentions,mention_mobile_28_5,URLSession 또는 async/await로 서버 통신을 구현해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_169f00797b0f3ffe0fec65d7,provenance,RequirementMention,requirement_mentions,mention_mobile_28_6,결제 승인 지연과 재시도를 직접 설계해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_850fdb745c3da8fb9ef94c9b,provenance,RequirementMention,requirement_mentions,mention_mobile_28_7,앱을 스토어에 배포하고 심사 반려에 대응해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_3aced0639d4ef8db4a659020,provenance,RequirementMention,requirement_mentions,mention_mobile_29_1,설계와 개발 절차를 문서로 남깁니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_3561561ed96f68d93b995272,provenance,RequirementMention,requirement_mentions,mention_mobile_29_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_3561561ed96f68d93b995272,provenance,RequirementMention,requirement_mentions,mention_mobile_29_2,Kotlin으로 안드로이드 앱을 개발한 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_3d33d0f8c3c2eec1ccb01178,provenance,RequirementMention,requirement_mentions,mention_mobile_29_3,화면과 로직을 분리한 구조로 개발해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_cb489dc638de08d8938570af,provenance,RequirementMention,requirement_mentions,mention_mobile_29_4,사내 서버 API 를 연동해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_cb489dc638de08d8938570af,provenance,RequirementMention,requirement_mentions,mention_mobile_29_4,사내 서버 API를 연동해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_58d60ca82fa15945ff78fdc7,provenance,RequirementMention,requirement_mentions,mention_mobile_29_5,앱 배포와 사내 스토어 운영을 경험해 보신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_f7c4c46aa685e6c26f5a3591,provenance,RequirementMention,requirement_mentions,mention_mobile_30_1,안드로이드와 iOS 두 플랫폼의 빌드와 스토어 배포를 관리합니다.,v1,ds_demo_v1,\N,an_demo_mobile
-node_314e6d52f68f0424da900c9d,provenance,RequirementMention,requirement_mentions,mention_mobile_30_2,Kotlin 으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,v1,ds_demo_v1,\N,an_demo_mobile
+node_314e6d52f68f0424da900c9d,provenance,RequirementMention,requirement_mentions,mention_mobile_30_2,Kotlin으로 안드로이드 앱을 개발한 경험이 3년 이상이신 분,v1,ds_demo_v1,\N,an_demo_mobile
 node_3cb0d6a5a8ffb17d7577b374,provenance,RequirementMention,requirement_mentions,mention_mobile_30_3,여러 기종에서 프레임 드랍 없이 동작하도록 최적화해 본 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_mobile
-node_1fa3c7d4cd2800cf4348b183,provenance,RequirementMention,requirement_mentions,mention_mobile_30_4,Swift 로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
+node_1fa3c7d4cd2800cf4348b183,provenance,RequirementMention,requirement_mentions,mention_mobile_30_4,Swift로 iOS 앱을 함께 개발해 본 경험,v1,ds_demo_v1,\N,an_demo_mobile
 node_b25a16d74a1cc2e9836b9828,semantic,JobRole,job_roles,security,정보보안,v1,ds_demo_v1,tx_demo_security,an_demo_security
 node_4812035e102fc99b3f4ab7cd,semantic,Company,companies,co_estsecurity,이스트시큐리티,v1,ds_demo_v1,tx_demo_security,an_demo_security
 node_db9049debaf8f8d62f0e0593,semantic,Posting,postings,dp_security_01,정보보안 엔지니어(취약점 진단) 신입·주니어,v1,ds_demo_v1,tx_demo_security,an_demo_security
@@ -2745,7 +2745,7 @@ node_55faf1691687b9809f7e60ea,provenance,RequirementMention,requirement_mentions
 node_98ae656dce2cc68df92985b9,provenance,RequirementMention,requirement_mentions,mention_game_client_10_7,C++ 기반 클라이언트 개발 경험이 있으신 분,v1,ds_demo_v1,\N,an_demo_game_client
 node_ac3ef218c976de254cc76a95,provenance,RequirementMention,requirement_mentions,mention_game_client_11_1,Unity 와 C# 로 채용 캠페인용 미니게임을 구현합니다.,v1,ds_demo_v1,\N,an_demo_game_client
 node_99664f6c157b9684bdd390f3,provenance,RequirementMention,requirement_mentions,mention_game_client_11_2,다양한 단말에서 안정적인 프레임을 유지하도록 리소스를 조정합니다.,v1,ds_demo_v1,\N,an_demo_game_client
-node_1e5a64a2c14c927afb83ec56,provenance,RequirementMention,requirement_mentions,mention_game_client_11_3,게임 진행 상태를 서비스 API 와 동기화합니다.,v1,ds_demo_v1,\N,an_demo_game_client
+node_1e5a64a2c14c927afb83ec56,provenance,RequirementMention,requirement_mentions,mention_game_client_11_3,게임 진행 상태를 서비스 API와 동기화합니다.,v1,ds_demo_v1,\N,an_demo_game_client
 node_b5eaad6e7bbfa670872608f3,provenance,RequirementMention,requirement_mentions,mention_game_client_11_4,Unity 로 플레이 가능한 프로젝트를 완성해 본 분,v1,ds_demo_v1,\N,an_demo_game_client
 node_a6090db8c00f605d3c863aee,provenance,RequirementMention,requirement_mentions,mention_game_client_11_5,충돌과 보간에 필요한 게임 수학의 기초를 이해하는 분,v1,ds_demo_v1,\N,an_demo_game_client
 node_71ba4a3fd0c3035eced5d6ce,provenance,RequirementMention,requirement_mentions,mention_game_client_11_6,프로파일러를 사용해 렌더링 병목을 확인해 본 분,v1,ds_demo_v1,\N,an_demo_game_client

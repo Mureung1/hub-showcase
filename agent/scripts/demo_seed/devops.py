@@ -4,10 +4,10 @@
 않고 메모리에서 계산해 ``parts/devops/<table>.csv`` 로만 낸다. 모델 호출은 0회다.
 
 `dataset_versions` 는 만들지 않는다. `ds_demo_v1` 는 아홉 직무가 함께 쓰는 한 행이라
-A1(backend) 이 한 번만 만든다.
+A1(backend)이 한 번만 만든다.
 
-CONTRACT 10.5 의 `allowed_uses` 예시값(`baseline`·`evidence`)은 `0001_initial_schema.sql`
-의 `allowed_uses_known` CHECK 가 허용하지 않는다. 적재가 실패하므로 A1 과 같은 값을
+CONTRACT 10.5의 `allowed_uses` 예시값(`baseline`·`evidence`)은 `0001_initial_schema.sql`
+의 `allowed_uses_known` CHECK가 허용하지 않는다. 적재가 실패하므로 A1과 같은 값을
 쓴다. 나머지 규약(계층 A·신뢰도 0.95000·`sa_v1`)은 그대로 따른다.
 
 recent 5건이 기업군 6종을 다 덮지 못한다. recent 공고가 없는 기업군은 recent 지표 행을
@@ -66,7 +66,7 @@ CLUSTER_ORDER = (
     "game",
 )
 
-# 지표 family 와 정책 버전의 대응. 정책 행은 `0002_seed_reference.sql` 이 넣는다.
+# 지표 family와 정책 버전의 대응. 정책 행은 `0002_seed_reference.sql`이 넣는다.
 METRIC_POLICY: dict[str, str] = {
     "posting_prevalence": "mp_v1_prevalence",
     "requiredness_ratio": "mp_v1_requiredness",
@@ -81,7 +81,7 @@ METRIC_FAMILIES = tuple(METRIC_POLICY)
 DEPTHS = ("foundation", "application", "tradeoff")
 DEPTH_RANK = {"foundation": 1, "application": 2, "tradeoff": 3}
 
-# 스냅샷 출처 계층 A 의 허용 용도. 스키마 CHECK 가 허용하는 값만 담는다.
+# 스냅샷 출처 계층 A의 허용 용도. 스키마 CHECK가 허용하는 값만 담는다.
 ALLOWED_USES = (
     "statistics",
     "interpretation_context",
@@ -115,7 +115,7 @@ DIMENSIONS: tuple[tuple[str, str, str, str, tuple[str, ...], bool], ...] = (
         "kubernetes",
         "technology",
         "Kubernetes 클러스터 운영",
-        "컨테이너 워크로드를 Kubernetes 로 배포하고 클러스터를 운영하는 요구.",
+        "컨테이너 워크로드를 Kubernetes로 배포하고 클러스터를 운영하는 요구.",
         ("Kubernetes", "쿠버네티스", "K8s", "컨테이너 오케스트레이션"),
         False,
     ),
@@ -172,7 +172,7 @@ def dim_id(slug: str) -> str:
     return DIM_INFO[slug]["dimension_id"]
 
 
-# 상하위·관련 관계. relation_type 은 dst 가 src 에 대해 갖는 위치다.
+# 상하위·관련 관계. relation_type은 dst가 src에 대해 갖는 위치다.
 DIMENSION_RELATIONS: tuple[tuple[str, str, str], ...] = (
     ("kubernetes", "cloud-network", "related"),
     ("kubernetes", "observability", "related"),
@@ -224,7 +224,7 @@ CAPABILITY_PREREQUISITES: tuple[tuple[str, str], ...] = (
 
 # ============================================================ 3. 채용공고 30건
 # 한 줄은 (본문, 차원 slug 또는 None, depth_level, 주석) 이다.
-# 주석은 recent 5건에만 붙는다. 해석 payload 의 세 종류 번호가 여기서 나온다.
+# 주석은 recent 5건에만 붙는다. 해석 payload의 세 종류 번호가 여기서 나온다.
 #   ("base", 기준선 항목명, 해설)                  → base_n
 #   ("mark", 제목, 해설, 신뢰도, 등장 비율)          → mark_n
 #   ("note", 제목, 해설)                          → note_n
@@ -485,7 +485,7 @@ POSTINGS: tuple[dict[str, Any], ...] = (
                   "직접이라는 단어가 붙었습니다. 팀에서 만들어 둔 것을 쓴 경험과 처음부터 구성한 경험을 이 공고는 구분합니다.")),
                 ("Docker로 이미지를 만들고 배포해 본 경험이 있으신 분", None, "foundation",
                  ("base", "Git 기반 협업 기록",
-                  "이미지 빌드는 저장소의 변경과 함께 돌아갑니다. Dockerfile 이 커밋 이력과 함께 남아 있으면 두 항목이 한 번에 증명됩니다.")),
+                  "이미지 빌드는 저장소의 변경과 함께 돌아갑니다. Dockerfile이 커밋 이력과 함께 남아 있으면 두 항목이 한 번에 증명됩니다.")),
             )),
             ("우대사항", (
                 ("Kubernetes를 학습하거나 토이 프로젝트로 다뤄 본 경험", "kubernetes", "foundation",
@@ -1076,7 +1076,7 @@ class FactBuilder:
         computed = value
         if computed is None and numerator is not None and denominator:
             computed = round(numerator / denominator, 6)
-        # CONTRACT 10.3 — overall 은 analysis_ready, 기업군은 표본이 작아 low_confidence.
+        # CONTRACT 10.3 — overall은 analysis_ready, 기업군은 표본이 작아 low_confidence.
         status = "analysis_ready" if scope_level == "overall" else "low_confidence"
         uncertainty = None
         if measure in WILSON_MEASURES[family] and denominator and numerator is not None:
@@ -1172,7 +1172,7 @@ def build_statistics_facts() -> FactBuilder:
                     period=period, numerator=boundary, denominator=total, sample_size=total,
                 )
 
-                # --- entry_label_advanced_signal_rate (대상군 축이 entry_junior 로 고정)
+                # --- entry_label_advanced_signal_rate (대상군 축이 entry_junior로 고정)
                 if segment == SEGMENT_ENTRY:
                     advanced = sum(
                         1 for dims in dim_sets.values()
@@ -1530,7 +1530,7 @@ def build_statistics_payload() -> dict[str, Any]:
             reality.append({"tag": tag, "label": label, "pct": value})
     reality.sort(key=lambda row: -row["pct"])
 
-    # --- cluster_axes (표본 확보를 위해 recent 와 prev 전체 기간을 합산한다)
+    # --- cluster_axes (표본 확보를 위해 recent와 prev 전체 기간을 합산한다)
     axes_rows = []
     for cluster_id in CLUSTER_ORDER:
         members = [p for p in POSTINGS if p["cluster"] == cluster_id]
@@ -1704,7 +1704,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
     "startup": (
         ("iac-terraform", "자동화 범위", "IaC 도구를 접해 본다",
          "인프라 전체를 혼자 코드로 세운다",
-         '"Terraform 등 IaC 도구를 접해 본 경험" 이 인원이 적은 조직의 우대에 있음',
+         '"Terraform 등 IaC 도구를 접해 본 경험"이 인원이 적은 조직의 우대에 있음',
          "표현은 가볍지만 인프라를 세울 사람이 몇 없습니다. 작은 규모라도 처음부터 끝까지 혼자 세워 본 기록이 실질 기준입니다.",
          "mid", "#items", "iac-terraform"),
         ("observability", "관측 구축", "만들어진 대시보드를 본다",
@@ -1728,7 +1728,7 @@ CLUSTER_DEVIATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
     "si_enterprise": (
         ("cicd-pipeline", "배포 절차", "파이프라인을 구성한다",
          "승인 단계와 절차 문서까지 포함한 릴리스를 만든다",
-         '"형상관리와 배포 절차를 이해하고 계신 분" 과 운영 문서 작성이 함께 있음',
+         '"형상관리와 배포 절차를 이해하고 계신 분"과 운영 문서 작성이 함께 있음',
          "속도보다 되돌릴 수 있는 기록이 우선입니다. 변경 이력과 승인 흔적을 남기는 습관이 이 기업군의 실질 요구입니다.",
          "mid", "#items", "release-docs"),
         ("cloud-network", "폐쇄망 제약", "클라우드 네트워크 기본을 안다",
@@ -1788,11 +1788,13 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
     interpretations: list[dict[str, Any]] = []
     baseline_notes: list[dict[str, Any]] = []
     signal_notes: list[dict[str, Any]] = []
+    annotation_candidates: list[tuple[dict[str, Any], tuple[Any, ...], str]] = []
     mark_n = base_n = note_n = 0
     for section, lines in posting["sections"]:
         rows = []
         for line in lines:
             row = {"text": line[0], "mark_n": None, "note_n": None, "base_n": None, "base_ref": None}
+            annotation_candidates.append((row, line, section))
             ann = line[3]
             if ann is not None:
                 if ann[0] == "base":
@@ -1813,14 +1815,54 @@ def posting_view(posting: dict[str, Any]) -> dict[str, Any]:
                     signal_notes.append({"n": note_n, "title": ann[1], "body": ann[2]})
             rows.append(row)
         raw_sections.append({"section": section, "lines": rows})
+
+    dimensions = list(dict.fromkeys(
+        line[1] for _row, line, _section in annotation_candidates if line[1] in DIM_INFO
+    ))
+    dimension_labels = [DIM_INFO[slug]["label"] for slug in dimensions[:2]]
+    focus = "·".join(dimension_labels) if dimension_labels else "배포 자동화와 운영 안정성"
+
+    if not baseline_notes:
+        row, line, _section = annotation_candidates[0]
+        base_n = 1
+        row["base_n"], row["base_ref"] = base_n, "직무 공통 기대치"
+        baseline_notes.append({"n": base_n, "base_ref": "직무 공통 기대치", "body": f"{posting['title']}의 ‘{line[0]}’ 문장에서 확인하는 핵심은 {focus}입니다. 이를 직접 구성하고 운영할 수 있어야 합니다."})
+    if not interpretations:
+        row, line, section = annotation_candidates[min(1, len(annotation_candidates) - 1)]
+        mark_n = 1
+        row["mark_n"] = mark_n
+        interpretations.append({
+            "n": mark_n, "title": f"{section}에서 확인할 운영 판단",
+            "body": f"{posting['title']}의 ‘{line[0]}’ 문장은 도구 이름보다 위험 판단과 자동화 범위를 묻습니다. {focus} 관련 경험에서 무엇을 먼저 보호했는지 설명해야 합니다.",
+            "confidence": "medium", "ratio": "공고 문맥 기반 해석",
+            "sources": [{"type": "posting", "url": posting_url(posting["nn"])}],
+        })
+    if not signal_notes:
+        row, line, _section = annotation_candidates[min(2, len(annotation_candidates) - 1)]
+        note_n = 1
+        row["note_n"] = note_n
+        signal_notes.append({
+            "n": note_n, "title": f"{posting['company']}가 따로 확인하는 지점",
+            "body": f"{posting['title']}에서 ‘{line[0]}’ 문장을 따로 적은 만큼, 지원 자료에는 선택 이유와 장애 재현·복구 결과를 한 사례로 연결하세요. 사례의 중심 주제는 {focus}입니다.",
+        })
+
+    summary_body = posting["summary"].strip()
+    if not summary_body:
+        summary_variants = (
+            f"{posting['company']}의 {posting['title']} 공고에서 핵심 요구는 {focus}입니다. 이를 반복 가능하게 운영할 수 있어야 하며, 저장소에는 구성 코드, 실행 절차, 장애를 냈을 때의 복구 결과가 함께 보여야 합니다.",
+            f"{posting['title']}에서 중심이 되는 요구는 {focus}입니다. 도구 목록보다 자동화 범위를 정한 이유와 변경 전후 운영 결과를 설명하는 것이 중요합니다.",
+            f"{posting['title']}의 핵심 요구는 {focus}입니다. 사용 경험이 아니라 재현 가능한 운영 절차로 제시하고, README에서 배포 방법과 실패 재현·복구 기록을 확인할 수 있게 구성하세요.",
+        )
+        summary_body = summary_variants[(int(posting["nn"]) - 1) % len(summary_variants)]
+    summary_ratio = posting["summary_ratio"].strip() or f"직무 공통 기대치 {len(baseline_notes)}건 · 숨은 의미 {len(interpretations)}건 · 회사 특징 {len(signal_notes)}건"
     return {
         "posting_id": posting_id(posting["nn"]),
         "company": posting["company"],
         "title": posting["title"],
         "summary": {
             "n": None, "title": "종합 해석 — 이 공고가 찾는 사람",
-            "body": posting["summary"], "confidence": "high",
-            "ratio": posting["summary_ratio"],
+            "body": summary_body, "confidence": "high",
+            "ratio": summary_ratio,
             "sources": [{"type": "posting", "url": posting_url(posting["nn"])}],
         },
         "raw_sections": raw_sections,
@@ -1975,9 +2017,9 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         "highlights": [
             {
                 "title": "코드로 남은 인프라가 가장 강한 증거입니다",
-                "body": f"{label} 기준에서도 화면 캡처보다 저장소가 강합니다. 클러스터와 자원을 코드로 세우고, 지우고 다시 세워도 같은 상태가 되는지 보여주세요.",
-                "tips": ["README 1절: 무엇을 코드로 세웠는가 → 어떻게 다시 세우는가",
-                         "apply 로그나 워크플로 실행 이력이 함께 남아 있으면 더 좋습니다"],
+                "body": f"{label}에서 화면 캡처보다 저장소가 강합니다. 클러스터와 자원을 코드로 세우고, 지우고 다시 세워도 같은 상태가 되는지 보여주세요.",
+                "tips": ["README 첫 절에 Terraform·매니페스트 위치와 재생성 명령을 적기",
+                         "전체 자원을 지운 뒤 워크플로로 다시 만들고 계획 결과가 변경 없음이면 완료로 표시"],
                 "linked_item_ids": [
                     CONCEPT_INFO["iac-terraform"]["concept_id"],
                     CONCEPT_INFO["k8s-deploy"]["concept_id"],
@@ -1986,7 +2028,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             {
                 "title": "장애를 만들어 본 기록이 희소합니다",
                 "body": "잘 도는 화면은 누구나 있습니다. 파드를 강제로 죽이거나 노드를 빼 보고 그때 지표가 어떻게 움직였는지 남긴 문서가 신입 지원자 사이에서 드뭅니다.",
-                "tips": ["의도적으로 장애를 만든 실험 1건", "알림이 울리기까지 걸린 시간 한 줄"],
+                "tips": ["장애 실험 문서에 실행 명령, 대시보드 위치, 예상 알림을 적기", "파드 종료 전후 탐지·복구 시간을 비교하고 목표 복구 시간 안에 돌아오면 완료로 표시"],
                 "linked_item_ids": [
                     CONCEPT_INFO["observability-stack"]["concept_id"],
                     CONCEPT_INFO["incident-retro"]["concept_id"],
@@ -2024,14 +2066,14 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "클러스터 검증",
             "question": "파드가 계속 재시작하면 무엇부터 확인하나요?",
             "followups": ["이벤트와 로그 중 무엇을 먼저 보나요?", "리소스 한계 설정은 어떤 기준으로 정했나요?"],
-            "point": "순서가 있는 답이 필요합니다. 직접 장애를 만들어 본 사람은 이 질문에서 바로 드러납니다.",
+            "point": "이벤트와 로그 중 먼저 볼 대상을 고른 이유, 확인한 상태, 조치 후 재시작 횟수를 차례로 답하세요. 리소스 한계를 바꾼다면 어떤 지표를 판단 기준으로 삼을지도 연결합니다.",
             "linked_item_ids": [CONCEPT_INFO["k8s-deploy"]["concept_id"]],
         },
         {
             "kicker": "자동화 검증",
             "question": "같은 Terraform 코드를 두 번 실행하면 어떻게 되나요?",
             "followups": ["콘솔에서 자원을 바꾸면 그 다음 실행은 어떻게 되나요?", "상태 파일은 어디에 두었나요?"],
-            "point": "멱등성과 드리프트를 아는지 묻는 질문입니다. 개념 설명이 아니라 내 저장소의 사례로 답하세요.",
+            "point": "두 번째 실행에서 변경이 없어야 하는 이유, 상태 파일 위치를 선택한 기준, 콘솔 변경 뒤 계획 결과를 답하세요. 드리프트를 복구한 실행 기록까지 제시하면 완료입니다.",
             "linked_item_ids": [
                 CONCEPT_INFO["iac-terraform"]["concept_id"],
                 CONCEPT_INFO["iac-idempotency"]["concept_id"],
@@ -2041,7 +2083,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "관측 검증",
             "question": "알림을 하나만 남긴다면 무엇을 남기겠어요?",
             "followups": ["그 지표가 정상인지 어떻게 판단하나요?", "알림이 너무 자주 울리면 무엇을 바꾸나요?"],
-            "point": "도구 이름이 아니라 무엇이 사용자에게 문제인지로 답해야 합니다. SLO 관점이 여기서 드러납니다.",
+            "point": "사용자 영향과 연결되는 지표를 고른 이유, 임계값 판단, 알림 조정 전후 발생 횟수를 답하세요. 잦은 알림을 줄이면서 실제 장애 탐지를 유지한 결과가 필요합니다.",
             "linked_item_ids": [
                 CONCEPT_INFO["observability-stack"]["concept_id"],
                 CONCEPT_INFO["sre-slo"]["concept_id"],
@@ -2051,7 +2093,7 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "태도 검증 · 자소서 연동",
             "question": "개발팀이 급하다고 절차를 건너뛰자고 하면 어떻게 하나요?",
             "followups": ["되돌릴 수 없는 변경이라면요?"],
-            "point": "규칙을 지킨 무용담이 아니라 위험을 어떻게 설명하고 합의했는지를 봅니다.",
+            "point": "건너뛸 수 없는 위험을 판단한 기준, 대안으로 제시한 절차, 합의 후 배포 결과를 답하세요. 되돌릴 수 없는 변경이라면 승인과 복구 계획을 어디에 남겼는지도 연결합니다.",
             "linked_item_ids": [CONCEPT_INFO["collab-ops"]["concept_id"]],
         },
     ]
@@ -2070,7 +2112,7 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "클러스터와 파이프라인이 채워지지 않으면 다른 준비가 평가에 닿지 않습니다.",
      ("매니페스트", "이미지 빌드", "워크플로")),
     (2, "STEP 02 · 3주", 3, "vhigh", "손으로 만든 자원을 코드로 옮기기",
-     "STEP 01 에서 콘솔로 만든 자원을 Terraform 으로 다시 선언하세요. 전부 지우고 코드만으로 같은 상태가 복원되는지 확인하면 증거가 완성됩니다.",
+     "STEP 01에서 콘솔로 만든 자원을 Terraform으로 다시 선언하세요. 전부 지우고 코드만으로 같은 상태가 복원되는지 확인하면 증거가 완성됩니다.",
      "Terraform 저장소 + 모듈 구조 설명 + 재생성 실행 기록",
      "인프라 코드화 요구가 1년 새 뚜렷하게 늘었고 면접의 꼬리질문이 여기에 몰립니다.",
      ("선언형 구성", "모듈", "재생성 검증")),
@@ -2079,11 +2121,11 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "대시보드 + 알림 규칙 + 장애 재현·복구 기록 + 회고 글",
      "관측 요구가 우대에서 자격요건으로 이동 중이고, 장애를 겪은 기록은 신입 사이에서 가장 희소한 산출물입니다.",
      ("지표 선택", "알림 임계값", "장애 재현")),
-    (4, "STEP 04 · 2주", 2, "mid", "지원 기업군의 편차 채우고 소개 다듬기",
-     "지원할 기업군의 편차 항목을 하나 골라 보강하고, 저장소 README 와 자소서의 소개 순서를 그 기업군 기준으로 다시 배치하세요.",
-     "편차 항목 산출물 + 기업군 맞춤 README·소개 순서",
+    (4, "STEP 04 · 2주", 2, "mid", "협업 결정과 배포 절차를 기업군에 맞춰 마무리하기",
+     "개발팀과 합의한 운영 결정 하나를 기록하고 배포·되돌리기 절차를 README에 적으세요. 지원 기업군의 편차 항목이 있으면 같은 문서의 첫 번째 사례로 배치합니다.",
+     "운영 결정 기록 + 배포·되돌리기 절차가 있는 README + 기업군 편차 항목 산출물",
      "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
-     ("편차 보강", "소개 순서", "문서 정리")),
+     ("협업 결정", "배포 문서", "편차 보강")),
 )
 
 STEP_FILLS: tuple[tuple[str, ...], ...] = (
@@ -2234,7 +2276,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     """테이블명 → 행 목록. 데이터베이스에 접속하지 않는다."""
     t: dict[str, list[dict[str, Any]]] = {}
 
-    # --- 2~7 출처와 공고 (`dataset_versions` 는 A1 이 만든다)
+    # --- 2~7 출처와 공고 (`dataset_versions`는 A1이 만든다)
     sources, snapshots, observations, assessments = [], [], [], []
     postings, posting_versions = [], []
     for p in POSTINGS:
@@ -2857,7 +2899,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
             "support_id": paths[0]["path_id"], "relation": "supports", "weight": "0.50000",
         })
     t["analysis_claims"] = claims
-    # 같은 (claim, support_type, support_id, relation) 이 겹치면 기본키가 부딪힌다.
+    # 같은 (claim, support_type, support_id, relation)이 겹치면 기본키가 부딪힌다.
     seen_evidence: set[tuple[str, str, str, str]] = set()
     unique_evidence = []
     for row in claim_evidence:
@@ -2946,7 +2988,7 @@ def build() -> dict[str, list[dict[str, Any]]]:
     t["roadmap_item_fills"] = fills
     t["study_tracks"] = tracks
 
-    # --- 42 검증 결과 (검사 1~4 pass, 5~7 은 판정자가 없어 적용 대상이 아니다)
+    # --- 42 검증 결과 (검사 1~4 pass, 5~7은 판정자가 없어 적용 대상이 아니다)
     checks = (
         ("schema_validator", "A0", "pass", "info", None),
         ("source_policy_validator", "A0", "pass", "info", None),
@@ -3007,7 +3049,7 @@ BASE_PERIODS = frozenset(PERIODS)
 BASE_CLUSTERS = frozenset(CLUSTERS)
 BASE_COMPANIES = frozenset(p["company_id"] for p in POSTINGS)
 BASE_METRIC_POLICIES = frozenset(METRIC_POLICY.values())
-# `dataset_versions` 는 A1 이 만든다. 이 조각은 참조만 한다.
+# `dataset_versions`는 A1이 만든다. 이 조각은 참조만 한다.
 BASE_DATASET_VERSIONS = frozenset({DATASET_VERSION})
 
 
@@ -3120,7 +3162,7 @@ def check_foreign_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
         "metric_policy_version": BASE_METRIC_POLICIES,
         "cluster_id": BASE_CLUSTERS,
     }
-    # (테이블, 컬럼, 참조 대상 키). NULL 은 통과한다.
+    # (테이블, 컬럼, 참조 대상 키). NULL은 통과한다.
     refs: tuple[tuple[str, str, str], ...] = (
         ("sources", "company_id", "company_id"),
         ("source_snapshots", "source_id", "source_id"),
@@ -3256,7 +3298,7 @@ def check_foreign_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
 
 
 def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
-    """검사 4 — payload 가 CONTRACT 5장의 키를 전부 갖는가."""
+    """검사 4 — payload가 CONTRACT 5장의 키를 전부 갖는가."""
     problems: list[str] = []
     for row in tables["analysis_outputs"]:
         payload = row["payload"]
@@ -3277,7 +3319,7 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
                 for k in kpi_keys if k not in payload["kpi"]
             )
             if not payload["cluster_axes"]["rows"]:
-                problems.append(f"{row['output_id']}: cluster_axes.rows 가 비었다")
+                problems.append(f"{row['output_id']}: cluster_axes.rows가 비었다")
         if row["output_type"] == "interpretation":
             for key in ("level", "cluster_tag", "posting_id"):
                 if key not in payload["scope"]:
@@ -3297,7 +3339,7 @@ def check_payload_keys(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
 
 
 def check_concepts(tables: dict[str, list[dict[str, Any]]]) -> list[str]:
-    """검사 5 — 체크 개념 식별자와 payload 의 item_id 가 맞는가."""
+    """검사 5 — 체크 개념 식별자와 payload의 item_id가 맞는가."""
     problems: list[str] = []
     concepts = {row["concept_id"] for row in tables["checklist_concepts"]}
     items: dict[tuple[str, str], set[str]] = {}
@@ -3484,6 +3526,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-

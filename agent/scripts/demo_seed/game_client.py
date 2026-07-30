@@ -639,7 +639,7 @@ POSTINGS += (
         (
             ("Unity 와 C# 로 채용 캠페인용 미니게임을 구현합니다.", "unity-csharp", "foundation", None),
             ("다양한 단말에서 안정적인 프레임을 유지하도록 리소스를 조정합니다.", "graphics-opt", "foundation", None),
-            ("게임 진행 상태를 서비스 API 와 동기화합니다.", "net-sync", "foundation", None),
+            ("게임 진행 상태를 서비스 API와 동기화합니다.", "net-sync", "foundation", None),
         ),
         (
             ("Unity 로 플레이 가능한 프로젝트를 완성해 본 분", "unity-csharp", "foundation", None),
@@ -769,6 +769,68 @@ POSTINGS += (
     _expanded_posting("29", "04", PRIOR, "2025-08-11T10:00:00+09:00", "experienced"),
     _expanded_posting("30", "01", PRIOR, "2025-11-10T10:00:00+09:00", "experienced"),
 )
+
+_CLUSTER_READING = {
+    "game": "라이브 플레이에서 프레임과 동기화를 함께 지키는 구현 판단",
+    "bigtech_platform": "여러 기기에서 입력·화면·상태를 안정적으로 이어 가는 완성도",
+    "si_enterprise": "고정 장비의 성능 예산과 3D 동작을 수치로 맞추는 검증",
+    "startup": "작은 콘텐츠를 빠르게 완성하면서 자원 사용량을 통제하는 실행력",
+    "b2b_saas": "지연이 있는 실시간 화면에서 상태를 자연스럽게 동기화하는 설계",
+    "fintech_finance": "앱 안의 콘텐츠가 서비스 상태와 어긋나지 않게 만드는 안정성",
+}
+
+
+def _complete_posting_content(posting: dict[str, Any]) -> dict[str, Any]:
+    """빈 공고 해석을 원문·기업군·클라이언트 요구에 맞춰 완성한다."""
+    sections = [(section, list(lines)) for section, lines in posting["sections"]]
+    flat = [(si, li, section, line) for si, (section, lines) in enumerate(sections)
+            for li, line in enumerate(lines)]
+    focus_slugs = list(dict.fromkeys(
+        line[1] for _, _, _, line in flat if line[1] is not None
+    ))[:2]
+    focus = " · ".join(DIM_INFO[slug]["label"] for slug in focus_slugs)
+    period = "최근 공고" if posting["period"] == RECENT else "이전 기간 공고"
+    level = "진입 지원자" if posting["entry_label"] == "entry_junior" else "경력 지원자"
+    if not posting["summary"]:
+        responsibility = next(line[0] for _, _, section, line in flat if section == "주요업무")
+        posting["summary"] = (
+            f"{posting['company']} | {posting['title']}. {period}이며, ‘{responsibility}’를 중심 업무로 두고 {focus} 두 항목까지 확인합니다. "
+            f"{level}는 다음 역량을 실행 빌드와 측정 기록으로 보여 줘야 합니다: {_CLUSTER_READING[posting['cluster']]}."
+        )
+        posting["summary_ratio"] = "직무 공통 기대치 1건 · 숨은 의미 1건 · 회사 특징 1건"
+
+    existing = {line[3][0] for _, _, _, line in flat if line[3] is not None}
+    available = [(si, li, section, line) for si, li, section, line in flat if line[3] is None]
+    used: set[tuple[int, int]] = set()
+    for kind in ("base", "mark", "note"):
+        if kind in existing:
+            continue
+        candidates = [row for row in available if (row[0], row[1]) not in used]
+        if kind == "base":
+            target = next((row for row in candidates if row[3][1] is not None), candidates[0])
+        elif kind == "mark":
+            target = next((row for row in reversed(candidates) if row[3][1] is not None), candidates[-1])
+        else:
+            target = next((row for row in candidates if row[2] == "주요업무"), candidates[0])
+        si, li, _section, line = target
+        used.add((si, li))
+        dim_label = DIM_INFO[line[1]]["label"] if line[1] else "업무 범위"
+        if kind == "base":
+            annotation = ("base", dim_label,
+                f"‘{line[0]}’는 게임 클라이언트의 직무 공통 기대치입니다. 실행 빌드에서 해당 기능의 위치와 직접 구현한 범위를 구분해 제시하세요.")
+        elif kind == "mark":
+            annotation = ("mark", f"{posting['company']}가 확인하는 {dim_label}",
+                f"이 문장은 다음 역량을 확인합니다: {_CLUSTER_READING[posting['cluster']]}. ‘{line[0]}’에 사용한 선택과 프레임·지연 측정 결과를 함께 설명해야 합니다.",
+                "mid", f"{CLUSTERS[posting['cluster']]} 전체 기간 참고")
+        else:
+            annotation = ("note", f"{posting['company']} 업무에서 읽을 점",
+                f"‘{line[0]}’는 기능이 보이는 것뿐 아니라 플레이 조건에서 안정적으로 작동해야 한다는 뜻입니다. 재현 조건과 완료 기준을 README에 남기세요.")
+        sections[si][1][li] = (*line[:3], annotation)
+    posting["sections"] = tuple((section, tuple(lines)) for section, lines in sections)
+    return posting
+
+
+POSTINGS = tuple(_complete_posting_content(dict(posting)) for posting in POSTINGS)
 
 
 # ============================================================ 파생 구조
@@ -1901,14 +1963,14 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         "highlights": [
             {
                 "title": "플레이 영상 30초가 첫 관문입니다",
-                "body": f"{label} 기준에서도 코드보다 먼저 열리는 것은 영상입니다. 조작이 어떤 느낌인지 30초 안에 보여주고, 그 뒤에 구조 설명을 두세요.",
-                "tips": ["첫 10초에 핵심 플레이 루프", "빌드 실행 방법을 README 맨 위에"],
+                "body": f"{label}에서도 코드보다 먼저 열리는 것은 영상입니다. 조작이 어떤 느낌인지 30초 안에 보여주고, 그 뒤에 구조 설명을 두세요.",
+                "tips": ["README 최상단에 빌드 링크·조작법·30초 영상 배치", "새 PC에서 안내대로 실행해 첫 플레이 루프가 재현되면 완료"],
                 "linked_item_ids": [CONCEPT_INFO["unity-build"]["concept_id"]],
             },
             {
                 "title": "성능은 문장이 아니라 표로 씁니다",
                 "body": "최적화했다는 서술은 거의 모든 지원자가 씁니다. 기기·해상도·프레임·드로우콜을 개선 전후로 나란히 둔 표 한 장이 그 문장을 대신합니다.",
-                "tips": ["측정 기기와 조건을 함께 적기", "무엇을 포기했는지 한 줄 추가"],
+                "tips": ["성능 절에 기기·해상도·장면별 개선 전후 표 배치", "같은 장면을 다시 측정해 목표 프레임을 재현하면 완료"],
                 "linked_item_ids": [
                     CONCEPT_INFO["frame-budget"]["concept_id"],
                     CONCEPT_INFO["device-test"]["concept_id"],
@@ -1946,28 +2008,28 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "성능 검증",
             "question": "프레임이 떨어졌을 때 무엇부터 확인했나요?",
             "followups": ["CPU 와 GPU 중 어느 쪽이 병목이었나요?", "무엇을 포기하고 무엇을 지켰나요?"],
-            "point": "도구 이름이 아니라 판단 순서를 묻습니다. 계측 → 가설 → 검증의 순서로 답하면 꼬리질문이 이어져도 흔들리지 않습니다.",
+            "point": "계측 → 병목 가설 → 수정 선택 이유 → 같은 장면의 전후 수치 순서로 답하고, 포기한 품질과 지킨 목표를 꼬리질문에 연결하세요.",
             "linked_item_ids": [CONCEPT_INFO["frame-budget"]["concept_id"]],
         },
         {
             "kicker": "동기화 검증",
             "question": "네트워크가 끊겼다가 돌아오면 캐릭터를 어디에 그리나요?",
             "followups": ["예측이 틀렸을 때는 어떻게 되돌리나요?", "지연이 커지면 무엇을 먼저 포기하나요?"],
-            "point": "정답이 하나가 아닌 질문입니다. 데모에서 실제로 골라 본 선택과 그 이유가 있으면 대화가 성립합니다.",
+            "point": "보간·예측 가운데 고른 방식과 이유, 지연 주입 조건, 위치 오차와 화면 끊김이 어떻게 바뀌었는지 답하세요.",
             "linked_item_ids": [CONCEPT_INFO["netsync-demo"]["concept_id"]],
         },
         {
             "kicker": "기본기 검증",
             "question": "쿼터니언을 왜 쓰나요?",
             "followups": ["오일러각으로는 무엇이 안 되나요?", "보간은 어떻게 하나요?"],
-            "point": "기준선 항목은 깊이보다 설명의 정확함을 봅니다. 짐벌락을 한 문장으로 말할 수 있으면 충분합니다.",
+            "point": "오일러각 대신 쿼터니언을 고른 이유를 짐벌락과 보간으로 설명하고, 데모에서 회전이 안정된 결과를 연결하세요.",
             "linked_item_ids": [CONCEPT_INFO["math-solve"]["concept_id"]],
         },
         {
             "kicker": "태도 검증 · 자소서 연동",
             "question": "재현이 안 되는 버그를 만나면 어떻게 하나요?",
             "followups": ["로그를 어디에 남겼나요?", "다시 그 상황이면 무엇을 다르게 하겠어요?"],
-            "point": "라이브 서비스 팀이 가장 자주 던지는 질문입니다. 재현 절차를 기록해 둔 경험이 그대로 답이 됩니다.",
+            "point": "로그 지점을 고른 이유, 재현 조건을 좁힌 순서, 수정 뒤 같은 절차에서 버그가 사라진 결과를 답하세요.",
             "linked_item_ids": [CONCEPT_INFO["crash-story"]["concept_id"]],
         },
     ]
@@ -1980,8 +2042,8 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
 
 ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ...]], ...] = (
     (1, "STEP 01 · 3주", 3, "vhigh", "플레이 가능한 빌드 하나를 끝내기",
-     "새 프로젝트를 벌이지 말고 있는 결과물 하나를 실행 파일까지 끌고 가세요. 조작 루프와 UI, 저장까지 붙여 완성 상태로 만듭니다.",
-     "실행 파일 + 30초 플레이 영상 + README", "완성한 빌드가 없으면 다른 준비가 평가에 닿지 않습니다.",
+     "새 프로젝트를 벌이지 말고 있는 결과물 하나를 실행 파일까지 끌고 가세요. 조작 루프와 UI, 저장까지 붙이고 아트·기획과 바꾼 결정 하나를 기록합니다.",
+     "실행 파일 + 30초 플레이 영상 + README + 협업 결정 기록", "완성한 빌드가 없으면 다른 준비가 평가에 닿지 않습니다.",
      ("완성", "빌드", "플레이 영상")),
     (2, "STEP 02 · 2주", 2, "vhigh", "성능을 숫자로 만들기",
      "목표 기기와 목표 프레임을 정하고 프로파일러로 병목을 찾으세요. 드로우콜과 프레임을 개선 전후로 표에 남깁니다.",
@@ -1992,8 +2054,8 @@ ROADMAP_STEPS: tuple[tuple[int, str, int, str, str, str, str, str, tuple[str, ..
      "수학 풀이 글 + 동기화 데모 + 지연 실험 기록", "엔진이 대신해 주지 않는 부분을 다뤄 본 흔적이 변별점입니다.",
      ("게임 수학", "보간", "지연 실험")),
     (4, "STEP 04 · 2주", 2, "mid", "기업군에 맞춰 마무리하기",
-     "지원 기업군의 편차 항목을 채우고 포트폴리오의 소개 순서와 자소서의 방점을 다시 배치하세요.",
-     "편차 항목 산출물 + 기업군 맞춤 소개 순서", "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
+     "지원 기업군의 편차 항목을 채우세요. 크래시 하나를 재현·수정하고, LOD 또는 셰이더 설정을 바꾼 전후 비용과 품질 선택을 기록한 뒤 소개 순서를 조정합니다.",
+     "크래시 재현·수정 기록 + LOD·셰이더 전후 비교 + 기업군 맞춤 소개 순서", "필수가 채워진 뒤의 마무리입니다. 순서만 바꿔도 읽히는 인상이 달라집니다.",
      ("편차 보강", "소개 순서", "문서 정리")),
 )
 

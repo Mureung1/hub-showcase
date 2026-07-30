@@ -785,6 +785,68 @@ POSTINGS += (
     expanded_posting("30", "05", PRIOR, "2025-11-10T10:00:00+09:00", "experienced"),
 )
 
+_CLUSTER_READING = {
+    "bigtech_platform": "서비스 변경 속도를 막지 않으면서 위험을 우선순위화하는 판단",
+    "startup": "한정된 인력으로 점검·대응·지침을 끝까지 운영하는 책임 범위",
+    "b2b_saas": "여러 고객 환경의 로그와 권한을 일관된 기준으로 다루는 운영력",
+    "fintech_finance": "규제 증적과 사고 대응 절차를 빠짐없이 연결하는 정확성",
+    "si_enterprise": "고객사별 인프라 차이를 문서와 점검표로 통제하는 능력",
+    "game": "실시간 서비스의 이상 행위를 가려 내고 대응 범위를 정하는 판단",
+}
+
+
+def _complete_posting_content(posting: dict[str, Any]) -> dict[str, Any]:
+    """빈 공고 해석을 원문·기업군·보안 요구에 맞춰 완성한다."""
+    sections = [(section, list(lines)) for section, lines in posting["sections"]]
+    flat = [(si, li, section, line) for si, (section, lines) in enumerate(sections)
+            for li, line in enumerate(lines)]
+    focus_slugs = list(dict.fromkeys(
+        line[1] for _, _, _, line in flat if line[1] is not None
+    ))[:2]
+    focus = " · ".join(DIM_INFO[slug]["label"] for slug in focus_slugs)
+    period = "최근 공고" if posting["period"] == RECENT else "이전 기간 공고"
+    level = "진입 지원자" if posting["entry_label"] == "entry_junior" else "경력 지원자"
+    if not posting["summary"]:
+        responsibility = next(line[0] for _, _, section, line in flat if section == "주요업무")
+        posting["summary"] = (
+            f"{posting['company']} | {posting['title']}. {period}이며, ‘{responsibility}’를 중심 업무로 두고 {focus} 두 항목까지 확인합니다. "
+            f"{level}는 다음 역량을 보고서·로그·대응 기록으로 보여 줘야 합니다: {_CLUSTER_READING[posting['cluster']]}."
+        )
+        posting["summary_ratio"] = "직무 공통 기대치 1건 · 숨은 의미 1건 · 회사 특징 1건"
+
+    existing = {line[3][0] for _, _, _, line in flat if line[3] is not None}
+    available = [(si, li, section, line) for si, li, section, line in flat if line[3] is None]
+    used: set[tuple[int, int]] = set()
+    for kind in ("base", "mark", "note"):
+        if kind in existing:
+            continue
+        candidates = [row for row in available if (row[0], row[1]) not in used]
+        if kind == "base":
+            target = next((row for row in candidates if row[3][1] is not None), candidates[0])
+        elif kind == "mark":
+            target = next((row for row in reversed(candidates) if row[3][1] is not None), candidates[-1])
+        else:
+            target = next((row for row in candidates if row[2] == "주요업무"), candidates[0])
+        si, li, _section, line = target
+        used.add((si, li))
+        dim_label = DIM_INFO[line[1]]["label"] if line[1] else "업무 범위"
+        if kind == "base":
+            annotation = ("base", dim_label,
+                f"‘{line[0]}’는 보안 직무의 공통 기대치입니다. 사용한 도구보다 점검 절차와 판단 근거가 남은 산출물을 제시하세요.")
+        elif kind == "mark":
+            annotation = ("mark", f"{posting['company']}가 확인하는 {dim_label}",
+                f"이 문장은 다음 역량을 확인합니다: {_CLUSTER_READING[posting['cluster']]}. ‘{line[0]}’에 대해 선택한 대응과 그 이유, 남은 위험을 설명해야 합니다.",
+                "mid", f"{CLUSTERS[posting['cluster']]} 전체 기간 참고")
+        else:
+            annotation = ("note", f"{posting['company']} 업무에서 읽을 점",
+                f"‘{line[0]}’는 발견만이 아니라 전달과 후속 확인까지 맡는다는 뜻입니다. 재현 절차와 조치 확인 결과를 기록하세요.")
+        sections[si][1][li] = (*line[:3], annotation)
+    posting["sections"] = tuple((section, tuple(lines)) for section, lines in sections)
+    return posting
+
+
+POSTINGS = tuple(_complete_posting_content(dict(posting)) for posting in POSTINGS)
+
 # ============================================================ 파생 구조
 def posting_id(nn: str) -> str:
     return f"dp_{JOB_ROLE_ID}_{nn}"
@@ -1897,14 +1959,14 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
         "highlights": [
             {
                 "title": "찾은 것을 남이 읽을 수 있게 남긴 기록",
-                "body": f"{label} 기준에서도 점검을 몇 번 했는지보다 결과를 어떻게 전달했는지가 강합니다. 보고서 한 건을 끝까지 다듬으세요.",
-                "tips": ["위험도 판단 근거를 한 줄로", "조치 우선순위와 그 이유를 함께"],
+                "body": f"{label}에서도 점검을 몇 번 했는지보다 결과를 어떻게 전달했는지가 강합니다. 보고서 한 건을 끝까지 다듬으세요.",
+                "tips": ["README의 보고서 절에 재현 절차·영향 범위·판단 근거 배치", "다른 사람이 절차대로 재현하고 같은 위험도를 판단하면 완료"],
                 "linked_item_ids": [CONCEPT_INFO["diagnosis-report"]["concept_id"]],
             },
             {
                 "title": "판단 근거를 남긴 로그 분석이 희소합니다",
                 "body": "도구 화면 캡처보다 이 로그를 왜 이상하다고 봤는지를 적은 문서가 신입 포트폴리오에서 드뭅니다.",
-                "tips": ["정상 기준선을 먼저 정의", "오탐이라고 판단한 사례도 함께 기록"],
+                "tips": ["분석 노트 첫 표에 정상·이상 로그를 나란히 비교", "샘플 로그로 탐지 규칙을 다시 실행해 탐지·오탐 결과가 재현되면 완료"],
                 "linked_item_ids": [
                     CONCEPT_INFO["log-analysis"]["concept_id"],
                     CONCEPT_INFO["detection-rule"]["concept_id"],
@@ -1942,28 +2004,28 @@ def strategy_payload(scope_level: str, scope_id: str) -> dict[str, Any]:
             "kicker": "판단 검증",
             "question": "점검 결과 중 무엇을 먼저 고쳐야 한다고 보고했나요?",
             "followups": ["그 우선순위의 근거는 무엇인가요?", "고치지 않기로 한 항목은 어떻게 설명했나요?"],
-            "point": "위험도 판단은 정답이 없습니다. 내 기준을 근거와 함께 말하면 꼬리질문이 두렵지 않습니다.",
+            "point": "영향 범위와 조치 비용을 비교한 기준, 그 우선순위를 고른 이유, 조치 뒤 남은 위험을 차례로 답하세요.",
             "linked_item_ids": [CONCEPT_INFO["diagnosis-report"]["concept_id"]],
         },
         {
             "kicker": "탐지 검증",
             "question": "이 로그를 왜 이상하다고 판단했나요?",
             "followups": ["정상 기준선은 어떻게 정했나요?", "오탐을 줄이려면 무엇을 바꾸겠어요?"],
-            "point": "분석 노트가 있으면 이 질문 전체를 제가 해봤는데요로 시작할 수 있습니다.",
+            "point": "정상 기준선을 정한 데이터, 탐지 조건을 고른 이유, 규칙 변경 전후의 탐지·오탐 결과를 연결해 답하세요.",
             "linked_item_ids": [CONCEPT_INFO["log-analysis"]["concept_id"]],
         },
         {
             "kicker": "기본기 검증",
             "question": "이 취약점은 코드에서 왜 생기나요?",
             "followups": ["같은 원인의 다른 사례를 들 수 있나요?"],
-            "point": "기준선 항목은 깊이보다 원인 설명을 봅니다. 취약 코드와 수정 코드 비교 한 장이면 됩니다.",
+            "point": "취약 코드와 수정 코드를 같은 위치에서 비교하고, 수정 방식을 고른 이유와 재현 테스트가 차단된 결과를 답하세요.",
             "linked_item_ids": [CONCEPT_INFO["secure-code-review"]["concept_id"]],
         },
         {
             "kicker": "태도 검증 · 자소서 연동",
             "question": "권한이 있는데 보면 안 되는 정보가 눈앞에 있다면요?",
             "followups": ["그 원칙을 지키기 어려웠던 경험이 있나요?"],
-            "point": "보안 직무 면접에서 반드시 나오는 축입니다. 원칙을 미리 문장으로 정리해 두세요.",
+            "point": "접근을 중단할 판단 기준, 보고 경로를 고른 이유, 정보 노출 없이 상황을 종료한 결과를 구체적으로 답하세요.",
             "linked_item_ids": [CONCEPT_INFO["security-ethics"]["concept_id"]],
         },
     ]

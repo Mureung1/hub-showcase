@@ -37,7 +37,7 @@ import json
 import re
 import sys
 from collections import Counter, defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -682,7 +682,7 @@ def deviation_reason(company: str, evidence: str) -> str:
     바꾼다. 인용 부호가 겹쳐 문장이 어디서 끊기는지 읽히지 않는 일을 막는다.
     """
     quoted = str(evidence).replace('"', "'").strip()
-    return f'{company} 공고가 "{quoted}" 를 요구합니다. 기업군 기준보다 앞당겨 준비합니다.'
+    return f'{company} 공고는 "{quoted}"라고 명시합니다. 기업군 기준보다 앞당겨 준비합니다.'
 
 
 def deviation_concepts(
@@ -1165,6 +1165,154 @@ def check_posting_scopes(
     return problems
 
 
+_QUOTE_PARTICLE_GAP = re.compile(r'["”’]\s+(?:은|는|이|가|을|를|과|와|로|으로|도|만)(?=\s|[.,!?]|$)')
+_TERM_PARTICLE_GAP = re.compile(
+    r'\b(?:API|README|Swift|React|Python|Java|Kotlin|Docker|Kubernetes)\s+'
+    r'(?:은|는|이|가|을|를|과|와|로|으로)(?=\s|[.,!?]|$)'
+)
+_PORTFOLIO_ACTION_WORDS = ("README", "비교", "전후", "재현", "테스트", "수치", "경로", "확인", "완료")
+_INTERVIEW_JUDGMENT_WORDS = ("선택", "이유", "판단", "결과", "비교", "확인", "먼저")
+_FILL_STOP_WORDS = {"기본", "심화", "경험", "항목", "역량", "프로젝트", "구현", "작성", "준비"}
+
+
+def _payload_texts(value: Any) -> Iterator[str]:
+    """중첩 payload에서 사용자에게 보이는 문자열을 순서대로 꺼낸다."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, Mapping):
+        for child in value.values():
+            yield from _payload_texts(child)
+    elif isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        for child in value:
+            yield from _payload_texts(child)
+
+
+def _filled_summary(summary: object) -> bool:
+    return (
+        isinstance(summary, Mapping)
+        and bool(str(summary.get("title", "")).strip())
+        and bool(str(summary.get("body", "")).strip())
+    )
+
+
+def _fill_matches_step(fill: Mapping[str, Any], step: Mapping[str, Any]) -> bool:
+    """채워짐 라벨의 구체어가 같은 단계 설명이나 산출물에 실제로 나타나는지 본다."""
+    label = str(fill.get("label", "")).strip()
+    haystack = " ".join(
+        str(step.get(field, "")) for field in ("title", "body", "deliverable")
+    ).casefold()
+    tokens = [
+        token.casefold()
+        for token in re.findall(r"[0-9A-Za-z가-힣]+", label)
+        if len(token) >= 2 and token not in _FILL_STOP_WORDS
+    ]
+    return bool(tokens) and any(token in haystack for token in tokens)
+
+
+def align_roadmap_fills(tables: Mapping[str, list[dict[str, Any]]]) -> None:
+    """로드맵의 ``채워짐`` 라벨을 같은 단계의 과제와 산출물에 명시한다.
+
+    기업군 편차 항목은 공통 로드맵 단계에 합성되므로 라벨과 단계 문장이 서로 다른
+    역량을 가리킬 수 있다. 이 경우 사용자가 해야 할 일과 확인 자료를 단계 안에
+    명시하고, 화면 payload와 정규화된 로드맵 행을 같은 내용으로 맞춘다.
+    """
+    normalized = {
+        (
+            str(row.get("scope_level")),
+            str(row.get("scope_id")),
+            int(row.get("step_order", 0)),
+        ): row
+        for row in tables.get("roadmap_items", ())
+    }
+    for output in tables.get("analysis_outputs", ()):
+        if output.get("output_type") != "roadmap":
+            continue
+        scope_level = str(output.get("scope_level"))
+        if scope_level not in {"overall", "cluster"}:
+            continue
+        scope_id = str(output.get("scope_id"))
+        payload = output.get("payload", {})
+        for step in payload.get("project_steps", ()):
+            unmatched = [
+                str(fill.get("label", "")).strip()
+                for fill in step.get("fills", ())
+                if str(fill.get("label", "")).strip()
+                and not _fill_matches_step(fill, step)
+            ]
+            if not unmatched:
+                continue
+            labels = " · ".join(dict.fromkeys(unmatched))
+            step["body"] = (
+                f'{str(step.get("body", "")).rstrip()} '
+                f"이 단계의 추가 완료 항목: {labels}."
+            ).strip()
+            step["deliverable"] = (
+                f'{str(step.get("deliverable", "")).rstrip()} + {labels} 확인 자료'
+            ).strip(" +")
+            row = normalized.get((scope_level, scope_id, int(step.get("n", 0))))
+            if row is not None:
+                row["body"] = step["body"]
+                row["deliverable"] = step["deliverable"]
+
+
+def check_content_quality(job: str, tables: Mapping[str, Sequence[Mapping[str, Any]]]) -> list[str]:
+    """공고 해석의 완전성과 전략·로드맵 문장의 실행 가능성을 검사한다."""
+    problems: list[str] = []
+    outputs = list(tables.get("analysis_outputs", ()))
+
+    for row in outputs:
+        output_type = str(row.get("output_type"))
+        scope_level = str(row.get("scope_level"))
+        payload = row.get("payload", {})
+        output_id = str(row.get("output_id"))
+
+        if output_type == "interpretation" and scope_level == "posting":
+            posting = payload.get("posting") if isinstance(payload, Mapping) else None
+            if not isinstance(posting, Mapping):
+                problems.append(f"{job}/{output_id}: posting 해석이 없다")
+                continue
+            if not _filled_summary(posting.get("summary")):
+                problems.append(f"{job}/{output_id}: summary 제목이나 본문이 비었다")
+            for field in ("baseline_notes", "interpretations", "signal_notes"):
+                notes = posting.get(field)
+                if not isinstance(notes, list) or not notes:
+                    problems.append(f"{job}/{output_id}: {field}가 비었다")
+
+        if output_type == "strategy" and scope_level in {"overall", "cluster"}:
+            portfolio = payload.get("portfolio", {}) if isinstance(payload, Mapping) else {}
+            for index, highlight in enumerate(portfolio.get("highlights", ()), 1):
+                tips = " ".join(str(item) for item in highlight.get("tips", ()))
+                if not any(word in tips for word in _PORTFOLIO_ACTION_WORDS):
+                    problems.append(
+                        f"{job}/{output_id}: 포트폴리오 {index}번 조언에 위치·비교·재현·완료 기준이 없다"
+                    )
+            for index, interview in enumerate(payload.get("interview", ()), 1):
+                if not interview.get("followups"):
+                    problems.append(f"{job}/{output_id}: 면접 {index}번 꼬리질문이 없다")
+                point = str(interview.get("point", ""))
+                if not any(word in point for word in _INTERVIEW_JUDGMENT_WORDS):
+                    problems.append(
+                        f"{job}/{output_id}: 면접 {index}번 답변 기준에 선택 이유·판단·결과가 없다"
+                    )
+
+        if output_type == "roadmap" and scope_level in {"overall", "cluster"}:
+            for step in payload.get("project_steps", ()):
+                for fill in step.get("fills", ()):
+                    if not _fill_matches_step(fill, step):
+                        problems.append(
+                            f"{job}/{output_id}/STEP {step.get('n')}: 채워짐 '{fill.get('label')}'이"
+                            " 단계 설명·산출물과 연결되지 않는다"
+                        )
+
+        for text in _payload_texts(payload):
+            if "전체 기준 기준" in text:
+                problems.append(f"{job}/{output_id}: '전체 기준 기준' 중복 표현이 있다")
+            if _QUOTE_PARTICLE_GAP.search(text) or _TERM_PARTICLE_GAP.search(text):
+                problems.append(f"{job}/{output_id}: 조사 앞 불필요한 공백이 있다: {text[:80]}")
+
+    return list(dict.fromkeys(problems))
+
+
 # ============================================================ 실행
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -1216,6 +1364,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         except MissingPart:
             skipped.append(part)
             continue
+        if part in JOB_PARTS:
+            align_roadmap_fills(parts[part])
         rows = sum(len(value) for value in parts[part].values())
         print(f"[읽음] {part:14s} {len(parts[part]):2d}개 표 · {rows:6d}행")
 
@@ -1249,6 +1399,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"       {line}")
         if len(derived_problems) > 20:
             print(f"       … 외 {len(derived_problems) - 20}건")
+        return EXIT_FAILED
+
+    content_problems: list[str] = []
+    for job in (part for part in order if part in JOB_PARTS and part in parts):
+        content_problems.extend(check_content_quality(job, parts[job]))
+    if content_problems:
+        print(f"\n[실패] 콘텐츠 품질 자기검사 {len(content_problems)}건")
+        for line in content_problems[:20]:
+            print(f"       {line}")
+        if len(content_problems) > 20:
+            print(f"       … 외 {len(content_problems) - 20}건")
         return EXIT_FAILED
 
     problems = find_duplicates(parts, order)
