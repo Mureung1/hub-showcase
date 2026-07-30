@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShowUp Demo Cards</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; color: #fff; font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; }
+  .card {
+    width: 1280px; height: 720px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    border-bottom: 2px solid #333;
+  }
+  .card h1 { font-size: 48px; font-weight: 700; line-height: 1.4; margin-bottom: 20px; }
+  .card h2 { font-size: 36px; font-weight: 600; line-height: 1.5; margin-bottom: 16px; }
+  .card p { font-size: 28px; font-weight: 400; line-height: 1.6; color: #ccc; }
+  .card .accent { color: #f59e0b; }
+  .card .red { color: #ef4444; }
+  .card .green { color: #22c55e; }
+  .card .blue { color: #3b82f6; }
+  .card .small { font-size: 22px; color: #888; margin-top: 24px; }
+
+  /* Card 1 — Problem definition 1 */
+  #card1 h1 { max-width: 900px; }
+
+  /* Card 2 — Problem definition 2 */
+  #card2 h1 { max-width: 900px; }
+  #card2 .gap { color: #ef4444; font-weight: 700; }
+
+  /* Card 3 — Title */
+  #card3 .logo { font-size: 72px; font-weight: 800; margin-bottom: 30px; letter-spacing: -2px; }
+  #card3 .tagline { font-size: 32px; color: #ccc; margin-bottom: 40px; }
+  #card3 .meta { font-size: 22px; color: #666; line-height: 1.8; }
+
+  /* Problem cards */
+  .problem-card { text-align: left; padding: 0 120px; }
+  .problem-card .label { font-size: 22px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px; }
+  .problem-card .content { font-size: 32px; line-height: 1.5; margin-bottom: 30px; }
+  .problem-card .solution-label { color: #22c55e; }
+  .problem-card .problem-label { color: #ef4444; }
+
+  /* Ending card */
+  #card-end .logo { font-size: 64px; font-weight: 800; margin-bottom: 20px; }
+  #card-end .tagline { font-size: 28px; color: #ccc; margin-bottom: 30px; }
+  #card-end .info { font-size: 22px; color: #888; line-height: 1.8; }
+  #card-end .roadmap { font-size: 20px; color: #555; margin-top: 30px; line-height: 1.8; }
+  #card-end .roadmap strong { color: #aaa; }
+</style>
+</head>
+<body>
+
+<!-- Card 1: Problem definition 1 (0:00~0:10) -->
+<div class="card" id="card1">
+  <h1>예약제 소상공인이<br>노쇼·폭언·분쟁 고객을<br>반복해서 겪는 피해.</h1>
+  <p>기록하고 확인할 수단이 없어<br>같은 피해가 계속됩니다.</p>
+</div>
+
+<!-- Card 2: Problem definition 2 (0:10~0:20) -->
+<div class="card" id="card2">
+  <h1>기존 예약 앱은<br>예약 접수에만 집중합니다.</h1>
+  <p class="gap">문제 고객 이력 관리?<br>사전 경고?<br>없습니다.</p>
+</div>
+
+<!-- Card 3: Title (0:20~0:35) -->
+<div class="card" id="card3">
+  <div class="logo">ShowUp</div>
+  <div class="tagline">노쇼·악성 고객 이력 관리 및 위험도 경고 웹서비스</div>
+  <div class="meta">
+    배포: showup-project.web.app<br>
+    개발: Hermes Agent + Ollama Pro 모델 4세션
+  </div>
+</div>
+
+<!-- Card 4: Problem — Spark (3:20~3:32) -->
+<div class="card problem-card" id="card-spark">
+  <div class="label problem-label">문제</div>
+  <div class="content">Firebase Spark 무료 요금제에서<br>Cloud Functions 배포 불가</div>
+  <div class="label solution-label">해결</div>
+  <div class="content">클라이언트 riskRefresh.ts로 위험도 갱신 대체<br>functions/ 이관 코드 보존<br><span class="small">(Blaze 업그레이드 시 전환)</span></div>
+</div>
+
+<!-- Card 5: Problem — Schedule (3:32~3:44) -->
+<div class="card problem-card" id="card-schedule">
+  <div class="label problem-label">문제</div>
+  <div class="content">마감 일정 7/30 → 7/28로<br>2일 앞당김</div>
+  <div class="label solution-label">해결</div>
+  <div class="content">16일차 작업 → 14일차로 압축<br>10~11일차 통합<br>13~16일차 → 13~14일차 재배치</div>
+</div>
+
+<!-- Card 6: Problem — Migration (3:44~3:55) -->
+<div class="card problem-card" id="card-migration">
+  <div class="label problem-label">문제</div>
+  <div class="content">기존 AI 도구 구독 만료<br>(Claude 구독 + Codex 정지)</div>
+  <div class="label solution-label">해결</div>
+  <div class="content">Ollama Pro 모델 4종으로 전면 이관<br>Hermes Agent 프레임워크 기반<br>4세션 역할 분리 개발</div>
+</div>
+
+<!-- Card 7: Problem — Sharing design decision (3:55~4:03) -->
+<div class="card problem-card" id="card-sharing">
+  <div class="label">설계 결정</div>
+  <div class="content">가게 간 자동 공유 → 블랙리스트 → 법적 리스크</div>
+  <div class="label solution-label">MVP</div>
+  <div class="content">가게 단위 격리</div>
+  <div class="label solution-label">Phase 2</div>
+  <div class="content">고객 동의 기반 신뢰 프로필<br><span class="small">(동의 있어야 타 가게 조회 가능)</span></div>
+</div>
+
+<!-- Card 8: Ending (4:38~4:50) -->
+<div class="card" id="card-end">
+  <div class="logo">ShowUp</div>
+  <div class="tagline">노쇼·악성 고객 이력 관리 및 위험도 경고</div>
+  <div class="info">
+    배포: https://showup-project.web.app<br>
+    개발: Hermes Agent + Ollama Pro 모델 4세션<br>
+    GitHub: N167_채민석
+  </div>
+  <div class="roadmap">
+    <strong>Phase 1.5</strong> — 월별 통계 차트<br>
+    <strong>Phase 2</strong> — 고객 동의 기반 신뢰 프로필 공유<br>
+    <strong>Phase 3</strong> — 예약금 결제 + 외부 예약 플랫폼 연동
+  </div>
+</div>
+
+</body>
+</html>

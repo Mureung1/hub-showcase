@@ -299,7 +299,7 @@
 ### 리드
 - [✅] 발표 자료 완성 — 12일차 outputs/weeks3/showup-week3-deck.pptx 15슬라이드
 - [✅] README 최종 갱신 — 배포 URL, 위험도 설계, 보안, 검증 결과, 로드맵, 데모 계정 추가
-- [✅] Agent·Skill·규칙 문서 사용 관계 시각 자료 — docs/agent-workflow.md
+- [✅] Agent·Skill·규칙 문서 사용 관계 시각 자료 — docs/final-summary.md §2
 - [✅] 재사용 가능한 워크플로우 문서 — docs/workflow.md
 - [✅] 체크리스트 12일차 갱신 (발표 완료 반영)
 - [ ] 데모 영상 시나리오 스크립트 작성 (5분 미만)

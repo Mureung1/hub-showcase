@@ -1,4 +1,6 @@
-# ShowUp LEAD Session (Hermes Agent 프레임워크 + Ollama Pro 모델)
+# ShowUp LEAD Session
+
+> 공통 규칙은 [sessions/_COMMON.md](_COMMON.md)를 참조.
 
 ## 역할
 
@@ -6,40 +8,7 @@ ShowUp 프로젝트의 기획, 구조, 일정, 통합, 검증, 문서, Git 상�
 LEAD는 직접 기능 구현을 많이 하기보다 FE, BE, 보안 세션이 같은 목표와
 같은 인터페이스 위에서 충돌 없이 작업하도록 조율한다.
 
-## 환경
-
-- **AI 에이전트 프레임워크**: Hermes Agent (by Nous Research) + Ollama Pro 모델
 - **모델**: GLM 5.2 (Ollama 연결)
-- **운영 방식**: 같은 default 프로필에서 채팅 세션 4개(리드/프론트엔드/백엔드/보안)를 열어 역할별로 운영
-- 기존 Conductor 기반 세션 구조는 Claude 구독 만료 + Codex 정지로 인해 Hermes Agent 프레임워크 + Ollama Pro 모델로 이관
-- 세션별 모델: LEAD·GLM 5.2 / FE·Qwen 3.5 / BE·Kimi K2.7 Code / 보안·GLM 5.2 (2026-07-14 변경, 기존 GPT-OSS 120B → GLM 5.2, 지능 이슈)
-
-## 공통 프로젝트 맥락
-
-- 서비스: 소상공인을 위한 노쇼·악성 고객 이력 관리 및 위험도 경고 웹서비스
-- 기간: 2026-07-07 ~ 2026-07-29 (기능 마감 7/28, 영상·PR 제출 7/29)
-- 프론트엔드: Vite + React + TypeScript + Tailwind CSS
-- 백엔드: Firebase Auth, Firestore, Cloud Functions, Hosting
-- 핵심 MVP:
-  - 고객 이벤트 기록: 방문, 노쇼, 취소, 사건 기록
-  - 위험도 조회 + 자동 경고: 전화 뒤 4자리/이름 검색, 위험도 3등급, 경고 배너
-
-## Git 규칙
-
-- 실제 작업 브랜치는 `N167_채민석` 단일 브랜치다.
-- `main`에서 작업하지 않는다.
-- 원본 repo의 `main`으로 PR을 보내지 않는다.
-- PR 방향은 `Min0504/hub:N167_채민석` -> `connect-AIAgentChallenge-26-1/hub:N167_채민석`이다.
-- Hermes Agent 프레임워크 + Ollama Pro 모델 세션은 git 브랜치 분리가 아니라 역할 분리로 사용한다.
-- 임의로 feature 브랜치를 만들지 않는다.
-- **커밋은 각 세션에서 하나의 작업(기능 구현, 버그 수정 등)이 끝날 때마다 자동으로 수행** — push와 PR은 사용자가 명시적으로 지시할 때만 실행
-- **커밋 메시지 규칙**: 세션별 접두어를 사용한다
-  - 프론트엔드 세션: `FE-<작업내용>` (예: `FE-고객 검색바 컴포넌트 추가`)
-  - 백엔드 세션: `BE-<작업내용>` (예: `BE-types/schema.ts 확정`)
-  - 보안 세션: `SEC-<작업내용>` (예: `SEC-Firestore Security Rules 초안`)
-  - 리드 세션: `LEAD-<작업내용>` (예: `LEAD-plan.md 일정 수정`)
-- merge, branch delete는 사용자가 명시적으로 요청한 경우에만 진행한다.
-- `.omc/`, `.DS_Store`, `node_modules/`, `dist/`, `.env`는 커밋하지 않는다.
 
 ## 담당 영역
 
@@ -103,19 +72,3 @@ LEAD는 직접 기능 구현을 많이 하기보다 FE, BE, 보안 세션이 같
 - `.omc/`, `.DS_Store`, `node_modules/`, `dist/`, `.env`가 커밋 대상에 없다.
 - 핵심 시나리오 A가 수동으로 통과한다.
 - 빌드가 통과한다.
-
-## 보고 형식
-
-모든 작업 완료 보고는 아래 형식을 그대로 사용한다:
-
-```
-오늘 날짜 - 몇번째 작업(작업내용)
-한것 -
-막힌 점 -
-검증 -
-관리자가 할것 -
-참고 -
-```
-
-- "참고"는 이번 작업에서 공부가 될 만한 개념·패턴 1~2개. 없으면 생략.
-- 막힌 점·관리자가 할것 없으면 "없음".
