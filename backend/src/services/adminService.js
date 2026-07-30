@@ -39,3 +39,22 @@ export async function setLetterMatchable(id, isMatchable) {
     select: { id: true, isMatchable: true, riskFlag: true },
   })
 }
+
+// 스쳐 가기(dismissed) 시 남긴 피드백 목록. authorId는 어느 관계에서도 select하지 않는다 —
+// "누가 이 피드백을 남겼는지"는 익명성 원칙상 관리자도 알 수 없어야 한다.
+export async function listFeedbackEntries() {
+  return prisma.match.findMany({
+    where: {
+      status: 'dismissed',
+      OR: [{ feedbackReason: { not: null } }, { feedbackText: { not: null } }],
+    },
+    select: {
+      id: true,
+      feedbackReason: true,
+      feedbackText: true,
+      updatedAt: true,
+      matchedLetter: { select: { id: true, primaryEmotion: true } },
+    },
+    orderBy: { updatedAt: 'desc' },
+  })
+}

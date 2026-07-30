@@ -107,10 +107,15 @@ export async function listMatchesForAuthor(authorId) {
   })
 }
 
-export async function setStatus(matchId, status) {
+export async function setStatus(matchId, status, feedback = {}) {
   return prisma.match.update({
     where: { id: matchId },
-    data: { status, ...(status === 'opened' ? { openedAt: new Date() } : {}) },
+    data: {
+      status,
+      ...(status === 'opened' ? { openedAt: new Date() } : {}),
+      ...(feedback.reason !== undefined ? { feedbackReason: feedback.reason } : {}),
+      ...(feedback.text !== undefined ? { feedbackText: feedback.text } : {}),
+    },
     include: { matchedLetter: { select: MATCHED_LETTER_SELECT } },
   })
 }

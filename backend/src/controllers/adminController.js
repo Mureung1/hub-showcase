@@ -1,6 +1,11 @@
 // /api/admin 라우트의 요청/응답 처리. requireAuth + requireAdmin을 거친 뒤에만 도달한다.
 import { setMatchableSchema } from '../schemas/adminSchema.js'
-import { listFailedOrStaleTagging, getLetterTaggingInfo, setLetterMatchable } from '../services/adminService.js'
+import {
+  listFailedOrStaleTagging,
+  getLetterTaggingInfo,
+  setLetterMatchable,
+  listFeedbackEntries,
+} from '../services/adminService.js'
 import { reprocessTagging } from '../services/taggingService.js'
 import { MAX_TAGGING_ATTEMPTS } from '../config/matchingConfig.js'
 
@@ -37,6 +42,14 @@ export async function setMatchable(req, res, next) {
       return res.status(404).json({ error: '편지를 찾을 수 없어요.' })
     }
     res.json(await setLetterMatchable(req.params.id, is_matchable))
+  } catch (err) {
+    next(err)
+  }
+}
+
+export async function listFeedback(req, res, next) {
+  try {
+    res.json(await listFeedbackEntries())
   } catch (err) {
     next(err)
   }
