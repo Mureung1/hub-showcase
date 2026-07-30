@@ -176,6 +176,22 @@ export function AppStateProvider({ children }) {
       await supabase.auth.signOut()
       navigate('/')
     },
+    // 비밀번호 재설정 메일 요청 — Supabase가 발송·토큰 검증을 전담한다. 메일의 링크를 클릭하면
+    // redirectTo로 지정한 /reset-password로 돌아오고, 그때 Supabase가 임시 복구 세션을 심어준다.
+    requestPasswordReset: async (email) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+      if (error) return { error: error.message }
+      return {}
+    },
+    // /reset-password 화면에서 새 비밀번호 저장. 메일 링크로 들어온 복구 세션이 있어야 성공한다.
+    updatePassword: async (newPassword) => {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) return { error: error.message }
+      navigate('/main')
+      return {}
+    },
 
     setTitle: (value) => dispatch({ type: 'SET_TITLE', value }),
     setLetter: (value) => dispatch({ type: 'SET_LETTER', value }),

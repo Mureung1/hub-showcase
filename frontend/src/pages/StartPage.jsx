@@ -32,7 +32,7 @@ function useTypewriter(text, speedMs, enabled = true) {
 export default function StartPage() {
   const { actions } = useAppState()
   const wordmark = useTypewriter(WORDMARK, 90)
-  const [mode, setMode] = useState('login') // 'login' | 'signup'
+  const [mode, setMode] = useState('login') // 'login' | 'signup' | 'reset'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -41,6 +41,18 @@ export default function StartPage() {
 
   const switchMode = () => {
     setMode((m) => (m === 'login' ? 'signup' : 'login'))
+    setError('')
+    setInfo('')
+  }
+
+  const openReset = () => {
+    setMode('reset')
+    setError('')
+    setInfo('')
+  }
+
+  const backToLogin = () => {
+    setMode('login')
     setError('')
     setInfo('')
   }
@@ -55,6 +67,19 @@ export default function StartPage() {
       setError('올바른 이메일 형식을 입력해주세요.')
       return
     }
+
+    if (mode === 'reset') {
+      setSubmitting(true)
+      const result = await actions.requestPasswordReset(email)
+      setSubmitting(false)
+      if (result.error) {
+        setError(result.error)
+        return
+      }
+      setInfo('재설정 메일을 보냈어요. 메일함을 확인해주세요.')
+      return
+    }
+
     if (!validatePassword(password)) {
       setError('비밀번호는 6자 이상이어야 해요.')
       return
@@ -100,30 +125,45 @@ export default function StartPage() {
             autoComplete="email"
             required
           />
-          <input
-            className={styles.input}
-            type="password"
-            placeholder="비밀번호 (6자 이상)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            minLength={6}
-            required
-          />
+          {mode !== 'reset' && (
+            <input
+              className={styles.input}
+              type="password"
+              placeholder="비밀번호 (6자 이상)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              minLength={6}
+              required
+            />
+          )}
 
           {error && <p className={styles.formError}>{error}</p>}
           {info && <p className={styles.formInfo}>{info}</p>}
 
           <div className={styles.actions}>
             <button type="submit" className={styles.btnPrimary} disabled={submitting}>
-              {mode === 'login' ? '로그인' : '회원가입'}
+              {mode === 'login' ? '로그인' : mode === 'signup' ? '회원가입' : '재설정 메일 보내기'}
             </button>
           </div>
         </form>
 
-        <button type="button" className={styles.switchMode} onClick={switchMode}>
-          {mode === 'login' ? '계정이 없나요? 회원가입' : '이미 계정이 있나요? 로그인'}
-        </button>
+        {mode === 'reset' ? (
+          <button type="button" className={styles.switchMode} onClick={backToLogin}>
+            로그인으로 돌아가기
+          </button>
+        ) : (
+          <>
+            <button type="button" className={styles.switchMode} onClick={switchMode}>
+              {mode === 'login' ? '계정이 없나요? 회원가입' : '이미 계정이 있나요? 로그인'}
+            </button>
+            {mode === 'login' && (
+              <button type="button" className={styles.switchMode} onClick={openReset}>
+                비밀번호를 잊으셨나요?
+              </button>
+            )}
+          </>
+        )}
 
         <p className={styles.caption}>Est. 2024 · Crafted for focus</p>
       </article>

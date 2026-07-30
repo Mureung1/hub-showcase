@@ -11,7 +11,7 @@ import styles from './AppLayout.module.css'
 export default function AppLayout() {
   const { state } = useAppState()
   const { pathname } = useLocation()
-  const showSidebar = pathname !== '/'
+  const showSidebar = pathname !== '/' && pathname !== '/reset-password'
   const showCountdown = pathname === '/main' || pathname === '/sent'
 
   return (

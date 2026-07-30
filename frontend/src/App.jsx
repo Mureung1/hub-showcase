@@ -3,6 +3,7 @@ import { AppStateProvider } from './state/AppStateContext'
 import { useAppState } from './state/useAppState'
 import AppLayout from './components/layout/AppLayout'
 import StartPage from './pages/StartPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 import MainPage from './pages/MainPage'
 import SentPage from './pages/SentPage'
 import RecommendPage from './pages/RecommendPage'
@@ -23,6 +24,7 @@ function AppRoutes() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<StartPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/main" element={<RequireAuth><MainPage /></RequireAuth>} />
         <Route path="/sent" element={<RequireAuth><SentPage /></RequireAuth>} />
         <Route path="/recommend" element={<RequireAuth><RecommendPage /></RequireAuth>} />
