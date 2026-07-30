@@ -6,6 +6,8 @@ import type { MarketStore } from "../../market/types";
 import {
   createStoreFeatureCollection,
   STORE_CATEGORY_ICON_LAYER_ID,
+  STORE_CLUSTER_CIRCLE_LAYER_ID,
+  STORE_CLUSTER_COUNT_LAYER_ID,
   STORE_POINT_HIT_LAYER_ID,
   STORE_POINT_LAYER_ID,
   STORE_POINT_SOURCE_ID,
@@ -42,7 +44,32 @@ const STORE_COLOR_EXPRESSION: ExpressionSpecification = [
 ];
 
 const NO_SELECTED_STORE = "__localtwin-no-selected-store__";
-const STORE_ICON_MIN_ZOOM = 15.55;
+const STORE_ICON_MIN_ZOOM = 15.25;
+const UNCLUSTERED_STORE_FILTER: ExpressionSpecification = ["!", ["has", "point_count"]];
+
+const CLUSTER_COLOR_EXPRESSION: ExpressionSpecification = [
+  "step",
+  ["get", "point_count"],
+  "#dff4ea",
+  20,
+  "#8ed4b2",
+  60,
+  "#3b9d73",
+  180,
+  "#17664c",
+];
+
+const CLUSTER_RADIUS_EXPRESSION: ExpressionSpecification = [
+  "step",
+  ["get", "point_count"],
+  13,
+  20,
+  17,
+  60,
+  21,
+  180,
+  27,
+];
 
 type StorePointLayersProps = {
   stores: MarketStore[];
@@ -70,77 +97,127 @@ export function StorePointLayers({
       id={STORE_POINT_SOURCE_ID}
       type="geojson"
       data={data}
+      cluster
+      clusterMaxZoom={15}
+      clusterRadius={46}
+      clusterMinPoints={3}
       maxzoom={18}
       buffer={64}
     >
       <Layer
+        id={STORE_CLUSTER_CIRCLE_LAYER_ID}
+        type="circle"
+        filter={["has", "point_count"]}
+        maxzoom={15.25}
+        paint={{
+          "circle-color": CLUSTER_COLOR_EXPRESSION,
+          "circle-radius": CLUSTER_RADIUS_EXPRESSION,
+          "circle-opacity": 0.94,
+          "circle-stroke-color": "rgba(255, 255, 255, 0.96)",
+          "circle-stroke-width": 2.4,
+        }}
+      />
+      <Layer
+        id={STORE_CLUSTER_COUNT_LAYER_ID}
+        type="symbol"
+        filter={["has", "point_count"]}
+        maxzoom={15.25}
+        layout={{
+          "text-field": ["get", "point_count_abbreviated"],
+          "text-size": 12,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true,
+        }}
+        paint={{
+          "text-color": [
+            "step",
+            ["get", "point_count"],
+            "#164a38",
+            60,
+            "#ffffff",
+          ],
+          "text-halo-color": "rgba(255, 255, 255, 0.5)",
+          "text-halo-width": 0.6,
+        }}
+      />
+      <Layer
         id={STORE_POINT_LAYER_ID}
         type="circle"
+        filter={UNCLUSTERED_STORE_FILTER}
         paint={{
           "circle-color": STORE_COLOR_EXPRESSION,
           "circle-radius": densityMode
-            ? ["interpolate", ["linear"], ["zoom"], 13, 2.4, 15.5, 3.8, 17.5, 4.8]
-            : ["interpolate", ["linear"], ["zoom"], 13, 3.2, 15.5, 4.8, 17.5, 5.8],
+            ? ["interpolate", ["linear"], ["zoom"], 13, 2.8, 15.5, 4.1, 17.5, 5]
+            : ["interpolate", ["linear"], ["zoom"], 13, 3.4, 15.5, 5, 17.5, 6],
           "circle-opacity": hasFocusedStore
-            ? 0.24
+            ? 0.5
             : densityMode
               ? [
                   "interpolate",
                   ["linear"],
                   ["zoom"],
                   13,
-                  0.42,
-                  15.4,
-                  0.68,
+                  0.48,
+                  15.15,
+                  0.72,
                   STORE_ICON_MIN_ZOOM,
-                  0.28,
+                  0.34,
                   17.5,
-                  0.12,
+                  0.14,
                 ]
               : [
                   "interpolate",
                   ["linear"],
                   ["zoom"],
                   13,
-                  0.72,
+                  0.78,
                   STORE_ICON_MIN_ZOOM,
-                  0.26,
+                  0.32,
                   17.5,
-                  0.1,
+                  0.12,
                 ],
-          "circle-stroke-color": "rgba(255, 255, 255, 0.92)",
-          "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 13, 0.6, 17, 1.2],
-          "circle-blur": densityMode ? 0.08 : 0,
+          "circle-stroke-color": "rgba(255, 255, 255, 0.94)",
+          "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 13, 0.8, 17, 1.4],
+          "circle-blur": densityMode ? 0.06 : 0,
         }}
       />
       <Layer
         id={STORE_SELECTED_HALO_LAYER_ID}
         type="circle"
-        filter={["==", ["get", "featureId"], selectedFeatureId]}
+        filter={[
+          "all",
+          UNCLUSTERED_STORE_FILTER,
+          ["==", ["get", "featureId"], selectedFeatureId],
+        ]}
         paint={{
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 11, 17, 17],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 12, 17, 18],
           "circle-color": STORE_COLOR_EXPRESSION,
-          "circle-opacity": 0.2,
-          "circle-stroke-color": "rgba(255, 255, 255, 0.96)",
-          "circle-stroke-width": 2,
-          "circle-blur": 0.25,
+          "circle-opacity": 0.28,
+          "circle-stroke-color": "rgba(255, 255, 255, 0.98)",
+          "circle-stroke-width": 2.5,
+          "circle-blur": 0.22,
         }}
       />
       <Layer
         id={STORE_SELECTED_POINT_LAYER_ID}
         type="circle"
-        filter={["==", ["get", "featureId"], selectedFeatureId]}
+        filter={[
+          "all",
+          UNCLUSTERED_STORE_FILTER,
+          ["==", ["get", "featureId"], selectedFeatureId],
+        ]}
         paint={{
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 7.5, 17, 11.5],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 8, 17, 12],
           "circle-color": STORE_COLOR_EXPRESSION,
-          "circle-opacity": 0.94,
+          "circle-opacity": 0.98,
           "circle-stroke-color": "#ffffff",
-          "circle-stroke-width": 3,
+          "circle-stroke-width": 3.2,
         }}
       />
       <Layer
         id={STORE_CATEGORY_ICON_LAYER_ID}
         type="symbol"
+        filter={UNCLUSTERED_STORE_FILTER}
         minzoom={STORE_ICON_MIN_ZOOM}
         layout={{
           "icon-image": STORE_CATEGORY_ICON_IMAGE_EXPRESSION,
@@ -162,15 +239,16 @@ export function StorePointLayers({
         }}
         paint={{
           "icon-opacity": hasFocusedStore
-            ? 0.46
-            : ["interpolate", ["linear"], ["zoom"], STORE_ICON_MIN_ZOOM, 0.86, 17, 1],
+            ? 0.78
+            : ["interpolate", ["linear"], ["zoom"], STORE_ICON_MIN_ZOOM, 0.9, 17, 1],
         }}
       />
       <Layer
         id={STORE_POINT_HIT_LAYER_ID}
         type="circle"
+        filter={UNCLUSTERED_STORE_FILTER}
         paint={{
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 9, 17, 14],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 10, 17, 15],
           "circle-color": "#000000",
           "circle-opacity": 0.01,
         }}
