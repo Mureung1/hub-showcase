@@ -6,7 +6,8 @@
   "demoUrl": "https://fridge-recipe-app-gl2n.onrender.com/",
   "videoUrl": "",
   "sourceUrl": "https://github.com/baejh3333-del/hub",
-  "introUrl": "https://github.com/baejh3333-del/hub/blob/final/docs/product.md",
+  "intro": "intro.md",
+  "introSlides": "intro-slides.pptx",
   "links": [
     {
       "type": "demo",
@@ -29,8 +30,14 @@
     {
       "type": "intro",
       "label": "프로젝트 소개 자료",
-      "url": "https://github.com/baejh3333-del/hub/blob/final/docs/product.md",
-      "note": "페르소나·문제정의·MVP 범위·화면별 기능을 정리한 제품 명세입니다."
+      "url": "intro.md",
+      "note": "3주간 AI와 어떤 순서로 일했는지(계획→검증→구현→리뷰→문서화) 정리한 문서. thumbnail·screenshots와 같이 showcase.json 기준 상대 경로입니다."
+    },
+    {
+      "type": "slides",
+      "label": "발표 자료",
+      "url": "intro-slides.pptx",
+      "note": "위 문서를 발표용으로 정리한 슬라이드입니다."
     }
   ],
   "thumbnail": "thumbnail.webp",
