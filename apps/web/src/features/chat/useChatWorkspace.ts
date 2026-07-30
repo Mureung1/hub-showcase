@@ -469,6 +469,9 @@ export function useChatWorkspace() {
         // SourceAnswer 스냅샷도 함께 복원한다(새로고침·재진입, SPEC-AI-001 4장).
         // 조회 실패한 Question은 빈 배열로 두고 나머지 복원을 막지 않는다.
         const answersByQuestion = new Map<string, SourceAnswer[]>();
+        // §12.3 — Agenda 스냅샷도 함께 복원한다. 이것이 없으면 새로고침 후 3열 비교와
+        // 충돌 목록이 사라지고, 사용자는 판단할 대상을 잃는다.
+        const agendasByQuestion = new Map<string, Agenda[]>();
         await Promise.all(
           stored.flatMap(({ chat, questions }) =>
             questions.map(async (question) => {
@@ -480,6 +483,17 @@ export function useChatWorkspace() {
               } catch (error) {
                 console.error(
                   "[apiStorage] SourceAnswer 복원 실패:",
+                  error instanceof Error ? error.message : error,
+                );
+              }
+              try {
+                agendasByQuestion.set(
+                  question.id,
+                  await loadAgendas(chat.id, question.id),
+                );
+              } catch (error) {
+                console.error(
+                  "[apiStorage] Agenda 복원 실패:",
                   error instanceof Error ? error.message : error,
                 );
               }
@@ -497,6 +511,7 @@ export function useChatWorkspace() {
                 ...question,
                 sourceAnswers:
                   answersByQuestion.get(question.id) ?? question.sourceAnswers,
+                agendas: agendasByQuestion.get(question.id) ?? question.agendas,
               })),
             };
           }),
@@ -1015,6 +1030,7 @@ export function useChatWorkspace() {
     questionId: string,
     next: Agenda[] | ((prev: Agenda[]) => Agenda[]),
   ) {
+    let completes = false;
     setState((prev) => {
       let createdNote: DecisionNote | null = null;
       const chats = prev.chats.map((chat) => {
@@ -1051,6 +1067,7 @@ export function useChatWorkspace() {
             }
 
             // 전부 마감됨 → FinalAnswer·DecisionNote 생성 후 완료(여전히 브라우저 Mock).
+            completes = true;
             const settledQuestion = { ...question, agendas };
             const finalAnswer = buildMockFinalAnswer(
               agendas,
@@ -1083,6 +1100,18 @@ export function useChatWorkspace() {
           : prev.decisionNotes,
       };
     });
+
+    // §12.1 — 완료를 **서버에도 영속화한다.** 화면만 completed로 두면 새로고침 시
+    // review_required로 되돌아오고 미완료 1개 제약도 풀리지 않는다.
+    // 사용자 행동이 아니라 **Agenda 집합 갱신**에 매달아야 충돌 0건 경로도 함께 뚫린다.
+    if (completes && serverBacked) {
+      void markQuestionCompleted(chatId, questionId).catch((error) =>
+        console.error(
+          "[apiStorage] Question 완료 영속화 실패:",
+          error instanceof Error ? error.message : error,
+        ),
+      );
+    }
   }
 
   /**
