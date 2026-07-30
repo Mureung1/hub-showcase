@@ -736,5 +736,24 @@
     - ⚠️ **정리 범위 밖으로 남은 것 9건**: `processing` 8 · `review_required` 1 (2026-07-23~30 부산물). 지시 대상이 아니라 건드리지 않았다
   - ⚠️ **`v1`을 제자리 수정했다** — 지시대로 버전을 올리지 않았으므로, 이미 저장된 `prompt_version="v1"` 행들은 **금지 지시가 없던 시점의 출력**이다. 프롬프트 버전으로는 둘을 구분할 수 없다
   - **검증**: 루트 typecheck·lint(web만)·build 통과
-- 이후: 폐기 인용 차이 축적 후 §11.2 개정 판단 · G 통제 재측정(effort:low) · AC2(단계 3b) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **T-021 구현·검증 완료 (2026-07-31, 커밋 대기)** — SPEC-EXPORT-001. Story 4-3(노트 Zip)·4-4(전체 대화 MD). **3사 0회 · Manager 0회 · 서버 변경 0건**
+  - **구성** — `exportMarkdown.ts`(순수: MD·파일명) / `buildZip.ts`(JSZip) / `downloadBlob.ts`(DOM) 3분할. 검증 스크립트가 MD 함수만 불러도 jszip이 딸려오지 않도록 **파일로 나눴다**(동적 import보다 명확). 검증 코드는 `apps/web/scripts/`에 둬 빌드 그래프에서 뺐다
+  - **`buildFullMarkdown(chat, notes, exportedAt)`** — DecisionNote는 `question_id`만 갖고 Chat에 매달려 있지 않아(`domain-policy` §6) **별도 배열로 받아 잇는다.** `chat`만 받으면 전체 MD에서 결정 기록이 통째로 빠진다
+  - **`safeFileName`이 `usedNames`를 스스로 변이시킨다** — 호출자에게 `add`를 맡기면 한 번 빠뜨렸을 때 **Zip에서 앞 파일이 조용히 덮어써진다.** 순수성보다 사고 방지를 택했고 JSDoc에 명시했다
+  - **Chat 제목도 정규화한다** — 사용자 입력이라 `/`·`:`가 들어가면 다운로드 파일명이 깨진다(§7). 정규화(2~4단계)를 내부 헬퍼로 공유하고 중복 번호(5단계)는 Zip 엔트리에만 건다. 빈 제목 대체어는 `chat`
+  - **비활성은 데이터 유무로만 판단한다**(§4.2) — Zip은 노트 0건, 전체 MD는 Question 0건. `chat.status`를 보지 않는다
+  - **E-1 순수 함수 35/35 PASS** (`npx tsx apps/web/scripts/exportCheck.ts`, 브라우저 없이)
+    - ⚠️ **첫 실행에서 중복 테스트 3건이 FAIL했는데 코드가 아니라 테스트 입력이 틀렸다.** 세 질문의 앞 30자가 실제로는 달라 **중복 상황 자체가 만들어지지 않았다** — `-3`과 Zip 엔트리 중복이 검증 안 된 채 통과할 뻔했다. 입력을 앞 30자가 같은 것으로 고쳐 `-2`·`-3`을 실제로 확인했다
+  - **E-2 브라우저 (3사 0회, 기존 Chat만 사용)**
+
+    | 확인 | 결과 |
+    |---|---|
+    | Zip 다운로드 → **실제 압축 해제** | ✅ `01_…`·`02_…` 2건, §2.2 형식·본문 일치 |
+    | 전체 MD | ✅ 질문 2건이 화면과 같은 순서, 최종 답변+결정 기록 |
+    | 미완료 Chat(§3.3) | ✅ 건너뛰지 않고 "아직 진행 중입니다", 빈 헤더 없음 |
+    | 비활성 분기(AC5) | ✅ 같은 Chat에서 **Zip 비활성 · 전체 MD 활성**으로 갈렸다 |
+    | `?scenario=` 회귀 | ✅ Mock 흐름·노트·헤더 정상, Mock 데이터로도 Zip 생성 |
+  - ⚠️ **macOS 기본 `unzip`(Info-ZIP 6.00)에서 한글 엔트리명이 깨진다.** Zip 자체는 정상이다 — **UTF-8 플래그(bit 11)가 켜져 있고** Finder 엔진(`ditto`)·Python `zipfile`은 올바로 읽는다. 구식 CLI가 플래그를 무시하는 알려진 문제이며 생성 측에서 고칠 여지가 없다
+  - **검증**: 루트 typecheck·lint·build 통과
+- 이후: T-021 커밋 · 폐기 인용 차이 축적 후 §11.2 개정 판단 · G 통제 재측정(effort:low) · AC2(단계 3b). BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정
