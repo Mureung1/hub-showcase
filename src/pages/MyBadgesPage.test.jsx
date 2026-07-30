@@ -5,6 +5,7 @@ import MyBadgesPage from './MyBadgesPage.jsx'
 import { useUser } from '../context/UserContext.jsx'
 import { getLevelState, getMealsByDateRange, getQuestClaimStats, getUnlockedBadgeIds, unlockBadge } from '../lib/dataStore.js'
 import { playConfetti } from '../lib/confetti.js'
+import { toDateKey } from '../lib/records.js'
 
 vi.mock('../context/UserContext.jsx', () => ({ useUser: vi.fn() }))
 vi.mock('../lib/dataStore.js', () => ({
@@ -28,6 +29,15 @@ function mockDefaults() {
   getQuestClaimStats.mockResolvedValue({ totalCount: 0, countsByQuestId: {} })
   getUnlockedBadgeIds.mockResolvedValue([])
   unlockBadge.mockImplementation((badgeId) => Promise.resolve({ alreadyUnlocked: false, unlockedIds: [badgeId] }))
+}
+
+// 연속 기록(calcStreak)은 **오늘부터 거꾸로** 센다 — 날짜를 고정해 적어두면 하루만 지나도 그 날짜가
+// 더 이상 "어제·그저께"가 아니게 되어 테스트가 저절로 깨진다(실제로 '2026-07-29/28/27'로 박아둔
+// 탓에 날이 바뀌며 깨졌다). 컴포넌트와 같은 toDateKey를 써서 항상 오늘 기준 상대 날짜를 만든다.
+function dateKeyDaysAgo(n) {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return toDateKey(d)
 }
 
 function renderPage() {
@@ -54,7 +64,12 @@ describe('MyBadgesPage', () => {
   })
 
   it('마운트 시 새로 조건을 만족한 뱃지는 잠금해제 + 컨페티를 트리거한다', async () => {
-    getMealsByDateRange.mockResolvedValue({ '2026-07-29': [{ id: 'm1' }], '2026-07-28': [{ id: 'm2' }], '2026-07-27': [{ id: 'm3' }] })
+    // 어제·그저께·그끄저께 3일 연속 — 오늘은 아직 기록 전인 상태(streak.js가 어제부터 세는 분기)
+    getMealsByDateRange.mockResolvedValue({
+      [dateKeyDaysAgo(1)]: [{ id: 'm1' }],
+      [dateKeyDaysAgo(2)]: [{ id: 'm2' }],
+      [dateKeyDaysAgo(3)]: [{ id: 'm3' }],
+    })
     renderPage()
 
     await waitFor(() => expect(unlockBadge).toHaveBeenCalledWith('streak-3'))

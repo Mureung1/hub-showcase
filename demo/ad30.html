@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Mealyze — 30초 소개 영상</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+/* ============================================================================
+   Mealyze 데모데이 30초 소개 영상 (기획: 광고영상-기획.md)
+
+   ⚠️ 이 파일은 앱 코드가 아니다. 발표용 재현 화면이다.
+   색·간격·둥근 정도는 src/styles/theme.js 값을 그대로 옮겨 적었고 아래 :root 한 곳에 모여 있다 —
+   theme.js가 바뀌면 여기 변수만 맞추면 전체가 따라온다.
+
+   타임라인은 CSS 애니메이션이 아니라 JS가 매 프레임 t(초)로부터 모든 값을 계산한다.
+   이유: 녹화 중 브라우저가 프레임을 건너뛰어도 화면이 어긋나지 않고, 아무 시점으로나
+   되감을 수 있다(← → 키). CSS 애니메이션은 둘 다 보장 못 한다.
+   ========================================================================== */
+:root{
+  /* theme.js colors */
+  --primary:#059669; --primary-dark:#047857; --primary-surface:#E3F5EC;
+  --deficient:#FF9F1C; --deficient-surface:#FFF4E5; --deficient-text:#C2410C;
+  --danger:#F04452; --info:#3182F6; --info-surface:#EAF2FE;
+  --bg:#F2F4F6; --surface:#FFFFFF;
+  --text-strong:#191F28; --text-sub:#4E5968; --muted:#64707D;
+  --brand-ink:#15566B; --border:#E5E8EB; --track:#F2F4F6;
+  /* theme.js radius / shadow */
+  --r-sm:12px; --r-md:16px; --r-lg:20px; --r-pill:999px;
+  --sh-card:0 2px 12px rgba(25,31,40,.06);
+  --font:-apple-system,BlinkMacSystemFont,'Pretendard','Apple SD Gothic Neo','Segoe UI','Malgun Gothic',Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#0E1116}
+body{font-family:var(--font);-webkit-font-smoothing:antialiased}
+
+/* ---------- 무대 (1920x1080 고정, 화면 크기에 맞춰 축소) ---------- */
+#stage{
+  position:absolute; left:50%; top:50%; width:1920px; height:1080px;
+  transform-origin:50% 50%;
+  background:
+    radial-gradient(1100px 800px at 82% 18%, #DFF3E9 0%, rgba(223,243,233,0) 62%),
+    radial-gradient(900px 700px at 10% 88%, #E6EDF4 0%, rgba(230,237,244,0) 60%),
+    #F7F9FA;
+  overflow:hidden;
+}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5}
+#blob1{width:620px;height:620px;background:#9FE3C6;left:1180px;top:-160px}
+#blob2{width:520px;height:520px;background:#BFD8EC;left:-140px;top:660px}
+
+/* ---------- 왼쪽 자막 ---------- */
+#caption{position:absolute;left:132px;top:0;width:930px;height:1080px;
+  display:flex;flex-direction:column;justify-content:center;gap:26px}
+#step{display:inline-flex;align-items:center;gap:12px;align-self:flex-start;
+  background:var(--primary-surface);color:var(--primary-dark);
+  font-size:26px;font-weight:800;letter-spacing:-.01em;
+  padding:12px 24px;border-radius:var(--r-pill)}
+/* word-break:keep-all — 없으면 한글이 단어 중간에서 잘린다("계산" → "계 / 산") */
+#head{font-size:70px;font-weight:800;line-height:1.24;letter-spacing:-.035em;
+  color:var(--text-strong);word-break:keep-all}
+#head .hl{color:var(--primary)}
+#sub{font-size:32px;font-weight:500;line-height:1.5;letter-spacing:-.02em;
+  color:var(--text-sub);word-break:keep-all}
+
+/* 왼쪽 아래 상시 로고 */
+#brandmark{position:absolute;left:132px;bottom:78px;display:flex;align-items:center;gap:14px}
+#brandmark img{height:44px;display:block}
+#brandmark span{font-size:34px;font-weight:800;letter-spacing:-.02em;color:var(--brand-ink)}
+
+/* ---------- 폰 ---------- */
+#phone{position:absolute;left:1180px;top:90px;width:430px;height:900px;
+  border-radius:56px;background:#12161B;padding:14px;
+  box-shadow:0 50px 90px -20px rgba(16,24,32,.42),0 0 0 2px rgba(255,255,255,.55) inset}
+#screen{position:relative;width:402px;height:872px;border-radius:44px;overflow:hidden;
+  background:var(--bg);display:flex;flex-direction:column}
+#notch{position:absolute;left:50%;top:12px;transform:translateX(-50%);
+  width:104px;height:26px;border-radius:var(--r-pill);background:#12161B;z-index:40}
+
+/* ===== 앱 화면 — 아래부터는 실제 앱 컴포넌트 재현 ===== */
+.appbar{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:40px 16px 12px;background:var(--surface);z-index:30}
+.appbar .logo{display:flex;align-items:center;gap:8px}
+.appbar .logo img{height:30px;display:block}
+.appbar .logo b{font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--brand-ink)}
+.pill{background:var(--bg);color:var(--text-sub);font-size:12px;font-weight:600;
+  border:0;border-radius:var(--r-pill);padding:7px 13px;white-space:nowrap;font-family:inherit}
+
+#viewport{position:relative;flex:1 1 auto;overflow:hidden}
+.scr{position:absolute;inset:0;padding:20px 18px 84px;overflow:hidden}
+.card{background:var(--surface);border-radius:var(--r-lg);box-shadow:var(--sh-card);
+  padding:20px;margin-bottom:12px}
+.h2{font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--text-strong);margin-bottom:4px}
+.h2s{font-size:13px;color:var(--text-sub);margin-bottom:14px}
+.btn{width:100%;height:48px;border:0;border-radius:var(--r-md);background:var(--primary);
+  color:#fff;font-size:16px;font-weight:700;font-family:inherit;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.btn.out{background:var(--surface);color:var(--primary);border:1.5px solid var(--primary)}
+.row{display:flex;gap:8px}
+
+/* 촬영 슬롯 */
+.slot{position:relative;height:206px;border-radius:var(--r-md);background:var(--bg);
+  border:2px dashed #CBD3DA;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;color:var(--muted);font-size:13px;margin-bottom:14px;overflow:hidden}
+.slot .shot{position:absolute;inset:0}
+
+/* 배지 */
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:700;
+  border-radius:var(--r-pill);padding:3px 9px}
+.badge.db{background:var(--info-surface);color:var(--info)}
+.badge.ok{background:var(--primary-surface);color:var(--primary-dark)}
+
+/* 영양소 막대 */
+.bar-l{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.bar-l .n{font-size:13px;color:var(--text-sub);font-weight:600}
+.bar-l .v{font-size:13px;font-weight:700;color:var(--text-strong)}
+.bar-l .v i{font-style:normal;font-weight:400;color:var(--muted);margin-left:2px;font-size:12px}
+.bar{height:8px;background:var(--track);border-radius:var(--r-pill);overflow:hidden}
+.bar>span{display:block;height:100%;width:100%;border-radius:var(--r-pill);
+  background:var(--primary);transform:scaleX(0);transform-origin:left center}
+.bar-w{margin-bottom:12px}
+.bar-s{font-size:11px;font-weight:700;margin-top:5px}
+
+/* 시간대 칩 */
+.chips{display:flex;gap:6px}
+.chip{flex:1;height:38px;border-radius:var(--r-sm);background:var(--bg);color:var(--text-sub);
+  font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.chip.on{background:var(--primary-surface);color:var(--primary-dark);
+  box-shadow:0 0 0 1.5px var(--primary) inset}
+
+/* 지도 */
+.mapwrap{position:absolute;inset:0}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--surface);
+  border-radius:22px 22px 0 0;box-shadow:0 -8px 28px rgba(16,24,32,.14);padding:10px 18px 90px}
+.grip{width:44px;height:4px;border-radius:var(--r-pill);background:#D5DBE1;margin:0 auto 12px}
+.place{display:flex;gap:11px;align-items:center;padding:11px 0;border-top:1px solid var(--border)}
+.place:first-of-type{border-top:0}
+.place .ic{flex:0 0 auto;width:38px;height:38px;border-radius:var(--r-sm);
+  background:var(--primary-surface);color:var(--primary-dark);
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+.place .nm{font-size:14px;font-weight:700;color:var(--text-strong)}
+.place .ds{font-size:11px;color:var(--muted);margin-top:2px}
+.place .tg{margin-left:auto;font-size:11px;font-weight:700;color:var(--deficient-text);
+  background:var(--deficient-surface);border-radius:var(--r-pill);padding:4px 9px;white-space:nowrap}
+
+/* 탭바 */
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:70px;background:var(--surface);
+  border-top:1px solid var(--border);display:flex;z-index:30}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  color:var(--muted);font-size:11px;font-weight:500}
+.tab.on{color:var(--primary);font-weight:700}
+.tab svg{width:22px;height:22px}
+
+/* 로딩 스피너 */
+.spin{width:34px;height:34px;border-radius:50%;border:3px solid var(--primary-surface);
+  border-top-color:var(--primary)}
+
+/* ---------- 클로징 ---------- */
+#closing{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:30px;opacity:0}
+#closing img{width:168px;display:block}
+#closing .wm{font-size:96px;font-weight:800;letter-spacing:-.04em;color:var(--brand-ink)}
+#closing .tag{font-size:42px;font-weight:700;letter-spacing:-.02em;color:var(--text-sub)}
+
+/* ---------- 조작 UI (녹화·전체화면에선 숨김) ---------- */
+#chrome{position:fixed;left:0;right:0;bottom:0;padding:14px 18px;
+  display:flex;align-items:center;gap:10px;background:rgba(14,17,22,.86);
+  color:#E7ECF1;font-family:var(--font);font-size:13px;z-index:100;transition:opacity .3s}
+/* visibility도 같이 끈다 — opacity만 두면 전환(0.3s)이 끝나기 전에 찍힌 화면에 조작 바가 남는다 */
+#chrome.hide{opacity:0;pointer-events:none;visibility:hidden}
+#chrome button{background:#252C35;color:#E7ECF1;border:0;border-radius:9px;
+  padding:9px 15px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
+#chrome button:hover{background:#333C48}
+#chrome button.rec{background:#C6303C}
+#chrome .sp{flex:1}
+#chrome .keys{color:#8C97A3;font-size:12px}
+#track{position:fixed;left:0;bottom:56px;height:3px;background:rgba(255,255,255,.14);
+  width:100%;z-index:100;transition:opacity .3s}
+#track.hide{opacity:0;visibility:hidden}
+#track>i{display:block;height:100%;width:0;background:var(--primary)}
+#recdot{display:none;position:fixed;right:22px;top:20px;z-index:110;
+  align-items:center;gap:9px;color:#fff;font-size:14px;font-weight:700;
+  background:rgba(198,48,60,.92);border-radius:var(--r-pill);padding:8px 16px}
+#recdot.on{display:flex}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div class="blob" id="blob1"></div>
+  <div class="blob" id="blob2"></div>
+
+  <!-- ── 왼쪽 자막 ── -->
+  <div id="caption">
+    <span id="step"></span>
+    <h1 id="head"></h1>
+    <p id="sub"></p>
+  </div>
+
+  <div id="brandmark">
+    <img src="logo-symbol.png" alt="" onerror="this.style.display='none'">
+    <span>Mealyze</span>
+  </div>
+
+  <!-- ── 폰 ── -->
+  <div id="phone">
+    <div id="notch"></div>
+    <div id="screen">
+
+      <!-- 앱바 (탭이 바뀌어도 그대로 — 실제 앱의 레이아웃 라우트와 같다) -->
+      <div class="appbar">
+        <div class="logo">
+          <img src="logo-symbol.png" alt="" onerror="this.style.display='none'">
+          <b>Mealyze</b>
+        </div>
+        <button class="pill">로그인 / 회원가입</button>
+      </div>
+
+      <div id="viewport">
+
+        <!-- ① 홈 — 촬영 -->
+        <div class="scr" id="s-home">
+          <div class="card">
+            <div class="h2">오늘 뭘 드셨나요?</div>
+            <div class="h2s">사진 한 장이면 영양소까지 계산해드려요.</div>
+            <div class="slot" id="slot">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" id="slotIcon">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              <span id="slotText">음식 사진을 올려주세요</span>
+              <!-- 촬영된 사진(그림). 사람·실사 사진 없음 -->
+              <svg class="shot" id="shot" viewBox="0 0 300 206" preserveAspectRatio="xMidYMid slice" style="opacity:0">
+                <defs>
+                  <linearGradient id="tbl" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#8A6E52"/><stop offset="1" stop-color="#6B543E"/>
+                  </linearGradient>
+                  <radialGradient id="lite" cx="34%" cy="18%" r="78%">
+                    <stop offset="0" stop-color="#fff" stop-opacity=".26"/>
+                    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+                  </radialGradient>
+                </defs>
+                <rect width="300" height="206" fill="url(#tbl)"/>
+                <rect width="300" height="206" fill="url(#lite)"/>
+                <!-- 제육볶음 -->
+                <ellipse cx="112" cy="92" rx="66" ry="50" fill="#F4F1EA"/>
+                <ellipse cx="112" cy="92" rx="56" ry="41" fill="#EDE7DC"/>
+                <g>
+                  <ellipse cx="96"  cy="82"  rx="20" ry="12" fill="#B4442A" transform="rotate(-14 96 82)"/>
+                  <ellipse cx="124" cy="78"  rx="18" ry="11" fill="#C24E30" transform="rotate(18 124 78)"/>
+                  <ellipse cx="104" cy="101" rx="21" ry="12" fill="#A93C25" transform="rotate(8 104 101)"/>
+                  <ellipse cx="131" cy="99"  rx="17" ry="10" fill="#BC4A2C" transform="rotate(-22 131 99)"/>
+                  <ellipse cx="114" cy="88"  rx="14" ry="8"  fill="#D2603B" transform="rotate(30 114 88)"/>
+                  <path d="M86 96q8-9 17-4" stroke="#4F7B3A" stroke-width="4" fill="none" stroke-linecap="round"/>
+                  <path d="M126 90q9-7 16-1" stroke="#5C8A44" stroke-width="4" fill="none" stroke-linecap="round"/>
+                  <ellipse cx="118" cy="107" rx="9" ry="4" fill="#E8B44A" transform="rotate(-10 118 107)"/>
+                </g>
+                <!-- 쌀밥 -->
+                <ellipse cx="220" cy="70" rx="45" ry="35" fill="#F7F5F0"/>
+                <ellipse cx="220" cy="68" rx="36" ry="27" fill="#FEFEFC"/>
+                <ellipse cx="212" cy="62" rx="12" ry="8" fill="#fff" opacity=".9"/>
+                <!-- 배추김치 -->
+                <ellipse cx="228" cy="158" rx="40" ry="30" fill="#F4F1EA"/>
+                <ellipse cx="228" cy="157" rx="31" ry="22" fill="#EDE7DC"/>
+                <g>
+                  <path d="M209 152q12-9 22-2t14 10" stroke="#B03427" stroke-width="9" fill="none" stroke-linecap="round"/>
+                  <path d="M212 163q13-6 22 1t12 3" stroke="#C7412D" stroke-width="8" fill="none" stroke-linecap="round"/>
+                  <path d="M218 147q9-4 15 0" stroke="#E0DCC6" stroke-width="4" fill="none" stroke-linecap="round"/>
+                </g>
+              </svg>
+            </div>
+            <button class="btn" id="shootBtn">사진 촬영 / 앨범에서 선택</button>
+          </div>
+
+          <!-- 오늘 요약 (HomeTodaySummary.jsx) — 아침만 기록한 상태.
+               700kcal + 이 끼니 686kcal = 식단 탭의 1,386kcal로 이어진다 -->
+          <div class="card" style="display:flex;align-items:center;gap:12px;padding:16px 18px">
+            <svg width="48" height="48" viewBox="0 0 48 48" style="flex:0 0 auto">
+              <circle cx="24" cy="24" r="21.5" fill="none" stroke="#EDF1F4" stroke-width="5"/>
+              <circle cx="24" cy="24" r="21.5" fill="none" stroke="var(--primary)" stroke-width="5"
+                      stroke-linecap="round" stroke-dasharray="135.1" stroke-dashoffset="90.5"
+                      transform="rotate(-90 24 24)"/>
+              <text x="24" y="25" text-anchor="middle" dominant-baseline="central"
+                    font-size="11" font-weight="800" fill="#191F28">33%</text>
+            </svg>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:700;color:var(--primary)">오늘 요약</div>
+              <div style="font-size:13px;font-weight:700;color:var(--text-strong);margin-top:2px">700 / 2,150kcal · 33%</div>
+              <div style="font-size:11px;color:var(--text-sub);margin-top:4px">아침만 기록됨 · 점심을 기록해보세요</div>
+            </div>
+            <span style="color:var(--muted);font-size:17px;flex:0 0 auto">›</span>
+          </div>
+
+          <!-- 오늘의 퀘스트 (HomeQuestCard.jsx) — 장면으로 다루지는 않지만 실제 홈 화면 구성이다 -->
+          <div class="card" style="padding:16px 18px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:14px;font-weight:800;color:var(--text-strong)">오늘의 퀘스트</span>
+              <span class="badge ok">+15 XP</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 6px">
+              <span style="font-size:13px;color:var(--text-sub);font-weight:600">식사 1회 기록하기</span>
+              <span style="font-size:11px;color:var(--muted)">0 / 1</span>
+            </div>
+            <div class="bar"><span style="transform:scaleX(0)"></span></div>
+          </div>
+        </div>
+
+        <!-- ② 분석 중 -->
+        <div class="scr" id="s-analyzing">
+          <div class="card" style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:44px 20px">
+            <div class="spin" id="spin"></div>
+            <div style="font-size:16px;font-weight:700;color:var(--text-strong)">음식을 분석하고 있어요</div>
+            <div style="font-size:13px;color:var(--text-sub);text-align:center;line-height:1.5">
+              음식 종류와 먹은 양을 알아낸 뒤<br>식약처 영양 데이터에서 찾아봐요
+            </div>
+          </div>
+        </div>
+
+        <!-- ③ 분석 결과 -->
+        <div class="scr" id="s-result">
+          <div class="card">
+            <div style="display:flex;gap:12px;align-items:center">
+              <svg width="72" height="72" viewBox="0 0 300 206" preserveAspectRatio="xMidYMid slice"
+                   style="border-radius:var(--r-sm);flex:0 0 auto">
+                <use href="#shot"/>
+              </svg>
+              <div style="min-width:0;flex:1">
+                <div style="display:flex;gap:5px;flex-wrap:wrap" id="badges">
+                  <span class="badge db">식약처DB</span>
+                  <span class="badge ok">정확도 높음</span>
+                </div>
+                <div style="font-size:17px;font-weight:700;color:var(--text-strong);margin:5px 0 2px">
+                  제육볶음 외 2개
+                </div>
+                <div style="font-size:13px;color:var(--text-sub)">
+                  총 <b style="color:var(--text-strong);font-size:15px" id="kcal">0</b> kcal
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px">1인분 · 약 200g 기준</div>
+              </div>
+            </div>
+
+            <div style="margin-top:18px" id="resultBars"></div>
+
+            <div style="margin-top:14px">
+              <div style="font-size:14px;font-weight:700;color:var(--text-strong);margin-bottom:8px">언제 드셨어요?</div>
+              <div class="chips">
+                <div class="chip">아침</div><div class="chip on">점심</div>
+                <div class="chip">저녁</div><div class="chip">간식</div>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:18px">
+              <button class="btn" style="flex:6" id="saveBtn">저장하기</button>
+              <button class="btn out" style="flex:4">다시 찍기</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ④ 식단 — 오늘의 영양 -->
+        <div class="scr" id="s-meals">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-end">
+              <div>
+                <div style="font-size:13px;color:var(--text-sub);margin-bottom:3px">오늘 먹은 열량</div>
+                <div style="font-size:30px;font-weight:800;letter-spacing:-.02em;color:var(--text-strong)">
+                  1,386<span style="font-size:15px;font-weight:600;color:var(--muted)"> / 2,150 kcal</span>
+                </div>
+              </div>
+              <div style="text-align:right;font-size:12px;line-height:1.6">
+                <div style="color:var(--primary);font-weight:700">3개 충족</div>
+                <div style="color:var(--deficient-text);font-weight:700">3개 부족</div>
+              </div>
+            </div>
+            <div class="bar" style="margin-top:12px"><span style="transform:scaleX(.645)"></span></div>
+          </div>
+
+          <div class="card" id="mealsBars"></div>
+
+          <!-- 오늘의 순위 (LeaderboardCard.jsx) — 식단 탭 아래에 실제로 있는 카드.
+               화면 아래가 잘려 보이게 둬서 "더 있다"는 걸 알린다 -->
+          <div class="card" style="padding:16px 18px">
+            <div style="font-size:14px;font-weight:800;color:var(--text-strong)">오늘의 순위</div>
+            <div style="font-size:12px;color:var(--text-sub);margin:4px 0 12px">
+              로그인하면 다른 사용자와 레벨·경험치로 경쟁할 수 있어요
+            </div>
+            <div class="chip" style="width:150px;flex:none">로그인하고 순위 보기</div>
+          </div>
+        </div>
+
+        <!-- ⑤ 지도 — 식당 추천 -->
+        <div class="scr" id="s-map" style="padding:0">
+          <div class="mapwrap">
+            <svg viewBox="0 0 402 620" style="width:100%;height:100%;display:block" preserveAspectRatio="xMidYMid slice">
+              <rect width="402" height="620" fill="#EAEFF3"/>
+              <g stroke="#DCE3E9" stroke-width="14" stroke-linecap="round">
+                <path d="M-20 130H430"/><path d="M-20 330H430"/><path d="M-20 520H430"/>
+                <path d="M80 -20V640"/><path d="M250 -20V640"/><path d="M350 -20V640"/>
+              </g>
+              <g stroke="#fff" stroke-width="3">
+                <path d="M-20 130H430"/><path d="M-20 330H430"/><path d="M-20 520H430"/>
+                <path d="M80 -20V640"/><path d="M250 -20V640"/><path d="M350 -20V640"/>
+              </g>
+              <g fill="#DFE7EC">
+                <rect x="100" y="150" width="130" height="60" rx="6"/>
+                <rect x="270" y="160" width="60" height="90" rx="6"/>
+                <rect x="20" y="360" width="42" height="70" rx="6"/>
+                <rect x="110" y="370" width="118" height="52" rx="6"/>
+                <rect x="270" y="380" width="66" height="66" rx="6"/>
+              </g>
+              <g fill="#CFE6D7"><circle cx="316" cy="88" r="46"/><circle cx="44" cy="248" r="34"/></g>
+            </svg>
+          </div>
+          <div id="pins"></div>
+          <div class="sheet" id="sheet">
+            <div class="grip"></div>
+            <div style="font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--text-strong)">
+              부족한 영양소를 채워줄 곳
+            </div>
+            <div style="font-size:12px;color:var(--text-sub);margin:3px 0 10px">
+              단백질 · 식이섬유 기준 · 현재 위치에서 가까운 순
+            </div>
+            <div id="places"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 탭바 -->
+      <nav class="tabbar" id="tabbar"></nav>
+    </div>
+  </div>
+
+  <!-- 클로징 -->
+  <div id="closing">
+    <img src="logo-symbol.png" alt="" onerror="this.style.display='none'">
+    <div class="wm">Mealyze</div>
+    <div class="tag">찍고, 알고, 채운다</div>
+  </div>
+</div>
+
+<div id="recdot"><span style="width:11px;height:11px;border-radius:50%;background:#fff"></span>녹화 중</div>
+<div id="track"><i id="trackFill"></i></div>
+<div id="chrome">
+  <button id="btnPlay">▶ 재생</button>
+  <button id="btnReset">⟲ 처음부터</button>
+  <button id="btnLoop">↻ 반복 : 끔</button>
+  <button id="btnFull">⛶ 전체화면</button>
+  <span class="sp"></span>
+  <span class="keys">Space 재생 · R 처음부터 · F 전체화면 · L 반복 · ← → 1초 이동 · H 숨기기</span>
+  <button id="btnRec" class="rec">● 영상으로 저장</button>
+</div>
+
+<script>
+'use strict'
+/* ==========================================================================
+   1. 데이터 — 자막과 화면 숫자
+   숫자는 서로 맞아떨어지게 잡았다(한 끼 686kcal이 하루 누계 1,386kcal 안에 들어가고,
+   결과 화면에서 부족했던 식이섬유가 식단 탭의 부족 항목, 지도 탭의 추천 근거로 이어진다).
+   ========================================================================== */
+const DURATION = 30.0
+
+// 큰 글씨는 한 줄 13자 이내(1080p 화면에서 한 번에 읽힌다). 넘으면 <br>로 직접 끊는다.
+const SCENES = [
+  { at:0.0,  step:'',       head:'오늘 뭘 먹었는지는 알아도',
+                            sub:'뭐가 부족한지는 모릅니다' },
+  { at:3.2,  step:'① 촬영', head:'<span class="hl">사진 한 장</span>이면 끝',
+                            sub:'찍기만 하면 음식과 먹은 양을 알아서 알아냅니다' },
+  { at:9.0,  step:'② 분석', head:'<span class="hl">어림짐작</span>이 아닙니다',
+                            sub:'식약처 공식 영양 데이터에서 실제 값을 찾아옵니다' },
+  { at:15.2, step:'③ 진단', head:'오늘 <span class="hl">부족한 게</span> 뭔지 바로',
+                            sub:'칼로리 말고 6가지 영양소를 한눈에' },
+  { at:21.0, step:'④ 추천', head:'부족한 걸 채워줄<br><span class="hl">식당</span>까지',
+                            sub:'지금 있는 위치에서 가까운 순으로 알려줍니다' },
+  { at:26.2, step:'',       head:'', sub:'' },
+]
+
+// 한 끼(제육볶음·쌀밥·배추김치) — NutritionCard.jsx의 BAR_MAX를 그대로 씀
+const MEAL = [
+  { label:'칼로리',   value:'686',   unit:'kcal', pct:0.76 },
+  { label:'단백질',   value:'34',    unit:'g',    pct:0.85 },
+  { label:'탄수화물', value:'78',    unit:'g',    pct:0.78 },
+  { label:'지방',     value:'24',    unit:'g',    pct:0.69 },
+  { label:'식이섬유', value:'4',     unit:'g',    pct:0.27 },
+  { label:'나트륨',   value:'1,180', unit:'mg',   pct:0.59 },
+]
+
+// 하루 누계 — NutritionStatusPanel.jsx의 문구 규칙(부족/달성/한도)을 그대로 씀
+const DAY = [
+  { label:'단백질',   now:'45',  goal:'65',    unit:'g',  pct:0.69, state:'low',  note:'20g 더 필요해요' },
+  { label:'탄수화물', now:'236', goal:'295',   unit:'g',  pct:0.80, state:'ok',   note:'달성했어요' },
+  { label:'지방',     now:'51',  goal:'62',    unit:'g',  pct:0.82, state:'ok',   note:'달성했어요' },
+  { label:'식이섬유', now:'6',   goal:'25',    unit:'g',  pct:0.24, state:'low',  note:'19g 더 필요해요' },
+  { label:'나트륨',   now:'1,640', goal:'2,000', unit:'mg', pct:0.82, state:'lim', note:'한도까지 360mg 남았어요' },
+]
+
+const PLACES = [
+  { ic:'한식', nm:'초록마당 비빔밥',   ds:'한식 > 비빔밥 · 320m',  tg:'식이섬유 ↑' },
+  { ic:'샐러드', nm:'하루채소 샐러드', ds:'샐러드 · 480m',        tg:'식이섬유 ↑' },
+  { ic:'백반', nm:'든든한끼 백반',     ds:'한식 > 백반 · 610m',    tg:'단백질 ↑' },
+]
+
+const TABS = [
+  { k:'home',  t:'홈',   d:'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z', extra:'<circle cx="12" cy="13" r="4"/>' },
+  { k:'meals', t:'식단', d:'M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2', extra:'<path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>' },
+  { k:'cal',   t:'달력', d:'M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', extra:'<path d="M16 2v4M8 2v4M3 10h18"/>' },
+  { k:'map',   t:'지도', d:'M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z', extra:'<circle cx="12" cy="10" r="3"/>' },
+  { k:'my',    t:'MY',  d:'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', extra:'<circle cx="12" cy="7" r="4"/>' },
+]
+
+/* ==========================================================================
+   2. 화면 조립 — 반복되는 마크업은 데이터에서 만든다
+   ========================================================================== */
+const $ = (s) => document.querySelector(s)
+
+$('#tabbar').innerHTML = TABS.map((x) => `
+  <div class="tab" data-k="${x.k}">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round"><path d="${x.d}"/>${x.extra}</svg>
+    <span>${x.t}</span>
+  </div>`).join('')
+
+$('#resultBars').innerHTML = MEAL.map((n) => `
+  <div class="bar-w">
+    <div class="bar-l"><span class="n">${n.label}</span>
+      <span class="v">${n.value}<i>${n.unit}</i></span></div>
+    <div class="bar"><span></span></div>
+  </div>`).join('')
+
+$('#mealsBars').innerHTML = DAY.map((n) => {
+  const col = n.state === 'low' ? 'var(--deficient)' : 'var(--primary)'
+  const txt = n.state === 'low' ? 'var(--deficient-text)'
+            : n.state === 'lim' ? 'var(--muted)' : 'var(--primary)'
+  return `
+  <div class="bar-w">
+    <div class="bar-l"><span class="n">${n.label}</span>
+      <span class="v" style="font-weight:400;color:var(--text-sub);font-size:12px">${n.now} / ${n.goal} ${n.unit}</span></div>
+    <div class="bar"><span style="background:${col}"></span></div>
+    <div class="bar-s" style="color:${txt}">${n.note}</div>
+  </div>`
+}).join('')
+
+$('#places').innerHTML = PLACES.map((p) => `
+  <div class="place">
+    <div class="ic">${p.ic}</div>
+    <div><div class="nm">${p.nm}</div><div class="ds">${p.ds}</div></div>
+    <div class="tg">${p.tg}</div>
+  </div>`).join('')
+
+$('#pins').innerHTML = PLACES.map((_, i) => {
+  const pos = [[112, 172], [258, 118], [178, 300]][i]
+  return `<svg class="pin" style="position:absolute;left:${pos[0]}px;top:${pos[1]}px;width:34px;height:34px"
+    viewBox="0 0 24 24" fill="#059669" stroke="#fff" stroke-width="1.4">
+    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/>
+    <circle cx="12" cy="10" r="3" fill="#fff" stroke="none"/></svg>`
+}).join('')
+
+/* ==========================================================================
+   3. 타임라인 — t(초) 하나로 모든 값을 계산한다 (프레임을 건너뛰어도 안 어긋난다)
+   ========================================================================== */
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
+const seg   = (t, at, dur) => clamp((t - at) / dur, 0, 1)          // 0→1 진행도
+const ease  = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2)
+const eOut  = (p) => 1 - Math.pow(1 - p, 3)
+const pulse = (t, at, dur) => { const p = seg(t, at, dur); return Math.sin(p * Math.PI) }
+
+// 화면별 노출 구간. slide=1이면 탭 전환(옆에서 밀려 들어옴), 0이면 같은 자리 카드 교체.
+const SCREENS = [
+  // 훅 자막(3.2s까지)이 떠 있는 동안 홈 화면이 먼저 들어온다 — 앱이 켜지는 것처럼 보인다
+  { el:'#s-home',      in:2.4,  out:7.7,  slide:0 },
+  { el:'#s-analyzing', in:7.7,  out:9.0,  slide:0 },
+  { el:'#s-result',    in:9.0,  out:15.2, slide:0 },
+  { el:'#s-meals',     in:15.2, out:21.0, slide:1 },
+  { el:'#s-map',       in:21.0, out:26.4, slide:1 },
+]
+SCREENS.forEach((s) => { s.node = $(s.el) })
+
+const TAB_AT = [[3.2,'home'], [15.2,'meals'], [21.0,'map']]
+
+const els = {
+  head:$('#head'), sub:$('#sub'), step:$('#step'), cap:$('#caption'),
+  phone:$('#phone'), closing:$('#closing'), brand:$('#brandmark'),
+  slot:$('#slot'), shot:$('#shot'), slotIcon:$('#slotIcon'), slotText:$('#slotText'),
+  shootBtn:$('#shootBtn'), saveBtn:$('#saveBtn'), spin:$('#spin'),
+  kcal:$('#kcal'), sheet:$('#sheet'),
+  rBars:[...document.querySelectorAll('#resultBars .bar>span')],
+  mBars:[...document.querySelectorAll('#mealsBars .bar>span')],
+  mNotes:[...document.querySelectorAll('#mealsBars .bar-s')],
+  badges:[...document.querySelectorAll('#badges .badge')],
+  places:[...document.querySelectorAll('#places .place')],
+  pins:[...document.querySelectorAll('.pin')],
+  tabs:[...document.querySelectorAll('.tab')],
+}
+
+let sceneIdx = -1
+
+function render(t) {
+  /* --- 자막 --- */
+  let idx = 0
+  for (let i = 0; i < SCENES.length; i++) if (t >= SCENES[i].at) idx = i
+  const sc = SCENES[idx]
+  if (idx !== sceneIdx) {
+    sceneIdx = idx
+    els.head.innerHTML = sc.head
+    els.sub.textContent = sc.sub
+    els.step.textContent = sc.step
+    els.step.style.display = sc.step ? 'inline-flex' : 'none'
+    // 첫 장면(훅)은 폰이 아직 안 떠서 화면이 비어 보인다 — 글씨를 키워 프레임을 채운다
+    els.head.style.fontSize = idx === 0 ? '88px' : '70px'
+    els.sub.style.fontSize = idx === 0 ? '36px' : '32px'
+  }
+  const cp = seg(t, sc.at, 0.55)
+  const ce = ease(cp)
+  const capOut = idx === SCENES.length - 1 ? seg(t, 26.2, 0.5) : 0   // 클로징에서 자막 퇴장
+  els.cap.style.opacity = ce * (1 - capOut)
+  els.cap.style.transform = `translateY(${(1 - ce) * 26 - capOut * 26}px)`
+
+  /* --- 폰 등장 / 퇴장 --- */
+  const phIn  = ease(seg(t, 1.5, 1.1))
+  const phOut = ease(seg(t, 26.2, 0.6))
+  els.phone.style.opacity = phIn * (1 - phOut)
+  els.phone.style.transform =
+    `translateY(${(1 - phIn) * 44}px) scale(${(0.94 + phIn * 0.06) * (1 - phOut * 0.1)})`
+
+  els.brand.style.opacity = ease(seg(t, 1.0, 0.6)) * (1 - ease(seg(t, 26.2, 0.4)))
+
+  /* --- 폰 안 화면 전환 --- */
+  for (const s of SCREENS) {
+    const a = seg(t, s.in, 0.34)                 // 들어오는 정도
+    const b = seg(t, s.out - 0.34, 0.34)         // 나가는 정도
+    const vis = a * (1 - b)
+    s.node.style.opacity = vis
+    if (s.slide) {
+      s.node.style.transform = `translateX(${(1 - ease(a)) * 74 - ease(b) * 74}px)`
+    } else {
+      s.node.style.transform = `translateY(${(1 - ease(a)) * 14}px)`
+    }
+    s.node.style.pointerEvents = 'none'
+  }
+
+  /* --- 탭바 활성 --- */
+  let active = 'home'
+  for (const [at, k] of TAB_AT) if (t >= at) active = k
+  els.tabs.forEach((el) => el.classList.toggle('on', el.dataset.k === active))
+
+  /* --- ① 촬영: 버튼 누름 → 사진이 슬롯을 채움 --- */
+  const press1 = pulse(t, 4.7, 0.32)
+  els.shootBtn.style.transform = `scale(${1 - press1 * 0.045})`
+  els.shootBtn.style.filter = `brightness(${1 - press1 * 0.1})`
+  const fill = ease(seg(t, 5.15, 0.55))
+  els.shot.style.opacity = fill
+  els.shot.style.transform = `scale(${1.06 - fill * 0.06})`
+  els.slotIcon.style.opacity = 1 - fill
+  els.slotText.style.opacity = 1 - fill
+  els.slot.style.borderColor = fill > 0.5 ? 'transparent' : '#CBD3DA'
+  if (fill > 0.02) { els.slotText.textContent = '' }
+  const press2 = pulse(t, 7.1, 0.32)               // "분석하기"(같은 버튼) 누름
+  if (t > 6.0) {
+    els.shootBtn.textContent = '이 사진으로 분석하기'
+    els.shootBtn.style.transform = `scale(${1 - press2 * 0.045})`
+  } else {
+    els.shootBtn.textContent = '사진 촬영 / 앨범에서 선택'
+  }
+
+  /* --- ② 분석 중: 스피너 --- */
+  els.spin.style.transform = `rotate(${t * 620}deg)`
+
+  /* --- ③ 결과: 배지 → 칼로리 카운트업 → 막대 순차 --- */
+  els.badges.forEach((b, i) => {
+    const p = ease(seg(t, 9.4 + i * 0.14, 0.34))
+    b.style.opacity = p
+    b.style.transform = `scale(${0.82 + p * 0.18})`
+  })
+  const kp = eOut(seg(t, 9.8, 1.2))
+  els.kcal.textContent = Math.round(686 * kp).toLocaleString('ko-KR')
+  els.rBars.forEach((b, i) => {
+    const p = eOut(seg(t, 10.6 + i * 0.18, 0.7))
+    b.style.transform = `scaleX(${MEAL[i].pct * p})`
+    // 식이섬유(4번째)만 부족을 미리 드러내 다음 장면으로 연결한다
+    b.style.background = i === 4 ? 'var(--deficient)' : 'var(--primary)'
+  })
+  const press3 = pulse(t, 13.6, 0.32)
+  els.saveBtn.style.transform = `scale(${1 - press3 * 0.045})`
+
+  /* --- ④ 식단: 막대 + 부족 문구 --- */
+  els.mBars.forEach((b, i) => {
+    const p = eOut(seg(t, 15.9 + i * 0.16, 0.66))
+    b.style.transform = `scaleX(${DAY[i].pct * p})`
+  })
+  els.mNotes.forEach((n, i) => {
+    const p = ease(seg(t, 16.3 + i * 0.16, 0.4))
+    n.style.opacity = p
+    // 부족 항목은 한 번 더 깜빡여 눈이 가게 한다
+    if (DAY[i].state === 'low') {
+      const g = pulse(t, 18.6, 1.0)
+      n.style.transform = `scale(${1 + g * 0.06})`
+      n.style.transformOrigin = 'left center'
+    }
+  })
+
+  /* --- ⑤ 지도: 핀 떨어짐 → 시트 올라옴 → 식당 순차 --- */
+  els.pins.forEach((p, i) => {
+    const q = eOut(seg(t, 21.4 + i * 0.2, 0.5))
+    p.style.opacity = q
+    p.style.transform = `translateY(${(1 - q) * -32}px) scale(${0.6 + q * 0.4})`
+  })
+  const sh = eOut(seg(t, 22.1, 0.62))
+  els.sheet.style.transform = `translateY(${(1 - sh) * 260}px)`
+  els.places.forEach((p, i) => {
+    const q = ease(seg(t, 22.7 + i * 0.24, 0.42))
+    p.style.opacity = q
+    p.style.transform = `translateY(${(1 - q) * 14}px)`
+  })
+
+  /* --- 클로징 --- */
+  const cl = ease(seg(t, 26.5, 0.8))
+  els.closing.style.opacity = cl
+  els.closing.style.transform = `scale(${0.9 + cl * 0.1})`
+
+  /* --- 진행 표시 --- */
+  $('#trackFill').style.width = (t / DURATION) * 100 + '%'
+}
+
+/* ==========================================================================
+   4. 재생 제어
+   ========================================================================== */
+let t = 0, playing = false, last = 0, loop = false
+
+function tick(now) {
+  if (playing) {
+    const dt = last ? (now - last) / 1000 : 0
+    last = now
+    t += dt
+    if (t >= DURATION) {
+      if (loop) { t = 0 } else { t = DURATION; playing = false; syncPlayBtn() }
+    }
+  } else {
+    last = now
+  }
+  render(t)
+  requestAnimationFrame(tick)
+}
+requestAnimationFrame(tick)
+
+function syncPlayBtn() { $('#btnPlay').textContent = playing ? '❚❚ 일시정지' : '▶ 재생' }
+function play()  { if (t >= DURATION) t = 0; playing = true;  last = 0; syncPlayBtn() }
+function pause() { playing = false; syncPlayBtn() }
+function reset() { t = 0; sceneIdx = -1; render(0) }
+
+$('#btnPlay').onclick  = () => (playing ? pause() : play())
+$('#btnReset').onclick = () => { reset(); play() }
+$('#btnLoop').onclick  = () => { loop = !loop; $('#btnLoop').textContent = '↻ 반복 : ' + (loop ? '켬' : '끔') }
+$('#btnFull').onclick  = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen())
+
+addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play() }
+  else if (e.key === 'r' || e.key === 'R') { reset(); play() }
+  else if (e.key === 'f' || e.key === 'F') { $('#btnFull').click() }
+  else if (e.key === 'l' || e.key === 'L') { $('#btnLoop').click() }
+  else if (e.key === 'h' || e.key === 'H') { toggleChrome() }
+  else if (e.key === 'ArrowLeft')  { t = clamp(t - 1, 0, DURATION); sceneIdx = -1 }
+  else if (e.key === 'ArrowRight') { t = clamp(t + 1, 0, DURATION); sceneIdx = -1 }
+})
+
+function toggleChrome(force) {
+  const on = force !== undefined ? force : !$('#chrome').classList.contains('hide')
+  $('#chrome').classList.toggle('hide', on)
+  $('#track').classList.toggle('hide', on)
+}
+document.addEventListener('fullscreenchange', () => toggleChrome(!!document.fullscreenElement))
+
+/* ---------- 크기 맞춤: 1920x1080을 창에 맞게 축소 ---------- */
+function fit() {
+  const s = Math.min(innerWidth / 1920, innerHeight / 1080)
+  $('#stage').style.transform = `translate(-50%,-50%) scale(${s})`
+}
+addEventListener('resize', fit); fit()
+
+/* ==========================================================================
+   5. 영상 파일로 저장 — 크롬 기본 기능(화면 공유 + MediaRecorder)만 쓴다.
+      별도 프로그램 설치가 필요 없다. 결과는 .webm.
+   ========================================================================== */
+$('#btnRec').onclick = async () => {
+  let stream
+  try {
+    stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { frameRate: 60, width: 1920, height: 1080 },
+      audio: false,
+      preferCurrentTab: true,
+    })
+  } catch { return }                                   // 사용자가 취소함
+
+  const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+    .find((m) => MediaRecorder.isTypeSupported(m))
+  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12_000_000 })
+  const chunks = []
+  rec.ondataavailable = (e) => e.data.size && chunks.push(e.data)
+  rec.onstop = () => {
+    stream.getTracks().forEach((tr) => tr.stop())
+    const url = URL.createObjectURL(new Blob(chunks, { type: 'video/webm' }))
+    const a = document.createElement('a')
+    a.href = url; a.download = 'mealyze-30s.webm'; a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 4000)
+    $('#recdot').classList.remove('on')
+    toggleChrome(false)
+  }
+
+  toggleChrome(true)
+  $('#recdot').classList.add('on')
+  reset()
+  // 공유 선택 창이 닫히는 순간 첫 프레임이 잘리지 않도록 0.6초 여유를 준다
+  setTimeout(() => { rec.start(); play(); setTimeout(() => rec.stop(), (DURATION + 0.4) * 1000) }, 600)
+}
+
+/* ---------- 주소 옵션 ----------
+   ?clean=1  조작 버튼 없이 바로 반복 재생 (녹화·부스 배경용)
+   ?t=12.5   그 시점 한 장면만 멈춰서 보여준다 (자막·수치 확인, 스크린샷 뽑을 때) */
+const qs = new URLSearchParams(location.search)
+if (qs.has('t')) { t = clamp(parseFloat(qs.get('t')) || 0, 0, DURATION); toggleChrome(qs.has('clean')); render(t) }
+else if (qs.has('clean')) { toggleChrome(true); loop = true; play() }
+else { render(0) }
+</script>
+</body>
+</html>
