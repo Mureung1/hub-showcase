@@ -56,15 +56,27 @@ describe("assertSafeHttpUrl", () => {
 
 describe("extractPageMetadata", () => {
   it("YouTube는 큰 HTML 대신 oEmbed에서 영상 제목을 가져온다", async () => {
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          title: "Orca IDE로 개발 생산성 높이기",
-          author_name: "개발 채널",
-        }),
-        { headers: { "content-type": "application/json" } }
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            title: "Orca IDE로 개발 생산성 높이기",
+            author_name: "개발 채널",
+          }),
+          { headers: { "content-type": "application/json" } }
+        )
       )
-    );
+      .mockResolvedValueOnce(
+        new Response(
+          `<script>var ytInitialPlayerResponse = {
+            "videoDetails":{
+              "shortDescription":"대규모 서비스에서 Cache와 MQ의 개념과 동작 방식을 설명합니다.\\n실제 성능 개선 사례를 살펴봅니다."
+            }
+          };</script>`,
+          { headers: { "content-type": "text/html; charset=utf-8" } }
+        )
+      );
 
     const result = await extractPageMetadata(
       "https://www.youtube.com/watch?v=orca-example",
@@ -77,7 +89,11 @@ describe("extractPageMetadata", () => {
 
     expect(result).toMatchObject({
       title: "Orca IDE로 개발 생산성 높이기",
+      description:
+        "대규모 서비스에서 Cache와 MQ의 개념과 동작 방식을 설명합니다. 실제 성능 개선 사례를 살펴봅니다.",
       ogTitle: "Orca IDE로 개발 생산성 높이기",
+      ogDescription:
+        "대규모 서비스에서 Cache와 MQ의 개념과 동작 방식을 설명합니다. 실제 성능 개선 사례를 살펴봅니다.",
       ogSiteName: "YouTube",
       ogType: "video",
     });
@@ -89,6 +105,17 @@ describe("extractPageMetadata", () => {
       expect.objectContaining({
         redirect: "manual",
         headers: expect.objectContaining({ Accept: "application/json" }),
+      })
+    );
+    expect(fetchImpl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hostname: "www.youtube.com",
+        pathname: "/watch",
+        search: expect.stringContaining("v=orca-example"),
+      }),
+      expect.objectContaining({
+        redirect: "manual",
+        headers: expect.objectContaining({ Accept: expect.stringContaining("text/html") }),
       })
     );
   });

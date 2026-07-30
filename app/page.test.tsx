@@ -93,5 +93,9 @@ describe("Home image input", () => {
     expect((request?.body as FormData).get("image")).toBe(image);
     expect(screen.queryByAltText("선택한 이미지 미리보기")).not.toBeInTheDocument();
     expect(screen.getByPlaceholderText("링크나 텍스트를 붙여넣으세요")).toHaveValue("");
+    expect(screen.getByRole("status")).toHaveTextContent("이미지");
+    expect(
+      screen.getByRole("link", { name: /분류 결과 확인하기/ })
+    ).toHaveAttribute("href", "/categories");
   });
 });

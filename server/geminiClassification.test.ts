@@ -44,18 +44,6 @@ describe("validateGeminiClassification", () => {
     { categoryMain: "음식", categorySub: "한식" },
     {
       categoryMain: "공부",
-      categorySub: "programming",
-      displayTitle: "프로그래밍 공부",
-      summary: "프로그래밍 공부 자료입니다.",
-    },
-    {
-      categoryMain: "공부",
-      categorySub: "가".repeat(31),
-      displayTitle: "프로그래밍 공부",
-      summary: "프로그래밍 공부 자료입니다.",
-    },
-    {
-      categoryMain: "공부",
       categorySub: "프로그래밍",
       displayTitle: "프로그래밍 공부",
       summary: "프로그래밍 공부 자료입니다.",
@@ -70,6 +58,25 @@ describe("validateGeminiClassification", () => {
   ])("유효하지 않은 응답을 거부한다: %o", (value) => {
     expect(validateGeminiClassification(value)).toBeNull();
   });
+
+  it.each(["programming", "가".repeat(31), "Cache/MQ"])(
+    "잘못된 소분류만 null로 정규화하고 AI 제목과 요약은 유지한다: %s",
+    (categorySub) => {
+      expect(
+        validateGeminiClassification({
+          categoryMain: "공부",
+          categorySub,
+          displayTitle: "대규모 트래픽 성능 튜닝",
+          summary: "대규모 트래픽에서 Cache와 MQ가 성능을 개선하는 방식을 설명합니다.",
+        })
+      ).toEqual({
+        categoryMain: "공부",
+        categorySub: null,
+        displayTitle: "대규모 트래픽 성능 튜닝",
+        summary: "대규모 트래픽에서 Cache와 MQ가 성능을 개선하는 방식을 설명합니다.",
+      });
+    }
+  );
 });
 
 describe("createGeminiClassifier", () => {
@@ -116,7 +123,9 @@ describe("createGeminiClassifier", () => {
         },
       ],
       config: expect.objectContaining({
-        systemInstruction: expect.stringContaining("untrusted"),
+        systemInstruction: expect.stringMatching(
+          /untrusted[\s\S]*actual takeaways[\s\S]*I'm upset/
+        ),
         responseMimeType: "application/json",
         responseJsonSchema: expect.any(Object),
       }),

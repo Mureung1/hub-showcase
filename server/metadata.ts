@@ -26,6 +26,7 @@ export type MetadataOptions = {
 const DEFAULT_TIMEOUT_MS = 5_000;
 const DEFAULT_MAX_BYTES = 1_000_000;
 const DEFAULT_MAX_REDIRECTS = 5;
+const YOUTUBE_WATCH_MAX_BYTES = 1_500_000;
 
 function isBlockedIpv4(address: string) {
   const parts = address.split(".").map(Number);
@@ -135,6 +136,53 @@ function isYouTubeUrl(url: URL) {
   );
 }
 
+function getYouTubeVideoId(url: URL) {
+  const hostname = url.hostname.toLowerCase();
+  const candidate =
+    hostname === "youtu.be" ? url.pathname.split("/").filter(Boolean)[0] : url.searchParams.get("v");
+  return candidate && /^[A-Za-z0-9_-]{6,20}$/.test(candidate) ? candidate : null;
+}
+
+function parseYouTubeDescription(html: string) {
+  const match = html.match(/"shortDescription":"((?:\\.|[^"\\])*)"/);
+  if (!match) return null;
+  try {
+    return clean(JSON.parse(`"${match[1]}"`) as string);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchYouTubeDescription(
+  originalUrl: URL,
+  fetchImpl: FetchLike,
+  resolveAddresses: ResolveAddresses,
+  signal: AbortSignal
+) {
+  const videoId = getYouTubeVideoId(originalUrl);
+  if (!videoId) return null;
+  const watchUrl = new URL("https://www.youtube.com/watch");
+  watchUrl.searchParams.set("v", videoId);
+  watchUrl.searchParams.set("hl", "ko");
+  await assertSafeHttpUrl(watchUrl.toString(), resolveAddresses);
+
+  const response = await fetchImpl(watchUrl, {
+    redirect: "manual",
+    signal,
+    headers: {
+      Accept: "text/html,application/xhtml+xml",
+      "Accept-Language": "ko,en;q=0.8",
+      "User-Agent": "Mozilla/5.0 (compatible; LaterMetadataBot/1.0)",
+    },
+  });
+  if (!response.ok) return null;
+  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!contentType.includes("text/html")) return null;
+  return parseYouTubeDescription(
+    await readLimitedText(response, YOUTUBE_WATCH_MAX_BYTES)
+  );
+}
+
 async function extractYouTubeMetadata(
   originalUrl: URL,
   fetchImpl: FetchLike,
@@ -165,12 +213,23 @@ async function extractYouTubeMetadata(
   };
   const title = clean(body.title);
   if (!title) throw new Error("YouTube 영상 제목을 찾지 못했습니다.");
+  let description: string | null = null;
+  try {
+    description = await fetchYouTubeDescription(
+      originalUrl,
+      fetchImpl,
+      resolveAddresses,
+      signal
+    );
+  } catch {
+    // YouTube 설명 조회 실패만으로 저장 흐름을 중단하지 않는다.
+  }
   return {
     url: originalUrl.toString(),
     title,
-    description: null,
+    description,
     ogTitle: title,
-    ogDescription: null,
+    ogDescription: description,
     ogSiteName: "YouTube",
     ogType: "video",
   };
