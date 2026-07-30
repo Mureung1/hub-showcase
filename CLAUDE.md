@@ -193,6 +193,9 @@ npm --prefix frontend run lint
 | `design-skill.md` | 디자인 원칙, 디자인 시스템 값, 컴포넌트 기준, 검토 체크리스트 |
 | `docs/data-model.md` | `subjects` 테이블 구조, 점수 계산식, 저장 방식 |
 | `docs/feature-completion-history.md` | 다음 기능(과목 완료 체크 · 히스토리) 설계 |
-| `docs/my-ai-workflow.md` | 이 저장소에서 AI와 일하는 순서 |
+| `docs/my-workflow.md` | **최종 워크플로우** — 작업 순서, 확인 기준, 문제 시 되돌아갈 단계 |
+| `docs/agent-collaboration.md` | 단계별 도구, 사람 결정과 AI 수행의 경계 |
+| `docs/deployment.md` | Vercel·Render 배포 순서와 확인 방법 |
+| `docs/my-ai-workflow.md` | 3주차 시점 기록 (최종본은 `my-workflow.md`) |
 | `.claude/skills/write-test/SKILL.md` | 이 저장소의 테스트 작성 절차 |
 | `.claude/agents/feature-verifier.md` | 기능 검증 Agent |
