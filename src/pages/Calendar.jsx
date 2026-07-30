@@ -188,6 +188,14 @@ function WeekStrip({ weekDates, selectedDateKey, todayKey, dayInfoMap, onSelectD
 
 const RING_SIZE = 96
 const RING_STROKE = 10
+// 링 가운데 숫자·라벨. 링 지름은 그대로 두고 **안쪽 글자만** 키워 빈 공간을 줄인다 —
+// 링을 키우면 옆 3행(충족/부족/초과)이 밀려 카드 전체 높이가 늘어난다.
+// lineHeight를 1로 조이는 게 핵심이다: 기본 행간(1.5)이면 두 줄 사이에 글자 반 줄만큼 빈틈이 생긴다.
+const RING_VALUE_FONT = 26
+const RING_LABEL_FONT = 11.5
+// 충족/부족/초과 라벨과 숫자 사이 간격을 기존의 약 75%로 좁힌다 — 라벨 쪽에 이만큼 여백을 넣어
+// 라벨을 오른쪽으로 민다(숫자는 카드 오른쪽 끝에 그대로 둔다).
+const COUNT_GAP_SHRINK = 25
 const COUNT_ORDER = [NUTRIENT_STATUS.SATISFIED, NUTRIENT_STATUS.DEFICIENT, NUTRIENT_STATUS.EXCEEDED]
 const COUNT_LABELS = { [NUTRIENT_STATUS.SATISFIED]: '충족', [NUTRIENT_STATUS.DEFICIENT]: '부족', [NUTRIENT_STATUS.EXCEEDED]: '초과' }
 const COUNT_COLORS = { [NUTRIENT_STATUS.SATISFIED]: colors.satisfied, [NUTRIENT_STATUS.DEFICIENT]: colors.deficientText, [NUTRIENT_STATUS.EXCEEDED]: colors.muted }
@@ -240,16 +248,34 @@ function DaySummaryCard({ selectedDateKey, isSelectedToday, status, total, recom
               style={{ transition: 'stroke-dashoffset 0.6s ease-out' }}
             />
           </svg>
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: 20, fontWeight: 800, color: colors.textStrong }}>{achievementPercent}%</span>
-            <span style={{ fontSize: 10.5, color: colors.muted }}>달성률</span>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              // 숫자와 라벨을 한 덩어리로 붙인다 — 둘 사이 여백이 곧 링 안쪽의 빈 느낌이었다.
+              gap: 1,
+              lineHeight: 1,
+            }}
+          >
+            <span style={{ fontSize: RING_VALUE_FONT, fontWeight: 800, color: colors.textStrong, letterSpacing: '-0.5px' }}>
+              {achievementPercent}%
+            </span>
+            <span style={{ fontSize: RING_LABEL_FONT, fontWeight: 600, color: colors.textSub }}>달성률</span>
           </div>
         </div>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
+        {/* 오른쪽 3행도 링과 같은 비율로 키운다 — 한쪽만 키우면 두 덩어리의 무게가 어긋나 보인다.
+            paddingLeft로 라벨을 오른쪽으로 밀어 라벨↔숫자 간격을 약 75%로 좁힌다(숫자는 카드
+            오른쪽 끝에 그대로 두는 편이 링과의 좌우 균형이 낫다). 간격이 넓으면 세 줄이 서로 떨어진
+            낱개처럼 보여서 "충족 4"가 한 덩어리로 안 읽힌다. */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: spacing.sm, paddingLeft: `${COUNT_GAP_SHRINK}%` }}>
           {COUNT_ORDER.map((s) => (
-            <div key={s} style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 12.5, color: colors.textSub }}>{COUNT_LABELS[s]}</span>
-              <span style={{ fontSize: 13.5, fontWeight: 800, color: COUNT_COLORS[s] }}>{counts[s]}</span>
+            <div key={s} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <span style={{ fontSize: 13.5, fontWeight: 600, color: colors.textSub }}>{COUNT_LABELS[s]}</span>
+              <span style={{ fontSize: 16, fontWeight: 800, color: COUNT_COLORS[s] }}>{counts[s]}</span>
             </div>
           ))}
         </div>
