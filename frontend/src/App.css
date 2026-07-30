@@ -504,6 +504,9 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
 .brand-mark {
   display: inline-flex;
   align-items: baseline;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: #075b32;
   text-align: left;
   font-size: 24px;
@@ -591,6 +594,54 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
   font-size: 16px;
   line-height: 1.7;
 }
+
+/* Service introduction */
+.about-page { display: grid; gap: 96px; }
+.about-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(420px, .9fr); min-height: 560px; align-items: center; gap: 64px; }
+.about-hero-copy h1 { margin-bottom: 24px; font-size: clamp(44px, 6vw, 72px); font-weight: 950; letter-spacing: -.065em; line-height: 1.04; }
+.about-hero-copy h1 span { color: var(--primary); }
+.about-lead { max-width: 570px; margin-bottom: 32px; color: var(--muted); font-size: 17px; line-height: 1.8; }
+.about-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.about-actions button, .about-bottom-cta button { min-height: 52px; padding: 0 22px; border-radius: 14px; font-size: 14px; font-weight: 900; }
+.about-primary, .about-bottom-cta button { border: 0; color: #fff; background: var(--secondary); box-shadow: 0 10px 22px rgba(255, 126, 71, .2); }
+.about-primary span, .about-bottom-cta button span { margin-left: 12px; }
+.about-secondary { border: 1px solid rgba(0, 109, 54, .2); color: var(--primary); background: #fff; }
+.about-hero-visual { position: relative; min-height: 440px; overflow: hidden; border-radius: 32px; background: linear-gradient(145deg, #e9f5ee, #fff4eb); }
+.visual-orbit { position: absolute; border: 1px solid rgba(0, 109, 54, .1); border-radius: 50%; }
+.orbit-one { width: 340px; height: 340px; top: 48px; left: 50px; }
+.orbit-two { width: 230px; height: 230px; top: 102px; left: 105px; }
+.visual-card { position: absolute; z-index: 2; padding: 22px; border: 1px solid rgba(34, 64, 47, .08); border-radius: 20px; background: rgba(255, 255, 255, .95); box-shadow: 0 18px 40px rgba(45, 61, 51, .12); }
+.visual-card > span { display: block; margin-bottom: 8px; color: var(--primary); font-size: 10px; font-weight: 950; letter-spacing: .13em; }
+.visual-card strong { display: block; font-size: 16px; }
+.visual-fridge { top: 78px; left: 34px; width: 190px; transform: rotate(-3deg); }
+.visual-fridge div { display: flex; gap: 8px; margin-top: 18px; }
+.visual-fridge i { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 12px; background: #f1f7f3; font-size: 21px; font-style: normal; }
+.visual-menu { right: 32px; bottom: 62px; width: 210px; transform: rotate(3deg); }
+.visual-menu b { display: grid; height: 104px; margin-bottom: 14px; place-items: center; border-radius: 15px; background: #fff0e7; font-size: 54px; }
+.visual-menu small { display: block; margin-top: 5px; color: var(--muted); font-weight: 700; }
+.visual-arrow { position: absolute; z-index: 3; top: 205px; left: 48%; display: grid; width: 50px; height: 50px; place-items: center; border-radius: 50%; color: #fff; background: var(--secondary); box-shadow: 0 8px 20px rgba(255,126,71,.25); font-size: 24px; font-weight: 900; }
+.about-problem { max-width: 760px; margin: 0 auto; text-align: center; }
+.about-problem h2, .about-how h2, .about-bottom-cta h2 { margin-bottom: 18px; font-size: clamp(30px, 4vw, 42px); letter-spacing: -.045em; line-height: 1.2; }
+.about-problem > p:last-child { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.8; }
+.about-feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.about-feature { min-height: 255px; padding: 28px; border: 1px solid rgba(54, 73, 62, .08); border-radius: 20px; background: #fff; box-shadow: 0 12px 32px rgba(45, 61, 51, .055); }
+.about-feature > span { display: grid; width: 42px; height: 42px; margin-bottom: 44px; place-items: center; border-radius: 12px; color: var(--primary); background: var(--primary-soft); font-size: 12px; font-weight: 950; }
+.about-feature.red > span { color: var(--warning); background: var(--warning-soft); }
+.about-feature.orange > span { color: #b34d22; background: var(--secondary-soft); }
+.about-feature h3 { margin-bottom: 10px; font-size: 21px; }
+.about-feature p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.75; }
+.about-how { display: grid; grid-template-columns: .8fr 1.2fr; align-items: start; gap: 80px; padding: 56px; border-radius: 28px; background: #edf6f1; }
+.about-how ol { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.about-how li { display: grid; grid-template-columns: 46px 1fr; gap: 18px; padding: 20px 0; border-bottom: 1px solid rgba(0, 109, 54, .11); }
+.about-how li:first-child { padding-top: 0; }
+.about-how li:last-child { padding-bottom: 0; border-bottom: 0; }
+.about-how li > span { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 50%; color: #fff; background: var(--primary); font-weight: 900; }
+.about-how strong { display: block; margin-bottom: 5px; font-size: 17px; }
+.about-how li p { margin: 0; color: var(--muted); font-size: 13px; }
+.about-bottom-cta { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 52px 58px; border-radius: 28px; color: #fff; background: var(--primary); }
+.about-bottom-cta > div > span { color: #bce4ca; font-size: 14px; font-weight: 900; }
+.about-bottom-cta h2 { margin: 6px 0 0; font-size: clamp(26px, 3.5vw, 38px); }
+.about-bottom-cta button { flex: 0 0 auto; }
 
 .summary-row {
   display: grid;
@@ -2418,6 +2469,32 @@ select:focus-visible {
 }
 
 @media (max-width: 980px) {
+  .about-hero {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .about-hero-visual {
+    min-height: 400px;
+  }
+
+  .about-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .about-feature {
+    min-height: auto;
+  }
+
+  .about-feature > span {
+    margin-bottom: 24px;
+  }
+
+  .about-how {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
   .expiration-banner {
     grid-template-columns: auto 1fr;
   }
@@ -2432,6 +2509,20 @@ select:focus-visible {
 }
 
 @media (max-width: 680px) {
+  .about-page { gap: 64px; }
+  .about-hero { min-height: auto; }
+  .about-hero-copy h1 { font-size: clamp(40px, 13vw, 56px); }
+  .about-lead { font-size: 15px; }
+  .about-actions { display: grid; }
+  .about-actions button { width: 100%; }
+  .about-hero-visual { min-height: 350px; margin: 0 -2px; }
+  .visual-fridge { top: 44px; left: 16px; }
+  .visual-menu { right: 15px; bottom: 38px; }
+  .visual-arrow { top: 168px; left: calc(50% - 25px); }
+  .about-how { padding: 30px 22px; }
+  .about-bottom-cta { align-items: stretch; flex-direction: column; padding: 34px 24px; }
+  .about-bottom-cta button { width: 100%; }
+
   .app-shell > main {
     width: min(100% - 28px, 1120px);
   }
