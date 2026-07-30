@@ -20,7 +20,6 @@ const SubscriptionEdit = () => {
   const [memberCount, setMemberCount] = useState(1)
   const [bankName, setBankName] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
-  const [accountHolderName, setAccountHolderName] = useState('')
 
   const [submitStatus, setSubmitStatus] = useState('idle')
   const [submitErrorMessage, setSubmitErrorMessage] = useState('')
@@ -46,7 +45,6 @@ const SubscriptionEdit = () => {
         setMemberCount(data.memberCount)
         setBankName(data.bankAccount.bankName)
         setAccountNumber(data.bankAccount.accountNumber)
-        setAccountHolderName(data.bankAccount.accountHolderName)
         setLoadStatus('ready')
       })
       .catch((error) => {
@@ -76,7 +74,6 @@ const SubscriptionEdit = () => {
         memberCount,
         bankName,
         accountNumber,
-        accountHolderName,
       })
       navigate(`/subscriptions/${id}`)
     } catch (error) {
@@ -201,22 +198,6 @@ const SubscriptionEdit = () => {
             inputMode="numeric"
             value={accountNumber}
             onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ''))}
-            autoComplete="off"
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label" htmlFor="accountHolderName">
-            예금주
-          </label>
-          <input
-            id="accountHolderName"
-            className="form-input"
-            type="text"
-            lang="ko"
-            value={accountHolderName}
-            onChange={(e) => setAccountHolderName(e.target.value)}
             autoComplete="off"
             required
           />
