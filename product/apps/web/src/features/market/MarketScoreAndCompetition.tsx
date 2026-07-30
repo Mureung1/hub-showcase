@@ -62,18 +62,19 @@ export function InspectorScoreAndCompetition({
           <div className="score-key-metrics" aria-label="점수 핵심 지표">
             <div>
               <UsersRound aria-hidden="true" />
-              <span>선택 분기 길단위인구 추정치</span>
+              <span>선택 분기 유동인구</span>
               <b>
                 {analysis.raw.total_flow == null
                   ? "자료 없음"
                   : `${Math.round(analysis.raw.total_flow).toLocaleString("ko-KR")}명/분기`}
               </b>
+              <small>서울시 길단위인구 기반 추정치</small>
             </div>
             <div>
               <Target aria-hidden="true" />
               <span>점포 위치 기준 동일 업종</span>
               <b>{sameCategoryCount.toLocaleString("ko-KR")}개</b>
-              <small>2026.06 점포 스냅샷</small>
+              <small>2026년 6월 원천 스냅샷 · 실시간 영업 여부 아님</small>
             </div>
             <div>
               <TrendingUp aria-hidden="true" />
@@ -95,7 +96,7 @@ export function InspectorScoreAndCompetition({
         <section className="metric-section">
           <div className="section-title">
             <span>경쟁 현황</span>
-            <small>점포 위치 2026.06 기준 · 서울시 상권 경계</small>
+            <small>점포 위치 원천: 2026년 6월 스냅샷 · 서울시 상권 경계</small>
           </div>
           <div className="competition-chart">
             <div className="competition-stat">
@@ -107,7 +108,10 @@ export function InspectorScoreAndCompetition({
               <span>
                 <i className="green" /> {categorySelection.name} <b>{sameCategoryCount}</b>
               </span>
-              <small>2026.06 점포 위치 스냅샷에서 같은 업종만 집계합니다.</small>
+              <small>
+                2026년 6월 원천 스냅샷에 등록된 같은 업종 점포를 집계합니다. 실시간 영업 여부는
+                아닙니다.
+              </small>
             </div>
           </div>
         </section>
