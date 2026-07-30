@@ -87,8 +87,12 @@ describe("applyPromo — 발송 문구(copy) 동기화", () => {
   });
 
   it("문구 속 할인액도 같이 바뀐다", () => {
-    const next = applyPromo(SCENARIOS.cold.copy, { kind: "amount", won: 2500 });
-    expect(next).toContain("세트 2,500원 할인");
+    const copy = SCENARIOS.cold.copy;
+    const next = applyPromo(copy, { kind: "amount", won: 2500 });
+    expect(next).toContain("2,500원 할인");
+    // 앞뒤 말·이모지·줄바꿈은 그대로 (금액 숫자만 바뀐다).
+    expect(next).toContain("❄️ 오늘 진짜 춥죠? 몸 녹이러 오세요 🔥");
+    expect(next.split("\n")).toHaveLength(copy.split("\n").length);
   });
 
   it("혜택이 두 번 나오면 둘 다 바꾼다", () => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { ScenarioKey, ChannelId, Tone, Scenario, SendCampaignResponse, TrackingResponse } from "shared";
-import { buildSmsBody, buildSnsCaption } from "shared";
+import { buildSmsBody, buildSnsCaption, MAX_DISCOUNT_PCT, MAX_DISCOUNT_WON } from "shared";
 import { T, font, won, DAYS, DANGOL_TOTAL, DANGOL_CONSENT } from "./styles/tokens";
 import { SCENARIOS, CHANNELS, HISTORY } from "./mocks/scenarios";
 import { MOCK_MODE, getWeatherToday, getProposalToday, patchCampaign, sendCampaign, getTracking } from "./api/client";
@@ -28,10 +28,6 @@ type RemoteState =
   | { status: "ready"; scenario: Scenario; campaignId: string; stale: boolean; date: string }
   | { status: "empty"; message: string } // 서버는 붙었으나 오늘 제안이 아직 없음
   | { status: "error"; message: string };
-
-// 서버 가드레일(agent/guardrails.ts)과 동일 상한 — 여기 값은 안내용이고 최종 강제는 서버다.
-const MAX_DISCOUNT_PCT = 20;
-const MAX_DISCOUNT_WON = 3000;
 
 // ---- 채널 브랜드 로고 (앱아이콘 스타일 인라인 SVG — 외부 아이콘 라이브러리 미사용) ------
 function InstagramLogo({ size = 22 }: { size?: number }) {
@@ -228,7 +224,8 @@ export default function WeatherPilotV3() {
         channels,
         editedPromo: { type: "할인", value: promoValue },
       });
-      const result = await sendCampaign(sendId, { channels, assumeNight: nightMode }, snsCaption);
+      // scenarioKey는 MOCK에서만 쓴다 — 날씨별로 미리 올려 둔 인스타 게시물을 고르는 용도.
+      const result = await sendCampaign(sendId, { channels, assumeNight: nightMode }, snsCaption, scenarioKey);
       setSentCampaignId(sendId);
       setSendResult(result);
       setView("sent");
@@ -505,7 +502,9 @@ function EditView({ copy, onCopyChange, promoEdit, onPromoChange, promoLabel, ch
           </span>
         </div>
         {overLimit && (
-          <div style={warnBox}>{overLimitText} 이대로 발송하면 서버가 거부합니다.</div>
+          /* MOCK_MODE에서도 api/client가 같은 판정으로 발송을 거부한다(shared/promoLimits.ts).
+             서버를 안 켠 데모에서 상한이 무방비였던 문제 — 이제 두 경로가 같은 문장으로 막는다. */
+          <div style={warnBox}>{overLimitText} 이대로는 발송이 거부됩니다.</div>
         )}
         {mismatch && (
           <div style={warnBox}>{mismatch} 문자와 쿠폰이 다른 혜택으로 발송돼요.</div>
@@ -614,6 +613,10 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
   const tracking = dangolOn && !scheduled;
   const names = channels.map((id) => CHANNELS.find((c) => c.id === id)?.label).filter(Boolean) as string[];
   const target = sendResult.recipients;
+  // 발송된 채널은 이 화면의 핵심 정보라 회색 본문에 묻히면 안 된다 — 파란 굵은 글씨로 띄운다.
+  const sentChannels = (
+    <span style={{ color: T.primaryDark, fontWeight: 700 }}>{names.join(" · ")}</span>
+  );
 
   // SNS 게시 결과: instagram은 본인 계정 실게시 시도(서버), 실패·미설정·X는 문구 복사 폴백.
   const igPosted = igOn && (sendResult.sns?.posted ?? false);
@@ -686,10 +689,10 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
         <div style={{ fontSize: 13, color: T.sub, marginTop: 5, lineHeight: 1.6 }}>
           {s.title}<br />
           {scheduled
-            ? <>{names.join(" · ")}<br />단골은 <b>내일 오전 8시 예약발송</b>으로 전환됐어요.</>
+            ? <>{sentChannels}<br />단골은 <b>내일 오전 8시 예약발송</b>으로 전환됐어요.</>
             : dangolOn
-              ? <>{names.join(" · ")}<br />수신동의 단골 {target}명에게 발송했어요.</>
-              : <>{names.join(" · ")}<br />{snsHint}</>}
+              ? <>{sentChannels}<br />수신동의 단골 {target}명에게 발송했어요.</>
+              : <>{sentChannels}<br />{snsHint}</>}
         </div>
         {sendResult.couponCode && (
           <div style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 999, background: T.surfaceAlt, fontSize: 12.5, color: T.ink, fontWeight: 600 }}>
@@ -772,7 +775,9 @@ function SentView({ s, channels, sendResult, campaignId, snsCaption, uat, elapse
 
       <p style={{ textAlign: "center", fontSize: 12, color: T.muted, marginTop: 14, lineHeight: 1.6 }}>
         {scheduled ? "예약 시간이 되면 자동 발송하고 추적을 시작할게요."
-          : tracking ? "쿠폰 사용은 쿠폰 코드로 누적 집계돼요. 날씨 회복이 아니라 이 캠페인이 만든 매출입니다."
+          /* 두 문장을 한 덩어리로 흘리면 마지막 "다."만 다음 줄로 넘어가 잘려 보인다.
+             문장 경계에서 직접 줄을 나눠 "날씨 회복이 아니라…"가 통째로 아랫줄에 오게 한다. */
+          : tracking ? <>쿠폰 사용은 쿠폰 코드로 누적 집계돼요.<br />날씨 회복이 아니라 이 캠페인이 만든 매출입니다.</>
           /* SNS 단독 발송 — 쿠폰이 발급되지 않는다(서버가 dangol 없으면 발급 경로를 건너뜀).
              구 문구는 "SNS 반응은 성과 탭에서 집계"였으나 PerfView는 쿠폰 사용률·귀속 매출만 보여준다.
              없는 기능을 약속하지 말고, 매출 추적을 켜는 방법을 안내한다. */
