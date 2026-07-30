@@ -40,4 +40,4 @@ description: Strict red-green-refactor TDD cycle for a single small function in 
 
 - **자동 cleanup 없음**: `vite.config.js`에 `test.globals: true`가 없고 `src/setupTests.js`도 `afterEach(cleanup)`을 등록하지 않는다. 한 테스트 파일 안에서 `render()`를 여러 번 호출하고 결과 텍스트가 겹치면(`"0%"`, `"NaN%"` 같은 짧은 문자열) "Found multiple elements" 에러가 난다. **고칠 때는 그 테스트 파일 안에서만** `afterEach(() => cleanup())`을 추가한다 — `setupTests.js`나 다른 기존 테스트 파일은 건드리지 않는다(프로젝트 공통 인프라라 영향 범위가 커짐).
 - **커밋 타이밍**: 구현+테스트가 끝났다고 바로 커밋하지 않는다. 사용자가 브라우저에서 확인하고 "커밋해줘"라고 말할 때까지 기다린다.
-- **체크리스트 문서**: 이슈 번호가 있는 작업이면 `docs/checklist_4_week3_4_issues.md` 같은 완료 기준 문서의 체크박스도 갱신 대상인지 확인한다(있다면 갱신 후 별도로 커밋해도 되는지 물어본다).
+- **체크리스트 문서**: 이슈 번호가 있는 작업이면 `docs/checklist.md` 같은 완료 기준 문서의 체크박스도 갱신 대상인지 확인한다(있다면 갱신 후 별도로 커밋해도 되는지 물어본다).

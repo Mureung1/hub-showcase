@@ -26,7 +26,7 @@ function LoginPage() {
     const { error: signInError } = await signIn({ email, password })
     setSubmitting(false)
     if (signInError) {
-      // 계정 존재 여부를 노출하지 않는 동일 메시지 (checklist_3의 시나리오 그대로)
+      // 계정 존재 여부를 노출하지 않는 동일 메시지 (checklist.md Part 2의 시나리오 그대로)
       setError('이메일 또는 비밀번호가 올바르지 않습니다.')
       return
     }
