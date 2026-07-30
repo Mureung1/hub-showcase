@@ -389,10 +389,11 @@
 /* Situation-based recipe recommendations */
 .mood-section,
 .recommendation-section,
-.special-recipe-section { margin-top: 28px; padding: 30px; border: 1px solid rgba(64,82,71,.1); border-radius: 22px; background: #fff; box-shadow: 0 14px 36px rgba(45,61,51,.055); }
-.mood-section { border-color: rgba(0,109,54,.11); box-shadow: 0 18px 44px rgba(35,65,48,.07); }
+.special-recipe-section { margin-top: 28px; padding: 30px; border: 1px solid rgba(64,82,71,.11); border-radius: 22px; background: #fff; box-shadow: 0 14px 34px rgba(45,61,51,.06); }
+.mood-section { margin-top: 0; }
 .mood-section .section-heading { margin-bottom: 24px; }
-.mood-section .section-heading .eyebrow { color: #d76532; letter-spacing: .045em; }
+.mood-section .section-heading .eyebrow,
+.recommendation-section-heading .eyebrow { color: #d76532; letter-spacing: .045em; }
 .mood-section .section-heading h2 { color: #343632; font-size: 24px; font-weight: 760; letter-spacing: -.025em; line-height: 1.35; word-break: keep-all; }
 .mood-selector { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 14px; }
 .mood-selector button { min-width: 0; min-height: 178px; padding: 24px 18px; display: grid; grid-template-rows: 88px auto; place-items: center; align-content: center; row-gap: 12px; border: 1px solid #dfe7e2; border-radius: 18px; color: #1d2a22; background: #fcfdfc; text-align: center; transition: transform 160ms ease,border-color 160ms ease,background 160ms ease,box-shadow 160ms ease; }
@@ -405,12 +406,12 @@
 .mood-selector button.active > span { border-color: rgba(0,109,54,.1); background: #fff; }
 .mood-selector strong { display: block; min-width: 0; color: #30332f; font-size: 18px; font-weight: 760; letter-spacing: -.02em; line-height: 1.35; white-space: nowrap; }
 .recommendation-section-heading { margin-bottom: 22px; display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
-.recommendation-section-heading h2 { margin: 3px 0 0; font-size: 25px; }
+.recommendation-section-heading h2 { margin: 3px 0 0; color: #343632; font-size: 25px; font-weight: 760; letter-spacing: -.025em; }
 .recommendation-section-heading p:last-child { margin: 7px 0 0; color: var(--muted); }
 .one-missing-toggle { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; font-weight: 800; white-space: nowrap; }
 .one-missing-toggle select { min-height: 34px; padding: 6px 28px 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; }
 .recipe-recommendation-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; }
-.recipe-card { min-width: 0; padding: 22px; display: flex; flex-direction: column; border: 1px solid #e3e7e4; border-radius: 18px; background: #fff; box-shadow: 0 8px 22px rgba(45,61,51,.055); }
+.recipe-card { min-width: 0; padding: 22px; display: flex; flex-direction: column; border: 1px solid rgba(64,82,71,.11); border-radius: 18px; background: #fff; box-shadow: 0 8px 20px rgba(45,61,51,.05); }
 .recipe-card.special { border-color: #f1d4bd; background: linear-gradient(180deg,#fffaf6 0%,#fff 58%); }
 .recipe-card.selected { outline: 2px solid var(--secondary); outline-offset: 2px; }
 .recipe-card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -582,13 +583,12 @@ h1, h2, h3, p { margin-top: 0; letter-spacing: 0; }
 .content-screen > .screen-title {
   position: relative;
   overflow: hidden;
+  margin-bottom: 28px;
   padding: 30px 34px;
-  border: 1px solid rgba(0, 109, 54, .1);
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at 92% 18%, rgba(255, 126, 71, .15), transparent 11rem),
-    linear-gradient(125deg, #f1f8f4 0%, #fff8f2 100%);
-  box-shadow: 0 16px 38px rgba(45, 61, 51, .065);
+  border: 1px solid rgba(64, 82, 71, .11);
+  border-radius: 22px;
+  background: linear-gradient(125deg, #f5faf7 0%, #fff8f3 100%);
+  box-shadow: 0 14px 34px rgba(45, 61, 51, .06);
 }
 
 .content-screen > .screen-title .eyebrow {
