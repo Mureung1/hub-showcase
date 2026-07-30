@@ -153,17 +153,24 @@ function paginate(items: MatchCandidate[], page: number, limit: number): PagedRe
 const PAGE_SIZE = 1000
 
 /**
- * loadAll() 결과 캐시 (이슈 #109) — TTL 60초.
+ * loadAll() 결과 캐시 (이슈 #109) — TTL 10분.
  * 크롤러는 하루 1회(`.github/workflows/crawler.yml`)만 테이블을 갱신하므로 훨씬 길게 잡아도
- * 무방하지만, 너무 길면 "방금 갱신된 데이터가 안 보인다"는 체감 지연이 생길 수 있어 60초로
- * 절충했다. `/api/match`·`/api/subsidies`가 loadAll()을 공유하므로 캐시도 여기 한 곳에만 둔다.
+ * 무방하지만, 너무 길면 "방금 갱신된 데이터가 안 보인다"는 체감 지연이 생길 수 있어 10분으로
+ * 절충했다(이슈 #113). `/api/match`·`/api/subsidies`가 loadAll()을 공유하므로 캐시도 여기 한 곳에만 둔다.
  * 캐시는 항상 원본 MatchCandidate[]만 보관하고, 필터링/정렬(match/findAll)은 매 호출마다 새로
  * 수행한다 — profile마다 결과가 달라지는 필터링된 결과는 절대 캐싱하지 않는다.
  * Supabase 에러로 FALLBACK을 반환한 경우는 캐싱하지 않는다 — 다음 요청에서 재시도할 수 있도록.
  * 여러 요청이 동시에 cold-cache 상태로 들어와 각자 Supabase를 중복 호출하는 케이스는 이번
  * 이슈 범위 밖 (단순 TTL 캐시로 충분, 동시 중복 조회 방지는 별도 이슈로 미룸).
+ *
+ * 이슈 #113: 실측 로그 기준 cache miss(전체 재조회) ~2.5초 vs cache hit ~1.4ms — 60초 TTL이라
+ * cache miss를 겪는 요청 비율이 불필요하게 높았다. 크롤러가 하루 1회만 갱신하므로 TTL을 몇 분
+ * 단위로 늘려도 "신선하지 않은 데이터"로 인한 체감 손실은 거의 없고, Render 재배포/재시작마다
+ * 캐시가 초기화되므로 TTL은 사실상 "재시작 전까지 최대 이만큼 묵힌다"는 상한선일 뿐이다. 다만
+ * 관리자가 데이터를 수동으로 고친 경우 하루 종일 반영이 안 되면 안 되므로, 5~15분 범위 안에서
+ * "합리적으로 빠른 시간 안에" 반영되도록 10분으로 정했다.
  */
-const CACHE_TTL_MS = 60_000
+const CACHE_TTL_MS = 600_000
 let cache: { data: MatchCandidate[]; fetchedAt: number } | null = null
 
 /** 테스트 전용: 모듈 스코프 캐시를 초기화한다. 프로덕션 코드에서는 호출하지 않는다. */
