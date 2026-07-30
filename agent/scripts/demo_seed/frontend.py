@@ -1255,7 +1255,7 @@ CLUSTER_AXES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
 def axis_level(value: int | None) -> str:
     if value is None:
         return "—"
-    if value >= 80:
+    if value >= 100:
         return "강"
     if value >= 21:
         return "중"

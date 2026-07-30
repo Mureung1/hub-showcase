@@ -1952,10 +1952,11 @@ button.view-tab { font-weight: 750; }
 /* ===== 개별 공고 해석: 세 종류 주석 + 탭 ===== */
 
 .posting-raw mark.mark--dev { background: #FEF08A; }
-.posting-raw mark.mark--dev sup { color: #B45309; }
+.posting-raw .sup-dev { color: #B45309; }
 .posting-raw mark.mark--signal { background: #DBEAFE; }
-.posting-raw mark.mark--signal sup { color: #1D4ED8; }
-.sup-base { font-size: 9px; font-weight: 800; color: var(--color-text-muted); margin-left: 1px; }
+.posting-raw .sup-signal { color: #1D4ED8; }
+.posting-raw .sup-base { font-size: 9px; font-weight: 800; color: var(--color-text-muted); margin-left: 1px; }
+.posting-raw sup + sup { margin-left: 4px; }
 
 .ann-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .ann-tab {
