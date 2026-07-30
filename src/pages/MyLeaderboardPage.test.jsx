@@ -96,6 +96,87 @@ describe('MyLeaderboardPage', () => {
     await waitFor(() => expect(screen.getByText('네트워크 오류')).toBeInTheDocument())
   })
 
+  // get_xp_leaderboard()는 SQL에서 `where total_xp > 0`으로 거른다 — 갓 가입해 XP가 0이면 **결과에
+  // 본인이 아예 없다**(rows는 정상인데 isMe가 하나도 없음). 예전에는 이때 "내 순위" 카드와 "내 순위
+  // 주변" 목록이 둘 다 조건에서 탈락해 **남의 포디움만 덩그러니** 남았고, 실제로 "리더보드가 제대로
+  // 안 뜬다"로 신고됐다. 조회 실패와 구분되는 정상 상태이므로 그렇게 보여야 한다.
+  it('XP가 0이라 순위에 없으면 그 사실과 다음 행동을 안내한다', async () => {
+    useUser.mockReturnValue({ authMode: 'user' })
+    getXpLeaderboard.mockResolvedValue(rows(3, null)) // isMe가 하나도 없다
+    render(
+      <MemoryRouter>
+        <MyLeaderboardPage />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByText('아직 순위에 없어요')).toBeInTheDocument()
+    expect(screen.getByText(/퀘스트를 완료해 XP를 얻으면/)).toBeInTheDocument()
+    // 남의 포디움은 그대로 보여야 한다 — 데이터는 정상이라 숨길 이유가 없다.
+    expect(screen.getByText('👑')).toBeInTheDocument()
+  })
+
+  it('순위 없음 안내에서 퀘스트 화면으로 바로 갈 수 있다', async () => {
+    useUser.mockReturnValue({ authMode: 'user' })
+    getXpLeaderboard.mockResolvedValue(rows(3, null))
+    render(
+      <MemoryRouter>
+        <MyLeaderboardPage />
+      </MemoryRouter>,
+    )
+    fireEvent.click(await screen.findByText('퀘스트 보러 가기'))
+    expect(mockNavigate).toHaveBeenCalledWith('/profile/quests')
+  })
+
+  it('순위에 있으면 "아직 순위에 없어요"는 뜨지 않는다', async () => {
+    useUser.mockReturnValue({ authMode: 'user' })
+    getXpLeaderboard.mockResolvedValue(rows(4, 4))
+    render(
+      <MemoryRouter>
+        <MyLeaderboardPage />
+      </MemoryRouter>,
+    )
+    await waitFor(() => expect(screen.getAllByText(/4위/).length).toBeGreaterThan(0))
+    expect(screen.queryByText('아직 순위에 없어요')).not.toBeInTheDocument()
+  })
+
+  it('조회 실패는 "순위 없음"과 다른 상태다 — 오류와 재시도 수단을 보여준다', async () => {
+    // 둘이 같은 화면으로 보이면 사용자는 앱이 고장난 건지 자기가 XP가 없는 건지 알 수 없다.
+    useUser.mockReturnValue({ authMode: 'user' })
+    getXpLeaderboard.mockRejectedValue(new Error('JWT expired'))
+    render(
+      <MemoryRouter>
+        <MyLeaderboardPage />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByText('JWT expired')).toBeInTheDocument()
+    expect(screen.getByText('다시 시도')).toBeInTheDocument()
+    expect(screen.queryByText('아직 순위에 없어요')).not.toBeInTheDocument()
+  })
+
+  it('다시 시도를 누르면 재조회한다', async () => {
+    useUser.mockReturnValue({ authMode: 'user' })
+    getXpLeaderboard.mockRejectedValueOnce(new Error('JWT expired')).mockResolvedValueOnce(rows(3, null))
+    render(
+      <MemoryRouter>
+        <MyLeaderboardPage />
+      </MemoryRouter>,
+    )
+    fireEvent.click(await screen.findByText('다시 시도'))
+    await waitFor(() => expect(getXpLeaderboard).toHaveBeenCalledTimes(2))
+    expect(await screen.findByText('아직 순위에 없어요')).toBeInTheDocument()
+  })
+
+  it('세션 복원 중에는 게스트 안내를 띄우지 않는다', () => {
+    // authMode는 세션이 오기 전까지 'guest'다 — 로그인 사용자에게 "로그인하면…"이 잠깐 보였다.
+    useUser.mockReturnValue({ authMode: 'guest', authLoading: true })
+    render(
+      <MemoryRouter>
+        <MyLeaderboardPage />
+      </MemoryRouter>,
+    )
+    expect(screen.queryByText(/로그인하면 다른 사용자와/)).not.toBeInTheDocument()
+    expect(getXpLeaderboard).not.toHaveBeenCalled()
+  })
+
   it('뒤로가기를 누르면 /profile로 이동한다', () => {
     useUser.mockReturnValue({ authMode: 'guest' })
     render(

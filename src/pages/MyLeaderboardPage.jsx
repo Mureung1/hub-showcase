@@ -117,6 +117,22 @@ export default function MyLeaderboardPage() {
         </Card>
       )}
 
+      {/* XP가 0이면 SQL(get_xp_leaderboard)의 `where total_xp > 0`에 걸려 결과에서 아예 빠진다 —
+          즉 rows는 정상인데 me만 없다. 이 안내가 없을 때는 갓 가입한 사용자가 남의 포디움만 덩그러니
+          보게 되어 "리더보드가 제대로 안 뜬다"로 읽혔다(실제 신고). 조회 실패와 구분돼야 하는 상태다.
+          식단 탭 LeaderboardCard는 같은 상황("오늘 기록 없음")을 이미 이렇게 안내하고 있었다. */}
+      {rows && rows.length > 0 && !me && (
+        <Card style={{ marginBottom: spacing.lg }}>
+          <p style={{ margin: 0, fontSize: font.size.md, fontWeight: 700, color: colors.textStrong }}>아직 순위에 없어요</p>
+          <p style={{ margin: `${spacing.xs}px 0 ${spacing.md}px`, fontSize: font.size.sm, color: colors.textSub }}>
+            퀘스트를 완료해 XP를 얻으면 리더보드에 올라가요.
+          </p>
+          <AppButton variant="secondary" onClick={() => navigate('/profile/quests')}>
+            퀘스트 보러 가기
+          </AppButton>
+        </Card>
+      )}
+
       {hasPodium && <LeaderboardPodium top3={rows.slice(0, 3)} />}
 
       {hasPodium && nearbyRows.length > 0 && (
