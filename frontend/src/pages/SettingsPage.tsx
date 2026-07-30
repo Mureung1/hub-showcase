@@ -94,10 +94,8 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
       setIsLoading(true)
       const response = await profileApi.fetch()
 
-      // 응답이 직접 프로필 객체 또는 ApiResponse 형태
-      const profileData = response?.data || response
-
-      if (profileData) {
+      if (response) {
+        const profileData = response as any
         setProfile({
           nickname: profileData.nickname || '',
           major: profileData.major || '',
@@ -119,7 +117,7 @@ export default function SettingsPage({ setCurrentPage }: SettingsPageProps) {
     try {
       setIsSaving(true)
       const response = await profileApi.update(profile)
-      if (response?.data) {
+      if (response) {
         setMessage({ type: 'success', text: '프로필이 성공적으로 저장되었습니다! 🎉' })
         setTimeout(() => setMessage(null), 3000)
       }

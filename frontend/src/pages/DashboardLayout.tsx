@@ -79,12 +79,9 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
       console.log('📋 프로필 API 응답:', response)
 
       // 백엔드가 직접 profile 객체를 반환 (ApiResponse 래핑 안 함)
-      if (response?.id || response?.userId) {
+      if (response?.userId) {
         console.log('✅ 프로필 데이터:', response)
         setProfile(response)
-      } else if (response?.data) {
-        console.log('✅ 프로필 데이터 (ApiResponse):', response.data)
-        setProfile(response.data)
       } else {
         console.warn('⚠️ 프로필 응답 형식 오류:', response)
       }
@@ -184,14 +181,20 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
         dtstart: endDate.toISOString(),
         dtend: endDate.toISOString(),
         relatedPostingId: posting.id,
-        isAllDay: true,
         memo: posting.sourceUrl ? `링크: ${posting.sourceUrl}` : '',
       })
 
       // 2. Google Calendar에 동기화 (오늘 이후인 경우만)
       if (!isPast) {
         try {
-          await calendarApi.sync(posting.id)
+          const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:3000/api'
+          const { tokenManager } = await import('../utils/apiClient')
+          const token = tokenManager.getAccessToken()
+          await fetch(`${API_BASE}/calendar/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ postingId: posting.id })
+          })
           console.log('✅ Google Calendar 동기화 완료')
         } catch (syncError) {
           console.warn('⚠️ Google Calendar 동기화 실패 (로컬 저장은 완료):', syncError)
@@ -279,12 +282,12 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                 <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <span style={{ color: '#fff', fontSize: '13px', fontWeight: 600 }}>
-                    {(profile as any).nickname?.charAt(0).toUpperCase() || profile.userId?.charAt(0).toUpperCase() || '?'}
+                    {profile.nickname?.charAt(0).toUpperCase() || profile.userId?.charAt(0).toUpperCase() || '?'}
                   </span>
                 </div>
                 <div>
                   <div style={{ fontSize: '13px', fontWeight: 600, lineHeight: 1.3 }}>
-                    {(profile as any).nickname || profile.userId || '사용자'}
+                    {profile.nickname || profile.userId || '사용자'}
                   </div>
                   <div style={{ fontSize: '11px', color: '#6b7280', lineHeight: 1.3 }}>{profile.major || '전공미정'} {profile.grade || ''}학년</div>
                 </div>
@@ -381,12 +384,14 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
                 transition: 'all 120ms',
               }}
               onFocus={(e) => {
-                (e.currentTarget as HTMLInputElement).style.borderColor = '#6366f1'
-                (e.currentTarget as HTMLInputElement).style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)'
+                const input = e.currentTarget as HTMLInputElement
+                input.style.borderColor = '#6366f1'
+                input.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.1)'
               }}
               onBlur={(e) => {
-                (e.currentTarget as HTMLInputElement).style.borderColor = '#e5e7eb'
-                (e.currentTarget as HTMLInputElement).style.boxShadow = 'none'
+                const input = e.currentTarget as HTMLInputElement
+                input.style.borderColor = '#e5e7eb'
+                input.style.boxShadow = 'none'
               }}
             />
             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '14px', color: '#9ca3af' }}>🔍</span>
@@ -728,7 +733,7 @@ export default function DashboardLayout({ setCurrentPage }: DashboardLayoutProps
 
                     try {
                       const content = await file.text()
-                      const result = await calendarEventsApi.importIcs(content)
+                      const result = await calendarEventsApi.importIcs(content) as any
                       alert(`✅ ${result.count || 0}개 일정을 가져왔습니다`)
                       await loadCalendarEvents()
                     } catch (error) {

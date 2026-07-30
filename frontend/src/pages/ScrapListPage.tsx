@@ -80,14 +80,17 @@ export default function ScrapListPage({ setCurrentPage }: ScrapListPageProps) {
         dtstart: endDate.toISOString(),
         dtend: endDate.toISOString(),
         relatedPostingId: posting.id,
-        isAllDay: true,
         memo: posting.sourceUrl ? `링크: ${posting.sourceUrl}` : '',
-      })
+      } as any)
 
       // 2. Google Calendar에 동기화 (오늘 이후인 경우만)
       if (!isPast) {
         try {
-          await calendarApi.sync(posting.id)
+          await fetch(`/api/calendar/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postingId: posting.id })
+          })
           console.log('✅ Google Calendar 동기화 완료')
         } catch (syncError) {
           console.warn('⚠️ Google Calendar 동기화 실패 (로컬 저장은 완료):', syncError)
