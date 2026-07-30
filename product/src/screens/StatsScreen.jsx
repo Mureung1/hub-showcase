@@ -329,27 +329,30 @@ function StatsScreen({ go, job }) {
               <span className="hint">기업군 × 강조축 언급률 · 다음 단계에서 기업군을 고르면 이 행이 공고 해석 입력이 됩니다</span>
             </div>
             <div className="panel">
-              <table className="heatmap">
-                <thead>
-                  <tr>
-                    <th>기업군</th>
-                    {clusterAxes.axes.map((a) => <th key={a}>{a}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {clusterAxes.rows.map((row) => (
-                    <tr key={row.cluster}>
-                      <td>{row.cluster} <small>n={row.n}</small></td>
-                      {row.cells.map((c) => (
-                        <td key={c.axis} className={`hm hm--${c.level === '강' ? 3 : c.level === '중' ? 2 : c.level === '약' ? 1 : 0}`}>
-                          <span className="hm-lv">{c.level}</span>
-                          <span className="hm-pc">{c.pct}%</span>
-                        </td>
-                      ))}
+              <p className="heatmap-scroll-hint">옆으로 밀어 전체 항목 보기 →</p>
+              <div className="heatmap-scroll">
+                <table className="heatmap">
+                  <thead>
+                    <tr>
+                      <th>기업군</th>
+                      {clusterAxes.axes.map((a) => <th key={a}>{a}</th>)}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {clusterAxes.rows.map((row) => (
+                      <tr key={row.cluster}>
+                        <td>{row.cluster} <small>n={row.n}</small></td>
+                        {row.cells.map((c) => (
+                          <td key={c.axis} className={`hm hm--${c.level === '강' ? 3 : c.level === '중' ? 2 : c.level === '약' ? 1 : 0}`}>
+                            <span className="hm-lv">{c.level}</span>
+                            <span className="hm-pc">{c.pct}%</span>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               <p className="panel-note">표본이 적은 기업군(n 표시)은 참고용입니다. 축 구성은 3b에서 에이전트가 직군별로 재구성합니다.</p>
             </div>
           </section>

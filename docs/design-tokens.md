@@ -8,7 +8,7 @@
 
 ```css
 :root {
-  --color-bg: #F8FAFC;
+  --color-bg: #FBFAF3;
   --color-surface: #FFFFFF;
   --color-surface-soft: #F1F5F9;
   --color-border: #E2E8F0;
@@ -31,8 +31,8 @@
 
   --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
   --shadow-float: 0 18px 50px rgba(15, 23, 42, 0.12);
-  --glass-surface: rgba(255, 255, 255, 0.68);
-  --glass-border: rgba(226, 232, 240, 0.72);
+  --glass-surface: rgba(248, 246, 238, 0.92);
+  --glass-border: rgba(210, 202, 184, 0.80);
   --glass-blur: 22px;
 
   --font-sans: "Pretendard", "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
@@ -49,7 +49,9 @@
 - 본문 컨테이너는 `.page`가 최대 폭 `760px`, 목차를 곁에 두는 `.page--wide`가 최대 폭 `980px`이다.
 - `.floating-nav`는 `position: sticky`로 상단에서 `96px` 떨어진 자리에 고정한다.
 - 화면 폭 `1350px` 이상에서는 본문을 화면 중앙 열에 두고 `.floating-nav`를 오른쪽 열에 둔다.
-- `1040px` 이하에서는 본문을 단일 열로 전환하고, 목차는 상단의 가로 스크롤 형태로 바꾼다.
+- `1040px` 이하에서는 본문을 `minmax(0, 1fr)` 단일 열로 전환하고, 목차는 상단의 가로 스크롤 형태로 바꾼다.
+- 넓은 표는 본문 폭을 늘리지 않고 전용 컨테이너 안에서만 가로로 스크롤한다. 모바일 히트맵은 기업군 열을 고정한다.
+- `620px` 이하에서는 제목·설명·상단 단계 표시의 글자 크기를 줄이고, `340px` 이하에서 한 단계 더 줄인다.
 - `1050px` 이상에서는 `html { zoom: 0.9; }`을 적용해 데스크톱 리포트의 표시 밀도를 조정한다.
 
 ## 구성 요소 규칙
