@@ -1,6 +1,40 @@
 # 배포 가이드 — Vercel(프론트) + Render(백엔드)
 
-> 오늘은 **사전 준비**까지. 실제 배포는 내일. 이 문서는 배포 시 옮겨야 할 환경변수와 설정을 한 장에 정리한다.
+> 이 문서는 배포 시 옮겨야 할 환경변수와 설정을 한 장에 정리한다.
+
+## ✅ 배포 완료 (2026-07-28) — 라이브
+
+| | 주소 |
+|---|---|
+| **프론트 (Vercel)** | https://respec-gamma.vercel.app |
+| **백엔드 (Render)** | https://respec.onrender.com |
+
+**검증 결과**
+- `GET https://respec.onrender.com/api/health` → `{"db":"ok"}` (백엔드 라이브 + DB 연결)
+- 발행 문서 65편·RAWG 게임 검색 정상 (환경변수 전부 적용됨)
+- 프론트 번들에 `VITE_API_URL=https://respec.onrender.com/api` 반영, CORS 허용 확인 (프론트 ↔ 백엔드 연결 성공)
+
+**배포 중 겪은 것 / 해결**
+- Vercel Hobby가 `Co-Authored-By` 트레일러를 "협업 커밋"으로 보고 차단 → 단일 작성자 커밋 + 커밋 이메일을 GitHub에 인증해 해결.
+- Vercel이 기본 `main`을 배포 → `main`을 최신 브랜치로 fast-forward 하여 최신 코드 배포.
+
+**남은 것**
+- Supabase Auth **Redirect URL / Site URL**에 `https://respec-gamma.vercel.app` 등록(프로덕션 로그인용). 프론트가 OAuth를 `redirectTo: window.location.origin`으로 부르므로, 이 등록 없이는 배포 도메인에서 소셜 로그인이 돌아오지 못한다.
+- 배포 후 CORS를 Vercel 도메인으로 제한(현재 전체 허용) — **데모 이후로 미룸**(데모 주간에 배포 리스크를 만들지 않는다).
+- Render 무료 인스턴스 콜드스타트(~50초) — 데모 직전 워밍업.
+
+## 재검증 기록 (2026-07-30, 4주차 마감)
+
+| 확인 | 결과 |
+|---|---|
+| `GET https://respec.onrender.com/api/health` | `{"status":"ok","service":"core-loop-builder-backend","db":"ok"}` |
+| `GET /api/documents` | 발행 문서 **66편** (최근: 2026-07-29) |
+| `GET /api/games/search?q=zelda` | RAWG 결과 8건 |
+| `https://respec-gamma.vercel.app` | HTTP 200 |
+| 배포 번들 | `VITE_API_URL`이 `https://respec.onrender.com/api`로 반영됨(번들 문자열 확인) |
+| 로컬 테스트 | backend 28 / frontend 36 통과, `npm run lint` 경고 2건(에러 0), `vite build` 성공 |
+
+이번 주 배포 반영분: 4주차 문서(WORKFLOW·발표 자료)·CI 워크플로우·showcase.json, 그리고 7/29 인증 개선 커밋(비밀번호 재설정·변경, 이메일 변경, 프로필 한 줄 소개, 로그인 UX). `main`에 반영하면 Vercel/Render가 자동 배포한다.
 
 ## 폴더 구조
 - **프론트엔드**: `frontend/` (Vite + React) → **Vercel**

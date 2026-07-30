@@ -5,7 +5,9 @@
 - **가이드형 에디터** — 직군별 템플릿과 섹션별 작성 가이드가 내장된 에디터로, 백지 공포 없이 구조부터 배우며 씁니다.
 - **아카이브 & 섹션별 코멘트** — 같은 게임·같은 시스템을 다룬 역기획서를 비교하며 배우고, 섹션 단위로 구체적인 피드백을 주고받습니다.
 - **역기획 챌린지** — 격주 공통 주제로 "일단 완성"을 강제하고, 동일 주제 제출작을 비교합니다.
-- **LLM 자동 피드백** — 발행 즉시 Google Gemini가 섹션별로 강점·개선점·제안을 달고 전체 총평을 남깁니다. 구조 완결성·구체성·예외 케이스 질문·역기획 관점 4가지만 봅니다. (회원 전용, 일일 5회)
+- **LLM 자동 피드백** — 발행 즉시 Google Gemini가 섹션별로 강점·개선점·제안을 달고 전체 총평을 남깁니다. 구조 완결성·구체성·예외 케이스 질문·역기획 관점 4가지만 봅니다. (회원 전용, 일일 10회)
+
+**라이브**: 프론트 <https://respec-gamma.vercel.app> · 백엔드 <https://respec.onrender.com> (Render 무료 인스턴스라 첫 요청은 콜드스타트로 ~50초 걸릴 수 있습니다)
 
 > **피벗 안내**: 이 프로젝트는 "Core Loop Builder"(AI 코어 루프 설계 도구)에서 방향을 전환한 것입니다. 구 프로젝트의 기획서·발표 자료·프로토타입은 [`docs/archive/core-loop-builder/`](./docs/archive/core-loop-builder/)에 보존되어 있습니다.
 
@@ -75,11 +77,14 @@ flowchart LR
 
 ## 문서
 
+- [개발 워크플로우](./docs/WORKFLOW.md) — 단계별 입력·확인 기준·결과물·복구 지점, Agent·Skill 협업 배치, 사람 결정 vs AI 수행
 - [아키텍처](./docs/ARCHITECTURE.md) — 데이터 흐름 다이어그램, 그리다 발견해 고친 권한 구멍 7가지
 - [아키텍처 발표 대본](./docs/ARCHITECTURE-script.md) — 위 문서를 말로 설명하는 대본
 - [서비스 기획서 v0.1](./project-plan.md) — 문제 정의, IA, 기능 명세, 4주 일정
 - [개발 백로그](./docs/BACKLOG.md) — 주차별 Task와 우선순위 (진행 상태의 단일 출처)
-- [2주차 실행 계획](./docs/WEEK2-PLAN.md) — 이번 주 요일별 작업·완료 기준 (수직슬라이스)
+- [2주차 실행 계획](./docs/WEEK2-PLAN.md) — 요일별 작업·완료 기준 (수직슬라이스)
+- [배포 가이드](./docs/DEPLOY.md) — Vercel·Render 설정, 환경변수, 배포 검증 기록
+- [데모 계획](./docs/DEMO-PLAN.md) · [최종 발표 대본](./docs/PRESENTATION-week4.md) · [슬라이드](./docs/PRESENTATION-week4.html)
 - [디자인 시스템](./design/DESIGN_SYSTEM.md)
 - [구 기획서 (Core Loop Builder, Wiki)](https://github.com/geulcho/hub/wiki/Core-Loop-Builder-기획서) — 피벗 이전 기록
 
