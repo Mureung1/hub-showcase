@@ -1,7 +1,6 @@
 -- 수집 source: 카카오테크.
 -- source는 스키마가 아니라 데이터이므로 migration이 아닌 seed로 관리한다.
--- docs/plan/engineering/content-pipeline.md 19장(source 등록 체크리스트),
--- docs/notes/2026-07-15-content-source-selection.md 참조.
+-- docs/plan/engineering/content-pipeline.md 19장(source 등록 체크리스트)을 따른다.
 --
 -- 멱등: feed_url이 이미 있으면 다시 넣지 않는다.
 --   psql "$DATABASE_URL" -f supabase/seeds/20260724_source_kakao_tech.sql

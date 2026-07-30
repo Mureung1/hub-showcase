@@ -228,7 +228,6 @@ hub-clone/
 │   │   ├── design/            # 디자인 시스템·프로토타이핑
 │   │   ├── engineering/       # API·DB·콘텐츠 파이프라인
 │   │   └── process/           # AI 협업·개발 프로세스
-│   ├── notes/                 # 결정과 설계 변경 사유
 │   └── prototype/             # 참고용 HTML 프로토타입
 ├── .agents/templates/         # AI 공통 협업 흐름
 ├── .codex/                    # Codex 에이전트·프롬프트 설정
