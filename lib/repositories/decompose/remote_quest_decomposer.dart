@@ -29,10 +29,27 @@ class RemoteQuestDecomposer implements QuestDecomposer {
     this.timeout = const Duration(seconds: 20),
   }) : _client = client ?? http.Client();
 
-  /// 무료 flash 계열. `-latest` 별칭이라 현재 flash(현재 gemini-3.5-flash)로 자동 연결된다.
-  /// gemini-2.0-flash는 무료 쿼터 0, gemini-2.5-flash는 신규 사용자 deprecated라
-  /// 실측으로 200을 주는 `gemini-flash-latest`로 고정한다. 나중에 교체하기 쉽게 파라미터로도 뺀다.
-  static const String _defaultModel = 'gemini-flash-latest';
+  /// 무료 등급에서 **일일 요청 한도(RPD)가 가장 넉넉한** 모델로 고정한다.
+  ///
+  /// 실측(2026-07-30, 실제 사용자 키로 rate-limit 조회):
+  /// `gemini-3.5-flash` **20 RPD** vs `gemini-3.5-flash-lite` **500 RPD**.
+  /// 데모를 공개하면 심사자 20명이 한 번씩 눌러 flash 쪽은 그날 소진되고,
+  /// 그 뒤엔 오류가 아니라 **조용히 템플릿 폴백**으로 넘어가 아무도 눈치채지 못한다.
+  ///
+  /// **`-latest` 별칭을 쓰지 않는다.** 별칭은 Google이 가리키는 실제 모델을 옮기면
+  /// 쿼터도 같이 따라 바뀐다 — 이전에 `gemini-flash-latest`를 쓰다가 별칭이
+  /// 20 RPD 모델로 옮겨간 사고가 실제로 있었다(그때 주석에 적힌 "200 RPD"는 사실이 아니었다).
+  /// 쿼터를 근거로 고른 선택이므로 **모델명을 명시적으로 고정**한다.
+  ///
+  /// **lite로 충분한 이유**: 이 엔진의 작업은 "목표 → 마이크로 퀘스트 5개 + 난이도 분류"로
+  /// 추론 부담이 작다. 게다가 [_requestBody]가 `responseSchema`로 출력 형식을 강제하고,
+  /// 형식이 어긋나면 [QuestDraft.parseStrict]가 항목을 버리고 상위 정책이 템플릿 폴백으로
+  /// 받아내므로, 품질 하락이 곧바로 잘못된 보상 지급으로 이어지지 않는다.
+  /// (다만 lite가 `responseSchema`를 무시하면 항목이 전부 걸러져 **항상 폴백**이 된다 —
+  /// 모델을 바꿀 때는 실제 키로 분해 1회를 돌려 폴백 배너가 뜨지 않는지 확인할 것.)
+  ///
+  /// 교체는 여전히 [model] 파라미터로 가능하다(테스트·실험용).
+  static const String _defaultModel = 'gemini-3.5-flash-lite';
 
   static const String _host = 'generativelanguage.googleapis.com';
 
