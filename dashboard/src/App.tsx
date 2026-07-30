@@ -1,23 +1,37 @@
 import './styles.css';
 import { useState } from 'react';
 import type { KeyboardEvent } from 'react';
+import projectCategoryConfig from '../config/project-categories.json';
 
 const categoryGroups = [
   { id: 'all', label: '전체' },
   { id: 'small-business', label: '소상공인' },
   { id: 'university', label: '대학생' },
-  { id: 'daily-life', label: '지역·생활' },
+  { id: 'daily-life', label: '기타' },
 ] as const;
 
 type CategoryGroupId = typeof categoryGroups[number]['id'];
+type ProjectCategory = '소상공인' | '대학생' | '기타';
 
 const categoryLabels: Record<Exclude<CategoryGroupId, 'all'>, string> = {
   'small-business': '소상공인',
   university: '대학생',
-  'daily-life': '지역·생활',
+  'daily-life': '기타',
 };
 
+const savedCategories = projectCategoryConfig.categories as Record<string, ProjectCategory>;
+
+function savedCategoryFor(project: Project): ProjectCategory | undefined {
+  if (!project.sourceBranch) return undefined;
+  return savedCategories[project.sourceBranch];
+}
+
 function categoryGroupFor(project: Project): Exclude<CategoryGroupId, 'all'> {
+  const savedCategory = savedCategoryFor(project);
+  if (savedCategory === '소상공인') return 'small-business';
+  if (savedCategory === '대학생') return 'university';
+  if (savedCategory === '기타') return 'daily-life';
+
   const category = project.category ?? '';
   if (category === '소상공인 운영' || category === '지역 상권과 홍보' || category === '소상공인') {
     return 'small-business';
@@ -50,6 +64,8 @@ function categoryGroupFor(project: Project): Exclude<CategoryGroupId, 'all'> {
 
 function categoryLabelFor(project: Project) {
   if (project.isDummy && project.category) return project.category;
+  const savedCategory = savedCategoryFor(project);
+  if (savedCategory) return savedCategory;
   if (project.category === '소상공인 운영' || project.category === '지역 상권과 홍보') return '소상공인';
   if (project.category === '대학 생활' || project.category === '학습과 진로') return '대학생';
   return categoryLabels[categoryGroupFor(project)];

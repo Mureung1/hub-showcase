@@ -45,6 +45,42 @@ describe('프로젝트 목록', () => {
     expect(screen.getByRole('heading', { name: '소상공인 정부 지원금 큐레이터' })).toBeInTheDocument();
   });
 
+  it('저장한 브랜치 분류를 단어 검사보다 먼저 적용한다', () => {
+    render(
+      <App
+        projects={[
+          {
+            id: 'baro-jinryo',
+            title: '바로진료',
+            summary: '동네 병원의 진료 대기열을 관리합니다.',
+            featureTags: [],
+            techStack: [],
+            githubUser: 'student',
+            thumbnailUrl: '/thumbnail.webp',
+            sourceBranch: 'N105_신명현',
+          },
+          {
+            id: 'green-connect',
+            title: 'Green Connect',
+            summary: '소상공인 판매장과 매장 상품을 안내합니다.',
+            featureTags: [],
+            techStack: [],
+            githubUser: 'student',
+            thumbnailUrl: '/thumbnail.webp',
+            sourceBranch: 'N059_김태윤',
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /^소상공인 \d+$/ }));
+    expect(screen.getByRole('heading', { name: '바로진료' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Green Connect' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^기타 \d+$/ }));
+    expect(screen.getByRole('heading', { name: 'Green Connect' })).toBeInTheDocument();
+  });
+
   it('썸네일 높이를 카드 너비에 맞춰 계산한다', () => {
     render(
       <App
