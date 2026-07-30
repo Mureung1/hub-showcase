@@ -8,6 +8,7 @@ import type { HomeManager } from './useHomeManager'
 import type { ProfileManager } from './useProfileManager'
 import { FOOD_ICON_KEYS, type RoomShopManager } from './useRoomShopManager'
 import type { DodoAppearance, FriendPost, HomeVisitActionKind } from './types'
+import { formatTimeAgo } from './timeAgo'
 
 export const SHOP_ITEM_ICON_CLASS: Record<string, string> = {
   'game-console': 'shop-item-console',
@@ -288,7 +289,7 @@ export function MyHomeView({ message, onInteract, homeManager, dodoManager, shop
                 <PixelAvatar {...getAvatarProps(visit.visitor.id)} />
                 <div>
                   <strong>{visit.visitor.name}</strong>
-                  <span>{VISIT_ACTION_LABEL[visit.action]}{visit.message ? ` · "${visit.message}"` : ''}</span>
+                  <span>{VISIT_ACTION_LABEL[visit.action]}{visit.message ? ` · "${visit.message}"` : ''} · {formatTimeAgo(visit.createdAt)}</span>
                 </div>
               </article>
             ))}

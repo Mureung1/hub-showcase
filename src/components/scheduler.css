@@ -257,6 +257,9 @@ button.agenda-copy:hover strong { text-decoration: underline; }
 .action-snack { background: var(--scheduler-coral); clip-path: polygon(0 8px, 8px 8px, 8px 0, 19px 0, 19px 8px, 27px 8px, 27px 27px, 0 27px); }.action-snack::after { content: ''; position: absolute; width: 5px; height: 5px; top: 13px; left: 7px; background: var(--scheduler-ink); box-shadow: 8px 0 0 var(--scheduler-ink); }
 .action-dress { border: 5px solid var(--scheduler-violet); border-top: 0; }.action-dress::before { content: ''; position: absolute; width: 13px; height: 8px; top: -7px; left: 2px; border: 4px solid var(--scheduler-violet); border-bottom: 0; }
 
+.friend-home-log { margin-top: 20px; padding: 14px 15px; display: grid; gap: 8px; border: 1px solid var(--scheduler-line); border-radius: 20px; background: var(--scheduler-cream); }
+.friend-home-log p { margin: 0; color: var(--scheduler-green); font-size: 11px; font-weight: 800; }
+
 .room-shop-panel { margin-top: 20px; padding: 16px 15px; border: 1px solid var(--scheduler-line); border-radius: 20px; background: var(--scheduler-cream); }
 .room-shop-panel .tab-page-heading { padding-bottom: 14px; }
 .room-shop-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
