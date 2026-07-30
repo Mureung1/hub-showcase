@@ -1,12 +1,14 @@
 import { Request, Response } from 'express';
 import { librarySchema } from '../schemas/curate.schema.js';
-import supabase from '../utils/supabaseClient.js';
+import supabase, { getAuthenticatedSupabaseClient } from '../utils/supabaseClient.js';
 import { mapToCamelCase } from '../utils/mapToCamelCase.js';
 import { DbPaper } from '../types/curate.types.js';
 
 export async function addPaperToLibraryController(req: Request, res: Response) {
   try {
     const authenticatedUser = (req as any).user;
+    const token = (req as any).token;
+
     if (!authenticatedUser || !authenticatedUser.id) {
       return res.status(401).json({
         status: 'error',
@@ -29,11 +31,14 @@ export async function addPaperToLibraryController(req: Request, res: Response) {
     const { paper } = validationResult.data;
     const authenticatedUserId = authenticatedUser.id;
 
-    if (!supabase) {
+    // RLS 준수를 위해 매 요청의 JWT 토큰 컨텍스트가 주입된 Supabase 클라이언트 사용
+    const dbClient = (token ? getAuthenticatedSupabaseClient(token) : null) || supabase;
+
+    if (!dbClient) {
       throw new Error('Supabase client is not initialized. Please configure env variables.');
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await dbClient
       .from('saved_papers')
       .insert([
         {
@@ -64,6 +69,8 @@ export async function addPaperToLibraryController(req: Request, res: Response) {
 export async function getUserLibraryController(req: Request, res: Response) {
   try {
     const authenticatedUser = (req as any).user;
+    const token = (req as any).token;
+
     if (!authenticatedUser || !authenticatedUser.id) {
       return res.status(401).json({
         status: 'error',
@@ -73,11 +80,14 @@ export async function getUserLibraryController(req: Request, res: Response) {
 
     const targetUserId = authenticatedUser.id;
 
-    if (!supabase) {
+    // RLS 준수를 위해 매 요청의 JWT 토큰 컨텍스트가 주입된 Supabase 클라이언트 사용
+    const dbClient = (token ? getAuthenticatedSupabaseClient(token) : null) || supabase;
+
+    if (!dbClient) {
       throw new Error('Supabase client is not initialized.');
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await dbClient
       .from('saved_papers')
       .select('*')
       .eq('user_id', targetUserId);
@@ -97,6 +107,8 @@ export async function getUserLibraryController(req: Request, res: Response) {
 export async function deletePaperFromLibraryController(req: Request, res: Response) {
   try {
     const authenticatedUser = (req as any).user;
+    const token = (req as any).token;
+
     if (!authenticatedUser || !authenticatedUser.id) {
       return res.status(401).json({
         status: 'error',
@@ -111,11 +123,14 @@ export async function deletePaperFromLibraryController(req: Request, res: Respon
 
     const targetUserId = authenticatedUser.id;
 
-    if (!supabase) {
+    // RLS 준수를 위해 매 요청의 JWT 토큰 컨텍스트가 주입된 Supabase 클라이언트 사용
+    const dbClient = (token ? getAuthenticatedSupabaseClient(token) : null) || supabase;
+
+    if (!dbClient) {
       throw new Error('Supabase client is not initialized.');
     }
 
-    const { error } = await supabase
+    const { error } = await dbClient
       .from('saved_papers')
       .delete()
       .eq('user_id', targetUserId)

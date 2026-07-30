@@ -15,4 +15,19 @@ if (!supabaseUrl || !supabaseKey) {
   supabase = createClient(supabaseUrl, supabaseKey);
 }
 
+/**
+ * 매 요청마다 유저의 JWT 토큰을 Authorization 헤더에 바인딩한 Supabase 클라이언트를 동적으로 생성합니다.
+ * 이를 통해 Supabase DB의 Row Level Security (RLS) 정책(auth.uid() = user_id)을 완벽히 준수합니다.
+ */
+export function getAuthenticatedSupabaseClient(token: string): SupabaseClient | null {
+  if (!supabaseUrl || !supabaseKey) return null;
+  return createClient(supabaseUrl, supabaseKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  });
+}
+
 export default supabase;

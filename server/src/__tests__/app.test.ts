@@ -29,7 +29,8 @@ vi.mock('../utils/supabaseClient.js', () => {
 
   return {
     __esModule: true,
-    default: mockClient
+    default: mockClient,
+    getAuthenticatedSupabaseClient: vi.fn().mockReturnValue(mockClient)
   };
 });
 
