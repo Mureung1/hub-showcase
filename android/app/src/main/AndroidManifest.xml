@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- ⚠️ allowBackup="false" — 안드로이드 자동 백업을 끈다.
+         이 앱의 화면은 WebView이고 로그인 세션(Supabase JWT + refresh token)과 게스트 모드
+         식단 데이터가 전부 WebView localStorage, 즉 앱 내부 저장소에 있다. 기본값인 true로 두면
+         그게 통째로 구글 드라이브 자동 백업에 올라가 **refresh token이 클라우드에 사본으로 남는다**
+         (백업을 복원하면 남의 기기에서 로그인 상태가 되살아날 수 있고, 사용자는 그런 사본이
+         생긴 줄도 모른다).
+         잃는 기능은 없다 — 기기 이전용 백업/복원은 MY 탭의 CSV 내보내기/가져오기가 담당하고,
+         그쪽이 무엇이 옮겨가는지 사용자에게 명시적으로 보여준다.
+         targetSdk 31+에서는 allowBackup=false만으로는 기기 간 직접 전송(D2D)이 안 막히므로
+         dataExtractionRules로 양쪽을 다 끈다. -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
