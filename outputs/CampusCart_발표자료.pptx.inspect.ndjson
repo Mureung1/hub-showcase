@@ -1,0 +1,139 @@
+{"kind":"deck","id":"pr/n1ea53","name":"Deck"}
+{"kind":"layout","layoutId":"53be066e-1c93-4346-aad1-4e57bb11307b","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"99a75f5f-81da-48ca-966c-cb124f4c86d2","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/7ois6r","slide":1,"title":"PROJECT DEMO","textShapes":6}
+{"kind":"shape","id":"sh/7epo7yts","slide":1,"bbox":[68,72,132,32]}
+{"kind":"textbox","id":"sh/6dg7etc7","slide":1,"text":"PROJECT DEMO","textPreview":"PROJECT DEMO","textChars":12,"textLines":1,"bbox":[68,72,132,32]}
+{"kind":"textbox","id":"sh/5c7658bm","slide":1,"text":"CampusCart","textPreview":"CampusCart","textChars":10,"textLines":1,"bbox":[68,160,590,88]}
+{"kind":"textbox","id":"sh/kbypc3u1","slide":1,"text":"같이 사면 가벼워지는\n캠퍼스 공동구매","textPreview":"같이 사면 가벼워지는 | 캠퍼스 공동구매","textChars":20,"textLines":2,"bbox":[68,254,560,112]}
+{"kind":"textbox","id":"sh/ja5o3ytg","slide":1,"text":"공동구매 참여부터 서로에게 편한\n수령 장소를 찾는 과정까지 연결했습니다.","textPreview":"공동구매 참여부터 서로에게 편한 | 수령 장소를 찾는 과정까지 연결했습니다.","textChars":40,"textLines":2,"bbox":[68,396,540,84]}
+{"kind":"textbox","id":"sh/i9w7atcv","slide":1,"text":"N129 이시우","textPreview":"N129 이시우","textChars":8,"textLines":1,"bbox":[68,590,280,30]}
+{"kind":"textbox","id":"sh/x8n61obq","slide":1,"text":"AI Agent Challenge 2026 · N129 이시우","textPreview":"AI Agent Challenge 2026 · N129 이시우","textChars":34,"textLines":1,"bbox":[70,678,620,20]}
+{"kind":"image","id":"im/5wfad07q","slide":1,"name":"","geometry":"roundRect","alt":"CampusCart 홈 화면","bbox":[710,76,500,568]}
+{"kind":"notes","id":"nt/7ois6r","slide":1,"text":""}
+{"kind":"slide","id":"sl/a176fu","slide":2,"title":"PROBLEM","textShapes":16}
+{"kind":"textbox","id":"sh/ovu9szyp","slide":2,"text":"PROBLEM","textPreview":"PROBLEM","textChars":7,"textLines":1,"bbox":[70,42,260,30]}
+{"kind":"textbox","id":"sh/nulszeh4","slide":2,"text":"같이 사고 싶어도, 모으고 만나기가 어렵습니다","textPreview":"같이 사고 싶어도, 모으고 만나기가 어렵습니다","textChars":25,"textLines":1,"bbox":[70,76,1050,64]}
+{"kind":"textbox","id":"sh/2tcrq9gj","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1160,50,50,26]}
+{"kind":"shape","id":"sh/1s3ax4zy","slide":2,"bbox":[70,176,1140,410]}
+{"kind":"shape","id":"sh/07u9ozyd","slide":2,"bbox":[78,218,52,52]}
+{"kind":"textbox","id":"sh/f61svuh8","slide":2,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[78,218,52,52]}
+{"kind":"textbox","id":"sh/e5srmpgn","slide":2,"text":"사람을 찾기 어렵다","textPreview":"사람을 찾기 어렵다","textChars":10,"textLines":1,"bbox":[152,216,420,32]}
+{"kind":"textbox","id":"sh/lona9ofi","slide":2,"text":"필요한 물건이 같아도 함께 구매할 사람을 쉽게 찾기 어렵습니다.","textPreview":"필요한 물건이 같아도 함께 구매할 사람을 쉽게 찾기 어렵습니다.","textChars":35,"textLines":1,"bbox":[152,252,500,52]}
+{"kind":"shape","id":"sh/k3et0jyx","slide":2,"bbox":[78,342,52,52]}
+{"kind":"textbox","id":"sh/qlwn2twb","slide":2,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[78,342,52,52]}
+{"kind":"textbox","id":"sh/bm54bydw","slide":2,"text":"수령 장소가 제각각이다","textPreview":"수령 장소가 제각각이다","textChars":12,"textLines":1,"bbox":[152,340,420,32]}
+{"kind":"textbox","id":"sh/cne543uh","slide":2,"text":"참여자마다 출발 위치가 달라 모두에게 괜찮은 장소를 정하기 어렵습니다.","textPreview":"참여자마다 출발 위치가 달라 모두에게 괜찮은 장소를 정하기 어렵습니다.","textChars":39,"textLines":1,"bbox":[152,376,500,52]}
+{"kind":"shape","id":"sh/donmd8v2","slide":2,"bbox":[78,466,52,52]}
+{"kind":"textbox","id":"sh/2xcny9wf","slide":2,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[78,466,52,52]}
+{"kind":"textbox","id":"sh/3i547ed0","slide":2,"text":"진행 상황이 흩어진다","textPreview":"진행 상황이 흩어진다","textChars":11,"textLines":1,"bbox":[152,464,420,32]}
+{"kind":"textbox","id":"sh/oje50jel","slide":2,"text":"참여 인원, 투표 결과, 수령 장소를 한눈에 확인하기 어렵습니다.","textPreview":"참여 인원, 투표 결과, 수령 장소를 한눈에 확인하기 어렵습니다.","textChars":36,"textLines":1,"bbox":[152,500,500,52]}
+{"kind":"shape","id":"sh/pknm9ovq","slide":2,"bbox":[744,226,392,288]}
+{"kind":"textbox","id":"sh/mdgnadcj","slide":2,"text":"CampusCart는","textPreview":"CampusCart는","textChars":11,"textLines":1,"bbox":[788,258,300,34]}
+{"kind":"textbox","id":"sh/nepojid4","slide":2,"text":"모집 → 참여 → 장소 투표","textPreview":"모집 → 참여 → 장소 투표","textChars":15,"textLines":1,"bbox":[788,310,300,82]}
+{"kind":"textbox","id":"sh/jyhkvatg","slide":2,"text":"공동구매의 한 바퀴를\n하나의 서비스 안에 담았습니다.","textPreview":"공동구매의 한 바퀴를 | 하나의 서비스 안에 담았습니다.","textChars":29,"textLines":2,"bbox":[788,410,300,72]}
+{"kind":"textbox","id":"sh/ix8j25cv","slide":2,"text":"AI Agent Challenge 2026 · N129 이시우","textPreview":"AI Agent Challenge 2026 · N129 이시우","textChars":34,"textLines":1,"bbox":[70,678,620,20]}
+{"kind":"notes","id":"nt/a176fu","slide":2,"text":""}
+{"kind":"slide","id":"sl/ban03b","slide":3,"title":"USER FLOW","textShapes":16}
+{"kind":"textbox","id":"sh/8jydobep","slide":3,"text":"USER FLOW","textPreview":"USER FLOW","textChars":9,"textLines":1,"bbox":[70,42,260,30]}
+{"kind":"textbox","id":"sh/7ipcv6x4","slide":3,"text":"사용자는 세 단계로 공동구매를 진행합니다","textPreview":"사용자는 세 단계로 공동구매를 진행합니다","textChars":22,"textLines":1,"bbox":[70,76,1050,64]}
+{"kind":"textbox","id":"sh/6hgvmlwj","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1160,50,50,26]}
+{"kind":"shape","id":"sh/hore10f6","slide":3,"bbox":[74,200,330,330]}
+{"kind":"textbox","id":"sh/gnidsvel","slide":3,"text":"1. 공동구매 탐색","textPreview":"1. 공동구매 탐색","textChars":10,"textLines":1,"bbox":[102,228,274,42]}
+{"kind":"textbox","id":"sh/vm9czqxg","slide":3,"text":"모집 중인 상품과 현재 인원,\n마감 여부를 확인합니다.","textPreview":"모집 중인 상품과 현재 인원, | 마감 여부를 확인합니다.","textChars":30,"textLines":2,"bbox":[102,296,274,92]}
+{"kind":"textbox","id":"sh/ul0vqlwv","slide":3,"text":"목록","textPreview":"목록","textChars":2,"textLines":1,"bbox":[102,452,150,32]}
+{"kind":"shape","id":"sh/5cbe50fi","slide":3,"bbox":[438,200,330,330]}
+{"kind":"textbox","id":"sh/4bidwvex","slide":3,"text":"2. 참여 정보 입력","textPreview":"2. 참여 정보 입력","textChars":11,"textLines":1,"bbox":[466,228,274,42]}
+{"kind":"textbox","id":"sh/e54fmto7","slide":3,"text":"로그인 후 수량과 출발 위치를\n입력해 공동구매에 참여합니다.","textPreview":"로그인 후 수량과 출발 위치를 | 입력해 공동구매에 참여합니다.","textChars":33,"textLines":2,"bbox":[466,296,274,92]}
+{"kind":"textbox","id":"sh/z6dwfe5s","slide":3,"text":"참여","textPreview":"참여","textChars":2,"textLines":1,"bbox":[466,452,150,32]}
+{"kind":"shape","id":"sh/07mxoj6x","slide":3,"bbox":[802,200,330,330]}
+{"kind":"textbox","id":"sh/18vehoni","slide":3,"text":"3. 수령 장소 투표","textPreview":"3. 수령 장소 투표","textChars":11,"textLines":1,"bbox":[830,228,274,42]}
+{"kind":"textbox","id":"sh/m94fqto3","slide":3,"text":"참여자의 위치를 바탕으로 나온\n후보 중 원하는 장소에 투표합니다.","textPreview":"참여자의 위치를 바탕으로 나온 | 후보 중 원하는 장소에 투표합니다.","textChars":36,"textLines":2,"bbox":[830,296,274,92]}
+{"kind":"textbox","id":"sh/nadwjy5o","slide":3,"text":"투표","textPreview":"투표","textChars":2,"textLines":1,"bbox":[830,452,150,32]}
+{"kind":"textbox","id":"sh/obmxs369","slide":3,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[406,330,28,42]}
+{"kind":"textbox","id":"sh/9cfyl8nu","slide":3,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[770,330,28,42]}
+{"kind":"textbox","id":"sh/2dkfepoz","slide":3,"text":"현재는 화면·서버·DB가 실제로 연결되어 저장과 조회가 이어집니다.","textPreview":"현재는 화면·서버·DB가 실제로 연결되어 저장과 조회가 이어집니다.","textChars":37,"textLines":1,"bbox":[190,574,900,36]}
+{"kind":"textbox","id":"sh/3etw7upk","slide":3,"text":"AI Agent Challenge 2026 · N129 이시우","textPreview":"AI Agent Challenge 2026 · N129 이시우","textChars":34,"textLines":1,"bbox":[70,678,620,20]}
+{"kind":"notes","id":"nt/ban03b","slide":3,"text":""}
+{"kind":"slide","id":"sl/kxjuuw","slide":4,"title":"FEATURE 01","textShapes":7}
+{"kind":"textbox","id":"sh/4belwr6t","slide":4,"text":"FEATURE 01","textPreview":"FEATURE 01","textChars":10,"textLines":1,"bbox":[70,42,260,30]}
+{"kind":"textbox","id":"sh/3a5k3m58","slide":4,"text":"모집 상태와 참여 여부를 목록에서 바로 확인합니다","textPreview":"모집 상태와 참여 여부를 목록에서 바로 확인합니다","textChars":27,"textLines":1,"bbox":[70,76,1050,64]}
+{"kind":"textbox","id":"sh/i9w3u1on","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1160,50,50,26]}
+{"kind":"textbox","id":"sh/szyl0b6p","slide":4,"text":"공동구매 목록","textPreview":"공동구매 목록","textChars":7,"textLines":1,"bbox":[880,196,280,36]}
+{"kind":"textbox","id":"sh/ryp47654","slide":4,"text":"• 모집 상태와 현재 인원 확인\n\n• 전체·모집 중·내 참여·찜 필터\n\n• 참여 취소 시 인원·상태 갱신\n\n• 내가 만든 모집만 수정·삭제","textPreview":"• 모집 상태와 현재 인원 확인 |  | • 전체·모집 중·내 참여·찜 필터 |  | • 참여 취소 시 인원·상태 갱신 |  | • 내가 만든 모집만 수정·삭제","textChars":77,"textLines":7,"bbox":[880,252,300,230]}
+{"kind":"shape","id":"sh/qdw3y1oj","slide":4,"bbox":[866,508,324,82]}
+{"kind":"textbox","id":"sh/147mdgn6","slide":4,"text":"참여와 취소 결과는 Supabase의\n실제 데이터를 기준으로 표시","textPreview":"참여와 취소 결과는 Supabase의 | 실제 데이터를 기준으로 표시","textChars":36,"textLines":2,"bbox":[890,520,276,58]}
+{"kind":"textbox","id":"sh/03yl4b61","slide":4,"text":"AI Agent Challenge 2026 · N129 이시우","textPreview":"AI Agent Challenge 2026 · N129 이시우","textChars":34,"textLines":1,"bbox":[70,678,620,20]}
+{"kind":"image","id":"im/0n65wrip","slide":4,"name":"","geometry":"roundRect","alt":"공동구매 목록 화면","bbox":[70,170,760,440]}
+{"kind":"notes","id":"nt/kxjuuw","slide":4,"text":""}
+{"kind":"slide","id":"sl/7aejdk","slide":5,"title":"FEATURE 02","textShapes":14}
+{"kind":"textbox","id":"sh/8nad8bm1","slide":5,"text":"FEATURE 02","textPreview":"FEATURE 02","textChars":10,"textLines":1,"bbox":[70,42,260,30]}
+{"kind":"textbox","id":"sh/7m1cf6lg","slide":5,"text":"각자의 위치에서 공통 수령 장소를 찾습니다","textPreview":"각자의 위치에서 공통 수령 장소를 찾습니다","textChars":23,"textLines":1,"bbox":[70,76,1050,64]}
+{"kind":"textbox","id":"sh/6lsb614v","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1160,50,50,26]}
+{"kind":"textbox","id":"sh/kjat4bm5","slide":5,"text":"참여 과정","textPreview":"참여 과정","textChars":5,"textLines":1,"bbox":[76,188,440,38]}
+{"kind":"shape","id":"sh/jihcb6lk","slide":5,"bbox":[78,258,52,52]}
+{"kind":"textbox","id":"sh/yh8b214z","slide":5,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[78,258,52,52]}
+{"kind":"textbox","id":"sh/xgzu9w3e","slide":5,"text":"수량과 출발 위치 입력","textPreview":"수량과 출발 위치 입력","textChars":12,"textLines":1,"bbox":[152,256,420,32]}
+{"kind":"textbox","id":"sh/wvqt0rmt","slide":5,"text":"참여자마다 자신의 정보를 남깁니다.","textPreview":"참여자마다 자신의 정보를 남깁니다.","textChars":19,"textLines":1,"bbox":[152,292,500,52]}
+{"kind":"shape","id":"sh/uh0rixo7","slide":5,"bbox":[78,372,52,52]}
+{"kind":"textbox","id":"sh/fi98r25s","slide":5,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[78,372,52,52]}
+{"kind":"textbox","id":"sh/gj29k76d","slide":5,"text":"공통 후보 장소 확인","textPreview":"공통 후보 장소 확인","textChars":11,"textLines":1,"bbox":[152,370,420,32]}
+{"kind":"textbox","id":"sh/hkbqtcni","slide":5,"text":"참여 위치를 바탕으로 수령 장소 후보를 봅니다.","textPreview":"참여 위치를 바탕으로 수령 장소 후보를 봅니다.","textChars":26,"textLines":1,"bbox":[152,406,500,52]}
+{"kind":"shape","id":"sh/6t07exov","slide":5,"bbox":[78,486,52,52]}
+{"kind":"textbox","id":"sh/7u98n25g","slide":5,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[78,486,52,52]}
+{"kind":"textbox","id":"sh/svipgn61","slide":5,"text":"닉네임으로 투표 확인","textPreview":"닉네임으로 투표 확인","textChars":11,"textLines":1,"bbox":[152,484,420,32]}
+{"kind":"textbox","id":"sh/tgrqpsnm","slide":5,"text":"누가 어떤 장소를 선택했는지 함께 확인합니다.","textPreview":"누가 어떤 장소를 선택했는지 함께 확인합니다.","textChars":25,"textLines":1,"bbox":[152,520,500,52]}
+{"kind":"textbox","id":"sh/ipg7adoz","slide":5,"text":"AI Agent Challenge 2026 · N129 이시우","textPreview":"AI Agent Challenge 2026 · N129 이시우","textChars":34,"textLines":1,"bbox":[70,678,620,20]}
+{"kind":"image","id":"im/g72xsr25","slide":5,"name":"","geometry":"roundRect","alt":"공동구매 상세와 수령 장소 투표 화면","bbox":[650,162,560,472]}
+{"kind":"notes","id":"nt/7aejdk","slide":5,"text":""}
+{"kind":"slide","id":"sl/9em8kw","slide":6,"title":"DATA FLOW","textShapes":13}
+{"kind":"textbox","id":"sh/tcvudovu","slide":6,"text":"DATA FLOW","textPreview":"DATA FLOW","textChars":9,"textLines":1,"bbox":[70,42,260,30]}
+{"kind":"textbox","id":"sh/694v29c3","slide":6,"text":"화면의 요청이 서버를 거쳐 DB에 저장됩니다","textPreview":"화면의 요청이 서버를 거쳐 DB에 저장됩니다","textChars":24,"textLines":1,"bbox":[70,76,1050,64]}
+{"kind":"textbox","id":"sh/radcbedo","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1160,50,50,26]}
+{"kind":"shape","id":"sh/47md0jux","slide":6,"bbox":[360,314,116,34]}
+{"kind":"shape","id":"sh/58vu9ovi","slide":6,"bbox":[750,314,116,34]}
+{"kind":"shape","id":"sh/i5kvy9cr","slide":6,"bbox":[84,220,318,246]}
+{"kind":"textbox","id":"sh/j6tc7edc","slide":6,"text":"React","textPreview":"React","textChars":5,"textLines":1,"bbox":[112,252,262,42]}
+{"kind":"textbox","id":"sh/o36dc3uh","slide":6,"text":"사용자가 보는 화면\n목록·참여·투표","textPreview":"사용자가 보는 화면 | 목록·참여·투표","textChars":19,"textLines":2,"bbox":[112,326,262,80]}
+{"kind":"shape","id":"sh/p4fel8vm","slide":6,"bbox":[474,220,318,246]}
+{"kind":"textbox","id":"sh/14vmpw3q","slide":6,"text":"Express","textPreview":"Express","textChars":7,"textLines":1,"bbox":[502,252,262,42]}
+{"kind":"textbox","id":"sh/03mlwrm5","slide":6,"text":"요청 처리와 검사\nREST API","textPreview":"요청 처리와 검사 | REST API","textChars":18,"textLines":2,"bbox":[502,326,262,80]}
+{"kind":"shape","id":"sh/z2d4nmlk","slide":6,"bbox":[864,220,318,246]}
+{"kind":"textbox","id":"sh/e1k3uh4z","slide":6,"text":"Supabase","textPreview":"Supabase","textChars":8,"textLines":1,"bbox":[892,252,262,42]}
+{"kind":"textbox","id":"sh/d0bmlw3e","slide":6,"text":"데이터 저장\nAuth·여러 테이블","textPreview":"데이터 저장 | Auth·여러 테이블","textChars":18,"textLines":2,"bbox":[892,326,262,80]}
+{"kind":"textbox","id":"sh/sz2lsrmt","slide":6,"text":"요청","textPreview":"요청","textChars":2,"textLines":1,"bbox":[385,280,64,22]}
+{"kind":"textbox","id":"sh/ryt4jml8","slide":6,"text":"조회·저장","textPreview":"조회·저장","textChars":5,"textLines":1,"bbox":[770,280,86,22]}
+{"kind":"shape","id":"sh/qxk3qh43","slide":6,"bbox":[230,520,820,78]}
+{"kind":"textbox","id":"sh/xwfmxg3i","slide":6,"text":"새로고침하거나 서버를 다시 실행해도 참여·투표 데이터가 유지됩니다.","textPreview":"새로고침하거나 서버를 다시 실행해도 참여·투표 데이터가 유지됩니다.","textChars":37,"textLines":1,"bbox":[258,536,764,46]}
+{"kind":"textbox","id":"sh/wv654bmd","slide":6,"text":"AI Agent Challenge 2026 · N129 이시우","textPreview":"AI Agent Challenge 2026 · N129 이시우","textChars":34,"textLines":1,"bbox":[70,678,620,20]}
+{"kind":"notes","id":"nt/9em8kw","slide":6,"text":""}
+{"kind":"slide","id":"sl/y5q7e2","slide":7,"title":"DEVELOPMENT","textShapes":13}
+{"kind":"textbox","id":"sh/9cnmpsfi","slide":7,"text":"DEVELOPMENT","textPreview":"DEVELOPMENT","textChars":11,"textLines":1,"bbox":[70,42,260,30]}
+{"kind":"textbox","id":"sh/m9c3edg7","slide":7,"text":"Agent와 함께 계획하고, 실제 화면과 DB를 확인했습니다","textPreview":"Agent와 함께 계획하고, 실제 화면과 DB를 확인했습니다","textChars":33,"textLines":1,"bbox":[70,76,1050,64]}
+{"kind":"textbox","id":"sh/nal4nixs","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1160,50,50,26]}
+{"kind":"shape","id":"sh/wfelk7y9","slide":7,"bbox":[72,180,540,390]}
+{"kind":"textbox","id":"sh/x0nmtcfu","slide":7,"text":"Agent 활용","textPreview":"Agent 활용","textChars":8,"textLines":1,"bbox":[104,210,300,38]}
+{"kind":"textbox","id":"sh/adw3ixg3","slide":7,"text":"개발 계획 Agent\n기능을 화면·서버·DB 작업으로 나눔\n\n검증 Agent\n요구사항과 빠진 조건을 다시 점검\n\n직접 확인\n코드를 실행하고 화면과 DB 결과를 확인","textPreview":"개발 계획 Agent | 기능을 화면·서버·DB 작업으로 나눔 |  | 검증 Agent | 요구사항과 빠진 조건을 다시 점검 |  | 직접 확인 | 코드를 실행하고 화면과 DB 결과를 확인","textChars":91,"textLines":8,"bbox":[104,272,448,230]}
+{"kind":"shape","id":"sh/be54r2xo","slide":7,"bbox":[650,180,558,390]}
+{"kind":"textbox","id":"sh/cjal83y5","slide":7,"text":"직접 확인한 부분","textPreview":"직접 확인한 부분","textChars":9,"textLines":1,"bbox":[684,210,440,38]}
+{"kind":"shape","id":"sh/d432h8fa","slide":7,"bbox":[684,278,92,42]}
+{"kind":"textbox","id":"sh/tcrypkj2","slide":7,"text":"화면","textPreview":"화면","textChars":2,"textLines":1,"bbox":[684,278,92,42]}
+{"kind":"textbox","id":"sh/sbihgzih","slide":7,"text":"참여·취소·투표 후 화면이 바뀌는지 확인","textPreview":"참여·취소·투표 후 화면이 바뀌는지 확인","textChars":22,"textLines":1,"bbox":[796,274,358,52]}
+{"kind":"shape","id":"sh/7a9gnu1c","slide":7,"bbox":[684,368,92,42]}
+{"kind":"textbox","id":"sh/69gzep0r","slide":7,"text":"DB","textPreview":"DB","textChars":2,"textLines":1,"bbox":[684,368,92,42]}
+{"kind":"textbox","id":"sh/hgrit4ze","slide":7,"text":"취소 후 인원과 참여 정보가 함께 바뀌는지 확인","textPreview":"취소 후 인원과 참여 정보가 함께 바뀌는지 확인","textChars":26,"textLines":1,"bbox":[796,364,358,52]}
+{"kind":"shape","id":"sh/gfihkzit","slide":7,"bbox":[684,458,92,42]}
+{"kind":"textbox","id":"sh/fe90ru18","slide":7,"text":"검증","textPreview":"검증","textChars":2,"textLines":1,"bbox":[684,458,92,42]}
+{"kind":"textbox","id":"sh/ud0zip0n","slide":7,"text":"권한·중복 참여·취소 가능 상태를 다시 점검","textPreview":"권한·중복 참여·취소 가능 상태를 다시 점검","textChars":24,"textLines":1,"bbox":[796,454,358,52]}
+{"kind":"textbox","id":"sh/p4bix4za","slide":7,"text":"AI Agent Challenge 2026 · N129 이시우","textPreview":"AI Agent Challenge 2026 · N129 이시우","textChars":34,"textLines":1,"bbox":[70,678,620,20]}
+{"kind":"notes","id":"nt/y5q7e2","slide":7,"text":""}
+{"kind":"slide","id":"sl/ej0giw","slide":8,"title":"CAMPUSCART","textShapes":7}
+{"kind":"textbox","id":"sh/s7y587qt","slide":8,"text":"CAMPUSCART","textPreview":"CAMPUSCART","textChars":10,"textLines":1,"bbox":[74,80,180,28]}
+{"kind":"textbox","id":"sh/r6pof2p8","slide":8,"text":"공동구매 참여부터\n수령 장소 결정까지","textPreview":"공동구매 참여부터 | 수령 장소 결정까지","textChars":20,"textLines":2,"bbox":[74,164,760,126]}
+{"kind":"textbox","id":"sh/q5wn6x8n","slide":8,"text":"CampusCart 소개를 마치겠습니다.","textPreview":"CampusCart 소개를 마치겠습니다.","textChars":22,"textLines":1,"bbox":[78,360,700,44]}
+{"kind":"textbox","id":"sh/1c76lc7a","slide":8,"text":"감사합니다.","textPreview":"감사합니다.","textChars":6,"textLines":1,"bbox":[78,430,700,72]}
+{"kind":"shape","id":"sh/0by5c76p","slide":8,"bbox":[870,162,300,340]}
+{"kind":"textbox","id":"sh/fapoj2p4","slide":8,"text":"CampusCart","textPreview":"CampusCart","textChars":10,"textLines":1,"bbox":[906,238,228,42]}
+{"kind":"textbox","id":"sh/e9gnax8z","slide":8,"text":"같이 사면 가벼워지는\n캠퍼스 공동구매","textPreview":"같이 사면 가벼워지는 | 캠퍼스 공동구매","textChars":20,"textLines":2,"bbox":[906,318,228,80]}
+{"kind":"textbox","id":"sh/pgr6pw7m","slide":8,"text":"N129 이시우","textPreview":"N129 이시우","textChars":8,"textLines":1,"bbox":[74,662,240,22]}
+{"kind":"notes","id":"nt/ej0giw","slide":8,"text":""}

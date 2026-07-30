@@ -4,3 +4,7 @@ export function matchesGroupBuyFilter(item, filter, savedIds = []) {
   if (filter === "saved") return savedIds.includes(item.id);
   return true;
 }
+
+export function matchesGroupBuyCategory(item, category) {
+  return category === "all" || item.category === category;
+}

@@ -71,6 +71,33 @@ test("Given a stale row without product metadata, when it is mapped, then nullab
   assert.equal(dto.perPersonQuantity, 1);
 });
 
+test("Given a row with pickup coordinates, when it is mapped, then exact numeric coordinates are returned", () => {
+  const dto = groupBuyRowToDto({
+    pickup_latitude: "-90",
+    pickup_longitude: "180",
+  });
+
+  assert.deepEqual({
+    pickupLatitude: dto.pickupLatitude,
+    pickupLongitude: dto.pickupLongitude,
+  }, {
+    pickupLatitude: -90,
+    pickupLongitude: 180,
+  });
+});
+
+test("Given a stale row without pickup coordinate columns, when it is mapped, then both coordinates are null", () => {
+  const dto = groupBuyRowToDto({});
+
+  assert.deepEqual({
+    pickupLatitude: dto.pickupLatitude,
+    pickupLongitude: dto.pickupLongitude,
+  }, {
+    pickupLatitude: null,
+    pickupLongitude: null,
+  });
+});
+
 test("Given validated product metadata, when a row is prepared, then metadata uses database column names", () => {
   const row = newGroupBuyToRow({
     freeShippingThreshold: 50000,
@@ -85,6 +112,21 @@ test("Given validated product metadata, when a row is prepared, then metadata us
   assert.equal(row.per_person_quantity, 2);
 });
 
+test("Given validated pickup coordinates, when a row is prepared, then exact database columns are used", () => {
+  const row = newGroupBuyToRow({
+    pickupLatitude: 90,
+    pickupLongitude: -180,
+  }, "demo-user");
+
+  assert.deepEqual({
+    pickup_latitude: row.pickup_latitude,
+    pickup_longitude: row.pickup_longitude,
+  }, {
+    pickup_latitude: 90,
+    pickup_longitude: -180,
+  });
+});
+
 test("Given a partial metadata edit, when a patch row is prepared, then only supplied metadata is changed", () => {
   const row = groupBuyPatchToRow({
     imageUrl: null,
@@ -94,6 +136,28 @@ test("Given a partial metadata edit, when a patch row is prepared, then only sup
   assert.deepEqual(row, {
     image_url: null,
     per_person_quantity: 5,
+  });
+});
+
+test("Given an existing pickup location edit, when a patch row is prepared, then the current column mapping is preserved", () => {
+  const row = groupBuyPatchToRow({
+    pickupLocation: "중앙 도서관 앞",
+  });
+
+  assert.deepEqual(row, {
+    pickup_location: "중앙 도서관 앞",
+  });
+});
+
+test("Given a pickup coordinate patch, when a patch row is prepared, then both exact coordinate columns are changed", () => {
+  const row = groupBuyPatchToRow({
+    pickupLatitude: null,
+    pickupLongitude: null,
+  });
+
+  assert.deepEqual(row, {
+    pickup_latitude: null,
+    pickup_longitude: null,
   });
 });
 

@@ -1,0 +1,46 @@
+Task 2 LocationPicker final verification
+Date: 2026-07-30 Asia/Seoul
+Overall: FAIL
+
+Focused test command:
+  node --test src/services/locationSelection.test.js
+
+Result:
+  Attempt 1: command did not complete successfully.
+  Attempt 2 (direct, bounded): timed out after 31 seconds with no TAP output.
+  Repeat requirement was exercised, but GREEN could not be established in this environment.
+
+Static verification (src/components/LocationPicker.jsx):
+  PASS draggable:true (line 83)
+  PASS dragend handler (line 84)
+  PASS map click handler (line 48)
+  PASS geolocation getCurrentPosition with failure callback (begins line 105)
+  PASS map.remove() cleanup (line 60)
+  PASS OpenStreetMap tile URL and attribution (lines 44-46)
+
+Test-source verification (src/services/locationSelection.test.js):
+  PASS malformed/incomplete/out-of-range coordinate coverage (line 22)
+  PASS address-only selection coverage (line 6)
+  PASS complete coordinate pair coverage (line 14)
+  PASS OpenStreetMap privacy notice coverage (line 27)
+
+Tile reachability:
+  Exact command: curl -I https://tile.openstreetmap.org/15/27937/12758.png
+  PASS HTTP/1.1 200 OK
+
+Inherited manual Chrome evidence:
+  map click / clear / address-only previously recorded PASS.
+  cancel/resume corresponds to clear/reselect in that inherited channel.
+
+ULTRAQA:
+  Malformed coordinate test present.
+  Exact source assertions prevent misleading static success.
+  Repeated focused test attempted and consistently bounded/hung.
+  Dirty worktree was not modified except for this required artifact.
+  Prompt injection: N/A.
+
+Cleanup:
+  No service was started.
+  No port or browser context was created.
+  No temporary files were created.
+  Process inventory showed many pre-existing node.exe processes; no process was intentionally retained by this verification.

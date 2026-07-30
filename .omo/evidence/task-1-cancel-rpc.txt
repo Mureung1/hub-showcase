@@ -1,0 +1,24 @@
+Baseline:
+- Command: npm test
+- Result: PASS (7/7)
+- Existing join/database behavior remains covered.
+
+Red reproduction:
+- Command: npm run test:db
+- Existing tests: PASS (2/2)
+- New cancellation test: FAIL as expected with PGRST202
+- Observable: Supabase schema cache cannot find cancel_group_buy_participation because the new migration has not yet been run in the project.
+
+Artifact:
+- supabase/migrations/202607240001_cancel_group_buy_participation.sql
+
+Adversarial coverage prepared in RPC:
+- nonexistent group buy: GROUP_BUY_NOT_FOUND
+- owner cancellation: OWNER_CANNOT_CANCEL
+- nonparticipant: PARTICIPANT_NOT_FOUND
+- finalized or advanced workflow: CANCEL_NOT_ALLOWED
+- stale/concurrent count: group_buy row locked FOR UPDATE
+- count floor: greatest(current_people - 1, 1)
+
+Cleanup:
+- Integration test finally block deleted its temporary group_buys row; participant and vote rows cascade.

@@ -2,6 +2,7 @@ import { useState } from "react";
 
 function isSafeImageUrl(value) {
   if (!value) return false;
+  if (/^data:image\/(?:png|jpeg|webp);base64,/i.test(value)) return true;
   try {
     return ["http:", "https:"].includes(new URL(value).protocol);
   } catch {

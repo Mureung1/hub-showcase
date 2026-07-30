@@ -1,0 +1,22 @@
+﻿src/components/ProductImage.jsx:12:function ProductImage({ category, className = "", imageUrl, name }) {
+src/components/ProductImage.jsx:14:  const failed = failedUrl === imageUrl;
+src/components/ProductImage.jsx:16:  if (!isSafeImageUrl(imageUrl) || failed) {
+src/components/ProductImage.jsx:18:      <div className={`product-image-fallback ${className}`.trim()} aria-label={`${name} 이미지 없음`}>
+src/components/ProductImage.jsx:28:      <img alt={name} loading="lazy" onError={() => setFailedUrl(imageUrl)} src={imageUrl} />
+src/pages/GroupBuyCreatePage.jsx:8:  const initialName = sessionStorage.getItem("campus-cart-draft-name") ?? "";
+src/pages/GroupBuyCreatePage.jsx:19:      sessionStorage.removeItem("campus-cart-draft-name");
+src/components/GroupBuyEditor.jsx:15:  imageUrl: "",
+src/components/GroupBuyEditor.jsx:26:      imageUrl: values.imageUrl ?? "",
+src/components/GroupBuyEditor.jsx:32:  const suggestedTarget = useMemo(() => calculateFreeShippingTarget({
+src/components/GroupBuyEditor.jsx:55:        imageUrl: product.imageUrl || current.imageUrl,
+src/components/GroupBuyEditor.jsx:70:      imageUrl: String(form.imageUrl ?? "").trim() || null,
+src/components/GroupBuyEditor.jsx:101:          <ProductImage category={form.category} className="editor-product-image" imageUrl={form.imageUrl} name={form.name || "상품"} />
+src/components/GroupBuyEditor.jsx:104:            <label>대표 이미지 주소<input name="imageUrl" type="url" placeholder="자동 입력되거나 직접 넣을 수 있어요" value={form.imageUrl} onChange={change} /></label>
+src/components/GroupBuyEditor.jsx:118:        {suggestedTarget && (
+src/components/GroupBuyEditor.jsx:120:            <div><span>무료배송 맞춤 추천</span><strong>최소 {suggestedTarget}명이 모이면 무료배송 금액을 넘어요.</strong><small>{Number(form.unitPrice).toLocaleString()}원 × {form.perPersonQuantity}개 × {suggestedTarget}명</small></div>
+src/components/GroupBuyEditor.jsx:121:            <button type="button" onClick={() => setForm((current) => ({ ...current, targetPeople: suggestedTarget, shippingFee: 0 }))}>{suggestedTarget}명으로 적용</button>
+src/pages/GroupBuysPage.jsx:59:    sessionStorage.setItem("campus-cart-draft-name", query.trim());
+src/pages/GroupBuysPage.jsx:107:        <section className="recommendation-section">
+src/pages/GroupBuysPage.jsx:120:          {isLoading ? <div className="empty-panel">공동구매를 불러오는 중...</div> : visibleItems.length === 0 ? <div className="empty-panel"><strong>{error ? "목록을 확인한 뒤 다시 검색해 주세요." : query.trim() ? `'${query.trim()}' 공동구매가 없어요.` : "현재 조건에 맞는 공동구매가 없어요."}</strong><span>{query.trim() ? "추천받을 모집이 없다면 직접 새 글을 만들어 보세요." : "검색어나 필터를 바꿔보세요."}</span></div> : <div className="group-list">{visibleItems.map((item) => <GroupBuyRow item={item} key={item.id} onDelete={remove} onEdit={setEditingItem} onNavigate={onNavigate} onSave={toggleSaved} saved={savedIds.includes(item.id)} />)}</div>}
+src/pages/GroupBuysPage.jsx:131:  return <button className="recommendation-card" type="button" onClick={() => onNavigate(`/group-buys/${item.id}`)}><ProductImage category={item.category} imageUrl={item.imageUrl} name={item.name} /><div><span>{item.category} · {percent}% 달성</span><strong>{item.name}</strong><small>{item.currentPeople}/{item.targetPeople}명 참여 중</small></div><b>참여하기 →</b></button>;
+src/pages/GroupBuysPage.jsx:136:  return <article className={`group-row ${item.isOwner ? "owned" : ""}`}><ProductImage category={item.category} className="row-product-image" imageUrl={item.imageUrl} name={item.name} /><div className="group-row-content"><div className="row-top"><span className={`state-chip ${item.status}`}>{item.status === "open" ? "모집 중" : "마감"}</span><span>{item.category}</span><span className="host-label">{item.isOwner ? "내가 개설" : item.hostName}</span><button className={`save-button ${saved ? "saved" : ""}`} type="button" aria-label={saved ? "찜 해제" : "찜하기"} onClick={() => onSave(item)}>{saved ? "♥" : "♡"}</button></div><h2>{item.name}</h2><p>{item.pickupLocation} · {item.deadline}</p><div className="progress-line"><span style={{ width: `${percent}%` }} /></div><div className="progress-copy"><strong>{item.currentPeople}/{item.targetPeople}명</strong><span>{percent}% 달성</span></div><div className="row-actions"><button type="button" onClick={() => onNavigate(`/group-buys/${item.id}`)}>상세 보기</button>{item.isOwner && <><button type="button" onClick={() => onEdit(item)}>모집 수정</button><button className="danger" type="button" onClick={() => onDelete(item)}>모집 삭제</button></>}</div></div></article>;

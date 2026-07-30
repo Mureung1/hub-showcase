@@ -1,0 +1,178 @@
+﻿{
+    "groupBuys":  [
+                      {
+                          "id":  "54e6a279-dad1-40f0-aac5-83267fd9617b",
+                          "name":  "아몬드브리즈",
+                          "category":  "식품",
+                          "targetPeople":  2,
+                          "currentPeople":  2,
+                          "deadline":  "내일 오후 6시",
+                          "finalPickup":  null,
+                          "pickupLocation":  "참여 후 공개",
+                          "status":  "closed",
+                          "hostName":  "슈슈",
+                          "unitPrice":  5000,
+                          "shippingFee":  3000,
+                          "stage":  "정산 완료",
+                          "createdAt":  "2026-07-24T05:41:31.283644+00:00",
+                          "participants":  [
+
+                                           ],
+                          "votes":  {
+
+                                    },
+                          "pickupCandidates":  [
+
+                                               ],
+                          "isOwner":  false,
+                          "userJoined":  false,
+                          "userQuantity":  null,
+                          "userVote":  null
+                      },
+                      {
+                          "id":  "9e334be2-0ddb-4115-b20d-9e3dd1fe349e",
+                          "name":  "아몬드브리즈",
+                          "category":  "식품",
+                          "targetPeople":  6,
+                          "currentPeople":  1,
+                          "deadline":  "내일 오후 6시",
+                          "finalPickup":  null,
+                          "pickupLocation":  "참여 후 공개",
+                          "status":  "open",
+                          "hostName":  "슈슈",
+                          "unitPrice":  5000,
+                          "shippingFee":  3000,
+                          "stage":  "모집 중",
+                          "createdAt":  "2026-07-23T12:56:56.742541+00:00",
+                          "participants":  [
+
+                                           ],
+                          "votes":  {
+
+                                    },
+                          "pickupCandidates":  [
+
+                                               ],
+                          "isOwner":  false,
+                          "userJoined":  false,
+                          "userQuantity":  null,
+                          "userVote":  null
+                      },
+                      {
+                          "id":  "e2abf9f9-2a94-411e-af91-cb3ae27b4e08",
+                          "name":  "시험기간 간식 꾸러미",
+                          "category":  "간식",
+                          "targetPeople":  2,
+                          "currentPeople":  2,
+                          "deadline":  "모집 완료",
+                          "finalPickup":  null,
+                          "pickupLocation":  "참여 후 공개",
+                          "status":  "closed",
+                          "hostName":  "나",
+                          "unitPrice":  6900,
+                          "shippingFee":  0,
+                          "stage":  "모집 중",
+                          "createdAt":  "2026-07-21T09:40:46.739597+00:00",
+                          "participants":  [
+
+                                           ],
+                          "votes":  {
+
+                                    },
+                          "pickupCandidates":  [
+
+                                               ],
+                          "isOwner":  false,
+                          "userJoined":  false,
+                          "userQuantity":  null,
+                          "userVote":  null
+                      },
+                      {
+                          "id":  "59680742-6999-4123-8cf4-fa9cc7050929",
+                          "name":  "기숙사 생필품 공동구매",
+                          "category":  "생활",
+                          "targetPeople":  5,
+                          "currentPeople":  3,
+                          "deadline":  "금요일 오후 6시",
+                          "finalPickup":  null,
+                          "pickupLocation":  "참여 후 공개",
+                          "status":  "open",
+                          "hostName":  "나",
+                          "unitPrice":  4500,
+                          "shippingFee":  2500,
+                          "stage":  "모집 중",
+                          "createdAt":  "2026-07-21T09:30:04.328162+00:00",
+                          "participants":  [
+
+                                           ],
+                          "votes":  {
+
+                                    },
+                          "pickupCandidates":  [
+
+                                               ],
+                          "isOwner":  false,
+                          "userJoined":  false,
+                          "userQuantity":  null,
+                          "userVote":  null
+                      },
+                      {
+                          "id":  "eef428f8-15c1-4012-87e7-fc0c51287c79",
+                          "name":  "말랑이",
+                          "category":  "식품",
+                          "targetPeople":  6,
+                          "currentPeople":  1,
+                          "deadline":  "내일 오후 6시",
+                          "finalPickup":  null,
+                          "pickupLocation":  "참여 후 공개",
+                          "status":  "open",
+                          "hostName":  "나",
+                          "unitPrice":  5000,
+                          "shippingFee":  3010,
+                          "stage":  "모집 중",
+                          "createdAt":  "2026-07-20T12:25:47.862287+00:00",
+                          "participants":  [
+
+                                           ],
+                          "votes":  {
+
+                                    },
+                          "pickupCandidates":  [
+
+                                               ],
+                          "isOwner":  false,
+                          "userJoined":  false,
+                          "userQuantity":  null,
+                          "userVote":  null
+                      },
+                      {
+                          "id":  "6c8c4761-2ecc-49be-9a32-49099509620c",
+                          "name":  "생수",
+                          "category":  "생활",
+                          "targetPeople":  6,
+                          "currentPeople":  1,
+                          "deadline":  "내일 오후 6시",
+                          "finalPickup":  null,
+                          "pickupLocation":  "참여 후 공개",
+                          "status":  "open",
+                          "hostName":  "나",
+                          "unitPrice":  5000,
+                          "shippingFee":  3000,
+                          "stage":  "모집 중",
+                          "createdAt":  "2026-07-20T12:16:33.240203+00:00",
+                          "participants":  [
+
+                                           ],
+                          "votes":  {
+
+                                    },
+                          "pickupCandidates":  [
+
+                                               ],
+                          "isOwner":  false,
+                          "userJoined":  false,
+                          "userQuantity":  null,
+                          "userVote":  null
+                      }
+                  ]
+}

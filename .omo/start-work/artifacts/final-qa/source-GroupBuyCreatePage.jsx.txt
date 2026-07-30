@@ -1,0 +1,44 @@
+﻿import { useState } from "react";
+import GroupBuyEditor from "../components/GroupBuyEditor";
+import { createGroupBuy } from "../services/groupBuysApi";
+
+function GroupBuyCreatePage({ onNavigate, user }) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+  const initialName = sessionStorage.getItem("campus-cart-draft-name") ?? "";
+
+  async function save(input) {
+    if (!user) {
+      onNavigate("/login");
+      return;
+    }
+    setIsSaving(true);
+    setError("");
+    try {
+      const created = await createGroupBuy(input);
+      sessionStorage.removeItem("campus-cart-draft-name");
+      onNavigate(`/group-buys/${created.id}`);
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <main className="workspace create-page">
+      <button className="back-button" type="button" onClick={() => onNavigate("/group-buys")}>??怨듬룞援щℓ 紐⑸줉?쇰줈 ?뚯븘媛湲?/button>
+      <section className="create-heading">
+        <div><span className="kicker">NEW GROUP BUY</span><h1>?ш퀬 ?띠? ?곹뭹??br />?④퍡 援щℓ??蹂쇨퉴??</h1></div>
+        <p>?곹뭹 留곹겕瑜??ｌ쑝硫?湲곕낯 ?뺣낫瑜?癒쇱? 梨꾩썙?쒕젮??<br />臾대즺諛곗넚???꾩슂???몄썝??怨꾩궛??蹂????덉뒿?덈떎.</p>
+      </section>
+      {error && <div className="error-banner"><span>{error}</span></div>}
+      <div className="create-form-wrap">
+        <GroupBuyEditor initialName={initialName} isSaving={isSaving} onCancel={() => onNavigate("/group-buys")} onSave={save} />
+      </div>
+    </main>
+  );
+}
+
+export default GroupBuyCreatePage;
+

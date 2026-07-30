@@ -1,0 +1,35 @@
+Context review: FAIL
+Date: 2026-07-29
+
+Blocking missed requirements
+
+1. Product-preview DNS rebinding defense is incomplete.
+   - Required by .omo/plans/link-driven-group-buy.md: each request must connect to the revalidated allowed IP.
+   - server/product-preview.js validates DNS with dns.lookup(), but then calls fetch(url) by hostname. Fetch performs its own DNS resolution, so the validated address is not pinned to the outbound connection.
+   - This leaves the documented SSRF/DNS-rebinding acceptance criterion unmet.
+
+2. Product metadata parsing uses regex instead of the required vetted parser dependency.
+   - Required by .omo/plans/link-driven-group-buy.md: choose a validated small parser dependency and update the lockfile.
+   - server/product-preview.js parses meta tags, attributes, title, and JSON-LD script blocks using regular expressions; package.json/package-lock.json contain no HTML parser dependency.
+   - This directly conflicts with the implementation requirement.
+
+3. Existing persisted pickup votes can become invisible/inconsistent after deployment.
+   - Historical workflow (README.md; migrations 202607220001 and 202607220002; prior server/demo.js) stored votes against fixed meeting-spot candidates.
+   - New server/demo.js derives candidates from the owner pickup label and participant-entered labels. Existing group_buy_votes rows are not migrated or mapped into those candidates.
+   - A closed existing buy may therefore have a stored userVote/winning candidate absent from pickupCandidates; the UI cannot display/select it, while finalize_group_buy_pickup can still finalize that hidden legacy candidate.
+   - This conflicts with the plan’s requirement that existing participation/voting flows have no regression.
+
+Sources searched
+- git status/diff and git log/history for changed participation, presenter, repository, detail, routing, and settlement files
+- README.md, CLAUDE.md, docs/deployment-precheck.md
+- .omo/plans/link-driven-group-buy.md and existing QA artifacts
+- all supabase/migrations/*.sql
+- server cross-references for join_group_buy, votes, candidate generation, product preview, and deployment DB check
+- src routing, create/detail flows, API client, settlement, free-shipping calculation, and image rendering
+- package.json/package-lock.json scripts and dependencies; vercel.json
+
+Validation observed
+- npm test: PASS (38 tests)
+- npm run build: PASS
+- npm run lint: PASS
+- Live Supabase integration tests were not run because this review did not use external services.

@@ -5,8 +5,9 @@ import { z } from "zod";
 import { canChangeTargetPeople } from "./group-buy-policy.js";
 import { presentGroupBuy } from "./group-buy-presenter.js";
 import { createGroupBuyRepository } from "./group-buy-repository.js";
-import { findPickupCandidates, hasCompleteCoordinatePair } from "./location-candidates.js";
-import { fetchProductPreview, isTrustedProductUrl } from "./product-preview.js";
+import { findPickupCandidateDetails, findPickupCandidates, hasCompleteCoordinatePair } from "./location-candidates.js";
+import { hasCompletePickupCoordinatePair, hasCompletePickupCoordinatePatch, pickupCoordinateFields } from "./pickup-coordinate-schema.js";
+import { fetchProductPreview, isAllowedProductImage, isTrustedProductUrl, productPreviewFallback } from "./product-preview.js";
 import { createSupabaseAdmin } from "./supabase.js";
 
 const app = express();
@@ -20,8 +21,10 @@ const allowedOrigins = [
 ].filter(Boolean);
 const stages = ["모집 중", "결제 대기", "주문 완료", "배송 중", "수령 가능", "정산 완료"];
 const optionalHttpUrl = z.union([z.literal(""), z.string().trim().url().max(2048).refine(isTrustedProductUrl)]).nullable().optional();
-const createSchema = z.object({ name: z.string().trim().min(1).max(80), category: z.enum(["생활", "식품", "간식", "문구", "기타"]), targetPeople: z.coerce.number().int().min(2).max(50), deadline: z.string().trim().min(1).max(60), pickupLocation: z.string().trim().min(1).max(80), unitPrice: z.coerce.number().int().min(100).max(1000000), shippingFee: z.coerce.number().int().min(0).max(100000), productUrl: optionalHttpUrl, imageUrl: optionalHttpUrl, freeShippingThreshold: z.coerce.number().int().min(0).max(100000000).nullable().optional(), perPersonQuantity: z.coerce.number().int().min(1).max(100).default(1) });
-const updateSchema = createSchema.partial().refine((value) => Object.keys(value).length > 0);
+const optionalImage = z.union([z.literal(""), z.string().trim().max(700000).refine(isAllowedProductImage)]).nullable().optional();
+const groupBuyFields = { name: z.string().trim().min(1).max(80), category: z.enum(["생활", "식품", "간식", "문구", "기타"]), targetPeople: z.coerce.number().int().min(2).max(50), deadline: z.string().trim().min(1).max(60), pickupLocation: z.string().trim().min(1).max(80), unitPrice: z.coerce.number().int().min(100).max(1000000), shippingFee: z.coerce.number().int().min(0).max(100000), productUrl: optionalHttpUrl, imageUrl: optionalImage, freeShippingThreshold: z.coerce.number().int().min(0).max(100000000).nullable().optional(), perPersonQuantity: z.coerce.number().int().min(1).max(100).default(1), ...pickupCoordinateFields };
+const createSchema = z.object(groupBuyFields).refine(hasCompletePickupCoordinatePair);
+const updateSchema = z.object(groupBuyFields).partial().refine((value) => Object.keys(value).length > 0).refine(hasCompletePickupCoordinatePatch);
 const joinSchema = z.object({
   latitude: z.number().min(-90).max(90).nullable().default(null),
   longitude: z.number().min(-180).max(180).nullable().default(null),
@@ -35,17 +38,29 @@ const previewRequests = new Map();
 const userId = (request) => request.user?.id || "";
 const present = (item, request) => presentGroupBuy(item, userId(request));
 const pickupLocationsFor = (item) => [
-  { startLocation: item.pickupLocation, latitude: null, longitude: null },
+  {
+    startLocation: item.pickupLocation,
+    latitude: item.pickupLatitude ?? null,
+    longitude: item.pickupLongitude ?? null,
+  },
   ...(item.participants ?? []),
 ];
 const withRuntimeFields = (item) => {
   const participants = item.participants ?? [];
-  return { ...item, participants, votes: item.votes ?? {}, voterChoices: item.voterChoices ?? {}, pickupCandidates: findPickupCandidates(pickupLocationsFor(item)) };
+  const pickupLocations = pickupLocationsFor(item);
+  return {
+    ...item,
+    participants,
+    votes: item.votes ?? {},
+    voterChoices: item.voterChoices ?? {},
+    pickupCandidates: findPickupCandidates(pickupLocations),
+    pickupCandidateDetails: findPickupCandidateDetails(pickupLocations),
+  };
 };
 const databaseFailure = (response, error) => { console.error("Supabase request failed:", error.message); return response.status(500).json({ error: "데이터베이스 요청을 처리하지 못했습니다." }); };
 
 app.use(cors({ origin: allowedOrigins, allowedHeaders: ["Authorization", "Content-Type"] }));
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 app.use(async (request, response, next) => {
   const token = request.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return next();
@@ -94,6 +109,8 @@ app.post("/api/products/preview", requireUser, async (request, response) => {
     return response.json({ product: { sourceUrl: preview.url, title: preview.title, imageUrl: preview.image, unitPrice: Number.isSafeInteger(numericPrice) && numericPrice > 0 ? numericPrice : null }, warnings: preview.warnings });
   } catch (error) {
     const unsafe = /private|reserved|unsafe|localhost|credentials|protocol|port|malformed|2048/i.test(error.message);
+    const fallback = productPreviewFallback(parsed.data.url);
+    if (!unsafe && fallback) return response.json({ product: { sourceUrl: fallback.url, title: fallback.title, imageUrl: null, unitPrice: null }, warnings: fallback.warnings });
     return response.status(unsafe ? 400 : 422).json({ error: unsafe ? "안전하게 확인할 수 없는 상품 링크예요." : "상품 정보를 자동으로 불러오지 못했어요." });
   }
 });

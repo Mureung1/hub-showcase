@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import GroupBuyEditor from "../components/GroupBuyEditor";
 import ProductImage from "../components/ProductImage";
 import { deleteGroupBuy, getGroupBuys, updateGroupBuy } from "../services/groupBuysApi";
-import { matchesGroupBuyFilter } from "../services/groupBuyFilters";
+import { matchesGroupBuyCategory, matchesGroupBuyFilter } from "../services/groupBuyFilters";
 import { getGroupBuySearchResults } from "../services/groupBuyRecommendations";
 
 const filters = [["all", "전체"], ["open", "모집 중"], ["mine", "내 참여"], ["saved", "찜"]];
+const categories = [["all", "전체"], ["생활", "생활"], ["식품", "식품"], ["간식", "간식"], ["문구", "문구"], ["기타", "기타"]];
 
 function storedIds(key) {
   try { return JSON.parse(localStorage.getItem(key) ?? "[]"); } catch { return []; }
@@ -21,6 +22,7 @@ function GroupBuysPage({ onNavigate, user }) {
   const [items, setItems] = useState([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("recent");
   const [editingItem, setEditingItem] = useState(null);
   const [savedIds, setSavedIds] = useState(() => storedIds("campus-cart-saved"));
@@ -51,9 +53,9 @@ function GroupBuysPage({ onNavigate, user }) {
   const search = useMemo(() => getGroupBuySearchResults(items, query), [items, query]);
   const baseItems = query.trim() ? search.exact : items;
   const visibleItems = useMemo(() => sortItems(
-    baseItems.filter((item) => matchesGroupBuyFilter(item, filter, savedIds)),
+    baseItems.filter((item) => matchesGroupBuyFilter(item, filter, savedIds) && matchesGroupBuyCategory(item, category)),
     sort,
-  ), [baseItems, filter, savedIds, sort]);
+  ), [baseItems, category, filter, savedIds, sort]);
 
   function startNewGroupBuy() {
     sessionStorage.setItem("campus-cart-draft-name", query.trim());
@@ -116,6 +118,7 @@ function GroupBuysPage({ onNavigate, user }) {
       <div className={`workspace-grid${editingItem ? "" : " single"}`}>
         <section className="list-panel">
           <div className="toolbar"><div className="filter-tabs wide">{filters.map(([value, label]) => <button className={filter === value ? "active" : ""} type="button" key={value} onClick={() => setFilter(value)}>{label}{value === "saved" && savedIds.length > 0 ? ` ${savedIds.length}` : ""}</button>)}</div><select className="sort-select" value={sort} onChange={(event) => setSort(event.target.value)} aria-label="정렬"><option value="recent">새로 등록한 순</option><option value="popular">달성률 높은 순</option></select></div>
+          <div className="category-filter" aria-label="카테고리 필터">{categories.map(([value, label]) => <button className={category === value ? "active" : ""} type="button" key={value} onClick={() => setCategory(value)}>{label}<span>{value === "all" ? items.length : items.filter((item) => item.category === value).length}</span></button>)}</div>
           <div className="list-heading"><strong>공동구매 목록</strong><span>{visibleItems.length}개</span></div>
           {isLoading ? <div className="empty-panel">공동구매를 불러오는 중...</div> : visibleItems.length === 0 ? <div className="empty-panel"><strong>{error ? "목록을 확인한 뒤 다시 검색해 주세요." : query.trim() ? `'${query.trim()}' 공동구매가 없어요.` : "현재 조건에 맞는 공동구매가 없어요."}</strong><span>{query.trim() ? "추천받을 모집이 없다면 직접 새 글을 만들어 보세요." : "검색어나 필터를 바꿔보세요."}</span></div> : <div className="group-list">{visibleItems.map((item) => <GroupBuyRow item={item} key={item.id} onDelete={remove} onEdit={setEditingItem} onNavigate={onNavigate} onSave={toggleSaved} saved={savedIds.includes(item.id)} />)}</div>}
           {!error && <div className="create-cta"><div><strong>{query.trim() ? "원하는 모집이 없나요?" : "찾는 상품이 아직 없나요?"}</strong><span>상품 링크를 붙여 넣으면 새 글을 더 빠르게 작성할 수 있어요.</span></div><button className="primary-button" type="button" onClick={startNewGroupBuy}>새 공동구매 만들기</button></div>}
