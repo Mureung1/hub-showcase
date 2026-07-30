@@ -2,6 +2,7 @@ import { useState } from 'react'
 import ProjectIntro from './components/ProjectIntro.jsx'
 import CertPlanner from './components/CertPlanner.jsx'
 import ProgressDashboard from './components/ProgressDashboard.jsx'
+import CertPathPlanner from './components/CertPathPlanner.jsx'
 
 function App() {
   const [view, setView] = useState('planner')
@@ -25,6 +26,13 @@ function App() {
         </button>
         <button
           type="button"
+          className={`app__tab ${view === 'path' ? 'app__tab--active' : ''}`}
+          onClick={() => setView('path')}
+        >
+          경로 최적화
+        </button>
+        <button
+          type="button"
           className={`app__tab ${view === 'intro' ? 'app__tab--active' : ''}`}
           onClick={() => setView('intro')}
         >
@@ -35,6 +43,7 @@ function App() {
       <div className="app__content">
         {view === 'planner' && <CertPlanner />}
         {view === 'dashboard' && <ProgressDashboard />}
+        {view === 'path' && <CertPathPlanner />}
         {view === 'intro' && <ProjectIntro />}
       </div>
     </div>
