@@ -3,9 +3,11 @@ function TopBar({ step, label, job, backTo, backLabel, go }) {
   return (
     <header className="top-bar">
       <div className="top-bar__inner">
-        <button className="top-bar__brand" onClick={() => go('select')} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-          <span className="top-bar__mark">CS</span>
-          <span>
+        <button type="button" className="top-bar__brand" onClick={() => go('select')} aria-label="CareerSignal 직무 선택으로 이동">
+          <span className="top-bar__mark" aria-hidden="true">
+            <img src="/careersignal-mark.svg" alt="" />
+          </span>
+          <span className="top-bar__wordmark">
             <span className="top-bar__name">CareerSignal</span>
             <span className="top-bar__tagline">채용공고 기반 진로탐색 에이전트</span>
           </span>
