@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "title": "Mealyze (밀라이즈)",
   "summary": "음식 사진 한 장으로 오늘 먹은 영양을 기록하고, 부족한 영양소를 진단해 보충 메뉴와 주변 식당까지 추천하는 한국어 영양 관리 서비스입니다.",
-  "githubUser": "12nick-kr(이현빈)",
+  "githubUser": "12nick-kr",
   "demoUrl": "https://hub-iota-seven.vercel.app",
   "demoVideoUrl": "https://youtu.be/Qcmk2mXS96Q",
   "thumbnail": "thumbnail.webp",
