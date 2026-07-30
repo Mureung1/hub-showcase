@@ -7,13 +7,12 @@ const router = Router()
 
 const SERVICE_NAME_MAX_LENGTH = 50
 const BANK_NAME_MAX_LENGTH = 30
-const ACCOUNT_HOLDER_NAME_MAX_LENGTH = 30
 const ACCOUNT_NUMBER_MAX_LENGTH = 30
 const ACCOUNT_NUMBER_PATTERN = /^[0-9-]+$/
 
 function validateSubscriptionInput(body) {
   const errors = []
-  const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber, accountHolderName } = body
+  const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber } = body
 
   if (!serviceName || typeof serviceName !== 'string') errors.push('serviceName은 필수 문자열입니다.')
   else if (serviceName.length > SERVICE_NAME_MAX_LENGTH) errors.push(`serviceName은 ${SERVICE_NAME_MAX_LENGTH}자 이하여야 합니다.`)
@@ -26,15 +25,13 @@ function validateSubscriptionInput(body) {
   else if (accountNumber.length > ACCOUNT_NUMBER_MAX_LENGTH || !ACCOUNT_NUMBER_PATTERN.test(accountNumber)) {
     errors.push(`accountNumber는 ${ACCOUNT_NUMBER_MAX_LENGTH}자 이하의 숫자/하이픈 조합이어야 합니다.`)
   }
-  if (!accountHolderName || typeof accountHolderName !== 'string') errors.push('accountHolderName은 필수 문자열입니다.')
-  else if (accountHolderName.length > ACCOUNT_HOLDER_NAME_MAX_LENGTH) errors.push(`accountHolderName은 ${ACCOUNT_HOLDER_NAME_MAX_LENGTH}자 이하여야 합니다.`)
 
   return errors
 }
 
 function validatePartialSubscriptionInput(body) {
   const errors = []
-  const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber, accountHolderName } = body
+  const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber } = body
 
   if (serviceName !== undefined) {
     if (!serviceName || typeof serviceName !== 'string') errors.push('serviceName은 필수 문자열입니다.')
@@ -59,11 +56,6 @@ function validatePartialSubscriptionInput(body) {
       errors.push(`accountNumber는 ${ACCOUNT_NUMBER_MAX_LENGTH}자 이하의 숫자/하이픈 조합이어야 합니다.`)
     }
   }
-  if (accountHolderName !== undefined) {
-    if (!accountHolderName || typeof accountHolderName !== 'string') errors.push('accountHolderName은 필수 문자열입니다.')
-    else if (accountHolderName.length > ACCOUNT_HOLDER_NAME_MAX_LENGTH) errors.push(`accountHolderName은 ${ACCOUNT_HOLDER_NAME_MAX_LENGTH}자 이하여야 합니다.`)
-  }
-
   return errors
 }
 
@@ -75,7 +67,7 @@ router.post('/', requireAuth, async (req, res, next) => {
     return next(err)
   }
 
-  const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber, accountHolderName } = req.body
+  const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber } = req.body
 
   try {
     const subscription = await prisma.subscription.create({
@@ -86,7 +78,6 @@ router.post('/', requireAuth, async (req, res, next) => {
         memberCount,
         bankName,
         accountNumber: encrypt(accountNumber),
-        accountHolderName: encrypt(accountHolderName),
         ownerId: req.user.id,
       },
     })
@@ -103,7 +94,6 @@ router.post('/', requireAuth, async (req, res, next) => {
       bankAccount: {
         bankName: subscription.bankName,
         accountNumber,
-        accountHolderName,
       },
       createdAt: subscription.createdAt,
     })
@@ -121,6 +111,10 @@ router.get('/', requireAuth, async (req, res, next) => {
           { members: { some: { userId: req.user.id } } },
         ],
       },
+      orderBy: [
+        { billingDay: 'asc' },
+        { serviceName: 'asc' },
+      ],
     })
 
     res.status(200).json({
@@ -227,7 +221,6 @@ router.get('/:id', requireAuth, async (req, res, next) => {
       response.bankAccount = {
         bankName: subscription.bankName,
         accountNumber: decrypt(subscription.accountNumber),
-        accountHolderName: decrypt(subscription.accountHolderName),
       }
     }
 
@@ -262,7 +255,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       return next(err)
     }
 
-    const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber, accountHolderName } = req.body
+    const { serviceName, subAmount, billingDay, memberCount, bankName, accountNumber } = req.body
 
     if (memberCount !== undefined) {
       const currentMemberCount = await prisma.partyMember.count({
@@ -282,7 +275,6 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     if (memberCount !== undefined) data.memberCount = memberCount
     if (bankName !== undefined) data.bankName = bankName
     if (accountNumber !== undefined) data.accountNumber = encrypt(accountNumber)
-    if (accountHolderName !== undefined) data.accountHolderName = encrypt(accountHolderName)
 
     const updated = await prisma.subscription.update({
       where: { id: subscription.id },
@@ -301,7 +293,6 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       bankAccount: {
         bankName: updated.bankName,
         accountNumber: decrypt(updated.accountNumber),
-        accountHolderName: decrypt(updated.accountHolderName),
       },
       createdAt: updated.createdAt,
     })

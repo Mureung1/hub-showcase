@@ -4,13 +4,15 @@
   "summary": "구독 서비스 비용을 간편하게 정산하고, AI 기반 구독 만족도 리포트로 구독 유지 여부 결정을 돕는 웹 플랫폼입니다.",
   "githubUser": "hyunjinch(최현진)",
   "demoUrl": "https://subzip.vercel.app",
-  "demoVideoUrl": "https://drive.google.com/file/d/15HcdEq3_fBEsil8jhiaIK-lSKOYCzBYh/view?usp=sharing",
+  "demoVideoUrl": "https://drive.google.com/file/d/1QeYzShgg5ZXwFxgJJJu7xtjxC8CqUjDP/view?usp=sharing",
   "thumbnail": "thumbnail.png",
   "screenshots": [
     "screenshots/home.png",
-    "screenshots/add-subscription.png",
-    "screenshots/settlement-owner.png",
-    "screenshots/settlement-partymember.png"
+    "screenshots/add-1.png",
+    "screenshots/add-2.png",
+    "screenshots/owner-1.png",
+    "screenshots/owner-2.png",
+    "screenshots/partymember.png"
   ],
   "problem": "여러 개의 구독 서비스를 이용하다 보면, 한 달에 정확히 얼마를 지출하고 있고 계속 유지할 만한 가치가 있는지 파악하기 어렵습니다. 특히 계정을 공유하는 경우 매달 번거로운 정산 과정을 거쳐야 하고, 전체 결제 금액이 파티장 한 명의 소비로만 기록되어 파티원들의 실제 소비 기록은 누락됩니다. 또한 개개인의 서비스 만족도가 구독 연장 등 그룹의 의사결정에 제대로 반영되지 않는 문제도 발생합니다.",
   "targetUsers": [
