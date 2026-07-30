@@ -443,9 +443,10 @@ function App() {
         <nav className="header-nav" aria-label="상단 메뉴">
           {mainTabs.map(([id, label]) => <button key={id} type="button" className={activeMainTab === id ? "active" : ""} aria-current={activeMainTab === id ? "page" : undefined} onClick={() => (id === "recommend" ? showRecommendations() : setActiveMainTab(id))}>{label}</button>)}
         </nav>
-        {!selectedRecipe && <button className="header-cta" type="button" onClick={activeMainTab === "fridge" ? showRecommendations : openIngredientForm}>
-          {activeMainTab === "about" ? "냉장고 시작하기" : activeMainTab === "fridge" ? "레시피 추천" : "재료 등록하기"}
-        </button>}
+        <div className="header-auth-actions" aria-label="계정 메뉴">
+          <button className="login-action" type="button" title="준비 중인 기능입니다" onClick={() => flash("로그인 기능은 준비 중입니다.")}>로그인</button>
+          <button className="signup-action" type="button" title="준비 중인 기능입니다" onClick={() => flash("회원가입 기능은 준비 중입니다.")}>회원가입</button>
+        </div>
       </header>
 
       <main>
@@ -478,9 +479,9 @@ function App() {
 
 function AboutWorkspace({ onStart, onRecommend }) {
   const features = [
-    { number: "01", title: "재료를 한눈에", description: "보관 위치와 수량, 소비기한을 함께 기록해 냉장고 상태를 놓치지 않아요.", accent: "green" },
-    { number: "02", title: "먼저 먹을 것부터", description: "소비기한이 가까운 재료를 앞에 보여줘 식재료 낭비를 자연스럽게 줄여요.", accent: "red" },
-    { number: "03", title: "있는 재료로 한 끼", description: "Gemini가 보유 재료와 오늘의 상황을 바탕으로 검증된 1인분 메뉴를 제안해요.", accent: "orange" },
+    { icon: "🧺", title: "재료를 한눈에", description: "보관 위치와 수량, 소비기한을 함께 기록해 냉장고 상태를 놓치지 않아요.", accent: "green" },
+    { icon: "⏰", title: "먼저 먹을 것부터", description: "소비기한이 가까운 재료를 앞에 보여줘 식재료 낭비를 자연스럽게 줄여요.", accent: "red" },
+    { icon: "🍳", title: "있는 재료로 한 끼", description: "Gemini가 보유 재료와 오늘의 상황을 바탕으로 검증된 1인분 메뉴를 제안해요.", accent: "orange" },
   ];
 
   return (
@@ -521,8 +522,8 @@ function AboutWorkspace({ onStart, onRecommend }) {
 
       <div className="about-feature-grid">
         {features.map((feature) => (
-          <article className={`about-feature ${feature.accent}`} key={feature.number}>
-            <span>{feature.number}</span>
+          <article className={`about-feature ${feature.accent}`} key={feature.title}>
+            <span aria-hidden="true">{feature.icon}</span>
             <h3>{feature.title}</h3>
             <p>{feature.description}</p>
           </article>
@@ -541,10 +542,6 @@ function AboutWorkspace({ onStart, onRecommend }) {
         </ol>
       </div>
 
-      <div className="about-bottom-cta">
-        <div><span>있는 재료 그대로,</span><h2>오늘은 뭘 먹을지 바로 정해보세요.</h2></div>
-        <button type="button" onClick={onStart}>무료로 시작하기 <span aria-hidden="true">→</span></button>
-      </div>
     </section>
   );
 }
@@ -564,7 +561,7 @@ function FridgeWorkspace({ ingredients, visibleIngredients, activeStorage, setAc
     <QuickActionSection onRecommend={showRecommendations} onUrgent={() => setActiveStorage("urgent")} />
 
     <section className="board-panel fridge-board">
-      <div className="ingredient-heading"><div><p className="eyebrow">MY INGREDIENTS</p><h2>내 재료 <span>{ingredients.length}개</span></h2></div><button className="secondary-action" type="button" onClick={openIngredientForm}>+ 재료 추가</button></div>
+      <div className="ingredient-heading"><div><p className="eyebrow">MY INGREDIENTS</p><h2>내 재료 <span>{ingredients.length}개</span></h2></div><button className="add-ingredient-action" type="button" onClick={openIngredientForm}><span aria-hidden="true">＋</span> 재료 추가</button></div>
       <div className="ingredient-toolbar">
         <nav className="storage-tabs" aria-label="재료 필터">{Object.entries(storageLabels).map(([id, label]) => <button key={id} type="button" className={activeStorage === id ? "active" : ""} aria-pressed={activeStorage === id} onClick={() => setActiveStorage(id)}>{label}</button>)}</nav>
         <label className="sort-control"><span>정렬</span><select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)}><option value="expiry">소비기한 임박순</option><option value="recent">최근 등록순</option><option value="name">이름순</option></select></label>

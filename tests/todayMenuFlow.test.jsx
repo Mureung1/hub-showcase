@@ -49,6 +49,7 @@ test("서비스 소개 탭에서 핵심 가치와 시작 동선을 제공한다"
   expect(screen.getByRole("heading", { name: "재료를 한눈에" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "먼저 먹을 것부터" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "있는 재료로 한 끼" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "무료로 시작하기" })).not.toBeInTheDocument();
   expect(requestedUrls).not.toContain("/api/recommendations");
 
   fireEvent.click(screen.getByRole("button", { name: "내 냉장고 채우기" }));
@@ -75,12 +76,14 @@ test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으�
 
   expect(screen.getByRole("button", { name: "내 냉장고" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "오늘의 메뉴" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "레시피 추천" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "로그인" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "회원가입" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "레시피" })).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "구매 추천" })).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "레시피 추천" }));
-  expect(screen.getByRole("button", { name: "재료 등록하기" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "오늘의 메뉴" }));
+  expect(screen.getByRole("button", { name: "로그인" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "회원가입" })).toBeInTheDocument();
   await screen.findAllByRole("button", { name: "레시피 보기" });
   expect(screen.getAllByRole("link", { name: "대파 구매하기" })).toHaveLength(3);
   expect(screen.getByRole("button", { name: "다른 추천 보기 (남은 4회)" })).toBeInTheDocument();
@@ -98,7 +101,8 @@ test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으�
   fireEvent.click(recipeButton);
 
   await screen.findByRole("heading", { name: "간장 두부 덮밥" });
-  expect(screen.queryByRole("button", { name: "재료 등록하기" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "로그인" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "회원가입" })).toBeInTheDocument();
   expect(screen.getAllByText(recipe.description)).toHaveLength(1);
   const recipeToolbar = screen.getByRole("toolbar", { name: "레시피 작업" });
   expect(within(recipeToolbar).getByRole("button", { name: "← 오늘의 메뉴" })).toBeInTheDocument();
@@ -138,7 +142,7 @@ test("인스턴트와 가공식품 조합을 선택하면 코칭 후 상세로 �
   };
 
   render(<App />);
-  fireEvent.click(screen.getByRole("button", { name: "레시피 추천" }));
+  fireEvent.click(screen.getByRole("button", { name: "오늘의 메뉴" }));
 
   const recipeHeading = await screen.findByRole("heading", { name: "스팸 김치라면" });
   const recipeCard = recipeHeading.closest("article");
@@ -206,7 +210,7 @@ test("요리 완료를 확인하면 레시피 사용량만큼 보유 재료를 �
   expect(await screen.findByRole("button", { name: "재료 수정" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "모두 사용" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /메뉴 열기/ })).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "레시피 추천" }));
+  fireEvent.click(screen.getByRole("button", { name: "오늘의 메뉴" }));
   fireEvent.click(await screen.findByRole("button", { name: "레시피 보기" }));
   await screen.findByRole("heading", { name: "간장 두부 덮밥" });
   fireEvent.click(screen.getByRole("button", { name: "✓ 이 레시피로 요리했어요" }));
