@@ -119,7 +119,7 @@ export default function Article() {
 
   return (
     <div className="min-h-screen bg-surface">
-      <div className="max-w-6xl mx-auto px-container-padding py-stack-lg flex gap-stack-lg items-start justify-center">
+      <div className="px-container-padding py-stack-lg flex gap-stack-lg items-start justify-center">
       <div className="max-w-2xl w-full">
         <Link
           to="/"

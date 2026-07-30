@@ -41,7 +41,7 @@ export default function MyPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-container-padding py-stack-lg">
+    <div className="px-container-padding py-stack-lg">
       <h1 className="font-headline-md text-headline-md text-on-surface mb-stack-lg">마이페이지</h1>
 
       {loading && (
