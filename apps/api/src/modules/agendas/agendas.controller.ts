@@ -32,8 +32,11 @@ const agendaParamsSchema = paramsSchema.extend({
 const userNoteSchema = z.string().max(2000).nullish();
 
 /**
- * §12.4 — 이번 범위의 액션은 `accept`·`compose`·`reject` 셋뿐이다.
- * `recheck`·`retry_recheck`는 Manager 재호출을 유발하므로 T-019.4에서 다룬다.
+ * §12.4 액션 5종. `recheck`·`retry_recheck`는 Manager 재호출을 유발하므로 그 구간의
+ * 저장이 시스템 쓰기로 넘어간다(Service가 처리).
+ *
+ * `recheckRequest`는 여기서 넉넉히 받고 **Service가 500자로 절단**한다(§16.2) —
+ * 경계에서 거절하면 사용자가 쓴 글이 통째로 날아간다.
  */
 const patchBodySchema = z.discriminatedUnion("action", [
   z.object({
@@ -50,6 +53,15 @@ const patchBodySchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("reject"),
     userNote: userNoteSchema,
+  }),
+  z.object({
+    action: z.literal("recheck"),
+    /** 추가 의견은 선택 입력이다(domain-policy의 recheck_request nullable과 정합). */
+    recheckRequest: z.string().max(5000).nullish(),
+  }),
+  z.object({
+    action: z.literal("retry_recheck"),
+    recheckRequest: z.string().max(5000).nullish(),
   }),
 ]);
 
@@ -122,7 +134,7 @@ export async function patchAgenda(
       response,
       400,
       "VALIDATION_ERROR",
-      "action은 accept·compose·reject 중 하나여야 하며 필요한 필드가 있어야 합니다.",
+      "action은 accept·compose·reject·recheck·retry_recheck 중 하나여야 하며 필요한 필드가 있어야 합니다.",
     );
     return;
   }
@@ -152,7 +164,14 @@ export async function patchAgenda(
       action: body.data.action,
       sourceRef: body.data.action === "accept" ? body.data.sourceRef : undefined,
       content: body.data.action === "compose" ? body.data.content : undefined,
-      userNote: body.data.userNote ?? null,
+      recheckRequest:
+        body.data.action === "recheck" || body.data.action === "retry_recheck"
+          ? body.data.recheckRequest ?? null
+          : undefined,
+      userNote:
+        body.data.action === "recheck" || body.data.action === "retry_recheck"
+          ? null
+          : body.data.userNote ?? null,
     });
     response.status(200).json(agenda);
   } catch (error) {

@@ -18,11 +18,14 @@ import {
   type ManagerMeta,
   type ManagerMetrics,
   type ManagerQualityMetrics,
+  type DraftSourceRef,
   type PipelineSection,
   type PipelineTrace,
 } from "./agendas.types.js";
 import * as repo from "./agendas.repository.js";
 import { judgeDrafts } from "./pipeline/judge.js";
+import { getAgendaRechecker } from "./adapters/agendaRechecker.registry.js";
+import { formatStanceSummary, verifyRecheckResult } from "./pipeline/recheck.js";
 import { getAgendaClassifier } from "./adapters/agendaClassifier.registry.js";
 import type {
   AgendaRef,
@@ -660,8 +663,13 @@ export async function runManagerForQuestion(input: {
 // 사용자 판단 (§12.4) — 사용자 행동이므로 userClient(RLS)로 쓴다
 // ---------------------------------------------------------------------------
 
-/** 이번 범위의 액션 3종. `recheck`·`retry_recheck`는 T-019.4. */
-export type UserDecisionAction = "accept" | "compose" | "reject";
+/** §12.4 액션 5종. `recheck`·`retry_recheck`는 Manager 호출을 유발한다. */
+export type UserDecisionAction =
+  | "accept"
+  | "compose"
+  | "reject"
+  | "recheck"
+  | "retry_recheck";
 
 export interface UserDecisionInput {
   userClient: SupabaseClient;
@@ -673,11 +681,144 @@ export interface UserDecisionInput {
   sourceRef?: SourceRef;
   /** compose — 사용자가 직접 쓴 내용. */
   content?: string;
+  /** recheck — 사용자의 추가 의견(선택). 500자로 절단해서 저장·전달한다(§16.2). */
+  recheckRequest?: string | null;
   userNote?: string | null;
 }
 
 /** 사용자 판단을 받을 수 있는 상태(§12.4·domain-policy §4.2). */
 const DECIDABLE_STATUSES = new Set(["conflicted", "recheck_requested", "reanswered"]);
+
+// ---------------------------------------------------------------------------
+// 재검토 (§10) — Manager 호출을 유발하므로 저장이 시스템 쓰기로 넘어간다
+// ---------------------------------------------------------------------------
+
+/**
+ * §10 재검토 실행.
+ *
+ * **전이 (§10.6)**
+ * ```text
+ * conflicted        --recheck-------> recheck_requested --(호출 성공)--> reanswered
+ * recheck_requested --retry_recheck-> recheck_requested --(호출 성공)--> reanswered
+ * 호출 실패 → recheck_requested 유지. 상태를 되돌리지 않는다
+ * ```
+ *
+ * **"1회 제한"은 요청 횟수가 아니라 성공한 재검토 횟수로 센다.** 그래서 `reanswered`에서만
+ * 재요청을 막고, `recheck_requested`에서는 몇 번이든 다시 시도할 수 있다. 이 출구가 없으면
+ * AI 장애가 길어질 때 Agenda가 갇히고 그 Question도 영영 완료되지 않는다.
+ */
+async function runRecheck(input: {
+  userClient: SupabaseClient;
+  questionId: string;
+  agenda: Agenda;
+  action: "recheck" | "retry_recheck";
+  recheckRequest: string | null;
+}): Promise<Agenda> {
+  const { userClient, questionId, agenda, action, recheckRequest } = input;
+
+  // §10.6 전이 검증 — 허용되지 않은 출발 상태는 409.
+  const allowedFrom = action === "recheck" ? "conflicted" : "recheck_requested";
+  if (agenda.status !== allowedFrom) {
+    throw new AppError(
+      409,
+      "INVALID_AGENDA_TRANSITION",
+      agenda.status === "reanswered"
+        ? "이미 재검토를 마친 쟁점입니다. 재검토는 쟁점당 1회입니다."
+        : `현재 상태(${agenda.status})에서는 재검토를 요청할 수 없습니다.`,
+    );
+  }
+
+  // §16.2 — 사용자 입력은 500자로 절단한다. 비신뢰 입력이므로 프롬프트에서 구분 블록에 들어간다.
+  const trimmed = recheckRequest?.trim() ?? "";
+  const truncated = trimmed.length > 0 ? trimmed.slice(0, 500) : null;
+
+  // 1) 요청 접수를 먼저 저장한다(사용자 행동 → RLS). 호출이 실패해도 이 상태는 남는다.
+  //    retry_recheck는 이미 recheck_requested이므로 요청 원문만 갱신한다.
+  const requested = await repo.markRecheckRequested(
+    userClient,
+    agenda.id,
+    truncated ?? agenda.recheckRequest,
+  );
+
+  // 2) Manager 호출. 여기서부터는 시스템 쓰기다(§12.4).
+  const adminClient = getAdminClient();
+  const rechecker = getAgendaRechecker();
+
+  // 근거 섹션 원문을 되읽는다 — 저장된 sourceRefs는 참조만 갖고 있다.
+  const refs = await loadSectionRefs(userClient, requested);
+  if (refs.length === 0) {
+    // 원문을 못 읽으면 인용 검증이 불가능하다. 상태는 유지하고 실패로 알린다(§10.6).
+    throw new AppError(
+      502,
+      "PROVIDER_ERROR",
+      "재검토에 필요한 원문을 읽지 못했습니다. 다시 시도해 주세요.",
+    );
+  }
+
+  const questionMessage = await repo.findQuestionMessage(userClient, questionId);
+
+  try {
+    const { output } = await rechecker.recheck({
+      question: questionMessage ?? "",
+      agendaTitle: requested.title,
+      disagreementType: requested.disagreementType,
+      stanceSummary: formatStanceSummary(requested.stances),
+      recheckRequest: truncated ?? "판정 근거를 더 자세히 설명해 주세요.",
+      sections: refs.map((r) => ({
+        provider: r.provider,
+        sectionId: r.sectionId,
+        title: r.title,
+        content: r.content,
+      })),
+    });
+
+    // §11-8 — citations의 quote도 원문 부분 문자열이어야 한다.
+    const verified = verifyRecheckResult(output, refs);
+
+    // §10.4·§10.5 — disagreementType·stances는 건드리지 않는다. revisedType만 따로 저장.
+    return await repo.saveRecheckResult(
+      adminClient,
+      requested.id,
+      verified.result,
+    );
+  } catch (error) {
+    // §10.6 — 호출 실패 시 recheck_requested를 **유지**한다. 기회를 소진하지 않는다.
+    console.error(
+      "[agendas] 재검토 실패:",
+      error instanceof Error ? error.message : error,
+    );
+    throw new AppError(
+      502,
+      error instanceof ManagerCallError ? error.errorCode : "PROVIDER_ERROR",
+      "재검토에 실패했습니다. 다시 시도할 수 있습니다.",
+    );
+  }
+}
+
+/** 저장된 sourceRefs로 원문 섹션을 되읽는다(인용 검증에 원문이 필요하다). */
+async function loadSectionRefs(
+  client: SupabaseClient,
+  agenda: Agenda,
+): Promise<DraftSourceRef[]> {
+  const out: DraftSourceRef[] = [];
+  for (const ref of agenda.sourceRefs) {
+    const section = await repo.findSection(
+      client,
+      ref.sourceAnswerId,
+      ref.sectionId,
+    );
+    if (section) {
+      out.push({
+        provider: section.provider,
+        sourceAnswerId: ref.sourceAnswerId,
+        sectionId: ref.sectionId,
+        title: section.title,
+        content: section.content,
+      });
+    }
+  }
+  return out;
+}
 
 /**
  * §12.4 접미사 규칙 — `_after_recheck`는 **`reanswered`에서 온 경우에만** 붙인다.
@@ -711,6 +852,18 @@ export async function applyUserDecision(
     // RLS로 안 보이거나 없는 경우 — 남의 것이거나 존재하지 않는다. 정보는 은닉한다.
     throw new AppError(404, "AGENDA_NOT_FOUND", "대상 Agenda를 찾을 수 없습니다.");
   }
+
+  // §10 재검토는 Manager 호출을 유발하므로 별도 경로다(§12.4).
+  if (action === "recheck" || action === "retry_recheck") {
+    return runRecheck({
+      userClient,
+      questionId,
+      agenda,
+      action,
+      recheckRequest: input.recheckRequest ?? null,
+    });
+  }
+
   if (!DECIDABLE_STATUSES.has(agenda.status)) {
     throw new AppError(
       409,

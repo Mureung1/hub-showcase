@@ -1,8 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   AgendaSchema,
+  AiProviderSchema,
   NO_VALUE,
   type Agenda,
+  type AgendaRecheckResult,
+  type AiProvider,
   type AgendaResolutionReason,
   type AgendaStance,
   type SourceRef,
@@ -236,6 +239,61 @@ export async function applyUserDecision(
   return toAgenda(data);
 }
 
+/**
+ * §10 재검토 — 요청 접수. `conflicted → recheck_requested` 전이 (사용자 행동, RLS).
+ * `recheckRequest`는 Service가 500자로 절단해서 넘긴다(§16.2).
+ */
+export async function markRecheckRequested(
+  userClient: SupabaseClient,
+  agendaId: string,
+  recheckRequest: string | null,
+): Promise<Agenda> {
+  const now = new Date().toISOString();
+  const { data, error } = await userClient
+    .from("agendas")
+    .update({
+      status: "recheck_requested",
+      recheck_request: recheckRequest,
+      recheck_requested_at: now,
+      updated_at: now,
+    })
+    .eq("id", agendaId)
+    .select(COLUMNS)
+    .single();
+  if (error) throw new Error(`재검토 요청 저장 실패: ${error.message}`);
+  return toAgenda(data);
+}
+
+/**
+ * §10 재검토 — 결과 저장. `recheck_requested → reanswered` (Manager 호출 결과이므로 시스템 쓰기).
+ *
+ * ⚠️ **`stances`와 `disagreement_type`을 건드리지 않는다**(§10.4·§10.5).
+ * 재검토는 덮어쓰기가 아니라 덧붙이기다 — `stances`는 1차 비교의 기록이자 3열 화면
+ * 재구성의 근거이고, `revised_type`은 별도 컬럼이라 "원래는 충돌로 봤는데 재검토하니
+ * 근거 차이였다"는 이력이 남는다. `kind`도 자동으로 바뀌지 않는다 — 최종 결정은 사용자 몫이다.
+ */
+export async function saveRecheckResult(
+  adminClient: SupabaseClient,
+  agendaId: string,
+  result: AgendaRecheckResult,
+): Promise<Agenda> {
+  const now = new Date().toISOString();
+  const { data, error } = await adminClient
+    .from("agendas")
+    .update({
+      status: "reanswered",
+      recheck_result: result,
+      revised_type: result.revisedType,
+      reanswered_at: now,
+      updated_at: now,
+    })
+    .eq("id", agendaId)
+    .select(COLUMNS)
+    .single();
+  if (error) throw new Error(`재검토 결과 저장 실패: ${error.message}`);
+  return toAgenda(data);
+}
+
 /** §3.3 실행 메타 스탬프. 재현·감사용이며 시스템 쓰기다. */
 export async function saveManagerMeta(
   adminClient: SupabaseClient,
@@ -297,6 +355,61 @@ export async function findSectionContent(
     }
   }
   return null;
+}
+
+/**
+ * 재검토 인용 검증용 — 섹션의 provider·title·content를 함께 되읽는다(§11-8).
+ * `findSectionContent`는 content만 주지만 재검토는 구분 블록에 provider·title도 넣어야 한다.
+ */
+export async function findSection(
+  client: SupabaseClient,
+  sourceAnswerId: string,
+  sectionId: string,
+): Promise<{ provider: AiProvider; title: string; content: string } | null> {
+  const { data, error } = await client
+    .from("source_answers")
+    .select("provider, structured_content")
+    .eq("id", sourceAnswerId)
+    .maybeSingle();
+  if (error) throw new Error(`SourceAnswer 조회 실패: ${error.message}`);
+  if (!data) return null;
+
+  const row = data as Record<string, unknown>;
+  const provider = AiProviderSchema.safeParse(row.provider);
+  if (!provider.success) return null;
+
+  const content = row.structured_content;
+  if (typeof content !== "object" || content === null) return null;
+  const sections = (content as { sections?: unknown }).sections;
+  if (!Array.isArray(sections)) return null;
+
+  for (const section of sections) {
+    if (typeof section !== "object" || section === null) continue;
+    const s = section as Record<string, unknown>;
+    if (
+      s.sectionId === sectionId &&
+      typeof s.content === "string" &&
+      typeof s.title === "string"
+    ) {
+      return { provider: provider.data, title: s.title, content: s.content };
+    }
+  }
+  return null;
+}
+
+/** Question 원문. 재검토 프롬프트의 맥락으로 들어간다(§10.2). */
+export async function findQuestionMessage(
+  client: SupabaseClient,
+  questionId: string,
+): Promise<string | null> {
+  const { data, error } = await client
+    .from("questions")
+    .select("message")
+    .eq("id", questionId)
+    .maybeSingle();
+  if (error) throw new Error(`Question 조회 실패: ${error.message}`);
+  const message = (data as { message?: unknown } | null)?.message;
+  return typeof message === "string" ? message : null;
 }
 
 /** stance 배열에 그 참조가 실제로 들어 있는지(사용자가 보낸 참조를 신뢰하지 않는다). */

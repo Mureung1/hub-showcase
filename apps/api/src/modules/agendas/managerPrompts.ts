@@ -12,7 +12,7 @@ import { loadEnv } from "../../shared/config/env.js";
 
 const cache = new Map<string, string>();
 
-export type ManagerPromptKind = "classify" | "leftover" | "compare";
+export type ManagerPromptKind = "classify" | "leftover" | "compare" | "recheck";
 
 function fill(template: string, variables: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (whole, key: string) =>
