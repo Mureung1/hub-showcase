@@ -11,6 +11,36 @@
 
 ---
 
+### 2026-07-30
+- 진행한 작업:
+  - 밀려 있던 브랜치 반영: 로컬 `dev`를 `N034_김선호`로 fast-forward(65커밋). `main`은 손대지 않음
+  - 열린 이슈 4건(`kimsunho2000/hub#6`·`#8`·`#9`·`#10`) 실제 코드와 대조 후 정리·종료. 미체크로 남아 있던 항목이 대부분 이미 구현돼 있어 구현 위치를 본문에 기입하고 닫음. 유일한 진짜 미구현은 #8의 "403 → 429를 rate limit 헤더로 세분화"인데, 인증 없이 공개 데이터만 읽는 구조라 권한 오류로서의 403이 발생할 경로가 없어 세분화해도 사용자에게 보이는 동작이 같음 → 스코프 아웃으로 기록
+  - `POST /api/analysis` 통합테스트 신설 — 이 핵심 엔드포인트에 통합테스트가 없었다(기존 `analysis.test.js`는 GET 계열만 검증). 정상 생성·저장 확인 / 24시간 캐시 히트 시 GitHub 미호출 / 캐시 만료 시 재호출 / 400·404·429 6케이스
+  - `isValidRepoFullName`·`isValidIssueNumber` 유닛테스트 추가 — 그동안 `favorites.test.js` 통합테스트를 통한 간접 검증만 있었음
+  - `frontend/src/utils/preferences.test.js` 신설 — `buildDefaultPreferences`가 프로필 화면 칩 초기값과 첫 추천 요청 입력을 결정하는데 테스트가 없었음. skillLevel→difficulty 매핑 케이스 작성(폴백 3케이스는 `TODO(human)`으로 남김)
+  - **`npm run test:frontend`가 계속 실패 상태였던 것을 발견·수정**: `vite.config.js`에 Vitest `include`가 없어 기본 패턴이 `frontend/e2e/*.spec.js`(Playwright)까지 잡아 무조건 2건 실패했다. `include: ['src/**/*.test.{js,jsx}']`로 좁힘. 배포 게이트(`render.yaml`)가 백엔드 `npm test`만 걸어서 아무 자동화 경로도 이 명령을 실행하지 않아 그동안 드러나지 않았음
+  - `security-review`로 백엔드 전체 보안 감사 — 신뢰도 8/10 이상 발견 0건. 검색 qualifier 인젝션(`LANGUAGE_PATTERN` + sink에서 재차 따옴표 제거), GraphQL 별칭 인젝션(`JSON.stringify` 인코딩), 원시 SQL 부재, 경로 탐색(Octokit 파라미터 바인딩), 시크릿 로깅(SHA-256 12자 절단만 기록), CORS·에러 응답 전부 클린 확인
+- 이슈/막힌 점:
+  - `POST /api/analysis` 캐시 테스트가 처음 실패 — `upsert`의 `update` 분기에 `analyzedAt`만 넣어서 앞 테스트가 남긴 행의 `languages`가 그대로 남았다. 실제 Supabase를 쓰는 테스트 정책의 대가라, `create`/`update` 양쪽을 같은 값으로 채워 픽스처를 고정
+- 다음 할 일:
+  - cron-job.org 무료 플랜 월 750시간 한도 — 다른 프로젝트와 Render 무료 가동시간 겹치는지 확인 필요 (07-28에서 이월, 외부 서비스 확인 작업)
+  - `preferences.test.js`의 `TODO(human)` 폴백 3케이스 채우기
+  - 프론트 테스트를 배포 게이트나 CI에 어떻게 연결할지 검토 — 지금은 수동 실행 외에 아무도 돌리지 않음
+
+---
+
+### 2026-07-29
+- 진행한 작업:
+  - 대회 제출용 `showcase/showcase.json`에 `demoVideoUrl`(구글 드라이브 시연 영상) 필드 추가
+  - 데모 URL을 `https://kimsunho2000.github.io/hub/#/`로 통일 — 해시 라우터를 쓰는데 해시 없는 URL을 안내하고 있었다. README·`docs/checklist.md`·`showcase.json` 세 곳이 서로 다른 형태였던 것도 함께 맞춤
+  - `pr-draft` 스킬 개정: (1) 커밋 범위 기준을 `dev..HEAD` → "마지막 머지된 PR 이후"로 변경. 로컬 `dev`가 뒤처져 있으면 이미 올린 옛 커밋까지 초안에 딸려오던 문제. (2) 산출물을 `gh pr create` 명령어 대신 웹 UI에 붙여넣을 제목/본문 텍스트로 변경. (3) 라벨은 `gh label list`로 실제 존재하는 것만 후보로 제시
+- 이슈/막힌 점:
+  - (해당 없음)
+- 다음 할 일:
+  - `submission-check` 스킬로 제출 전 최종 점검 (07-28에서 이월)
+
+---
+
 ### 2026-07-28
 - 진행한 작업:
   - Week3 잔여 2건 마감: `[BE] rate limit/엣지케이스 대응`, `[FE/BE] 버그 디버깅 + 필터/재조회 마감`
