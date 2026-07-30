@@ -19,9 +19,22 @@
 - Vercel이 기본 `main`을 배포 → `main`을 최신 브랜치로 fast-forward 하여 최신 코드 배포.
 
 **남은 것**
-- Supabase Auth **Redirect URL / Site URL**에 `https://respec-gamma.vercel.app` 등록(프로덕션 로그인용).
-- 배포 후 CORS를 Vercel 도메인으로 제한(현재 전체 허용).
+- Supabase Auth **Redirect URL / Site URL**에 `https://respec-gamma.vercel.app` 등록(프로덕션 로그인용). 프론트가 OAuth를 `redirectTo: window.location.origin`으로 부르므로, 이 등록 없이는 배포 도메인에서 소셜 로그인이 돌아오지 못한다.
+- 배포 후 CORS를 Vercel 도메인으로 제한(현재 전체 허용) — **데모 이후로 미룸**(데모 주간에 배포 리스크를 만들지 않는다).
 - Render 무료 인스턴스 콜드스타트(~50초) — 데모 직전 워밍업.
+
+## 재검증 기록 (2026-07-30, 4주차 마감)
+
+| 확인 | 결과 |
+|---|---|
+| `GET https://respec.onrender.com/api/health` | `{"status":"ok","service":"core-loop-builder-backend","db":"ok"}` |
+| `GET /api/documents` | 발행 문서 **66편** (최근: 2026-07-29) |
+| `GET /api/games/search?q=zelda` | RAWG 결과 8건 |
+| `https://respec-gamma.vercel.app` | HTTP 200 |
+| 배포 번들 | `VITE_API_URL`이 `https://respec.onrender.com/api`로 반영됨(번들 문자열 확인) |
+| 로컬 테스트 | backend 28 / frontend 36 통과, `npm run lint` 경고 2건(에러 0), `vite build` 성공 |
+
+이번 주 배포 반영분: 4주차 문서(WORKFLOW·발표 자료)·CI 워크플로우·showcase.json, 그리고 7/29 인증 개선 커밋(비밀번호 재설정·변경, 이메일 변경, 프로필 한 줄 소개, 로그인 UX). `main`에 반영하면 Vercel/Render가 자동 배포한다.
 
 ## 폴더 구조
 - **프론트엔드**: `frontend/` (Vite + React) → **Vercel**
