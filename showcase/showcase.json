@@ -3,7 +3,8 @@
   "title": "선호도 기반 약속 시간 조율 서비스",
   "summary": "가능한 시간뿐 아니라 선호하는 시간까지 함께 모아, 모두에게 가장 만족스러운 약속 시간을 찾아주는 모바일 웹 서비스입니다.",
   "githubUser": "Ladea1224(신주하)",
-  "demoUrl": "https://hub-git-subtask-ladea1225.vercel.app/",
+  "demoUrl": "https://hub-oemo-git-main-ladea1225.vercel.app/",
+  "demoVideoUrl": "https://youtu.be/XhuCBYjqXuo",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/01-home.webp",
