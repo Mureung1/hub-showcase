@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/dialog_art.dart';
 import '../../../core/theme/app_colors.dart';
@@ -67,7 +66,7 @@ class _LevelUpDialogState extends State<LevelUpDialog>
     return AppDialogShell(
       children: [
         // 상승 배지 — 완료·스트릭 연출과 **같은 규격**([CelebrationBadge]).
-        // 폴백 📈는 정본이 이 자리에 세워 둔 `Symbols.trending_up`과 같은 뜻이다.
+        // 폴백 📈는 정본이 이 자리에 세워 둔 `Icons.trending_up`과 같은 뜻이다.
         AnimatedBuilder(
           animation: _pop,
           builder: (context, child) => Opacity(
@@ -130,7 +129,7 @@ class _LevelUpDialogState extends State<LevelUpDialog>
                 ),
               ),
               Icon(
-                Symbols.arrow_forward,
+                Icons.arrow_forward,
                 size: 24,
                 color: scheme.onSurfaceVariant,
               ),

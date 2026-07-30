@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/constants/empty_art.dart';
 import '../../core/error/app_failure.dart';
@@ -244,12 +243,12 @@ class _SummaryCard extends StatelessWidget {
     return StatCardRow(
       cards: [
         StatCard(
-          icon: Symbols.check_circle,
+          icon: Icons.check_circle,
           label: '완료',
           value: '$completedCount',
         ),
         StatCard(
-          icon: Symbols.local_fire_department,
+          icon: Icons.local_fire_department,
           label: '연속 일수',
           value: '$streak',
           // 정본 실측 값은 `5일`이다. '일'은 한글이라 수치 서체(Sora)에 넣을 수

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/error/app_failure.dart';
 import '../../core/theme/app_radius.dart';
@@ -241,12 +240,12 @@ class _StatsContent extends StatelessWidget {
     return StatCardRow(
       cards: [
         StatCard(
-          icon: Symbols.check_circle,
+          icon: Icons.check_circle,
           label: '완료한 도전',
           value: '$completedCount',
         ),
         StatCard(
-          icon: Symbols.local_fire_department,
+          icon: Icons.local_fire_department,
           label: '연속 출석',
           // 스트릭 0이면 숫자 대신 "아직 없음"으로 — 신규 사용자에게 0은
           // 실패처럼 읽힌다. 한글이라 수치 서체(Sora)를 쓸 수 없어 numeric:false다.

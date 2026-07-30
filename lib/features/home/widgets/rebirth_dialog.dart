@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/dialog_art.dart';
 import '../../../core/constants/growth_rules.dart';
@@ -141,7 +140,7 @@ class _RebirthCelebrationDialogState extends State<RebirthCelebrationDialog>
       children: [
         // 환생 표식(별) 배지가 튕겨 나온다 — 다른 축하 연출과 같은 규격
         // ([CelebrationBadge]). 폴백 ⭐는 정본이 이 자리에 세워 둔
-        // `Symbols.auto_awesome`(및 아래 등급 칩의 ★)과 같은 뜻이다.
+        // `Icons.auto_awesome`(및 아래 등급 칩의 ★)과 같은 뜻이다.
         //
         // ⚠️ 예전에는 여기에 **새 계열 캐릭터**를 세웠다. 정본 `122:646`은 배지를
         // 그리므로 정본을 따랐고, 계열이 실제로 바뀌는 환생에서는 아래
@@ -226,12 +225,8 @@ class _RebirthBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Symbols.star,
-            fill: 1,
-            size: 18,
-            color: scheme.onPrimaryContainer,
-          ),
+          // 채운 별. Material Icons는 `Icons.star`가 곧 채움이다.
+          Icon(Icons.star, size: 18, color: scheme.onPrimaryContainer),
           AppSpacing.gapWXs,
           Flexible(
             child: Text(

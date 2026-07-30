@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/constants/empty_art.dart';
 import '../../core/constants/growth_rules.dart';
@@ -161,7 +160,7 @@ class _HomeContent extends ConsumerWidget {
           padding: AppSpacing.screenHorizontal,
           child: GradientButton(
             onPressed: () => context.go('/quest'),
-            icon: Symbols.check,
+            icon: Icons.check,
             label: '오늘의 퀘스트',
           ),
         ),
@@ -227,13 +226,14 @@ class _HomeStats extends StatelessWidget {
     return StatCardRow(
       cards: [
         StatCard(
-          icon: Symbols.monetization_on,
+          // 채운 코인(칩 배경 위 글리프). Material Icons는 기본형이 채움이다.
+          icon: Icons.monetization_on,
           label: '코인',
           value: _formatThousands(user.coin),
           accent: StatAccent.reward,
         ),
         StatCard(
-          icon: Symbols.local_fire_department,
+          icon: Icons.local_fire_department,
           label: '연속',
           value: '${user.streak}',
           // '일'은 한글이라 수치 서체(Sora)에 넣을 수 없다 — 단위로 따로 넘긴다.
@@ -350,7 +350,7 @@ class _RebirthButtonState extends ConsumerState<_RebirthButton> {
   /// [GradientButton.busy]가 맡는다(주 버튼과 같은 처리라 따로 짜지 않는다).
   Widget _unlocked() => GradientButton(
     onPressed: _onPressed,
-    icon: Symbols.refresh,
+    icon: Icons.refresh,
     label: '환생',
     style: GradientButtonStyle.rebirth,
     busy: _busy,
@@ -382,7 +382,7 @@ class _RebirthLockedButton extends StatelessWidget {
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Symbols.refresh, size: 20),
+          Icon(Icons.refresh, size: 20),
           AppSpacing.gapWSm,
           // **현재 레벨**을 되뇌는 대신 열리는 조건을 말한다.
           // 긴 라벨·큰 배율에서 넘치지 않게 접을 수 있게 둔다.

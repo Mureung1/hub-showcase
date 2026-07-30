@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
@@ -153,12 +152,9 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Symbols.error,
-              size: 48,
-              color: theme.colorScheme.error,
-              fill: 1,
-            ),
+            // 채운 경고 글리프. Material Icons는 `Icons.error`가 곧 채움이고
+            // 외곽선은 `Icons.error_outline`이라 이름으로 갈린다.
+            Icon(Icons.error, size: 48, color: theme.colorScheme.error),
             AppSpacing.gapMd,
             Text(
               message,
@@ -171,7 +167,7 @@ class ErrorView extends StatelessWidget {
               AppSpacing.gapLg,
               OutlinedButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(Symbols.refresh),
+                icon: const Icon(Icons.refresh),
                 label: const Text('다시 시도'),
               ),
             ],

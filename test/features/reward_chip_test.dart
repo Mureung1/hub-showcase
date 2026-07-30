@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_symbols_icons/symbols.dart';
 import 'package:one_step/core/constants/reward_rules.dart';
 import 'package:one_step/core/theme/app_theme.dart';
 import 'package:one_step/core/widgets/reward_chip.dart';
@@ -138,10 +137,10 @@ void main() {
       expect(tester.takeException(), isNull);
 
       final coinIconY = tester
-          .getCenter(find.byIcon(Symbols.monetization_on))
+          .getCenter(find.byIcon(Icons.monetization_on))
           .dy;
       final coinTextY = tester.getCenter(find.text('+${hard.coin}')).dy;
-      final xpIconY = tester.getCenter(find.byIcon(Symbols.star)).dy;
+      final xpIconY = tester.getCenter(find.byIcon(Icons.star)).dy;
       final xpTextY = tester.getCenter(find.text('XP +${hard.xp}')).dy;
 
       expect(coinIconY, coinTextY, reason: '코인 아이콘과 숫자가 갈라졌다.');
@@ -156,11 +155,11 @@ void main() {
       expect(tester.takeException(), isNull);
 
       expect(
-        tester.getCenter(find.byIcon(Symbols.monetization_on)).dy,
+        tester.getCenter(find.byIcon(Icons.monetization_on)).dy,
         tester.getCenter(find.text('+${hard.coin}')).dy,
       );
       expect(
-        tester.getCenter(find.byIcon(Symbols.star)).dy,
+        tester.getCenter(find.byIcon(Icons.star)).dy,
         tester.getCenter(find.text('XP +${hard.xp}')).dy,
       );
     });
@@ -175,8 +174,8 @@ void main() {
 
       // 코인·XP가 같은 줄(한 줄 레이아웃).
       expect(
-        tester.getCenter(find.byIcon(Symbols.monetization_on)).dy,
-        tester.getCenter(find.byIcon(Symbols.star)).dy,
+        tester.getCenter(find.byIcon(Icons.monetization_on)).dy,
+        tester.getCenter(find.byIcon(Icons.star)).dy,
         reason: 'large=$large · 배율 1.0에서는 접히지 않아야 한다.',
       );
     }

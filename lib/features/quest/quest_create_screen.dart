@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/analytics/analytics_logger.dart';
 import '../../core/constants/reward_rules.dart';
@@ -248,7 +247,10 @@ class _QuestCreateScreenState extends ConsumerState<QuestCreateScreen> {
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
                 hintText: '예: 교내 공모전 지원하기',
-                prefixIcon: Icon(Symbols.target, size: _inputIconSize),
+                // ⚠️ Figma 정본은 `Symbols.target`(과녁)이지만 Material Icons에
+                // `target`이 없다. 후보 중 `track_changes`가 동심원 과녁에 가장
+                // 가까워 골랐다(`adjust`는 점이 하나뿐, `gps_fixed`는 위치 의미).
+                prefixIcon: Icon(Icons.track_changes, size: _inputIconSize),
               ),
             ),
             AppSpacing.gapMd,
@@ -275,7 +277,7 @@ class _QuestCreateScreenState extends ConsumerState<QuestCreateScreen> {
             // 두 버튼의 위계가 색으로 읽히지 않았다.)
             GradientButton(
               onPressed: _submitting ? null : _addRow,
-              icon: Symbols.add,
+              icon: Icons.add,
               label: '퀘스트 추가',
               style: GradientButtonStyle.ai,
             ),
@@ -398,7 +400,7 @@ class _QuestRowCard extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                   iconSize: 20,
                   color: scheme.onSurfaceVariant,
-                  icon: const Icon(Symbols.close),
+                  icon: const Icon(Icons.close),
                 ),
             ],
           ),

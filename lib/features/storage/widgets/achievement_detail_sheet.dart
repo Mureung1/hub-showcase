@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/proof_rules.dart';
 import '../../../core/error/app_failure.dart';
@@ -305,7 +304,7 @@ class _AchievementDetailSheetState extends State<AchievementDetailSheet> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: _enterEdit,
-            icon: const Icon(Symbols.edit),
+            icon: const Icon(Icons.edit_outlined),
             label: const Text('수정'),
           ),
         ),
@@ -476,7 +475,7 @@ class _EditPhoto extends StatelessWidget {
                         dimension: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Symbols.photo_camera),
+                    : const Icon(Icons.photo_camera_outlined),
                 label: Text(picking ? '사진 여는 중…' : '사진 바꾸기'),
               ),
             ),
@@ -487,7 +486,7 @@ class _EditPhoto extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: picking ? null : onRemove,
-                  icon: const Icon(Symbols.delete),
+                  icon: const Icon(Icons.delete_outlined),
                   label: const Text('제거'),
                 ),
               ),

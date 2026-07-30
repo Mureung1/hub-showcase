@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/constants/empty_art.dart';
 import '../../core/constants/shop_items.dart';
@@ -400,10 +399,11 @@ class _ShopItemCard extends StatelessWidget {
       children: [
         // 장착 표시(아이콘·라벨)도 스킴 그린이다 — 상수는 다크에서 2.38:1이라
         // "장착 중" 한 줄이 카드 면에 묻힌다.
+        // 둘 다 채움 글리프다(Material Icons는 기본형이 채움이라 예전 `fill: 1`이
+        // 필요 없다 — 외곽선이 필요하면 `_outlined` 이름을 써야 한다).
         Icon(
-          equipped ? Symbols.check_circle : Symbols.inventory_2,
+          equipped ? Icons.check_circle : Icons.inventory_2,
           size: 16,
-          fill: 1,
           color: equipped
               ? theme.colorScheme.primary
               : theme.colorScheme.onSurfaceVariant,
@@ -651,9 +651,8 @@ class _Preview extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Symbols.check,
+                Icons.check,
                 size: 14,
-                fill: 1,
                 color: theme.colorScheme.onPrimary,
               ),
             ),

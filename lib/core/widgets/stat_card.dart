@@ -180,7 +180,9 @@ class _IconChip extends StatelessWidget {
         color: background,
         borderRadius: AppRadius.smAll,
       ),
-      child: Icon(icon, size: 20, fill: 1, color: color),
+      // 채움 여부는 호출부가 고른 아이콘 이름이 정한다(Material Icons에는 `fill`
+      // 축이 없다 — 예전 Material Symbols는 여기서 `fill: 1`을 줬다).
+      child: Icon(icon, size: 20, color: color),
     );
   }
 }

@@ -67,7 +67,8 @@
 - [x] 노랑이 코인·보상 이외의 UI 요소에 사용되지 않는다(코드 검색으로 확인 가능).
       → **테스트로 강제**: `test/theme/color_role_test.dart`가 `lib/**`를 스캔해 허용 목록(reward_colors·app_theme·coin_pill·reward_chip·difficulty_pill·character_card) 밖의 노랑 사용을 FAIL 처리. 노랑은 `ColorScheme`에 넣지 않고 `RewardTheme` 확장으로만 노출한다.
       > 합의된 예외: `difficulty_pill.dart`(보통 난이도 pill의 노랑 틴트) — 난이도가 곧 보상 등급이므로 허용.
-- [x] 폰트 Sora, 아이콘 Material Symbols, 12px 라운드가 공통 테마에 반영되어 있다. → Sora 가변폰트 번들(`assets/fonts/Sora-Variable.ttf`), `material_symbols_icons`, `AppRadius.md = 12`.
+- [x] 폰트 Sora, 아이콘 세트, 12px 라운드가 공통 테마에 반영되어 있다. → Sora 가변폰트 번들(`assets/fonts/Sora-Variable.ttf`), **Flutter 내장 Material Icons**(`Icons.*`), `AppRadius.md = 12`.
+      > 2026-07-30: 아이콘을 `material_symbols_icons` → 내장 `Icons.*`로 전면 교체했다. Material Symbols 폰트가 **릴리스 빌드(웹 CanvasKit·Wasm, APK)에서 글리프를 그리지 않았고** `--no-tree-shake-icons`로도 살아나지 않았다. 되돌리지 말 것 — 사유와 대역 아이콘은 `.claude/skills/one-step-design/tokens.md` §6.
 - [x] 다크/라이트 대비가 텍스트 가독성을 해치지 않는다. → `test/theme/contrast_test.dart`가 WCAG AA 4.5:1을 라이트·다크 양쪽에서 검증.
 
 ### 하단 내비게이션 구성

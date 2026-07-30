@@ -87,10 +87,11 @@ class NoticeBox extends StatelessWidget {
               boxShadow: alert ? null : AppColors.noticeIconShadow,
             ),
             child: Center(
+              // 채움 여부는 호출부가 고른 아이콘 이름이 정한다(Material Icons에는
+              // `fill` 축이 없다 — 예전 Material Symbols는 `fill: 1`을 줬다).
               child: Icon(
                 icon,
                 size: _iconSize,
-                fill: 1,
                 // 채운 홀더 위 글리프는 **`onSecondaryContainer`**다(채움이
                 // `secondaryContainer`이므로). 예전에는 `onSecondary`를 썼는데
                 // 라이트에서 두 값이 우연히 같은 흰색이라 티가 나지 않았을 뿐이다 —

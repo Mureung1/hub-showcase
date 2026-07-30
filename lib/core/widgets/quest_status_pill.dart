@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../models/quest_status.dart';
 import '../theme/app_radius.dart';
@@ -44,9 +43,10 @@ class QuestStatusPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // 채운 일시정지. Material Icons는 `Icons.pause_circle`이 곧 채움이고
+          // 외곽선은 `Icons.pause_circle_outline`이라 이름으로 갈린다.
           Icon(
-            Symbols.pause_circle,
-            fill: 1,
+            Icons.pause_circle,
             size: _iconSize,
             color: scheme.onSurfaceVariant,
           ),

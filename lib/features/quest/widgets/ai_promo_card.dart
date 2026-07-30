@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
@@ -52,10 +51,10 @@ class AiPromoCard extends StatelessWidget {
               // 라벨은 라이트·다크 모두 `secondary`다(테마 분기 없음). 다크 스킴의
               // 이 슬롯이 밝은 블루 [AppColors.darkSecondary]로 뒤집혀 있어
               // 어두운 패널 위에서도 6.79:1로 읽힌다.
+              // 채운 ✦(라벨 옆 표식). Material Icons는 기본형이 채움이다.
               Icon(
-                Symbols.auto_awesome,
+                Icons.auto_awesome,
                 size: _labelIconSize,
-                fill: 1,
                 color: scheme.secondary,
               ),
               AppSpacing.gapWXs,
@@ -78,7 +77,7 @@ class AiPromoCard extends StatelessWidget {
           GradientButton(
             onPressed: onPressed,
             style: GradientButtonStyle.ai,
-            icon: Symbols.auto_awesome,
+            icon: Icons.auto_awesome_outlined,
             label: '분해하기',
           ),
         ],

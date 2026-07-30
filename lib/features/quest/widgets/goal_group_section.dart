@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
@@ -102,7 +101,7 @@ class GoalGroupSection extends StatelessWidget {
                     children: [
                       // Figma 실측 22 — 본문 아이콘(24)보다 한 단 작아 목표명이 먼저 읽힌다.
                       Icon(
-                        expanded ? Symbols.expand_more : Symbols.chevron_right,
+                        expanded ? Icons.expand_more : Icons.chevron_right,
                         size: _chevronSize,
                         color: scheme.onSurfaceVariant,
                       ),

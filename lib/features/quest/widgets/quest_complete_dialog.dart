@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/dialog_art.dart';
 import '../../../core/constants/reward_rules.dart';
@@ -117,7 +116,8 @@ class _QuestCompleteDialogState extends State<QuestCompleteDialog>
       onBodyTap: _skip,
       children: [
         // 트로피 배지 — 옅은 그린 원 위 도트아트 트로피. 튕겨 나오며 등장.
-        // 폴백 🏆는 정본이 이 자리에 세워 둔 `Symbols.trophy`와 같은 뜻이다.
+        // 폴백 🏆는 정본이 이 자리에 세워 둔 트로피 글리프와 같은 뜻이다
+        // (Material Symbols의 `trophy`. Material Icons에는 없어 도트아트로만 산다).
         AnimatedBuilder(
           animation: _trophy,
           builder: (context, child) {
@@ -172,12 +172,8 @@ class _QuestCompleteDialogState extends State<QuestCompleteDialog>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Symbols.workspace_premium,
-                size: 16,
-                fill: 1,
-                color: scheme.primary,
-              ),
+              // 채운 훈장. Material Icons는 기본형이 채움이다.
+              Icon(Icons.workspace_premium, size: 16, color: scheme.primary),
               AppSpacing.gapWXs,
               // 아래 상한 안내 줄과 같은 처방 — 아이콘은 16px 고정이고
               // 문구만 글꼴 배율을 타므로 문구 쪽에 접힐 여지를 준다.
@@ -202,7 +198,7 @@ class _QuestCompleteDialogState extends State<QuestCompleteDialog>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Symbols.info, size: 16, fill: 1, color: scheme.secondary),
+              Icon(Icons.info, size: 16, color: scheme.secondary),
               AppSpacing.gapWXs,
               Flexible(
                 child: Text(

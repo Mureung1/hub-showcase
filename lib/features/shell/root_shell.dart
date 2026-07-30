@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import 'tab_scroll_registry.dart';
 
@@ -12,12 +11,29 @@ class RootShell extends ConsumerWidget {
 
   final StatefulNavigationShell navigationShell;
 
+  /// 탭 하나에 **아이콘 두 개**를 둔다 — 비선택은 외곽선, 선택은 채움.
+  ///
+  /// Material Symbols 시절엔 아이콘 하나에 `fill: 0/1` 축만 바꿔 썼지만,
+  /// Material Icons(Flutter 내장)는 가변폰트가 아니라 **채움과 외곽선이 이름부터
+  /// 다른 별개 글리프**다. `fill` 인자는 조용히 무시되므로 이름으로 갈라야 한다.
   static const _destinations = [
-    (icon: Symbols.home, label: '홈'),
-    (icon: Symbols.assignment, label: '퀘스트'),
-    (icon: Symbols.storefront, label: '상점'),
-    (icon: Symbols.inventory_2, label: '보관함'),
-    (icon: Symbols.person, label: 'MY'),
+    (icon: Icons.home_outlined, selectedIcon: Icons.home, label: '홈'),
+    (
+      icon: Icons.assignment_outlined,
+      selectedIcon: Icons.assignment,
+      label: '퀘스트',
+    ),
+    (
+      icon: Icons.storefront_outlined,
+      selectedIcon: Icons.storefront,
+      label: '상점',
+    ),
+    (
+      icon: Icons.inventory_2_outlined,
+      selectedIcon: Icons.inventory_2,
+      label: '보관함',
+    ),
+    (icon: Icons.person_outline, selectedIcon: Icons.person, label: 'MY'),
   ];
 
   void _onTap(WidgetRef ref, int index) {
@@ -51,7 +67,7 @@ class RootShell extends ConsumerWidget {
             for (final d in _destinations)
               NavigationDestination(
                 icon: Icon(d.icon),
-                selectedIcon: Icon(d.icon, fill: 1),
+                selectedIcon: Icon(d.selectedIcon),
                 label: d.label,
               ),
           ],

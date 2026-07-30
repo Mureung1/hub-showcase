@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../constants/growth_rules.dart';
 import '../theme/app_colors.dart';
@@ -52,12 +51,9 @@ class RebirthBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Symbols.star,
-            fill: 1,
-            size: 16,
-            color: scheme.onPrimaryContainer,
-          ),
+          // 채운 별. Material Icons는 `Icons.star`가 곧 채움이고 외곽선은
+          // `Icons.star_outline`이라 이름으로 갈린다.
+          Icon(Icons.star, size: 16, color: scheme.onPrimaryContainer),
           AppSpacing.gapWXs,
           Flexible(
             child: Text(

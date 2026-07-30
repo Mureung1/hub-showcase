@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../models/quest.dart';
 import '../theme/app_radius.dart';
@@ -207,9 +206,10 @@ class _DoneButton extends StatelessWidget {
         padding: EdgeInsets.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
+      // 완료면 채운 체크, 미완료면 빈 원. Material Icons는 `fill` 축이 없어
+      // 예전 `fill: done ? 1 : 0` 대신 **아이콘 이름으로** 채움/외곽선을 가른다.
       icon: Icon(
-        done ? Symbols.check_circle : Symbols.circle,
-        fill: done ? 1 : 0,
+        done ? Icons.check_circle : Icons.circle_outlined,
         // 🟢 완료 체크는 **`scheme.primary`**다. 상수 [AppColors.primary]
         // (`#006e2f`)를 쓰면 다크 카드(`#13263D`) 위 대비가 2.38:1로 무너진다 —
         // 다크 스킴이 이 슬롯을 밝은 그린(`#4ae176`)으로 이미 뒤집어 뒀다(8.98:1).

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/constants/proof_rules.dart';
 import '../../../core/constants/reward_rules.dart';
@@ -183,7 +182,7 @@ class _QuestMemoSheetState extends State<QuestMemoSheet> {
                 child: Row(
                   children: [
                     Icon(
-                      Symbols.workspace_premium,
+                      Icons.workspace_premium_outlined,
                       size: 20,
                       color: scheme.primary,
                     ),
@@ -300,7 +299,7 @@ class _PhotoAttach extends StatelessWidget {
                   dimension: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(Symbols.photo_camera),
+              : const Icon(Icons.photo_camera_outlined),
           label: Text(picking ? '사진 여는 중…' : '사진 첨부'),
         ),
       );
@@ -329,7 +328,7 @@ class _PhotoAttach extends StatelessWidget {
                 iconSize: 18,
                 visualDensity: VisualDensity.compact,
                 onPressed: onRemove,
-                icon: Icon(Symbols.close, color: scheme.onSurface),
+                icon: Icon(Icons.close, color: scheme.onSurface),
               ),
             ),
           ),

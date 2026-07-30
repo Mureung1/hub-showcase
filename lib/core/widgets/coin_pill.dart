@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import '../theme/app_radius.dart';
 import '../theme/app_spacing.dart';
@@ -10,7 +9,7 @@ import '../theme/reward_colors.dart';
 ///
 /// 정본 `CoinPill`(Redesign `11:36`, 인스턴스 `65:423` 홈 · `66:446` 퀘스트 목록 ·
 /// `43:253` 상점). 실측 71×24: 패딩 **좌 8 · 우 12 · 상하 4**, full radius, 채움
-/// `tint/coinbg`(= [RewardTheme.coinSurface]), 아이콘 `Symbols.monetization_on` 16, 숫자
+/// `tint/coinbg`(= [RewardTheme.coinSurface]), 아이콘 `Icons.monetization_on` 16, 숫자
 /// `Sora SemiBold 12/16`(= [AppTypography.numericLabelSmallStrong]), 글자
 /// `reward/cointext` #855300(= [RewardTheme.onCoinTint]).
 ///
@@ -64,12 +63,8 @@ class CoinPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Symbols.monetization_on,
-            size: _iconSize,
-            fill: 1,
-            color: reward.coin,
-          ),
+          // 채운 코인. Material Icons는 기본형이 채움이라 예전 `fill: 1`이 필요 없다.
+          Icon(Icons.monetization_on, size: _iconSize, color: reward.coin),
           // 정본 실측 간격은 2다. 8px 리듬에 없는 값이고 2dp 차이는 육안으로
           // 구분되지 않아 토큰(4)을 유지한다.
           AppSpacing.gapWXs,
@@ -121,12 +116,7 @@ class CoinPrice extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          Symbols.monetization_on,
-          size: _iconSize,
-          fill: 1,
-          color: reward.coin,
-        ),
+        Icon(Icons.monetization_on, size: _iconSize, color: reward.coin),
         AppSpacing.gapWXs,
         Text(
           _format(amount),

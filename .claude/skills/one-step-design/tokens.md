@@ -79,6 +79,11 @@
 
 ## 6. 아이콘
 
-- **Material Symbols Outlined** (weight/fill 가변). 24px 기본.
+- **Flutter 내장 Material Icons**(`Icons.*`). 24px 기본.
+  - ⚠️ **예전에는 `material_symbols_icons`(Material Symbols Outlined)였다. 되돌리지 말 것** (2026-07-30 이관). 그 패키지의 가변 아이콘 폰트가 **릴리스 빌드에서 글리프를 그리지 않는다** — 릴리스 웹(CanvasKit·Wasm)과 릴리스 APK에서 똑같이 재현됐고 `--no-tree-shake-icons`로도 살아나지 않았다. 폰트 파일 자체는 전 테이블 검증에서 무결했으므로 패키지·릴리스 컴파일러 상호작용 문제로 보고, 확실히 동작하는 내장 폰트로 옮겼다(같은 자리를 `Icons.person` 하나로 바꾸면 릴리스에서 정상 렌더됐다).
+  - **Figma 정본은 Material Symbols로 그려져 있다.** 두 세트는 글리프 모양이 조금 다르다 — 이 차이는 위 사유로 **의도한 이탈**이다.
+- **채움/외곽선은 `fill` 축이 아니라 이름으로 가른다.** Material Symbols는 기본이 외곽선이고 `fill: 1`이 채움이었지만, Material Icons는 **기본이 채움**이고 외곽선은 `Icons.X_outlined`다. `Icon(..., fill:)`은 내장 폰트에서 조용히 무시되므로 절대 기대지 말 것.
+- Material Icons에 **없는 글리프 대역**: `target`(과녁) → `Icons.track_changes`(동심원이 과녁에 가장 가깝다. `adjust`는 점이 하나뿐, `gps_fixed`는 위치 의미라 탈락), `trophy` → 도트아트 자산(`DialogArt`)으로만 존재.
 - 하단 탭: `home / assignment / storefront / inventory_2 / person`.
   - **이 목록이 정본이다.** Figma 목업의 탭 아이콘은 따르지 않는다 — 퀘스트 탭이 `subdirectory_arrow_right`(꺾이는 화살표)로 그려져 있어 세트가 큐레이션되지 않은 임시값으로 판단했다.
+  - 비선택은 `_outlined`(`person`만 `_outline`), 선택은 채움 이름을 쓴다 — 탭 하나에 아이콘 **두 개**가 필요하다(`lib/features/shell/root_shell.dart`).
