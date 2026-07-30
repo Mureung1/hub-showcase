@@ -10,6 +10,7 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "tsx scripts/e2eSmokeTest.ts",
     "sync:catalog": "tsx scripts/syncGovCatalog.ts",
     "sync:districts": "tsx scripts/syncRegionDistricts.ts",
     "sync:item-names-en": "tsx scripts/syncItemNamesEn.ts",
@@ -41,7 +42,9 @@
     "@types/multer": "^2.2.0",
     "@types/node": "^24.13.3",
     "@types/pg": "^8.20.0",
+    "@types/supertest": "^7.2.1",
     "prisma": "^7.8.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.23.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"

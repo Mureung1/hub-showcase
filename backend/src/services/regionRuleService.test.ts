@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getRegionRule, getZoneOptions } from './regionRuleService'
+import { __resetSggRowsCacheForTests, getRegionRule, getZoneOptions } from './regionRuleService'
 import type { GovRegionRow } from '../types/govRegionApi'
 
 const mocks = vi.hoisted(() => ({
@@ -69,6 +69,9 @@ function buildRow(overrides: Partial<GovRegionRow>): GovRegionRow {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // sggNm='북구'를 여러 테스트가 공유하므로, 모듈 레벨 sggRowsCache에 이전 테스트의 rows가 남아있으면
+  // 새로 설정한 fetchRowsBySgg mock을 무시하고 그대로 반환된다 — 매 테스트 전 반드시 비운다.
+  __resetSggRowsCacheForTests()
   // 기본값: RegionZoneName 캐시에 아무것도 없고, 번역은 "EN:이름" 형태로 스텁 — 이 파일의 테스트는
   // 동 목록 파싱/확장 로직을 검증하는 게 목적이라 실제 로마자 표기 정확도는 geminiRegionNameClient
   // 쪽에서 별도로 다룬다.

@@ -32,6 +32,16 @@ export function buildWeeklySchedule(categories: RegionRuleCategories): DaySchedu
 
   for (const [categoryName, rule] of Object.entries(categories)) {
     if (categoryName === '대형폐기물' || !rule || !('dow' in rule)) continue
+
+    // "매일"은 요일 토큰이 아니라 그 자체로 전체 요일을 뜻하는 값이라 "+"로 쪼개면 사라진다 — 실측
+    // 정부 데이터에 실제로 나오는 값(예: 음식물쓰레기 매일 수거 지역)이라 별도로 처리한다.
+    if (rule.dow.trim() === '매일') {
+      for (const day of DAY_ORDER) {
+        dayToRules.get(day)?.push({ category: categoryName, rule })
+      }
+      continue
+    }
+
     for (const rawDay of rule.dow.split('+')) {
       const day = rawDay.trim() as DayName
       if (DAY_ORDER.includes(day)) {
