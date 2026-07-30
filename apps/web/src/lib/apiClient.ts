@@ -1,6 +1,8 @@
 import {
   AgendaSchema,
   AuthMeResponseSchema,
+  DecisionNoteSchema,
+  FinalAnswerSchema,
   ChatListResponseSchema,
   CreateChatResponseSchema,
   ErrorEnvelopeSchema,
@@ -220,6 +222,31 @@ export function patchAgenda(
     `/api/chats/${chatId}/questions/${questionId}/agendas/${agendaId}`,
     AgendaSchema,
     body,
+  );
+}
+
+// --- FinalAnswer 실호출 (SPEC-AI-003 §8.1) ---
+
+/**
+ * GET .../final-answer — **폴링과 새로고침 복원이 같이 쓴다.**
+ *
+ * 미생성은 404가 아니라 `{ finalAnswer: null, decisionNote: null }`로 온다 —
+ * 그래야 폴링이 그것을 오류로 다루지 않는다. 404는 미소유·없는 Question 뿐이다.
+ */
+const FinalAnswerBundleSchema = z.object({
+  finalAnswer: FinalAnswerSchema.nullable(),
+  decisionNote: DecisionNoteSchema.nullable(),
+});
+export type FinalAnswerBundle = z.infer<typeof FinalAnswerBundleSchema>;
+
+export function fetchFinalAnswer(
+  chatId: string,
+  questionId: string,
+): Promise<ApiResult<FinalAnswerBundle>> {
+  return requestAuthed(
+    "GET",
+    `/api/chats/${chatId}/questions/${questionId}/final-answer`,
+    FinalAnswerBundleSchema,
   );
 }
 

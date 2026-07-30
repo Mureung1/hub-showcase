@@ -1,6 +1,7 @@
 import { Badge } from "@astryxdesign/core/Badge";
 import { Button } from "@astryxdesign/core/Button";
 import { Collapsible } from "@astryxdesign/core/Collapsible";
+import { Spinner } from "@astryxdesign/core/Spinner";
 import { Text } from "@astryxdesign/core/Text";
 import type { Agenda, Provider, Question } from "./types";
 import { isAgendaUnresolved } from "./types";
@@ -61,6 +62,10 @@ interface AnswerCardProps {
   onOpenAnswers: () => void;
   /** 충돌 해소 팝업 열기 */
   onResolveClick: (agendaId: string) => void;
+  /** SPEC-AI-003 §8.1 — 서버가 최종 답변을 생성 중이다(SSE 또는 폴링). */
+  isComposing?: boolean;
+  /** 폴링 상한(120초)을 넘겼다. 조용히 멈추지 않고 알린다. */
+  isDelayed?: boolean;
 }
 
 /**
@@ -73,6 +78,8 @@ export function AnswerCard({
   removingAgendaIds,
   onOpenAnswers,
   onResolveClick,
+  isComposing = false,
+  isDelayed = false,
 }: AnswerCardProps) {
   // 자동 통과 = 다중 AI 합의(auto_consensus) + 단일 소스(auto_single_source, §3.4).
   // 단일 소스도 자동 통과이므로 "자동 통과 N건" 접힘 요약에 함께 넣는다. 단, "합의"로
@@ -224,9 +231,27 @@ export function AnswerCard({
         <FinalAnswerBlock question={question} />
       ) : (
         <div className="answer-pending">
-          <Text type="supporting" color="secondary">
-            충돌을 모두 해결하면 최종 답변이 여기에 작성됩니다.
-          </Text>
+          {/*
+            SPEC-AI-003 §8.1 — 서버가 생성 중이면 그 사실을 알린다. 15~33초 걸리고
+            (T-020.1 실측) 충돌 있는 경로는 SSE 가 닫혀 있어 폴링으로 기다린다.
+            상한(120초)을 넘기면 **조용히 멈추지 않고** 지연 사실을 표시한다.
+          */}
+          {isComposing ? (
+            <>
+              <Spinner size="sm" />
+              <Text type="supporting" color="secondary">
+                최종 답변 생성 중…
+              </Text>
+            </>
+          ) : isDelayed ? (
+            <Text type="supporting" color="secondary">
+              최종 답변 생성이 지연되고 있습니다. 잠시 후 새로고침해 주세요.
+            </Text>
+          ) : (
+            <Text type="supporting" color="secondary">
+              충돌을 모두 해결하면 최종 답변이 여기에 작성됩니다.
+            </Text>
+          )}
         </div>
       )}
     </div>

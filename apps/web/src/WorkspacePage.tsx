@@ -24,6 +24,8 @@ function WorkspacePage() {
     mockValidationError,
     liveStatuses,
     managerProgress,
+    composingQuestionIds,
+    delayedQuestionIds,
     serverBacked,
     submitQuestion,
     resolveAgenda,
@@ -130,6 +132,8 @@ function WorkspacePage() {
             onResolveAgendaOnServer={resolveAgendaOnServer}
             onRequestRecheckOnServer={requestRecheckOnServer}
             managerProgress={managerProgress}
+            composingQuestionIds={composingQuestionIds}
+            delayedQuestionIds={delayedQuestionIds}
           />
         }
         notes={

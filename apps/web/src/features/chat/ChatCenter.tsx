@@ -77,6 +77,10 @@ interface ChatCenterProps {
     retry: boolean,
   ) => Promise<void>;
   /** Manager 진행 표시(questionId → 단계·N/M). §12.2의 무음 구간을 없앤다. */
+  /** SPEC-AI-003 §8.1 — 최종 답변 생성 중인 questionId. */
+  composingQuestionIds?: ReadonlySet<string>;
+  /** 폴링 상한을 넘긴 questionId. */
+  delayedQuestionIds?: ReadonlySet<string>;
   managerProgress?: Record<
     string,
     {
@@ -124,6 +128,8 @@ export function ChatCenter({
   onResolveAgendaOnServer,
   onRequestRecheckOnServer,
   managerProgress,
+  composingQuestionIds,
+  delayedQuestionIds,
 }: ChatCenterProps) {
   const toast = useToast();
   // "AI 별 답변 보기" 모달이 열람 중인 Question id (null = 닫힘)
@@ -346,6 +352,8 @@ export function ChatCenter({
                     question={question}
                     removingAgendaIds={removingAgendaIds}
                     onOpenAnswers={() => setAnswersModalQuestionId(question.id)}
+                    isComposing={composingQuestionIds?.has(question.id)}
+                    isDelayed={delayedQuestionIds?.has(question.id)}
                     onResolveClick={(agendaId) =>
                       setResolvingAgendaId(agendaId)
                     }

@@ -14,13 +14,15 @@ import {
   fetchQuestions,
   fetchSourceAnswers,
   fetchAgendas,
+  fetchFinalAnswer,
   patchAgenda as patchAgendaRequest,
   streamSourceAnswers,
   type AgendaPatchBody,
   type ApiResult,
+  type FinalAnswerBundle,
 } from "./apiClient";
 
-export type { AgendaPatchBody } from "./apiClient";
+export type { AgendaPatchBody, FinalAnswerBundle } from "./apiClient";
 
 /**
  * apiStorageAdapter (SPEC-DB-001 5장) — Chat·Question을 Express→Supabase로 저장·조회한다.
@@ -147,4 +149,15 @@ export async function patchAgenda(
   body: AgendaPatchBody,
 ): Promise<Agenda> {
   return unwrap(await patchAgendaRequest(chatId, questionId, agendaId, body));
+}
+
+/**
+ * SPEC-AI-003 §8.1 — FinalAnswer·DecisionNote 조회.
+ * 미생성이면 둘 다 null 이며 그것은 **오류가 아니다**(아직 생성 중이라는 뜻).
+ */
+export async function loadFinalAnswer(
+  chatId: string,
+  questionId: string,
+): Promise<FinalAnswerBundle> {
+  return unwrap(await fetchFinalAnswer(chatId, questionId));
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NO_VALUE } from "@decision-log/shared";
 import type {
   Agenda,
@@ -13,6 +13,7 @@ import type {
 } from "./types";
 import { hasIncompleteQuestion, isSourceAnswerSettled } from "./types";
 import { validateWorkspaceEntities } from "./mockValidation";
+import type { DecisionNote as ServerDecisionNote } from "@decision-log/shared";
 import { getActiveScenario } from "./scenarios";
 import {
   loadChatsWithQuestions,
@@ -22,6 +23,7 @@ import {
   ApiStorageError,
   type StoredChat,
   loadAgendas,
+  loadFinalAnswer,
   loadSourceAnswers,
   patchAgenda,
   startSourceAnswers,
@@ -40,6 +42,10 @@ import {
   mockSummaryByProvider,
   providerMeta,
 } from "./mockData";
+
+/** SPEC-AI-003 §8.1 — 폴링 간격·상한. 생성이 15~33초라 3초×40회(120초)면 충분하다. */
+const FINAL_ANSWER_POLL_INTERVAL_MS = 3000;
+const FINAL_ANSWER_POLL_MAX = 40;
 
 export const QUESTION_MAX_LENGTH = 1000;
 
@@ -476,6 +482,16 @@ export function useChatWorkspace() {
       }
     >
   >({});
+  /** 폴링 중인 questionId — "최종 답변 생성 중…" 표시용. */
+  const [composingQuestionIds, setComposingQuestionIds] = useState<Set<string>>(
+    new Set(),
+  );
+  /** 폴링 상한을 넘긴 questionId — 조용히 멈추지 않고 지연을 알린다. */
+  const [delayedQuestionIds, setDelayedQuestionIds] = useState<Set<string>>(
+    new Set(),
+  );
+  /** 중복 폴링 방지. 렌더와 무관하므로 ref 로 둔다. */
+  const pollingRef = useRef<Set<string>>(new Set());
   const [liveStatuses, setLiveStatuses] = useState<
     Record<string, Partial<Record<Provider, SourceAnswerStatus>>>
   >({});
@@ -495,6 +511,12 @@ export function useChatWorkspace() {
         // §12.3 — Agenda 스냅샷도 함께 복원한다. 이것이 없으면 새로고침 후 3열 비교와
         // 충돌 목록이 사라지고, 사용자는 판단할 대상을 잃는다.
         const agendasByQuestion = new Map<string, Agenda[]>();
+        // SPEC-AI-003 §9 — **FinalAnswer·DecisionNote 도 복원한다.**
+        // T-019.5에서 Agenda 복원 배선이 빠져 새로고침 시 갇혔던 자리와 같은 종류다.
+        const finalByQuestion = new Map<
+          string,
+          { finalAnswer: FinalAnswer; decisionNote: ServerDecisionNote } | null
+        >();
         await Promise.all(
           stored.flatMap(({ chat, questions }) =>
             questions.map(async (question) => {
@@ -517,6 +539,23 @@ export function useChatWorkspace() {
               } catch (error) {
                 console.error(
                   "[apiStorage] Agenda 복원 실패:",
+                  error instanceof Error ? error.message : error,
+                );
+              }
+              try {
+                const bundle = await loadFinalAnswer(chat.id, question.id);
+                finalByQuestion.set(
+                  question.id,
+                  bundle.finalAnswer && bundle.decisionNote
+                    ? {
+                        finalAnswer: bundle.finalAnswer,
+                        decisionNote: bundle.decisionNote,
+                      }
+                    : null,
+                );
+              } catch (error) {
+                console.error(
+                  "[apiStorage] FinalAnswer 복원 실패:",
                   error instanceof Error ? error.message : error,
                 );
               }
@@ -560,6 +599,27 @@ export function useChatWorkspace() {
             // FinalAnswer 가 없는가"다.
             if (restored.length === 0 && managerRan) {
               applyAgendas(chat.id, question.id, [], { final: true });
+              continue;
+            }
+
+            /**
+             * SPEC-AI-003 §8.1 — **새로고침 후에도 같은 조건으로 수렴한다.**
+             * 조건은 상태가 아니라 내용이다: 모든 Agenda 확정 && FinalAnswer 없음.
+             * 있으면 복원해 붙이고, 없으면 폴링을 다시 시작한다(새로고침으로 끊겼으므로).
+             */
+            const composed = finalByQuestion.get(question.id) ?? null;
+            const settled =
+              restored.length > 0 &&
+              restored.every(
+                (a) => a.status === "passed" || a.status === "rejected",
+              );
+            if (composed) {
+              applyAgendas(chat.id, question.id, restored, {
+                final: true,
+                composed,
+              });
+            } else if (settled && managerRan) {
+              startFinalAnswerPolling(chat.id, question.id);
             }
           }
         }
@@ -1047,6 +1107,66 @@ export function useChatWorkspace() {
   }
 
   /**
+   * SPEC-AI-003 §8.1 — FinalAnswer 폴링.
+   *
+   * ⚠️ **시작 조건을 상태로 잡지 않는다.** `question.status === "review_required"` 같은
+   * 가드는 T-019.5에서 새 경로를 막았던 그 함정이다. 조건은 내용이다 —
+   * **"모든 Agenda 확정 && FinalAnswer 없음 && serverBacked"**. 그래야 SSE 경로든
+   * PATCH 후든 **새로고침 후든** 같은 조건으로 수렴한다.
+   *
+   * 생성이 15~33초다(T-020.1 실측). 3초 × 40회(120초)면 충분하고, 상한을 넘기면
+   * **조용히 멈추지 않고** 지연 사실을 표시한다.
+   */
+  function startFinalAnswerPolling(chatId: string, questionId: string): void {
+    if (!serverBacked) return;
+    if (pollingRef.current.has(questionId)) return; // 중복 시작 방지
+    pollingRef.current.add(questionId);
+    setComposingQuestionIds((prev) => new Set(prev).add(questionId));
+
+    let attempts = 0;
+    const tick = async (): Promise<void> => {
+      attempts += 1;
+      try {
+        const bundle = await loadFinalAnswer(chatId, questionId);
+        if (bundle.finalAnswer && bundle.decisionNote) {
+          pollingRef.current.delete(questionId);
+          setComposingQuestionIds((prev) => {
+            const next = new Set(prev);
+            next.delete(questionId);
+            return next;
+          });
+          // 공급원 단일 지점으로 되돌린다 — 여기서 화면을 직접 만들지 않는다.
+          applyAgendas(chatId, questionId, (prev) => prev, {
+            final: true,
+            composed: {
+              finalAnswer: bundle.finalAnswer,
+              decisionNote: bundle.decisionNote,
+            },
+          });
+          return;
+        }
+      } catch (error) {
+        console.error(
+          "[finalAnswers] 폴링 실패:",
+          error instanceof Error ? error.message : error,
+        );
+      }
+      if (attempts >= FINAL_ANSWER_POLL_MAX) {
+        pollingRef.current.delete(questionId);
+        setComposingQuestionIds((prev) => {
+          const next = new Set(prev);
+          next.delete(questionId);
+          return next;
+        });
+        setDelayedQuestionIds((prev) => new Set(prev).add(questionId));
+        return;
+      }
+      window.setTimeout(() => void tick(), FINAL_ANSWER_POLL_INTERVAL_MS);
+    };
+    window.setTimeout(() => void tick(), FINAL_ANSWER_POLL_INTERVAL_MS);
+  }
+
+  /**
    * 판정된 쟁점 한 건을 교체한다(§12.2 조기 표시).
    * 교체 후 마감 판단은 `applyAgendas`가 하도록 넘긴다 — 규칙을 두 곳에 두지 않는다.
    */
@@ -1086,9 +1206,23 @@ export function useChatWorkspace() {
      * 0건을 "Manager 완전 실패"로 볼 수 있는 것은 확정 시점뿐이다 — 아직 오는 중인
      * 빈 배열과 섞이면 정상 실행을 실패로 오판한다.
      */
-    options?: { final?: boolean },
+    options?: {
+      final?: boolean;
+      /**
+       * SPEC-AI-003 §9 — **서버가 만든 FinalAnswer·DecisionNote.**
+       *
+       * 공급원을 결정하는 곳은 여기 하나다. 위쪽 호출부(SSE `final_answer.done` ·
+       * GET 폴링 · 새로고침 복원)는 **Mock 인지 서버인지 모른다.** T-019.4에서
+       * `buildMockAgendas` 3곳을 각각 고치려다 분기가 어긋날 뻔한 것을 되풀이하지 않는다.
+       */
+      composed?: {
+        finalAnswer: FinalAnswer;
+        /** 서버 계약(`packages/shared`). web 의 UI 파생 타입과 다르다 — 아래에서 보강한다. */
+        decisionNote: ServerDecisionNote;
+      };
+    },
   ) {
-    let completes = false;
+    let needsPolling = false;
     setState((prev) => {
       let createdNote: DecisionNote | null = null;
       const chats = prev.chats.map((chat) => {
@@ -1143,8 +1277,26 @@ export function useChatWorkspace() {
               return question;
             }
 
-            // 전부 마감됨 → FinalAnswer·DecisionNote 생성 후 완료(여전히 브라우저 Mock).
-            completes = true;
+            /**
+             * §9 공급원 결정 — **이 순서가 전부다.**
+             *
+             * 1) 서버가 준 것(`composed`)                → 그대로 쓴다
+             * 2) Manager 완전 실패                        → 고정 문구(§2.5)
+             * 3) `serverBacked` 인데 아직 안 옴           → **만들지 않는다.** 폴링이 채운다
+             * 4) `?scenario=` 개발 경로                   → 기존 Mock (AC10)
+             */
+            if (
+              !options?.composed &&
+              !managerProducedNothing &&
+              serverBacked
+            ) {
+              // 서버가 생성 중이다. Mock 을 만들면 잠시 뒤 서버 값으로 덮여 화면이 두 번 바뀌고,
+              // 그 사이 사용자는 **서버에 없는 답변**을 본다.
+              needsPolling = true;
+              return { ...question, agendas, updatedAt: nowIso() };
+            }
+
+            // 전부 마감됨 → FinalAnswer·DecisionNote 확정.
             const settledQuestion = { ...question, agendas };
             const now0 = nowIso();
             /**
@@ -1152,7 +1304,9 @@ export function useChatWorkspace() {
              * 원문 세 개는 그대로 살아 있으므로 `sourceAnswers`를 건드리지 않고,
              * 없는 판정을 있는 것처럼 보이지 않게 쟁점 목록도 만들지 않는다.
              */
-            const finalAnswer: FinalAnswer = managerProducedNothing
+            const finalAnswer: FinalAnswer = options?.composed
+              ? options.composed.finalAnswer
+              : managerProducedNothing
               ? {
                   id: crypto.randomUUID(),
                   questionId,
@@ -1166,7 +1320,14 @@ export function useChatWorkspace() {
                   question.sourceAnswers,
                   questionId,
                 );
-            createdNote = managerProducedNothing
+            createdNote = options?.composed
+              ? {
+                  ...options.composed.decisionNote,
+                  chatId: chat.id,
+                  title: chat.title,
+                  bullets: [options.composed.decisionNote.content],
+                }
+              : managerProducedNothing
               ? {
                   id: crypto.randomUUID(),
                   questionId,
@@ -1204,17 +1365,18 @@ export function useChatWorkspace() {
       };
     });
 
-    // §12.1 — 완료를 **서버에도 영속화한다.** 화면만 completed로 두면 새로고침 시
-    // review_required로 되돌아오고 미완료 1개 제약도 풀리지 않는다.
-    // 사용자 행동이 아니라 **Agenda 집합 갱신**에 매달아야 충돌 0건 경로도 함께 뚫린다.
-    if (completes && serverBacked) {
-      void markQuestionCompleted(chatId, questionId).catch((error) =>
-        console.error(
-          "[apiStorage] Question 완료 영속화 실패:",
-          error instanceof Error ? error.message : error,
-        ),
-      );
-    }
+    /**
+     * ⚠️ **`completed` 전이를 여기서 하지 않는다** (SPEC-AI-003 §6.3).
+     *
+     * FinalAnswer·DecisionNote 저장 후 **서버가 전이를 소유한다.** web 이 함께 시도하면
+     * 둘 다 전이하려 들고, 서버가 아직 저장 전인데 web 이 먼저 `completed` 로 만들면
+     * 데이터 없이 완료된 Question 이 생긴다. 서버는 `neq('status','completed')` 로
+     * 멱등하게 처리한다.
+     *
+     * (Mock 경로 `resolveAgenda`·전멸 경로 `applyServerSnapshot` 의 전이는 서버가
+     *  FinalAnswer 를 만들지 않는 경로라 그대로 둔다.)
+     */
+    if (needsPolling) startFinalAnswerPolling(chatId, questionId);
   }
 
   /**
@@ -1308,6 +1470,27 @@ export function useChatWorkspace() {
           if (event.type === "agenda.judged") {
             // **판정되는 대로 한 건씩 교체한다.** 모아두면 조기 표시가 사라진다.
             applyJudgedAgenda(chatId, questionId, event.agenda);
+            return;
+          }
+          // --- SPEC-AI-003 §8.1 충돌 0건 경로: 스트림이 아직 열려 있다 ---
+          if (event.type === "final_answer.progress") {
+            setComposingQuestionIds((prev) => new Set(prev).add(questionId));
+            return;
+          }
+          if (event.type === "final_answer.done") {
+            setComposingQuestionIds((prev) => {
+              const next = new Set(prev);
+              next.delete(questionId);
+              return next;
+            });
+            // 공급원 단일 지점으로 넘긴다 — SSE 도 GET 도 여기로 수렴한다.
+            applyAgendas(chatId, questionId, (prev) => prev, {
+              final: true,
+              composed: {
+                finalAnswer: event.finalAnswer,
+                decisionNote: event.decisionNote,
+              },
+            });
             return;
           }
           if (event.type === "agenda.done") {
@@ -1592,6 +1775,10 @@ export function useChatWorkspace() {
     liveStatuses,
     /** Manager 진행 표시(questionId → 단계·N/M). 무음 구간을 없앤다(§12.2) */
     managerProgress,
+    /** 최종 답변 생성 중인 questionId (SPEC-AI-003 §8.1 폴링) */
+    composingQuestionIds,
+    /** 폴링 상한(120초)을 넘긴 questionId — 조용히 멈추지 않는다 */
+    delayedQuestionIds,
     /** 서버 Agenda를 쓰는가 — UI가 Mock 경로와 서버 경로를 가르는 유일한 신호 */
     serverBacked,
     submitQuestion,
