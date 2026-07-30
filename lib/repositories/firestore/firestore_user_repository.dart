@@ -5,6 +5,7 @@ import '../../core/constants/growth_rules.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../models/app_user.dart';
+import '../../models/theme_preference.dart';
 import '../user_repository.dart';
 import 'firestore_codec.dart';
 
@@ -186,6 +187,24 @@ class FirestoreUserRepository implements UserRepository {
       () => _doc(
         uid,
       ).set({'equipped': equipped}, SetOptions(mergeFields: ['equipped'])),
+    );
+  }
+
+  /// 테마 선택을 사용자 문서에 남긴다.
+  ///
+  /// **여기서는 `SetOptions(merge: true)`가 맞다.** [updateEquipped]가 `mergeFields`를
+  /// 쓰는 이유는 `equipped`가 **맵 필드**여서다 — merge는 맵을 깊게 병합하므로 "키를
+  /// 빼서 해제"가 서버에 도달하지 못했다(실제 사고였다). 이 값은 **스칼라 문자열**이라
+  /// 그 함정이 성립하지 않는다: merge든 mergeFields든 `themePreference` 하나를 통째로
+  /// 덮어쓰고 나머지 필드(`coin`·`level`·`streak`·`equipped`)는 그대로 보존된다.
+  /// `merge: true`를 고른 건 사용자 문서가 아직 없을 때도 문서를 만들며 안전하게
+  /// 쓰기 때문이다(`purchaseItem`의 코인 차감과 같은 판단).
+  @override
+  Future<void> updateThemePreference(String uid, ThemePreference preference) {
+    return guard(
+      () => _doc(
+        uid,
+      ).set({'themePreference': preference.name}, SetOptions(merge: true)),
     );
   }
 

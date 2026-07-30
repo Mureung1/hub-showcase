@@ -40,6 +40,15 @@ items/{itemId}                              # 공개 아이템 카탈로그 (4�
 | `attendanceDate` | string? | null | 마지막 출석일 (KST 날짜 키) |
 | `streak` | int | 0 | 연속 출석 일수. 끊기면 0이 아니라 **1**부터 다시 센다 |
 | `streakBonusDate` | string? | null | 마지막으로 연속 출석 보너스를 지급한 날. 하루 1회 가드 |
+| `themePreference` | string | `system` | 앱 테마 선택. `system` \| `light` \| `dark` |
+
+#### `themePreference` — 앱 테마 선택 (MY 탭)
+
+- **값 어휘는 `system` \| `light` \| `dark` 3개**이고 저장값은 항상 **소문자 영문**이다. 화면에 보이는 `시스템`/`라이트`/`다크`는 `ThemePreference.label`의 표시용 한글일 뿐 문서에 들어가지 않는다(`difficulty`의 `easy`/`쉬움` 관계와 같다).
+- **기본값은 `system`**(기기 설정을 따른다). 이 필드가 없던 구버전 문서도 자동으로 이 값이다.
+- **관대한 파싱이다.** `ThemePreference.fromNameOrDefault()`가 대소문자·앞뒤 공백을 무시하고, 모르는 값(`"Dark"`·`" dark "`·`"블랙"`·문자열이 아닌 값·null)은 전부 `system`으로 떨어진다. 테마 값이 이상하다고 앱이 죽거나 화면이 비면 안 된다 — `AppUser.fromJson`이 예외를 던지지 않는다는 계약의 일부다. (반대로 AI 응답을 검증하는 `difficulty`만 엄격 파싱을 쓴다. 그쪽은 난이도 = 보상 등급이라 조용한 폴백이 보상을 왜곡한다.)
+- **쓰기 경로는 `UserRepository.updateThemePreference(uid, pref)` 하나다.** `set({'themePreference': ...}, SetOptions(merge: true))` — 스칼라 문자열 한 필드라 `merge: true`로 `coin`·`level`·`equipped` 등 나머지 필드는 보존되고, 문서가 아직 없어도 안전하다. `equipped`가 `mergeFields`를 써야 했던 이유(merge가 **맵 필드**를 깊게 병합해 키 삭제가 서버에 도달하지 못했다)는 스칼라에는 성립하지 않는다.
+- **기기 로컬에 캐시하지 않는다.** 정본은 이 문서 하나이고, 앱은 `users/{uid}` 스트림으로만 값을 읽는다(`lib/app.dart`가 `ThemePreference` → `ThemeMode`로 변환한다 — `lib/models/`는 Flutter를 모른다). 대가로 앱 시작 직후 문서가 도착하기 전 한 프레임은 `ThemeMode.system`으로 그려진다.
 
 #### 보상 경제 — 하루 코인 상한과 출석 스트릭 (3주차)
 

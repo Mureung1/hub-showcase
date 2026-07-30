@@ -4,6 +4,7 @@ import '../../core/constants/growth_rules.dart';
 import '../../core/constants/reward_rules.dart';
 import '../../core/error/app_failure.dart';
 import '../../models/app_user.dart';
+import '../../models/theme_preference.dart';
 import '../user_repository.dart';
 
 /// Firebase 없이 도는 사용자 저장소.
@@ -129,6 +130,19 @@ class InMemoryUserRepository implements UserRepository {
     _check();
     final current = _users[uid] ?? AppUser.initial(uid);
     _users[uid] = current.copyWith(equipped: equipped);
+    _controller.add(uid);
+  }
+
+  /// Firestore 구현과 **같은 의미**의 테마 저장 — 스칼라 한 필드만 바꾸고 나머지
+  /// (코인·레벨·장착·스트릭)는 `copyWith`가 그대로 보존한다.
+  @override
+  Future<void> updateThemePreference(
+    String uid,
+    ThemePreference preference,
+  ) async {
+    _check();
+    final current = _users[uid] ?? AppUser.initial(uid);
+    _users[uid] = current.copyWith(themePreference: preference);
     _controller.add(uid);
   }
 

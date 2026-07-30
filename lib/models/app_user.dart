@@ -2,6 +2,7 @@ import '../core/constants/growth_rules.dart';
 import '../core/constants/reward_rules.dart';
 import '../core/utils/json_utils.dart';
 import '../core/utils/kst_date.dart';
+import 'theme_preference.dart';
 
 /// 사용자. 레벨 · XP · 코인 · 환생 · 장착 아이템.
 ///
@@ -25,6 +26,7 @@ class AppUser {
     this.attendanceDate,
     this.streak = 0,
     this.streakBonusDate,
+    this.themePreference = ThemePreference.system,
   });
 
   /// 신규 사용자 기본값. Firestore에 문서가 아직 없을 때 이 값으로 렌더한다.
@@ -47,6 +49,10 @@ class AppUser {
       attendanceDate: asNullableString(data['attendanceDate']),
       streak: asInt(data['streak']),
       streakBonusDate: asNullableString(data['streakBonusDate']),
+      // 관대한 파싱 — 필드가 없던 구버전 문서·손으로 고친 값도 system으로 떨어진다.
+      themePreference: ThemePreference.fromNameOrDefault(
+        asNullableString(data['themePreference']),
+      ),
     );
   }
 
@@ -77,6 +83,12 @@ class AppUser {
 
   /// 마지막으로 연속 출석 보너스를 지급한 날(KST 날짜 키). 하루 1회 가드.
   final String? streakBonusDate;
+
+  /// 사용자가 고른 앱 테마. 기본값은 기기 설정을 따르는 [ThemePreference.system].
+  ///
+  /// 이 값을 실제 `ThemeMode`로 바꾸는 건 `lib/app.dart`다 — 모델은 Flutter를
+  /// 모른다(→ [ThemePreference] 문서).
+  final ThemePreference themePreference;
 
   /// 오늘(KST) **퀘스트로** 이미 받은 코인. 날짜가 바뀌었으면 0이다.
   ///
@@ -121,6 +133,13 @@ class AppUser {
     if (attendanceDate != null) 'attendanceDate': attendanceDate,
     'streak': streak,
     if (streakBonusDate != null) 'streakBonusDate': streakBonusDate,
+    // **항상 쓴다.** 위의 `if (x != null)`들은 전부 **nullable** 필드다 — 그쪽은
+    // "값이 아직 없음"이 의미 있는 상태라 null을 쓰는 대신 키를 뺀다. 이 값은
+    // non-nullable enum이라 "없음"이 존재하지 않고, 기본값도 `system`이라는 **실제
+    // 선택지**다(`streak: 0`·`dailyCoinEarned: 0`을 항상 쓰는 것과 같은 자리).
+    // 키를 빼면 콘솔에서 "테마를 안 고른 문서"와 "시스템을 고른 문서"가 구분되지
+    // 않는데, 읽는 쪽은 둘을 어차피 같게 취급하므로 굳이 생략해 얻는 게 없다.
+    'themePreference': themePreference.name,
   };
 
   AppUser copyWith({
@@ -135,6 +154,7 @@ class AppUser {
     String? attendanceDate,
     int? streak,
     String? streakBonusDate,
+    ThemePreference? themePreference,
   }) {
     return AppUser(
       uid: uid,
@@ -149,6 +169,7 @@ class AppUser {
       attendanceDate: attendanceDate ?? this.attendanceDate,
       streak: streak ?? this.streak,
       streakBonusDate: streakBonusDate ?? this.streakBonusDate,
+      themePreference: themePreference ?? this.themePreference,
     );
   }
 
@@ -166,6 +187,7 @@ class AppUser {
       other.attendanceDate == attendanceDate &&
       other.streak == streak &&
       other.streakBonusDate == streakBonusDate &&
+      other.themePreference == themePreference &&
       _mapEquals(other.equipped, equipped);
 
   @override
@@ -182,6 +204,7 @@ class AppUser {
     attendanceDate,
     streak,
     streakBonusDate,
+    themePreference,
   );
 
   @override

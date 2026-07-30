@@ -1,6 +1,7 @@
 import '../core/constants/growth_rules.dart';
 import '../core/constants/reward_rules.dart';
 import '../models/app_user.dart';
+import '../models/theme_preference.dart';
 
 /// [UserRepository.ensureUser]의 결과.
 ///
@@ -85,6 +86,16 @@ abstract interface class UserRepository {
 
   /// 장착 아이템 변경 (4주차 상점).
   Future<void> updateEquipped(String uid, Map<String, String> equipped);
+
+  /// 앱 테마 선택 저장 (MY 탭).
+  ///
+  /// 기기 로컬이 아니라 **사용자 문서**에 남긴다 — 이 앱의 모든 사용자 설정이
+  /// `users/{uid}`에 있고(장착·출석·스트릭), 나중에 OAuth 연동이 붙으면 기기를
+  /// 바꿔도 고른 테마가 따라온다. 앱을 재실행해도 값이 유지되는 근거도 이것이다.
+  ///
+  /// 화면은 이 메서드를 부르고 값을 스스로 들고 있지 않는다. 반영은 사용자 문서
+  /// 스트림([watchUser])이 흘려주는 새 값으로만 이뤄진다(단일 진실 공급원).
+  Future<void> updateThemePreference(String uid, ThemePreference preference);
 
   /// 보유 아이템 ID 집합 스트림 (4주차 상점의 "보유 중" 표시용).
   ///

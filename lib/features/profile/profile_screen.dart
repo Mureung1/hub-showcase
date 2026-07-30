@@ -13,6 +13,7 @@ import '../../core/widgets/screen_title.dart';
 import '../../core/widgets/stat_card.dart';
 import '../../core/widgets/state_views.dart';
 import '../../models/app_user.dart';
+import '../../models/theme_preference.dart';
 import '../../providers/providers.dart';
 import '../shell/tab_scroll_registry.dart';
 
@@ -295,7 +296,10 @@ class _StatsSkeleton extends StatelessWidget {
   }
 }
 
-/// 설정 섹션(정본 `47:431`).
+/// 설정 섹션(정본 `47:431` — 계정 연동 · 테마 · 가입일 3칸).
+///
+/// 테마 칸([_ThemeTile])만 실제로 동작하는 설정이다. 나머지 둘은 준비 중 자리와
+/// 읽기 전용 정보다.
 ///
 /// **OAuth 자리만 연다(실제 구현 아님).** 현재 계정은 익명이라 로그아웃하면 진행상황이
 /// 통째로 날아간다. 그래서 "Google 계정 연동"을 준비 상태로만 두고, 나중에 익명↔Google
@@ -324,6 +328,10 @@ class _SettingsSection extends StatelessWidget {
           comingSoon: true,
           onTap: _showComingSoon,
         ),
+        // 정본 실측: 항목 사이 12.
+        AppSpacing.gapSmd,
+        // 정본 두 번째 칸(`47:438`)이 테마 타일이다 — 순서를 그대로 지킨다.
+        const _ThemeTile(),
         if (joinedAt != null) ...[
           // 정본 실측: 항목 사이 12.
           AppSpacing.gapSmd,
@@ -343,6 +351,72 @@ void _showComingSoon(BuildContext context) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(const SnackBar(content: Text('계정 연동은 곧 지원돼요.')));
+}
+
+/// 테마 타일 — 탭할 때마다 시스템 → 라이트 → 다크로 순환한다(정본 `47:438`).
+///
+/// **정본에는 「준비 중」 pill이 붙어 있다**(설명이 "다크 모드는 추후 지원해요."였다).
+/// 다크 스킴이 실제로 동작하게 된 지금 그 문구는 거짓이라, 값 자리를 **현재 선택**을
+/// 보여 주는 값 pill로 바꾼다 — 가입일 줄과 **같은** [_ValueText]다(새 모양을 만들지
+/// 않는다). 별도 선택 시트 없이 탭 순환인 것은 사용자 결정이다: 항목이 3개뿐이라
+/// 시트를 띄우면 탭이 두 번 늘고 결과를 보려면 시트를 닫아야 한다.
+///
+/// **표시하는 값은 "지금 실제로 적용된 테마"다.** 사용자 문서를 아직/끝내 못 읽었으면
+/// `app.dart`가 [ThemeMode.system]으로 그리고 있으므로 여기도 `시스템`으로 읽힌다
+/// (거짓이 아니라 같은 폴백을 공유한다). 그래서 그 상태에서도 타일은 살아 있고, 탭하면
+/// 눈에 보이는 값의 다음 값으로 넘어간다.
+///
+/// 상태를 스스로 들고 있지 않는다. 쓰기는 저장소로만 나가고, 화면은 사용자 문서
+/// 스트림이 흘려주는 새 값을 다시 읽는다(단일 진실 공급원).
+class _ThemeTile extends ConsumerStatefulWidget {
+  const _ThemeTile();
+
+  @override
+  ConsumerState<_ThemeTile> createState() => _ThemeTileState();
+}
+
+class _ThemeTileState extends ConsumerState<_ThemeTile> {
+  /// 쓰기 진행 중 잠금. 연타로 같은 쓰기가 여러 번 나가는 것을 막는다
+  /// (문서가 갱신되기 전에 두 번 누르면 같은 값을 두 번 쓰거나 한 단을 건너뛴다).
+  bool _saving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    // 지금 적용된 값. 로딩·오류로 문서가 없으면 app.dart와 같은 폴백(system)이다.
+    final current =
+        ref.watch(currentUserProvider).valueOrNull?.themePreference ??
+        ThemePreference.fallback;
+
+    return _SettingsTile(
+      title: '테마',
+      subtitle: '탭하면 시스템 → 라이트 → 다크로 바뀌어요.',
+      value: current.label,
+      onTap: (_) => _cycle(current),
+    );
+  }
+
+  Future<void> _cycle(ThemePreference current) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+
+    try {
+      // sessionProvider는 로그인 + users 문서 생성이 끝난 uid를 보장한다.
+      // currentUidProvider를 read하면 AsyncLoading이라 uid가 null로 나온다.
+      final uid = await ref.read(sessionProvider.future);
+      await ref
+          .read(userRepositoryProvider)
+          .updateThemePreference(uid, current.next);
+    } on AppFailure catch (failure) {
+      // 실패를 알려야 하는 이유: 화면은 문서 스트림만 읽으므로 쓰기가 실패하면
+      // 값이 그대로 남는다 — 사용자에게는 "눌렀는데 아무 일도 안 남"으로 보인다.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(failure.message)));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 }
 
 /// 설정 항목 한 줄(정본 `47:404` SettingsTile).
