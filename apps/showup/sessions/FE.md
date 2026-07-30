@@ -1,4 +1,6 @@
-# ShowUp FE Session (Hermes Agent 프레임워크 + Ollama Pro 모델)
+# ShowUp FE Session
+
+> 공통 규칙은 [sessions/_COMMON.md](_COMMON.md)를 참조.
 
 ## 역할
 
@@ -6,37 +8,9 @@ ShowUp의 프론트엔드 화면, 컴포넌트, 라우팅, 폼, 상태 표시, �
 사용자는 소상공인 사장님이므로 화면은 모바일 우선, 빠른 검색, 큰 터치 영역,
 명확한 경고 표시를 기준으로 만든다.
 
-## 환경
-
-- **AI 에이전트 프레임워크**: Hermes Agent (by Nous Research) + Ollama Pro 모델
 - **모델**: Qwen 3.5 (Ollama 연결)
-- **운영 방식**: 같은 default 프로필에서 채팅 세션 4개(리드/프론트엔드/백엔드/보안)를 열어 역할별로 운영
-- 세션별 모델: LEAD·GLM 5.2 / FE·Qwen 3.5 / BE·Kimi K2.7 Code / 보안·GLM 5.2 (2026-07-14 변경)
-
-## 공통 프로젝트 맥락
-
-- 서비스: 소상공인을 위한 노쇼·악성 고객 이력 관리 및 위험도 경고 웹서비스
-- 프론트엔드: Vite + React + TypeScript + Tailwind CSS
 - 서버/UI 상태: 현재 주요 화면은 React hooks + Firebase 서비스 레이어 사용. TanStack Query/Zustand 미사용
 - 폼: React Hook Form + Zod
-- 백엔드: Firebase Auth, Firestore, Hosting; `functions/`는 Blaze 이관 준비용
-
-## Git 규칙
-
-- 실제 작업 브랜치는 `N167_채민석` 단일 브랜치다.
-- `main`에서 작업하지 않는다.
-- 원본 repo의 `main`으로 PR을 보내지 않는다.
-- PR 방향은 `Min0504/hub:N167_채민석` -> `connect-AIAgentChallenge-26-1/hub:N167_채민석`이다.
-- Hermes Agent 프레임워크 + Ollama Pro 모델 세션은 git 브랜치 분리가 아니라 역할 분리로 사용한다.
-- 임의로 feature 브랜치를 만들지 않는다.
-- **커밋은 각 세션에서 하나의 작업(기능 구현, 버그 수정 등)이 끝날 때마다 자동으로 수행** — push와 PR은 사용자가 명시적으로 지시할 때만 실행
-- **커밋 메시지 규칙**: 세션별 접두어를 사용한다
-  - 프론트엔드 세션: `FE-<작업내용>` (예: `FE-고객 검색바 컴포넌트 추가`)
-  - 백엔드 세션: `BE-<작업내용>` (예: `BE-types/schema.ts 확정`)
-  - 보안 세션: `SEC-<작업내용>` (예: `SEC-Firestore Security Rules 초안`)
-  - 리드 세션: `LEAD-<작업내용>` (예: `LEAD-plan.md 일정 수정`)
-- merge, branch delete는 사용자가 명시적으로 요청한 경우에만 진행한다.
-- `.omc/`, `.DS_Store`, `node_modules/`, `dist/`, `.env`는 커밋하지 않는다.
 
 ## 담당 영역
 
@@ -56,15 +30,8 @@ ShowUp의 프론트엔드 화면, 컴포넌트, 라우팅, 폼, 상태 표시, �
 
 ## MVP 화면
 
-- `/login`
-- `/register`
-- `/app/dashboard`
-- `/app/customers`
-- `/app/customers/:id`
-- `/app/reservations`
-- `/app/reservations/new`
-- `/privacy`
-- `/terms`
+- `/login`, `/register`, `/app/dashboard`, `/app/customers`, `/app/customers/:id`
+- `/app/reservations`, `/app/reservations/new`, `/privacy`, `/terms`
 
 `/stats`와 `/me`는 MVP 이후 단계다.
 
@@ -108,6 +75,7 @@ ShowUp의 프론트엔드 화면, 컴포넌트, 라우팅, 폼, 상태 표시, �
 - 노쇼 3회 이상 또는 abuse 1회 이상이면 검색 결과와 예약 생성 화면에 경고 배너를 강제 표시한다.
 - 자동 차단처럼 보이는 문구를 피하고, 사장님의 최종 판단을 돕는 문구를 사용한다.
 - 모든 주요 화면에 loading, error, empty 상태를 포함한다.
+- **이모지 금지** — UI 텍스트에 이모지 넣지 말 것. SVG line icon 사용.
 
 ## 작업 순서
 
@@ -123,7 +91,7 @@ ShowUp의 프론트엔드 화면, 컴포넌트, 라우팅, 폼, 상태 표시, �
 
 ## 위험도 UI 기준
 
-> 기준 원본은 `docs/plan.md` §4. 수치가 다르면 plan.md가 정답이고, 변경은 plan.md 먼저 고친 뒤 세션 문서에 반영한다. 점수·등급·경고 배너 조건은 plan.md를 참조.
+> 기준 원본은 `docs/plan.md` §4. 수치가 다르면 plan.md가 정답이고, 변경은 plan.md 먼저 고친 뒤 세션 문서에 반영한다.
 
 ## 완료 기준
 
@@ -134,19 +102,3 @@ ShowUp의 프론트엔드 화면, 컴포넌트, 라우팅, 폼, 상태 표시, �
 - 위험 조건이 아니면 경고 배너가 표시되지 않는다.
 - loading, error, empty 상태가 존재한다.
 - 빌드가 통과한다.
-
-## 보고 형식
-
-모든 작업 완료 보고는 아래 형식을 그대로 사용한다:
-
-```
-오늘 날짜 - 몇번째 작업(작업내용)
-한것 -
-막힌 점 -
-검증 -
-관리자가 할것 -
-참고 -
-```
-
-- "참고"는 이번 작업에서 공부가 될 만한 개념·패턴 1~2개. 없으면 생략.
-- 막힌 점·관리자가 할것 없으면 "없음".

@@ -92,11 +92,12 @@ stores/{storeId}/reservations/{reservationId}  ← customerId, date, time, statu
 
 ## 문서
 
+- [최종 정리 (4주차)](docs/final-summary.md) — 워크플로우·Agent 협업·배포 확인·데모 준비
 - [기획서 전문](docs/plan.md)
 - [작업 체크리스트](docs/checklist.md)
 - [아키텍처 다이어그램](docs/architecture.md) — 전체 데이터 흐름 (화면 - 서비스 - Firestore)
-- [검증 Skill](docs/verify-skill.md) — lint + typecheck + build + 단위 테스트 자동화
-- [유저 플로우](docs/user-flow.md)
+- [재사용 워크플로우](docs/workflow.md) — 캠프 이후 새 프로젝트에 적용하는 가이드
+- [Hermes 스킬 전체](docs/skills/) — FE/BE/보안/검증/멀티세션 스킬 복사본 (23개 파일)
 - [1주차 발표 자료](docs/presentations/0710.md) — 7/10 금
 - [2주차 발표 데크 (1~2주차 통합)](outputs/weeks2/showup-week1-2-integrated-deck-v2.pptx) — 7/16 목
 - [2주차 핵심 기능 시연 스크립트](outputs/weeks2/showup-core-demo-script.md) — 7/16 목

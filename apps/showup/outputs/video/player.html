@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShowUp Demo Player</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111; color: #fff;
+    font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    overflow: hidden;
+  }
+
+  /* Main stage */
+  #stage {
+    width: 100vw; height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+  }
+
+  /* Card styles */
+  .card-content {
+    max-width: 900px;
+  }
+  .card-content h1 { font-size: 48px; font-weight: 700; line-height: 1.4; margin-bottom: 20px; }
+  .card-content h2 { font-size: 36px; font-weight: 600; line-height: 1.5; margin-bottom: 16px; }
+  .card-content p { font-size: 28px; font-weight: 400; line-height: 1.6; color: #ccc; }
+  .card-content .small { font-size: 22px; color: #888; margin-top: 24px; }
+  .card-content .logo { font-size: 72px; font-weight: 800; margin-bottom: 30px; }
+  .card-content .tagline { font-size: 32px; color: #ccc; margin-bottom: 40px; }
+  .card-content .meta { font-size: 22px; color: #666; line-height: 1.8; }
+
+  /* Action cue — when user needs to switch to Chrome */
+  .action-cue {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    width: 100vw; height: 100vh;
+  }
+  .action-cue .icon { font-size: 80px; margin-bottom: 20px; }
+  .action-cue .title { font-size: 42px; font-weight: 700; margin-bottom: 15px; }
+  .action-cue .desc { font-size: 28px; color: #aaa; max-width: 700px; line-height: 1.5; }
+  .action-cue .steps { font-size: 24px; color: #888; margin-top: 20px; line-height: 1.8; text-align: left; }
+  .action-cue .steps li { margin-bottom: 8px; list-style: none; }
+  .action-cue .steps li::before { content: "→ "; color: #f59e0b; }
+  .action-cue .timer { font-size: 60px; font-weight: 700; color: #f59e0b; margin-top: 30px; }
+
+  /* Problem cards */
+  .problem-card { text-align: left; padding: 0 120px; max-width: 1000px; }
+  .problem-card .label { font-size: 22px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px; }
+  .problem-card .content { font-size: 32px; line-height: 1.5; margin-bottom: 30px; }
+  .problem-card .solution-label { color: #22c55e; }
+  .problem-card .problem-label { color: #ef4444; }
+
+  /* Ending card */
+  .ending .logo { font-size: 64px; font-weight: 800; margin-bottom: 20px; }
+  .ending .tagline { font-size: 28px; color: #ccc; margin-bottom: 30px; }
+  .ending .info { font-size: 22px; color: #888; line-height: 1.8; }
+  .ending .roadmap { font-size: 20px; color: #555; margin-top: 30px; line-height: 1.8; }
+  .ending .roadmap strong { color: #aaa; }
+
+  /* Progress bar */
+  #progress {
+    position: fixed; bottom: 0; left: 0;
+    height: 4px; background: #f59e0b;
+    width: 0%; transition: width 0.3s;
+    z-index: 100;
+  }
+
+  /* Scene counter */
+  #counter {
+    position: fixed; top: 20px; right: 20px;
+    font-size: 16px; color: #555;
+    z-index: 100;
+  }
+
+  /* Start screen */
+  #start-screen {
+    width: 100vw; height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+  }
+  #start-screen h1 { font-size: 56px; margin-bottom: 20px; }
+  #start-screen p { font-size: 24px; color: #888; margin-bottom: 15px; line-height: 1.6; }
+  #start-screen .warning { font-size: 20px; color: #f59e0b; margin-top: 30px; line-height: 1.6; }
+  #start-btn {
+    margin-top: 40px;
+    padding: 20px 60px;
+    font-size: 28px;
+    font-weight: 700;
+    background: #f59e0b;
+    color: #111;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  #start-btn:hover { transform: scale(1.05); }
+  #start-btn:active { transform: scale(0.98); }
+
+  /* Hidden */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="counter"></div>
+
+<!-- Start Screen -->
+<div id="start-screen">
+  <h1>ShowUp 데모 영상 플레이어</h1>
+  <p>QuickTime으로 전체 화면 녹화를 시작한 뒤<br>아래 버튼을 누르세요</p>
+  <p style="font-size: 18px; color: #555;">총 20개 장면 · 약 4분 50초 · 자동 재생</p>
+  <div class="warning">
+    ⚠ 시작 전 확인:<br>
+    1. Chrome에서 showup-project.web.app 로그인 해두기<br>
+    2. 에디터에서 risk.ts, firestore.rules 열어두기<br>
+    3. 터미널에서 빌드 결과 미리 실행해두기<br>
+    4. QuickTime 화면 기록 시작 (전체 화면)
+  </div>
+  <button id="start-btn">시작</button>
+</div>
+
+<!-- Stage -->
+<div id="stage" class="hidden"></div>
+
+<script>
+const scenes = [
+  // 1. Problem definition 1
+  {
+    type: 'card',
+    audio: '01-intro-1.mp3',
+    html: `<div class="card-content">
+      <h1>예약제 소상공인이<br>노쇼·폭언·분쟁 고객을<br>반복해서 겪는 피해.</h1>
+      <p>기록하고 확인할 수단이 없어<br>같은 피해가 계속됩니다.</p>
+    </div>`
+  },
+  // 2. Problem definition 2
+  {
+    type: 'card',
+    audio: '02-intro-2.mp3',
+    html: `<div class="card-content">
+      <h1>기존 예약 앱은<br>예약 접수에만 집중합니다.</h1>
+      <p style="color:#ef4444; font-weight:600;">문제 고객 이력 관리?<br>사전 경고?<br>없습니다.</p>
+    </div>`
+  },
+  // 3. Title
+  {
+    type: 'card',
+    audio: '03-title.mp3',
+    html: `<div class="card-content">
+      <div class="logo">ShowUp</div>
+      <div class="tagline">노쇼·악성 고객 이력 관리 및 위험도 경고 웹서비스</div>
+      <div class="meta">배포: showup-project.web.app<br>개발: Hermes Agent + Ollama Pro 모델 4세션</div>
+    </div>`
+  },
+  // 4. Action: Show landing page
+  {
+    type: 'action',
+    audio: '04-landing.mp3',
+    icon: '🌐',
+    title: 'Chrome으로 이동하세요',
+    desc: 'showup-project.web.app 랜딩 페이지를 천천히 스크롤하며 보여주세요',
+    steps: [
+      'Chrome 탭으로 이동',
+      '랜딩 페이지 위→아래로 스크롤',
+      '4대 핵심 기능 카드가 보이도록'
+    ]
+  },
+  // 5. Action: Login
+  {
+    type: 'action',
+    audio: '05-login.mp3',
+    icon: '🔑',
+    title: '로그인하세요',
+    desc: '데모 계정으로 로그인하는 과정을 보여주세요',
+    steps: [
+      '로그인 버튼 클릭',
+      'demo@showup.example 입력',
+      'demoPassword123! 입력',
+      '로그인 버튼 클릭'
+    ]
+  },
+  // 6. Action: Dashboard
+  {
+    type: 'action',
+    audio: '06-dashboard.mp3',
+    icon: '📊',
+    title: '대시보드를 보여주세요',
+    desc: '요약 카드 4개, 주의 고객 Top 5, 오늘 예약을 천천히 보여주세요',
+    steps: [
+      '요약 카드 4개를 하나씩 가리키기',
+      '주의 고객 Top 5 스크롤',
+      '오늘 예약 리스트 보여주기'
+    ]
+  },
+  // 7. Action: Search + Alert (KEY)
+  {
+    type: 'action',
+    audio: '07-search-alert.mp3',
+    icon: '⚠',
+    title: '고객 검색 + 경고 배너 (핵심)',
+    desc: '김철수를 검색하고 경고 배너를 보여주세요. 가장 중요한 장면입니다.',
+    steps: [
+      '고객관리 탭 클릭',
+      '검색창에 "김" 입력',
+      '김철수 카드 클릭 (RiskBadge 주의)',
+      '경고 배너 강조하여 보여주기',
+      '타임라인 스크롤'
+    ]
+  },
+  // 8. Action: Reservation
+  {
+    type: 'action',
+    audio: '08-reservation.mp3',
+    icon: '📅',
+    title: '예약 관리 — 상태 변경',
+    desc: '예약 관리에서 노쇼 버튼을 클릭하세요',
+    steps: [
+      '예약관리 탭 클릭',
+      'pending 상태 예약 선택',
+      '노쇼 버튼 클릭',
+      '상태 변경 확인'
+    ]
+  },
+  // 9. Action: Incident
+  {
+    type: 'action',
+    audio: '09-incident.mp3',
+    icon: '📝',
+    title: '사건 기록',
+    desc: '고객 상세에서 사건을 기록하세요',
+    steps: [
+      '고객 상세로 이동',
+      '사건 기록 버튼 클릭',
+      '폭언·위협 카테고리 선택',
+      '메모 입력: "예약 시간 30분 후 도착, 직원에게 소리침"',
+      '저장 클릭 → 타임라인 + 위험도 갱신 확인'
+    ]
+  },
+  // 10. Tech: Risk code
+  {
+    type: 'card',
+    audio: '10-risk-code.mp3',
+    html: `<div class="card-content">
+      <h2>위험도 계산 — 순수 함수 + TDD</h2>
+      <p style="text-align:left; font-family:monospace; font-size:22px; line-height:1.8; color:#aaa; margin-top:20px;">
+        노쇼 +8 · 폭언 +10 · 정상방문 -1 (회복)<br>
+        최근 30일 노쇼 +5 (최신성 가중)<br><br>
+        0~23: 안심 · 24~39: 주의 · 40+: 위험<br>
+        폭언 1회+ → 최소 '주의' 보장<br><br>
+        <span style="color:#22c55e;">✅ 9개 단위 테스트 PASS</span>
+      </p>
+    </div>`
+  },
+  // 11. Tech: Security
+  {
+    type: 'card',
+    audio: '11-security.mp3',
+    html: `<div class="card-content">
+      <h2>보안 — Firestore Rules</h2>
+      <p style="text-align:left; font-family:monospace; font-size:22px; line-height:1.8; color:#aaa; margin-top:20px;">
+        isStoreOwner(storeId)<br>
+        → ownerUid == auth.uid (가게 격리)<br><br>
+        필드 타입 검증 · type enum · status enum<br>
+        전화번호 마스킹 (010-****-1234)<br><br>
+        <span style="color:#22c55e;">✅ 18개 회귀 테스트 PASS</span><br>
+        <span style="color:#22c55e;">✅ 침투 테스트 전부 차단</span>
+      </p>
+    </div>`
+  },
+  // 12. Tech: Performance
+  {
+    type: 'card',
+    audio: '12-performance.mp3',
+    html: `<div class="card-content">
+      <h2>성능 — 코드 스플리팅</h2>
+      <p style="text-align:left; font-family:monospace; font-size:22px; line-height:1.8; color:#aaa; margin-top:20px;">
+        React.lazy + Suspense<br>
+        Auth / Firestore 지연 청크 분리<br><br>
+        메인 청크: <span style="color:#f59e0b;">10.86 KB</span> (gzip 3.85 KB)<br><br>
+        <span style="color:#22c55e;">✅ 142 modules · build 1.69s</span>
+      </p>
+    </div>`
+  },
+  // 13. Problem: Spark
+  {
+    type: 'problem',
+    audio: '13-problem-spark.mp3',
+    problemLabel: '문제',
+    problem: 'Firebase Spark 무료 요금제에서<br>Cloud Functions 배포 불가',
+    solutionLabel: '해결',
+    solution: '클라이언트 riskRefresh.ts로 갱신 대체<br>functions/ 이관 코드 보존<br><span style="font-size:22px;color:#888;">(Blaze 업그레이드 시 전환)</span>'
+  },
+  // 14. Problem: Schedule
+  {
+    type: 'problem',
+    audio: '14-problem-schedule.mp3',
+    problemLabel: '문제',
+    problem: '마감 일정 7/30 → 7/28로<br>2일 앞당김',
+    solutionLabel: '해결',
+    solution: '16일차 작업 → 14일차로 압축<br>10~11일차 통합<br>13~16일차 → 13~14일차 재배치'
+  },
+  // 15. Problem: Migration
+  {
+    type: 'problem',
+    audio: '15-problem-migration.mp3',
+    problemLabel: '문제',
+    problem: '기존 AI 도구 구독 만료<br>(Claude 구독 + Codex 정지)',
+    solutionLabel: '해결',
+    solution: 'Ollama Pro 모델 4종으로 전면 이관<br>Hermes Agent 프레임워크 기반<br>4세션 역할 분리 개발'
+  },
+  // 16. Problem: Sharing design
+  {
+    type: 'problem',
+    audio: '16-problem-sharing.mp3',
+    problemLabel: '설계 결정',
+    problem: '가게 간 자동 공유 → 블랙리스트 → 법적 리스크',
+    solutionLabel: 'Phase 2',
+    solution: '고객 동의 기반 신뢰 프로필<br><span style="font-size:22px;color:#888;">(동의 있어야 타 가게 조회 가능)</span>'
+  },
+  // 17. Agent structure
+  {
+    type: 'card',
+    audio: '17-agent-structure.mp3',
+    html: `<div class="card-content">
+      <h2>Agent 활용 — 4세션 역할 분리</h2>
+      <p style="text-align:left; font-size:24px; line-height:1.8; margin-top:20px;">
+        <span style="color:#f59e0b;">🟨 리드</span> GLM 5.2 — 기획·통합 QA·배포<br>
+        <span style="color:#3b82f6;">🟦 프론트엔드</span> Qwen 3.5 — UI·컴포넌트·라우팅<br>
+        <span style="color:#22c55e;">🟩 백엔드</span> Kimi K2.7 Code — Firestore·로직<br>
+        <span style="color:#ef4444;">🟥 보안</span> GLM 5.2 — Rules·침투테스트·법무
+      </p>
+    </div>`
+  },
+  // 18. Git log
+  {
+    type: 'card',
+    audio: '18-git-log.mp3',
+    html: `<div class="card-content">
+      <h2>단일 브랜치 · 커밋 접두어</h2>
+      <p style="text-align:left; font-family:monospace; font-size:20px; line-height:1.6; color:#aaa; margin-top:20px;">
+        <span style="color:#3b82f6;">FE-</span>14일차 예약 항목 UI 보완<br>
+        <span style="color:#22c55e;">BE-</span>14일차 데모 계정 시드 경로 추가<br>
+        <span style="color:#ef4444;">SEC-</span>14일차 스모크 테스트 14건 PASS<br>
+        <span style="color:#f59e0b;">LEAD-</span>14일차 버그 재점검 및 체크리스트<br><br>
+        <span style="color:#fff;">100+ 커밋 · 인터페이스 우선 · 병렬 개발</span>
+      </p>
+    </div>`
+  },
+  // 19. Verify
+  {
+    type: 'card',
+    audio: '19-verify.mp3',
+    html: `<div class="card-content">
+      <h2>자동화 검증 — 전부 PASS</h2>
+      <p style="text-align:left; font-family:monospace; font-size:24px; line-height:1.8; margin-top:20px;">
+        <span style="color:#22c55e;">✅ lint</span> — warning 0, error 0<br>
+        <span style="color:#22c55e;">✅ typecheck</span> — tsc -b PASS<br>
+        <span style="color:#22c55e;">✅ build</span> — 10.86 KB main chunk<br>
+        <span style="color:#22c55e;">✅ risk</span> — 9개 단위 테스트<br>
+        <span style="color:#22c55e;">✅ phone</span> — 8개 단위 테스트<br>
+        <span style="color:#22c55e;">✅ search</span> — 13 passed, 0 failed<br>
+        <span style="color:#22c55e;">✅ security</span> — 18/18 PASS
+      </p>
+    </div>`
+  },
+  // 20. Ending
+  {
+    type: 'card',
+    audio: '20-ending.mp3',
+    html: `<div class="card-content ending">
+      <div class="logo">ShowUp</div>
+      <div class="tagline">노쇼·악성 고객 이력 관리 및 위험도 경고</div>
+      <div class="info">
+        배포: https://showup-project.web.app<br>
+        개발: Hermes Agent + Ollama Pro 모델 4세션<br>
+        GitHub: N167_채민석
+      </div>
+      <div class="roadmap">
+        <strong>Phase 1.5</strong> — 월별 통계 차트<br>
+        <strong>Phase 2</strong> — 고객 동의 기반 신뢰 프로필 공유<br>
+        <strong>Phase 3</strong> — 예약금 결제 + 외부 예약 플랫폼 연동
+      </div>
+    </div>`
+  }
+];
+
+let currentScene = 0;
+let audio = new Audio();
+
+function renderScene(i) {
+  const scene = scenes[i];
+  const stage = document.getElementById('stage');
+  const counter = document.getElementById('counter');
+  counter.textContent = `${i + 1} / ${scenes.length}`;
+
+  if (scene.type === 'card') {
+    stage.innerHTML = scene.html;
+  } else if (scene.type === 'action') {
+    stage.innerHTML = `
+      <div class="action-cue">
+        <div class="icon">${scene.icon}</div>
+        <div class="title">${scene.title}</div>
+        <div class="desc">${scene.desc}</div>
+        <ul class="steps">
+          ${scene.steps.map(s => `<li>${s}</li>`).join('')}
+        </ul>
+        <div class="timer" id="action-timer"></div>
+      </div>
+    `;
+  } else if (scene.type === 'problem') {
+    stage.innerHTML = `
+      <div class="card-content problem-card">
+        <div class="label problem-label">${scene.problemLabel}</div>
+        <div class="content">${scene.problem}</div>
+        <div class="label solution-label">${scene.solutionLabel}</div>
+        <div class="content">${scene.solution}</div>
+      </div>
+    `;
+  }
+
+  // Play audio
+  audio.src = scene.audio;
+  audio.play();
+
+  // Update progress bar
+  const progress = ((i + 1) / scenes.length) * 100;
+  document.getElementById('progress').style.width = progress + '%';
+
+  // When audio ends, go to next scene
+  audio.onended = () => {
+    if (i + 1 < scenes.length) {
+      renderScene(i + 1);
+    } else {
+      // Done
+      stage.innerHTML = `<div class="card-content">
+        <h1 style="color:#22c55e;">녹화 완료</h1>
+        <p>QuickTime 녹화를 중지하세요</p>
+      </div>`;
+      document.getElementById('counter').textContent = '완료';
+      document.getElementById('progress').style.width = '100%';
+    }
+  };
+
+  // Action timer
+  if (scene.type === 'action') {
+    audio.onloadedmetadata = () => {
+      let remaining = Math.ceil(audio.duration);
+      const timerEl = document.getElementById('action-timer');
+      const interval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(interval);
+          timerEl.textContent = '';
+        } else {
+          timerEl.textContent = remaining + '초';
+        }
+      }, 1000);
+    };
+  }
+}
+
+// Start button
+document.getElementById('start-btn').addEventListener('click', () => {
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('stage').classList.remove('hidden');
+  renderScene(0);
+});
+</script>
+
+</body>
+</html>
