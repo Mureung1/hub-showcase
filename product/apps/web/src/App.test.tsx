@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./features/market/useProductCatalog", () => ({
@@ -79,7 +79,7 @@ describe("App", () => {
     expect(screen.getByRole("toolbar", { name: "분석 도구" })).toBeInTheDocument();
     expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "전체 상권 보기" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "분석 데이터 분기" })).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: "상권 통계 분기" })).toHaveValue("");
     expect(screen.getByRole("option", { name: "분기 확인 중" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "H" })).not.toBeInTheDocument();
     expect(screen.getByText("서울시 공식 상권 경계로 집계")).toBeInTheDocument();
@@ -88,7 +88,7 @@ describe("App", () => {
       "true",
     );
     expect(screen.getByRole("button", { name: "3DGS 실험 열기" })).toBeInTheDocument();
-    expect(screen.getByText("서울 상권분석 공식 데이터를 불러오는 중입니다.")).toBeInTheDocument();
+    expect(screen.getByText("서울 상권분석 공식 분기 자료를 불러오는 중입니다.")).toBeInTheDocument();
   });
 
   it("starts without an implicit store selection and leaves the product URL unchanged", () => {
@@ -151,15 +151,15 @@ describe("App", () => {
     expect(screen.queryByRole("button", { name: "직접 선택" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "300m" })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "유동인구" }));
+    fireEvent.click(within(document.querySelector(".topic-grid")!).getByRole("button", { name: "유동인구" }));
     expect(screen.getByText("유동인구", { selector: ".inspector-topic" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "시간대 수요" })).toHaveAttribute(
+    expect(within(document.querySelector(".layer-filter")!).getByRole("button", { name: "유동인구" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "점포 위치" }));
-    expect(screen.getByRole("button", { name: "점포 위치" })).toHaveAttribute(
+    fireEvent.click(within(document.querySelector(".layer-filter")!).getByRole("button", { name: /점포 위치/ }));
+    expect(within(document.querySelector(".layer-filter")!).getByRole("button", { name: /점포 위치/ })).toHaveAttribute(
       "aria-pressed",
       "false",
     );
@@ -411,8 +411,9 @@ describe("App", () => {
 
     expect(screen.getByText("서울시 공식 상권 경계로 집계")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "시간대 수요" }));
-    expect(screen.getByRole("button", { name: "시간대 수요" })).toHaveAttribute(
+    const mapLayers = within(document.querySelector(".layer-filter")!);
+    fireEvent.click(mapLayers.getByRole("button", { name: "유동인구" }));
+    expect(mapLayers.getByRole("button", { name: "유동인구" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -586,7 +587,7 @@ describe("App", () => {
       ),
     );
     expect(screen.getAllByText("꽃집").length).toBeGreaterThan(0);
-    expect((await screen.findAllByText("점포·경쟁 지표만 제공")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("점포 위치·경쟁만 제공")).length).toBeGreaterThan(0);
     expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
     expect(screen.queryByText(/카페 기준/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "전체 상권 보기" })).toBeDisabled();
