@@ -23,7 +23,7 @@ PR 제목: [N123_이규민] - 배포 환경 핵심 흐름과 데모 영상 제�
 
 - [x] Client tests 17개 통과
 - [x] Server tests 14개 통과
-- [x] Sites Worker tests 4개 통과
+- [x] Sites Worker tests 5개 통과
 - [x] ESLint 통과
 - [x] production build 통과
 - [x] Sites production deployment 성공

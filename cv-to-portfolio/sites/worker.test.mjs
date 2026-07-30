@@ -17,7 +17,7 @@ test("배포 Worker health가 AI·DB 구성 여부를 구분한다", async () =>
     new Request("https://example.com/api/health"),
     {
       ...baseEnv,
-      ANTHROPIC_API_KEY: "secret",
+      ANTHROPIC_API_KEY: `sk-ant-${"a".repeat(32)}`,
       SUPABASE_URL: "https://example.supabase.co",
       SUPABASE_SECRET_KEY: "secret",
     },
@@ -28,6 +28,18 @@ test("배포 Worker health가 AI·DB 구성 여부를 구분한다", async () =>
     aiConfigured: true,
     databaseConfigured: true,
   });
+});
+
+test("짧은 Anthropic 예시 키는 AI 구성 완료로 표시하지 않는다", async () => {
+  const response = await worker.fetch(
+    new Request("https://example.com/api/health"),
+    {
+      ...baseEnv,
+      ANTHROPIC_API_KEY: "sk-ant-example",
+    },
+  );
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).aiConfigured, false);
 });
 
 test("빈 생성 입력은 외부 API 호출 전에 400을 반환한다", async () => {

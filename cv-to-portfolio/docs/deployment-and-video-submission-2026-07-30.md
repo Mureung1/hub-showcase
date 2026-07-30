@@ -63,7 +63,7 @@
 
 ### 성공 판단 기준
 
-- Client 17개, Server 14개, Worker 4개 테스트 통과
+- Client 17개, Server 14개, Worker 5개 테스트 통과
 - lint와 production build 통과
 - 배포 상태 `succeeded`
 - 배포 API의 400·200·201 응답 확인
@@ -80,4 +80,3 @@
 | 3:25–4:15 | React → API → Supabase 데이터 흐름과 배포 구조 |
 | 4:15–4:50 | 배포 오류 원인, Agent 요청·검토·적용 과정 |
 | 4:50–5:00 | 완료 범위와 다음 개선 항목 정리 |
-

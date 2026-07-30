@@ -48,6 +48,11 @@ function supabaseConfigured(env) {
   return Boolean(env.SUPABASE_URL && env.SUPABASE_SECRET_KEY);
 }
 
+function anthropicConfigured(env) {
+  const key = env.ANTHROPIC_API_KEY || "";
+  return key.startsWith("sk-ant-") && key.length >= 32;
+}
+
 function supabaseHeaders(env, prefer) {
   const key = env.SUPABASE_SECRET_KEY;
   const headers = {
@@ -149,7 +154,7 @@ async function generatePortfolio(env, request) {
     20_000,
   );
 
-  if (!env.ANTHROPIC_API_KEY) {
+  if (!anthropicConfigured(env)) {
     throw new HttpError("AI 생성이 구성되지 않았습니다.", 503);
   }
 
@@ -279,7 +284,7 @@ async function handleApi(request, env, url) {
   if (url.pathname === "/api/health" && request.method === "GET") {
     return json({
       status: "ok",
-      aiConfigured: Boolean(env.ANTHROPIC_API_KEY),
+      aiConfigured: anthropicConfigured(env),
       databaseConfigured: supabaseConfigured(env),
     });
   }
