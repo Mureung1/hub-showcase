@@ -179,6 +179,36 @@ button.cal-day.today:hover { background: var(--primary-light); }
 .empty-state p { margin: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
 
+/* 감정 리포트 */
+.report-screen { display: grid; gap: 18px; }
+.report-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.report-heading h2 { margin-top: 6px; }
+.report-range { margin: -10px 0 0; color: var(--text-sub); font-size: 12px; }
+.report-privacy { margin: 0; border-radius: 12px; padding: 11px 12px; color: #475467; background: #f8fafc; font-size: 11.5px; line-height: 1.45; }
+.report-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.report-metrics div { display: grid; gap: 3px; border-radius: 14px; padding: 16px; background: var(--primary-light); }
+.report-metrics strong { color: var(--primary); font-size: 26px; line-height: 1; }
+.report-metrics span { color: var(--text-sub); font-size: 11.5px; font-weight: 700; }
+.report-section { display: grid; gap: 10px; }
+.report-section h3 { margin: 0; color: var(--text-strong); font-size: 14px; }
+.mood-report-list { display: grid; gap: 9px; }
+.mood-report-row { display: grid; grid-template-columns: 28px 1fr 34px; align-items: center; gap: 8px; }
+.mood-report-icon { font-size: 20px; }
+.mood-report-track { height: 8px; overflow: hidden; border-radius: 999px; background: var(--bg-weak); }
+.mood-report-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), #6c63ff); }
+.mood-report-row strong { color: var(--text-sub); font-size: 11px; text-align: right; }
+.report-summary-list { display: grid; gap: 8px; }
+.report-summary-list article { display: grid; grid-template-columns: auto 1fr; gap: 4px 9px; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.report-summary-list time { color: var(--text-sub); font-size: 11px; }
+.report-summary-list strong { color: var(--text-strong); font-size: 13px; }
+.report-summary-list p { grid-column: 1 / -1; margin: 0; color: var(--text-default); font-size: 12.5px; line-height: 1.45; }
+.action-report-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.action-report-list li { border-radius: 12px; padding: 11px 13px; color: var(--text-default); background: var(--bg-input); font-size: 12.5px; line-height: 1.45; }
+.action-report-list li::before { margin-right: 7px; content: '🌱'; }
+.report-empty { margin: 0; color: var(--text-sub); font-size: 12.5px; }
+.report-copy { margin-top: 2px; }
+.report-copy-status { margin: -8px 0 0; color: #067647; font-size: 12px; text-align: center; }
+
 @media (max-width: 480px) {
   .app-shell { width: min(100% - 20px, 430px); padding-top: 20px; }
   .entry-shell { align-items: start; padding-top: 16px; }

@@ -1,0 +1,55 @@
+import { describe, expect, test } from 'vitest'
+import { buildEmotionReport } from '../utils/emotionReport'
+
+describe('감정 리포트', () => {
+  test('저장된 기록의 개수, 기분 분포와 AI 정리 내용을 요약한다', () => {
+    const report = buildEmotionReport([
+      {
+        id: '3',
+        mood: '😐',
+        emotion: '긴장',
+        cause: '발표 준비',
+        action: '목차를 세 줄로 적기',
+        createdAt: '2026-07-30T03:00:00.000Z',
+      },
+      {
+        id: '2',
+        mood: '😐',
+        emotion: '걱정',
+        cause: '마감 시간',
+        action: '제출 링크 확인하기',
+        createdAt: '2026-07-29T03:00:00.000Z',
+      },
+      {
+        id: '1',
+        mood: '🙂',
+        emotion: '',
+        cause: '',
+        action: '',
+        createdAt: '2026-07-28T03:00:00.000Z',
+      },
+    ])
+
+    expect(report).toMatchObject({
+      total: 3,
+      organizedCount: 2,
+      moods: [
+        { mood: '😐', count: 2 },
+        { mood: '🙂', count: 1 },
+      ],
+      actions: ['목차를 세 줄로 적기', '제출 링크 확인하기'],
+    })
+    expect(report.copyText).toContain('전체 기록: 3개')
+    expect(report.copyText).toContain('발표 준비')
+  })
+
+  test('기록이 없으면 빈 리포트를 만든다', () => {
+    expect(buildEmotionReport([])).toMatchObject({
+      total: 0,
+      organizedCount: 0,
+      moods: [],
+      recent: [],
+      actions: [],
+    })
+  })
+})

@@ -4,6 +4,7 @@ import FlipCard from './components/FlipCard'
 import RecordCard from './components/RecordCard'
 import RecordDetail from './pages/RecordDetail'
 import CalendarView from './pages/CalendarView'
+import ReportView from './pages/ReportView'
 import EntryScreen from './components/EntryScreen'
 import { createGuestCheckinRepository, fileToDataUrl } from './services/guestCheckinRepository'
 import { createSupabaseCheckinRepository } from './services/supabaseCheckinRepository'
@@ -387,6 +388,11 @@ function App() {
           type="button"
           onClick={() => switchTab('calendar')}
         >기록</button>
+        <button
+          className={`tab-btn${screen === 'report' ? ' active' : ''}`}
+          type="button"
+          onClick={() => switchTab('report')}
+        >리포트</button>
       </nav>
 
       <section className="workspace" aria-live="polite">
@@ -485,6 +491,10 @@ function App() {
 
         {screen === 'detail' && selectedCheckin && (
           <RecordDetail checkin={selectedCheckin} onBack={backToList} onDelete={handleDeleteCheckin} />
+        )}
+
+        {screen === 'report' && (
+          <ReportView checkins={checkins} isLoading={isLoadingRecords} onRefresh={loadCheckins} />
         )}
 
         {error && <p className="feedback feedback-error" role="alert">{error}</p>}
