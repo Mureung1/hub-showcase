@@ -36,12 +36,10 @@
   gap: 10px;
   margin: 14px 16px -64px;
   padding: 10px;
-  border: 1px solid rgba(255, 255, 255, .2);
+  border: 1px solid rgba(64, 82, 71, .14);
   border-radius: 18px;
-  background: rgba(20, 91, 54, .94);
-  box-shadow: 0 14px 34px rgba(21, 61, 39, .2);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  background: #fffdfb;
+  box-shadow: 0 8px 22px rgba(45, 61, 51, .1);
   isolation: isolate;
 }
 
@@ -56,11 +54,10 @@
 .recipe-detail-actions .consume-recipe-button {
   min-height: 42px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid #d6e2da;
   border-radius: 12px;
-  border-color: rgba(255, 255, 255, 0.28);
-  color: #fff;
-  background: rgba(255, 255, 255, .09);
+  color: #245a3c;
+  background: #f8fbf9;
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
@@ -70,8 +67,8 @@
 .recipe-detail-actions .back-to-recipes:hover,
 .recipe-detail-actions .save-detail-recipe:hover {
   transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, .46);
-  background: rgba(255, 255, 255, .16);
+  border-color: #9ab9a5;
+  background: #eef7f1;
 }
 
 .recipe-detail-actions .consume-recipe-button {
@@ -87,7 +84,8 @@
 
 .recipe-detail-actions .save-detail-recipe[aria-pressed="true"] {
   color: #006d36;
-  background: #fff;
+  border-color: #a7cdb7;
+  background: #edf7f1;
 }
 
 .recipe-detail-hero .eyebrow {
