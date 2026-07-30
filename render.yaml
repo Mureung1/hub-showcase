@@ -7,9 +7,9 @@ services:
   - type: web
     name: hub-api
     runtime: node
-    rootDir: apps/api
-    buildCommand: npm install
-    startCommand: npm start
+    # Root Directory는 프로젝트 루트 (packages/kb 접근 필요)
+    buildCommand: cd apps/api && npm install
+    startCommand: cd apps/api && npm start
     envVars:
       - key: NODE_ENV
         value: production
