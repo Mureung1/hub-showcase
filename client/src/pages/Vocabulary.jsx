@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { getVocabulary } from "../api/vocabulary.js"
+import { getVocabulary, deleteVocabularyTerms } from "../api/vocabulary.js"
 import { useAuth } from "../context/AuthContext.jsx"
+import { useVocabularyCount } from "../context/VocabularyContext.jsx"
 import VocabularyCard from "../components/VocabularyCard.jsx"
 
 function formatDateLabel(dateKey) {
@@ -15,6 +16,7 @@ function formatDateLabel(dateKey) {
 
 export default function Vocabulary() {
   const { user } = useAuth()
+  const { setVocabularyCount } = useVocabularyCount()
   const [vocabulary, setVocabulary] = useState([])
   const [selectedDate, setSelectedDate] = useState(null)
 
@@ -37,6 +39,27 @@ export default function Vocabulary() {
   }, [vocabulary])
 
   const selectedGroup = dateGroups.find((group) => group.dateKey === selectedDate) ?? null
+
+  async function handleDeleteDateGroup(e, dateKey, ids) {
+    e.stopPropagation()
+    if (!window.confirm(`${formatDateLabel(dateKey)}에 저장된 단어 ${ids.length}개를 모두 삭제하시겠습니까?`)) return
+    await deleteVocabularyTerms(ids)
+    setVocabulary((prev) => {
+      const next = prev.filter((v) => !ids.includes(v.id))
+      setVocabularyCount(next.length)
+      return next
+    })
+  }
+
+  async function handleDeleteTerm(id) {
+    if (!window.confirm("이 단어를 삭제하시겠습니까?")) return
+    await deleteVocabularyTerms([id])
+    setVocabulary((prev) => {
+      const next = prev.filter((v) => v.id !== id)
+      setVocabularyCount(next.length)
+      return next
+    })
+  }
 
   if (!user) {
     return (
@@ -61,18 +84,40 @@ export default function Vocabulary() {
 
         <div className="vocabulary-master-list">
           {dateGroups.map((group) => (
-            <button
-              type="button"
+            <div
+              role="button"
+              tabIndex={0}
               key={group.dateKey}
               className={`vocabulary-date-card ${group.dateKey === selectedDate ? "active" : ""}`}
               onClick={() => setSelectedDate(group.dateKey)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault()
+                  setSelectedDate(group.dateKey)
+                }
+              }}
             >
-              <p className="vocabulary-date-card-label">{formatDateLabel(group.dateKey)}</p>
+              <div className="vocabulary-date-card-header">
+                <p className="vocabulary-date-card-label">{formatDateLabel(group.dateKey)}</p>
+                <button
+                  type="button"
+                  className="vocabulary-date-card-delete"
+                  onClick={(e) =>
+                    handleDeleteDateGroup(
+                      e,
+                      group.dateKey,
+                      group.items.map((item) => item.id),
+                    )
+                  }
+                >
+                  삭제
+                </button>
+              </div>
               <p className="vocabulary-date-card-preview">
                 {group.items.map((item) => item.term).join(", ")}
               </p>
               <p className="vocabulary-date-card-count">{group.items.length}개 단어</p>
-            </button>
+            </div>
           ))}
           {dateGroups.length === 0 && (
             <p className="vocabulary-master-empty">아직 적재된 단어가 없습니다.</p>
@@ -88,7 +133,7 @@ export default function Vocabulary() {
             </header>
             <div className="vocabulary-detail-list">
               {selectedGroup.items.map((item) => (
-                <VocabularyCard item={item} key={`${item.term}-${item.addedAt}`} />
+                <VocabularyCard item={item} key={item.id} onDelete={() => handleDeleteTerm(item.id)} />
               ))}
             </div>
           </>
