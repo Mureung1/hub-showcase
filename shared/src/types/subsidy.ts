@@ -74,9 +74,25 @@ export interface Subsidy {
   atchFileId?: string
 }
 
+/**
+ * 리스트 화면(`SubsidyCard`/`HomeScreen`) 전용 — 상세 전용 필드(method/qualifications/
+ * documents/how/where/whereUrl/contact 등)를 뺀 축소 타입 (이슈 #114).
+ * `Subsidy`와 겹치는 필드는 동일한 타입을 그대로 쓴다. 상세 화면은 여전히 `Subsidy`를 쓰므로
+ * "리스트 캐시를 상세 데이터로 잘못 재사용"하면 컴파일 타임에 타입 에러로 잡힌다.
+ */
+export interface SubsidyListItem {
+  id: string
+  name: string
+  org: string
+  amount: string
+  dday: number
+  match: number
+  deadline: string
+}
+
 /** GET /api/subsidies 응답 — 페이지네이션 포함 (이슈 #48) */
 export interface SubsidyListResponse {
-  items: Subsidy[]
+  items: SubsidyListItem[]
   /** 페이지네이션 이전 전체 건수 */
   total: number
   sort: SortOption

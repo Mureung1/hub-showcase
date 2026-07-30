@@ -1,4 +1,4 @@
-import type { OnboardingProfile, SortOption, Subsidy } from '@hub/shared'
+import type { OnboardingProfile, SortOption, Subsidy, SubsidyListItem } from '@hub/shared'
 import { sampleSubsidies } from '../data/sample-subsidies.js'
 import { rowToSubsidy, type SubsidyRow } from './mappers.js'
 import { SUBSIDIES_TABLE, supabase } from './supabase.js'
@@ -10,6 +10,74 @@ import { SUBSIDIES_TABLE, supabase } from './supabase.js'
  * Supabase 조회가 실패하면 서버가 죽지 않도록 sample-subsidies.ts로 fallback한다.
  */
 
+/**
+ * loadAll()/findAll()/match() 내부 전용 타입 (이슈 #114) — 리스트 화면에 노출되는
+ * `SubsidyListItem` 필드 + 매칭/정렬 로직(scoreForProfile/matchesRegion/matchesSupportRealm)이
+ * 계산에 쓰는 필드만 담는다. 상세 전용 텍스트 필드(method/qualifications/documents/how/
+ * where/whereUrl/contact 등)는 리스트 조회에서 아예 select하지 않으므로 여기에도 없다.
+ * client에는 이 타입 그대로 내려주지 않고 `toListItem()`으로 `SubsidyListItem`으로 축소한 뒤 응답한다.
+ */
+type MatchCandidate = SubsidyListItem & {
+  region: string[]
+  supportRealm: string
+  employeesMaxCount?: number
+  revenueMaxKrw?: number
+  businessYearsMax?: number
+}
+
+/** loadAll()이 Supabase에서 select하는 컬럼만 담은 row 형태 */
+type MatchCandidateRow = Pick<
+  SubsidyRow,
+  | 'id'
+  | 'name'
+  | 'org'
+  | 'amount'
+  | 'dday'
+  | 'match_score'
+  | 'deadline'
+  | 'region'
+  | 'support_realm'
+  | 'employees_max_count'
+  | 'revenue_max_krw'
+  | 'business_years_max'
+>
+
+/** 축소된 row → MatchCandidate 매핑 (findById용 rowToSubsidy와 별개, mappers.ts는 건드리지 않음) */
+function rowToMatchCandidate(row: MatchCandidateRow): MatchCandidate {
+  return {
+    id: row.id,
+    name: row.name,
+    org: row.org,
+    amount: row.amount,
+    dday: row.dday,
+    match: row.match_score,
+    deadline: row.deadline,
+    region: row.region,
+    supportRealm: row.support_realm,
+    employeesMaxCount: row.employees_max_count ?? undefined,
+    revenueMaxKrw: row.revenue_max_krw ?? undefined,
+    businessYearsMax: row.business_years_max ?? undefined,
+  }
+}
+
+/** MatchCandidate → client 응답용 SubsidyListItem (region/supportRealm 등 매칭 내부 정보는 안 내려줌) */
+function toListItem(candidate: MatchCandidate): SubsidyListItem {
+  return {
+    id: candidate.id,
+    name: candidate.name,
+    org: candidate.org,
+    amount: candidate.amount,
+    dday: candidate.dday,
+    match: candidate.match,
+    deadline: candidate.deadline,
+  }
+}
+
+/**
+ * 여전히 `Subsidy[]`로 둔다 — `findById()`가 그대로 이 배열에서 상세 fallback을 찾아 쓰고,
+ * `Subsidy`는 `MatchCandidate`보다 필드가 많아 구조적으로 호환되므로 `loadAll()`이
+ * `Promise<MatchCandidate[]>`를 반환하는 자리에 그대로 써도 타입 에러가 나지 않는다.
+ */
 const FALLBACK: Subsidy[] = sampleSubsidies as Subsidy[]
 
 /**
@@ -35,7 +103,7 @@ function parseAmountForSort(amount: string): number {
  * 요청(같은 profile/sort)을 여러 페이지에 걸쳐 반복 호출해도 순서가 흔들리지 않게 하기 위함
  * (동점 항목이 많은 region 가중치 특성상 결정적 정렬이 아니면 항목 중복/누락이 생길 수 있음).
  */
-function applySort(items: Subsidy[], sort: SortOption): Subsidy[] {
+function applySort(items: MatchCandidate[], sort: SortOption): MatchCandidate[] {
   const copy = [...items]
   switch (sort) {
     case 'deadline':
@@ -53,7 +121,7 @@ function applySort(items: Subsidy[], sort: SortOption): Subsidy[] {
 }
 
 export interface PagedResult {
-  items: Subsidy[]
+  items: SubsidyListItem[]
   /** 페이지네이션 이전 전체 건수 */
   total: number
   page: number
@@ -64,12 +132,16 @@ export interface PagedResult {
 export const DEFAULT_PAGE = 1
 export const DEFAULT_LIMIT = 20
 
-/** 정렬된 배열을 page/limit 기준으로 자른다 (이슈 #48) */
-function paginate(items: Subsidy[], page: number, limit: number): PagedResult {
+/**
+ * 정렬된 배열을 page/limit 기준으로 자른다 (이슈 #48). 반환 직전 `MatchCandidate` →
+ * `SubsidyListItem`으로 축소한다 — client에 region/supportRealm 등 매칭 내부 정보를
+ * 내려줄 필요가 없어서다 (이슈 #114).
+ */
+function paginate(items: MatchCandidate[], page: number, limit: number): PagedResult {
   const total = items.length
   const start = (page - 1) * limit
   return {
-    items: items.slice(start, start + limit),
+    items: items.slice(start, start + limit).map(toListItem),
     total,
     page,
     limit,
@@ -85,8 +157,8 @@ const PAGE_SIZE = 1000
  * 크롤러는 하루 1회(`.github/workflows/crawler.yml`)만 테이블을 갱신하므로 훨씬 길게 잡아도
  * 무방하지만, 너무 길면 "방금 갱신된 데이터가 안 보인다"는 체감 지연이 생길 수 있어 10분으로
  * 절충했다(이슈 #113). `/api/match`·`/api/subsidies`가 loadAll()을 공유하므로 캐시도 여기 한 곳에만 둔다.
- * 캐시는 항상 원본 Subsidy[]만 보관하고, 필터링/정렬(match/findAll)은 매 호출마다 새로 수행한다
- * — profile마다 결과가 달라지는 필터링된 결과는 절대 캐싱하지 않는다.
+ * 캐시는 항상 원본 MatchCandidate[]만 보관하고, 필터링/정렬(match/findAll)은 매 호출마다 새로
+ * 수행한다 — profile마다 결과가 달라지는 필터링된 결과는 절대 캐싱하지 않는다.
  * Supabase 에러로 FALLBACK을 반환한 경우는 캐싱하지 않는다 — 다음 요청에서 재시도할 수 있도록.
  * 여러 요청이 동시에 cold-cache 상태로 들어와 각자 Supabase를 중복 호출하는 케이스는 이번
  * 이슈 범위 밖 (단순 TTL 캐시로 충분, 동시 중복 조회 방지는 별도 이슈로 미룸).
@@ -99,15 +171,23 @@ const PAGE_SIZE = 1000
  * "합리적으로 빠른 시간 안에" 반영되도록 10분으로 정했다.
  */
 const CACHE_TTL_MS = 600_000
-let cache: { data: Subsidy[]; fetchedAt: number } | null = null
+let cache: { data: MatchCandidate[]; fetchedAt: number } | null = null
 
 /** 테스트 전용: 모듈 스코프 캐시를 초기화한다. 프로덕션 코드에서는 호출하지 않는다. */
 export function __resetLoadAllCacheForTests(): void {
   cache = null
 }
 
-/** Supabase에서 전체 row를 읽어 Subsidy[]로 변환. 실패 시 fallback 반환 */
-async function loadAll(): Promise<Subsidy[]> {
+/**
+ * 리스트/매칭에 필요한 컬럼만 select — 상세 전용 텍스트 필드(method/qualifications/documents/
+ * how/apply_where/where_url/contact 등)는 리스트 조회에서 아예 가져오지 않는다 (이슈 #114).
+ * `findById()`는 이 select를 쓰지 않고 그대로 `select('*')`를 유지한다.
+ */
+const LIST_SELECT_COLUMNS =
+  'id, name, org, amount, dday, match_score, deadline, region, support_realm, employees_max_count, revenue_max_krw, business_years_max'
+
+/** Supabase에서 리스트/매칭용 컬럼만 읽어 MatchCandidate[]로 변환. 실패 시 fallback 반환 */
+async function loadAll(): Promise<MatchCandidate[]> {
   if (cache && performance.now() - cache.fetchedAt < CACHE_TTL_MS) {
     console.log(`[timing] loadAll: cache hit (age=${(performance.now() - cache.fetchedAt).toFixed(1)}ms), supabase 조회 생략`)
     return cache.data
@@ -115,7 +195,7 @@ async function loadAll(): Promise<Subsidy[]> {
   console.log('[timing] loadAll: cache miss, supabase 조회 시작')
 
   const startedAt = performance.now()
-  const rows: SubsidyRow[] = []
+  const rows: MatchCandidateRow[] = []
   let from = 0
   let roundTrips = 0
 
@@ -123,7 +203,7 @@ async function loadAll(): Promise<Subsidy[]> {
     const fetchStartedAt = performance.now()
     const { data, error } = await supabase
       .from(SUBSIDIES_TABLE)
-      .select('*')
+      .select(LIST_SELECT_COLUMNS)
       .order('id', { ascending: true })
       .range(from, from + PAGE_SIZE - 1)
     roundTrips += 1
@@ -136,15 +216,15 @@ async function loadAll(): Promise<Subsidy[]> {
       return FALLBACK
     }
 
-    rows.push(...(data as SubsidyRow[]))
+    rows.push(...(data as unknown as MatchCandidateRow[]))
     if (data.length < PAGE_SIZE) break
     from += PAGE_SIZE
   }
 
   const mapStartedAt = performance.now()
-  const mapped = rows.map(rowToSubsidy)
+  const mapped = rows.map(rowToMatchCandidate)
   console.log(
-    `[timing] loadAll: rowToSubsidy mapping (${rows.length} rows) took ${(performance.now() - mapStartedAt).toFixed(1)}ms`,
+    `[timing] loadAll: rowToMatchCandidate mapping (${rows.length} rows) took ${(performance.now() - mapStartedAt).toFixed(1)}ms`,
   )
   console.log(`[timing] loadAll: total (${roundTrips} round trip(s)) took ${(performance.now() - startedAt).toFixed(1)}ms`)
 
@@ -261,7 +341,7 @@ type ScoringProfile = Pick<OnboardingProfile, 'region' | 'supportRealm'> &
  * 처리한다(region과 동일 방식, 사용자 결정) — 그래서 scoreForProfile 자체엔 supportRealm 가점
  * 로직이 없다.
  */
-function scoreForProfile(subsidy: Subsidy, profile: ScoringProfile): number {
+function scoreForProfile(subsidy: MatchCandidate, profile: ScoringProfile): number {
   let score = subsidy.match
 
   if (subsidy.region.length > 0 && subsidy.region.includes(profile.region)) {
@@ -293,7 +373,7 @@ function scoreForProfile(subsidy: Subsidy, profile: ScoringProfile): number {
 }
 
 /** region 정보가 있는데 profile.region과 안 맞으면 제외 (이슈 #62) — 정보 없음은 필터링 대상 아님 */
-function matchesRegion(subsidy: Subsidy, profile: OnboardingProfile): boolean {
+function matchesRegion(subsidy: MatchCandidate, profile: OnboardingProfile): boolean {
   return subsidy.region.length === 0 || subsidy.region.includes(profile.region)
 }
 
@@ -303,7 +383,7 @@ function matchesRegion(subsidy: Subsidy, profile: OnboardingProfile): boolean {
  * profile.supportRealm이 비어있으면(zod가 min(1)로 막아 실제로는 안 생기지만 방어적으로)
  * 필터링하지 않는다.
  */
-function matchesSupportRealm(subsidy: Subsidy, profile: OnboardingProfile): boolean {
+function matchesSupportRealm(subsidy: MatchCandidate, profile: OnboardingProfile): boolean {
   return profile.supportRealm.length === 0 || profile.supportRealm.includes(subsidy.supportRealm)
 }
 
