@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./features/market/useProductCatalog", () => ({
@@ -35,6 +35,7 @@ vi.mock("./features/market/useProductCatalog", () => ({
         { name: "음식점", codes: ["CS100001"] },
         { name: "베이커리", codes: ["CS100005"] },
         { name: "편의점", codes: ["CS300002"] },
+        { name: "의류", codes: ["CS300021"] },
       ],
       radii: [100, 300, 500],
       ranking_basis: "supported_market_unique_store_count",
@@ -53,10 +54,12 @@ vi.mock("./components/SplatViewer", () => ({
 }));
 
 import { App } from "./App";
+import { ANALYSIS_SESSION_STORAGE_KEY } from "./features/analysis/analysisSessionState";
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  window.sessionStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 
@@ -66,7 +69,7 @@ describe("App", () => {
 
     expect(screen.getByRole("link", { name: "LocalTwin 상권 분석 홈" })).toHaveAttribute(
       "href",
-      "/",
+      "/home",
     );
     expect(screen.getByRole("link", { name: "Docs" })).toHaveAttribute(
       "href",
@@ -76,7 +79,7 @@ describe("App", () => {
     expect(screen.getByRole("toolbar", { name: "분석 도구" })).toBeInTheDocument();
     expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "전체 상권 보기" })).toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "분석 데이터 분기" })).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: "상권 통계 분기" })).toHaveValue("");
     expect(screen.getByRole("option", { name: "분기 확인 중" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "H" })).not.toBeInTheDocument();
     expect(screen.getByText("서울시 공식 상권 경계로 집계")).toBeInTheDocument();
@@ -85,26 +88,17 @@ describe("App", () => {
       "true",
     );
     expect(screen.getByRole("button", { name: "3DGS 실험 열기" })).toBeInTheDocument();
-    expect(screen.getByText("서울 상권분석 공식 데이터를 불러오는 중입니다.")).toBeInTheDocument();
+    expect(screen.getByText("서울 상권분석 공식 분기 자료를 불러오는 중입니다.")).toBeInTheDocument();
   });
 
-  it("starts without an implicit store selection and persists default workspace state", () => {
+  it("starts without an implicit store selection and leaves the product URL unchanged", () => {
     render(<App />);
 
     expect(document.querySelector(".selected-location")).not.toBeInTheDocument();
     expect(screen.getByText("카페 · 상권 분석")).toBeInTheDocument();
 
-    const parameters = new URLSearchParams(window.location.search);
-    expect(parameters.get("market")).toBe("연남");
-    expect(parameters.get("category")).toBe("카페");
-    expect(parameters.get("selectedCategory")).toBe("카페");
-    expect(parameters.get("radius")).toBe("300");
-    expect(parameters.get("hour")).toBe("0");
-    expect(parameters.get("layer")).toBe("density");
-    expect(parameters.get("topic")).toBe("overview");
-    expect(parameters.get("view")).toBe("analysis");
-    expect(parameters.has("store")).toBe(false);
-    expect(parameters.has("storeName")).toBe(false);
+    expect(window.location.pathname).toBe("/");
+    expect(window.location.search).toBe("");
   });
 
   it("closes evidence with Escape and returns focus to its trigger", async () => {
@@ -157,15 +151,15 @@ describe("App", () => {
     expect(screen.queryByRole("button", { name: "직접 선택" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "300m" })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "유동인구" }));
+    fireEvent.click(within(document.querySelector(".topic-grid")!).getByRole("button", { name: "유동인구" }));
     expect(screen.getByText("유동인구", { selector: ".inspector-topic" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "시간대 수요" })).toHaveAttribute(
+    expect(within(document.querySelector(".layer-filter")!).getByRole("button", { name: "유동인구" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "점포 위치" }));
-    expect(screen.getByRole("button", { name: "점포 위치" })).toHaveAttribute(
+    fireEvent.click(within(document.querySelector(".layer-filter")!).getByRole("button", { name: /점포 위치/ }));
+    expect(within(document.querySelector(".layer-filter")!).getByRole("button", { name: /점포 위치/ })).toHaveAttribute(
       "aria-pressed",
       "false",
     );
@@ -250,12 +244,38 @@ describe("App", () => {
     );
   });
 
-  it("trusts the API category result instead of filtering detailed store names again", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?market=합정&category=음식점&selectedCategory=음식점",
+  it("restores the same-tab analysis filters from session storage while keeping the URL clean", () => {
+    window.sessionStorage.setItem(
+      ANALYSIS_SESSION_STORAGE_KEY,
+      JSON.stringify({
+        marketKey: "합정",
+        selectedCategoryName: "음식점",
+        selectedCategoryCode: null,
+        radius: 300,
+        activeHour: 4,
+        layer: "density",
+        topic: "competition",
+        boundaryVisible: true,
+        storesVisible: true,
+        period: "20254",
+      }),
     );
+
+    render(<App />);
+
+    expect(screen.getByRole("button", { name: "상권 선택: 합정" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "음식점" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "경쟁 현황" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(window.location.search).toBe("");
+  });
+
+  it("trusts the API category result instead of filtering detailed store names again", async () => {
     const stores = [
       ["FOOD-1", "돼지고기집", "I20107", "돼지고기 구이/찜"],
       ["FOOD-2", "동네 중국집", "I20201", "중국집"],
@@ -306,6 +326,8 @@ describe("App", () => {
     );
 
     render(<App />);
+    fireEvent.change(screen.getByLabelText("상권 선택"), { target: { value: "합정" } });
+    fireEvent.click(screen.getByRole("button", { name: "음식점" }));
 
     expect(await screen.findByText("상권 내 음식점")).toBeInTheDocument();
     expect(screen.getByText("3개 중 3개 표시")).toBeInTheDocument();
@@ -322,11 +344,6 @@ describe("App", () => {
   });
 
   it("keeps the selected top category when an API-filtered store has a detailed name", async () => {
-    window.history.replaceState(
-      {},
-      "",
-      "/?market=연남&category=의류&selectedCategory=의류",
-    );
     vi.stubGlobal(
       "fetch",
       vi.fn().mockImplementation(async (input: string) => {
@@ -374,12 +391,11 @@ describe("App", () => {
     );
 
     render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "의류" }));
     fireEvent.click(await screen.findByRole("button", { name: /연남 가방점/ }));
 
     await waitFor(() => {
-      const parameters = new URLSearchParams(window.location.search);
-      expect(parameters.get("category")).toBe("의류");
-      expect(parameters.get("selectedCategory")).toBe("의류");
+      expect(window.location.search).toBe("");
     });
     expect(screen.getByText("상권 내 의류")).toBeInTheDocument();
     expect(screen.getByText("1개 중 1개 표시")).toBeInTheDocument();
@@ -395,8 +411,9 @@ describe("App", () => {
 
     expect(screen.getByText("서울시 공식 상권 경계로 집계")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "시간대 수요" }));
-    expect(screen.getByRole("button", { name: "시간대 수요" })).toHaveAttribute(
+    const mapLayers = within(document.querySelector(".layer-filter")!);
+    fireEvent.click(mapLayers.getByRole("button", { name: "유동인구" }));
+    expect(mapLayers.getByRole("button", { name: "유동인구" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -563,23 +580,18 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "검색" }));
     fireEvent.click(await screen.findByRole("button", { name: /연남 꽃 작업실/ }));
 
-    expect(screen.getAllByText("꽃집").length).toBeGreaterThan(0);
-    expect((await screen.findAllByText("부분 지원")).length).toBeGreaterThan(0);
-    expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
-    expect(screen.queryByText(/카페 기준/)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "전체 상권 보기" })).toBeDisabled();
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining(`category=${encodeURIComponent("꽃집")}`),
         expect.any(Object),
       ),
     );
-
-    const parameters = new URLSearchParams(window.location.search);
-    expect(parameters.get("selectedCategory")).toBe("꽃집");
-    expect(parameters.get("categoryCode")).toBe("G21501");
-    expect(parameters.get("store")).toBe("FLOWER-1");
-    expect(parameters.get("storeName")).toBe("연남 꽃 작업실");
+    expect(screen.getAllByText("꽃집").length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("점포 위치·경쟁만 제공")).length).toBeGreaterThan(0);
+    expect(screen.queryByText("입지 점수")).not.toBeInTheDocument();
+    expect(screen.queryByText(/카페 기준/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "전체 상권 보기" })).toBeDisabled();
+    expect(window.location.search).toBe("");
 
     expect(document.querySelector(".selected-location")).not.toBeInTheDocument();
     expect(document.querySelector("main")).toHaveAttribute("data-storefront-3d-state", "idle");

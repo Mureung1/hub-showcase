@@ -6,22 +6,11 @@ import type { MapMode } from "../market/types";
 import { getMapPresentationProfile, type MapPresentationMode } from "./mapPresentation";
 import { findReadyOverlayRegion, type MapBounds } from "./supportedRegions";
 
-const PRESENTATION_MODES: readonly MapPresentationMode[] = ["flat", "analysis", "storefront3d"];
-
-function initialPresentationMode(): MapPresentationMode {
-  const value = new URLSearchParams(window.location.search).get("view");
-  return PRESENTATION_MODES.includes(value as MapPresentationMode)
-    ? (value as MapPresentationMode)
-    : "analysis";
-}
-
 export function useMapViewport(
   initialCenter: [number, number],
   _preventOverlayCollisions = true,
 ) {
-  const [presentationMode, setPresentationModeState] = useState<MapPresentationMode>(
-    initialPresentationMode,
-  );
+  const [presentationMode, setPresentationModeState] = useState<MapPresentationMode>("analysis");
   const [storefront3dUnavailable, setStorefront3dUnavailable] = useState(false);
   const [marketTransitionActive, setMarketTransitionActive] = useState(false);
   const [committedCenter, setCommittedCenter] = useState<[number, number]>(initialCenter);

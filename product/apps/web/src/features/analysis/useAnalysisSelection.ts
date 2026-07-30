@@ -4,11 +4,32 @@ import {
   quickCategorySelection,
   topCategorySelectionForStore,
 } from "../market/categorySelection";
-import type { AnalysisTopic, Category, CategorySelection } from "../market/types";
-import type { AnalysisUrlState } from "./analysisUrlState";
-import type { NearbyStoreResponse } from "./types";
+import type {
+  AnalysisTopic,
+  Category,
+  CategorySelection,
+  LayerMode,
+  MarketKey,
+} from "../market/types";
+import type { AnalysisRadius, NearbyStoreResponse } from "./types";
 
-export function useAnalysisSelection(initial: AnalysisUrlState) {
+export type AnalysisInitialState = {
+  marketKey: MarketKey;
+  category: Category;
+  selectedCategoryName: string;
+  selectedCategoryCode: string | null;
+  radius: AnalysisRadius;
+  activeHour: number;
+  layer: LayerMode;
+  scope: "market";
+  topic: AnalysisTopic;
+  boundaryVisible: boolean;
+  storesVisible: boolean;
+  period: string;
+  center: [number, number];
+};
+
+export function useAnalysisSelection(initial: AnalysisInitialState) {
   const initialCategorySelection = topCategorySelectionForStore(
     initial.selectedCategoryName,
     initial.selectedCategoryCode,

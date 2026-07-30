@@ -66,7 +66,7 @@
   border: 1px solid rgba(255, 255, 255, 0.38);
   border-radius: 14px;
   color: #fff;
-  background: rgba(18, 111, 56, 0.92);
+  background: rgba(0, 143, 88, 0.92);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     inset 0 -2px 5px rgba(6, 62, 29, 0.18),
@@ -76,7 +76,7 @@
 }
 
 .map-bottom-actions .compare-cta:hover:not(:disabled) {
-  background: rgba(14, 96, 47, 0.96);
+  background: rgba(0, 122, 75, 0.96);
   transform: translateY(-1px);
 }
 
@@ -131,8 +131,8 @@
 
 .map-legend-help:hover,
 .map-legend-help:focus-visible {
-  color: #176f3a;
-  background: #e4f3e8;
+  color: #007a4b;
+  background: #dcf7e9;
 }
 
 .selected-location .selected-store-heading {
@@ -216,7 +216,7 @@
 .map-controls button:focus-visible,
 .map-bottom-actions .compare-cta:focus-visible {
   outline: 0;
-  box-shadow: inset 0 0 0 2px #1f7540;
+  box-shadow: inset 0 0 0 2px #008f58;
 }
 
 @media (max-width: 1180px) {

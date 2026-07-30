@@ -6,7 +6,6 @@ import { MarketMapPanel } from "../map/MarketMapPanel";
 import { MarketSearch } from "../search/MarketSearch";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
 import type { PanelTextSize } from "./usePanelTextSize";
-import { useWorkspaceUrlPersistence } from "./useWorkspaceUrlPersistence";
 
 export function WorkspaceLayout({
   model,
@@ -31,11 +30,15 @@ export function WorkspaceLayout({
     apiReadiness,
   } = model;
   const { market, nearby, marketAnalysis } = marketData;
-  useWorkspaceUrlPersistence(model);
-
   const selectedStore = storefronts.storeSelection.selected;
 
   function selectAndFocusStore(storeKey: string) {
+    const selectedKey = selectedStore ? (selectedStore.id ?? selectedStore.name) : null;
+    if (selectedStore && (selectedKey === storeKey || selectedStore.name === storeKey)) {
+      storefronts.storeSelection.clearSelection();
+      return;
+    }
+
     const store = storefronts.visibleStores.find(
       (candidate) => (candidate.id ?? candidate.name) === storeKey || candidate.name === storeKey,
     );
@@ -128,6 +131,7 @@ export function WorkspaceLayout({
             selected={selectedStore}
             score={storefronts.score}
             onSelectStore={selectAndFocusStore}
+            onClearSelection={storefronts.storeSelection.clearSelection}
             visibleSupportedRegion={viewport.visibleSupportedRegion !== undefined}
             onEvidenceOpen={() => panels.setEvidenceOpen(true)}
           />
