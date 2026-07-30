@@ -196,7 +196,7 @@ export class StaffQueueService implements StaffQueueOperations {
         metadata: { source: "onsite" },
       });
 
-      const statusUrl = `${this.options.patientWebOrigin}/onsite-status/${encodeURIComponent(lookupToken)}`;
+      const statusUrl = `${this.options.patientWebOrigin}/?onsiteStatus=${encodeURIComponent(lookupToken)}`;
       const notificationResult = await this.notificationSender.send(executor, {
         waitingEntryId: waiting.id,
         recipientPhone: waiting.phoneNumber,

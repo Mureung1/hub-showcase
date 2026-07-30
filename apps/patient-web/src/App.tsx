@@ -113,7 +113,7 @@ function PatientApp() {
 
   return (
     <Routes>
-      <Route path="/" element={<HospitalSearchPage />} />
+      <Route path="/" element={<PatientHomeRoute />} />
       <Route path="/login" element={<PatientLoginPage />} />
       <Route path="/onsite-status/:lookupToken" element={<OnsiteWaitingStatusPage />} />
       <Route
@@ -135,6 +135,13 @@ function PatientApp() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
+}
+
+function PatientHomeRoute() {
+  const location = useLocation();
+  const onsiteStatusToken = new URLSearchParams(location.search).get("onsiteStatus");
+  if (onsiteStatusToken) return <OnsiteWaitingStatusPage lookupTokenOverride={onsiteStatusToken} />;
+  return <HospitalSearchPage />;
 }
 
 export default function App() {

@@ -2,7 +2,10 @@ export function toPatientStatusUrl(openPath: string, patientWebUrl: string): str
   try {
     const url = new URL(openPath, patientWebUrl);
     if (url.pathname.startsWith("/onsite-status/")) {
-      return new URL(`${url.pathname}${url.search}${url.hash}`, patientWebUrl).toString();
+      const lookupToken = url.pathname.split("/").filter(Boolean).at(-1);
+      const statusUrl = new URL("/", patientWebUrl);
+      if (lookupToken) statusUrl.searchParams.set("onsiteStatus", lookupToken);
+      return statusUrl.toString();
     }
     return url.toString();
   } catch {

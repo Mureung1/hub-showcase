@@ -8,8 +8,13 @@ import { getOnsiteWaitingStatus } from "../services/apiClient";
 
 const pollInterval = Number(import.meta.env.VITE_WAITING_POLL_INTERVAL_MS ?? 10_000);
 
-export function OnsiteWaitingStatusPage() {
-  const { lookupToken = "" } = useParams();
+export function OnsiteWaitingStatusPage({
+  lookupTokenOverride,
+}: {
+  lookupTokenOverride?: string;
+}) {
+  const { lookupToken: routeLookupToken = "" } = useParams();
+  const lookupToken = lookupTokenOverride ?? routeLookupToken;
   const [status, setStatus] = useState<OnsiteWaitingStatus | null>();
   const [loadError, setLoadError] = useState(false);
 
