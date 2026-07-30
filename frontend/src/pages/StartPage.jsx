@@ -1,10 +1,37 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppState } from '../state/useAppState'
 import { validateEmail, validatePassword } from '../lib/validateAuth'
 import styles from './StartPage.module.css'
 
+const WORDMARK = 'BRIDGE'
+const DESC = '하루 한 통의 편지를 씁니다. 붙여넣기 없이, 손으로 직접.\n당신의 글은 24시간 뒤 낯선 이의 편지와 이어집니다.'
+
+// 글자를 한 자씩 늘려가며 "쓰이는" 느낌을 내는 타자기 효과. enabled가 false인 동안은 대기하다가
+// true가 되는 순간부터 타이핑을 시작한다(워드마크 → 본문 순으로 이어지도록 하기 위함).
+function useTypewriter(text, speedMs, enabled = true) {
+  const [count, setCount] = useState(0)
+  const timerRef = useRef(null)
+
+  useEffect(() => {
+    if (!enabled) return undefined
+    let i = 0
+    const tick = () => {
+      i += 1
+      setCount(i)
+      if (i < text.length) {
+        timerRef.current = setTimeout(tick, speedMs)
+      }
+    }
+    timerRef.current = setTimeout(tick, speedMs)
+    return () => clearTimeout(timerRef.current)
+  }, [text, speedMs, enabled])
+
+  return { text: text.slice(0, count), done: count >= text.length }
+}
+
 export default function StartPage() {
   const { actions } = useAppState()
+  const wordmark = useTypewriter(WORDMARK, 90)
   const [mode, setMode] = useState('login') // 'login' | 'signup'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -55,15 +82,13 @@ export default function StartPage() {
           <span className="msym">auto_stories</span>
         </span>
 
-        <h1 className={styles.wordmark}>BRIDGE</h1>
+        <h1 className={styles.wordmark}>
+          {wordmark.text}
+          {!wordmark.done && <span className={styles.caret} aria-hidden="true" />}
+        </h1>
         <div className={styles.divider} />
 
-        <p className={styles.quote}>글이 만나 사람을 이어주는 곳</p>
-        <p className={styles.desc}>
-          하루 한 통의 편지를 씁니다. 붙여넣기 없이, 손으로 직접.
-          <br />
-          당신의 글은 24시간 뒤 낯선 이의 편지와 이어집니다.
-        </p>
+        <p className={styles.desc}>{DESC}</p>
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <input

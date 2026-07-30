@@ -35,7 +35,7 @@
   margin: 0;
   font-family: var(--font-heading);
   font-weight: 700;
-  font-size: 40px;
+  font-size: 46px;
   letter-spacing: 0.14em;
   color: var(--color-primary-teal);
 }
@@ -47,20 +47,28 @@
   margin: 20px auto;
 }
 
-.quote {
-  font-family: var(--font-heading);
-  font-style: italic;
-  font-weight: 600;
-  font-size: 34px;
-  color: var(--color-ink);
-  margin: 0 0 20px;
-}
-
 .desc {
   font-size: 16px;
   color: var(--color-muted-gray);
   line-height: 1.7;
   margin: 0 0 36px;
+  white-space: pre-line;
+}
+
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: currentColor;
+  animation: caretBlink 0.9s steps(1) infinite;
+}
+
+@keyframes caretBlink {
+  50% {
+    opacity: 0;
+  }
 }
 
 .form {
