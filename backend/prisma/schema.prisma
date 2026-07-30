@@ -30,7 +30,6 @@ model Subscription {
   memberCount       Int
   bankName          String
   accountNumber     String
-  accountHolderName String?
   ownerId           String
   owner             User          @relation(fields: [ownerId], references: [id])
   members           PartyMember[]
