@@ -46,7 +46,7 @@ describe('clampExpectedForItems (1단계 — 현실 범위 보정)', () => {
   })
 
   it('테이블에 없는 메뉴·expected 없는 항목은 원본 그대로', () => {
-    const noTable = { representativeMenu: '괴식샐러드볼', expected: { protein: 99 } }
+    const noTable = { representativeMenu: '정체불명음식', expected: { protein: 99 } }
     const noExpected = { representativeMenu: '짜장면' }
     const out = clampExpectedForItems([noTable, noExpected], (i) => i.representativeMenu)
     expect(out[0].expected.protein).toBe(99)

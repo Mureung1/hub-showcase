@@ -59,11 +59,18 @@ export async function enrichExpectedFromDB(items, getMenuName) {
   const targets = []
   for (const [index, item] of items.entries()) {
     const menuName = getMenuName(item)
-    if (item?.expected && menuName) targets.push({ index, menuName })
+    // 전국 체인이면 업체가 식약처에 제출한 공식 영양성분(출처코드 2)이 있을 가능성이 높다 — 그쪽을
+    // 먼저 보게 'packaged'로 보낸다. 동네 식당은 그런 레코드가 없으니 외식 분석 평균이 맞다.
+    if (item?.expected && menuName) targets.push({ index, menuName, servingContext: item.isFranchise ? 'packaged' : 'restaurant' })
   }
   if (targets.length === 0) return items
 
-  const resolved = await resolveFoodItemsApi(targets.map((t) => ({ dbSearchName: t.menuName, fallbackSearchName: t.menuName })))
+  // 지도 탭 식당 대표 메뉴 = 명백히 외식 맥락. 기본값도 'restaurant'지만, 이 경로가 급식으로
+  // 잘못 붙으면 김치찌개가 19kcal/100g짜리 급식 국물 수치로 나오므로 의도를 코드에 남긴다.
+  const resolved = await resolveFoodItemsApi(
+    targets.map((t) => ({ dbSearchName: t.menuName, fallbackSearchName: t.menuName, servingContext: t.servingContext })),
+    { context: 'restaurant' },
+  )
 
   const byIndex = new Map()
   for (const [i, target] of targets.entries()) byIndex.set(target.index, resolved[i])

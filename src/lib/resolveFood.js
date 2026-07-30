@@ -9,12 +9,22 @@ import { fetchWithTimeout } from './fetchWithTimeout.js'
 // 기본 28초를 그대로 쓰면 서버가 이미 부분 결과로 답했는데도 클라이언트가 계속 기다리는 일이 없다.
 const RESOLVE_TIMEOUT_MS = 10000
 
-// items: [{ dbSearchName, fallbackSearchName, displayName, estimatedGrams, estimatedNutrients }]
-// 반환: items와 같은 길이의 [{ matchedName, match, source, matchType, confidence, assumedServing }]
+// items: [{ dbSearchName, fallbackSearchName, displayName, estimatedGrams, estimatedNutrients,
+//           servingContext?, role? }]
+//   servingContext/role은 AI 식별 단계가 항목마다 채워 보내는 값이다(geminiSchemas.js 참고).
+//   **항목 단위가 요청 단위 context보다 우선한다** — 한 사진에 급식 식판과 포장 음료가 같이 있을 수
+//   있고, 그때 요청 하나에 맥락 하나로는 둘 다 맞출 수 없다.
+// context: 요청 전체의 기본값. 'restaurant'(기본) | 'packaged' | 'cafeteria' | 'home'.
+//   같은 음식이라도 어디서 나왔느냐로 영양밀도도 1인분 중량도 다르다(실측: 돼지갈비구이 급식
+//   132kcal/100g vs 외식 294). 식약처 DB가 출처별로 다른 레코드를 갖고 있어 어느 쪽을 볼지
+//   정해줘야 한다.
+// 반환: items와 같은 길이의
+//   [{ matchedName, match, source, matchType, confidence, assumedServing, servingGram, context }]
 // 실패하면 던지지 않고 전부 "매칭 없음"으로 채운 배열을 돌려준다 — 해석 실패가 분석 전체를 막으면
 // 안 되고(AI 추정치라도 보여주는 게 낫다), 호출부가 그 폴백을 이미 처리하고 있기 때문이다.
-export async function resolveFoodItems(items) {
-  const fallback = () => items.map(() => ({ matchedName: null, match: null, source: null, matchType: null, confidence: 'low' }))
+export async function resolveFoodItems(items, { context } = {}) {
+  const fallback = () =>
+    items.map(() => ({ matchedName: null, match: null, source: null, matchType: null, confidence: 'low', servingGram: null, servingGramFounded: false }))
   if (!Array.isArray(items) || items.length === 0) return []
 
   try {
@@ -23,7 +33,7 @@ export async function resolveFoodItems(items) {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify(context ? { items, context } : { items }),
       },
       RESOLVE_TIMEOUT_MS,
     )

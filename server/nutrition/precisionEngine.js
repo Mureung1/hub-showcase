@@ -29,11 +29,15 @@
 // 캘리브레이션된 합계를 쓰므로(④), 이 오차는 캘리브레이션이 없는 학식(대학) 케이스에만 직접
 // 영향을 준다.
 import NodeCache from 'node-cache'
-import { lookupFood } from './foodLookup.js'
+import { lookupFood, pickVariantForContext } from './foodLookup.js'
 import { lookupRecipe } from './recipeLookup.js'
 import { recipeToPer100 } from './resolveFood.js'
+import { resolveStandardServingGram } from './servingWeight.js'
+import { FOOD_MATCH_SIMILARITY_THRESHOLD, foodNameSimilarity } from '../../src/lib/foodMatch.js'
 import { classifyMenuRole } from '../../src/lib/mealPortions.js'
-import { getPlausibility } from '../../src/lib/foodData.js'
+import { applyOfficialAnchors, applyProportionalCalibration } from '../../src/lib/anchoredNutrients.js'
+import { correctMealMacros } from '../../src/lib/macroPlausibility.js'
+import { clampToPlausibleNutrients, NUTRITION_SOURCE } from '../../src/lib/nutrition.js'
 import { buildTrayAnalysisPrompt, parseTrayAnalysisResult } from '../../src/lib/prompts/trayAnalysis.js'
 
 export const PORTION_FACTORS = {
@@ -97,21 +101,11 @@ export function _clearCacheForTest() {
   cache.flushAll()
 }
 
-// 식약처 DB의 foodSize(1회 제공량)는 일반 외식·가정식 기준이라 "탕"류처럼 원래 여럿이 나눠 먹는
-// 음식은 학교 급식 트레이 1인분보다 훨씬 크게 잡혀 있다(실측: "연포탕" servingGram=1000g vs
-// mealPortions role 표준 soup=300g — 정확도 테스트에서 이 격차가 최악 오차 사례의 공통 원인으로
-// 확인됨). mealPortions role 표준 중량 대비 너무 벗어난 DB 값은 신뢰하지 않고 대체한다.
-const MAX_SERVING_RATIO_TO_ROLE = 2.0
-const MIN_SERVING_RATIO_TO_ROLE = 0.4
-
-// 대체·판정 기준 중량: foodData.js(사진 분석용으로 이미 검증된 ~30개 음식의 표준 1인분)가 있으면
-// 그 값을 우선한다 — mealPortions role 8종은 폭넓은 카테고리 하나로 뭉뚱그려서, "카레라이스"처럼
-// 밥 한 공기가 아니라 그 자체로 한 끼인 메뉴를 '밥'류 210g으로만 잡으면 실측보다 한참 작게 나온다
-// (foodData.js엔 이미 카레라이스=450g처럼 그런 메뉴별 보정이 있다). 없는 메뉴만 role 표준으로 폴백.
-function resolveReferenceWeight(menuName) {
-  const plausibility = getPlausibility(menuName)
-  return plausibility?.referenceGrams ?? classifyMenuRole(menuName).weight
-}
+// 중량 결정 규칙은 servingWeight.js가 단일 소스다 — 예전엔 이 파일과 resolveFood.js가 서로 다른
+// 규칙을 갖고 있었고 그 차이가 "돼지갈비 70kcal"의 원인이었다(그 파일 헤더 주석에 전말이 있다).
+// 이 엔진은 학식·급식 전용이라 context는 항상 'cafeteria' — DB가 가진 제공량이 그 급식의 실제
+// 배식량이므로 우리 외식 정량 사전보다 먼저 믿는다.
+const SERVING_CONTEXT = 'cafeteria'
 
 // 메뉴 하나를 로컬 DB에서 찾는다: 식약처 음식DB(foodDB.json) 우선, 없으면 레시피DB(recipeDB.json).
 //
@@ -128,12 +122,32 @@ function resolveReferenceWeight(menuName) {
 // 완전일치/별칭은 어느 DB에서 나왔든 편집거리 매칭보다 항상 신뢰할 수 있다.
 const MATCH_TYPE_RANK = { exact: 0, alias: 1, partial: 2, fuzzy: 3 }
 
+// exact/alias는 매처가 이름을 정확히(또는 등록된 별칭으로) 맞춘 것이라 그대로 믿는다.
+// partial/fuzzy는 재검증 대상 — 편집거리 단계는 오탈자 구제가 목적이라 **의미가 전혀 다른 음식**을
+// 물어온다. 실측: "콩자반"→"간자장"(유사도 0.0), "양념갈비"→"양념두부", "치킨"→"제육(돼지고기 수육)".
+// resolveFood.js는 예전부터 이 게이트를 갖고 있었는데 이 엔진에만 없어서, 한 판 통합 분석에서만
+// 엉뚱한 음식의 영양값이 무검증으로 합산되고 있었다(단백질·지방이 비현실적으로 높게 나온 원인).
+// 통과 못 하면 "매칭 실패"로 떨어뜨려 기존 Gemini 추정 경로가 그 항목을 맡는다.
+const TRUSTED_MATCH_TYPES = new Set(['exact', 'alias'])
+
+function isVerifiedMatch(menuName, matchType, matchedName) {
+  if (TRUSTED_MATCH_TYPES.has(matchType)) return true
+  return foodNameSimilarity(menuName, matchedName) >= FOOD_MATCH_SIMILARITY_THRESHOLD
+}
+
 function lookupMenuItem(menuName) {
-  const food = lookupFood(menuName)
-  const recipe = lookupRecipe(menuName)
+  const foodRaw = lookupFood(menuName)
+  const recipeRaw = lookupRecipe(menuName)
+  const food = foodRaw && isVerifiedMatch(menuName, foodRaw.matchType, foodRaw.item.name) ? foodRaw : null
+  const recipe = recipeRaw && isVerifiedMatch(menuName, recipeRaw.matchType, recipeRaw.item.name) ? recipeRaw : null
 
   const candidates = []
-  if (food) candidates.push({ rank: MATCH_TYPE_RANK[food.matchType] ?? 9, build: () => food })
+  if (food) {
+    // 출처 변형(외식/급식) 선택은 foodLookup의 규칙을 그대로 쓴다 — 여기서 item을 직접 읽기 때문에
+    // toFoodItemResponse를 안 거치고, 그러면 대표값(빌드 순서상 급식)에 우연히 기대게 된다.
+    const item = pickVariantForContext(food.item, SERVING_CONTEXT)
+    candidates.push({ rank: MATCH_TYPE_RANK[food.matchType] ?? 9, build: () => ({ ...food, item, kind: 'food' }) })
+  }
   if (recipe) {
     candidates.push({
       rank: MATCH_TYPE_RANK[recipe.matchType] ?? 9,
@@ -144,6 +158,7 @@ function lookupMenuItem(menuName) {
         if (!per100) return null
         return {
           matchType: recipe.matchType,
+          kind: 'recipe',
           item: {
             name: recipe.item.name,
             // RCP_PAT2(반찬/국&찌개/…)는 mealPortions의 role 체계와 달라 그대로 쓰면 안 된다 —
@@ -165,14 +180,21 @@ function lookupMenuItem(menuName) {
   return null
 }
 
+// dbItem.category는 DB 레코드에 붙어 있는 역할이다. 메뉴명이 창작·조합형이라 이름 패턴으로는 역할을
+// 못 읽어도(급식표에 흔하다: "새콤달콤오이무침무침" 류) 매칭된 레코드 쪽 이름으로는 읽히는 경우가
+// 있어, 그걸 힌트로 넘긴다. 예전엔 이 값을 Gemini 프롬프트용 role로만 쓰고 정작 **중량 계산은 원래
+// 메뉴명으로 다시 분류**해서, 같은 항목의 역할이 두 곳에서 달라질 수 있었다.
+//
+// ⚠️ dbItem.category는 classifyMenuRole이 이름 패턴에 못 걸려도 DEFAULT_ROLE('side')로 항상 채워져
+// 있다 — categoryMatched가 true일 때만 "진짜로 안다"이므로, false면 힌트를 아예 넘기지 않는다(넘기면
+// resolveStandardServingGram이 이걸 "AI가 확인한 역할"로 오인해 근거 있는 foodData/DB 중량을
+// 반찬 기본값으로 덮어쓴다 — 리뷰에서 돈가스가 200g→50g로 4배 축소되는 것으로 재현됨).
 function resolveWeightGram(menuName, dbItem, schoolType) {
   const factor = PORTION_FACTORS[schoolType] ?? 1
-  const referenceWeight = resolveReferenceWeight(menuName)
-  let base = referenceWeight
-  if (typeof dbItem?.servingGram === 'number' && dbItem.servingGram > 0) {
-    const ratio = dbItem.servingGram / referenceWeight
-    base = ratio >= MIN_SERVING_RATIO_TO_ROLE && ratio <= MAX_SERVING_RATIO_TO_ROLE ? dbItem.servingGram : referenceWeight
-  }
+  const base = resolveStandardServingGram(menuName, dbItem?.servingGram, {
+    context: SERVING_CONTEXT,
+    roleHint: dbItem?.categoryMatched ? dbItem.category : null,
+  })
   return Math.round(base * factor)
 }
 
@@ -251,31 +273,9 @@ async function geminiEstimateDefault(trayItems) {
   return parsed // { items:[{name,weight,calories,protein,carbs,fat,sodium,fiber}], total:{...} }
 }
 
-// 영양소별 독립 스케일 — officialTotals에 값이 있는 항목만 그 값에 정확히 맞춘다. kcal이 없으면
-// (필수 조건) 캘리브레이션 자체를 하지 않는다. referenceTotals.calories > 0은 호출부(analyzeTray)가
-// 이미 확인하고 부르므로 여기서 다시 검사하지 않는다 — currentTotal.calories(항목이 전부 실패해
-// 합계가 0인 경우 등)만 이 함수 자체가 지켜야 하는 조건이다.
-function applyProportionalCalibration(items, referenceTotals, currentTotal) {
-  if (!(currentTotal.calories > 0)) return null
-
-  const scales = {}
-  for (const key of NUTRIENT_KEYS) {
-    const reference = referenceTotals[key]
-    const current = currentTotal[key]
-    if (typeof reference === 'number' && reference > 0 && typeof current === 'number' && current > 0) {
-      scales[key] = reference / current
-    }
-  }
-
-  for (const item of items) {
-    for (const key of NUTRIENT_KEYS) {
-      if (scales[key] && typeof item.nutrients[key] === 'number') {
-        item.nutrients[key] = round2(item.nutrients[key] * scales[key])
-      }
-    }
-  }
-  return scales
-}
+// 영양소별 독립 스케일 — src/lib/anchoredNutrients.js의 applyProportionalCalibration(단일 소스,
+// Analyze.jsx 사진 분석 경로도 이걸 공유한다)을 그대로 쓴다. officialTotals에 값이 있는 항목만
+// 그 값에 정확히 맞춘다. kcal이 없으면(필수 조건) 캘리브레이션 자체를 하지 않는다.
 
 // menus: string[], mealType: 'breakfast'|'lunch'|'dinner', schoolType: 'elementary'|'middle'|'high'|'univ',
 // officialTotals: { calories, protein?, carbs?, fat? } | null(NEIS 공식 수치 — 없으면 학식).
@@ -297,19 +297,24 @@ export async function analyzeTray({ menus, mealType, schoolType, officialTotals 
     const dbItem = lookup?.item ?? null
     const role = dbItem?.category ?? classifyMenuRole(name).role
     const weight = resolveWeightGram(name, dbItem, schoolType)
-    return { name, dbItem, matchType: lookup?.matchType ?? null, role, weight }
+    return { name, dbItem, matchType: lookup?.matchType ?? null, kind: lookup?.kind ?? null, role, weight }
   })
 
   // ③
   const matched = resolved.filter((r) => r.dbItem)
   const failed = resolved.filter((r) => !r.dbItem)
 
+  // macroPlausibility.js의 correctMealMacros는 item.source로 "근거가 얼마나 확실한지"를 판단해
+  // 부족분을 근거가 약한 항목(추정)부터 깎는다. 이 필드가 없으면 모든 항목이 같은 취급(rank 0)을
+  // 받아 배열 삽입 순서(=DB 실측값이 먼저 온다)로 우선순위가 정해져, 실측값이 AI 추정치보다 먼저
+  // 깎이는 정반대 결과가 난다(리뷰에서 발견 — 학식·급식 통합분석에서 재현됨).
   const matchedItems = matched.map((r) => ({
     name: r.name,
     matched: true,
     matchType: r.matchType,
     weight: r.weight,
     nutrients: scaleFromPer100(r.dbItem.nutrientsPer100, r.weight),
+    source: r.kind === 'recipe' ? NUTRITION_SOURCE.RECIPE_DB : NUTRITION_SOURCE.DB,
   }))
 
   // 매칭 실패분 추정은 이미 항목 대부분이 DB로 해결된 요청까지 통째로 실패시키면 안 된다 — Gemini
@@ -332,6 +337,7 @@ export async function analyzeTray({ menus, mealType, schoolType, officialTotals 
           matchType: null,
           weight: r.weight,
           nutrients: Object.fromEntries(NUTRIENT_KEYS.map((k) => [k, est && typeof est[k] === 'number' ? est[k] : null])),
+          source: NUTRITION_SOURCE.ESTIMATED,
         }
       })
     } catch (err) {
@@ -343,13 +349,26 @@ export async function analyzeTray({ menus, mealType, schoolType, officialTotals 
         matchType: null,
         weight: r.weight,
         nutrients: Object.fromEntries(NUTRIENT_KEYS.map((k) => [k, null])),
+        source: NUTRITION_SOURCE.ESTIMATED,
       }))
     }
   }
 
-  const items = [...matchedItems, ...estimatedItems]
+  // 사진·텍스트 분석 경로는 항목마다 clampToPlausibleNutrients(Atwater 탄단지-칼로리 정합 + 음식별
+  // 현실범위)를 거치는데, 트레이 경로만 이 보정을 통째로 건너뛰고 있었다 — 같은 앱에서 같은 음식이
+  // 어느 화면으로 들어왔느냐에 따라 다른 수치로 나오던 원인이다. 여기서 같은 보정을 적용해 맞춘다.
+  //
+  // 아래 KDRI sanity 교차검증(메뉴 2개 이상일 때만)과 역할이 다르다: 저건 "트레이 전체 칼로리가
+  // 한 끼로 말이 되는가"고, 이건 "이 음식 하나의 수치가 그 음식의 현실 범위 안인가"다. 그래서 단일
+  // 메뉴 조회도 최소한 이 검증은 받게 된다(예전엔 아무 검증도 못 받고 나갔다).
+  // 영양값이 null인 항목(추정 실패분)은 clamp 내부에서 그대로 통과한다.
+  let items = [...matchedItems, ...estimatedItems].map((item) => ({
+    ...item,
+    nutrients: clampToPlausibleNutrients(item.nutrients, item.name, item.weight),
+  }))
   let total = sumNutrients(items)
   let method = 'estimated' // 화면 표기는 6주차 §1-B에서 이 값을 한국어 문구로 매핑한다
+  let macroCorrection = null
   let calibration = null
   let calibrated = false
 
@@ -359,13 +378,20 @@ export async function analyzeTray({ menus, mealType, schoolType, officialTotals 
   // 불필요한 LLM 재추정으로 덮어써진다(리뷰에서 발견). 메뉴가 2개 이상일 때만 적용한다.
   if (calibrate) {
     if (officialTotals?.calories > 0) {
-      const scales = applyProportionalCalibration(items, officialTotals, total)
+      // NEIS 공식 수치는 영양(교)사가 표준레시피로 산출해 공시한 값이라 우리 추정보다 정확하다.
+      // **공식으로 받은 항목은 그대로 확정**하고, 안 받은 항목(학교마다 다르고 식이섬유·나트륨은
+      // NEIS에 아예 없다)만 남은 열량에서 역산해 6영양소를 채운다. 예전엔 공식 값이 있는 항목만
+      // 스케일하고 나머지는 원래 추정값을 그대로 둬서, 열량은 0.8배로 줄었는데 나트륨은 1.0배로
+      // 남는 앞뒤 안 맞는 합계가 나왔다.
+      const anchored = applyOfficialAnchors(total, officialTotals)
+      const scales = applyProportionalCalibration(items, anchored.nutrients, total)
       if (scales) {
         total = sumNutrients(items)
-        for (const key2 of Object.keys(scales)) {
-          if (typeof officialTotals[key2] === 'number') total[key2] = officialTotals[key2] // 반올림 누적오차 제거
+        // 항목 스케일은 반올림 오차가 쌓이므로 합계는 확정/역산된 값으로 덮는다.
+        for (const key2 of NUTRIENT_KEYS) {
+          if (typeof anchored.nutrients[key2] === 'number') total[key2] = anchored.nutrients[key2]
         }
-        calibration = { scales, reason: 'official' }
+        calibration = { scales, reason: 'official', confirmed: anchored.confirmed, derived: anchored.derived }
         method = 'official'
         calibrated = true
       }
@@ -390,6 +416,18 @@ export async function analyzeTray({ menus, mealType, schoolType, officialTotals 
     }
   }
 
+  // 단백질·지방 현실성 보정 — **공식 수치가 없을 때만**(학식·대학). NEIS 공식 값이 있으면 그게
+  // 정답지라 일반 규칙으로 덮으면 안 된다. 근거가 약한 항목부터 깎고, foodData가 검증해둔 음식
+  // (치킨·삼겹살처럼 원래 치우친 것)은 건드리지 않는다 — macroPlausibility.js 주석 참고.
+  if (!(officialTotals?.calories > 0)) {
+    const corrected = correctMealMacros(items)
+    if (Object.keys(corrected.corrections).length > 0) {
+      items = corrected.items
+      total = sumNutrients(items)
+      macroCorrection = corrected.corrections
+    }
+  }
+
   // confidence는 입력(officialTotals 유무)이 아니라 실제로 무슨 일이 있었는지를 반영해야 한다 —
   // 캘리브레이션이 실제로 적용됐는지(calibrated), Gemini 추정이 온전했는지(hasIncompleteEstimate)를
   // 먼저 보고, 그다음에야 DB 매칭 비율을 본다(리뷰에서 발견 — 이전엔 officialTotals가 있다는
@@ -405,7 +443,7 @@ export async function analyzeTray({ menus, mealType, schoolType, officialTotals 
           ? 'medium'
           : 'low'
 
-  const result = { items, total, method, confidence, calibration }
+  const result = { items, total, method, confidence, calibration, macroCorrection }
   if (useCache && calibrate) setCached(key, result)
   return result
 }

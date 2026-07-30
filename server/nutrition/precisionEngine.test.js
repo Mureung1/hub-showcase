@@ -4,6 +4,7 @@
 // 과금이 발생하고 네트워크에 좌우돼 CI에 적합하지 않다.
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { analyzeTray, PORTION_FACTORS, _clearCacheForTest } from './precisionEngine.js'
+import { NUTRITION_SOURCE } from '../../src/lib/nutrition.js'
 
 beforeEach(() => {
   _clearCacheForTest()
@@ -108,7 +109,7 @@ describe('analyzeTray', () => {
     expect(result.method).toBe('llm_reviewed')
   })
 
-  it('메뉴가 1개뿐이면(단일 항목 모드) 칼로리가 낮아도 sanity 교차검증을 하지 않는다', async () => {
+  it('메뉴가 1개뿐이면(단일 항목 모드) 칼로리가 낮아도 LLM sanity 교차검증을 하지 않는다', async () => {
     // 학식·급식 카드의 메뉴별 [영양 분석](6주차 §1-B)은 반찬 하나만 조회할 수 있는데, KDRI 한 끼
     // 범위(300~1400kcal)는 트레이 전체 기준이라 반찬 하나엔 안 맞다 — 리뷰에서 발견해 고친 버그.
     const geminiEstimate = vi.fn()
@@ -119,7 +120,21 @@ describe('analyzeTray', () => {
 
     expect(geminiEstimate).not.toHaveBeenCalled()
     expect(result.method).toBe('estimated')
-    expect(result.total.calories).toBe(28)
+  })
+
+  // 위 KDRI 교차검증(트레이 전체 기준)과 달리, 음식별 현실범위 보정은 단일 메뉴에도 걸려야 한다.
+  // 예전엔 트레이 경로가 이 보정을 통째로 건너뛰어서 단일 메뉴 조회가 아무 검증도 못 받았다 —
+  // foodDB의 미역국 급식 레코드는 7kcal/100g이라 국 한 그릇이 21kcal로 나온다(실제 20kcal/100g 수준).
+  it('단일 메뉴도 음식별 현실범위 보정은 받는다(LLM 호출 없이)', async () => {
+    const geminiEstimate = vi.fn()
+    const result = await analyzeTray(
+      { menus: ['미역국'], mealType: 'lunch', schoolType: 'univ' },
+      { geminiEstimate, calibrate: true, useCache: false },
+    )
+
+    expect(geminiEstimate).not.toHaveBeenCalled()
+    // 트레이 중량은 역할 표준(국 300g) → foodData 범위[80,220]@400g를 300g로 스케일한 하한 60으로 보정.
+    expect(result.total.calories).toBe(60)
   })
 
   it('같은 입력이면 캐시로 같은 결과를 반환하고 Gemini를 다시 호출하지 않는다(결정성)', async () => {
@@ -219,5 +234,54 @@ describe('analyzeTray', () => {
     expect(soup.nutrients.calories).toBeLessThan(200)
     const sideDish = result.items.find((i) => i.name === '가지겉절이')
     expect(sideDish.nutrients.calories).toBeGreaterThan(50)
+  })
+
+  // 급식 중량은 **역할 표준만** 쓴다. 다른 후보(foodData referenceGrams = 식당 1인분,
+  // 식약처 foodSize = 대개 외식 레코드의 포장량)는 트레이 기준이 아니다.
+  //
+  // ⚠️ 한때 역할을 못 알아본 음식(31.8%)에 한해 저 둘로 흘려보낸 적이 있다. NEIS 실제 115끼로 재보니
+  // DB매칭분이 공식 열량의 53.9%→61.4%로 부풀고 **DB 매칭분만으로 공식을 넘긴 끼니가 5→13끼**로
+  // 늘었다(쇠고기샤브샤브 50g→930g, 삼치카레구이 50g→450g). 아래 두 테스트가 그 되돌림을 막는다.
+  it('역할을 못 알아본 급식 메뉴가 외식 포장량을 배식량으로 쓰지 않는다', async () => {
+    const result = await analyzeTray(
+      { menus: ['쇠고기샤브샤브'], mealType: 'lunch', schoolType: 'middle' },
+      { calibrate: false, useCache: false },
+    )
+    const item = result.items[0]
+    expect(item.matched).toBe(true)
+    // 매칭된 레코드의 foodSize는 930g(외식 기준)이다. 트레이 기본값(반찬 50g × 0.95 ≈ 48g)이 나와야 한다.
+    expect(item.weight).toBeLessThan(100)
+  })
+
+  it('역할을 아는 급식 메뉴는 DB 제공량이 아니라 역할 표준을 쓴다', async () => {
+    const result = await analyzeTray(
+      { menus: ['잡곡밥'], mealType: 'lunch', schoolType: 'middle' },
+      { calibrate: false, useCache: false },
+    )
+    const item = result.items[0]
+    // 잡곡밥 레코드의 foodSize는 450g이지만 rice 표준은 210g × 0.95 ≈ 200g이다 —
+    // 한 트레이 안에서 밥 무게가 메뉴 이름에 따라 달라지면 안 된다(재현성).
+    expect(item.weight).toBeGreaterThan(150)
+    expect(item.weight).toBeLessThan(260)
+  })
+
+  // 리뷰에서 발견한 회귀: matchedItems/estimatedItems에 source 필드가 빠져 있으면
+  // macroPlausibility.correctMealMacros가 모든 항목을 "근거 동급"으로 취급해, 근거가 약한 AI
+  // 추정치가 아니라 배열 앞쪽(DB 실측값)부터 깎는 정반대 결과가 났다(macroPlausibility.js의
+  // "DB 실측값은 절대 건드리면 안 된다" 원칙 위반). source가 있어야 그 우선순위가 성립한다.
+  it('DB 매칭 항목과 AI 추정 항목에 서로 다른 source가 붙는다', async () => {
+    const geminiEstimate = vi.fn().mockResolvedValue({
+      items: [{ name: '창작메뉴XYZ', weight: 120, calories: 300, protein: 10, carbs: 40, fat: 8, sodium: 500, fiber: 2 }],
+      total: { calories: 300, protein: 10, carbs: 40, fat: 8, sodium: 500, fiber: 2 },
+    })
+    const result = await analyzeTray(
+      { menus: ['잡곡밥', '창작메뉴XYZ'], mealType: 'lunch', schoolType: 'univ' },
+      { geminiEstimate, calibrate: false, useCache: false },
+    )
+
+    const dbItem = result.items.find((i) => i.name === '잡곡밥')
+    const estimatedItem = result.items.find((i) => i.name === '창작메뉴XYZ')
+    expect(dbItem.source).toBe(NUTRITION_SOURCE.DB)
+    expect(estimatedItem.source).toBe(NUTRITION_SOURCE.ESTIMATED)
   })
 })

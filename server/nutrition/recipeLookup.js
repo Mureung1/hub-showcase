@@ -12,26 +12,27 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getCanonicalName } from '../../src/lib/foodData.js'
+import { createNameIndex } from './nameIndex.js'
 import { createNameMatcher } from './nameMatcher.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const RECIPE_DB_PATH = path.join(__dirname, '..', 'data', 'recipeDB.json')
 
 let matcher = null // createNameMatcher(...)의 반환 함수 — 지연 로드
+let index = null // createNameIndex(...)의 반환 함수
 
 function load() {
   if (matcher) return
   const raw = JSON.parse(readFileSync(RECIPE_DB_PATH, 'utf8'))
-  matcher = createNameMatcher(raw.items, {
-    getName: (item) => item.name,
-    getAliases: (item) => item.aliases,
-    getCanonicalName,
-  })
+  const options = { getName: (item) => item.name, getAliases: (item) => item.aliases }
+  matcher = createNameMatcher(raw.items, { ...options, getCanonicalName })
+  index = createNameIndex(raw.items, options)
 }
 
 // 서버 재기동 없이 recipeDB.json을 다시 만들었을 때 테스트/스크립트에서 강제로 다시 읽고 싶을 때만 사용.
 export function _resetForTest() {
   matcher = null
+  index = null
 }
 
 // 반환: { item, matchType: 'exact'|'alias'|'partial'|'fuzzy' } | null
@@ -39,4 +40,10 @@ export function _resetForTest() {
 export function lookupRecipe(menuName) {
   load()
   return matcher(menuName)
+}
+
+// retrieval 전용 — 정확도 판정 없이 "이름이 닮은 것들"을 넓게 회수한다. 고르는 건 호출부의 게이트다.
+export function searchRecipeCandidates(menuName, limit) {
+  load()
+  return index(menuName, limit)
 }

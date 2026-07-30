@@ -55,6 +55,18 @@ const FOODSAFETY_SOURCES = {
 // 7초 목표 안에 들어오도록 잡은 값이다(resolveFood.js의 DEFAULT_DEADLINE_MS 참고).
 const RESOLVE_FOOD_MAX_ITEMS = 20
 const RESOLVE_FOOD_MAX_DEADLINE_MS = 4000
+// /api/precision-analyze도 같은 이유로 상한이 필요하다. 이쪽은 한 판(트레이) 메뉴 목록이라 실제
+// 급식은 5~10품이고, 넘는 건 잘못된 사용이거나 남용이다. 상한이 없으면 배열 하나가 그대로
+// foodLookup(동기 파일 기반 조회) 반복 + Gemini 프롬프트 길이로 이어져, 이벤트 루프를 수십 초
+// 잡아먹고 유료 토큰을 그만큼 태운다(리뷰 실측: 무제한일 때 19초 정지 + 13.5만 자 프롬프트).
+const PRECISION_ANALYZE_MAX_MENUS = 30
+
+// 스키마 없이 재요청해볼 가치가 있는 상태 코드 — "구조화 출력을 거부했다"를 실제로 뜻하는 것만.
+// 429/401/402는 스키마와 무관하고, 재요청하면 이미지 포함 본문을 한 번 더 태울 뿐이다.
+const SCHEMA_FALLBACK_STATUSES = new Set([400, 422])
+// 허용 맥락 — server/nutrition/foodLookup.js의 ORIGIN_PREFERENCE 키와 같아야 한다.
+// 같은 음식이라도 어디서 나왔느냐로 참조할 식약처 출처가 갈린다(급식 132kcal/100g vs 외식 294).
+const RESOLVE_FOOD_CONTEXTS = new Set(['restaurant', 'packaged', 'cafeteria', 'home'])
 
 // NEIS(나이스) 교육정보 개방포털: 학교기본정보(학교 검색) + 급식식단정보(초중고 급식 조회).
 const NEIS_SCHOOL_INFO_URL = 'https://open.neis.go.kr/hub/schoolInfo'
@@ -390,9 +402,16 @@ async function handleGeminiRequest(req, res) {
     let openRouterRes = await callOpenRouter(requestBody)
     let data = await openRouterRes.json()
 
-    // 스키마 강제가 원인일 수 있는 실패(4xx)면 스키마 없이 1회 재시도한다 — 모델/프로바이더가
-    // 구조화 출력을 거부해도 기능 전체가 죽지 않게. 클라이언트의 parseJsonLoose가 그 폴백을 받는다.
-    if (!openRouterRes.ok && requestBody.response_format && openRouterRes.status < 500) {
+    // 스키마 강제가 원인일 수 있는 실패면 스키마 없이 1회 재시도한다 — 모델/프로바이더가 구조화
+    // 출력을 거부해도 기능 전체가 죽지 않게. 클라이언트의 parseJsonLoose가 그 폴백을 받는다.
+    //
+    // ⚠️ 조건을 "4xx 전체"로 두면 안 된다. 429(레이트리밋)·401(키)·402(크레딧)까지 폴백을 타는데,
+    // 그 재요청 본문에는 base64 이미지가 그대로 다시 들어간다. fetchWithRetry가 429를 이미 최대
+    // 4회 재시도하므로 사용자 탭 한 번에 이미지 포함 요청이 최대 8회 나가고 — 레이트리밋 상황에서
+    // 호출량을 오히려 두 배로 늘려 상황을 악화시킨다. 게다가 429 백오프(~7초) + 폴백 요청까지
+    // 더하면 Vercel maxDuration 30초를 넘겨 함수가 죽는다(클라이언트는 28초에 이미 포기한 뒤라
+    // 그 시간과 토큰은 100% 낭비). 스키마 거부를 실제로 뜻하는 코드만 남긴다.
+    if (!openRouterRes.ok && requestBody.response_format && SCHEMA_FALLBACK_STATUSES.has(openRouterRes.status)) {
       console.warn(
         `OpenRouter response_format 요청 실패(${openRouterRes.status}) — 스키마 없이 재시도:`,
         data?.error?.message || '',
@@ -446,6 +465,9 @@ app.post('/api/precision-analyze', geminiLimiter, async (req, res) => {
   if (!Array.isArray(menus) || menus.length === 0 || !menus.every((m) => typeof m === 'string' && m.trim())) {
     return res.status(400).json({ error: 'menus(문자열 배열)가 필요합니다' })
   }
+  if (menus.length > PRECISION_ANALYZE_MAX_MENUS) {
+    return res.status(400).json({ error: `menus는 최대 ${PRECISION_ANALYZE_MAX_MENUS}개까지 처리합니다` })
+  }
   try {
     const result = await analyzeTray({ menus, mealType, schoolType, officialTotals: officialTotals ?? null })
     res.json(result)
@@ -464,7 +486,7 @@ app.post('/api/precision-analyze', geminiLimiter, async (req, res) => {
 // 결과로 정상 응답하므로, 느린 업스트림이 사용자 화면을 멈춰 세우지 못한다.
 // Gemini를 호출하지 않으므로(식별은 이미 끝난 상태로 들어온다) geminiLimiter는 걸지 않는다.
 app.post('/api/resolve-food', async (req, res) => {
-  const { items, deadlineMs } = req.body || {}
+  const { items, deadlineMs, context } = req.body || {}
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'items(배열)가 필요합니다' })
   }
@@ -478,6 +500,9 @@ app.post('/api/resolve-food', async (req, res) => {
       // 클라이언트가 더 짧은 예산을 요구하면 존중하되, 서버 상한을 넘기지는 못하게 한다.
       deadlineMs: Number.isFinite(budget) && budget > 0 ? Math.min(budget, RESOLVE_FOOD_MAX_DEADLINE_MS) : undefined,
       searchRemote: lookupFoodSafety,
+      // 요청 전체의 기본 맥락. 알 수 없는 값이 오면 'restaurant'로 떨어뜨린다.
+      // 항목별 servingContext(AI가 사진을 보고 판정한 값)는 resolveFoodItems 안에서 이것보다 우선한다.
+      context: RESOLVE_FOOD_CONTEXTS.has(context) ? context : 'restaurant',
     })
     res.json({ items: resolved })
   } catch (err) {
