@@ -210,19 +210,19 @@ CLAUDE.md의 "로그인 없는 익명 세션" 결정을 뒤집고, 실제 회원
 - [x] **P0** — [#43](https://github.com/rldbs5353/hub/issues/43) Vercel 프론트엔드 배포 및 백엔드 연동 (완료. **FE**: [hub-lovat-omega.vercel.app](https://hub-lovat-omega.vercel.app) — Root Directory를 `review-assistant-react`로 지정, `VITE_API_BASE_URL`에 BE 주소 등록. 배포 중 GitHub 포크의 기본 브랜치가 `main`이라 `N112_엄기윤`의 실제 코드가 안 보이던 문제 발견 — 기본 브랜치를 임시로 `N112_엄기윤`로 바꿔서 해결)
 - [x] **P0** — [#44](https://github.com/rldbs5353/hub/issues/44) 배포 환경 전체 회귀 검증 (핵심 플로우 확인 완료 — `/health`, SPA 라우팅(`/dashboard` 직접 접속), CORS preflight(Vercel→Render 허용 확인, 처음엔 `CORS_ORIGIN`이 로컬 임시값으로 남아있어 수정), 실제 리뷰 분석 end-to-end curl 테스트 전부 통과. 에러 케이스 전체(429/400 6종)까지의 배포 환경 재검증은 `#54`에서 이어서 진행)
 
-### 수요일(7/29) — 보완·재배포·워크플로우 정리 + 영상 제출
+### 수요일(7/29) — 보완·재배포·워크플로우 정리 + 영상 제출 (완료)
 
-- [ ] **P0** — [#54](https://github.com/rldbs5353/hub/issues/54) 배포 후 버그 보완 및 재배포 (착수. AI 인사이트 캐시가 당일 신규 리뷰를 반영 못 하던 버그를 `hasNewReviewsSince()`로 수정, Figma 목업 기준 랜딩/대시보드/도구 페이지 디자인 개편, `N112_엄기윤` 브랜치에 커밋·푸시해 Vercel/Render 재배포 트리거 — 목요일에 배포 환경 재검증까지 이어서 진행)
-- [ ] **P1** — [#47](https://github.com/rldbs5353/hub/issues/47) Agent 개발 흐름 정리(4주차 회고) — 착수. `WORKFLOW.md`에 "4주차 — 배포와 디자인 반영에서 달라진 것" 섹션 추가(배포는 AI가 안내만/클릭은 사람, 사람이 스크린샷으로 버그를 신고하는 패턴, 디자인 세부조정은 사람에게 역할이 넘어간 사례) — 목요일에 마무리
-- [ ] **P0** — [#55](https://github.com/rldbs5353/hub/issues/55) 데모 영상 제출 (마감)
+- [x] **P0** — [#54](https://github.com/rldbs5353/hub/issues/54) 배포 후 버그 보완 및 재배포 (착수. AI 인사이트 캐시가 당일 신규 리뷰를 반영 못 하던 버그를 `hasNewReviewsSince()`로 수정, Figma 목업 기준 랜딩/대시보드/도구 페이지 디자인 개편, `N112_엄기윤` 브랜치에 커밋·푸시해 Vercel/Render 재배포 트리거 — 목요일에 배포 환경 재검증까지 이어서 진행)
+- [x] **P1** — [#47](https://github.com/rldbs5353/hub/issues/47) Agent 개발 흐름 정리(4주차 회고) — 착수. `WORKFLOW.md`에 "4주차 — 배포와 디자인 반영에서 달라진 것" 섹션 추가(배포는 AI가 안내만/클릭은 사람, 사람이 스크린샷으로 버그를 신고하는 패턴, 디자인 세부조정은 사람에게 역할이 넘어간 사례) — 목요일에 마무리
+- [x] **P0** — [#55](https://github.com/rldbs5353/hub/issues/55) 데모 영상 제출 (완료. Google Drive 링크를 `showcase.json`의 `demoVideoUrl`에 반영)
 
-### 목요일(7/30) — 보완·재배포·워크플로우 정리 (계속)
+### 목요일(7/30) — 보완·재배포·워크플로우 정리 (완료)
 
-- [ ] **P0** — [#54](https://github.com/rldbs5353/hub/issues/54) 배포 후 버그 보완 및 재배포 (계속)
-- [ ] **P1** — [#45](https://github.com/rldbs5353/hub/issues/45) 최종 데모 시나리오 정리 (리허설)
-- [ ] **P1** — [#46](https://github.com/rldbs5353/hub/issues/46) README 최신화
-- [ ] **P1** — [#47](https://github.com/rldbs5353/hub/issues/47) Agent 개발 흐름 정리 — 마무리
-- [ ] **P2** — [#52](https://github.com/rldbs5353/hub/issues/52) 잔여 백로그 정리 및 회고 기록
+- [x] **P0** — [#54](https://github.com/rldbs5353/hub/issues/54) 배포 후 버그 보완 및 재배포 (완료. Vercel Production Branch 설정 문제로 어제 커밋들이 Preview로만 배포되던 것을 확인·해결, 프로덕션 도메인에서 새 디자인·버그 수정이 실제로 반영된 것을 스크린샷으로 재확인. `EMPTY_INPUT` 에러 케이스도 배포 백엔드에 curl로 재검증)
+- [x] **P1** — [#45](https://github.com/rldbs5353/hub/issues/45) 최종 데모 시나리오 정리 (완료. 문제정의→핵심기능→차별점→데모 순서의 대본을 `DEMO_SCRIPT.md`로 문서화, 배포본 기준 실습화면 흐름을 Playwright로 1회 리허설 — 분석 소요 약 8초, 콘솔 에러 없음 확인)
+- [x] **P1** — [#46](https://github.com/rldbs5353/hub/issues/46) README 최신화 (완료. 끊어져 있던 기획서 위키 링크를 실제 파일 경로로 수정, "4주차 변경 사항" 섹션 추가, 데모 영상·WORKFLOW.md 링크 추가)
+- [x] **P1** — [#47](https://github.com/rldbs5353/hub/issues/47) Agent 개발 흐름 정리 — 마무리 (완료. `WORKFLOW.md`에 "4주 전체 정리" 섹션 추가, 백로그(#48~#51) 이월 판단 근거 명시)
+- [x] **P2** — [#52](https://github.com/rldbs5353/hub/issues/52) 잔여 백로그 정리 및 회고 기록 (완료. #48~#51은 데모데이 전까지 착수하지 않기로 최종 판단, `WORKFLOW.md` 4주차 회고에 근거 기록)
 
 ### 금요일(7/31) — 데모데이
 
