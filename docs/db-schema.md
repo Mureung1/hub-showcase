@@ -70,6 +70,8 @@ Supabase Auth가 관리하는 시스템 테이블이다. 애플리케이션 마�
 | `role` | `text` | 불가 | CHECK (`mentee`, `mentor`) | 사용자 역할 |
 | `name` | `text` | 불가 |  | 이름 |
 | `nickname` | `text` | 불가 |  | 서비스 표시 닉네임 |
+| `mentor_list_onboarded_at` | `timestamptz` | 가능 |  | 멘티 온보딩 코치마크(멘토 목록 6스텝) 열람 완료 시각 |
+| `questionnaire_onboarded_at` | `timestamptz` | 가능 |  | 멘티 온보딩 코치마크(사전 질문지 1스텝) 열람 완료 시각 |
 | `created_at` | `timestamptz` | 불가 | `now()` | 생성 시각 |
 | `updated_at` | `timestamptz` | 불가 | `now()` | 수정 시각 |
 
@@ -78,6 +80,7 @@ Supabase Auth가 관리하는 시스템 테이블이다. 애플리케이션 마�
 - `id`는 `auth.users.id`와 같아야 한다.
 - `auth.users` 삭제 시 함께 삭제되도록 `ON DELETE CASCADE`를 사용한다.
 - 로그인은 이메일로 처리하므로 `username` 칼럼은 사용하지 않는다.
+- `mentor_list_onboarded_at`/`questionnaire_onboarded_at`은 멘티 역할에만 의미가 있으며, 멘토 프로필에서는 항상 `NULL`로 둔다. 아직 온보딩을 보지 않았으면 `NULL`, 완료하면 완료 시각이 저장된다.
 
 ### 4.3 `mentee_profiles`
 

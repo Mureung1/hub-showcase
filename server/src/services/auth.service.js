@@ -181,7 +181,7 @@ const login = async (payload) => {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, role, name, nickname')
+    .select('id, role, name, nickname, mentor_list_onboarded_at, questionnaire_onboarded_at')
     .eq('id', data.user.id)
     .single();
 
@@ -199,6 +199,8 @@ const login = async (payload) => {
       role: profile.role,
       name: profile.name,
       nickname: profile.nickname,
+      mentorListOnboardedAt: profile.mentor_list_onboarded_at,
+      questionnaireOnboardedAt: profile.questionnaire_onboarded_at,
     },
   };
 };

@@ -22,6 +22,7 @@ function MentorApplicationBar({ selectedMentors, onApply, onMentorClick }) {
 
       <button
         className="button button-primary mentor-application-button"
+        data-onboarding="apply"
         disabled={!hasSelectedMentors}
         onClick={onApply}
         type="button"

@@ -1,4 +1,5 @@
 const menteeProfileService = require('../services/menteeProfile.service');
+const onboardingService = require('../services/onboarding.service');
 const { sendError } = require('../utils/apiError');
 const { ConflictError } = require('../utils/errors');
 const { ValidationError } = require('../utils/validators');
@@ -29,7 +30,22 @@ const updateMyMenteeProfile = async (req, res) => {
   }
 };
 
+const completeMyOnboarding = async (req, res) => {
+  try {
+    const status = await onboardingService.completeOnboarding(req.user, req.body);
+    return res.json({ data: status });
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return sendError(res, 400, 'VALIDATION_ERROR', err.message, { field: err.field });
+    }
+
+    console.error(err);
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', '서버 내부 오류가 발생했습니다.');
+  }
+};
+
 module.exports = {
   getMyMenteeProfile,
   updateMyMenteeProfile,
+  completeMyOnboarding,
 };

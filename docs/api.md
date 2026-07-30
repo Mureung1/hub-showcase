@@ -89,6 +89,7 @@ Authorization: Bearer <access-token>
 |---|---|---|---|
 | `GET` | `/api/mentees/me` | 멘티 | 내 멘티 프로필 조회 |
 | `PATCH` | `/api/mentees/me` | 멘티 | 내 멘티 프로필 수정 |
+| `PATCH` | `/api/mentees/me/onboarding` | 멘티 | 온보딩 코치마크 열람 완료 처리 |
 | `GET` | `/api/mentors` | 멘티 | 멘토 프로필 목록·검색 |
 | `GET` | `/api/mentors/me` | 멘토 | 내 멘토 프로필 조회 |
 | `PATCH` | `/api/mentors/me` | 멘토 | 내 멘토 프로필 수정 |
@@ -297,6 +298,33 @@ Authorization: Bearer <access-token>
 ```
 
 모든 필드는 선택적으로 전달할 수 있다. `email`/`password`도 이 요청 본문에 함께 넣어 변경한다 (별도의 이메일·비밀번호 전용 엔드포인트는 없다). 이메일 중복 시 `409 EMAIL_ALREADY_EXISTS`, 형식/길이 검증 실패 시 `400 VALIDATION_ERROR`를 반환한다.
+
+### 5.2.1 온보딩 코치마크 열람 완료 처리
+
+`PATCH /api/mentees/me/onboarding`
+
+요청 본문:
+
+```json
+{
+  "tour": "mentorList"
+}
+```
+
+`tour`는 `mentorList`(멘토 목록 6스텝 투어) 또는 `questionnaire`(사전 질문지 1스텝 투어) 중 하나여야 한다. 유효하지 않으면 `400 VALIDATION_ERROR`를 반환한다.
+
+응답 `200`:
+
+```json
+{
+  "data": {
+    "mentorListOnboardedAt": "2026-07-30T12:00:00.000Z",
+    "questionnaireOnboardedAt": null
+  }
+}
+```
+
+로그인 응답(`POST /api/auth/login`)과 `GET /api/auth/me`의 `user` 객체에도 `mentorListOnboardedAt`, `questionnaireOnboardedAt` 필드가 포함된다(둘 다 아직 완료 전이면 `null`).
 
 ### 5.3 멘토 목록 조회
 

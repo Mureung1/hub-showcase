@@ -4,7 +4,10 @@ import { getMentors } from "../api/mentors";
 import MentorApplicationBar from "../components/MentorApplicationBar";
 import MentorCard from "../components/MentorCard";
 import MentorSearchFilter from "../components/MentorSearchFilter";
+import OnboardingCoachMark from "../components/OnboardingCoachMark";
 import { useAuth } from "../context/AuthContext";
+import { menteeMentorListTourSteps, TOUR_IDS, TOUR_SERVER_KEYS } from "../constants/onboarding";
+import useOnboardingTour from "../hooks/useOnboardingTour";
 import { routePaths } from "../routes/routePaths";
 import { initialMentorFilters } from "../utils/mentorFilters";
 
@@ -15,7 +18,7 @@ function toMentorViewModel(mentor) {
 function MentorListPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { currentUser, logout } = useAuth();
   const [selectedMentorIds, setSelectedMentorIds] = useState(
     () => location.state?.mentorIds ?? [],
   );
@@ -135,6 +138,17 @@ function MentorListPage() {
     });
   };
 
+  const mentorListTour = useOnboardingTour(
+    TOUR_IDS.menteeMentorList,
+    menteeMentorListTourSteps,
+    {
+      enabled: currentUser?.role === "mentee" && !isLoading && filteredMentors.length > 0,
+      userId: currentUser?.id,
+      serverCompletedAt: currentUser?.[TOUR_SERVER_KEYS[TOUR_IDS.menteeMentorList].userField],
+      serverTourKey: TOUR_SERVER_KEYS[TOUR_IDS.menteeMentorList].tour,
+    },
+  );
+
   return (
     <div className="mentor-list-page">
       <header className="page-header mentor-list-header">
@@ -146,7 +160,11 @@ function MentorListPage() {
           <Link className="button button-neutral" to={routePaths.menteeMyPage}>
             개인 정보
           </Link>
-          <Link className="button button-neutral" to={routePaths.menteeApplications}>
+          <Link
+            className="button button-neutral"
+            data-onboarding="application-list"
+            to={routePaths.menteeApplications}
+          >
             면담 신청 목록
           </Link>
           <button className="button button-soft mentor-logout-button" onClick={handleLogout} type="button">
@@ -182,12 +200,13 @@ function MentorListPage() {
           </div>
         ) : (
           <section className="stack" aria-label="멘토 목록">
-            {filteredMentors.map((mentor) => (
+            {filteredMentors.map((mentor, index) => (
               <MentorCard
                 key={mentor.id}
                 mentor={mentor}
                 selected={selectedMentorIds.includes(mentor.id)}
                 onSelect={(isSelected) => handleMentorSelect(mentor.id, isSelected)}
+                isOnboardingTarget={index === 0}
               />
             ))}
             {filteredMentors.length === 0 && !errorMessage && (
@@ -224,6 +243,16 @@ function MentorListPage() {
             확인
           </button>
         </div>
+      )}
+
+      {mentorListTour.isActive && (
+        <OnboardingCoachMark
+          key={mentorListTour.stepIndex}
+          step={mentorListTour.currentStep}
+          stepIndex={mentorListTour.stepIndex}
+          totalSteps={mentorListTour.totalSteps}
+          onNext={mentorListTour.next}
+        />
       )}
     </div>
   );

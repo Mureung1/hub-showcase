@@ -11,3 +11,9 @@ export const updateMyMenteeProfile = async (payload) => {
 
   return response.data;
 };
+
+export const completeMyOnboarding = async (tour) => {
+  const response = await httpClient.patch('/mentees/me/onboarding', { tour });
+
+  return response.data;
+};

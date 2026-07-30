@@ -2,11 +2,16 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getMentorById } from "../api/mentors";
 import { createApplication } from "../api/applications";
+import OnboardingCoachMark from "../components/OnboardingCoachMark";
+import { menteeQuestionnaireTourSteps, TOUR_IDS, TOUR_SERVER_KEYS } from "../constants/onboarding";
+import { useAuth } from "../context/AuthContext";
+import useOnboardingTour from "../hooks/useOnboardingTour";
 import { navigationTargets, routePaths } from "../routes/routePaths";
 
 function QuestionnairePage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const mentorIds = Array.isArray(location.state?.mentorIds)
     ? location.state.mentorIds
     : [];
@@ -15,6 +20,17 @@ function QuestionnairePage() {
   const [submissionError, setSubmissionError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApplicationComplete, setIsApplicationComplete] = useState(false);
+
+  const questionnaireTour = useOnboardingTour(
+    TOUR_IDS.menteeQuestionnaire,
+    menteeQuestionnaireTourSteps,
+    {
+      enabled: currentUser?.role === "mentee" && !isLoadingMentors && !isApplicationComplete,
+      userId: currentUser?.id,
+      serverCompletedAt: currentUser?.[TOUR_SERVER_KEYS[TOUR_IDS.menteeQuestionnaire].userField],
+      serverTourKey: TOUR_SERVER_KEYS[TOUR_IDS.menteeQuestionnaire].tour,
+    },
+  );
 
   useEffect(() => {
     if (mentorIds.length === 0) {
@@ -136,7 +152,12 @@ function QuestionnairePage() {
           )}
         </section>
 
-        <form className="questionnaire-form" noValidate onSubmit={handleSubmit}>
+        <form
+          className="questionnaire-form"
+          data-onboarding="questionnaire-form"
+          noValidate
+          onSubmit={handleSubmit}
+        >
           <label className="questionnaire-field">
             <span><strong>1. 자기소개</strong><em>필수</em></span>
             <textarea
@@ -219,6 +240,16 @@ function QuestionnairePage() {
             <span className="questionnaire-complete-progress" aria-hidden="true" />
           </section>
         </div>
+      )}
+
+      {questionnaireTour.isActive && (
+        <OnboardingCoachMark
+          key={questionnaireTour.stepIndex}
+          step={questionnaireTour.currentStep}
+          stepIndex={questionnaireTour.stepIndex}
+          totalSteps={questionnaireTour.totalSteps}
+          onNext={questionnaireTour.next}
+        />
       )}
     </main>
   );
