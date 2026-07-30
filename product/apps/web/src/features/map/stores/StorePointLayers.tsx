@@ -1,6 +1,6 @@
 import type { ExpressionSpecification, FilterSpecification } from "maplibre-gl";
-import { useMemo } from "react";
-import { Layer, Source } from "react-map-gl/maplibre";
+import { useEffect, useMemo, useState } from "react";
+import { Layer, Source, useMap } from "react-map-gl/maplibre";
 
 import type { MarketStore } from "../../market/types";
 import {
@@ -76,24 +76,68 @@ const CLUSTER_RADIUS_EXPRESSION: ExpressionSpecification = [
 type StorePointLayersProps = {
   stores: MarketStore[];
   selected: MarketStore | null;
-  hoveredFeatureId: string | null;
   visible: boolean;
   densityMode: boolean;
   storefrontMode: boolean;
 };
 
+type StoreHoverEvent = {
+  features?: Array<{
+    properties?: {
+      featureId?: unknown;
+    } | null;
+  }>;
+};
+
+type StoreLayerEventMap = {
+  on: (
+    type: "mousemove" | "mouseleave",
+    layerId: string,
+    listener: (event: StoreHoverEvent) => void,
+  ) => void;
+  off: (
+    type: "mousemove" | "mouseleave",
+    layerId: string,
+    listener: (event: StoreHoverEvent) => void,
+  ) => void;
+};
+
 export function StorePointLayers({
   stores,
   selected,
-  hoveredFeatureId,
   visible,
   densityMode,
   storefrontMode,
 }: StorePointLayersProps) {
+  const { current: mapRef } = useMap();
+  const [hoveredFeatureId, setHoveredFeatureId] = useState<string | null>(null);
   const data = useMemo(() => createStoreFeatureCollection(stores), [stores]);
   const selectedFeatureId = selected ? storeFeatureIdentity(selected) : NO_SELECTED_STORE;
   const resolvedHoveredFeatureId = hoveredFeatureId ?? NO_HOVERED_STORE;
   const hasFocusedStore = storefrontMode && selected !== null;
+
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map || !visible) {
+      setHoveredFeatureId(null);
+      return;
+    }
+
+    const layerEvents = map as unknown as StoreLayerEventMap;
+    const handleMove = (event: StoreHoverEvent) => {
+      const featureId = event.features?.[0]?.properties?.featureId;
+      const nextFeatureId = typeof featureId === "string" ? featureId : null;
+      setHoveredFeatureId((current) => (current === nextFeatureId ? current : nextFeatureId));
+    };
+    const handleLeave = (_event: StoreHoverEvent) => setHoveredFeatureId(null);
+
+    layerEvents.on("mousemove", STORE_POINT_HIT_LAYER_ID, handleMove);
+    layerEvents.on("mouseleave", STORE_POINT_HIT_LAYER_ID, handleLeave);
+    return () => {
+      layerEvents.off("mousemove", STORE_POINT_HIT_LAYER_ID, handleMove);
+      layerEvents.off("mouseleave", STORE_POINT_HIT_LAYER_ID, handleLeave);
+    };
+  }, [mapRef, visible]);
 
   if (!visible || stores.length === 0) return null;
 
