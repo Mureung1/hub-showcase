@@ -1,3 +1,6 @@
+server:
+  port: ${PORT:8080}
+
 spring:
   application:
     name: devpulse
@@ -25,3 +28,5 @@ devpulse:
   groq:
     api-key: ${DEVPULSE_GROQ_API_KEY:}
     model: ${DEVPULSE_GROQ_MODEL:llama-3.3-70b-versatile}
+  cors:
+    allowed-origins: ${DEVPULSE_CORS_ALLOWED_ORIGINS:http://localhost:5173}

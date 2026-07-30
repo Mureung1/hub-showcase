@@ -2,6 +2,7 @@
 .claude/settings.local.json
 .env
 .env.*
+!frontend/.env.example
 *.log
 
 # 2. 시스템 및 IDE 캐시 (개인 설정)

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-
-const API_BASE_URL = 'http://localhost:8080'
+import { API_BASE_URL } from '../config.js'
 
 async function parseErrorMessage(response) {
   const body = await response.json().catch(() => null)

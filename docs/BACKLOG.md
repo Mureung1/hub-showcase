@@ -507,6 +507,49 @@ Issue 6에서 만든 위상 정렬 그래프 알고리즘(`pathfinder` 패키지
 
 ---
 
+## Issue 18. 배포 준비 — Vercel(프론트) + Render(백엔드+DB)
+
+**요구사항**
+캠프 최종 제출 마감(주말)에 실제 배포가 필수 항목으로 추가됨. Kafka는 무료 배포 플랫폼(Render 무료 티어)에서 지원이 마땅치 않아, 배포 환경에서는 Kafka 없이 동기 처리로 폴백하기로 결정 — Kafka 자체는 로컬에서 이미 검증 완료(Issue 17)된 걸로 충분하고, 코드는 남겨두되 배포 시엔 비활성화만 함.
+
+**범위 결정** (planner 검토 + 사용자 확인)
+- `JobPostingEventPublisher` 인터페이스 도입 — `KafkaJobPostingEventPublisher`(`@Profile("!prod")`, 기존 직렬화+Kafka 발행 로직 그대로 이관)와 `DirectJobPostingEventPublisher`(`@Profile("prod")`, ingest+recalculate 동기 호출)로 분기. `KafkaTopicConfig`/`JobPostingCollectedConsumer`에도 `@Profile("!prod")` 부착.
+- 컨슈머의 ingest+recalculate 2줄과 DirectPublisher의 같은 2줄은 **중복 그대로 둠** — 분기 클래스를 새로 만드는 비용이 중복 비용보다 큼(Issue 17 DLQ 기각과 같은 판단 기준). 대신 서로를 가리키는 주석만 남김.
+- **`application-local.yml`/`application-prod.yml` 둘 다 만들지 않음** — 기존 `application.yml`이 이미 로컬 기본값이고, `@Profile`은 파일 존재 여부와 무관하게 `SPRING_PROFILES_ACTIVE` 값만으로 동작. prod 전용 프로퍼티 값이 실제로 필요해지기 전까지 새 yml 자체를 안 만듦.
+- **`backend/Dockerfile`은 스코프 추가가 아니라 누락된 전제조건** — Render는 Java/Gradle 네이티브 빌드팩이 없어 Dockerfile이 사실상 유일한 경로. `render.yaml`(IaC)과 Spring Boot Actuator는 이 규모·시간 압박에 안 맞아 추가하지 않음(대시보드 수동 설정으로 충분, TCP 헬스체크로 충분).
+- CORS는 프로필 분기 없이 `devpulse.cors.allowed-origins` 프로퍼티화만 — 로컬 기본값(`http://localhost:5173`) 유지, Render 배포 시 `DEVPULSE_CORS_ALLOWED_ORIGINS` env var 하나만 추가.
+- 프론트는 4개 훅에 흩어진 `http://localhost:8080` 하드코딩을 `frontend/src/config.js` 공유 상수(`VITE_API_BASE_URL` env var, 로컬 기본값 유지) 하나로 통합.
+
+**작업 단계**
+- [x] `kafka/JobPostingEventPublisher.java`(인터페이스), `kafka/KafkaJobPostingEventPublisher.java`(`@Profile("!prod")`), `service/DirectJobPostingEventPublisher.java`(`@Profile("prod")`)
+- [x] `normalizer/JobPostingCollectedConsumer.java`, `kafka/KafkaTopicConfig.java`에 `@Profile("!prod")` 부착
+- [x] `collector/alio/AlioJobPostingCollectorService.java` — `KafkaTemplate` 필드를 `JobPostingEventPublisher`로 교체, `publish()`를 한 줄로 축소
+- [x] `application.yml` — `server.port: ${PORT:8080}`(Render가 `PORT` env var로 포트 지정), `devpulse.cors.allowed-origins` 추가
+- [x] `api/WebCorsConfig.java` — 하드코딩된 오리진을 `@Value` 기반 콤마분리 리스트로 교체
+- [x] `backend/Dockerfile` — 멀티스테이지(JDK17 빌드에서 `./gradlew bootJar -x test`, JRE17 런타임)
+- [x] `frontend/src/config.js`(신규) + 4개 훅(`useCertificationRanking`/`useCertificationProgress`/`useCertificationOptions`/`useCertificationPath`)이 이를 import하도록 교체
+- [x] `frontend/.env.example` + 루트 `.gitignore`에 `!frontend/.env.example` 예외 규칙 추가
+
+**발견한 함정 2가지**
+1. Docker 빌드 스테이지에서 `./gradlew build`를 그대로 돌리면 빌드 컨테이너 안에 Postgres/Kafka가 없어 통합 테스트가 반드시 실패함 → `bootJar -x test`로 명시(테스트는 기존처럼 로컬 `./gradlew test`로만 실행, CI에 테스트 워크플로 자체가 없음).
+2. 루트 `.gitignore`의 `.env.*` 패턴이 `frontend/.env.example`까지 잡아 커밋에서 빠짐 → 기존 `!backend/gradle/wrapper/gradle-wrapper.jar`와 같은 방식으로 예외 규칙 추가.
+3. **(배포 시 반드시 확인)** Render 관리형 Postgres의 기본 연결 문자열은 `postgresql://user:pass@host/db`(URI 스킴)인데 우리 앱은 `jdbc:postgresql://host/db`(JDBC 형식)을 기대 — 그대로 못 씀. Render가 같이 주는 개별 필드(host/port/db/user/pw)로 JDBC URL을 직접 조합해야 함.
+
+**완료 기준**
+- [x] **로컬 prod 프로필 스모크 테스트(가장 중요)** — `docker stop devpulse-kafka`로 Kafka를 완전히 내린 상태에서 `./gradlew bootRun --args='--spring.profiles.active=prod'`로 기동, 부팅 로그에 Kafka 관련 라인이 전혀 없음을 확인. `POST /api/job-postings/collect?jobTitle=전산직` 호출 후 `job_posting`/`certification_mention` 테이블에 실제로 반영됨을 DB 직접 조회로 확인(55건 수집, 정보처리기사 mention_count 7 등 실측) — Kafka 없이 동기 경로가 실제로 끝까지 동작함을 증명
+- [x] `./gradlew test` 전체 통과 (1회성 플레이키 실패 `CertificationProgressQuerydslRepositoryTest`를 재실행으로 재현·격리 — 이번 변경과 무관한 기존 테스트 격리 이슈로 확인, 별도 조치 없이 백로그에만 기록)
+- [x] `docker build` + `docker run`(prod 프로필, 호스트 Postgres 연결)으로 컨테이너 자체 기동 검증 — 7초 내 정상 기동, Kafka 로그 라인 0건
+- [x] 프론트 `npm run test`(기존 11개 테스트 그대로 통과) + `npm run build` 성공 확인
+
+**이번엔 하지 않은 것 (사용자가 직접 해야 하는 외부 계정 작업)**
+- Render 관리형 PostgreSQL/Web Service 생성, 환경변수 입력, 실제 배포
+- Vercel 프로젝트 생성, `VITE_API_BASE_URL` 설정, 실제 배포
+- 배포 후 CORS 오리진 실제 Vercel 도메인으로 갱신, e2e 수동 확인
+- `render.yaml`(IaC) — 단일 서비스라 대시보드 수동 설정으로 충분, 시간 남으면 추후 고려
+- Render 무료 티어 cold start(첫 요청 지연) 등은 아직 실측 안 됨 — 실제 배포 후 확인 필요
+
+---
+
 ## 백로그 (다음 슬라이스 이후, 우선순위순)
 
 | Task | 설명 | 우선순위 | 예상 시점 | 상태 |
@@ -531,6 +574,9 @@ Issue 6에서 만든 위상 정렬 그래프 알고리즘(`pathfinder` 패키지
 | 컨슈머 재시도/DLQ 정책 | 명시적 `DefaultErrorHandler(FixedBackOff(1000, 2))` 등록 완료. DLQ는 이 규모(재수집 트리거가 실질적 복구 수단)에서 과설계로 기각, 컨슈머 그룹/파티션(1개)도 현행 유지 확정 | P2 | - | Done (Issue 17) |
 | 통합 테스트 · 예외처리 고도화 | 전체 파이프라인 e2e 확인 | P2 | 추후 | Todo |
 | 최종 문서화 · 데모 준비 | README/위키 최신화, 발표 자료 | P2 | 추후 | Todo |
+| 배포 준비 (Kafka 우회 프로필 + Dockerfile + CORS/env 설정화) | `JobPostingEventPublisher` 인터페이스로 prod 프로필은 Kafka 없이 동기 처리, `backend/Dockerfile`, CORS/`API_BASE_URL` 설정화. 로컬 prod 프로필 스모크 테스트로 실제 동작 확인 완료 | P0 | - | Done (Issue 18) |
+| 실제 배포 (Render+Vercel 계정 작업) | Render PostgreSQL/Web Service 생성, Vercel 프로젝트 생성, 환경변수 입력, CORS 오리진 갱신, e2e 확인 — 계정 접근이 필요해 사용자가 직접 진행 | P0 | 이번 주말 | Todo |
+| `CertificationProgressQuerydslRepositoryTest` 플레이키 이슈 | 전체 스위트 실행 시 간헐적으로 `DataIntegrityViolationException`(certification_id 유니크 제약) 발생, 단독 실행/재실행 시엔 통과(Issue 18에서 재현). 원인 미규명 — 테스트 격리(전용 픽스처 자격증 등) 개선 필요 | P2 | 다음 슬라이스 | Todo |
 
 ---
 
