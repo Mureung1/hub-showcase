@@ -335,10 +335,6 @@ const SubscriptionDetail = () => {
               <span className="detail-label">계좌번호</span>
               <span className="detail-value">{bankAccount.accountNumber}</span>
             </div>
-            <div className="detail-row">
-              <span className="detail-label">예금주</span>
-              <span className="detail-value">{bankAccount.accountHolderName}</span>
-            </div>
 
             <p className="detail-section-title">파티원 초대 링크</p>
             <p className="detail-join-url">{joinUrl}</p>
