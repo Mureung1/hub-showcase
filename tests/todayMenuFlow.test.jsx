@@ -119,8 +119,8 @@ test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으�
   expect(await screen.findByRole("button", { name: /저장됨/ })).toBeInTheDocument();
 });
 
-test("인스턴트와 가공식품 조합을 선택하면 코칭 후 상세로 이동한다", async () => {
-  const instantProcessedRecipe = {
+test("인스턴트와 가공식품 조합도 별도 코칭 없이 상세로 이동한다", async () => {
+  const instantRecipe = {
     ...recipe,
     id: "recipe-spam-ramen",
     fingerprint: "e".repeat(64),
@@ -128,14 +128,12 @@ test("인스턴트와 가공식품 조합을 선택하면 코칭 후 상세로 �
     requiredIngredients: [
       { name: "라면", amount: 1, unit: "개" },
       { name: "스팸", amount: 0.5, unit: "캔" },
-      { name: "계란", amount: 1, unit: "개" },
     ],
-    missingIngredients: ["계란"],
   };
   globalThis.fetch = async (url) => {
     if (url === "/api/ingredients") return new Response(JSON.stringify({ ingredients: [] }));
     if (url === "/api/recommendations") return new Response(JSON.stringify({
-      recipes: [instantProcessedRecipe],
+      recipes: [instantRecipe],
       meta: { source: "gemini", maxRecipes: 15, batchNumber: 1, maxBatches: 5 },
     }));
     throw new Error(`Unexpected request: ${url}`);
@@ -143,19 +141,11 @@ test("인스턴트와 가공식품 조합을 선택하면 코칭 후 상세로 �
 
   render(<App />);
   fireEvent.click(screen.getByRole("button", { name: "오늘의 메뉴" }));
-
   const recipeHeading = await screen.findByRole("heading", { name: "스팸 김치라면" });
-  const recipeCard = recipeHeading.closest("article");
-  expect(within(recipeCard).getByRole("link", { name: "계란 구매하기" })).toHaveAttribute(
-    "href",
-    expect.stringContaining("query=%EA%B3%84%EB%9E%80"),
-  );
-  fireEvent.click(within(recipeCard).getByRole("button", { name: "레시피 보기" }));
+  fireEvent.click(within(recipeHeading.closest("article")).getByRole("button", { name: "레시피 보기" }));
 
-  expect(await screen.findByRole("dialog")).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "조금 더 든든하게 먹어볼까요?" })).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "원래 선택 계속하기" }));
   expect(await screen.findByRole("heading", { name: "스팸 김치라면" })).toBeInTheDocument();
+  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
 test("요리 완료를 확인하면 레시피 사용량만큼 보유 재료를 차감한다", async () => {

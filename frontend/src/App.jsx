@@ -3,7 +3,6 @@ import { getDefaultIngredientTags, getIngredientTags, INGREDIENT_TAG_LABELS } fr
 import { convertQuantityToStandard } from "../../shared/quantityUnits";
 import "./App.css";
 import IngredientForm from "./components/IngredientForm";
-import NaggingMessage from "./components/NaggingMessage";
 import RecipeConsumptionModal from "./components/RecipeConsumptionModal";
 import { getAllowedStorageOptions, getDefaultStorage, getSuggestedUseByDate } from "./data/shelfLifeRules";
 import { consumeIngredients, deleteIngredient, getIngredients, registerIngredient, updateIngredient } from "./services/ingredients";
@@ -20,8 +19,6 @@ import {
   formatIngredientQuantity,
   getIngredientExpirationPresentation,
 } from "./utils/ingredientUtils";
-import { getRecipeNaggingMessage } from "./utils/naggingUtils";
-import { getCoachingTone, readMealChoiceHistory } from "./utils/mealChoiceHistory";
 import { isPantryIngredientName } from "./utils/pantry";
 import {
   createShoppingSearchUrl,
@@ -99,8 +96,6 @@ function App() {
   const [initialFocusField, setInitialFocusField] = useState("name");
   const [sortOrder, setSortOrder] = useState("expiry");
   const [confirmAction, setConfirmAction] = useState(null);
-  const [pendingRecipe, setPendingRecipe] = useState(null);
-  const [naggingMessage, setNaggingMessage] = useState(null);
   const [message, setMessage] = useState({ text: "", type: "success" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formValues, setFormValues] = useState(createInitialFormValues);
@@ -352,45 +347,6 @@ function App() {
     window.setTimeout(() => setIsRecipeLoading(false), 350);
   };
 
-  const closeNaggingMessage = () => {
-    setNaggingMessage(null);
-    setPendingRecipe(null);
-  };
-
-  const continueFromNagging = (mode) => {
-    setNaggingMessage(null);
-    setPendingRecipe(null);
-    setSelectedMood(mode);
-    setMissingIngredientLimit(1);
-    setSelectedRecipe(null);
-    setActiveMainTab("recommend");
-  };
-
-  const handleRecipeSelect = (recipe) => {
-    const nextNaggingMessage = getRecipeNaggingMessage({
-      recipe,
-      ingredients: managedIngredients,
-      tone: getCoachingTone(readMealChoiceHistory(), { includeCurrentChoice: true }),
-    });
-    if (nextNaggingMessage) {
-      setPendingRecipe(recipe);
-      setNaggingMessage(nextNaggingMessage);
-      return;
-    }
-    selectMenu(recipe);
-  };
-
-  const continueOriginalFromNagging = () => {
-    if (!pendingRecipe) {
-      continueFromNagging("quick");
-      return;
-    }
-    const recipe = pendingRecipe;
-    setNaggingMessage(null);
-    setPendingRecipe(null);
-    selectMenu(recipe);
-  };
-
   const showRecommendations = () => {
     setSelectedRecipe(null);
     setActiveMainTab("recommend");
@@ -464,14 +420,13 @@ function App() {
         {activeMainTab === "fridge" && !isLoading && !ingredientError && <FridgeWorkspace ingredients={managedIngredients} visibleIngredients={visibleIngredients} activeStorage={activeStorage} setActiveStorage={setActiveStorage} sortOrder={sortOrder} setSortOrder={setSortOrder} recommendedCount={recommendedCount} openIngredientForm={openIngredientForm} editIngredient={editIngredient} requestIngredientAction={requestIngredientAction} showRecommendations={showRecommendations} />}
         {activeMainTab === "recommend" && (selectedRecipe
           ? <RecipeWorkspace menu={selectedRecipe} isLoading={isRecipeLoading} onBack={showRecommendations} isSaved={isRecipeSaved(selectedRecipe, savedRecipes)} onToggleSaved={() => toggleRecipeSaved(selectedRecipe)} onConsume={openConsumptionModal} isConsumed={consumedRecipeId === selectedRecipe.id} />
-          : <RecommendWorkspace recipes={recommendationRecipes} savedRecipes={savedRecipes} meta={recommendationMeta} isLoading={isRecommendationsLoading} isLoadingMore={isMoreRecommendationsLoading} error={recommendationError} onRetry={recommendationErrorScope === "more" ? loadMoreRecommendations : () => setRecommendationRetryKey((current) => current + 1)} onLoadMore={loadMoreRecommendations} selectedMood={selectedMood} setSelectedMood={setSelectedMood} missingIngredientLimit={missingIngredientLimit} setMissingIngredientLimit={setMissingIngredientLimit} onSelectRecipe={handleRecipeSelect} onToggleSaved={toggleRecipeSaved} />)}
+          : <RecommendWorkspace recipes={recommendationRecipes} savedRecipes={savedRecipes} meta={recommendationMeta} isLoading={isRecommendationsLoading} isLoadingMore={isMoreRecommendationsLoading} error={recommendationError} onRetry={recommendationErrorScope === "more" ? loadMoreRecommendations : () => setRecommendationRetryKey((current) => current + 1)} onLoadMore={loadMoreRecommendations} selectedMood={selectedMood} setSelectedMood={setSelectedMood} missingIngredientLimit={missingIngredientLimit} setMissingIngredientLimit={setMissingIngredientLimit} onSelectRecipe={selectMenu} onToggleSaved={toggleRecipeSaved} />)}
       </main>
       {message.text && <div className={`toast-message ${message.type}`} role={message.type === "error" ? "alert" : "status"} aria-live="polite">{message.text}</div>}
       {isFormOpen && <IngredientFormModal title={editingIngredientId ? "재료 수정" : "재료 추가"} onClose={closeIngredientForm}>
         <IngredientForm formValues={formValues} errors={errors} isEditing={Boolean(editingIngredientId)} isSubmitting={isSubmitting} initialFocusField={initialFocusField} onChange={handleFormChange} onBlur={handleFormBlur} onTagToggle={handleTagToggle} onApplySuggestedDate={applySuggestedDate} onSubmit={handleSubmitIngredient} onCancel={closeIngredientForm} />
       </IngredientFormModal>}
       {confirmAction && <ConfirmDialog action={confirmAction} isSubmitting={isSubmitting} onCancel={() => setConfirmAction(null)} onConfirm={completeIngredientAction} />}
-      {naggingMessage && pendingRecipe && <NaggingMessage message={naggingMessage} onAcceptSuggestion={() => continueFromNagging("balanced")} onContinueOriginal={continueOriginalFromNagging} onClose={closeNaggingMessage} />}
       {consumptionRecipe && <RecipeConsumptionModal recipe={consumptionRecipe} ingredients={managedIngredients} isSubmitting={isConsumptionSubmitting} error={consumptionError} onClose={closeConsumptionModal} onConfirm={confirmRecipeConsumption} />}
     </div>
   );
