@@ -75,10 +75,11 @@ https://<render-service>.onrender.com/api/health
 
 ## 3. CORS 연결
 
-Vercel의 Production URL이 확정되면 Render 서비스의 `CLIENT_ORIGIN`을 아래처럼 변경한다.
+Vercel과 GitHub Pages의 공개 URL이 확정되면 Render 서비스의 `CLIENT_ORIGIN`에
+두 Origin을 쉼표로 구분해 입력한다. Origin에는 경로를 포함하지 않는다.
 
 ```text
-https://<vercel-project>.vercel.app
+https://<vercel-project>.vercel.app,https://<github-user>.github.io
 ```
 
 저장 후 Render 서비스를 다시 배포하거나 재시작한다.
@@ -106,7 +107,7 @@ https://<vercel-project>.vercel.app
 
 ### 브라우저에서 CORS 오류가 발생함
 
-- Render의 `CLIENT_ORIGIN`이 Vercel Production URL과 정확히 같은지 확인한다.
+- Render의 `CLIENT_ORIGIN`에 Vercel과 GitHub Pages Origin이 쉼표로 구분되어 있는지 확인한다.
 - 마지막 `/`를 제외하고 `https://`를 포함한다.
 
 ### Render가 시작되지 않음
