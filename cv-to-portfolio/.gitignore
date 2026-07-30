@@ -3,6 +3,7 @@ node_modules
 dist
 dist-ssr
 .vite
+.vercel
 
 # env (예시 파일은 커밋)
 .env
