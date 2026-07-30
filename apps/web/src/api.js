@@ -9,6 +9,18 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 디바이스 ID — 브라우저별 고유 식별자 (사용자 구분용)
+// ─────────────────────────────────────────────────────────────────────────────
+export function getDeviceId() {
+  let id = localStorage.getItem('device_id')
+  if (!id) {
+    id = 'dev_' + crypto.randomUUID()
+    localStorage.setItem('device_id', id)
+  }
+  return id
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // fetchSpaces — 공간 목록 조회
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchSpaces() {
@@ -28,7 +40,7 @@ export async function startSession(spaceId = 'kitchen') {
   const res = await fetch(`${API_BASE}/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ spaceId, domain: 'kitchen_odor' }),
+    body: JSON.stringify({ spaceId, domain: 'kitchen_odor', deviceId: getDeviceId() }),
   })
 
   if (!res.ok) {
@@ -81,7 +93,7 @@ export async function done(sessionId) {
 // fetchHistory — 과거 진단 이력 조회
 // ─────────────────────────────────────────────────────────────────────────────
 export async function fetchHistory(spaceId) {
-  const res = await fetch(`${API_BASE}/sessions/history?space=${spaceId}`)
+  const res = await fetch(`${API_BASE}/sessions/history?space=${spaceId}&device=${getDeviceId()}`)
 
   if (!res.ok) {
     throw new Error(`fetchHistory failed: ${res.status}`)
