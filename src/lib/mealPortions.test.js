@@ -5,43 +5,43 @@ import { assignTrayWeights, classifyMenuRole, PORTION_WEIGHTS } from './mealPort
 
 describe('classifyMenuRole — role별 대표 키워드', () => {
   it('rice: 210g', () => {
-    expect(classifyMenuRole('흰쌀밥')).toEqual({ role: 'rice', weight: 210 })
-    expect(classifyMenuRole('제육덮밥')).toEqual({ role: 'rice', weight: 210 })
+    expect(classifyMenuRole('흰쌀밥')).toEqual({ role: 'rice', weight: 210, matched: true })
+    expect(classifyMenuRole('제육덮밥')).toEqual({ role: 'rice', weight: 210, matched: true })
   })
 
   it('noodle: 450g', () => {
-    expect(classifyMenuRole('멸치칼국수')).toEqual({ role: 'noodle', weight: 450 })
-    expect(classifyMenuRole('짜장면')).toEqual({ role: 'noodle', weight: 450 })
+    expect(classifyMenuRole('멸치칼국수')).toEqual({ role: 'noodle', weight: 450, matched: true })
+    expect(classifyMenuRole('짜장면')).toEqual({ role: 'noodle', weight: 450, matched: true })
   })
 
   it('soup: 300g', () => {
-    expect(classifyMenuRole('된장찌개')).toEqual({ role: 'soup', weight: 300 })
-    expect(classifyMenuRole('미역국')).toEqual({ role: 'soup', weight: 300 })
+    expect(classifyMenuRole('된장찌개')).toEqual({ role: 'soup', weight: 300, matched: true })
+    expect(classifyMenuRole('미역국')).toEqual({ role: 'soup', weight: 300, matched: true })
   })
 
   it('main: 120g', () => {
-    expect(classifyMenuRole('제육볶음')).toEqual({ role: 'main', weight: 120 })
-    expect(classifyMenuRole('돈까스')).toEqual({ role: 'main', weight: 120 })
+    expect(classifyMenuRole('제육볶음')).toEqual({ role: 'main', weight: 120, matched: true })
+    expect(classifyMenuRole('돈까스')).toEqual({ role: 'main', weight: 120, matched: true })
   })
 
   it('side: 50g', () => {
-    expect(classifyMenuRole('시금치나물')).toEqual({ role: 'side', weight: 50 })
-    expect(classifyMenuRole('감자조림')).toEqual({ role: 'side', weight: 50 })
+    expect(classifyMenuRole('시금치나물')).toEqual({ role: 'side', weight: 50, matched: true })
+    expect(classifyMenuRole('감자조림')).toEqual({ role: 'side', weight: 50, matched: true })
   })
 
   it('kimchi: 40g', () => {
-    expect(classifyMenuRole('배추김치')).toEqual({ role: 'kimchi', weight: 40 })
-    expect(classifyMenuRole('깍두기')).toEqual({ role: 'kimchi', weight: 40 })
+    expect(classifyMenuRole('배추김치')).toEqual({ role: 'kimchi', weight: 40, matched: true })
+    expect(classifyMenuRole('깍두기')).toEqual({ role: 'kimchi', weight: 40, matched: true })
   })
 
   it('dessert: 80g', () => {
-    expect(classifyMenuRole('요구르트')).toEqual({ role: 'dessert', weight: 80 })
-    expect(classifyMenuRole('빵')).toEqual({ role: 'dessert', weight: 80 })
+    expect(classifyMenuRole('요구르트')).toEqual({ role: 'dessert', weight: 80, matched: true })
+    expect(classifyMenuRole('빵')).toEqual({ role: 'dessert', weight: 80, matched: true })
   })
 
   it('drink: 200ml', () => {
-    expect(classifyMenuRole('우유')).toEqual({ role: 'drink', weight: 200 })
-    expect(classifyMenuRole('식혜')).toEqual({ role: 'drink', weight: 200 })
+    expect(classifyMenuRole('우유')).toEqual({ role: 'drink', weight: 200, matched: true })
+    expect(classifyMenuRole('식혜')).toEqual({ role: 'drink', weight: 200, matched: true })
   })
 })
 
@@ -64,8 +64,8 @@ describe('classifyMenuRole — 긴 패턴 우선 매칭(우선순위 케이스)'
   })
 
   it('미매칭 메뉴는 기본값 side 50g', () => {
-    expect(classifyMenuRole('알 수 없는 메뉴 XYZ')).toEqual({ role: 'side', weight: 50 })
-    expect(classifyMenuRole('')).toEqual({ role: 'side', weight: 50 })
+    expect(classifyMenuRole('알 수 없는 메뉴 XYZ')).toEqual({ role: 'side', weight: 50, matched: false })
+    expect(classifyMenuRole('')).toEqual({ role: 'side', weight: 50, matched: false })
   })
 })
 

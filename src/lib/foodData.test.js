@@ -27,7 +27,7 @@ describe('getPortionRange — 기존 PORTION_REFERENCE_G 값 보존', () => {
   })
 
   it('테이블에 없는 음식은 null (호출부가 범용 범위로 폴백)', () => {
-    expect(getPortionRange('생선구이')).toBeNull()
+    expect(getPortionRange('정체불명음식')).toBeNull()
     expect(getPortionRange('')).toBeNull()
     expect(getPortionRange(null)).toBeNull()
   })
@@ -68,7 +68,7 @@ describe('getPlausibility — 기존 NUTRIENT_PLAUSIBILITY 값 보존', () => {
   })
 
   it('범위가 없는 음식은 null (보정 생략)', () => {
-    expect(getPlausibility('생선구이')).toBeNull()
+    expect(getPlausibility('정체불명음식')).toBeNull()
   })
 })
 
@@ -135,8 +135,8 @@ describe('nutrition.js 경유 end-to-end (기존 동작 보존)', () => {
   it('clampEstimatedGrams: 짜장면 2000g → 900g(상한), 0g → 675g(중앙값), 미등록 음식 0g → 100g', () => {
     expect(clampEstimatedGrams(2000, '짜장면')).toBe(900)
     expect(clampEstimatedGrams(0, '짜장면')).toBe(675)
-    expect(clampEstimatedGrams(0, '생선구이')).toBe(100)
-    expect(clampEstimatedGrams(3000, '생선구이')).toBe(1500) // 범용 상한
+    expect(clampEstimatedGrams(0, '정체불명음식')).toBe(100)
+    expect(clampEstimatedGrams(3000, '정체불명음식')).toBe(1500) // 범용 상한
   })
 
   it('clampToPlausibleNutrients: 짜장면 650g 단백질 28g → 상한(16g)으로 보정, 20g은 1.5배 여유 내라 유지', () => {
@@ -159,6 +159,6 @@ describe('nutrition.js 경유 end-to-end (기존 동작 보존)', () => {
 
   it('범위 없는 음식은 원본 그대로', () => {
     const src = { protein: 999 }
-    expect(clampToPlausibleNutrients(src, '생선구이', 300)).toBe(src)
+    expect(clampToPlausibleNutrients(src, '정체불명음식', 300)).toBe(src)
   })
 })
