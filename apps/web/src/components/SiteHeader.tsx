@@ -47,13 +47,6 @@ export function SiteHeader({
     .filter(Boolean)
     .join(" ");
 
-  const scrollToSection = (sectionId: string) => {
-    document.getElementById(sectionId)?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  };
-
   return (
     <header className={headerClassName}>
       <div className="ptop-container grid min-h-[var(--header-height)] grid-cols-[auto_1fr_auto] items-center gap-7 max-[560px]:gap-3">
@@ -72,33 +65,6 @@ export function SiteHeader({
           className="flex justify-center gap-6 max-[560px]:hidden"
           aria-label="주요 메뉴"
         >
-          <a
-            href="#features"
-            onClick={(event) => {
-              event.preventDefault();
-              scrollToSection("features");
-            }}
-          >
-            서론
-          </a>
-          <a
-            href="#workflow"
-            onClick={(event) => {
-              event.preventDefault();
-              scrollToSection("workflow");
-            }}
-          >
-            핵심 기능
-          </a>
-          <a
-            href="#analysis-example"
-            onClick={(event) => {
-              event.preventDefault();
-              scrollToSection("analysis-example");
-            }}
-          >
-            분석 예시
-          </a>
           <a
             href="#workspace"
             onClick={(event) => {
