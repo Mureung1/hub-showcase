@@ -8,6 +8,7 @@ import {
   dismissActive,
   countRecentMatchesForUser,
   countRecentRefreshesForUser,
+  findResolvedMatchForSource,
 } from './matchesService.js'
 import { callAiModel } from '../lib/aiClient.js'
 import { serializeMatch } from '../lib/serializeMatch.js'
@@ -167,6 +168,16 @@ export async function getOrCreateRecommendation(sourceLetterId) {
   const cached = await findActiveMatch(sourceLetterId)
   if (cached) {
     return serializeMatch(cached)
+  }
+
+  // 활성(recommended/opened) 매칭이 없다는 게 확정된 시점 — 여기서 replied/dismissed 매칭이
+  // 발견되면 그건 항상 "이미 최종 결정 난 편지"라는 뜻이다(스펙: 답장/스쳐가기 후엔 그 편지에
+  // 대해 다시 추천받지 않는다). 이 확인이 없으면 이미 끝난 편지를 계속 새로 매칭해버린다 —
+  // "다른 편지 보기" 도중의 일시적 dismissed와 겹치지 않도록, 반드시 findActiveMatch 실패 뒤에만
+  // 확인한다(그 전에 확인하면 refresh 중간 상태를 오판해 정상 refresh까지 막아버린다).
+  const resolved = await findResolvedMatchForSource(sourceLetterId)
+  if (resolved) {
+    return { has_match: false, reason_code: 'already_resolved' }
   }
 
   // 캐시 히트는 레이트리밋과 무관(AI 호출이 없으므로) — 새로 생성할 때만 체크한다.

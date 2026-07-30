@@ -135,6 +135,18 @@ export async function findUnresolvedMatchForAuthor(authorId) {
   })
 }
 
+// 이 편지(sourceLetter)가 이미 최종 결정(답장 또는 스쳐 가기)이 난 적 있는지 확인한다.
+// 'dismissed'는 "다른 편지 보기"(refresh) 중간 상태로도 쓰이지만, 그 경우엔 항상 새로 생성된
+// recommended/opened 매칭이 뒤따르므로 — 여기 도달하는 시점엔(활성 매칭이 없는 시점) dismissed가
+// 있다면 그건 항상 "최종적으로 스쳐 감"을 의미한다. 이 확인이 없으면 이미 끝난 편지를
+// getOrCreateRecommendation이 계속 새로 매칭해버린다(새로고침 복원 로직에서 실제로 발견된 버그).
+export async function findResolvedMatchForSource(sourceLetterId) {
+  return prisma.match.findFirst({
+    where: { sourceLetterId, status: { in: ['replied', 'dismissed'] } },
+    select: { id: true },
+  })
+}
+
 // 답장 작성(T10). matchId로 소유권(내가 받은 추천이 맞는지)을 확인하고, 한 Match당 답장은
 // 한 번만 허용한다(status를 'replied'로 원자적 전이 — 동시 요청 경쟁 시 count로 감지).
 // threadId는 매칭된 Match.id를 재사용 — 상대방 편지에도 같은 threadId를 심어둬야(T12) 양쪽
