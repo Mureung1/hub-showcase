@@ -2,6 +2,8 @@ import { resolveCategorySemanticGroup } from "../../market/categorySemantics";
 import type { MarketStore } from "../../market/types";
 
 export const STORE_POINT_SOURCE_ID = "localtwin-store-points";
+export const STORE_CLUSTER_CIRCLE_LAYER_ID = "localtwin-store-clusters";
+export const STORE_CLUSTER_COUNT_LAYER_ID = "localtwin-store-cluster-counts";
 export const STORE_POINT_LAYER_ID = "localtwin-store-points-visible";
 export const STORE_CATEGORY_ICON_LAYER_ID = "localtwin-store-category-icons";
 export const STORE_POINT_HIT_LAYER_ID = "localtwin-store-points-hit";
