@@ -45,3 +45,149 @@
   margin: 7px 0 0;
   line-height: 1.5;
 }
+
+.inspector-panel .score-key-metrics {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.inspector-panel .score-key-metrics > div {
+  grid-template-columns: 26px minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  align-items: start;
+  gap: 2px 9px;
+  padding: 11px 12px;
+}
+
+.inspector-panel .score-key-metrics svg {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  width: 20px;
+  height: 20px;
+}
+
+.inspector-panel .score-key-metrics :where(span, b, small) {
+  grid-column: 2;
+  min-width: 0;
+  margin-left: 0;
+  word-break: keep-all;
+}
+
+.inspector-panel .score-key-metrics b {
+  overflow: visible;
+  font-size: 14px;
+  line-height: 1.35;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.inspector-panel .score-key-metrics small {
+  line-height: 1.45;
+}
+
+.inspector-panel .competition-chart {
+  display: grid;
+  align-items: stretch;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.inspector-panel .competition-stat {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 12px;
+  min-width: 0;
+}
+
+.inspector-panel .competition-stat span {
+  grid-column: 1;
+  grid-row: 1;
+  word-break: keep-all;
+}
+
+.inspector-panel .competition-stat small {
+  grid-column: 1;
+  grid-row: 2;
+  margin-left: 0;
+  word-break: keep-all;
+}
+
+.inspector-panel .competition-stat b {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: 20px;
+  white-space: nowrap;
+}
+
+.inspector-panel .legend-list {
+  width: 100%;
+  min-width: 0;
+  gap: 6px;
+}
+
+.inspector-panel .legend-list span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.inspector-panel .legend-list span b {
+  margin-left: auto;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.inspector-panel .legend-list > small {
+  margin-left: 0;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.inspector-panel .section-title {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: start;
+  gap: 6px 10px;
+}
+
+.inspector-panel .section-title > span {
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.inspector-panel .section-title > small {
+  min-width: 0;
+  margin-left: 0;
+  text-align: right;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.inspector-panel .hour-chart-value {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.inspector-panel .hour-chart-value > span,
+.inspector-panel .hour-chart-value > strong {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.4;
+  text-align: left;
+  word-break: keep-all;
+}
+
+.inspector-panel .hour-chart-value > strong {
+  font-size: 14px;
+  white-space: nowrap;
+}
