@@ -129,10 +129,11 @@ POST /api/admin/{guildId}/notice-config/test
 ## 3.1.1 Selector 설정 도움 요청
 
 Selector 설정이 어려운 관리자가 개발자에게 설정 도움을 요청할 때 사용합니다.
-현재 Day 4 frontend mock 흐름에서는 실제 전송 없이 요청 접수 상태만 표시합니다.
 
-MVP 현재 UI에서는 실제 이메일을 발송하지 않고 접수 안내 문구만 표시합니다.
+MVP 현재는 Backend API를 제공하지 않고, Frontend에서 실제 전송 없이 접수 안내 문구만 표시합니다.
 실제 서비스 연동 후에는 요청 내용이 운영자 메일 또는 저장소로 전달되고, 운영자는 사용자가 입력한 이메일 주소로 답변합니다.
+
+Planned endpoint:
 
 ```http
 POST /api/admin/{guildId}/selector-help-requests
@@ -151,7 +152,8 @@ POST /api/admin/{guildId}/selector-help-requests
 **Success Rules**
 
 - `email`, `siteName`, `url`은 필수입니다.
-- 요청은 운영자 확인용 메일 또는 저장소로 전달되어야 합니다.
+- MVP 현재는 요청을 실제로 전송하지 않고 접수 안내만 표시합니다.
+- 실제 서비스 연동 후 요청은 운영자 확인용 메일 또는 저장소로 전달되어야 합니다.
 - 답변은 입력한 `email`을 기준으로 처리합니다.
 
 ---
@@ -185,13 +187,13 @@ POST /api/admin/{guildId}/notice-config
   "categories": [
     {
       "name": "학사",
-      "channelId": "...",
+      "channelId": "111111111111111111",
       "roleName": "학사공지",
       "isActive": true
     },
     {
       "name": "장학",
-      "channelId": "...",
+      "channelId": "111111111111111111",
       "roleName": "장학공지",
       "isActive": false
     }
@@ -277,8 +279,8 @@ GET /api/admin/{guildId}/notice-config
             {   
                 "categoryId": 2,
                 "name": "장학",
-                "channelId": "333333333333333333",
-                "roleId": "2222222222222",
+                "channelId": "111111111111111111",
+                "roleId": "333333333333333333",
                 "roleName": "장학공지",
                 "isActive": true
             }
@@ -339,7 +341,7 @@ PUT /api/admin/{guildId}/notice-config
     },
     {
       "name": "장학",
-      "channelId": "333333333333333333",
+      "channelId": "111111111111111111",
       "roleName": "장학공지",
       "isActive": false
     }
@@ -405,13 +407,13 @@ PATCH /api/admin/{guildId}/notice-config/categories
   "categories": [
     {
       "categoryId": 1,
-      "channelId": "444444444444444444",
+      "channelId": "111111111111111111",
       "roleName": "학사 알림",
       "isActive": true
     },
     {
       "categoryId": 2,
-      "channelId": "555555555555555555",
+      "channelId": "111111111111111111",
       "roleName": "장학 알림",
       "isActive": false
     }
@@ -429,10 +431,18 @@ PATCH /api/admin/{guildId}/notice-config/categories
       {
         "categoryId": 1,
         "name": "학사",
-        "channelId": "444444444444444444",
+        "channelId": "111111111111111111",
         "roleId": "222222222222222222",
         "roleName": "학사 알림",
         "isActive": true
+      },
+      {
+        "categoryId": 2,
+        "name": "장학",
+        "channelId": "111111111111111111",
+        "roleId": null,
+        "roleName": "장학 알림",
+        "isActive": false
       }
     ]
   }
@@ -441,7 +451,7 @@ PATCH /api/admin/{guildId}/notice-config/categories
 
 **Rules**
 
-- 변경된 카테고리만 요청에 포함합니다.
+- 요청에 포함된 카테고리의 설정을 수정합니다.
 - 활성 상태를 유지하는 카테고리는 기존 roleId는 유지합니다.
 - 알림 채널이 변경되면 요청에 포함된 카테고리들의 `channelId`를 같은 값으로 수정합니다.
 - 역할 이름이 변경되면 기존 Discord 역할의 이름을 변경합니다.
@@ -532,11 +542,7 @@ GET /api/admin/{guildId}/discord/channels
     "channels": [
       {
         "id": "111111111111111111",
-        "name": "학사공지"
-      },
-      {
-        "id": "222222222222222222",
-        "name": "장학공지"
+        "name": "공지알림"
       }
     ]
   }

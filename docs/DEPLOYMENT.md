@@ -30,19 +30,9 @@ Discord Bot과 Scheduler는 Backend container 안에서 같은 Node.js 프로세
 
 ## Branch Policy
 
-- `work`: 기능 개발과 검증 브랜치
-- `deploy`: 실제 배포 기준 브랜치
+브랜치와 PR 작업 기준은 [CONTRIBUTING.md](./CONTRIBUTING.md)를 따른다.
 
-배포 흐름은 다음과 같다.
-
-```text
-work에서 작업, 검증, push
-  -> deploy로 이동
-  -> work 내용을 deploy에 merge
-  -> deploy push
-  -> GitHub Actions CI/CD 실행
-  -> EC2에서 deploy 브랜치 기준으로 Docker Compose 재배포
-```
+배포는 `deploy` 브랜치 push를 기준으로 GitHub Actions CI/CD를 실행한다.
 
 ---
 
@@ -298,33 +288,7 @@ curl -f https://<VERCEL_APP_URL>/api/health
 
 # 9. Post-deploy Manual QA
 
-배포 후 실제 Discord와 관리자 페이지 흐름은 필요할 때 수동으로 확인한다.
-
-이 확인은 운영 DB와 Discord 서버에 테스트 데이터가 생길 수 있으므로 테스트 서버에서 진행하고, 끝난 뒤 관리자 페이지의 설정 삭제로 정리한다.
-
-확인 순서:
-
-1. Frontend landing 접속
-2. Discord `/setup` 실행
-3. 관리자 페이지 링크 접속
-4. 경북대학교 컴퓨터학부 selector로 테스트 크롤링
-5. 공통 알림 채널과 카테고리 역할 저장
-6. `/guide` 안내 확인
-7. `/subscribe` 구독과 역할 부여 확인
-8. `/keyword` 키워드 추가, 삭제 확인
-9. Scheduler run-once 실행
-10. 공통 알림 채널 메시지 확인
-11. `DM으로 저장`, `요약 보기`, `알림 삭제` 버튼 확인
-12. 키워드 DM 알림 확인
-
-Scheduler 1회 실행:
-
-```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml exec backend npm run scheduler:notice:run-once
-```
-
-운영 container의 `scheduler:notice:run-once`는 빌드된 `dist` 파일을 실행한다.
-첫 수집이면 공지를 저장만 하고 Discord 알림은 보내지 않는다. 이후 실행에서는 새로 감지된 공지만 알림 대상이 된다.
+배포 후 실제 Discord와 관리자 페이지 흐름은 [QA.md](./QA.md)의 Production Smoke Test를 기준으로 확인한다.
 
 ---
 

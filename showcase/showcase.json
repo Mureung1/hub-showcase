@@ -6,7 +6,15 @@
   "demoUrl": "https://hub-silk-kappa-40.vercel.app",
   "demoVideoUrl": "https://youtu.be/TX8B7Anzvpw",
   "thumbnail": "thumbnail.webp",
-  "screenshots": [],
+  "screenshots": [
+    "screenshots/home.webp",
+    "screenshots/admin1.webp",
+    "screenshots/admin2.webp",
+    "screenshots/admin3.webp",
+    "screenshots/discord1.webp",
+    "screenshots/discord2.webp",
+    "screenshots/discord3.webp"
+  ],
   "problem": "대학 공지는 언제 올라올지 알기 어려워 사용자가 사이트를 반복해서 확인해야 합니다. 하지만 새 공지를 확인해도 자신에게 필요한 내용이 아닐 때가 많습니다.",
   "targetUsers": [
     "학교 공지를 반복해서 확인하기 피곤하지만 필요한 공지는 놓치고 싶지 않은 학생",
@@ -34,14 +42,70 @@
     "Cheerio"
   ],
   "techHighlights": [
-    "Axios와 Cheerio로 공지 사이트 HTML을 가져와 CSS Selector 기반으로 공지 제목, 링크, 날짜, 카테고리를 추출합니다.",
-    "Prisma와 MySQL로 Discord 서버별 공지 사이트 설정, 카테고리, 공지 이력, 구독, 키워드를 관리합니다.",
-    "discord.js로 채널 조회, Role 생성/수정/삭제, Slash Command 기반 관리자 설정 흐름을 연결합니다."
+    "관리자가 입력한 CSS Selector를 기반으로 Axios와 Cheerio가 공지 제목, 링크, 날짜, 카테고리를 추출합니다.",
+    "정규화된 공지 링크와 hashKey로 공지 이력을 저장해 30분 주기 크롤링에서도 중복 알림을 방지합니다.",
+    "설정 저장 직후 초기 수집을 실행하고 첫 수집은 알림 없이 저장만 하도록 처리해 운영 시작 시 기존 공지가 한꺼번에 발송되지 않게 했습니다.",
+    "discord.js Slash Command, Interaction Button, Role mention을 연결해 카테고리 구독과 키워드 DM 알림 흐름을 구현했습니다."
   ],
-  "developmentWithAI": "MVP 범위와 테스트 시나리오를 정하고 실제 동작을 검증했습니다. AI Agent는 기능 단위 구현 계획, 코드 작성, 오류 원인 분석, 문서 갱신을 도왔습니다.",
+  "developmentWithAI": "기획 정리부터 기능 구현, 운영 배포 오류 해결, 데모 준비와 PR 작성까지 Agent를 활용했습니다. 특히 기능을 단계별 작업으로 나누고, 구현 후 코드와 문서가 함께 맞는지 점검하는 방식으로 협업했습니다.",
   "agent": {
-    "summary": "기획 정리, 기능 구현, 테스트 체크리스트 작성, 문서 갱신에 AI Agent를 활용했습니다.",
-    "agentTools": [],
-    "workflows": []
+    "summary": "공지 알림 서비스의 요구사항 정리, 구현 계획 수립, 코드 작성, 운영 오류 분석, 테스트 체크리스트와 PR 문서 작성에 Agent를 활용했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "기능 설계 Agent",
+        "purpose": "공지 사이트 설정, 카테고리 구독, 키워드 알림, 배포 작업을 단계별 구현 단위로 나누고 우선순위를 정했습니다."
+      },
+      {
+        "type": "agent",
+        "name": "구현 보조 Agent",
+        "purpose": "React 관리자 페이지, Express API, Discord Slash Command, Scheduler 로직의 코드 작성과 수정 방향을 제안했습니다."
+      },
+      {
+        "type": "agent",
+        "name": "오류 분석 Agent",
+        "purpose": "EC2 Docker 배포, Prisma migration, 운영 컨테이너 run-once 실행 오류를 로그와 설정 파일 기준으로 분석했습니다."
+      },
+      {
+        "type": "agent",
+        "name": "문서 정리 Agent",
+        "purpose": "API, Architecture, QA, Deployment, PR 설명 문서를 실제 구현 상태에 맞게 정리했습니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "요구사항을 기능 단위로 정리",
+          "작업 단계를 나누고 구현 순서 결정",
+          "관련 코드와 문서 검색",
+          "코드 구현",
+          "타입체크와 빌드 실행",
+          "Discord와 관리자 페이지에서 수동 검증",
+          "변경 내용을 문서에 반영"
+        ]
+      },
+      {
+        "name": "운영 배포 Workflow",
+        "steps": [
+          "EC2, Docker Compose, Vercel 배포 구조 정리",
+          "GitHub Actions 배포 스크립트 작성",
+          "배포 로그 확인",
+          "migration과 컨테이너 재생성 문제 분석",
+          "운영 환경에서 health check와 run-once 검증",
+          "배포 절차를 문서화"
+        ]
+      },
+      {
+        "name": "PR 정리 Workflow",
+        "steps": [
+          "기능 단위로 커밋 분리",
+          "주요 작업 리스트 작성",
+          "설명 가능한 부분 정리",
+          "아직 이해가 부족한 부분 기록",
+          "새로 알게 된 내용 정리"
+        ]
+      }
+    ]
   }
 }

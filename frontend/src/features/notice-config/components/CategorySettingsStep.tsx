@@ -80,7 +80,7 @@ export function CategorySettingsStep({
               {category.isActive ? (
                 <input
                   value={category.roleName}
-                  placeholder={`예: Iris-${category.name}`}
+                  placeholder={`예: IRIS-${category.name}`}
                   onChange={(event) => onCategoryChange(category.name, 'roleName', event.target.value)}
                 />
               ) : (

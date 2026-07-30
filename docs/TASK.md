@@ -473,7 +473,7 @@
 
 ## 이슈
 
-- `npm run scheduler:notice:run-once` 실행 시 DB에 남아 있는 `IRIS Dev Notice` 테스트 사이트와 `경북대학교 컴퓨터학부` 사이트 fetch가 실패함.
+- 로컬 `npm run scheduler:notice:run-once:dev` 실행 시 DB에 남아 있는 `IRIS Dev Notice` 테스트 사이트와 `경북대학교 컴퓨터학부` 사이트 fetch가 실패함.
 - Scheduler run-once 스크립트는 정상 종료되며, site 단위 실패는 전체 job 실패로 전파하지 않도록 처리함.
 - `전체` 카테고리는 공지 저장 카테고리가 아니라 전체 공지 구독 역할로 사용한다.
 - 기존 DB 설정은 관리자 페이지에서 저장을 한 번 눌러 모든 카테고리의 알림 채널을 같은 값으로 맞출 수 있다.

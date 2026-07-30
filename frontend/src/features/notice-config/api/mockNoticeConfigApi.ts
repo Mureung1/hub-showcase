@@ -19,31 +19,31 @@ const mockDetectedCategories: DetectedCategory[] = [
   {
     name: '학사공지',
     channelId: 'channel-academic',
-    roleName: 'Iris-학사공지',
+    roleName: 'IRIS-학사공지',
     isActive: true,
   },
   {
     name: '장학공지',
     channelId: 'channel-scholarship',
-    roleName: 'Iris-장학공지',
+    roleName: 'IRIS-장학공지',
     isActive: true,
   },
   {
     name: '취업공지',
     channelId: 'channel-career',
-    roleName: 'Iris-취업공지',
+    roleName: 'IRIS-취업공지',
     isActive: true,
   },
   {
     name: '행사공지',
     channelId: 'channel-event',
-    roleName: 'Iris-행사공지',
+    roleName: 'IRIS-행사공지',
     isActive: true,
   },
   {
     name: '기타공지',
     channelId: 'channel-general',
-    roleName: 'Iris-기타공지',
+    roleName: 'IRIS-기타공지',
     isActive: false,
   },
 ]
