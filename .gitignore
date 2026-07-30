@@ -21,6 +21,12 @@ dist-ssr
 # scripts/generate-sample-csv.mjs가 만드는 CSV 테스트 파일(필요할 때 다시 생성하면 되므로 커밋하지 않음)
 scripts/sample-*.csv
 
+# 일회성 검증 스크립트를 저장소 안에서 돌릴 때 쓰는 자리(측정·재현용). 커밋 대상이 아니다 —
+# 실제로 리뷰 중 만든 임시 디렉터리가 커밋될 뻔했다.
+.tmpchk/
+_measure*.mjs
+_scratch*.mjs
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

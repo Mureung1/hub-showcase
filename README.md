@@ -24,7 +24,7 @@ graph TD
     end
 
     subgraph P["⚙️ Express 프록시 · server/proxy.js — 비밀 키 보관소"]
-        API["/api/gemini · /api/fooddb<br/>/api/naver-places · /api/reverse-geocode"]
+        API["/api/gemini · /api/resolve-food · /api/fooddb<br/>/api/naver-places · /api/reverse-geocode"]
     end
 
     subgraph X["🌐 외부 서비스"]
@@ -59,6 +59,7 @@ graph TD
 | **화면** | React SPA. 로그인 없이도 모든 기능이 동작한다(게스트 우선) |
 | **`dataStore.js`** | 매 호출마다 세션을 보고 localStorage/Supabase를 고른다. 화면은 저장소를 모른다 |
 | **Express 프록시** | 존재 이유는 오직 하나 — 비밀 키를 브라우저에 노출하지 않기 위해 |
+| **`/api/resolve-food`** | 음식명 → 실제 영양수치. 로컬 DB 스냅샷을 먼저 보고 놓친 것만 식약처에 병렬로 묻는다. `servingContext`(식당/포장·프랜차이즈/급식/집밥)에 따라 같은 음식도 다른 출처 레코드를 고르며, 그 맥락은 화면이 아니라 **AI가 항목마다** 판정한다 |
 | **Supabase** | 인증 + 로그인 계정 데이터. 접근 제어는 키가 아니라 RLS가 한다 |
 | **APK** | 같은 웹을 WebView가 원격 URL로 로드 → 웹 배포가 곧 앱 업데이트 |
 
@@ -117,6 +118,8 @@ Vercel 서버리스 경로(`api/index.js`)까지 로컬에서 그대로 재현�
 | `FOODSAFETY_RECIPE_API_KEY` | 선택 (**빌드 타임 전용**) | [식품안전나라(openapi.foodsafetykorea.go.kr)](https://openapi.foodsafetykorea.go.kr)에서 **별도로** 회원가입 후 즉시 발급받는 인증키(위 `FOODSAFETY_API_KEY`류와는 완전히 다른 계정 체계, data.go.kr 아님). 무료·트래픽 제한 없음. **`node scripts/buildRecipeDB.js`를 돌려 레시피 스냅샷을 다시 만들 때만** 쓴다 — "조리식품의 레시피 DB"(COOKRCP01)는 전체가 1,141종뿐이라 통째로 `server/data/recipeDB.json`에 번들해 두고 런타임엔 메모리에서 조회한다. 따라서 **배포 서버에는 이 키를 넣을 필요가 없다**(넣어도 쓰이지 않는다). |
 | `VITE_SUPABASE_URL` | 필수 (빌드 시점) | Supabase 프로젝트 대시보드 → **Project Settings → API → Project URL**. 로그인(아이디/비밀번호)에 쓰는 Supabase 클라이언트(`src/lib/supabase.js`) 초기화 값으로, `VITE_KAKAO_JS_KEY`와 마찬가지로 프론트 번들에 그대로 박힌다. |
 | `VITE_SUPABASE_ANON_KEY` | 필수 (빌드 시점) | 같은 화면의 **anon public** 키. 브라우저에 노출돼도 되는 공개 키다(실제 접근 제어는 Supabase의 Row Level Security가 담당 — `supabase/schema.sql` 참고). |
+| `SUPABASE_SERVICE_ROLE_KEY` | 필수 (서버) | 같은 화면의 **service_role** 키. ⚠️ **절대 프론트에 노출하면 안 된다**(RLS를 통째로 우회하는 키라 `VITE_` 접두를 붙이면 안 된다). 서버의 `/api/auth/*`(비밀번호 찾기 — 보안질문 등록/조회/재설정)만 이 키를 쓴다(`server/supabaseAdmin.js`). **빠뜨리면 그 라우트 전체가 500**이 되어 비밀번호 찾기가 동작하지 않고, 회원가입 시 보안질문 등록에서도 에러 토스트가 뜬다. 나머지 기능은 정상 동작하므로 배포 후 눈에 잘 띄지 않는다. |
+| `NEIS_API_KEY` | 필수 (서버) | [교육정보 개방포털(open.neis.go.kr)](https://open.neis.go.kr)에서 발급받는 인증키. 학교 검색·급식 식단 조회(`/api/school-meal` 등)에 쓴다. 빠지면 급식 조회가 실패하는데, **화면에 에러로 드러나지 않는다** — 급식 프로필 사용자의 closed-set 프라이어와 NEIS 공식 영양 앵커링이 조용히 꺼지고 분석은 open-set 경로로 계속되므로, 정확도만 떨어진 채로 지나가기 쉽다. |
 
 ### ⚠️ Supabase 인증 설정 (아이디/비밀번호 로그인 필수 조건)
 
@@ -210,8 +213,15 @@ Render 설정(`render.yaml`)과 별개로 동작하는 독립적인 배포 경�
 3. **Environment Variables**에 위 환경변수 표의 값들을 등록한다
    (`OPENROUTER_API_KEY`, `KAKAO_REST_API_KEY`, `NAVER_SEARCH_CLIENT_ID`,
    `NAVER_SEARCH_CLIENT_SECRET`, `VITE_NAVER_MAP_CLIENT_ID`, `FOODSAFETY_API_KEY`,
-   `FOODSAFETY_PROC_API_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, 선택으로
-   `APP_URL`). `NODE_ENV`/`PORT`/`VERCEL`은 설정하지 않는다.
+   `FOODSAFETY_PROC_API_KEY`, `NEIS_API_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`, 선택으로 `APP_URL`). `NODE_ENV`/`PORT`/`VERCEL`은 설정하지 않는다.
+
+   ⚠️ **`SUPABASE_SERVICE_ROLE_KEY`와 `NEIS_API_KEY`는 빠뜨려도 배포가 성공하고 대부분의 화면이
+   정상으로 보인다.** 전자는 비밀번호 찾기(`/api/auth/*`)만 500으로 죽고, 후자는 급식 프라이어·공식
+   영양 앵커링이 조용히 꺼져 정확도만 떨어진다. 배포 후 아래 두 가지로 실제 확인할 것:
+   - `curl "https://<도메인>/api/auth/security-question?loginId=없는아이디"` → 404/200이어야 정상
+     (500이면 `SUPABASE_SERVICE_ROLE_KEY` 누락)
+   - 학교 프로필로 급식 탭 진입 → 오늘 식단이 뜨는지(안 뜨면 `NEIS_API_KEY` 확인)
 4. **Deploy**
 
 `vercel.json`에 이미 포함된 설정:
