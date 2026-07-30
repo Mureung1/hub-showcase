@@ -6,6 +6,8 @@
     "dev": "concurrently -n CLIENT,SERVER -c blue,green \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
     "start": "npm start --prefix server",
     "install:all": "npm install --prefix client && npm install --prefix server",
+    "test": "npm test --prefix client && npm test --prefix server",
+    "verify": "npm test && npm run build",
     "build": "npm run build --prefix client",
     "render:build": "npm install --package-lock=false && npm install --prefix client --package-lock=false && npm install --prefix server --package-lock=false && npm run build"
   },
