@@ -6,8 +6,9 @@
 
 - Frontend: React 19, Vite, Axios, TanStack Query
 - Backend: Node.js, Express, Sequelize
-- Database: MySQL 8 (Docker Compose)
+- Database: MySQL 8 (로컬 Docker Compose / 운영 Railway)
 - Authentication: 개발용 JWT 로그인
+- Deployment: Vercel(Frontend), Render(Backend), Railway(MySQL)
 
 ## 주요 기능
 
@@ -35,6 +36,20 @@ npm run dev
 ```
 
 프론트엔드는 기본적으로 Vite 프록시를 통해 `http://localhost:4000` 백엔드에 연결합니다. 별도 배포 시 `frontend/.env`의 `VITE_API_BASE_URL`과 `backend/.env`의 `CORS_ORIGINS`를 실제 주소로 설정하세요.
+
+## 배포 주소와 최종 확인
+
+- 서비스: https://hub-opal-eta.vercel.app/
+- 백엔드 상태 확인: https://hub-z5dg.onrender.com/health
+- 데모 영상: https://youtu.be/1XQzD72mFPg
+
+운영 환경에서 프론트는 `VITE_API_BASE_URL`로 Render API를 호출하고, Render는 `CORS_ORIGINS`로 Vercel 주소만 허용합니다. 실제 비밀 값과 DB 접속 값은 GitHub가 아닌 Vercel·Render 환경변수에만 저장합니다.
+
+## 작업 과정과 AI 협업 문서
+
+- [나만의 개발·배포 워크플로우](Project/docs/final-workflow.md)
+- [Agent 협업 과정 시각화](Project/docs/agent-collaboration.md)
+- [2026-07-30 작업 과정 기록](Project/docs/work-log-2026-07-30.md)
 
 ## 품질 확인
 
