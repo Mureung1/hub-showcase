@@ -3,14 +3,17 @@ import type { FormEvent } from 'react';
 import { SYMPTOM_ID_BY_NAME, INGREDIENT_ICONS } from '../mockData';
 import { getRecommendedIngredients } from '../api/ingredients';
 import type { RecommendedIngredient } from '../api/ingredients';
+import { ApiError } from '../api/ApiError';
 import { ChipIcon, getChipColor } from '../chipIcons';
 
 interface AnalysisProps {
   symptoms: string[];
+  token: string;
   onNext: (ingredientIds: number[], supplements: string[]) => void;
+  onAuthError: () => void;
 }
 
-export function Analysis({ symptoms, onNext }: AnalysisProps) {
+export function Analysis({ symptoms, token, onNext, onAuthError }: AnalysisProps) {
   const [supplementInput, setSupplementInput] = useState('');
   const [supplements, setSupplements] = useState<string[]>([]);
   const [recommendedIngredients, setRecommendedIngredients] = useState<RecommendedIngredient[]>([]);
@@ -25,11 +28,17 @@ export function Analysis({ symptoms, onNext }: AnalysisProps) {
       return;
     }
     setLoading(true);
-    getRecommendedIngredients(symptomIds)
+    getRecommendedIngredients(symptomIds, token)
       .then(setRecommendedIngredients)
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 401) {
+          onAuthError();
+          return;
+        }
+        setError(err.message);
+      })
       .finally(() => setLoading(false));
-  }, [symptoms]);
+  }, [symptoms, token, onAuthError]);
 
   function addSupplement(e: FormEvent) {
     e.preventDefault();

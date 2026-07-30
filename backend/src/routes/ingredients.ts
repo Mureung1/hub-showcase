@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { pool } from "../db";
+import { requireAuth } from "../middleware/auth";
 
 export const ingredientsRouter = Router();
 
@@ -12,7 +13,7 @@ interface RecommendedIngredientRow {
   match_count: string;
 }
 
-ingredientsRouter.get("/recommend", async (req, res) => {
+ingredientsRouter.get("/recommend", requireAuth, async (req, res) => {
   const symptomIdsParam = req.query.symptomIds as string | undefined;
 
   if (!symptomIdsParam) {

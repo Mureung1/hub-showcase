@@ -176,7 +176,12 @@ function App() {
               <>
                 {screen === 'home' && <Home onStart={handleStart} />}
                 {screen === 'analysis' && (
-                  <Analysis symptoms={symptoms} onNext={handleAnalysisNext} />
+                  <Analysis
+                    symptoms={symptoms}
+                    token={auth.token}
+                    onNext={handleAnalysisNext}
+                    onAuthError={handleAuthError}
+                  />
                 )}
                 {screen === 'overlap' && (
                   <Overlap
