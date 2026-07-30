@@ -34,6 +34,28 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
+test("서비스 소개 탭에서 핵심 가치와 시작 동선을 제공한다", async () => {
+  const requestedUrls = [];
+  globalThis.fetch = async (url) => {
+    requestedUrls.push(url);
+    if (url === "/api/ingredients") return new Response(JSON.stringify({ ingredients: [] }));
+    throw new Error(`Unexpected request: ${url}`);
+  };
+
+  render(<App />);
+  fireEvent.click(screen.getByRole("button", { name: "서비스 소개" }));
+
+  expect(screen.getByRole("heading", { name: /냉장고 속 재료를\s*오늘의 한 끼로/ })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "재료를 한눈에" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "먼저 먹을 것부터" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "있는 재료로 한 끼" })).toBeInTheDocument();
+  expect(requestedUrls).not.toContain("/api/recommendations");
+
+  fireEvent.click(screen.getByRole("button", { name: "내 냉장고 채우기" }));
+  expect(await screen.findByRole("dialog")).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "재료 추가" })).toBeInTheDocument();
+});
+
 test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으로 이어진다", async () => {
   const requestedModes = [];
   globalThis.fetch = async (url, options) => {

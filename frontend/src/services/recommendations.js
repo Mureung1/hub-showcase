@@ -13,7 +13,7 @@ export class RecommendationRequestError extends Error {
 
 export async function fetchRecommendations({
   mode = "quick",
-  maxMissingIngredients = 0,
+  maxMissingIngredients = 3,
   batchNumber = 1,
   excludedRecipeFingerprints = [],
   signal,

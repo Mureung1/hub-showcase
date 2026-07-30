@@ -32,6 +32,7 @@ import {
 
 const storageLabels = { urgent: "먼저 먹기", all: "전체", fridge: "냉장", freezer: "냉동", room: "실온" };
 const mainTabs = [
+  ["about", "서비스 소개"],
   ["fridge", "내 냉장고"],
   ["recommend", "오늘의 메뉴"],
 ];
@@ -91,7 +92,7 @@ function App() {
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [savedRecipes, setSavedRecipes] = useState(() => readSavedRecipes());
   const [selectedMood, setSelectedMood] = useState("expiryFirst");
-  const [missingIngredientLimit, setMissingIngredientLimit] = useState(1);
+  const [missingIngredientLimit, setMissingIngredientLimit] = useState(3);
   const [isRecipeLoading, setIsRecipeLoading] = useState(false);
   const [editingIngredientId, setEditingIngredientId] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -436,17 +437,19 @@ function App() {
   return (
     <div className="app-shell" data-current-date={todayKey}>
       <header className={`site-header ${activeMainTab === "fridge" ? "fridge-context" : ""}`}>
-        <div className="header-spacer" aria-hidden="true" />
+        <button className="brand-mark" type="button" aria-label="있는대로 홈" onClick={() => setActiveMainTab("about")}>
+          있는대로
+        </button>
         <nav className="header-nav" aria-label="상단 메뉴">
-          <button type="button">서비스 소개</button>
           {mainTabs.map(([id, label]) => <button key={id} type="button" className={activeMainTab === id ? "active" : ""} aria-current={activeMainTab === id ? "page" : undefined} onClick={() => (id === "recommend" ? showRecommendations() : setActiveMainTab(id))}>{label}</button>)}
         </nav>
         {!selectedRecipe && <button className="header-cta" type="button" onClick={activeMainTab === "fridge" ? showRecommendations : openIngredientForm}>
-          {activeMainTab === "fridge" ? "레시피 추천" : "재료 등록하기"}
+          {activeMainTab === "about" ? "냉장고 시작하기" : activeMainTab === "fridge" ? "레시피 추천" : "재료 등록하기"}
         </button>}
       </header>
 
       <main>
+        {activeMainTab === "about" && <AboutWorkspace onStart={openIngredientForm} onRecommend={showRecommendations} />}
         {activeMainTab === "fridge" && isLoading && (
           <div className="empty-board">재료를 불러오는 중입니다...</div>
         )}
@@ -470,6 +473,79 @@ function App() {
       {naggingMessage && pendingRecipe && <NaggingMessage message={naggingMessage} onAcceptSuggestion={() => continueFromNagging("balanced")} onContinueOriginal={continueOriginalFromNagging} onClose={closeNaggingMessage} />}
       {consumptionRecipe && <RecipeConsumptionModal recipe={consumptionRecipe} ingredients={managedIngredients} isSubmitting={isConsumptionSubmitting} error={consumptionError} onClose={closeConsumptionModal} onConfirm={confirmRecipeConsumption} />}
     </div>
+  );
+}
+
+function AboutWorkspace({ onStart, onRecommend }) {
+  const features = [
+    { number: "01", title: "재료를 한눈에", description: "보관 위치와 수량, 소비기한을 함께 기록해 냉장고 상태를 놓치지 않아요.", accent: "green" },
+    { number: "02", title: "먼저 먹을 것부터", description: "소비기한이 가까운 재료를 앞에 보여줘 식재료 낭비를 자연스럽게 줄여요.", accent: "red" },
+    { number: "03", title: "있는 재료로 한 끼", description: "Gemini가 보유 재료와 오늘의 상황을 바탕으로 검증된 1인분 메뉴를 제안해요.", accent: "orange" },
+  ];
+
+  return (
+    <section className="about-page" aria-labelledby="about-title">
+      <div className="about-hero">
+        <div className="about-hero-copy">
+          <p className="eyebrow">TODAY&apos;S FRIDGE, TODAY&apos;S MENU</p>
+          <h1 id="about-title">냉장고 속 재료를<br /><span>오늘의 한 끼로</span></h1>
+          <p className="about-lead">있는대로는 냉장고에 남은 재료와 소비기한을 기억하고, 지금 만들기 좋은 메뉴까지 이어주는 1인 가구의 식재료 관리 서비스입니다.</p>
+          <div className="about-actions">
+            <button className="about-primary" type="button" onClick={onStart}>내 냉장고 채우기 <span aria-hidden="true">→</span></button>
+            <button className="about-secondary" type="button" onClick={onRecommend}>오늘의 메뉴 보기</button>
+          </div>
+        </div>
+        <div className="about-hero-visual" aria-label="재료가 한 끼로 이어지는 과정">
+          <div className="visual-orbit orbit-one" />
+          <div className="visual-orbit orbit-two" />
+          <div className="visual-card visual-fridge">
+            <span>MY FRIDGE</span>
+            <strong>남은 재료 8개</strong>
+            <div><i>🥬</i><i>🥚</i><i>🍅</i></div>
+          </div>
+          <div className="visual-arrow" aria-hidden="true">→</div>
+          <div className="visual-card visual-menu">
+            <span>TODAY&apos;S MENU</span>
+            <b>🍳</b>
+            <strong>토마토 달걀 볶음</strong>
+            <small>15분 · 1인분</small>
+          </div>
+        </div>
+      </div>
+
+      <div className="about-problem">
+        <p className="eyebrow">WHY 있는대로</p>
+        <h2>사놓고 잊는 재료,<br />매일 반복되는 메뉴 고민</h2>
+        <p>재료 관리와 메뉴 탐색을 따로 하지 않아도 괜찮아요.<br />냉장고를 확인하는 순간부터 오늘의 식사까지 한 흐름으로 연결합니다.</p>
+      </div>
+
+      <div className="about-feature-grid">
+        {features.map((feature) => (
+          <article className={`about-feature ${feature.accent}`} key={feature.number}>
+            <span>{feature.number}</span>
+            <h3>{feature.title}</h3>
+            <p>{feature.description}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="about-how">
+        <div>
+          <p className="eyebrow">HOW IT WORKS</p>
+          <h2>복잡한 계획 없이,<br />세 단계면 충분해요</h2>
+        </div>
+        <ol>
+          <li><span>1</span><div><strong>냉장고 기록</strong><p>가지고 있는 재료와 소비기한을 등록해요.</p></div></li>
+          <li><span>2</span><div><strong>오늘의 기준 선택</strong><p>소비기한, 간편함, 영양 균형 중 우선순위를 골라요.</p></div></li>
+          <li><span>3</span><div><strong>메뉴 추천과 재료 차감</strong><p>레시피를 확인하고 요리한 만큼 냉장고에서 바로 차감해요.</p></div></li>
+        </ol>
+      </div>
+
+      <div className="about-bottom-cta">
+        <div><span>있는 재료 그대로,</span><h2>오늘은 뭘 먹을지 바로 정해보세요.</h2></div>
+        <button type="button" onClick={onStart}>무료로 시작하기 <span aria-hidden="true">→</span></button>
+      </div>
+    </section>
   );
 }
 
@@ -588,7 +664,7 @@ function RecommendWorkspace({ recipes, savedRecipes, meta, isLoading, isLoadingM
     </section>}
 
     <section className="recommendation-section" aria-labelledby="recommendation-title">
-      <div className="recommendation-section-heading"><div><p className="eyebrow">For You</p><h2 id="recommendation-title">지금 고르기 좋은 메뉴</h2></div><label className="one-missing-toggle">부족 재료 허용<select value={missingIngredientLimit} onChange={(event) => setMissingIngredientLimit(Number(event.target.value))}><option value={0}>없음</option><option value={1}>최대 1개</option><option value={2}>최대 2개</option></select></label></div>
+      <div className="recommendation-section-heading"><div><p className="eyebrow">For You</p><h2 id="recommendation-title">지금 고르기 좋은 메뉴</h2></div><label className="one-missing-toggle">부족 재료 허용<select value={missingIngredientLimit} onChange={(event) => setMissingIngredientLimit(Number(event.target.value))}><option value={0}>없음</option><option value={1}>최대 1개</option><option value={2}>최대 2개</option><option value={3}>최대 3개</option><option value={4}>최대 4개</option><option value={5}>최대 5개</option></select></label></div>
       {isLoading && <div className="recommendation-status" role="status">보유 재료로 레시피를 추천하고 있어요...</div>}
       {!isLoading && error && <RecommendationError message={error} hasRecipes={recipes.length > 0} onRetry={onRetry} />}
       {!isLoading && recipes.length > 0 && <div className="recipe-recommendation-grid">{recipes.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} label="오늘 추천" isSaved={isRecipeSaved(recipe, savedRecipes)} onSelect={() => onSelectRecipe(recipe)} onToggleSaved={() => onToggleSaved(recipe)} />)}</div>}

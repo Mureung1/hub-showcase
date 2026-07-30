@@ -192,9 +192,9 @@ test("품질 기준을 통과한 레시피가 적으면 1~2개 응답을 허용�
   assert.equal(result.generated.generationSummary.stopReason, "qualityLimit");
 });
 
-test("추천 요청은 부족 재료를 최대 두 개까지 허용하고 세 개는 거부한다", () => {
-  assert.equal(recommendationRequestSchema.parse({ maxMissingIngredients: 2 }).maxMissingIngredients, 2);
-  assert.throws(() => recommendationRequestSchema.parse({ maxMissingIngredients: 3 }));
+test("추천 요청은 부족 재료를 최대 다섯 개까지 허용한다", () => {
+  assert.equal(recommendationRequestSchema.parse({ maxMissingIngredients: 5 }).maxMissingIngredients, 5);
+  assert.throws(() => recommendationRequestSchema.parse({ maxMissingIngredients: 6 }));
 });
 
 test("적합한 레시피가 없으면 빈 결과와 명시적인 종료 이유를 허용한다", () => {

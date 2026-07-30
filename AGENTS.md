@@ -85,6 +85,7 @@ docs/           Notion으로 옮길 수 있는 문서
 
 - 커밋 하나에는 논리적 변경 하나만 포함한다.
 - 형식은 `<type>: <summary>`, type은 `feat`, `fix`, `docs`, `refactor`, `test`, `chore` 중 선택한다.
+- 커밋 메시지의 type과 summary는 모두 영어로 작성한다.
 - `dist/`, `node_modules/`, `.env`는 커밋하지 않는다.
 - 커밋 전 `npm run lint`와 `npm run build`를 실행한다.
 - 사용자 변경을 삭제하거나 관련 없는 파일을 함께 커밋하지 않는다.

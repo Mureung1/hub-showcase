@@ -14,6 +14,12 @@ export const ASSUMED_PANTRY_INGREDIENTS = [
   "설탕",
   "식초",
   "다진 마늘",
+  "된장",
+  "고추장",
+  "참기름",
+  "깨",
+  "조미료",
+  "육수 조미료",
 ];
 
 const INGREDIENT_ALIASES = new Map([
@@ -309,10 +315,10 @@ export function validateGeneratedRecipes(generated, request, ingredientContext, 
   for (let leftIndex = 0; leftIndex < generated.recipes.length; leftIndex += 1) {
     for (let rightIndex = leftIndex + 1; rightIndex < generated.recipes.length; rightIndex += 1) {
       if (invalidRecipeIndexes.has(leftIndex) || invalidRecipeIndexes.has(rightIndex)) continue;
-      if (getRecipeDifferenceCount(generated.recipes[leftIndex], generated.recipes[rightIndex]) < 2) {
+      if (getRecipeDifferenceCount(generated.recipes[leftIndex], generated.recipes[rightIndex]) < 1) {
         addRecipeViolation(
           rightIndex,
-          `INSUFFICIENT_VARIETY: recipes.${leftIndex}와 recipes.${rightIndex}는 조리 형태·기법·주재료 중 두 가지 이상 달라야 합니다.`,
+          `INSUFFICIENT_VARIETY: recipes.${leftIndex}와 recipes.${rightIndex}는 조리 형태·기법·주재료 중 한 가지 이상 달라야 합니다.`,
         );
       }
     }
