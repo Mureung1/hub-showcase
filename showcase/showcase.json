@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "title": "편방 (Pyeonbang) - 편의점 단백질 가성비 계산기",
+  "summary": "편의점 음식의 가격 대비 단백질 함량을 분석하여 3단계 가성비 등급(갓성비/보통/주의)을 판별해 주는 서비스",
+  "githubUser": "yeongmin0901",
+  "demoUrl": "",
+  "demoVideoUrl": "https://drive.google.com/file/d/1mVsHj1fxpzzGcD76kY6YesYDsuRyVV1V/view?usp=sharing",
+  "thumbnail": "showcase/thumbnail.webp",
+  "screenshots": [
+    "showcase/screenshots/home.webp"
+  ],
+  "problem": "편의점에서 운동/식단 관리용 음식을 살 때, 가격 대비 단백질 함량을 일일이 비교하기 어렵고 합리적인 구매 판단을 내리기 힘듦",
+  "targetUsers": [
+    "편의점에서 식단을 해결하는 자취생 및 대학생",
+    "가격 대비 단백질 함량(가성비)을 빠르게 비교하고 싶은 운동인"
+  ],
+  "features": [
+    "단백질 함량 및 가격 기반 3단계 가성비 스코어링 로직 (갓성비/보통/주의)",
+    "OCR 파싱을 통한 영양성분 정보 자동 인식 및 DB 저장",
+    "직관적인 프론트엔드 UI를 통한 가성비 결과 시각화"
+  ],
+  "featureTags": [
+    "가성비계산기",
+    "프로틴식단",
+    "OCR인식",
+    "Flask"
+  ],
+  "techStack": [
+    "Python",
+    "Flask",
+    "JavaScript",
+    "HTML5/CSS3",
+    "SQLite"
+  ],
+  "techHighlights": [
+    "단백질 가성비 지수((단백질/가격) * 1000) 및 가격/단백질 방어선을 조합한 3단계 검증 알고리즘 구현",
+    "OCR 파싱 모듈을 통한 이미지 데이터 자동 추출 백엔드 API 설계"
+  ],
+  "developmentWithAI": "Antigravity CLI 및 Gemini 3.6 Flash 모델을 활용하여 백엔드 가성비 산출 알고리즘 디버깅, OCR 파싱 API 연동, 코드 리팩토링 및 Git 작업 효율화 진행",
+  "agent": {
+    "summary": "Antigravity CLI 및 Gemini 3.6 Flash 기반 보조 AI Agent 활용",
+    "agentTools": [
+      {
+        "name": "Antigravity CLI",
+        "type": "skill",
+        "purpose": "개발 환경 구성 및 명령어 수행"
+      },
+      {
+        "name": "Gemini 3.6 Flash",
+        "type": "agent",
+        "purpose": "코드 리뷰 및 디버깅 보조"
+      }
+    ],
+    "workflows": [
+      {
+        "name": "백엔드 가성비 계산 알고리즘 검증 및 디버깅",
+        "steps": [
+          "가성비 산출 로직 디버깅",
+          "알고리즘 연산 결과 검증"
+        ]
+      },
+      {
+        "name": "OCR 파싱 예외 처리 및 백엔드 API 구조 고도화",
+        "steps": [
+          "OCR 데이터 예외 처리",
+          "백엔드 API 리팩토링"
+        ]
+      }
+    ]
+  }
+}
