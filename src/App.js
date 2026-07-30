@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { Badge, Button, SearchField } from "./components/ui";
 import { supabase, toAppUser } from "./supabaseClient";
+import { shouldLoadSuggestions } from "./searchSuggestions";
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const KAKAO_MAP_KEY = process.env.REACT_APP_KAKAO_MAP_JAVASCRIPT_KEY;
@@ -37,6 +38,14 @@ function saveTestAnalysis(entry) {
   let entries = [];
   try { entries = JSON.parse(localStorage.getItem(TEST_ANALYSIS_STORAGE_KEY)) || []; } catch { entries = []; }
   localStorage.setItem(TEST_ANALYSIS_STORAGE_KEY, JSON.stringify([...entries, entry]));
+}
+
+function deleteOwnTestAnalysis(reviewId, userId) {
+  const entries = loadAllTestAnalyses();
+  const target = entries.find((entry) => entry.id === reviewId);
+  if (!target || target.userId !== userId) return false;
+  localStorage.setItem(TEST_ANALYSIS_STORAGE_KEY, JSON.stringify(entries.filter((entry) => entry.id !== reviewId)));
+  return true;
 }
 
 function loadMapScreenState() {
@@ -222,9 +231,23 @@ function MyPage({ user, selectedPlace, onBack, onLogout, onSavedPlaces, onUserUp
   const [nameInput, setNameInput] = useState(user.name);
   const [nameStatus, setNameStatus] = useState("idle");
   const [nameMessage, setNameMessage] = useState("");
-  const reviews = loadAllTestAnalyses().filter((review) => review.testOnly && (!review.userId || review.userId === user.id));
+  const [pendingDeleteId, setPendingDeleteId] = useState("");
+  const [reviewMessage, setReviewMessage] = useState("");
+  const [reviewRevision, setReviewRevision] = useState(0);
+  const reviews = loadAllTestAnalyses().filter((review) => review.testOnly && review.userId === user.id);
   const sortedReviews = [...reviews].sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
   const placeName = (review) => review.placeTitle || (selectedPlace?.id === review.placeId ? selectedPlace.title : "작성한 업체");
+
+  function deleteReview(reviewId) {
+    if (!deleteOwnTestAnalysis(reviewId, user.id)) {
+      setReviewMessage("본인이 작성한 리뷰만 삭제할 수 있습니다.");
+      setPendingDeleteId("");
+      return;
+    }
+    setPendingDeleteId("");
+    setReviewMessage("리뷰가 삭제되었습니다.");
+    setReviewRevision((value) => value + 1);
+  }
 
   async function updateNickname(event) {
     event.preventDefault();
@@ -269,7 +292,7 @@ function MyPage({ user, selectedPlace, onBack, onLogout, onSavedPlaces, onUserUp
       <aside className="mypage-sidebar"><a href="/" onClick={resetAndGoHome}>⌂ 홈</a><button onClick={onSavedPlaces} type="button">♡ 관심 장소</button><strong>♙ 마이페이지</strong></aside>
       <div className="mypage-content">
         <section className="mypage-profile"><span className="mypage-avatar">{user.name.slice(0, 1)}</span><div className="mypage-profile-info">{isEditingName ? <form className="nickname-form" onSubmit={updateNickname}><label htmlFor="nickname">닉네임</label><div><input autoFocus id="nickname" maxLength="30" onChange={(event) => setNameInput(event.target.value)} value={nameInput} /><Button disabled={nameStatus === "saving"} type="submit">{nameStatus === "saving" ? "저장 중" : "저장"}</Button><button className="nickname-cancel" onClick={() => { setNameInput(user.name); setIsEditingName(false); setNameMessage(""); setNameStatus("idle"); }} type="button">취소</button></div></form> : <div className="mypage-name-row"><h1>{user.name}</h1><button onClick={() => setIsEditingName(true)} type="button">닉네임 변경</button></div>}<p>{user.email}</p><small>영수증 인증 리뷰로 믿을 수 있는 장소 선택을 돕고 있어요.</small>{nameMessage && <span className={`nickname-message is-${nameStatus}`} role="status">{nameMessage}</span>}</div><div className="mypage-count"><span>작성 리뷰</span><strong>{reviews.length}</strong></div></section>
-        <section className="mypage-reviews"><div className="mypage-section-title"><div><span>MY REVIEWS</span><h2>작성한 리뷰</h2></div><small>최신순</small></div>{sortedReviews.length > 0 ? <div className="mypage-review-list">{sortedReviews.map((review) => <article className="mypage-review-card" key={review.id}><header><div><h3>{placeName(review)}</h3><span>{new Date(review.createdAt).toLocaleDateString("ko-KR")} 작성</span></div><Badge>테스트</Badge></header><p>{review.content}</p><footer><strong>{SENTIMENT_LABELS[review.bucket]}</strong><span>AI 신뢰도 {Math.round(review.confidence * 100)}%</span></footer>{review.keywords?.length > 0 && <small>{review.keywords.map((keyword) => `#${keyword}`).join(" ")}</small>}</article>)}</div> : <div className="mypage-empty"><strong>아직 작성한 리뷰가 없습니다</strong><p>지도에서 업체를 선택하고 첫 리뷰를 작성해 보세요.</p><Button onClick={onBack}>지도로 이동</Button></div>}</section>
+        <section className="mypage-reviews" data-revision={reviewRevision}><div className="mypage-section-title"><div><span>MY REVIEWS</span><h2>작성한 리뷰</h2></div><small>최신순</small></div>{reviewMessage && <p className="mypage-review-message" role="status">{reviewMessage}</p>}{sortedReviews.length > 0 ? <div className="mypage-review-list">{sortedReviews.map((review) => <article className="mypage-review-card" key={review.id}><header><div><h3>{placeName(review)}</h3><span>{new Date(review.createdAt).toLocaleDateString("ko-KR")} 작성</span></div><div className="mypage-review-card__actions"><Badge>이미지 확인</Badge><button aria-label={`${placeName(review)} 리뷰 삭제`} onClick={() => { setPendingDeleteId(review.id); setReviewMessage(""); }} type="button">삭제</button></div></header><p>{review.content}</p><footer><strong>{SENTIMENT_LABELS[review.bucket]}</strong><span>AI 신뢰도 {Math.round(review.confidence * 100)}%</span></footer>{review.keywords?.length > 0 && <small>{review.keywords.map((keyword) => `#${keyword}`).join(" ")}</small>}{pendingDeleteId === review.id && <div className="review-delete-confirm" role="alert"><span>정말 삭제할까요?</span><div><button onClick={() => setPendingDeleteId("")} type="button">취소</button><button aria-label="삭제 확인" onClick={() => deleteReview(review.id)} type="button">삭제</button></div></div>}</article>)}</div> : <div className="mypage-empty"><strong>아직 작성한 리뷰가 없습니다</strong><p>지도에서 업체를 선택하고 첫 리뷰를 작성해 보세요.</p><Button onClick={onBack}>지도로 이동</Button></div>}</section>
       </div>
       <nav className="mypage-bottom-nav"><button onClick={onBack} type="button"><span>⌂</span><small>홈</small></button><button onClick={onSavedPlaces} type="button"><span>♡</span><small>저장</small></button><button onClick={onBack} type="button"><span>✎</span><small>리뷰작성</small></button><button className="is-active" type="button"><span>♙</span><small>내정보</small></button></nav>
     </main>
@@ -319,6 +342,8 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
   const mapRef = useRef(null);
   const overlaysRef = useRef([]);
   const resultsRef = useRef(null);
+  const autocompleteEnabledRef = useRef(false);
+  const suggestionRequestRef = useRef(0);
   const [mapStatus, setMapStatus] = useState(KAKAO_MAP_KEY ? "loading" : "missing-key");
   const [mapError, setMapError] = useState("");
   const [searchInput, setSearchInput] = useState(() => restoredStateRef.current.searchInput || "");
@@ -370,10 +395,11 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
 
   useEffect(() => {
     const query = searchInput.trim();
-    if (query.length < 2 || mapStatus !== "ready" || !mapRef.current) {
+    if (!shouldLoadSuggestions({ enabled: autocompleteEnabledRef.current, query, mapReady: mapStatus === "ready" && Boolean(mapRef.current) })) {
       setSuggestions([]);
       return undefined;
     }
+    const requestId = ++suggestionRequestRef.current;
     let cancelled = false;
     const timer = setTimeout(async () => {
       try {
@@ -381,15 +407,27 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
         const params = new URLSearchParams({ query, size: "5", x: String(center.getLng()), y: String(center.getLat()), radius: "20000" });
         let payload = await apiRequest(`/api/kakao/local?${params.toString()}`);
         if (!(payload.items || []).length) payload = await apiRequest(`/api/kakao/local?${new URLSearchParams({ query, size: "5" }).toString()}`);
-        if (!cancelled) setSuggestions((payload.items || []).map(normalizePlace));
+        if (!cancelled && requestId === suggestionRequestRef.current && autocompleteEnabledRef.current) setSuggestions((payload.items || []).map(normalizePlace));
       } catch {
-        if (!cancelled) setSuggestions([]);
+        if (!cancelled && requestId === suggestionRequestRef.current) setSuggestions([]);
       }
     }, 300);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [searchInput, mapStatus]);
 
+  function closeAutocomplete() {
+    autocompleteEnabledRef.current = false;
+    suggestionRequestRef.current += 1;
+    setSuggestions([]);
+  }
+
+  function changeSearchInput(event) {
+    autocompleteEnabledRef.current = true;
+    setSearchInput(event.target.value);
+  }
+
   function openPlaceAndPreserveMap(place) {
+    closeAutocomplete();
     const mapCenter = mapRef.current?.getCenter();
     sessionStorage.setItem(MAP_SCREEN_STORAGE_KEY, JSON.stringify({
       searchInput,
@@ -420,7 +458,7 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
       marker.type = "button";
       marker.className = `map-marker ${place.id === selectedPlaceId ? "is-selected" : ""}`;
       marker.textContent = place.title;
-      marker.addEventListener("click", () => setSelectedPlaceId(place.id));
+      marker.addEventListener("click", () => { closeAutocomplete(); setSelectedPlaceId(place.id); });
       overlaysRef.current.push(new maps.CustomOverlay({ map: mapRef.current, position, content: marker, yAnchor: 1.25 }));
     });
   }, [places, selectedPlaceId, mapStatus]);
@@ -428,7 +466,7 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
   async function searchPlaces(queryValue) {
     const query = queryValue.trim();
     if (!query) return;
-    setSearchInput(query); setSuggestions([]); setPlaceStatus("loading"); setPlaceError(""); setSelectedPlaceId("");
+    closeAutocomplete(); setSearchInput(query); setPlaceStatus("loading"); setPlaceError(""); setSelectedPlaceId("");
     try {
       if (!mapRef.current) throw new Error("지도가 준비된 뒤 다시 검색해 주세요.");
       const center = mapRef.current.getCenter();
@@ -499,7 +537,7 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
     <main className="map-screen">
       <header className="top-nav"><button aria-label="검색창으로 이동" className="mobile-top-action" onClick={() => document.querySelector(".ui-search input")?.focus()} type="button">⌕</button><a className="top-nav__brand brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><span>영수증 인증 리뷰 지도</span><AccountControl {...accountProps} /></header>
       <aside className="place-sidebar">
-        <div className="sidebar-search"><div className="sidebar-title-row"><div><h1>어디를 찾으세요?</h1><p>현재 보고 있는 지도 주변을 먼저 검색하고, 결과가 없으면 전체 지역에서 찾습니다.</p></div><button className="saved-places-link" onClick={accountProps.onSavedPlaces} type="button">♡ 관심 장소</button></div><div className="search-autocomplete"><SearchField value={searchInput} onChange={(event) => setSearchInput(event.target.value)} onClear={() => { setSearchInput(""); setSuggestions([]); }} onSubmit={handleSearchSubmit} />{suggestions.length > 0 && <div aria-label="장소 자동완성" className="search-suggestions">{suggestions.map((place) => <button key={place.id} onClick={() => searchPlaces(place.title)} type="button"><strong>{place.title}</strong><span>{place.category} · {place.address || "주소 정보 없음"}</span></button>)}</div>}</div><div className="mobile-filter-chips" aria-label="빠른 검색"><button onClick={() => searchPlaces("음식점")} type="button">음식점</button><button onClick={() => searchPlaces("카페")} type="button">카페</button></div><div className="search-scope"><span>{searchScope === "all" ? "주변 결과가 없어 전체 지역에서 찾았어요" : `지도 중심에서 약 ${(searchRadius / 1000).toFixed(searchRadius < 1000 ? 1 : 0)}km 이내`}</span><button onClick={moveToCurrentLocation} type="button">{locationStatus === "loading" ? "위치 확인 중..." : "◎ 내 위치"}</button></div></div>
+        <div className="sidebar-search"><div className="sidebar-title-row"><div><h1>어디를 찾으세요?</h1><p>현재 보고 있는 지도 주변을 먼저 검색하고, 결과가 없으면 전체 지역에서 찾습니다.</p></div><button className="saved-places-link" onClick={accountProps.onSavedPlaces} type="button">♡ 관심 장소</button></div><div className="search-autocomplete"><SearchField value={searchInput} onChange={changeSearchInput} onClear={() => { closeAutocomplete(); setSearchInput(""); }} onSubmit={handleSearchSubmit} />{suggestions.length > 0 && <div aria-label="장소 자동완성" className="search-suggestions">{suggestions.map((place) => <button key={place.id} onClick={() => searchPlaces(place.title)} type="button"><strong>{place.title}</strong><span>{place.category} · {place.address || "주소 정보 없음"}</span></button>)}</div>}</div><div className="mobile-filter-chips" aria-label="빠른 검색"><button onClick={() => searchPlaces("음식점")} type="button">음식점</button><button onClick={() => searchPlaces("카페")} type="button">카페</button></div><div className="search-scope"><span>{searchScope === "all" ? "주변 결과가 없어 전체 지역에서 찾았어요" : `지도 중심에서 약 ${(searchRadius / 1000).toFixed(searchRadius < 1000 ? 1 : 0)}km 이내`}</span><button onClick={moveToCurrentLocation} type="button">{locationStatus === "loading" ? "위치 확인 중..." : "◎ 내 위치"}</button></div></div>
         <div className={`place-results place-results--${placeStatus} ${places.length ? "has-results" : ""}`} aria-live="polite" ref={resultsRef}>
           {placeStatus === "ready" && places.length > 0 && <div className="place-results__header"><strong>검색 결과</strong><span>{places.length}곳</span></div>}
           {placeStatus === "idle" && <div className="empty-search"><strong>검색 결과가 여기에 표시됩니다</strong><span>식당이나 카페 이름을 입력해 주세요.</span></div>}
@@ -613,10 +651,10 @@ function PlaceDetailPage({ place, user, authStatus, onLogin, onLogout, onProfile
       <aside className="detail-nav"><div><a className="detail-nav__brand brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><span>Verified places</span></div><nav><button onClick={onBack} type="button">⌂ 홈</button><button className="is-active" type="button">▤ 업체 리뷰</button></nav><Button onClick={reviewAction}>{user ? "영수증 리뷰 등록하기" : "로그인하고 리뷰 쓰기"}</Button></aside>
       <div className="detail-content"><header className="detail-header"><button onClick={onBack} type="button">← 지도</button><a className="detail-header__brand brand-home-link" href="/" onClick={resetAndGoHome}>지금리뷰</a><AccountControl user={user} authStatus={authStatus} onLogin={onLogin} onLogout={onLogout} onProfile={onProfile} /></header>
         <section className="place-summary"><div><Badge>{place.category || "음식점"}</Badge><h1>{place.title}</h1><p>{place.address || place.oldAddress || "주소 정보 없음"}</p></div><div className="place-summary-actions"><SavePlaceButton authStatus={authStatus} onLogin={onLogin} place={place} user={user} />{place.link && <a href={place.link} rel="noreferrer" target="_blank">카카오맵에서 보기 ↗</a>}</div></section>
-        <section className="place-facts"><div><span>전화</span><strong>{place.telephone || "등록된 전화번호 없음"}</strong></div><div><span>분류</span><strong>{place.fullCategory || place.category}</strong></div><div><span>방문 인증 리뷰</span><strong>0개</strong></div></section>
+        <section className="place-facts"><div><span>전화</span><strong>{place.telephone || "등록된 전화번호 없음"}</strong></div><div><span>분류</span><strong>{place.fullCategory || place.category}</strong></div><div><span>등록 리뷰</span><strong>{testTotal}개</strong></div></section>
         <h2 className="mobile-review-heading">리뷰</h2>
-        <section className="review-insight"><div><span>✦ AI 분석 요약 {testTotal > 0 && "· 테스트 데이터"}</span><h2>{testTotal > 0 ? `리뷰 ${testTotal}건의 경험 분포` : "아직 분석할 인증 리뷰가 없습니다"}</h2></div><p>{testTotal > 0 ? "작성된 리뷰를 분석해 방문 경험을 다섯 단계로 정리했습니다. 영수증 인증 전 테스트 결과는 실제 통계와 구분됩니다." : "영수증 OCR 인증을 통과한 리뷰가 등록되면 경험 분포와 주요 의견이 표시됩니다."}</p>{testTotal > 0 ? <div className="sentiment-chart">{sentimentBuckets.map((bucket) => { const percentage = Math.round((sentimentCounts[bucket] / testTotal) * 100); return <div className="sentiment-chart__item" key={bucket}><div className="sentiment-chart__track"><span style={{ height: `${Math.max(percentage, sentimentCounts[bucket] ? 8 : 0)}%` }} /></div><strong>{percentage}%</strong><small>{SENTIMENT_LABELS[bucket]}</small></div>; })}</div> : <div className="empty-bars" aria-hidden="true">{[1,2,3,4,5].map((item) => <span key={item} />)}</div>}</section>
-        <section className="review-section"><div className="review-section__header"><div><span>{testTotal > 0 ? "테스트 리뷰" : "인증 리뷰"}</span><h2>방문자의 솔직한 경험</h2></div><Button onClick={reviewAction}>{user ? "리뷰 작성" : "로그인"}</Button></div>{testTotal > 0 ? <div className="test-review-list">{[...testAnalyses].reverse().map((review) => <article className="test-review-item" key={review.id}><div><span className="test-review-avatar">리</span><span className="test-review-author"><strong>지금리뷰 방문자</strong><small>{new Date(review.createdAt).toLocaleDateString("ko-KR")} 작성</small></span><Badge>테스트</Badge><strong>{SENTIMENT_LABELS[review.bucket]}</strong><span>신뢰도 {Math.round(review.confidence * 100)}%</span></div><p>{review.content}</p>{review.keywords?.length > 0 && <small>{review.keywords.map((keyword) => `#${keyword}`).join(" ")}</small>}</article>)}</div> : <div className="review-empty"><strong>첫 번째 인증 리뷰를 기다리고 있어요</strong><p>영수증 이미지로 방문을 인증한 리뷰만 집계됩니다.</p></div>}</section>
+        <section className="review-insight"><div><span>✦ AI 분석 요약</span><h2>{testTotal > 0 ? `리뷰 ${testTotal}건의 경험 분포` : "아직 분석할 리뷰가 없습니다"}</h2></div><p>{testTotal > 0 ? "작성된 리뷰를 분석해 방문 경험을 다섯 단계로 정리했습니다." : "리뷰가 등록되면 경험 분포와 주요 의견이 표시됩니다."}</p>{testTotal > 0 ? <div className="sentiment-chart">{sentimentBuckets.map((bucket) => { const percentage = Math.round((sentimentCounts[bucket] / testTotal) * 100); return <div className="sentiment-chart__item" key={bucket}><div className="sentiment-chart__track"><span style={{ height: `${Math.max(percentage, sentimentCounts[bucket] ? 8 : 0)}%` }} /></div><strong>{percentage}%</strong><small>{SENTIMENT_LABELS[bucket]}</small></div>; })}</div> : <div className="empty-bars" aria-hidden="true">{[1,2,3,4,5].map((item) => <span key={item} />)}</div>}</section>
+        <section className="review-section"><div className="review-section__header"><div><span>등록 리뷰</span><h2>방문자의 솔직한 경험</h2></div><Button onClick={reviewAction}>{user ? "리뷰 작성" : "로그인"}</Button></div>{testTotal > 0 ? <div className="test-review-list">{[...testAnalyses].reverse().map((review) => <article className="test-review-item" key={review.id}><div><span className="test-review-avatar">리</span><span className="test-review-author"><strong>지금리뷰 방문자</strong><small>{new Date(review.createdAt).toLocaleDateString("ko-KR")} 작성</small></span><Badge>이미지 확인</Badge><strong>{SENTIMENT_LABELS[review.bucket]}</strong><span>신뢰도 {Math.round(review.confidence * 100)}%</span></div><p>{review.content}</p>{review.keywords?.length > 0 && <small>{review.keywords.map((keyword) => `#${keyword}`).join(" ")}</small>}</article>)}</div> : <div className="review-empty"><strong>첫 번째 리뷰를 기다리고 있어요</strong><p>영수증 이미지를 확인한 리뷰가 표시됩니다.</p></div>}</section>
       </div>
       <nav className="detail-mobile-bottom-nav" aria-label="리뷰 화면 메뉴"><button onClick={onBack} type="button"><span>⌂</span><small>홈</small></button><button onClick={onSavedPlaces} type="button"><span>♡</span><small>저장</small></button><button className="is-active" onClick={reviewAction} type="button"><span>✎</span><small>리뷰작성</small></button><button onClick={onProfile} type="button"><span>♙</span><small>내정보</small></button></nav>
     </main>
@@ -634,8 +672,10 @@ function ReviewWritePage({ place, user, onBack }) {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState("idle");
+  const [verificationResult, setVerificationResult] = useState(null);
 
-  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+  useEffect(() => () => { if (previewUrl.startsWith("blob:") && typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
   if (!place) return <main className="route-empty"><strong>업체 정보를 찾을 수 없습니다.</strong><p>지도에서 업체를 다시 선택해 주세요.</p><Button onClick={onBack}>업체 상세로 돌아가기</Button></main>;
 
@@ -646,13 +686,28 @@ function ReviewWritePage({ place, user, onBack }) {
     const acceptedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
     if (!acceptedTypes.includes(file.type.toLowerCase())) { setError("영수증은 JPG, PNG, WEBP, HEIC 이미지로 선택해 주세요."); event.target.value = ""; return; }
     if (file.size > 10 * 1024 * 1024) { setError("영수증 이미지는 10MB 이하만 사용할 수 있습니다."); event.target.value = ""; return; }
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    if (previewUrl.startsWith("blob:") && typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(previewUrl);
     setReceiptFile(file);
     setPreviewUrl(URL.createObjectURL(file));
+    setVerificationStatus("selected");
+    setVerificationResult(null);
+  }
+
+  function verifyDemoReceipt() {
+    setError("");
+    setVerificationStatus("processing");
+    window.setTimeout(() => {
+      const normalizedPlaceName = place.title.toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
+      const matched = normalizedPlaceName.includes("메가mgc커피강남중앙점");
+      setVerificationResult({ merchantName: "메가MGC커피 강남중앙점", paidAt: "2026-07-30 14:32", total: "5,000원", approvalNumber: "12345678" });
+      setVerificationStatus(matched ? "verified" : "rejected");
+      if (!matched) setError("영수증 상호명과 선택한 업체가 일치하지 않습니다. 메가MGC커피 강남중앙점을 선택해 주세요.");
+    }, 1200);
   }
 
   async function saveDraft(event) {
     event.preventDefault(); setError(""); setSaved(null);
+    if (verificationStatus !== "verified") return setError("영수증 인증을 먼저 완료해 주세요.");
     if (content.trim().length < 10) return setError("리뷰 내용을 10자 이상 작성해 주세요.");
     setSubmitting(true);
     try {
@@ -682,11 +737,17 @@ function ReviewWritePage({ place, user, onBack }) {
       <header className="review-write-header"><button onClick={onBack} type="button">← 업체 상세</button><strong>영수증 리뷰 작성</strong><span aria-hidden="true" /></header>
       <form className="review-write-card" onSubmit={saveDraft}>
         <div className="review-write-intro"><Badge>방문 인증</Badge><h1>{place.title}</h1><p>영수증으로 실제 방문을 확인한 뒤 리뷰가 등록됩니다.</p></div>
-        <section className="receipt-step"><div><span className="step-number">1</span><div><h2>영수증 이미지</h2><p>상호명과 결제일이 잘 보이도록 촬영해 주세요.</p></div></div><label className={`receipt-upload ${previewUrl ? "has-preview" : ""}`}><input accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={selectReceipt} type="file" /><span>{previewUrl ? "다른 이미지 선택" : "영수증 이미지 선택"}</span>{previewUrl && <img alt="선택한 영수증 미리보기" src={previewUrl} />}</label><div className={`receipt-readiness is-${receiptFile ? "ready" : "waiting"}`} aria-live="polite"><div><strong>{receiptFile ? "이미지 사전 확인 완료" : "영수증 인증 준비"}</strong><Badge>{receiptFile ? "OCR 연결 대기" : "업로드 필요"}</Badge></div><p>{receiptFile ? `${receiptFile.name} · ${(receiptFile.size / 1024 / 1024).toFixed(1)}MB` : "JPG, PNG, WEBP, HEIC · 최대 10MB"}</p><ul><li className={receiptFile ? "is-complete" : ""}>이미지 형식과 용량 확인</li><li>OCR로 상호명·결제일 추출</li><li>업체 일치·30일 이내·중복 영수증 검증</li></ul>{receiptFile && <small>외부 OCR API가 연결되면 이 단계에서 자동 인증을 시작합니다.</small>}</div></section>
+        <section className="receipt-step">
+          <div><span className="step-number">1</span><div><h2>영수증 이미지</h2><p>상호명과 결제일이 잘 보이도록 촬영해 주세요.</p></div></div>
+          <label className={`receipt-upload ${previewUrl ? "has-preview" : ""}`}><input aria-label="영수증 이미지 업로드" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={selectReceipt} type="file" /><span>{previewUrl ? "다른 이미지 선택" : "촬영하거나 이미지 선택"}</span>{previewUrl && <img alt="선택한 영수증 미리보기" src={previewUrl} />}</label>
+          <div className="receipt-demo-actions">{receiptFile && <Button disabled={verificationStatus === "processing" || verificationStatus === "verified"} onClick={verifyDemoReceipt} type="button">{verificationStatus === "processing" ? "OCR 분석 중..." : verificationStatus === "verified" ? "인증 완료" : "영수증 인증"}</Button>}</div>
+          <div className={`receipt-readiness is-${verificationStatus}`} aria-live="polite" role={verificationStatus === "processing" ? "status" : undefined}><div><strong>{verificationStatus === "processing" ? "영수증을 분석하고 있어요" : verificationStatus === "verified" ? "방문 인증이 완료됐어요" : receiptFile ? "이미지 사전 확인 완료" : "영수증 인증 준비"}</strong><Badge>{verificationStatus === "verified" ? "인증 완료" : verificationStatus === "processing" ? "OCR 분석 중" : receiptFile ? "OCR 연결 대기" : "업로드 필요"}</Badge></div><p>{receiptFile ? `${receiptFile.name} · ${(receiptFile.size / 1024 / 1024).toFixed(1)}MB` : "JPG, PNG, WEBP, HEIC · 최대 10MB"}</p><ul><li className={receiptFile ? "is-complete" : ""}>이미지 형식과 용량 확인</li><li className={["processing", "verified"].includes(verificationStatus) ? "is-complete" : ""}>OCR로 상호명·결제일 추출</li><li className={verificationStatus === "verified" ? "is-complete" : ""}>업체 일치·30일 이내·중복 영수증 검증</li></ul>{receiptFile && verificationStatus === "selected" && <small>선택한 이미지로 영수증 인증을 시작해 주세요.</small>}</div>
+          {verificationStatus === "verified" && verificationResult && <div className="receipt-result"><div><strong>인식 결과</strong><Badge>확인 완료</Badge></div><dl><div><dt>상호명</dt><dd>{verificationResult.merchantName}</dd></div><div><dt>결제일</dt><dd>{verificationResult.paidAt}</dd></div><div><dt>결제 금액</dt><dd>{verificationResult.total}</dd></div><div><dt>승인번호</dt><dd>{verificationResult.approvalNumber}</dd></div></dl></div>}
+        </section>
         <section className="review-text-step"><div><span className="step-number">2</span><div><h2>방문 경험</h2><p>메뉴, 서비스, 분위기처럼 직접 경험한 내용을 알려주세요.</p></div></div><label><span className="sr-only">리뷰 내용</span><textarea maxLength="1000" onChange={(event) => { setContent(event.target.value); setSaved(false); }} placeholder="이 장소에서 어떤 경험을 하셨나요?" value={content} /></label><small>{content.length}/1000자 · 최소 10자</small></section>
         {error && <p className="review-form-message is-error" role="alert">{error}</p>}
-        {saved && <p className="review-form-message is-saved" role="status">텍스트 분석 완료: <strong>{SENTIMENT_LABELS[saved.bucket]}</strong> ({Math.round(saved.confidence * 100)}%). 테스트 그래프에 반영했습니다.</p>}
-        <div className="review-write-actions"><button onClick={onBack} type="button">{saved ? "그래프 보러 가기" : "취소"}</button><Button disabled={submitting} type="submit">{submitting ? "AI 분석 중..." : "OCR 연결 전 테스트 분석"}</Button></div>
+        {saved && <p className="review-form-message is-saved" role="status">리뷰 분석 완료: <strong>{SENTIMENT_LABELS[saved.bucket]}</strong> ({Math.round(saved.confidence * 100)}%). 리뷰 그래프에 반영했습니다.</p>}
+        <div className="review-write-actions"><button onClick={onBack} type="button">{saved ? "그래프 보러 가기" : "취소"}</button><Button disabled={submitting || verificationStatus !== "verified"} type="submit">{submitting ? "AI 분석 중..." : verificationStatus === "verified" ? "리뷰 등록하기" : "영수증 인증 후 등록"}</Button></div>
       </form>
     </main>
   );

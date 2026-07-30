@@ -106,11 +106,48 @@ test("로그인 사용자는 별점 없이 영수증 리뷰 작성 화면을 이
   expect(screen.getByText("영수증 인증 준비")).toBeInTheDocument();
   expect(screen.getByText("OCR로 상호명·결제일 추출")).toBeInTheDocument();
 
-  fireEvent.change(screen.getByLabelText("리뷰 내용"), { target: { value: "음식이 정말 맛있고 다음에도 다시 방문하고 싶어요." } });
-  fireEvent.click(screen.getByRole("button", { name: "OCR 연결 전 테스트 분석" }));
-  expect(await screen.findByRole("status")).toHaveTextContent("매우 좋음");
+  expect(screen.getByRole("button", { name: "영수증 인증 후 등록" })).toBeDisabled();
 
   global.fetch = originalFetch;
+  mockAuthUser = null;
+  sessionStorage.removeItem("jigeum-review:selected-place");
+  localStorage.removeItem("jigeum-review:test-analyses");
+});
+
+test("모바일에서 직접 선택한 영수증으로 인증 과정을 완료한다", async () => {
+  const originalFetch = global.fetch;
+  const originalCreateObjectURL = URL.createObjectURL;
+  const originalRevokeObjectURL = URL.revokeObjectURL;
+  URL.createObjectURL = jest.fn(() => "blob:mobile-receipt");
+  URL.revokeObjectURL = jest.fn();
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ analysis: { bucket: "very_positive", score: 1, confidence: 0.98, keywords: ["커피"] } }),
+  });
+  mockAuthUser = { id: "user-1", email: "test@example.com", user_metadata: { display_name: "테스트" } };
+  sessionStorage.setItem("jigeum-review:selected-place", JSON.stringify({
+    id: "mega-gangnam",
+    title: "메가MGC커피 강남중앙점",
+    category: "카페",
+    address: "서울 강남구",
+  }));
+  window.history.pushState({}, "", "/places/mega-gangnam/reviews/new");
+  render(<App />);
+
+  const receiptFile = new File(["demo receipt"], "mega-receipt.png", { type: "image/png" });
+  fireEvent.change(await screen.findByLabelText("영수증 이미지 업로드"), { target: { files: [receiptFile] } });
+  expect(screen.getByAltText("선택한 영수증 미리보기")).toHaveAttribute("src", "blob:mobile-receipt");
+  fireEvent.click(screen.getByRole("button", { name: "영수증 인증" }));
+  expect(screen.getByRole("status")).toHaveTextContent("영수증을 분석하고 있어요");
+  expect((await screen.findAllByText("인증 완료", {}, { timeout: 2500 })).length).toBeGreaterThan(0);
+  expect(screen.getByText("메가MGC커피 강남중앙점", { selector: "dd" })).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("리뷰 내용"), { target: { value: "커피가 맛있고 매장이 깔끔해서 다시 방문하고 싶어요." } });
+  fireEvent.click(screen.getByRole("button", { name: "리뷰 등록하기" }));
+  expect(await screen.findByRole("status")).toHaveTextContent("리뷰 그래프에 반영했습니다");
+
+  global.fetch = originalFetch;
+  URL.createObjectURL = originalCreateObjectURL;
+  URL.revokeObjectURL = originalRevokeObjectURL;
   mockAuthUser = null;
   sessionStorage.removeItem("jigeum-review:selected-place");
   localStorage.removeItem("jigeum-review:test-analyses");
@@ -137,6 +174,29 @@ test("마이페이지에서 닉네임을 변경하고 홈과 지도 탐색을 �
   expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/api/users/me"), expect.objectContaining({ method: "PATCH" }));
 
   global.fetch = originalFetch;
+  mockAuthUser = null;
+});
+
+test("사용자는 마이페이지에서 본인이 작성한 리뷰만 삭제한다", async () => {
+  mockAuthUser = { id: "user-1", email: "test@example.com", user_metadata: { display_name: "테스터" } };
+  localStorage.setItem("jigeum-review:test-analyses", JSON.stringify([
+    { id: "review-own", userId: "user-1", placeId: "place-1", placeTitle: "내 리뷰 업체", content: "제가 작성한 리뷰 내용입니다.", bucket: "positive", confidence: 0.9, keywords: [], testOnly: true, createdAt: "2026-07-30T00:00:00.000Z" },
+    { id: "review-other", userId: "user-2", placeId: "place-2", placeTitle: "다른 사용자 업체", content: "다른 사용자의 리뷰입니다.", bucket: "neutral", confidence: 0.8, keywords: [], testOnly: true, createdAt: "2026-07-29T00:00:00.000Z" },
+  ]));
+  window.history.pushState({}, "", "/mypage");
+  render(<App />);
+
+  expect(await screen.findByRole("heading", { name: "내 리뷰 업체" })).toBeInTheDocument();
+  expect(screen.queryByText("다른 사용자 업체")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "내 리뷰 업체 리뷰 삭제" }));
+  expect(screen.getByText("정말 삭제할까요?")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "삭제 확인" }));
+
+  expect(screen.queryByRole("heading", { name: "내 리뷰 업체" })).not.toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem("jigeum-review:test-analyses"))).toHaveLength(1);
+  expect(JSON.parse(localStorage.getItem("jigeum-review:test-analyses"))[0].id).toBe("review-other");
+
+  localStorage.removeItem("jigeum-review:test-analyses");
   mockAuthUser = null;
 });
 
