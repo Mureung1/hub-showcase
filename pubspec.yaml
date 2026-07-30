@@ -60,11 +60,26 @@ dependencies:
   image_picker: ^1.2.3
 
 dependency_overrides:
+  # ⚠️ 아래 두 핀은 **한 쌍**이다. 하나만 풀면 다시 깨진다 (사유는 각 핀 주석).
+  #
   # firebase_core_platform_interface 7.1.0의 Dart pigeon 코덱은 필드를 14개 기대하지만
   # firebase_core 4.10.0의 **네이티브(Android)** 쪽은 13개만 보낸다.
   # → 초기화 시 "RangeError (length): Not in inclusive range 0..13: 14".
   # 네이티브와 짝이 맞는 7.0.1로 고정한다. (auth 6.5.2의 제약 ^7.0.1을 만족)
   firebase_core_platform_interface: 7.0.1
+  # 위 fcpi 핀은 **Android**를 지키지만, 그것만으로는 **웹 컴파일이 깨진다**:
+  # firebase_core_web 3.9.0은 제약이 `fcpi: ^7.1.0`이고 7.1.0에서 새로 생긴
+  # `FirebaseOptions.recaptchaSiteKey`를 참조한다. 7.0.1에는 그 필드가 없으므로
+  #   "Error: No named parameter with the name 'recaptchaSiteKey'"
+  #   "Error: The getter 'recaptchaSiteKey' isn't defined for the type 'FirebaseOptions'"
+  # 로 `flutter run -d chrome` / `build web`이 실패한다.
+  # 즉 **두 플랫폼이 서로 다른 fcpi를 원하는 상황**이다(Android는 7.0.1, web 3.9.0은 7.1.0+).
+  # firebase_core_web을 fcpi 제약이 `^7.0.1`인 3.8.0으로 내려 양쪽을 동시에 만족시킨다.
+  #   3.8.0 → fcpi ^7.0.1 (우리 핀과 일치) · 3.9.0 → ^7.1.0 · 3.9.1 → ^8.0.0
+  # firebase_core 4.10.0이 요구하는 것도 `firebase_core_web: ^3.8.0`이라, 이건
+  # 다운그레이드가 아니라 **정당한 하한 고정**이다(pub이 최신을 골라 3.9.0으로 올라갔을 뿐).
+  # 상류가 정리되면(firebase_core가 fcpi 7.1.0+와 네이티브 짝을 맞추면) **두 핀을 함께 풀 것.**
+  firebase_core_web: 3.8.0
 
 dev_dependencies:
   flutter_test:
