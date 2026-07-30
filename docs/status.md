@@ -697,5 +697,26 @@
     2. 테스트 3 준비 시 `kind='single_source'`인데 `resolution_reason`만 `user_rejected`로 바꿔 **계약 검증에 걸렸다.** `AgendaSchema`의 superRefine이 잘못된 테스트 데이터를 잡아준 것이다
     - **최종 복원 검증**: Agenda 4건(status/reason/kind/content) · SourceAnswer 3건 · Question 상태·`completed_at` 전부 원본 스냅샷과 **정확히 일치** 확인
   - **검증**: 루트 typecheck·lint(web만)·build 통과. `--mode-test` 16/16
-- 이후: 폐기 인용 차이 축적 후 §11.2 개정 판단 · G 통제 재측정(effort:low) · AC2(단계 3b) → SPEC-AI-003(FinalAnswer) → SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **T-020.2 완료 (2026-07-31)** — web이 서버 FinalAnswer·DecisionNote를 소비. 3사 실행 **2회**(상한 2), Manager 호출은 그에 딸린 분량
+  - **1. 공급원 단일화** — `applyAgendas`가 Agenda·FinalAnswer 공급을 결정하는 **유일한 지점**이다. 우선순위: 서버 `composed` → Manager 전멸 고정 문구 → `serverBacked`인데 아직 없음(**만들지 않고 폴링에 맡긴다**) → `?scenario=` Mock. 세 호출부가 각각 분기하던 구조를 없앴다
+  - **2. 두 경로** — 충돌 0건은 SSE `final_answer.progress`→`done`, 충돌 있는 경로는 PATCH 즉시 반환 + `GET .../final-answer` 폴링(3초 × 40 = 120초). **폴링 시작 조건은 상태가 아니라 내용**이다 — "모든 Agenda 확정 && FinalAnswer 없음 && serverBacked". 상한 도달 시 조용히 멈추지 않고 "생성이 지연되고 있습니다"를 띄운다
+  - **3. 전이 이관** — `applyAgendas`에서 `markQuestionCompleted`를 제거했다(§6.3은 서버 소유). Mock 경로(`resolveAgenda`)와 3사 전멸 경로에는 남겼다 — 서버가 전이시킬 대상이 없는 경우다
+  - **4. 새로고침 복원** — 마운트 시 sourceAnswers·agendas에 더해 **FinalAnswer도 GET**한 뒤 `applyAgendas`를 통과시킨다. 경로 A(SSE)·B(폴링)·C(복원)가 같은 함수로 수렴한다
+  - **GET 계약**: **404는 Question이 없거나 미소유, 200 + `{finalAnswer:null, decisionNote:null}`은 아직 미생성.** 미생성을 404로 주면 폴링이 그것을 오류로 다룬다
+  - **브라우저 회귀 (실서버)**
+
+    | 시나리오 | 결과 |
+    |---|---|
+    | 새로고침 복원 (`19f77a22`, 3사 0회) | ✅ 서버 FinalAnswer 본문 + 우측 노트 복원. T-019.4 때 "충돌을 모두 해결하면…"이던 자리다 |
+    | SSE·충돌 0건 (`699999fd`, `MANAGER_CONFLICT_TYPES` 주입) | ✅ "판단할 충돌 없음" 배지 + 본문. `completed`·`multi_source` |
+    | PATCH+폴링 (`970d48ef`, 3사 0회 — 기존 미해결 질문 재사용) | ✅ "충돌 해결 완료" + "최종 답변 생성 중…" → 본문 도착, 스피너 소멸, 목록의 미완료 점 소멸 |
+    | 폴링 경로 새로고침 | ✅ 동일 복원 |
+  - **AC9 충족** — `699999fd`의 `context_snapshot`에 직전 확정 FinalAnswer **전문**이 담겼고, 생성된 답변이 실제로 이전 결정(Supabase)을 이어받았다. T-020.1에서 단위 검증만 했던 부분이 실데이터로 채워졌다
+  - **§9.3 표시 (Mock, 3사 0회)** — `single-source-fallback`: "합의"·"일치" 없음 · "하나의 답변만을 기반으로" 고지 · 출처 Claude 단독 / `all-rejected`: 본문 없이 고정 문구만, 노트도 동일 / `recheck-path`: 재검색 결과 박스 · "원문 인용 없음" 표시 · "선택한 입장 채택"
+  - **⚠️ 내 실수 1건** — `?scenario=happy-path`를 Mock인 줄 알고 골랐는데 **happy-path가 곧 서버 경로**(`serverBacked = id === "happy-path"`)여서 3사를 1회 더 썼다. 그 질문(`1f399b86`)은 `review_required`로 남겨뒀다
+  - **알려진 표시 문제 2건 (T-020.2 범위 밖, 기존 동작)**
+    1. 단일 소스인데 섹션 헤더가 **"공통 권장 사항"**으로 나온다. §9.3 금지어는 아니지만 어색하다
+    2. FinalAnswer 본문의 `**강조**` 마크다운이 **원문 그대로** 보인다(2번째 질문). AnswerCard가 평문 렌더다
+  - **검증**: 루트 typecheck·lint(web만)·build 통과. 커밋 `92c2e36`
+- 이후: 폐기 인용 차이 축적 후 §11.2 개정 판단 · G 통제 재측정(effort:low) · AC2(단계 3b) · 마크다운 렌더 판단 → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정
