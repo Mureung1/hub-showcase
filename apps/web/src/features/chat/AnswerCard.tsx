@@ -102,6 +102,14 @@ export function AnswerCard({
    */
   const hadConflicts = conflictAgendas.length > 0;
   const isAllResolved = hadConflicts && unresolved.length === 0;
+  /**
+   * **판정 결과가 존재하는가** — 상태가 아니라 내용으로 판단한다.
+   *
+   * Manager 완전 실패(§2.5)는 쟁점이 하나도 없다. 그때 "판단할 충돌 없음"을 띄우면
+   * **거짓이 된다** — 충돌이 없는 게 아니라 비교 자체를 못 한 것이고, 그 설명은
+   * 카드 본문의 고정 문구가 이미 하고 있다.
+   */
+  const hasJudgement = question.agendas.length > 0;
   // 재시도까지 실패해 비교에서 제외된 Provider (Step 10-3: 카드 상단 고정 배너, 토스트 아님)
   const excludedAnswers = question.sourceAnswers.filter(
     (answer) => answer.excludedFromComparison,
@@ -120,8 +128,19 @@ export function AnswerCard({
       ))}
       <div className="answer-card-top">
         <div className="answer-card-title">
-          {/* 판단할 충돌이 없었으면 배지도 (0/0) 카운터도 띄우지 않는다 — 둘 다 사실이 아니다. */}
-          {!hadConflicts ? null : isAllResolved ? (
+          {/*
+            4갈래다. 위에서부터:
+            1) 판정 자체가 없음(Manager 완전 실패) → 표시 없음. 고정 문구가 설명한다
+            2) 판정은 있으나 충돌 0건 → "판단할 충돌 없음". **중립 표기이며 ✓를 쓰지
+               않는다** — 사용자가 해결한 것이 아니라 할 일이 없었던 것이다.
+               "일치"·"합의"도 쓰지 않는다: single_source만 있는 경우는 일치한 게
+               아니라 비교 상대가 없었던 것이라 거짓이 된다(domain-policy 5.3·§8.4).
+            3) 충돌을 전부 해결 → 기존 완료 배지
+            4) 미해소 남음 → 기존 카운터
+          */}
+          {!hasJudgement ? null : !hadConflicts ? (
+            <Badge variant="neutral" label="판단할 충돌 없음" />
+          ) : isAllResolved ? (
             <Badge variant="success" label="✓ 충돌 해결 완료" />
           ) : (
             <>

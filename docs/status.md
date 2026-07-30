@@ -631,6 +631,18 @@
     | `?scenario=provider-excluded` | ✅ "충돌 지점 (2/2)" 카운터 정상 | ✅ "자동 통과 1건" |
     | `?scenario=single-source-fallback` | ✅ 없음(자동 통과만) | ✅ "공통 권장 사항 (2)"·중립 bullet 유지 |
 
-  - **검증**: 루트 typecheck·lint(web만)·build 통과. 3사 호출 0회
+  - **후속 — "판단할 충돌 없음" 문구 추가 (같은 날)**: 자동 통과만 있는 경우 카드 상단이 비어 있어 중립 문구를 넣었다. **갈래가 4개가 된다**
+
+    | 조건 | 표시 | 이유 |
+    |---|---|---|
+    | `agendas.length === 0` | 없음 | Manager 완전 실패. 충돌이 없는 게 아니라 **판정을 못 한 것**이라 "판단할 충돌 없음"이 거짓이 된다. 고정 문구가 설명한다 |
+    | `!hadConflicts` | **"판단할 충돌 없음"**(중립) | ✓를 쓰지 않는다 — 해결한 게 아니라 할 일이 없었던 것 |
+    | `hadConflicts && isAllResolved` | "✓ 충돌 해결 완료" | 기존 |
+    | `hadConflicts && !isAllResolved` | "충돌 지점 (n/m)" | 기존 |
+
+    첫 조건은 상태가 아니라 **"판정 결과가 존재하는가"**라는 내용 판단이다(`hasJudgement`).
+    ⚠️ 문구에 **"일치"·"합의"를 쓰지 않았다** — `single_source`만 있는 경우는 일치한 게 아니라 **비교 상대가 없었던 것**이라 거짓이 된다(domain-policy 5.3·§8.4의 "합의를 사실 판정이 아니라 비교 결과로만 표현한다").
+    Badge `variant="neutral"`(회색)로 success와 시각적으로 구분했다.
+  - **검증**: 루트 typecheck·lint(web만)·build 통과. 3사 호출 0회. 4갈래 + `?scenario=` 2종 브라우저 확인
 - 이후: 폐기 인용 차이 축적 후 §11.2 개정 판단 · G 통제 재측정(effort:low) · AC2(단계 3b) → SPEC-AI-003(FinalAnswer) → SPEC-AI-003(FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정
