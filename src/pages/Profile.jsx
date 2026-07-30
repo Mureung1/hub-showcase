@@ -133,7 +133,17 @@ export default function Profile() {
   }
 
   function handleSelectK12School(school) {
-    setSelectedSchool({ type: 'k12', officeCode: school.officeCode, code: school.schoolCode, name: school.name, kind: school.kind })
+    // officeName까지 저장한다 — 지도 탭의 학교 핀이 NEIS에 없는 좌표를 이름으로 지오코딩할 때
+    // 지역을 좁히는 데 쓴다(schoolLocation.js buildQuery). 이게 빠져 있어서 "중앙초등학교"처럼
+    // 동명 학교가 수백 km 떨어진 엉뚱한 곳에 찍히고 그대로 캐시됐다(리뷰에서 발견).
+    setSelectedSchool({
+      type: 'k12',
+      officeCode: school.officeCode,
+      officeName: school.officeName,
+      code: school.schoolCode,
+      name: school.name,
+      kind: school.kind,
+    })
     suggestOccupation(occupationForSchoolKind(school.kind))
   }
 
