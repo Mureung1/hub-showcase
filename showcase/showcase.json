@@ -4,7 +4,7 @@
   "summary": "자연어로 조건을 걸면 시장을 대신 지켜보다 Discord로 알리고, 그렇게 남긴 매매를 과거 기록까지 끌어와 복기해 주는 AI 투자 코치입니다.",
   "githubUser": "gyuwonlee1(이규원)",
   "demoUrl": "https://hub-psi-seven.vercel.app",
-  "demoVideoUrl": "",
+  "demoVideoUrl": "https://youtu.be/UuRCG8BQ2gc",
   "thumbnail": "thumbnail.png",
   "screenshots": [
     "screenshots/stock.png",
