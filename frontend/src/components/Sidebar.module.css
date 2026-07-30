@@ -39,6 +39,23 @@
   font-weight: 700;
   font-size: 36px;
   color: var(--color-primary-teal);
+  font-variant-numeric: tabular-nums;
+}
+
+.digitSlot {
+  display: inline-block;
+  overflow: hidden;
+  height: 1em;
+  line-height: 1em;
+  vertical-align: bottom;
+}
+
+.digit {
+  display: inline-block;
+}
+
+.digitStatic {
+  display: inline-block;
 }
 
 .poolUnit {
