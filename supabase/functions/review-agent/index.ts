@@ -73,9 +73,10 @@ function horizonLabel(horizon: string | null | undefined): string {
 interface ReviewOutput {
   headline?: string;
   plan_adherence?: string;
-  timing?: string;
+  execution?: string;
   emotion?: string;
   behavior_pattern?: string;
+  reflection_prompt?: string;
   cited_trade_ids?: unknown;
 }
 
@@ -166,14 +167,24 @@ const FINAL_SCHEMA = {
         "실제 실행이 그 계획과 어떻게 달랐는지를 사실로 서술한다. 계획이 기록돼 있지 않으면 " +
         "'계획(목표가/손절가/가설)이 기록되지 않았다'는 사실 자체를 짚는다.",
     },
-    timing: {
+    execution: {
       type: "string",
-      description: "타이밍 관점 복기(한국어). 진입 시점의 주가 맥락을 사실로만 서술한다.",
+      description:
+        "실행 품질 관점 복기(한국어). 진입/청산이 기록된 계획 규칙(목표가·손절가·가설)을 따랐는지 등 " +
+        "'통제 가능한 행동'을 사실로 서술한다. 진입 시점의 주가 맥락도 사실 근거로 포함한다. " +
+        "이후 수익률로 잘잘못을 판정하지 마라.",
     },
     emotion: { type: "string", description: "감정 관점 복기(한국어). 기록된 감정과 행동의 관계를 관찰한다." },
     behavior_pattern: {
       type: "string",
       description: "행동 패턴 관점 복기(한국어). 같은 태그·감정에서 반복되는 행동 패턴을 사실로 서술한다.",
+    },
+    reflection_prompt: {
+      type: "string",
+      description:
+        "사용자가 스스로 돌아보게 하는 '성찰 질문' 한 줄(한국어). 반드시 질문형(물음표로 끝난다). " +
+        "미래 매매 지시·권유·전망이 아니라, 위에서 관찰한 행동 패턴을 스스로 되짚게 하는 질문이어야 한다. " +
+        "예: '급등 직후 진입할 때 목표가를 상향 조정한 이유는 무엇이었나요?'",
     },
     cited_trade_ids: {
       type: "array",
@@ -346,7 +357,7 @@ Deno.serve(async (req: Request) => {
         let q = client
           .from("reviews")
           .select(
-            "headline, plan_adherence, timing, emotion, behavior_pattern, cited_trade_ids, created_at, trades!inner(ticker)",
+            "headline, plan_adherence, execution, emotion, behavior_pattern, reflection_prompt, cited_trade_ids, created_at, trades!inner(ticker)",
           )
           .eq("user_id", trade.user_id)
           .neq("trade_id", trade.id)
@@ -361,9 +372,10 @@ Deno.serve(async (req: Request) => {
         return (data ?? []).map((r: Record<string, unknown>) => ({
           headline: r.headline,
           plan_adherence: r.plan_adherence,
-          timing: r.timing,
+          execution: r.execution,
           emotion: r.emotion,
           behavior_pattern: r.behavior_pattern,
+          reflection_prompt: r.reflection_prompt,
           cited_trade_ids: r.cited_trade_ids,
           created_at: r.created_at,
         }));
@@ -399,7 +411,11 @@ Deno.serve(async (req: Request) => {
       "5) 모든 출력 텍스트는 한국어로 작성한다.",
       "6) plan_adherence: 대상 매매의 목표가·손절가·진입 가설(thesis)·확신도가 기록됐는지 보고, 기록됐으면 " +
       "실제 실행과의 차이를 사실로 서술하고, 없으면 계획 미기록 사실을 짚는다.",
-      "7) behavior_pattern: 셋업 태그가 겹치는 과거 매매, 같은 태그·감정 조합의 반복 여부를 근거로 서술한다.",
+      "7) execution: 진입/청산이 기록된 계획 규칙을 따랐는지 등 '통제 가능한 행동'과 진입 시점 주가 맥락을 " +
+      "사실로 서술한다. 이후 수익률로 잘잘못을 판정하지 마라.",
+      "8) behavior_pattern: 셋업 태그가 겹치는 과거 매매, 같은 태그·감정 조합의 반복 여부를 근거로 서술한다.",
+      "9) reflection_prompt: 위 관찰을 바탕으로 사용자가 스스로 돌아보게 하는 '성찰 질문' 한 줄을 만든다. " +
+      "반드시 물음표로 끝나는 질문형이어야 하고, 미래 매매 지시·권유·전망이 아니라 과거 행동을 되짚는 질문이어야 한다.",
     ].join("\n");
 
     const initialUserText = [
@@ -425,8 +441,8 @@ Deno.serve(async (req: Request) => {
       "- get_price_context: 특정일 전후 주가 흐름과 직전/이후 수익률(%) 조회 (사실 서술용)",
       "- get_past_reviews: 과거 복기 노트 조회(반복되는 행동 패턴 확인)",
       "",
-      "필요한 근거를 스스로 정해 도구를 여러 번 호출한 뒤, 계획 대비 실행·타이밍·감정·행동 패턴 관점에서",
-      "'사실'을 종합해 복기 노트를 작성하라. 미래 매매 지시나 종목 평가는 절대 하지 마라.",
+      "필요한 근거를 스스로 정해 도구를 여러 번 호출한 뒤, 계획 대비 실행·실행 품질·감정·행동 패턴 관점에서",
+      "'사실'을 종합해 복기 노트를 작성하고, 마지막에 성찰 질문 한 줄을 남겨라. 미래 매매 지시나 종목 평가는 절대 하지 마라.",
       "date 인자에는 대상 매매의 체결일(위 traded_at의 날짜 부분)을 우선 사용하라.",
     ].join("\n");
 
@@ -475,10 +491,13 @@ Deno.serve(async (req: Request) => {
         user_id: trade.user_id,
         headline,
         plan_adherence: typeof result.plan_adherence === "string" ? result.plan_adherence : null,
-        timing: typeof result.timing === "string" ? result.timing : null,
+        execution: typeof result.execution === "string" ? result.execution : null,
         emotion: typeof result.emotion === "string" ? result.emotion : null,
         behavior_pattern: typeof result.behavior_pattern === "string"
           ? result.behavior_pattern
+          : null,
+        reflection_prompt: typeof result.reflection_prompt === "string"
+          ? result.reflection_prompt
           : null,
         cited_trade_ids: validIds,
         raw: { output, toolCallCount, transcript },

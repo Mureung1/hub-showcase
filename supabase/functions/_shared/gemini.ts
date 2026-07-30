@@ -1,7 +1,10 @@
 // Gemini 구조화 출력(Structured Output) 호출 헬퍼.
 // 근거: docs/research.md §8 — SDK 없이 Deno raw REST fetch로 직접 호출.
 
-const DEFAULT_MODEL = "gemini-2.5-flash";
+// `gemini-2.5-flash`는 503 UNAVAILABLE(용량 초과)이 반복돼 `/알림` 파싱과 복기가 함께 막혔다.
+// `-latest` 별칭은 구글이 가용한 최신 flash로 연결해 주므로 특정 버전 용량 부족을 우회한다.
+// 모델을 고정하려면 GEMINI_MODEL 시크릿을 설정한다(재배포 없이 교체 가능).
+const DEFAULT_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-flash-latest";
 
 export interface GenerateStructuredParams {
   /** 사용자 프롬프트(자연어 입력) */

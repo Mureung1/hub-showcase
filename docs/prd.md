@@ -112,16 +112,17 @@ create index on ai_usage_events (user_id, kind, created_at desc);
 -- RLS: select-own(user_id = auth.uid()). insert는 Edge Function(service role)만 수행.
 -- 과금 전환 시나리오: 요청 전 월별 count(*) 검사 + 할당량 초과 시 요청 거부 로직만 추가하면 됨.
 
--- AI 복기 결과 (0007에서 거울 프레임으로 개편)
+-- AI 복기 결과 (0007에서 거울 프레임으로 개편, 0009에서 실행 품질 축 확장 + 성찰 질문 신설)
 create table reviews (
   id uuid primary key default gen_random_uuid(),
   trade_id uuid not null references trades(id) on delete cascade,
   user_id uuid not null references profiles(id) on delete cascade,
   headline text not null,               -- 한 줄 관찰 (가치평가 아닌 행동 요약)
-  timing text,                          -- 진입 시점 주가 맥락 (사실 서술만)
+  execution text,                       -- 0009: timing 개명·확장 — 진입/청산이 계획 규칙을 따랐나(통제 가능한 행동)+진입 시점 주가 맥락
   emotion text,
   plan_adherence text,                  -- 0007: 계획(목표가·손절가·가설) 대비 실행. 미기록이면 그 사실을 서술
   behavior_pattern text,                -- 0007: repeated_mistake 대체 — '실수'(가치어) 제거, 반복 행동 패턴 서술
+  reflection_prompt text,               -- 0009: 성찰 질문 한 줄(질문형만, 매매 지시 금지)
   cited_trade_ids uuid[] not null default '{}',  -- 근거로 인용한 과거 매매
   raw jsonb,                            -- 에이전트 원응답 (감사/디버그)
   created_at timestamptz not null default now()
@@ -146,7 +147,7 @@ create index reviews_user_created_idx on reviews (user_id, created_at desc);  --
 
 **입력 경로**: Discord 슬래시 커맨드 `/알림 [자연어]` → Edge Function `discord-interactions`.
 
-**모델**: `gemini-2.5-flash`, **Structured Outputs**(JSON 스키마 강제).
+**모델**: `gemini-flash-latest`(env `GEMINI_MODEL`로 고정 가능), **Structured Outputs**(JSON 스키마 강제).
 
 **출력 스키마**:
 ```json
@@ -227,14 +228,14 @@ create index reviews_user_created_idx on reviews (user_id, created_at desc);  --
 - **금지**: 미래 매매 지시("사라/팔아라/기다려라"), 종목·시장 가치평가("고평가다/오를 것"), 수익률 기반 잘잘못 판정, `~하세요` 명령형.
 - **허용**: 과거 사실 서술, 반복 행동 패턴 지적, 계획-실행 갭 서술, 스스로 돌아보게 하는 질문형 마무리.
 
-**모델**: `gemini-2.5-flash`, **function calling 루프**(무거운 프레임워크 없이).
+**모델**: `gemini-flash-latest`(env `GEMINI_MODEL`로 고정 가능), **function calling 루프**(무거운 프레임워크 없이).
 
 **도구 계약**:
 | 도구 | 입력 | 출력 | 데이터원 |
 |------|------|------|----------|
 | `search_past_trades` | `{ticker?, side?, limit=10}` | `trades[] {id,ticker,side,price,traded_at,memo,tags,emotion}` | Supabase |
 | `get_price_context` | `{ticker, date, window_days=10}` | `{candles[], pre_return, post_return}` (※ `post_return`은 사실 서술만, 매매 평가 근거 금지) | KIS 일봉 |
-| `get_past_reviews` | `{ticker?, limit=5}` | `reviews[] {headline,timing,emotion,plan_adherence,behavior_pattern,cited_trade_ids}` | Supabase |
+| `get_past_reviews` | `{ticker?, limit=5}` | `reviews[] {headline,execution,emotion,plan_adherence,behavior_pattern,reflection_prompt,cited_trade_ids}` | Supabase |
 
 **루프**:
 ```
@@ -251,9 +252,10 @@ system: "너는 사용자의 과거 매매를 비추는 '거울'이다. 추천·
 ```json
 {
   "headline": "급등 직후 추격매수 패턴이 반복됩니다",   // 한 줄 관찰(가치평가 아님)
-  "timing": "...", "emotion": "...",
+  "execution": "...", "emotion": "...",                 // execution: 진입/청산이 계획 규칙을 따랐나(통제 가능한 행동)
   "plan_adherence": "목표가·손절가가 기록돼 있지 않습니다",  // 계획 미기록이면 그 사실을 서술
   "behavior_pattern": "...",                            // repeated_mistake 대체(가치어 제거)
+  "reflection_prompt": "급등 직후 진입할 때 목표가를 상향한 이유는 무엇이었나요?",  // 질문형만, 매매 지시 금지
   "cited_trade_ids": ["<uuid>", "<uuid>"]
 }
 ```
