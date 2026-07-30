@@ -498,7 +498,7 @@ type FriendsViewProps = {
   onVisitFriendHome: (friendId: string) => void
 }
 
-export function FriendsView({ manager, myPosts, currentUserId, onDeletePost, onViewFriendCalendar, onVisitFriendHome }: FriendsViewProps) {
+export function FriendsView({ manager, myPosts, friendPosts, currentUserId, onDeletePost, onViewFriendCalendar, onVisitFriendHome }: FriendsViewProps) {
   const [requestPanelOpen, setRequestPanelOpen] = useState(false)
   const [requestIdentifier, setRequestIdentifier] = useState('')
 
@@ -517,7 +517,7 @@ export function FriendsView({ manager, myPosts, currentUserId, onDeletePost, onV
           <div className="tab-page-heading">
             <div><span>ACTIVITY</span><h2>친구 인증 피드</h2></div>
           </div>
-          <FriendFeed myPosts={myPosts} currentUserId={currentUserId} onDeletePost={onDeletePost} />
+          <FriendFeed myPosts={myPosts} friendPosts={friendPosts} currentUserId={currentUserId} onDeletePost={onDeletePost} />
         </div>
 
         <div className="friends-list-col">
