@@ -40,17 +40,19 @@ matchRouter.post('/', async (req, res) => {
   try {
     const { items, total, hasMore } = await match(profile, sort, page, limit)
 
-    const insertStartedAt = performance.now()
-    try {
-      await insertMatchRequest(profile, sort)
-    } catch (err) {
-      // 매칭 요청 저장은 best-effort — 여기서 실패해도 조회 응답은 정상 반환한다.
-      console.error('[POST /api/match] 매칭 요청 저장 실패:', err)
-    }
-    console.log(`[timing] POST /api/match: insertMatchRequest took ${(performance.now() - insertStartedAt).toFixed(1)}ms`)
-
     res.json({ items, total, sort, page, limit, hasMore })
     console.log(`[timing] POST /api/match: full handler took ${(performance.now() - requestStartedAt).toFixed(1)}ms`)
+
+    // 매칭 요청 저장은 best-effort이자 응답과 무관하므로 await하지 않고 백그라운드로 흘려보낸다
+    // (이슈 #107 — 응답 전에 await하면 insert 지연이 그대로 사용자 체감 지연이 됨).
+    const insertStartedAt = performance.now()
+    insertMatchRequest(profile, sort)
+      .catch((err) => {
+        console.error('[POST /api/match] 매칭 요청 저장 실패:', err)
+      })
+      .finally(() => {
+        console.log(`[timing] POST /api/match: insertMatchRequest (background) took ${(performance.now() - insertStartedAt).toFixed(1)}ms`)
+      })
   } catch (err) {
     console.error('[POST /api/match] 실패:', err)
     res.status(500).json({ error: 'Failed to match subsidies' })
