@@ -11,29 +11,14 @@ import CreditAnalytics from './components/CreditAnalytics';
 
 function App() {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  // Load session from localStorage on initialization
-  useEffect(() => {
-    const savedUser = localStorage.getItem('gnu_advisor_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error('Failed to parse saved user credentials', e);
-      }
-    }
-    setLoading(false);
-  }, []);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = (userData) => {
     setUser(userData);
-    localStorage.setItem('gnu_advisor_user', JSON.stringify(userData));
   };
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('gnu_advisor_user');
   };
 
   if (loading) {
@@ -72,13 +57,13 @@ function App() {
         {/* Timetable Simulation Route */}
         <Route 
           path="/timetable" 
-          element={user ? <TimetableGenerator initialStudentType={user.studentType} /> : <Navigate to="/login" replace />} 
+          element={user ? <TimetableGenerator user={user} initialStudentType={user.studentType} /> : <Navigate to="/login" replace />} 
         />
 
         {/* Credit Analytics Route */}
         <Route 
           path="/analytics" 
-          element={user ? <CreditAnalytics initialStudentType={user.studentType} /> : <Navigate to="/login" replace />} 
+          element={user ? <CreditAnalytics user={user} initialStudentType={user.studentType} /> : <Navigate to="/login" replace />} 
         />
 
         {/* Fallback Route */}
