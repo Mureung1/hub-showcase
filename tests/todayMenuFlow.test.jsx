@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 import App from "../frontend/src/App.jsx";
 
 const originalFetch = globalThis.fetch;
+const originalScrollTo = window.scrollTo;
 
 const recipe = {
   id: "recipe-test-1",
@@ -35,6 +36,7 @@ const recipe = {
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
+  window.scrollTo = originalScrollTo;
   window.localStorage.clear();
 });
 
@@ -64,6 +66,7 @@ test("서비스 소개 탭에서 핵심 가치와 시작 동선을 제공한다"
 test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으로 이어진다", async () => {
   const requestedModes = [];
   const recommendationRequests = [];
+  window.scrollTo = vi.fn();
   globalThis.fetch = async (url, options) => {
     if (url === "/api/ingredients") return new Response(JSON.stringify({ ingredients: [] }));
     if (url === "/api/recommendations") {
@@ -122,6 +125,7 @@ test("오늘의 메뉴에서 레시피 상세, 구매 링크, 저장 기능으�
   fireEvent.click(recipeButton);
 
   await screen.findByRole("heading", { name: "간장 두부 덮밥" });
+  expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: "auto" });
   expect(screen.getByRole("button", { name: "로그인" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "회원가입" })).toBeInTheDocument();
   expect(screen.getAllByText(recipe.description)).toHaveLength(1);
