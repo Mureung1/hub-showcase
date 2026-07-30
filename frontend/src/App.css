@@ -30,9 +30,10 @@
 .recipe-detail-actions {
   position: sticky;
   z-index: 9;
-  top: 84px;
+  top: 72px;
   display: grid;
-  grid-template-columns: auto auto minmax(190px, 1fr);
+  grid-template-columns: repeat(3, auto);
+  justify-content: end;
   gap: 10px;
   margin: 0;
   padding: 12px 24px;
@@ -40,7 +41,7 @@
   border-bottom: 1px solid rgba(64, 82, 71, .12);
   border-radius: 29px 29px 0 0;
   background: #fff;
-  box-shadow: 0 6px 18px rgba(45, 61, 51, .08);
+  box-shadow: 0 3px 12px rgba(45, 61, 51, .07);
   isolation: isolate;
 }
 
@@ -348,8 +349,9 @@
   }
 
   .recipe-detail-actions {
-    top: 72px;
+    top: 64px;
     grid-template-columns: 1fr 1fr;
+    justify-content: stretch;
     margin: 0;
     padding: 10px 12px;
     border-radius: 23px 23px 0 0;
