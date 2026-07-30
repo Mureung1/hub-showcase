@@ -4,7 +4,7 @@
   "summary": "편의점 음식의 가격 대비 단백질 함량을 분석하여 3단계 가성비 등급(갓성비/보통/주의)을 판별해 주는 서비스",
   "githubUser": "yeongmin0901",
   "demoUrl": "",
-  "demoVideoUrl": "",
+  "demoVideoUrl": "https://drive.google.com/file/d/1mVsHj1fxpzzGcD76kY6YesYDsuRyVV1V/view?usp=sharing",
   "thumbnail": "showcase/thumbnail.webp",
   "screenshots": [
     "showcase/screenshots/home.webp"
@@ -38,14 +38,34 @@
   ],
   "developmentWithAI": "Antigravity CLI 및 Gemini 3.6 Flash 모델을 활용하여 백엔드 가성비 산출 알고리즘 디버깅, OCR 파싱 API 연동, 코드 리팩토링 및 Git 작업 효율화 진행",
   "agent": {
-    "summary": "Antigravity CLI 환경에서 Gemini 3.6 Flash 기반 개발 보조 AI Agent 활용",
+    "summary": "Antigravity CLI 및 Gemini 3.6 Flash 기반 보조 AI Agent 활용",
     "agentTools": [
-      "Antigravity CLI",
-      "Gemini 3.6 Flash"
+      {
+        "name": "Antigravity CLI",
+        "type": "skill",
+        "purpose": "개발 환경 구성 및 명령어 수행"
+      },
+      {
+        "name": "Gemini 3.6 Flash",
+        "type": "agent",
+        "purpose": "코드 리뷰 및 디버깅 보조"
+      }
     ],
     "workflows": [
-      "백엔드 가성비 계산 알고리즘 검증 및 디버깅",
-      "OCR 파싱 예외 처리 및 백엔드 API 구조 고도화"
+      {
+        "name": "백엔드 가성비 계산 알고리즘 검증 및 디버깅",
+        "steps": [
+          "가성비 산출 로직 디버깅",
+          "알고리즘 연산 결과 검증"
+        ]
+      },
+      {
+        "name": "OCR 파싱 예외 처리 및 백엔드 API 구조 고도화",
+        "steps": [
+          "OCR 데이터 예외 처리",
+          "백엔드 API 리팩토링"
+        ]
+      }
     ]
   }
 }
