@@ -3,7 +3,7 @@
   "title": "챌린지로그",
   "summary": "매일 랜덤 챌린지를 받아 사진 한 장 + 한 줄 메모로 기록하고, 소규모 친구 방에서 완료 여부만 느슨하게 나누는 기록 서비스입니다.",
   "githubUser": "parkjihyoun(박지현)",
-  "demoUrl": "",
+  "demoUrl": "https://challenge-log-for-me.vercel.app/",
   "demoVideoUrl": "https://youtu.be/VET9-gVLCok",
   "thumbnail": "thumbnail.png",
   "screenshots": [],
