@@ -30,8 +30,9 @@ function Stars({ value, onChange }) {
 }
 
 function RatingScreen({ candidate, onBack, onFinish }) {
-  const [rating, setRating] = useState(0);
-  const [noshow, setNoshow] = useState(false);
+  // 동행자별로 별점·노쇼 여부를 따로 관리 ({ [동행자requestId]: 값 })
+  const [ratings, setRatings] = useState({});
+  const [noshows, setNoshows] = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [companions, setCompanions] = useState([]);
@@ -51,19 +52,32 @@ function RatingScreen({ candidate, onBack, onFinish }) {
       .finally(() => setLoadingCompanions(false));
   }, [candidate?.groupId, candidate?.myRequestId]);
 
+  function setCompanionRating(id, stars) {
+    setRatings((prev) => ({ ...prev, [id]: stars }));
+  }
+
+  function toggleNoshow(id, checked) {
+    setNoshows((prev) => ({ ...prev, [id]: checked }));
+  }
+
   async function handleSubmit() {
-    if (rating < 1) {
-      setError("별점을 선택해주세요.");
+    if (companions.some((c) => !ratings[c.id])) {
+      setError("모든 동행자에게 별점을 선택해주세요.");
       return;
     }
     setSaving(true);
     setError(null);
 
     try {
+      const payload = companions.map((c) => ({
+        targetRequestId: c.id,
+        stars: ratings[c.id],
+        noshow: !!noshows[c.id],
+      }));
       const res = await fetch(`${API_BASE}/api/requests/${candidate.myRequestId}/rating`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stars: rating, noshow }),
+        body: JSON.stringify({ ratings: payload }),
       });
       const body = await res.json();
       if (!res.ok) {
@@ -90,42 +104,42 @@ function RatingScreen({ candidate, onBack, onFinish }) {
       )}
       <h1 style={{ fontSize: 20, fontWeight: 800, margin: "14px 0 20px" }}>이동이 끝났어요</h1>
 
-      <div
-        style={{
-          background: "#fff",
-          border: "1px solid rgba(36,21,18,0.08)",
-          borderRadius: 14,
-          padding: 16,
-          marginBottom: 20,
-        }}
-      >
-        {loadingCompanions ? (
-          <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 12px" }}>동행자 정보를 불러오는 중...</p>
-        ) : companions.length === 0 ? (
-          <p style={{ fontSize: 14, fontWeight: 700, margin: "0 0 12px" }}>동행자</p>
-        ) : (
-          <div style={{ marginBottom: 12 }}>
-            {companions.map((c) => (
-              <div
-                key={c.id}
-                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}
-              >
-                <span style={{ fontSize: 14, fontWeight: 700 }}>{c.profile?.name ?? "동행 학생"}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: c.profile?.ratingCount ? "#C98A1F" : "#2F8F5B" }}>
-                  {c.profile?.ratingCount ? `★ ${c.profile.rating.toFixed(1)}` : "NEW"}
-                </span>
-              </div>
-            ))}
+      {loadingCompanions ? (
+        <p style={{ fontSize: 12, color: "#8A7A76", margin: "0 0 12px" }}>동행자 정보를 불러오는 중...</p>
+      ) : companions.length === 0 ? (
+        <p style={{ fontSize: 13, color: "#8A7A76", margin: "0 0 20px" }}>평가할 동행자가 없어요.</p>
+      ) : (
+        companions.map((c) => (
+          <div
+            key={c.id}
+            style={{
+              background: "#fff",
+              border: "1px solid rgba(36,21,18,0.08)",
+              borderRadius: 14,
+              padding: 16,
+              marginBottom: 12,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <span style={{ fontSize: 14, fontWeight: 700 }}>{c.profile?.name ?? "동행 학생"}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: c.profile?.ratingCount ? "#C98A1F" : "#2F8F5B" }}>
+                {c.profile?.ratingCount ? `★ ${c.profile.rating.toFixed(1)}` : "NEW"}
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Stars value={ratings[c.id] ?? 0} onChange={(v) => setCompanionRating(c.id, v)} />
+              <label style={{ fontSize: 12, color: "#8A7A76", display: "flex", alignItems: "center", gap: 6 }}>
+                <input
+                  type="checkbox"
+                  checked={!!noshows[c.id]}
+                  onChange={(e) => toggleNoshow(c.id, e.target.checked)}
+                />
+                노쇼 신고하기
+              </label>
+            </div>
           </div>
-        )}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Stars value={rating} onChange={setRating} />
-          <label style={{ fontSize: 12, color: "#8A7A76", display: "flex", alignItems: "center", gap: 6 }}>
-            <input type="checkbox" checked={noshow} onChange={(e) => setNoshow(e.target.checked)} />
-            노쇼 신고하기
-          </label>
-        </div>
-      </div>
+        ))
+      )}
 
       {error && (
         <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 8px", textAlign: "center" }}>{error}</p>
