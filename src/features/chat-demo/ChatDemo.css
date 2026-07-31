@@ -13,7 +13,30 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-5);
-  padding-bottom: var(--space-6);
+  /* 하단에 떠 있는 입력창 높이만큼만 여유를 둔다(과하면 빈 공간이 답답해 보인다). */
+  padding-bottom: 76px;
+}
+
+/* 입력 영역: 스레드 위에 겹쳐 띄우고 반투명 프로스트 배경을 깔아, 스크롤되는 내용이
+   딱 잘리지 않고 이 층 아래로 부드럽게 사라지게 한다. (rgba는 --color-bg의 반투명 버전) */
+.chat-demo__composer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  /* 거의 투명하게: 입력창(pill)이 내용 위에 떠 있고, 아래쪽 살짝만 배경색으로 깔려
+     스크롤 내용이 부드럽게 사라진다. 대부분 구간은 투명해서 답답하지 않다. */
+  background: linear-gradient(to top, var(--color-bg) 35%, transparent);
+  /* 투명 구간이 뒤 내용의 스크롤/클릭을 막지 않도록 */
+  pointer-events: none;
+}
+
+.chat-demo__composer > * {
+  pointer-events: auto;
 }
 
 .chat-demo__empty,
@@ -189,15 +212,15 @@
 
 .chat-demo__input-bar {
   display: flex;
-  align-items: flex-end;
-  gap: var(--space-3);
+  align-items: center;
+  gap: var(--space-2);
   width: 100%;
   max-width: 900px;
   margin: 0 auto;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  padding: var(--space-2);
+  padding: var(--space-2) var(--space-4);
   box-shadow: var(--shadow-card);
 }
 
@@ -215,10 +238,9 @@
   max-height: 160px;
 }
 
-/* 전송 버튼과 같은 40px 원형. flex-end로 여러 줄일 때도 하단 정렬 유지 */
+/* 전송 버튼과 같은 40px 원형. 입력 바가 가운데 정렬이라 여러 줄일 때도 세로 중앙에 놓인다. */
 .chat-demo__attach-btn {
   flex-shrink: 0;
-  align-self: flex-end;
   width: 40px;
   height: 40px;
   display: inline-flex;
@@ -227,7 +249,6 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 18px;
   line-height: 1;
   border-radius: var(--radius-pill);
   color: var(--color-text-secondary);

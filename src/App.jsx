@@ -6,11 +6,6 @@ import AuthPage from "./features/auth/AuthPage.jsx";
 import { useAuth } from "./features/auth/AuthContext.jsx";
 import "./App.css";
 
-const SCREENS = {
-  "chat-demo": ChatDemo,
-  "log-viewer": LogViewer,
-};
-
 export default function App() {
   const { user, loading } = useAuth();
   const [screen, setScreen] = useState("chat-demo");
@@ -23,13 +18,16 @@ export default function App() {
     return <AuthPage />;
   }
 
-  const ActiveScreen = SCREENS[screen];
-
   return (
     <div className="app-shell">
       <Sidebar active={screen} onNavigate={setScreen} />
       <main className="app-content">
-        <ActiveScreen />
+        {/* ChatDemo는 항상 마운트해 대화·입력 상태를 유지하고, 비활성일 때 숨기기만 한다.
+            LogViewer는 매번 마운트돼 진입할 때마다 최신 로그를 다시 불러온다. */}
+        <div className={`screen-pane${screen === "chat-demo" ? "" : " screen-pane--hidden"}`}>
+          <ChatDemo />
+        </div>
+        {screen === "log-viewer" && <LogViewer />}
       </main>
     </div>
   );

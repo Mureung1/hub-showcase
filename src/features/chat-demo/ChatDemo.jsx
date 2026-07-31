@@ -134,6 +134,7 @@ export default function ChatDemo() {
 
       {dragging && <div className="chat-demo__drop-hint">여기에 파일을 놓으세요</div>}
 
+      <div className="chat-demo__composer">
       {files.length > 0 && (
         <div className="chat-demo__attachments">
           {files.map((f, i) => (
@@ -194,6 +195,7 @@ export default function ChatDemo() {
           전송
         </Button>
       </form>
+      </div>
     </div>
   );
 }
