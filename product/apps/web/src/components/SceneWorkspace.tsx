@@ -2,6 +2,7 @@ import { Box, Clock3, Cloud, FileImage, HardDrive, Lock, Play, UploadCloud, X } 
 import { type FormEvent, type RefObject, useEffect, useMemo, useRef, useState } from "react";
 
 import { sceneAssetUrl, type CaptureType } from "../features/scene/sceneApi";
+import { googleDriveFileId, googleDrivePreviewUrl, googleDriveViewUrl } from "../features/scene/sceneDrive";
 import { SceneObservationPanel } from "../features/scene/SceneObservationPanel";
 import { SceneProgress } from "../features/scene/SceneProgress";
 import { SceneWorkerStatus } from "../features/scene/SceneWorkerStatus";
@@ -30,31 +31,24 @@ type SceneDemoAsset = {
 const DEMO_SPLAT_URL =
   import.meta.env.VITE_SCENE_DEMO_ASSET_URL ?? "https://sparkjs.dev/assets/splats/butterfly.spz";
 
-function optionalEnvironmentValue(value: string | undefined) {
-  const normalized = value?.trim();
-  return normalized ? normalized : undefined;
-}
-
-function googleDrivePreviewUrl(fileId: string) {
-  return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
-}
-
-function googleDriveViewUrl(fileId: string) {
-  return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/view`;
-}
-
 const SCENE_DEMO_ASSETS: SceneDemoAsset[] = [
   {
     id: "jongmyo",
     label: "종묘",
     splatUrl: `${import.meta.env.BASE_URL}splats/jongmyo.ply`,
-    driveFileId: optionalEnvironmentValue(import.meta.env.VITE_JONGMYO_DRIVE_FILE_ID),
+    driveFileId: googleDriveFileId(
+      import.meta.env.VITE_JONGMYO_DRIVE_FILE_ID,
+      "1q0CR2OPkk1kYjSV5TDWFlKOoRlSc8w8s",
+    ),
   },
   {
     id: "gwanpyeong",
     label: "관평동 거리",
     splatUrl: `${import.meta.env.BASE_URL}splats/Gwanpyeong-dong.ply`,
-    driveFileId: optionalEnvironmentValue(import.meta.env.VITE_GWANPYEONG_DRIVE_FILE_ID),
+    driveFileId: googleDriveFileId(
+      import.meta.env.VITE_GWANPYEONG_DRIVE_FILE_ID,
+      "1F-pyWGG_knL45BcsQ2OXgismPhqefMtt",
+    ),
   },
 ];
 
