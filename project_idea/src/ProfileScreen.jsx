@@ -194,6 +194,19 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack, onLogo
         </label>
       </div>
 
+      {isEdit && (
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+          {existingProfile?.rating_count ? (
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#C98A1F" }}>
+              ★ {existingProfile.rating.toFixed(1)}{" "}
+              <span style={{ fontWeight: 600, color: "#8A7A76" }}>({existingProfile.rating_count}회 평가)</span>
+            </span>
+          ) : (
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#2F8F5B" }}>NEW · 아직 평가 이력이 없어요</span>
+          )}
+        </div>
+      )}
+
       <div style={{ marginBottom: 16 }}>
         <label htmlFor="profile-name" style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>이름</label>
         <input
