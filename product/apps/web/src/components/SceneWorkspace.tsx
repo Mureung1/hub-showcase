@@ -24,24 +24,37 @@ type SceneDemoAsset = {
   id: string;
   label: string;
   splatUrl: string;
-  videoUrl: string;
+  driveFileId?: string;
 };
 
 const DEMO_SPLAT_URL =
   import.meta.env.VITE_SCENE_DEMO_ASSET_URL ?? "https://sparkjs.dev/assets/splats/butterfly.spz";
+
+function optionalEnvironmentValue(value: string | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized : undefined;
+}
+
+function googleDrivePreviewUrl(fileId: string) {
+  return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview`;
+}
+
+function googleDriveViewUrl(fileId: string) {
+  return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/view`;
+}
 
 const SCENE_DEMO_ASSETS: SceneDemoAsset[] = [
   {
     id: "jongmyo",
     label: "종묘",
     splatUrl: `${import.meta.env.BASE_URL}splats/jongmyo.ply`,
-    videoUrl: `${import.meta.env.BASE_URL}videos/jongmyo.mp4`,
+    driveFileId: optionalEnvironmentValue(import.meta.env.VITE_JONGMYO_DRIVE_FILE_ID),
   },
   {
     id: "gwanpyeong",
     label: "관평동 거리",
     splatUrl: `${import.meta.env.BASE_URL}splats/Gwanpyeong-dong.ply`,
-    videoUrl: `${import.meta.env.BASE_URL}videos/Gwanpyeong-dong.mp4`,
+    driveFileId: optionalEnvironmentValue(import.meta.env.VITE_GWANPYEONG_DRIVE_FILE_ID),
   },
 ];
 
@@ -184,8 +197,8 @@ export function SceneWorkspace({ onClose, restoreFocusExternally }: SceneWorkspa
 
 function SceneDemoContent() {
   const [availableAssets, setAvailableAssets] = useState<SceneDemoAsset[]>([]);
+  const [availableSplatIds, setAvailableSplatIds] = useState<Set<string>>(new Set());
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
-  const [availableVideos, setAvailableVideos] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -194,14 +207,17 @@ function SceneDemoContent() {
       SCENE_DEMO_ASSETS.map(async (asset) => ({
         asset,
         hasSplat: await assetExists(asset.splatUrl),
-        hasVideo: await assetExists(asset.videoUrl),
       })),
     ).then((results) => {
       if (cancelled) return;
-      const splatAssets = results.filter((result) => result.hasSplat).map((result) => result.asset);
-      setAvailableAssets(splatAssets);
-      setSelectedAssetId((current) => current ?? splatAssets[0]?.id ?? null);
-      setAvailableVideos(new Set(results.filter((result) => result.hasVideo).map((result) => result.asset.id)));
+      const visibleAssets = results
+        .filter((result) => result.hasSplat || result.asset.driveFileId)
+        .map((result) => result.asset);
+      setAvailableAssets(visibleAssets);
+      setAvailableSplatIds(
+        new Set(results.filter((result) => result.hasSplat).map((result) => result.asset.id)),
+      );
+      setSelectedAssetId((current) => current ?? visibleAssets[0]?.id ?? null);
     });
 
     return () => {
@@ -210,7 +226,14 @@ function SceneDemoContent() {
   }, []);
 
   const selectedAsset = availableAssets.find((asset) => asset.id === selectedAssetId);
-  const viewerAssetUrl = selectedAsset?.splatUrl ?? DEMO_SPLAT_URL;
+  const hasSelectedSplat = selectedAsset ? availableSplatIds.has(selectedAsset.id) : false;
+  const viewerAssetUrl = hasSelectedSplat && selectedAsset ? selectedAsset.splatUrl : DEMO_SPLAT_URL;
+  const drivePreviewUrl = selectedAsset?.driveFileId
+    ? googleDrivePreviewUrl(selectedAsset.driveFileId)
+    : null;
+  const driveViewUrl = selectedAsset?.driveFileId
+    ? googleDriveViewUrl(selectedAsset.driveFileId)
+    : null;
 
   return (
     <>
@@ -234,28 +257,56 @@ function SceneDemoContent() {
       <div className="scene-demo-viewer">
         <SplatViewer key={viewerAssetUrl} assetUrl={viewerAssetUrl} />
         <span>
-          {selectedAsset
+          {selectedAsset && hasSelectedSplat
             ? `${selectedAsset.label} · 마우스로 회전하고 휠로 확대할 수 있습니다.`
-            : "Spark 공식 SPZ 샘플 · LocalTwin 촬영 결과가 아닙니다."}
+            : selectedAsset
+              ? "Spark 공식 SPZ 샘플 · 촬영 결과 영상은 아래에서 확인합니다."
+              : "Spark 공식 SPZ 샘플 · LocalTwin 촬영 결과가 아닙니다."}
         </span>
       </div>
 
       <div className="scene-modal-content scene-demo-content">
         <div className="scene-demo-summary">
-          <b>마우스로 회전하고 휠로 확대해 보세요.</b>
-          <p>로컬 PLY 파일이 있으면 해당 장면을 불러오고, 없으면 기본 Spark 샘플을 표시합니다.</p>
+          <b>
+            {hasSelectedSplat
+              ? "마우스로 회전하고 휠로 확대해 보세요."
+              : "Google Drive 렌더 영상으로 촬영 결과를 확인하세요."}
+          </b>
+          <p>
+            {drivePreviewUrl
+              ? "대용량 영상은 Git 저장소에 넣지 않고 Google Drive 공유 파일을 임베드합니다."
+              : "로컬 PLY 파일이 있으면 해당 장면을 불러오고, 없으면 기본 Spark 샘플을 표시합니다."}
+          </p>
         </div>
 
-        {selectedAsset && availableVideos.has(selectedAsset.id) && (
-          <div className="scene-storage-grid" aria-label="3DGS 렌더 영상">
-            <article>
-              <Play size={18} />
-              <div>
-                <b>{selectedAsset.label} 렌더 영상</b>
-                <a href={selectedAsset.videoUrl} target="_blank" rel="noreferrer">
-                  새 창에서 보기
-                </a>
-              </div>
+        {selectedAsset && drivePreviewUrl && driveViewUrl && (
+          <div className="scene-storage-grid" aria-label="3DGS Google Drive 렌더 영상">
+            <article
+              style={{
+                display: "grid",
+                gridColumn: "1 / -1",
+                gap: 10,
+                padding: 12,
+              }}
+            >
+              <b>{selectedAsset.label} 렌더 영상</b>
+              <iframe
+                title={`${selectedAsset.label} 3DGS 렌더 영상`}
+                src={drivePreviewUrl}
+                allow="autoplay; fullscreen"
+                allowFullScreen
+                loading="lazy"
+                style={{
+                  width: "100%",
+                  aspectRatio: "16 / 9",
+                  border: 0,
+                  borderRadius: 8,
+                  background: "#111",
+                }}
+              />
+              <a href={driveViewUrl} target="_blank" rel="noreferrer">
+                Google Drive에서 새 창으로 보기
+              </a>
             </article>
           </div>
         )}
@@ -264,15 +315,15 @@ function SceneDemoContent() {
           <article>
             <HardDrive size={18} />
             <div>
-              <b>현재 로컬 저장</b>
+              <b>로컬 3D asset</b>
               <code>product/apps/web/public/splats/*.ply</code>
             </div>
           </article>
           <article>
             <Cloud size={18} />
             <div>
-              <b>서버 저장</b>
-              <span>아직 연결 전 · Object Storage 연결 후 배포합니다.</span>
+              <b>렌더 영상</b>
+              <span>Google Drive 공유 파일 · Vercel 환경변수로 ID 연결</span>
             </div>
           </article>
         </div>
