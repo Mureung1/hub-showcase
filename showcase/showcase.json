@@ -7,7 +7,11 @@
   "demoVideoUrl": "https://drive.google.com/drive/folders/1VfiAl05IA56WRRBB7z5cflz1psx1_la9?usp=drive_link",
   "thumbnail": "thumbnail.png",
   "screenshots": [
-    "screenshots/home.png"
+    "screenshots/1_login.png",
+    "screenshots/2_dashboard.png",
+    "screenshots/3_timetable.png",
+    "screenshots/4_analytics.png",
+    "screenshots/5_report.png"
   ],
   "problem": "편입생이나 다전공 수강생들의 경우, 각각 다르게 적용되는 복잡한 교양 및 전공 졸업 요건을 스스로 진단하기 매우 어렵고, 모의 수강신청 시간표 배정과 성적표 분석을 여러 시스템에서 분산 처리해야 하는 수고가 있습니다.",
   "targetUsers": [
@@ -41,13 +45,25 @@
   "agent": {
     "summary": "학습 진단 및 시간표 모의 설계를 돕는 AI 어드바이저 챗봇 에이전트입니다. 사용자의 성적 데이터와 학적 상태를 바탕으로 최적의 추천 수강 로드맵을 가이드합니다.",
     "agentTools": [
-      "성적표 OCR 이미지 정밀 판독 및 GPA 계산 도구",
-      "시간표 수강 과목 간 강의 시간 충돌 자동 감지 도구",
-      "진단 결과 상세 리포트 내보내기(TXT Export) 도구"
+      {
+        "type": "agent",
+        "name": "학업 어드바이저 Agent",
+        "purpose": "학생의 학적 상태(편입생 등)와 질문을 분석하여 맞춤형 과목을 추천하고 시간표에 자동 배치합니다."
+      },
+      {
+        "type": "skill",
+        "name": "성적표 OCR 판독 Skill",
+        "purpose": "Tesseract.js를 활용하여 성적표 이미지에서 교과목명, 학점, 등급을 자동으로 추출합니다."
+      },
+      {
+        "type": "skill",
+        "name": "성적 자가진단 리포트 내보내기 Skill",
+        "purpose": "진단 결과 데이터를 정밀하게 포맷팅하여 브라우저 로컬 파일(.txt)로 내보내기(Export) 합니다."
+      }
     ],
     "workflows": [
       {
-        "title": "기능 개발 Workflow",
+        "name": "기능 개발 Workflow",
         "steps": [
           "수강신청 및 성적표 분석 요구사항 정의",
           "Express 서버 연동 및 Supabase 테이블 설계",
@@ -57,7 +73,7 @@
         ]
       },
       {
-        "title": "테스트 검증 Workflow",
+        "name": "테스트 검증 Workflow",
         "steps": [
           "OCR 파싱 실패 및 예외 조건 정의",
           "백엔드 API 단위 테스트 실행",
