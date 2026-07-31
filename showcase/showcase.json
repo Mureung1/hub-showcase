@@ -6,7 +6,11 @@
   "demoUrl": "https://respec-gamma.vercel.app",
   "demoVideoUrl": "https://drive.google.com/file/d/1GRNnkG26mHtgFr5acZF3QA_nzFBcs4aF/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
-  "screenshots": ["screenshots/home.webp"],
+  "screenshots": [
+    "screenshots/home.webp",
+    "screenshots/editor.png",
+    "screenshots/ai-feedback.png"
+  ],
   "problem": "역기획서는 게임 기획 지망생에게 사실상 필수 포트폴리오지만, 처음 쓰는 사람은 무엇을 어떤 순서로 써야 하는지 몰라 백지 앞에서 멈춥니다. 겨우 다 쓰고 나서도 봐줄 사람이 없어, 게임 내용을 '요약'만 한 문서인지 설계 '의도까지 분석'한 문서인지 스스로 판단하기 어렵고, 마감이 없어 완성으로 이어지지 않습니다.",
   "targetUsers": [
     "게임 기획자 지망생",
