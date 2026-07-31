@@ -6,7 +6,11 @@
   "demoUrl": "",
   "demoVideoUrl": "",
   "thumbnail": "thumbnail.png",
-  "screenshots": [],
+  "screenshots": [
+    "screenshots/search-map.png",
+    "screenshots/spot-guide.png",
+    "screenshots/analysis-contribution.png"
+  ],
   "problem": "여행·나들이 중 SNS에서 본 사진을 따라 찍고 싶은 대학생은 실제 촬영 장소, 카메라 방향, 사람과 배경의 위치를 한 번에 알기 어렵습니다. 지도는 장소만 알려 주고 SNS 사진은 구도만 보여 주기 때문에, 사용자는 같은 장소에 가도 어디에 서고 어떤 프레임을 골라야 할지 반복해서 시행착오를 겪습니다. 혼자 찍거나 친구·연인과 번갈아 촬영할 때는 원하는 구도를 확인해 줄 사람도 부족합니다.",
   "targetUsers": [
     "지수(23·대학생): 여행지 SNS 사진을 실제 장소에서 재현하고 싶은 사용자"
