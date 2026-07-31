@@ -50,6 +50,7 @@ npm run dev
 - [나만의 개발·배포 워크플로우](Project/docs/final-workflow.md)
 - [Agent 협업 과정 시각화](Project/docs/agent-collaboration.md)
 - [2026-07-30 작업 과정 기록](Project/docs/work-log-2026-07-30.md)
+- [프로젝트 소개 자료 (웹 슬라이드)](https://hub-opal-eta.vercel.app/project-introduction.html)
 
 ## 품질 확인
 
