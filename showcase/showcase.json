@@ -3,7 +3,7 @@
   "title": "편방 (Pyeonbang) - 편의점 단백질 가성비 계산기",
   "summary": "편의점 음식의 가격 대비 단백질 함량을 분석하여 3단계 가성비 등급(갓성비/보통/주의)을 판별해 주는 서비스",
   "githubUser": "yeongmin0901",
-  "demoUrl": "",
+  "demoUrl": "https://pyeonbang.onrender.com",
   "demoVideoUrl": "https://drive.google.com/file/d/1mVsHj1fxpzzGcD76kY6YesYDsuRyVV1V/view?usp=sharing",
   "thumbnail": "showcase/thumbnail.webp",
   "screenshots": [
