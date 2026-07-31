@@ -2,6 +2,7 @@ services:
   - type: web
     name: smartff-backend
     runtime: docker
+    plan: free
     dockerfilePath: backend/Dockerfile
     dockerContext: .
     healthCheckPath: /health
@@ -11,4 +12,6 @@ services:
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: PORT
         sync: false
