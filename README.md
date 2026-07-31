@@ -1,12 +1,10 @@
-# hub
+# 🏪 편방 (Pyeonbang) - 편의점 단백질 가성비 계산기
 
-7월 13~ 17 todo list
-https://github.com/users/yeongmin0901/projects/1/views/1
+[![Live Demo](https://img.shields.io/badge/Live_Service-https%3A%2F%2Fpyeonbang.onrender.com-brightgreen?style=for-the-badge&logo=render)](https://pyeonbang.onrender.com)
+[![Demo Video](https://img.shields.io/badge/Demo_Video-Google_Drive-blue?style=for-the-badge&logo=googledrive)](https://drive.google.com/file/d/1mVsHj1fxpzzGcD76kY6YesYDsuRyVV1V/view?usp=sharing)
 
-# 🏪 편방 (Pyeon-Bang) - 편의점 식비·건강 관리 앱 기획서
-
-> **"치고 들어오는 고물가와 폭탄 칼로리, 편의점에서 철벽 방어!"**
-> 본 문서는 자취생, 대학생, 직장인 등 전국의 고물가 시대를 살아가는 모든 이들의 식비 절약 및 균형 잡힌 영양 관리를 돕는 AI 에이전트 기반 웹 서비스의 기획 및 설계 문서입니다.
+> **"치고 들어오는 고물가와 폭탄 칼로리, 편의점에서 철벽 방어!"**  
+> 편의점 음식의 가격 대비 단백질 함량을 AI/OCR 기반으로 분석하여 3단계 가성비 등급(갓성비/보통/주의)을 판별해 주는 스마트 식비·건강 관리 서비스입니다.
 
 ---
 
@@ -208,4 +206,39 @@ sequenceDiagram
     DB-->>BE: 전체 분석 데이터 리스트 반환
     BE-->>FE: HTTP 200 OK (분석 이력 JSON Array 반환)
     FE->>User: 누적 세이브 대시보드 업데이트 & 히스토리 목록 렌더링
+```
+
+---
+
+## 11. 프로젝트 디렉토리 및 파일 구조 (Directory Structure)
+
+본 프로젝트는 서비스의 관심사 분리(SoC, Separation of Concerns)를 준수하여 **프론트엔드, 백엔드, 클라우드 배포 설정, 제출용 쇼케이스** 디렉토리로 직관적으로 구성되어 있습니다.
+
+```text
+hub/
+├── 📄 README.md                  # 프로젝트 메인 통합 소개 및 배포 가이드 문서
+├── ⚙️ render.yaml                # Render 클라우드 호스팅 웹 서비스 Blueprint 설정 파일
+│
+├── 🏪 pyeonbang/                 # [앱 코어] 편방 메인 서비스 프로젝트 디렉토리
+│   ├── 📋 Backlog.md             # FE-BE-DB 데이터 통신 학습 및 개발 백로그
+│   ├── 📖 README.md              # 세부 기획서 및 시나리오 명세서
+│   ├── 📊 presentation.html      # 데모데이 발표용 슬라이드 템플릿
+│   │
+│   ├── 🐍 backend/               # [백엔드] Python / Flask RESTful API 서버
+│   │   ├── 🚀 app.py             # Flask 메인 애플리케이션 (API 라우팅, 가성비 로직, DB 제어)
+│   │   ├── 🤖 nutrition_parser.py# Gemini Vision AI 기반 영양성분 파싱 모듈
+│   │   ├── 🧪 test_app.py        # 백엔드 API 기능 및 예외 처리 검증 스크립트
+│   │   ├── 📦 requirements.txt   # 백엔드 실행 의존성 패키지 정의 (Flask, Gunicorn 등)
+│   │   ├── 📝 Procfile           # WSGI 프로덕션 서버(Gunicorn) 프로세스 스타트 파일
+│   │   └── 💾 pyeonbang.db       # 영양 분석 이력 저장을 위한 SQLite 데이터베이스
+│   │
+│   ├── 🎨 frontend/              # [프론트엔드] HTML5 / CSS3 / Vanilla JS 
+│   │   └── 📱 index.html         # 가성비 분석 및 대시보드 인터랙션 싱글 페이지 UI
+│   │
+│   └── 📸 images/                # 분석 요청 이미지를 위한 임시 업로드 저장소
+│
+└── 🏆 showcase/                  # [제출] AI Agent Challenge 수료 및 쇼케이스 등록용
+    ├── 📄 showcase.json          # 제출 메타데이터 (서비스 URL, 영상 링크, 기술 스택)
+    ├── 🖼️ thumbnail.webp         # 쇼케이스 섬네일 이미지
+    └── 🖼️ screenshots/           # 주요 기능 화면 스크린샷 (home.webp)
 ```
