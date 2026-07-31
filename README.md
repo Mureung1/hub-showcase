@@ -12,14 +12,10 @@ SWIM은 하루를 대표하는 음악 한 곡과 짧은 감정을 기록하고, 
 
 | 구분 | 주소·상태 |
 |---|---|
-| Frontend | Vercel 배포 설정 문서화 — 공개 URL 및 배포 상태 확인 필요 |
+| Frontend | (https://swim-self-pi.vercel.app/) |
 | Backend | [Render API](https://swim-scy0.onrender.com) |
 | Health Check | [`GET /health`](https://swim-scy0.onrender.com/health) 응답 확인 |
 | Demo Video | [Google Drive에서 보기](https://drive.google.com/file/d/1MmuMuZEwLBEagwL7WjqxmIBOhFn5Ak8E/view?usp=drive_link) |
-
-현재 저장소에서 확인할 수 있는 배포 검증 근거는 Render의 `/health` 응답입니다. 타입 검사, 자동 테스트와 프로덕션 빌드는 로컬에서 통과했습니다.
-
-Vercel 공개 URL은 아직 저장소에 기록하지 않았으며, 배포 환경의 브라우저 전체 흐름도 최종 검증 전입니다. URL을 공개할 때는 `showcase/showcase.json`의 `demoUrl`과 위 표에 같은 주소를 추가하고 다음 항목을 실제 환경에서 확인해야 합니다.
 
 - 회원가입·로그인·세션 유지와 음악 기록 저장·조회
 - 두 계정의 사용자 검색·팔로우·피드·좋아요 상태 분리
