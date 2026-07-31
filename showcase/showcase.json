@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "title": "UniRadar",
-  "summary": "대학생이 여러 공지 사이트를 추적하고 장학금·공모전·대외활동·봉사·지원사업을 AI로 분석해 저장하고 태스크로 관리하는 서비스입니다.",
+  "summary": "대학생이 여러 공지 사이트를 추적하고 장학금·공모전·대외활동·봉사·지원사업을 AI로 분석해 저장하고 태스크로 관리하는 서비스입니다. 소개 자료는 ../output/presentation/UniRadar_12min_Final_Presentation.pdf입니다.",
   "githubUser": "clradtr(박건태)",
-  "demoUrl": "https://hub-clradtr1.vercel.app/",
+  "demoUrl": "https://hub-clradtr1.vercel.app/, https://github.com/clradtr/newhub",
   "thumbnail": "thumbnail.webp",
   "demoVideoUrl": "https://youtu.be/ChGaooVO-8E",
   "screenshots": [],
