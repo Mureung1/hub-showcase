@@ -1,6 +1,6 @@
 import { Routes, Route, NavLink } from 'react-router-dom';
 import HotDealPage from './pages/HotDealPage.jsx';
-import HotDealFormPage from './pages/HotDealFormPage.jsx';
+import HotDealFormPage from './pages/HotDealForm.jsx';
 import TalentFeedPage from './pages/TalentFeedPage.jsx';
 import RequestDetailPage from './pages/RequestDetailPage.jsx';
 import RequestFormPage from './pages/RequestFormPage.jsx';

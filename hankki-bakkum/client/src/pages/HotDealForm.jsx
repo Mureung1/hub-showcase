@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../hooks/useAuth";
 import { generateAdCopy } from "../lib/api";
 import { STATUS } from "../lib/status";
-import "./HotDealFormPage.css";
+import "./HotDealForm.css";
 
 const TAGS = ["마감할인", "노쇼발생", "우천특가", "당일한정"];
 
