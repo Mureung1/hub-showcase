@@ -3,8 +3,8 @@ services:
     name: smartff-backend
     runtime: docker
     plan: free
-    dockerfilePath: backend/Dockerfile
-    dockerContext: .
+    dockerfilePath: smartff-agent/backend/Dockerfile
+    dockerContext: smartff-agent
     healthCheckPath: /health
     envVars:
       - key: FRONTEND_ORIGIN
