@@ -42,8 +42,21 @@ ls apps/web/dist/index.html apps/api/dist/server.js   # 둘 다 있어야 한다
 
 ### `/prompts` 배포 포함 여부
 
-- `/prompts/answer/{claude,openai,gemini}/v1.md`는 저장소에 커밋되어 있고 `.gitignore` 대상이 아니다 → **루트를 배포하면 자동 포함된다.**
-- 별도 설정은 필요 없다. 다른 위치에 두고 싶을 때만 `ANSWER_PROMPTS_DIR`에 절대 경로를 지정한다.
+프롬프트는 **9개 파일**이다. 셋이 아니다.
+
+```text
+prompts/answer/{claude,openai,gemini}/v1.md        3개 — 3사 답변
+prompts/manager/classify/v1.md                     단계 3·4 분류
+prompts/manager/leftover/v1.md                     단계 4 leftover·제목 중립화
+prompts/manager/compare/v1.md                      단계 6 판정
+prompts/manager/recheck/v1.md                      재검토
+prompts/manager/final/v1.md                        FinalAnswer 종합
+prompts/manager/finalNote/v1.md                    DecisionNote
+```
+
+- 모두 저장소에 커밋되어 있고 `.gitignore` 대상이 아니다 → **루트를 배포하면 자동 포함된다.**
+- 별도 설정은 필요 없다. 다른 위치에 두고 싶을 때만 `ANSWER_PROMPTS_DIR`·`MANAGER_PROMPTS_DIR`에 절대 경로를 지정한다.
+- **`manager/` 하나라도 빠지면 생성이 분류 단계에서 멈춘다.** Root Directory를 `apps/api`로 잡으면 안 되는 두 번째 이유다.
 - 프롬프트는 런타임에 읽는 텍스트라 문구만 고치면 재빌드가 필요 없다. 단, 프로세스 내 캐시가 있어 **재배포(재기동)해야 반영**된다.
 
 ### 환경변수 (Render 대시보드 → Environment)
@@ -60,6 +73,10 @@ ls apps/web/dist/index.html apps/api/dist/server.js   # 둘 다 있어야 한다
 | `OPENAI_API_KEY` | 앱 기본 OpenAI 키 |
 | `GEMINI_API_KEY` | 앱 기본 Gemini 키 |
 | `CLIENT_ORIGIN` | **Netlify 주소**(예: `https://<사이트>.netlify.app`). CORS 허용 출처 |
+| `OPENROUTER_API_KEY` | **Manager AI 전용.** OpenRouter 키. BYOK 대상이 아니라 앱 키만 쓴다 |
+| `MANAGER_MODEL` | 예: `qwen/qwen3.7-plus`. OpenRouter 모델 ID |
+
+> ⚠️ **`OPENROUTER_API_KEY`와 `MANAGER_MODEL`은 기본값이 없다.** 빠지면 서버가 **기동 자체를 못 한다**(`env.ts`에서 필수). Render 로그에 `OPENROUTER_API_KEY가 필요합니다.`가 찍히고 프로세스가 종료된다. 배포가 "빌드는 성공, 헬스체크 실패"로 보이면 이걸 먼저 의심한다.
 
 **선택(기본값 있음)**
 
@@ -72,6 +89,22 @@ ls apps/web/dist/index.html apps/api/dist/server.js   # 둘 다 있어야 한다
 | `CLAUDE_MODEL` | `claude-haiku-4-5` | 최소 티어 기본값 |
 | `OPENAI_MODEL` | `gpt-5-nano` | 최소 티어 기본값 |
 | `GEMINI_MODEL` | `gemini-3.5-flash-lite` | 최소 티어 기본값 |
+
+**Manager 선택 항목 — 전부 기본값으로 두고 배포한다.** 아래는 문제가 생겼을 때 손댈 곳을 알기 위한 목록이다.
+
+| 키 | 기본값 | 설명 |
+|---|---|---|
+| `MANAGER_PROMPTS_DIR` | 저장소 루트 `/prompts/manager` | Manager 프롬프트 루트 |
+| `CLASSIFIER_PROMPT_VERSION` | `v1` | 단계 3·4. `manager_meta.classifierVersion`에 스탬프 |
+| `COMPARATOR_PROMPT_VERSION` | `v1` | 단계 6. `manager_meta.comparatorVersion`에 스탬프 |
+| `RECHECKER_PROMPT_VERSION` | `v1` | 재검토 |
+| `COMPOSER_PROMPT_VERSION` | `v1` | FinalAnswer 종합 |
+| `CONTEXT_MAX_NOTES` | `5` | Context에 넣을 DecisionNote 상한. 초과분 개수는 `context_snapshot`에 기록된다 |
+| `MANAGER_CONFLICT_TYPES` | `main_answer` | 충돌로 매핑할 유형(쉼표 구분) |
+| `MANAGER_CONCURRENCY` | `3` | 단계 6 쟁점별 병렬 상한 |
+| `MANAGER_TIMEOUT_MS` | `45000` | 단계 3·4 타임아웃 |
+| `MANAGER_JUDGE_TIMEOUT_MS` | `120000` | 단계 6·재검토 타임아웃. **재시도하지 않고 fallback으로 직행**하므로 이 값이 쟁점당 지연 상한이다 |
+| `MANAGER_JUDGE_REASONING_EFFORT` | `low` | 단계 6에만 적용. 단계 3·4에 적용하면 오히려 느려진다(실측) |
 
 - `PORT`는 Render가 주입하므로 **직접 설정하지 않는다**(서버가 `process.env.PORT`를 읽는다).
 - `SUPABASE_DB_URL`은 마이그레이션 적용 전용이라 **런타임 env에 넣지 않는다**.
@@ -128,7 +161,10 @@ Render는 Netlify 주소를, Netlify는 Render 주소를 알아야 한다. **한
 ## 5. 데모 시 알아둘 것
 
 - **Cold start**: Render 무료 플랜은 유휴 시 인스턴스를 내린다. 첫 요청이 **30~60초** 걸릴 수 있다. 시연 직전에 아무 페이지나 열어 미리 깨워둔다.
-- **첫 질문은 특히 느리다**: cold start + 3사 실호출(각 최대 45초·실패 시 1회 재시도)이 겹친다. 깨워둔 상태라면 보통 10~30초.
+- **첫 질문은 특히 느리다**: cold start + 3사 실호출(각 최대 45초·실패 시 1회 재시도)이 겹친다. 깨워둔 상태라면 3사 답변까지 보통 10~30초.
+- **⚠️ 3사 답변이 끝이 아니다.** 그 뒤에 Manager 파이프라인이 돈다. 실측 기준 **단계 6(판정)만 p50 83초·p90 111초**이고 쟁점이 여럿이면 3개씩 병렬로 처리된다. 질문 하나가 최종 답변까지 **2~3분** 걸리는 것이 정상이다.
+  - 시연에서 이 시간을 침묵으로 보내지 마라. 화면이 단계별로 갱신되므로(`agenda.created` → `agenda.judged` → `final_answer.progress`) **진행 중인 화면을 보여주면서 설명하는 것이 시나리오**다.
+  - 시간이 없는 시연이라면 **미리 생성해둔 Chat을 여는 것**이 안전하다. 라이브 생성은 한 건만 한다.
 - **SSE 연결 유지**: 생성 스트림은 15초마다 heartbeat 프레임을 보내 중간 프록시가 유휴 연결을 끊지 않게 한다.
 - **AI 키 잔액**: 앱 기본 키의 크레딧이 떨어지면 해당 Provider만 실패로 표시되고 나머지로 진행된다(3사 전멸 시 고정 안내 문구로 마무리).
 
@@ -138,6 +174,10 @@ Render는 Netlify 주소를, Netlify는 Render 주소를 알아야 한다. **한
 
 | 증상 | 확인할 것 |
 |---|---|
+| **빌드는 성공했는데 헬스체크가 계속 실패** | Render 로그를 본다. `OPENROUTER_API_KEY가 필요합니다.` / `MANAGER_MODEL이 필요합니다.` 면 env 누락이다. 이 둘은 기본값이 없어 **서버가 기동하지 않는다** |
+| 3사 답변은 나오는데 그 뒤로 안 넘어감 | ① Render Root Directory가 저장소 루트인지(=`prompts/manager/` 포함) ② OpenRouter 크레딧 잔액 ③ Render 로그의 Manager 오류 |
+| 최종 답변이 "판단하지 못했습니다"류로 나옴 | 단계 6 타임아웃 후 fallback. `MANAGER_JUDGE_TIMEOUT_MS`(기본 120초)와 모델 응답 속도 확인. 정상 동작 범위이긴 하다 |
+| 생성이 몇 분씩 걸림 | Manager 파이프라인 특성. 5장 참고. **정상** |
 | 브라우저 콘솔에 CORS 오류 | Render `CLIENT_ORIGIN`이 Netlify 주소와 **정확히** 일치하는지(프로토콜·끝 `/` 포함). 수정 후 재배포 |
 | 로그인은 되는데 API가 401 | Netlify `VITE_SUPABASE_*`와 Render `SUPABASE_*`가 **같은 프로젝트**인지 |
 | 생성 시작이 `NO_AVAILABLE_KEYS` | Render의 AI 키 3종과 `APP_DEFAULT_AI_KEYS_ENABLED` 확인 |

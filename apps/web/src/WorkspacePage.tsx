@@ -23,9 +23,15 @@ function WorkspacePage() {
     isActiveChatBusy,
     mockValidationError,
     liveStatuses,
+    managerProgress,
+    composingQuestionIds,
+    delayedQuestionIds,
+    serverBacked,
     submitQuestion,
     resolveAgenda,
     requestRecheck,
+    resolveAgendaOnServer,
+    requestRecheckOnServer,
     selectChat,
     startNewChat,
   } = useChatWorkspace();
@@ -122,12 +128,18 @@ function WorkspacePage() {
             onSubmitQuestion={handleSubmitQuestion}
             onResolveAgenda={resolveAgenda}
             onRequestRecheck={requestRecheck}
+            serverBacked={serverBacked}
+            onResolveAgendaOnServer={resolveAgendaOnServer}
+            onRequestRecheckOnServer={requestRecheckOnServer}
+            managerProgress={managerProgress}
+            composingQuestionIds={composingQuestionIds}
+            delayedQuestionIds={delayedQuestionIds}
           />
         }
         notes={
           <DecisionNotesPanel
             notes={decisionNotes}
-            activeChatId={activeChat?.id ?? null}
+            chat={activeChat ?? null}
             onNavigateToQuestion={handleNavigateToQuestion}
           />
         }

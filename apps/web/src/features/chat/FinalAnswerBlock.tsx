@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Text } from "@astryxdesign/core/Text";
-import type { Question } from "./types";
+import type { Agenda, Question } from "./types";
 import { providerMeta } from "./mockData";
 import "./chat.css";
 
@@ -60,13 +60,16 @@ export function FinalAnswerBlock({ question }: { question: Question }) {
     );
   }
 
-  const consensus = question.agendas.filter(
-    (agenda) => agenda.resolutionReason === "auto_consensus",
-  );
+  // §12.5 — 분류는 `resolutionReason` 기준이며 **`auto_single_source`도 자동 통과**다.
+  // 빠뜨리면 단일 소스가 "사용자 판단 우선 적용"으로 분류돼 사용자가 판단한 적 없는
+  // 항목이 결정 사항으로 표시된다. 표현 문제가 아니라 정확성 문제다.
+  const isAutoPassed = (agenda: Agenda): boolean =>
+    agenda.resolutionReason === "auto_consensus" ||
+    agenda.resolutionReason === "auto_single_source";
+
+  const consensus = question.agendas.filter(isAutoPassed);
   const decisions = question.agendas.filter(
-    (agenda) =>
-      agenda.status === "passed" &&
-      agenda.resolutionReason !== "auto_consensus",
+    (agenda) => agenda.status === "passed" && !isAutoPassed(agenda),
   );
   const excluded = question.agendas.filter(
     (agenda) => agenda.status === "rejected",
@@ -75,11 +78,24 @@ export function FinalAnswerBlock({ question }: { question: Question }) {
     .filter((answer) => answer.status === "succeeded")
     .map((answer) => answer.provider);
 
+  /**
+   * ⚠️ 단일 소스에서는 "공통"이 사실이 아니다 — 여럿이 공통으로 권장한 게 아니라
+   * 하나만 답한 것이다. T-019.6의 "✓ 충돌 해결 완료" 배지와 같은 계열의 문제로,
+   * **하지 않은 일을 한 것처럼 표시하면 안 된다.**
+   *
+   * 판단 기준은 Agenda 상태가 아니라 `generationMode`다. 상태로 분기하면
+   * "3사가 답했는데 이 쟁점만 한 곳이 다뤘다"와 "애초에 한 곳만 답했다"를 구분하지 못한다.
+   */
+  const consensusHeading =
+    finalAnswer.generationMode === "single_source_fallback"
+      ? "자동 통과 항목"
+      : "공통 권장 사항";
+
   return (
     <div className="final-answer">
       {consensus.length > 0 && (
         // R1: 자동 통과 요약을 대체하는 접이식 섹션 — 펼치면 제목 + 합의 내용 (Step 7 R1-1·2)
-        <CollapsibleSection heading={`공통 권장 사항 (${consensus.length})`}>
+        <CollapsibleSection heading={`${consensusHeading} (${consensus.length})`}>
           <div className="final-consensus-list">
             {consensus.map((agenda) => (
               <div className="final-consensus-item" key={agenda.id}>

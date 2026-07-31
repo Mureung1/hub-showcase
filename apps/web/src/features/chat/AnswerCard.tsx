@@ -1,6 +1,7 @@
 import { Badge } from "@astryxdesign/core/Badge";
 import { Button } from "@astryxdesign/core/Button";
 import { Collapsible } from "@astryxdesign/core/Collapsible";
+import { Spinner } from "@astryxdesign/core/Spinner";
 import { Text } from "@astryxdesign/core/Text";
 import type { Agenda, Provider, Question } from "./types";
 import { isAgendaUnresolved } from "./types";
@@ -61,6 +62,10 @@ interface AnswerCardProps {
   onOpenAnswers: () => void;
   /** 충돌 해소 팝업 열기 */
   onResolveClick: (agendaId: string) => void;
+  /** SPEC-AI-003 §8.1 — 서버가 최종 답변을 생성 중이다(SSE 또는 폴링). */
+  isComposing?: boolean;
+  /** 폴링 상한(120초)을 넘겼다. 조용히 멈추지 않고 알린다. */
+  isDelayed?: boolean;
 }
 
 /**
@@ -73,15 +78,45 @@ export function AnswerCard({
   removingAgendaIds,
   onOpenAnswers,
   onResolveClick,
+  isComposing = false,
+  isDelayed = false,
 }: AnswerCardProps) {
-  const consensusAgendas = question.agendas.filter(
-    (agenda) => agenda.resolutionReason === "auto_consensus",
+  // 자동 통과 = 다중 AI 합의(auto_consensus) + 단일 소스(auto_single_source, §3.4).
+  // 단일 소스도 자동 통과이므로 "자동 통과 N건" 접힘 요약에 함께 넣는다. 단, "합의"로
+  // 표현하지 않는다(domain-policy 5.3·SPEC-AI-001 §6.1) — 항목에 "단일 답변" 라벨을 붙인다.
+  const autoPassedAgendas = question.agendas.filter(
+    (agenda) =>
+      agenda.resolutionReason === "auto_consensus" ||
+      agenda.resolutionReason === "auto_single_source",
   );
   const conflictAgendas = question.agendas.filter(
-    (agenda) => agenda.resolutionReason !== "auto_consensus",
+    (agenda) =>
+      agenda.resolutionReason !== "auto_consensus" &&
+      agenda.resolutionReason !== "auto_single_source",
   );
   const unresolved = conflictAgendas.filter(isAgendaUnresolved);
-  const isAllResolved = unresolved.length === 0;
+  /**
+   * **해결한 충돌이 있어야 "해결 완료"다** (T-019.6).
+   *
+   * 예전에는 `unresolved.length === 0` 만 봤는데, 빈 배열도 참이라 **"해결할 게 없었다"가
+   * "해결을 완료했다"로 뒤집혔다.** 두 경우가 여기로 떨어졌다.
+   *  - Manager 완전 실패(§2.5): 쟁점 0건인데 "✓ 충돌 해결 완료" — 바로 옆 고정 문구는
+   *    "비교 결과를 만들지 못했습니다"라고 말해 서로 모순이었다
+   *  - 충돌 0건 자동 통과(§12.1): 전부 자동 통과라 사용자가 해결한 것이 없다
+   *
+   * 상태(`completed`)로 분기하지 않는다 — 확인할 것은 "해결한 충돌이 있었는가"이지
+   * "완료 상태인가"가 아니다. 두 경우가 이 조건 하나로 함께 처리된다.
+   */
+  const hadConflicts = conflictAgendas.length > 0;
+  const isAllResolved = hadConflicts && unresolved.length === 0;
+  /**
+   * **판정 결과가 존재하는가** — 상태가 아니라 내용으로 판단한다.
+   *
+   * Manager 완전 실패(§2.5)는 쟁점이 하나도 없다. 그때 "판단할 충돌 없음"을 띄우면
+   * **거짓이 된다** — 충돌이 없는 게 아니라 비교 자체를 못 한 것이고, 그 설명은
+   * 카드 본문의 고정 문구가 이미 하고 있다.
+   */
+  const hasJudgement = question.agendas.length > 0;
   // 재시도까지 실패해 비교에서 제외된 Provider (Step 10-3: 카드 상단 고정 배너, 토스트 아님)
   const excludedAnswers = question.sourceAnswers.filter(
     (answer) => answer.excludedFromComparison,
@@ -100,7 +135,19 @@ export function AnswerCard({
       ))}
       <div className="answer-card-top">
         <div className="answer-card-title">
-          {isAllResolved ? (
+          {/*
+            4갈래다. 위에서부터:
+            1) 판정 자체가 없음(Manager 완전 실패) → 표시 없음. 고정 문구가 설명한다
+            2) 판정은 있으나 충돌 0건 → "판단할 충돌 없음". **중립 표기이며 ✓를 쓰지
+               않는다** — 사용자가 해결한 것이 아니라 할 일이 없었던 것이다.
+               "일치"·"합의"도 쓰지 않는다: single_source만 있는 경우는 일치한 게
+               아니라 비교 상대가 없었던 것이라 거짓이 된다(domain-policy 5.3·§8.4).
+            3) 충돌을 전부 해결 → 기존 완료 배지
+            4) 미해소 남음 → 기존 카운터
+          */}
+          {!hasJudgement ? null : !hadConflicts ? (
+            <Badge variant="neutral" label="판단할 충돌 없음" />
+          ) : isAllResolved ? (
             <Badge variant="success" label="✓ 충돌 해결 완료" />
           ) : (
             <>
@@ -121,7 +168,12 @@ export function AnswerCard({
         />
       </div>
 
-      {!isAllResolved && (
+      {/*
+        ⚠️ `!isAllResolved` 를 쓰지 않는다. `isAllResolved` 가 "충돌이 있었고 전부
+        해결됨"으로 좁아졌으므로, 그 부정에는 **충돌이 애초에 없던 경우**가 섞여
+        빈 목록과 함께 "각 충돌을 해결하면…" 이 뜬다. 여기서 볼 것은 미해소 건수뿐이다.
+      */}
+      {unresolved.length > 0 && (
         <>
           <Text type="supporting" color="secondary" as="p">
             각 충돌을 해결하면 아래에 최종 답변이 작성됩니다
@@ -140,16 +192,27 @@ export function AnswerCard({
       )}
 
       {/* R1: FinalAnswer 표시 후에는 접힘 요약을 없앤다 — 해소 진행 중에만 유지 (Step 7 R1-1) */}
-      {!question.finalAnswer && consensusAgendas.length > 0 && (
+      {!question.finalAnswer && autoPassedAgendas.length > 0 && (
         <div className="consensus-summary">
           {/* 기본 접힘 (Step 5-1) */}
           <Collapsible
-            trigger={`자동 통과 ${consensusAgendas.length}건`}
+            trigger={`자동 통과 ${autoPassedAgendas.length}건`}
             defaultIsOpen={false}
           >
             <div className="consensus-list">
-              {consensusAgendas.map((agenda) => (
+              {autoPassedAgendas.map((agenda) => (
                 <div className="consensus-item" key={agenda.id}>
+                  {/* 단일 소스 근거는 다중 AI 합의가 아니므로 중립 라벨로 구분한다 */}
+                  {agenda.kind === "single_source" && (
+                    <Text
+                      type="label"
+                      color="secondary"
+                      as="span"
+                      display="block"
+                    >
+                      단일 답변
+                    </Text>
+                  )}
                   <Text type="label" as="p" display="block">
                     {agenda.title}
                   </Text>
@@ -168,9 +231,27 @@ export function AnswerCard({
         <FinalAnswerBlock question={question} />
       ) : (
         <div className="answer-pending">
-          <Text type="supporting" color="secondary">
-            충돌을 모두 해결하면 최종 답변이 여기에 작성됩니다.
-          </Text>
+          {/*
+            SPEC-AI-003 §8.1 — 서버가 생성 중이면 그 사실을 알린다. 15~33초 걸리고
+            (T-020.1 실측) 충돌 있는 경로는 SSE 가 닫혀 있어 폴링으로 기다린다.
+            상한(120초)을 넘기면 **조용히 멈추지 않고** 지연 사실을 표시한다.
+          */}
+          {isComposing ? (
+            <>
+              <Spinner size="sm" />
+              <Text type="supporting" color="secondary">
+                최종 답변 생성 중…
+              </Text>
+            </>
+          ) : isDelayed ? (
+            <Text type="supporting" color="secondary">
+              최종 답변 생성이 지연되고 있습니다. 잠시 후 새로고침해 주세요.
+            </Text>
+          ) : (
+            <Text type="supporting" color="secondary">
+              충돌을 모두 해결하면 최종 답변이 여기에 작성됩니다.
+            </Text>
+          )}
         </div>
       )}
     </div>

@@ -1,0 +1,103 @@
+{
+  "questionId": "22222222-2222-4222-8222-222222222222",
+  "questionMessage": "Supabase RLS 정책은 어떻게 관리하고 검증해야 하나요?",
+  "sourceAnswers": [
+    {
+      "id": "dddddddd-0000-4000-8000-000000000001",
+      "questionId": "22222222-2222-4222-8222-222222222222",
+      "provider": "claude",
+      "model": "fixture",
+      "status": "succeeded",
+      "structuredContent": {
+        "summary": "RLS는 기본 거부로 시작해 정책을 마이그레이션으로 관리하라.",
+        "sections": [
+          {
+            "sectionId": "claude-s1",
+            "title": "기본 원칙",
+            "content": "모든 public 스키마 테이블에 RLS를 기본 ON으로 켜고 필요한 접근만 정책으로 명시적으로 허용하라. 정책이 없는 테이블은 아무도 접근할 수 없는 안전한 출발점이다.",
+            "order": 0,
+            "kind": "principle"
+          },
+          {
+            "sectionId": "claude-s2",
+            "title": "정책 작성 위치",
+            "content": "정책은 SQL 마이그레이션 파일로 작성해 버전 관리하는 것을 권장한다. 대시보드 임시 정책은 환경 간 불일치와 리뷰 누락을 만든다.",
+            "order": 1,
+            "kind": "practice"
+          },
+          {
+            "sectionId": "claude-s3",
+            "title": "service_role 키 취급",
+            "content": "service_role 키는 RLS를 우회하므로 반드시 서버 환경에서만 사용하라. 뷰와 함수의 우회 경로도 함께 점검하라.",
+            "order": 2,
+            "kind": "caution"
+          }
+        ]
+      },
+      "responseMeta": null,
+      "errorCode": null,
+      "errorMessage": null,
+      "retryCount": 0,
+      "excludedFromComparison": false,
+      "excludedAt": null,
+      "startedAt": "2026-07-30T00:00:00.000+00:00",
+      "completedAt": "2026-07-30T00:00:01.000+00:00",
+      "createdAt": "2026-07-30T00:00:00.000+00:00",
+      "updatedAt": "2026-07-30T00:00:01.000+00:00"
+    },
+    {
+      "id": "eeeeeeee-0000-4000-8000-000000000002",
+      "questionId": "22222222-2222-4222-8222-222222222222",
+      "provider": "gemini",
+      "model": "fixture",
+      "status": "succeeded",
+      "structuredContent": {
+        "summary": "정책은 SQL 파일로 관리하고 역할·키 경계를 지켜라.",
+        "sections": [
+          {
+            "sectionId": "gemini-s1",
+            "title": "정책 관리",
+            "content": "정책은 SQL 파일로 관리하되 select/insert/update/delete를 나눠 정의하는 것을 권장한다. 정책 이름에 역할과 목적을 담으면 감사가 쉬워진다.",
+            "order": 0,
+            "kind": "practice"
+          },
+          {
+            "sectionId": "gemini-s2",
+            "title": "역할과 키",
+            "content": "service_role 키를 클라이언트에 노출하면 안 되며 프론트엔드에는 공개 가능한 키만 두어야 한다. 공개 키 요청은 anon 또는 authenticated 역할로 실행된다.",
+            "order": 1,
+            "kind": "security"
+          }
+        ]
+      },
+      "responseMeta": null,
+      "errorCode": null,
+      "errorMessage": null,
+      "retryCount": 0,
+      "excludedFromComparison": false,
+      "excludedAt": null,
+      "startedAt": "2026-07-30T00:00:00.000+00:00",
+      "completedAt": "2026-07-30T00:00:01.000+00:00",
+      "createdAt": "2026-07-30T00:00:00.000+00:00",
+      "updatedAt": "2026-07-30T00:00:01.000+00:00"
+    },
+    {
+      "id": "ffffffff-0000-4000-8000-000000000003",
+      "questionId": "22222222-2222-4222-8222-222222222222",
+      "provider": "openai",
+      "model": "fixture",
+      "status": "failed",
+      "structuredContent": null,
+      "responseMeta": null,
+      "errorCode": "PROVIDER_TIMEOUT",
+      "errorMessage": "제한 시간 안에 응답하지 않았습니다.",
+      "retryCount": 1,
+      "excludedFromComparison": true,
+      "excludedAt": "2026-07-30T00:00:03.000+00:00",
+      "startedAt": "2026-07-30T00:00:00.000+00:00",
+      "completedAt": "2026-07-30T00:00:03.000+00:00",
+      "createdAt": "2026-07-30T00:00:00.000+00:00",
+      "updatedAt": "2026-07-30T00:00:03.000+00:00"
+    }
+  ]
+}

@@ -1,8 +1,9 @@
 import type {
+  Agenda,
   Chat,
   Question,
   SourceAnswer,
-  SourceAnswerEvent,
+  QuestionStreamEvent,
 } from "@decision-log/shared";
 
 import {
@@ -12,9 +13,16 @@ import {
   fetchChats,
   fetchQuestions,
   fetchSourceAnswers,
+  fetchAgendas,
+  fetchFinalAnswer,
+  patchAgenda as patchAgendaRequest,
   streamSourceAnswers,
+  type AgendaPatchBody,
   type ApiResult,
+  type FinalAnswerBundle,
 } from "./apiClient";
+
+export type { AgendaPatchBody, FinalAnswerBundle } from "./apiClient";
 
 /**
  * apiStorageAdapter (SPEC-DB-001 5장) — Chat·Question을 Express→Supabase로 저장·조회한다.
@@ -102,7 +110,7 @@ export async function startSourceAnswers(
   chatId: string,
   questionId: string,
   context: string | null,
-  onEvent: (event: SourceAnswerEvent) => void,
+  onEvent: (event: QuestionStreamEvent) => void,
 ): Promise<{ done: boolean }> {
   const result = await streamSourceAnswers(
     chatId,
@@ -118,4 +126,38 @@ export async function startSourceAnswers(
     );
   }
   return { done: result.done };
+}
+
+// --- Agenda (SPEC-AI-002 §12.3·§12.4) ---
+
+/** 새로고침·재진입 복원 스냅샷(§12.3). */
+export async function loadAgendas(
+  chatId: string,
+  questionId: string,
+): Promise<Agenda[]> {
+  return unwrap(await fetchAgendas(chatId, questionId));
+}
+
+/**
+ * 사용자 판단 반영(§12.4). 서버가 저장한 Agenda를 그대로 돌려주므로 화면은 그것을 쓴다 —
+ * 낙관적 갱신으로 만든 값을 그대로 두면 서버 규칙(§9.2)과 어긋난 상태가 화면에 남는다.
+ */
+export async function patchAgenda(
+  chatId: string,
+  questionId: string,
+  agendaId: string,
+  body: AgendaPatchBody,
+): Promise<Agenda> {
+  return unwrap(await patchAgendaRequest(chatId, questionId, agendaId, body));
+}
+
+/**
+ * SPEC-AI-003 §8.1 — FinalAnswer·DecisionNote 조회.
+ * 미생성이면 둘 다 null 이며 그것은 **오류가 아니다**(아직 생성 중이라는 뜻).
+ */
+export async function loadFinalAnswer(
+  chatId: string,
+  questionId: string,
+): Promise<FinalAnswerBundle> {
+  return unwrap(await fetchFinalAnswer(chatId, questionId));
 }

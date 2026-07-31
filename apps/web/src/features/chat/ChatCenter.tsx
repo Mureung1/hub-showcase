@@ -16,7 +16,7 @@ import type {
   Question,
   SourceAnswerStatus,
 } from "./types";
-import { agendaRecheckText } from "./types";
+import type { AgendaPatchBody } from "../../lib/apiStorageAdapter";
 import { AnswerCard } from "./AnswerCard";
 import { AnswersModal } from "./AnswersModal";
 import { ConflictResolveModal } from "./ConflictResolveModal";
@@ -31,9 +31,10 @@ const CONFLICT_REMOVE_ANIMATION_MS = 280;
 /** 토스트 자동 소멸까지의 시간 (Step 6 R5 — 표시 후 약 2초 뒤 자동 소멸) */
 const TOAST_AUTO_HIDE_MS = 2000;
 
+// 사용자 판단 사유 — 자동 통과(auto_consensus·auto_single_source)와 null은 제외한다.
 type UserResolutionReason = Exclude<
   AgendaResolutionReason,
-  null | "auto_consensus"
+  null | "auto_consensus" | "auto_single_source"
 >;
 
 interface ChatCenterProps {
@@ -58,6 +59,56 @@ interface ChatCenterProps {
     agendaId: string,
     recheckRequest: string,
   ) => void;
+  /** 서버 Agenda를 쓰는가. `?scenario=` 개발 경로는 false이고 기존 Mock 흐름을 탄다(AC11). */
+  serverBacked?: boolean;
+  /** 서버 경로 사용자 판단(§12.4). 실패하면 throw 하므로 호출부가 되돌린다. */
+  onResolveAgendaOnServer?: (
+    chatId: string,
+    questionId: string,
+    agendaId: string,
+    body: AgendaPatchBody,
+  ) => Promise<void>;
+  /** 서버 경로 재검토·재시도(§10). */
+  onRequestRecheckOnServer?: (
+    chatId: string,
+    questionId: string,
+    agendaId: string,
+    recheckRequest: string,
+    retry: boolean,
+  ) => Promise<void>;
+  /** Manager 진행 표시(questionId → 단계·N/M). §12.2의 무음 구간을 없앤다. */
+  /** SPEC-AI-003 §8.1 — 최종 답변 생성 중인 questionId. */
+  composingQuestionIds?: ReadonlySet<string>;
+  /** 폴링 상한을 넘긴 questionId. */
+  delayedQuestionIds?: ReadonlySet<string>;
+  managerProgress?: Record<
+    string,
+    {
+      stage: "classify" | "leftover" | "finalize" | "judge";
+      done: number | null;
+      total: number | null;
+    }
+  >;
+}
+
+/** §12.2 진행 이벤트 → 사용자에게 보일 문구. 결과가 아니라 경과다. */
+function managerProgressLabel(progress: {
+  stage: "classify" | "leftover" | "finalize" | "judge";
+  done: number | null;
+  total: number | null;
+}): string {
+  switch (progress.stage) {
+    case "classify":
+      return "쟁점 분류 중…";
+    case "leftover":
+      return "남은 내용 정리 중…";
+    case "finalize":
+      return "쟁점 목록 확정 중…";
+    case "judge":
+      return progress.total !== null && progress.total > 0
+        ? `쟁점 판정 중… ${progress.done ?? 0}/${progress.total}`
+        : "쟁점 판정 중…";
+  }
 }
 
 /**
@@ -73,6 +124,12 @@ export function ChatCenter({
   onSubmitQuestion,
   onResolveAgenda,
   onRequestRecheck,
+  serverBacked = false,
+  onResolveAgendaOnServer,
+  onRequestRecheckOnServer,
+  managerProgress,
+  composingQuestionIds,
+  delayedQuestionIds,
 }: ChatCenterProps) {
   const toast = useToast();
   // "AI 별 답변 보기" 모달이 열람 중인 Question id (null = 닫힘)
@@ -160,15 +217,55 @@ export function ChatCenter({
   })();
 
   /** 판단 확정: 모달 닫기 → 토스트 → 제거 애니메이션 → 상태 전이(카운터 감소) */
-  function finalizeResolution(
+  /**
+   * 충돌 해소 확정.
+   *
+   * **서버 경로는 응답을 받은 뒤에 제거 애니메이션을 시작한다.** 낙관적으로 먼저 지우면
+   * 서버가 409·400을 돌려줬을 때 화면에서 사라진 쟁점을 되살려야 하고, 그 사이 사용자는
+   * 판단이 반영됐다고 믿는다. Mock 경로는 실패가 없으므로 기존 순서를 유지한다.
+   */
+  async function finalizeResolution(
     question: Question,
     agendaId: string,
     resolutionReason: UserResolutionReason,
     selectedContent: string | null,
+    serverBody?: AgendaPatchBody,
   ) {
     const isRejected =
       resolutionReason === "user_rejected" ||
       resolutionReason === "user_rejected_after_recheck";
+
+    if (serverBacked && serverBody && onResolveAgendaOnServer) {
+      setResolvingAgendaId(null);
+      try {
+        await onResolveAgendaOnServer(
+          activeChatId,
+          question.id,
+          agendaId,
+          serverBody,
+        );
+      } catch (error) {
+        // 서버가 거부했다 — 쟁점을 지우지 않고 그대로 둔다. 사용자가 다시 시도할 수 있다.
+        console.error(
+          "[agendas] 판단 반영 실패:",
+          error instanceof Error ? error.message : error,
+        );
+        toast({
+          body: "판단을 저장하지 못했습니다. 다시 시도해 주세요.",
+          autoHideDuration: TOAST_AUTO_HIDE_MS,
+        });
+        return;
+      }
+      toast({
+        body: isRejected
+          ? "Agenda를 최종 답변에서 제외했습니다"
+          : "Agenda가 채택되었습니다",
+        autoHideDuration: TOAST_AUTO_HIDE_MS,
+      });
+      return;
+    }
+
+    // --- ?scenario= 개발 경로: 기존 메모리 Mock 흐름 그대로 (AC11) ---
     setResolvingAgendaId(null);
     toast({
       body: isRejected
@@ -224,6 +321,20 @@ export function ChatCenter({
                     sourceAnswers={question.sourceAnswers}
                     liveStatuses={liveStatuses?.[question.id]}
                   />
+                  {/*
+                    §12.2 — Manager 구간 진행. 3사가 끝난 뒤 쟁점이 나오기까지
+                    실측 70초 동안 화면이 비어 있던 구간을 메운다(§14.5.5).
+                  */}
+                  {managerProgress?.[question.id] && (
+                    <Text
+                      type="supporting"
+                      color="secondary"
+                      display="block"
+                      className="manager-progress"
+                    >
+                      {managerProgressLabel(managerProgress[question.id])}
+                    </Text>
+                  )}
                 </ChatMessageBubble>
               </ChatMessage>,
             );
@@ -241,6 +352,8 @@ export function ChatCenter({
                     question={question}
                     removingAgendaIds={removingAgendaIds}
                     onOpenAnswers={() => setAnswersModalQuestionId(question.id)}
+                    isComposing={composingQuestionIds?.has(question.id)}
+                    isDelayed={delayedQuestionIds?.has(question.id)}
                     onResolveClick={(agendaId) =>
                       setResolvingAgendaId(agendaId)
                     }
@@ -268,52 +381,82 @@ export function ChatCenter({
         <ConflictResolveModal
           agenda={resolving.agenda}
           onClose={() => setResolvingAgendaId(null)}
-          onAcceptStance={(stanceText) =>
-            finalizeResolution(
+          onAcceptStance={(stance) =>
+            void finalizeResolution(
               resolving.question,
               resolving.agenda.id,
               resolving.agenda.status === "reanswered"
                 ? "user_accepted_after_recheck"
                 : "user_accepted",
-              stanceText,
+              stance.text,
+              // §12.4 — 서버에는 **출처만** 보낸다. 내용은 서버가 원문에서 되읽는다.
+              stance.sourceRefs[0]
+                ? { action: "accept", sourceRef: stance.sourceRefs[0] }
+                : undefined,
             )
           }
-          onAcceptRecheck={() =>
-            finalizeResolution(
-              resolving.question,
-              resolving.agenda.id,
-              "user_accepted_after_recheck",
-              agendaRecheckText(resolving.agenda),
-            )
-          }
+          onRetryRecheck={() => {
+            if (onRequestRecheckOnServer) {
+              void onRequestRecheckOnServer(
+                activeChatId,
+                resolving.question.id,
+                resolving.agenda.id,
+                "",
+                true,
+              ).catch(() =>
+                toast({
+                  body: "재검토에 다시 실패했습니다. 잠시 후 시도해 주세요.",
+                  autoHideDuration: TOAST_AUTO_HIDE_MS,
+                }),
+              );
+            }
+          }}
           onCompose={(text) =>
-            finalizeResolution(
+            void finalizeResolution(
               resolving.question,
               resolving.agenda.id,
               resolving.agenda.status === "reanswered"
                 ? "user_composed_after_recheck"
                 : "user_composed",
               text,
+              { action: "compose", content: text },
             )
           }
           onReject={() =>
-            finalizeResolution(
+            void finalizeResolution(
               resolving.question,
               resolving.agenda.id,
               resolving.agenda.status === "reanswered"
                 ? "user_rejected_after_recheck"
                 : "user_rejected",
               null,
+              { action: "reject" },
             )
           }
-          onRecheck={(request) =>
+          onRecheck={(request) => {
+            setResolvingAgendaId(null);
+            if (serverBacked && onRequestRecheckOnServer) {
+              void onRequestRecheckOnServer(
+                activeChatId,
+                resolving.question.id,
+                resolving.agenda.id,
+                request,
+                false,
+              ).catch(() =>
+                toast({
+                  body: "재검토를 시작하지 못했습니다. [다시 시도]를 눌러 주세요.",
+                  autoHideDuration: TOAST_AUTO_HIDE_MS,
+                }),
+              );
+              return;
+            }
             onRequestRecheck(
-              activeChat.id,
+              activeChatId,
               resolving.question.id,
               resolving.agenda.id,
               request,
-            )
-          }
+            );
+          }}
         />
       )}
     </div>

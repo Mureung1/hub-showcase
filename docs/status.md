@@ -18,7 +18,7 @@
 
 - 모든 Provider(Claude·OpenAI·Gemini)가 최초 요청과 1회 재시도에 모두 실패한 경우의 FinalAnswer 고정 문구와 DecisionNote 처리 — AI Provider Spec 작성 전에 확정 → **SPEC-AI-001 §6.2에서 확정(2026-07-22): 3사 전멸 시 고정 안내 문구로 마무리+완료. 서버 generation_mode 확장은 AI-003 재검토**
 - 좌초 상태 복구 정책 — Manager AI 비교·재검토·FinalAnswer 생성 호출 실패 시 재시도 규칙, 버려진 `draft` Question 취소, 중단된 `processing` Question timeout 회수 → **SPEC-AI-001에서 이번 범위 밖으로 확정, 마지막 주 안정화로 이관(2026-07-22, 알려진 한계: 갇힌 질문이 새 질문 차단 가능)**
-- 단일 SourceAnswer 기반 Agenda 처리 방식과 `resolution_reason` — Manager AI Spec에서 구체화
+- 단일 SourceAnswer 기반 Agenda 처리 방식과 `resolution_reason` — Manager AI Spec에서 구체화 → **SPEC-AI-002 §3.4·§9.2에서 확정(2026-07-30): `kind="single_source"` + `auto_single_source` 자동 통과, 실제 참조 유지. 다중 AI 합의로 표현하지 않음(domain-policy 5.3). 계약·마이그레이션·Mock 반영은 T-019.1**
 - 사용자 계정 삭제 시 데이터 처리 정책
 
 ## 완료된 작업
@@ -318,5 +318,442 @@
   - **검증**: 루트 typecheck·lint·build 통과. 박스 표시·필드 자동입력·제출 확인. 자리표시자 상태에서 박스 숨김 확인
   - **후속 수정 (2026-07-22)**: 상수를 실제 값으로 바꾸면 `TS2367`(리터럴 타입끼리 교집합 없는 비교)로 **빌드가 깨지는 결함**이 있었다 — 자리표시자 상태에서만 검증한 탓에 놓쳤다. 두 상수에 `: string` 주석을 붙여 자리표시자·실제값 **양쪽에서 타입이 통과**하도록 수정하고, 실제 계정으로 로그인까지 실측(커밋 `77a353d`)
   - **남은 문제**: 커밋한 비밀번호는 **비공개 저장소 히스토리에 영구히 남는다**. 저장소를 공개로 전환하거나 협업자를 추가하면 그 시점부터 함께 노출된다. 데모 종료 후 계정 비밀번호 교체를 권한다
-- 이후: SPEC-AI-002~003(Manager·FinalAnswer) → SPEC-EXPORT-001. BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
+- **T-019.1 완료 (2026-07-30)** — SPEC-AI-002(Manager) **계약·마이그레이션·Mock 정합만**. Manager 실호출·프롬프트·OpenRouter는 T-019.2, Agenda 저장·SSE 발신은 T-019.3, web의 `buildMockAgendas` 제거는 T-019.4로 분리(이번엔 브라우저 Mock Agenda 흐름을 새 계약 위에서 유지)
+  - **shared 계약**: `enums.ts`에 `auto_single_source` 추가·`AgendaKind`·`AgendaDisagreementType` 신설. `agenda.ts`에 `SourceRef`·`AgendaStance`(quotes·sourceRefs `.min(1)`)·`AgendaRecheckResult` 신설, `AgendaSchema` 확장(kind·selectedSourceRef·stances·disagreementType·revisedType·confidence·displayOrder + `sourceRefs`·`recheckResult` 정식화) 및 superRefine 4규칙 추가(§3.4·§9.2). SSE 계약을 `questionStream.ts`로 이동·`SourceAnswerEventSchema`→`QuestionStreamEventSchema` 개명, `done`→`source_answer.done`, Manager 이벤트 3종(`agenda.created`·`agenda.judged`·`agenda.done`) 추가
+  - **마이그레이션 2개**(트랜잭션 분리): `20260730120000_agenda_manager_enums.sql`(enum 추가·신설) + `20260730120100_agenda_manager_columns.sql`(agendas 5컬럼·`questions.manager_meta`·`agendas_selected_source_ref_ck` §9.3 개정 — 합의·단일 소스는 실제 참조, NO_VALUE는 사용자 행동에서만)
+  - **web**: 로컬 `AgendaSourceRef`·`AgendaStance` 제거→shared 사용, `Agenda` 교차타입 제거, `agendaRecheckText`를 객체(`.response`)로. Mock에 신규 필드·실제 섹션 부분 문자열 quotes(§11) 채움, 단일 소스 시나리오를 `single_source` 자동 통과로 전환(AnswerCard 자동 통과 요약에 "단일 답변" 중립 라벨 — 합의로 표현 금지, domain-policy 5.3·SPEC-AI-001 §6.1). SSE 이름 교체(api controller·apiClient·apiStorageAdapter), agenda.* 이벤트는 무시(소비는 T-019.4)
+  - **검증**: 루트 typecheck·lint·build 통과. `supabase db push` 원격 적용 후 psql로 신규 컬럼·enum·CHECK 정의(§9.3)·RLS 3정책·GRANT 불변 확인. **questions 조회 회귀 없음** — Repository가 명시적 `QUESTION_COLUMNS`(manager_meta 미포함)로 select하므로 새 컬럼이 조회에 실리지 않음(실제 프로젝션으로 기존 9행 조회 확인). Agenda 계약 만족은 실제 `AgendaSchema`로 8개 정상 상태 통과·5개 위반 거부를 스크립트로 검증(MockValidationBanner 미발생 근거)
+  - **브라우저 회귀 (2026-07-30, 테스트 계정 로그인)**: 5개 시나리오 전부 PASS — happy-path(3사 SSE→Agenda→충돌 2해소→FinalAnswer→노트→completed), recheck-path(재검색 결과 박스에 recheckResult.response 렌더 정상, [이 결과로 결정]→user_accepted_after_recheck 통과), provider-excluded(제외 배너), all-rejected(고정 문구), single-source-fallback(auto_single_source 자동 통과·"단일 답변" 중립 라벨·합의 표현 없음). 전 시나리오 MockValidationBanner 미발생·콘솔 오류 없음
+  - **회귀 1건 발견·수정**: single_source를 자동 통과로 바꾸면서 충돌 0건 Question이 사용자 판단 트리거를 잃어 FinalAnswer 없이 review_required에 갇혔다. `applySourceAnswerEvent` settle을 setState 기반으로 바꿔, 빌드된 Agenda가 전부 passed/rejected면 같은 갱신에서 FinalAnswer·DecisionNote 생성 후 completed로 전이하도록 수정(충돌이 있으면 기존대로 review_required). 재검증 완료
+  - **미확인/후속**: 완료 뷰에서 single_source가 "결정 사항·사용자 판단 우선 적용" 그룹에 들어가고 노트 bullet이 "— 내 결정 반영"으로 나오는 건 사용자 판단이 아니므로 문구가 약간 어색(합의 오표기는 아님) — 문구 정교화는 T-019.4 후보. Manager 실제 판정·저장·web 소비는 T-019.2~4
+- **T-019.2 완료 (2026-07-30)** — SPEC-AI-002 **Manager 분류 파이프라인 단계 1~5 실호출**. `buildAgendaDrafts(questionId, succeeded[]) → { drafts, managerMeta, trace }`. Agenda 저장·단계 6·7·SSE·web 재배선은 T-019.3~4. **라우터 미연결**(진입점은 개발 스크립트 `npm run manager:classify`뿐)
+  - **구조**: `apps/api/src/modules/agendas/`(types·service·ports/AgendaClassifier·adapters/openRouterClassifier+registry·pipeline/pickPivot·shuffle·suspiciousTitle·postProcess·scripts/classify+fixtures 3종·managerPrompts). 프롬프트 `prompts/manager/classify|leftover/v1.md`. env(§15.2, OPENROUTER_API_KEY·MANAGER_MODEL required)+`.env.example`. 반환 초안은 §7.7 균일형(participantCount+섹션+title·summary·displayOrder만; kind·stances·selectedContent는 단계 7=T-019.3)
+  - **OpenRouter**: fetch 직접 호출(명시 body 타입, any 없음), `response_format json_schema strict`·`provider.require_parameters`·max_tokens 미설정(§15.3). 쟁점 ID enum 런타임 생성(결정 2). 재현성: pivot=fnv1a·shuffle=mulberry32, Math.random 없음(AC1). 참여 provider 수는 코드가 셈(§7.2)
+  - **⚠️ 실측 (qwen/qwen3.7-plus, 2026-07-30) — 프롬프트는 v1 그대로, 튜닝 없이 통과**:
+    - **JSON 파싱 성공률 8/8 (100%)**, 스키마 검증 실패 0. 구조화 출력 **실작동 확인**(§18 미지수 해소)
+    - **재현성**: 같은 입력 5회 정렬 구조·pivot·shuffleSeed 완전 동일
+    - **stage3OutputTokens**: 1026~4496 (3사 fixture 평균 ~1515, 실제 질문 4496). **§5.5의 800토큰 가정을 2~5배 초과, §14.1 1500 경고를 8회 중 3회 넘김** → §5.5 재추정 또는 provider별 분할 검토 필요
+    - **stage3 지연**: fixture 20~44초, 실제 질문(5쟁점·7섹션) **84초 = 45초 타임아웃+재시도**. **§2.3의 5~15초 추정을 2~5배 초과.** qwen/qwen3.7-plus는 §2.3이 가정한 "최저가 티어"보다 느림 — 모델 재검토 신호(판단은 사용자). 타임아웃·재시도 로직은 정상 작동
+    - **multiAssignRate**: fixture 0%, 실제 질문 29%(임계 30% 직전). **leftoverRate**: fixture 0%, 단계4 트리거 fixture 50%. **titleRevisionRate**: 단계4 fixture 100%(의심 제목 1개 중 1개 중립화)
+    - **의미 정렬 품질(육안)**: 대체로 양호 — "정책 관리"↔"정책 작성 위치", "점검 체크리스트"↔"검증 방법" 동의어 병합 성공. 오정렬 1건: openai "역할 구분(anon/authenticated)"을 "service_role 키 취급"이 아닌 "기본 원칙"에 배정(경미)
+    - **단계 4 실검증**: 의심 제목 "service_role 키를 반드시 서버에서만 써야 하는 이유" → "service_role 키의 서버 사용 제한 이유"(반드시·이유 제거) + 무관 섹션(성능/인덱스)을 재배정 대신 **신규 쟁점 생성**(§6.4 편향 준수)
+  - **검증**: 루트 typecheck·build 통과, lint(web만) 통과. web 무변경 → Mock 4시나리오 흐름 영향 없음(브라우저 렌더 확인). DB 미기록·비밀값 미노출 준수
+  - **후속(T-019.3)**: 단계 6(합의/충돌 판정)·단계 7(selectedContent·kind 마감)·Agenda DB 저장·SSE Manager 이벤트. **모델 지연·토큰 초과는 T-019.3 착수 전 사용자 판단 필요**(모델 교체 여부)
+- **T-019.2.1 완료 (2026-07-30)** — SPEC-AI-002 §5.5.2 이행: **단계 3을 비-pivot provider별 병렬 분할 + 스키마 다이어트**. 파이프라인 로직·판정 규칙·모델(qwen/qwen3.7-plus)·§5.3 판정 문구는 그대로. 단계적 측정(분할만→분할+다이어트)
+  - **구현**: `agendas.service.ts` 단계 3을 provider별 병렬(동시성 `MANAGER_CONCURRENCY`), 단계 3b도 provider 단위. **실패 격리** — 한 provider 호출 실패 시 그 섹션만 leftover, 나머지는 살림(§2.5). 병합은 provider 알파벳 정렬 순서로 **결정론적**(AC1). `pipeline/concurrency.ts`(순서 보존) 신설. 다이어트: `topicRestated` 40자 명시, `secondAgendaReason`를 `required`에서 제외. provider별 호출 성공/실패·토큰·지연을 `trace.stage3Calls`에 남겨 "모델 미배정"과 "호출 실패"를 구분(§6.3 오진 방지)
+  - **⚠️ 실측 3시점 (같은 fixture 3종 ×3 + 실제 질문, 전 구간 파싱 성공·스키마 실패 0·타임아웃 0)**:
+
+    | 케이스 | 기준선(단일호출) | ① 분할만 | ② 분할+다이어트 |
+    |---|---|---|---|
+    | **실제 질문(5쟁점·7섹션)** wall-clock | **84초**(45초 타임아웃+재시도) | **33초**(타임아웃 없음) | 42.7초 |
+    | 실제 질문 호출당 토큰 | 4,496(단일) | 1,779+1,621 | 2,255+1,098 |
+    | 3사 fixture wall-clock(≈가장 느린 호출) | 20~44초 | 24.6~42.4초 | 20.1~38.9초 |
+    | 3사 fixture 호출당 최대 토큰 | 1,026~2,346(단일) | 1,260~2,077 | 1,045~2,065 |
+    | 3사 fixture 합계 토큰 | 위와 동일(단일) | 2,275~2,741 | 1,536~2,949 |
+    | multiAssignRate(실제 질문) | 29% | 0% | 0% |
+
+  - **핵심 결론**: **분할이 성패를 갈랐다.** 실제 질문 84초→33초, **45초 타임아웃+재시도를 제거**(입력이 커질수록 급격히 느려지던 지점 완화). 단일 4,496토큰이 호출당 ~1,600~1,800으로 쪼개짐
+  - **호출당 토큰**: 섹션이 많은 provider(gemini 3~4섹션) 호출은 여전히 1,500 경고를 종종 넘김(1,547~2,255). 다이어트로 확실히 못 내림 — **Qwen 런투런 변동(같은 입력 gemini 1,045~2,255)이 다이어트 효과를 덮음**
+  - **다이어트 판정**: **B-2 `secondAgendaReason` optional 허용됨**(OpenRouter·Qwen strict에서 20/20 파싱, 스키마 오류 0 → `required`에서 제외 확정). **B-1 40자는 품질 저하 없음** — 기준선 동의어 병합 쌍이 ②에서도 유지: "정책 관리"(gemini)↔"정책 작성 위치", "역할과 키"(gemini)↔"service_role 키 취급", "점검 체크리스트"(gemini)↔"검증 방법" 모두 그대로. (경미 변동: ambiguous한 "역할 구분"(openai)의 배정만 A↔B로 흔들림 — 기준선에도 있던 오배정)
+  - **미해소/신호**: 단계 3 지연이 여전히 20~43초. **모델 자체가 호출당 느림**(입력이 작은 2사 fixture도 12~30초). 실제 질문 ② 참여 분포가 A2·C2·D2로 흔들린 1회 관측(다이어트 vs Qwen 변동 미구분, n=1). **모델 교체 판단(§5.5.1)에 필요한 지연 하한은 분할로도 ~30초** — 단계 6(쟁점별 N회)이 붙는 T-019.3 전 모델 결정에 이 수치를 쓰면 됨
+  - **검증**: 루트 typecheck·build, lint(web) 통과. web 무변경. 타임아웃 45초 유지(늘리지 않음). 비밀값 미노출
+- **T-019.3 서버 구간 완료 / web 재배선 미완 (2026-07-30)** — SPEC-AI-002 §8·§9·§7.6~7.7·§11·§12(§12.5 제외)·§2.5·§14·§16. 재검토(§10)와 PATCH의 `recheck`·`retry_recheck`는 T-019.4로 제외. **⚠️ §12.5 web 재배선은 손대지 않았다** — `buildMockAgendas`가 그대로 있고 web은 `agenda.*` SSE 이벤트를 무시하므로, 서버가 실제 Agenda를 만들어 저장·발신하는데도 **브라우저에는 여전히 Mock Agenda가 보인다**
+  - **구현**: `ports/conflictComparator.port.ts`+`adapters/openRouterComparator.adapter.ts`+`registry`(단계 6), `pipeline/judge.ts`(쟁점별 병렬 판정 오케스트레이션·`onJudged` 건별 발신), `pipeline/grounding.ts`(§11 검증 2·3·4), `pipeline/finalize.ts`(§9.2 규칙표 — **경로 무관 단일 마감 지점**, §7.6), `agendas.repository.ts`(2단계 저장 §12.1)·`agendas.controller.ts`(GET 스냅샷·PATCH 3액션)·라우트 연결, `agendas.service.ts`에 `runManagerForQuestion`·`applyUserDecision` 추가, `sourceAnswers.controller.ts`가 **같은 SSE 스트림에 Manager 구간을 이어붙임**(§12.2, 새 스트림 열지 않음). `adapters/openRouterCall.ts`로 HTTP·재시도·파싱을 단계 3·4·6이 공유. 프롬프트 `prompts/manager/compare/v1.md`
+  - **마이그레이션**: `20260730120200_agenda_stances.sql`(`agendas.stances` jsonb + `agendas_stances_ck` — draft만 빈 배열 허용). **실 DB 적용 완료**(psql로 컬럼·CHECK·`schema_migrations` 이력 확인)
+  - **검증 (루트 typecheck·lint·build 통과)**:
+    - **날조 인용 주입 8/8 통과**(`npm run manager:judge -- --grounding-test`, LLM 0회, 결정론적): 정상 대조군·원문 부재·타 provider 인용·단어 추가·공백만 차이(통과해야 함)·전량 날조로 stance 폐기·전 stance 날조로 쟁점 폐기·비참여 provider stance
+    - **자연 발생 날조 탐지**: 3사 실측에서 openai가 원문에 없는 문장을 인용으로 내 `not_in_source`로 폐기됨. §11이 주입 테스트에서만 작동하는 게 아님을 확인
+    - **충돌 0건 경로 실 DB 통과**: `MANAGER_CONFLICT_TYPES`를 아무 유형과도 매칭 안 되는 값으로 두어 6쟁점 전부 자동 통과 → Question이 `review_required`로 **전이되지 않고** 전 쟁점 `passed`·`selectedContent` 전부 채워짐. 검증 하네스가 만든 행만 삭제하고 Question 상태 복원함
+    - **실 DB 저장·CHECK 정합**: `stances` 채움, `auto_single_source` 경로, `agendas_stances_ck`·`agendas_selected_source_ref_ck`(§9.3) 통과. `manager_meta`에 `conflictTypes`·`comparatorVersion`·품질 지표 스탬프(결정 4·6). 충돌 1건 있는 질문은 `review_required`로 정상 전이
+    - **재현성(AC1)**: pivot·shuffleSeed 동일 입력에서 완전 일치. `Math.random()` 미사용
+  - **⚠️ 실측 문제 — 지연이 지배적 (상세 §14.4)**: 단계 6 출력 토큰 **694~6,365**(§5.5 추정 430의 1.6~15배), Manager 전체 **37.9~145.5초**(§2.3 예산 10~30초의 최대 5배), 첫 `agenda.judged` **14.9~95.1초**. §2.3이 기댄 "조기 표시로 완화" 가정이 **95초 케이스에서 무너진다**
+  - **원인 규명 완료 (후속 조사)**: 지연은 **출력 토큰에 정비례**한다 — 처리량이 ~53토큰/초로 일정(10지점 거의 완전 선형). 그런데 최종 JSON은 **513~700자뿐**이고 `comparisonNote`는 84~172자다. `completion_tokens`의 **88~94%가 `reasoning_tokens`** — `qwen/qwen3.7-plus`가 추론 모델이라 우리가 읽지도 저장하지도 않는 확장 사고 토큰을 1,300~4,700개 생성한다. **지연의 90%가 버리는 사고 과정 생성비다.** §8.6이 `comparisonNote`로 유도한 "reason free, constrain late"는 모델 네이티브 추론과 중복(100토큰 vs 4,700토큰)
+    - **완화안 실측**: `reasoning:{effort:"low"}` → 토큰 39% 감소(3,183→1,943, ~60초→~37초), **grounding 11/11 유지**, 판정 3/4 일치(불일치 1건은 §8.5가 애매하다고 인정한 `main_answer`↔`detail_content` 경계) → **유력**. `reasoning:{enabled:false}` → 토큰 92% 감소지만 **grounding 붕괴(2/8), 4쟁점 중 3개가 stance 0개 → §11-4로 폐기** = 쟁점이 사라짐 → **실격**. 추론을 끄면 원문을 찾아 정확히 복사하는 작업 자체를 못 한다
+    - **⚠️ 파이프라인에 적용하지 않았다 — 사용자 판단 필요.** 후보 ①`effort:"low"` 적용(근거상 유력, 되돌리기 쉬운 한 줄, 단 n=4 소표본) ②동시성 상향(wall-clock만 줄고 첫 판정 시간은 그대로 → 효과 제한적) ③모델 재검토(T-019.2.1의 품질 결정을 되돌리는 것)
+    - **측정 함정 기록**: 조사 중 `fetch`가 **응답 헤더 도착 시 resolve**하는 것을 놓쳐 호출 지연을 1~2초로 오측정한 구간이 있었다(생성 시간은 `res.json()`/`res.text()`에 들어간다). 순차 3회 "호출당 1.1초"가 wall 82.5초와 모순되어 드러났다. 파이프라인 계측은 `response.text()`까지 await하므로 처음부터 옳았고, 토큰·품질 수치는 타이밍과 무관해 영향 없음
+  - **지표 추가**: `quoteRejectRate` 0%인데 쟁점이 폐기되는 조합(33.3% 폐기 / 인용 폐기 0건)이 관측됐으나 원인 관측값이 하나도 없었다 — quote 검증에 도달하기 전 버려지는 stance가 있기 때문. `stancesDiscarded`(`empty_output`·`not_participant`·`duplicate_provider`)를 신설해 폐기 사유를 셈(§14.2)
+  - **미확인/남은 문제**:
+    - **§12.5 web 재배선 전량 미완** — `buildMockAgendas` 제거, `agenda.*` 이벤트 소비, SSE 종료 판정 규칙(§12.2), 자동 통과 vs 사용자 판단 분류(`resolutionReason` 기준), `recheck_requested` [다시 시도] 버튼. **브라우저 사용자 시나리오는 하나도 확인하지 못했다**(서버만 검증)
+    - GET 스냅샷·PATCH 3액션은 **HTTP로 호출해 보지 않았다** — 라우트 연결과 타입만 확인. 사용자 JWT가 필요해 서버 코드 경로로만 검증
+    - `agendaDropRate` 33.3% 1회의 근본 원인 미규명(`stancesDiscarded` 계측만 넣음, 재현 안 됨)
+    - `main_answer` 0% 관측 2회 — §14.2 "충돌 과소 탐지 의심" 임계 해당. 판정 품질 축적 필요
+    - `confidence` 표준편차 0.025~0.045(n=2·4) — §14.3의 0.05 미만이나 표본 부족, 20~30건 축적 후 재판정
+- **T-019.3.1 완료 (2026-07-30)** — Manager 품질 이상 진단. T-019.3에서 각 1회 관측되고 원인 미규명이던 `agendaDropRate` 33.3%·`quoteRejectRate` 33.3%를 규명했다. **Manager(OpenRouter) 호출 18회/상한 20** + 3사 API 각 1회
+  - **A. 쟁점 소멸 원인 = 확정. `quotes: []`(스키마가 허용하는 빈 인용 배열)**
+    - `AgendaStanceSchema`(저장 계약)는 `quotes.min(1)`인데 `CompareStanceSchema`(LLM 출력)와 LLM에 보내는 JSON Schema에는 **최소 개수 제약이 없다.** 모델이 `quotes: []` stance를 내는 것이 합법이다
+    - 그 stance는 `grounding.ts`에서 `for (const quote of value.quotes)` 루프가 0회 돌아 `quotesTotal`·`quotesRejected`에 **아무것도 더하지 않고** `kept.length === 0`으로 폐기된다 → **어느 지표에도 안 잡힘.** "`quoteRejectRate` 0%인데 쟁점 폐기" 조합이 정확히 이것
+    - **실증**: 프로덕션 경로 재실행에서 `agendaDropRate 25%` · `quoteRejectRate 0%` · **`empty_quotes: 3`**(호출 2회에 3건) — 드문 사고가 아니라 상시 발생
+    - **(a)/(b) 판별 = (a) 모델 실패.** 폐기된 "정책 작성 위치" 쟁점의 배정 섹션(`claude-s2`+`gemini-s1`)은 둘 다 "정책은 SQL 파일로 작성/관리"를 직접 말하고 있어 인용할 원문이 양쪽에 충분했다. 또 **같은 fixture·같은 seed의 다른 회차는 폐기 0건** — 동일 배정에서 결과가 갈렸으므로 단계 3 배정 문제가 아니다
+    - **A-3 배제**: `participantCount`·`sourceRefs`·judge의 `participants`가 모두 `finalizeDrafts`의 같은 `c.sections`에서 파생돼 구조적으로 어긋날 수 없다. `not_participant`·`providerRefs.length===0` 경로는 이번 사건과 무관(후자는 도달 불가 방어 코드)
+  - **B. 인용 폐기 원인 = 최소 의역. 날조가 아니다**
+    - 실관측 폐기 1건을 원문과 대조: 원문 `익명 사용자(anon)**와**…` → 모델 인용 `익명 사용자(anon)**과**…` — **조사 한 글자 차이, 내용 100% 동일**
+    - §11의 `normalized`는 공백만 정규화하므로 조사·어미 변형을 날조와 구분할 수 없다. **정당한 근거가 죽고, 인용이 0개가 되면 stance가 죽고, stance가 0개면 쟁점이 사라진다**
+    - **마크다운·유니코드 FP는 잠재 위험이나 이번 원인은 아니다**: 실 DB 140개 섹션에 `**`·둥근따옴표·en dash·말줄임표가 **전부 0건**(목록 시작 1건). 다만 프로브 10건 중 6건이 폐기됨 — 원문 형식이 바뀌면 즉시 현실화된다
+    - **저장 데이터 정합은 양호**: `c1e496e9`의 저장된 인용 17건 전부 자기 provider 원문에 실재(근거 없음 0건)
+  - **C. quotes ↔ 추론 토큰 상관 = 가설 미지지**
+    - n=5 실측 상관: 섹션 수 −0.556 · 섹션 원문 총 길이 −0.597 · quotes 총 길이 −0.438 · `comparisonNote` 길이 −0.522. **전부 음의 상관이고 n=5 유의 임계 r≈0.878 미만** → 입력 크기로 추론 토큰이 설명되지 않는다
+    - 따라서 **"인용 길이 상한"은 지연 완화책으로 근거가 없다.** reasoning 비중 73~92%, 처리량 49 t/s(§14.4의 53 t/s 재확인), 지연↔completion r=0.826
+  - **D. GET/PATCH 실호출 전부 통과** (dev 서버 + 테스트 계정 토큰)
+    - `GET` 200 · Agenda 5건 · **`stances` 정상 매핑**(Repository 우려 지점 해소) · `selectedSourceRef`가 §9.2대로
+    - `accept`→`passed`/`user_accepted`/실제 참조(서버가 원문 되읽음), `compose`→`passed`/`user_composed`/`NO_VALUE`, `reject`→`rejected`/`user_rejected`/`NO_VALUE`
+    - 무토큰 401 · 엉터리 토큰 401 · 미소유 Question·Chat 404 · 없는 agendaId 404 · `passed`에 PATCH 409(`INVALID_AGENDA_TRANSITION`) · 이 쟁점 근거 아닌 sourceRef 400
+    - **body 위조 `userId` 무시 확인**(소유자 `user_id` 불변). **3액션 각각 원상복구 후 `updated_at` 외 전 컬럼 일치 검증**, Question도 `review_required`로 복원
+  - **E. SSE 실 스트림 = 이벤트 순서·heartbeat 정상, 그러나 70초 공백 발견**
+    - 순서 정상: `source_answer.updated`×6 → `source_answer.done`(30.9s) → `agenda.created`(100.5s) → `agenda.judged`×3 → `agenda.done`(185.6s) → 닫힘. **15초 heartbeat가 Manager 구간에도 그대로 흐름**(12회)
+    - ⚠️ **`source_answer.done`(30.9s) ~ `agenda.created`(100.5s) 사이 69.7초 동안 Agenda 관련 이벤트가 하나도 없다.** 단계 1~5가 SSE 이벤트를 전혀 내지 않기 때문이다. §14.4가 잰 "첫 판정" 시각은 파이프라인 내부 기준이라 이 공백이 보이지 않았다 — **사용자 관점의 체감 지연은 heartbeat만 오는 70초 사각지대**
+    - `agenda.judged`는 흩어져 도착(100.8s ×2 즉시=single_source, 141.0s) — 조기 표시 자체는 작동
+  - **고친 것 (관측만, 승인 범위)**
+    - `stancesDiscarded`에 4번째 사유 `empty_quotes` 추가. 주석의 "전부 LLM이 스키마를 어긴 경우다"를 정정 — `empty_quotes`는 **스키마가 허용하는** 경우이며, 그 문구가 이번 누락의 원인이었다
+    - **`stancesDiscarded`를 `ManagerQualityMetrics`에 배선** — T-019.3에서 `JudgeDraftsResult`에만 넣어 `manager_meta`에 저장되지 않았고, 그 탓에 E 실행에서 폐기가 재현됐는데도 진단값이 또 유실됐다. 지표는 저장되는 곳까지 도달해야 지표다
+    - `--grounding-test`에 재현 케이스 4건(`empty_quotes` 귀속·`empty_output` 구분·오귀인 방지) + false positive 프로브 10건 추가. **LLM 0회로 12/12 통과**
+  - **고치지 않은 것 (설계 판단 필요)**: `minItems: 1` 추가 — (b) 해석에서 모델이 억지 인용을 하게 되고, 그때 나올 **"원문에 있지만 이 쟁점과 무관한 문장"은 grounding이 잡지 못해** 조용한 폐기보다 나쁠 수 있다. 정규화 규칙 완화(조사·어미·유니코드) — 날조 탐지력과 맞바꾸는 결정. 단계 1~5 구간 SSE 진행 이벤트 추가
+  - **남은 불확실성**: 원 33.3% 회차의 폐기 인용은 §16.3에 따라 저장되지 않아 **소급 복원 불가**(재실행 2회 모두 `quoteRejectRate` 0%였다). `empty_quotes`와 `empty_output` 중 원 사건이 어느 쪽이었는지는 당시 지표가 없어 확정 불가 — 다만 둘 다 "모델이 쓸 인용을 못 냈다"로 동일하고, 이제 양쪽이 구분돼 기록된다
+  - **검증 부산물**: 테스트 계정에 SSE 검증용 Chat `a986b4e7`·Question `f165d95d`(Agenda 3건)가 남아 있다. 지워도 무해하다. dev 서버(api:4000)는 계속 켜 둠
+- **T-019.3.2 완료 (2026-07-31)** — `reasoning: { effort: "low" }` A/B 측정. **파이프라인에 적용하지 않았다**(하네스에서만 조건으로 줌, 코드는 무설정 그대로). Spec 미갱신 — 사용자 판단 후 일괄 반영. **Manager 호출 56회/상한 60**, 3사 API 0회
+  - **설계**: `three-providers` fixture 1종. 단계 1~5를 1회만 돌려 초안을 `three-providers-drafts.json`으로 **고정**하고 모든 반복이 글자 그대로 같은 입력을 받게 했다(단계 3 배정 변동을 판정 비교에서 제거). 조건은 **교대 실행**(baseline → low → …). 지연은 본문을 다 읽은 뒤 측정. 초안 쟁점 4개 = A 기본 원칙(참여2) · B 정책 작성 위치(참여3) · C service_role 키 취급(참여2) · D 검증 방법(참여2)
+  - **precheck**: `reasoning_tokens` 1554 → 966 (**37.8% 감소**) — 파라미터가 실제로 먹는 것을 확인하고 본 측정 진행
+  - **C-1. 판정 — 쟁점별 5회 분포** (조건당 20판정)
+
+    | 쟁점 | 조건 | 5회 판정 분포 | 최빈 |
+    |---|---|---|---|
+    | 기본 원칙 | baseline | `detail_content`×1 `main_answer`×4 | main_answer |
+    | 기본 원칙 | low | `main_answer`×5 | main_answer |
+    | 정책 작성 위치 | baseline | `detail_content`×1 `main_answer`×4 | main_answer |
+    | 정책 작성 위치 | low | `detail_content`×1 `main_answer`×4 | main_answer |
+    | service_role 키 취급 | baseline | `paraphrasing`×3 `detail_content`×2 | paraphrasing |
+    | service_role 키 취급 | low | `detail_expansion`×1 `detail_content`×2 `main_answer`×2 | main_answer |
+    | 검증 방법 | baseline | `detail_content`×2 `main_answer`×3 | main_answer |
+    | 검증 방법 | low | `detail_content`×2 `main_answer`×3 | main_answer |
+
+  - **C-1. `main_answer` 비율**: baseline **55.0%**(11/20) · low **70.0%**(14/20). **둘 다 §14.2 임계(5% 미만) 를 크게 상회** → T-019.2·3에서 관측된 `main_answer` 0%는 **런투런 잡음이었고 체계적 충돌 과소 탐지가 아니다**(§14.4의 우려 해소)
+  - **C-1. 조건 내부 변동 = 잡음 수준**: 판정이 5회 내내 동일한 쟁점이 **baseline 0/4 · low 1/4**. **기준선이 4개 쟁점 전부에서 흔들린다.** 이 잡음 위에서 조건 차이를 읽어야 한다
+  - **C-1. 불일치 방향** (§8.5 — 충돌→합의는 복구 불가)
+
+    | 기준 | 동일 | 낮아짐(⚠️ 충돌→합의) | 높아짐(안전) |
+    |---|---|---|---|
+    | 쟁점별 최빈값 (4쟁점) | 3 | **0** | 1 (`paraphrasing`→`main_answer`) |
+    | 회차 매칭 (20쌍) | 11 (55.0%) | **3 (15.0%)** | 6 (30.0%) |
+
+  - **C-2. 인용·stance**
+
+    | 조건 | `empty_quotes` | 쟁점 폐기 | stance 부분 손실 | `quoteRejectRate` | grounding |
+    |---|---|---|---|---|---|
+    | baseline | **2** | 2/20 = 10.0% | 1/20 = 5.0% | 6/57 = 10.5% | 51/57 |
+    | low | **0** | 0/20 = 0.0% | 1/20 = 5.0% | 2/61 = 3.3% | 59/61 |
+
+    stance 생존 상세 — baseline `2→0`:2건 `2→1`:1건 `2→2`:12건 `3→3`:5건 / low `2→1`:1건 `2→2`:14건 `3→3`:5건
+  - **C-3. 비용·지연 — ⚠️ 평균과 중앙값이 반대를 말한다**
+
+    | 조건 | completion 평균 | reasoning 평균 | reason% | 지연 평균 | 지연 최대 |
+    |---|---|---|---|---|---|
+    | baseline | 2847.9 (±3247.6) | 2629.3 (±3262.3) | 92.3% | 53.4s | **292.5s** |
+    | low | 2360.4 (±1296.2) | 2128.8 (±1298.8) | 90.2% | 44.7s | 118.4s |
+
+    평균 기준 completion −17.1% · reasoning −19.0% · 지연 −16.2%. **그러나 baseline의 표준편차가 평균보다 크다**(±3247.6 > 2847.9). 이상치 1건(baseline r4 `service_role`, **16,125토큰 / 292.5초 / 추론 15,985**)이 평균을 혼자 끌어올린 것이다.
+
+    | 조건 | p50 | p75 | p90 | 최대 | 최대/중앙 |
+    |---|---|---|---|---|---|
+    | baseline (토큰) | 2066 | 2851 | 3490 | 16125 | 7.8 |
+    | low (토큰) | **2148** | **2892** | **3530** | 6438 | 3.0 |
+    | baseline (지연s) | 39.4 | 53.3 | 65.0 | 292.5 | 7.4 |
+    | low (지연s) | **40.5** | **55.9** | **66.2** | 118.4 | 2.9 |
+
+    **중앙값 기준으로는 low가 오히려 4.0% 크고 2.6% 느리다.** p50·p75·p90이 사실상 동일하고 **최대값만 다르다** → `low`의 실효는 전형값 감소가 아니라 **극단 꼬리 절단**이다. 처리량은 양쪽 52 t/s로 동일. (T-019.3.1의 "39% 감소"는 n=4 단발이었고, 이번 n=20에서 재현되지 않는다)
+  - **C-3. `confidence`** (§14.3 축적): baseline n=20 평균 0.8385 **표준편차 0.0744** / low n=20 평균 0.7790 **표준편차 0.1229**. **양쪽 다 0.05 이상** → §14.3의 "자기보고 확신도 무의미" 판정 조건에 해당하지 않는다. 누적 n=40으로 20~30건 기준 충족
+  - **단계 3 A/B (n=3, 조건 교대) — `low`가 오히려 나쁘다**
+
+    | 조건 | 회차별 지연(ms) | 평균 | 회차별 토큰 | 평균 |
+    |---|---|---|---|---|
+    | baseline | 17613 · 13175 · 17661 | 16150 | 1391 · 1141 · 1455 | 1329 |
+    | low | 60931 · 46387 · 22294 | **43204** | 4431 · 3126 · 1840 | **3132** |
+
+    **지연 2.68배 · 토큰 2.36배**, 회차별로도 3/3 전부 low가 크다(r1 3.46배 · r2 3.52배 · r3 1.26배). 단계 6과 방향이 정반대다
+  - **단계 3 배정 안정성 — 조건과 무관하다**: 조건 내 3회 쌍별 일치율 baseline **93.3%** · low **93.3%**, 조건 간 9쌍 평균 **93.3%** — 셋이 동일. 쟁점 목록(4개·제목)은 6회 전부 같았다. 흔들린 섹션은 2개뿐이고 조건별로 1건씩 대칭: `gemini-s1` 정책 작성 위치→기본 원칙(b3), `openai-s1` 기본 원칙→검증 방법(l3). `leftoverRate` 0 · `multiAssignRate` 0 · `titleRevisionRate` null(의심 제목 없음) 전 회차 동일. **배정 잡음(~7%)은 `low` 탓이 아니라 상시 존재한다**
+  - **D. 세 질문에 대한 수치 답**
+    1. **low 판정이 기준선 내부 변동 범위 안에 있는가** → **3/4 쟁점은 안, 1개는 벗어남.** 기본 원칙·정책 작성 위치·검증 방법은 baseline이 관측한 유형 집합에 포함된다. `service_role 키 취급`만 baseline{`paraphrasing`,`detail_content`} → low{`detail_expansion`,`detail_content`,`main_answer`}로 **벗어났고, 벗어난 방향은 더 심각한 쪽(안전 방향)**이다
+    2. **위험 방향 치우침** → **아니다.** 회차 매칭 20쌍에서 낮아짐 3 vs 높아짐 6으로 **안전 방향이 2배**다. 쟁점 최빈값 기준으로는 낮아짐 0건
+    3. **low가 `empty_quotes`·`agendaDropRate`를 늘렸는가** → **아니다. 줄었다.** `empty_quotes` 2→0, 쟁점 폐기 2/20→0/20, `quoteRejectRate` 10.5%→3.3%. stance 부분 손실만 1건으로 동일. **추론 축소가 인용 생성을 악화시킬 것이라는 우려는 이 표본에서 관측되지 않았다**
+  - **n 부족으로 답할 수 없는 것**: 위 3번의 방향은 확인됐으나 `empty_quotes` 절대 건수가 baseline 2건이라 **감소가 유의한지는 판정 불가**(0 vs 2). 조건당 최소 60판정(현재 20의 3배, 쟁점 4개×15회)이면 5%p 차이를 분간할 수 있을 것으로 추정한다. 1번의 `service_role` 이탈도 n=5라 조건 효과인지 잡음인지 미확정 — 같은 쟁점만 15회씩 반복하면 갈린다
+  - **⚠️ 측정 중 발견 (범위 밖, 기록만)**
+    - **단계 6 호출의 40~45%가 `MANAGER_TIMEOUT_MS`(45초)를 초과한다** — baseline 9/20, low 8/20. 파이프라인이라면 이들이 타임아웃 후 `withOneRetry`로 재시도되므로 **실제 호출 수와 지연이 배가된다.** T-019.3에서 관측된 `stage6DurationsMs` 88,234ms 같은 값이 "45초 타임아웃 + 43초 재시도"였을 가능성이 있다
+    - **교락 가능성**: `provider.require_parameters: true`와 함께 `reasoning`을 넣으면 **그 파라미터를 지원하는 업스트림으로 라우팅이 제한**된다. 단계 3에서 low가 2.7배 느린 것이 effort 효과가 아니라 라우팅 변화일 수 있다. 이 측정으로는 분리 불가
+  - **코드 변경**: A-1 계측만(승인 예외). `ManagerQualityMetrics.stanceSurvival`에 쟁점당 `{participants, survived}` 쌍을 기록 — §11-4는 stance 0개만 폐기하므로 **참여 3개 중 1개만 죽는 부분 손실이 어디에도 안 잡혔다**(`agendaDropRate` 0, `quoteRejectRate`도 원인이 `quotes: []`면 0). 비율로 뭉개지 않고 쌍 그대로 남긴다. 단계 6 경로 + `single_source`·fallback 경로 모두 기록. 측정용 초안 fixture `three-providers-drafts.json` 커밋(다음 비교 시 단계 3 재실행 불필요)
+  - **검증**: 루트 typecheck·lint·build 통과. `--grounding-test` 12/12 + FP 프로브 10건 유지. 파이프라인에 `reasoning` 미적용 확인(하네스 삭제됨)
+- **T-019.4 진행 (2026-07-31)** — A~E 완료, F 부분, G n=1, H 미완. 커밋 `6d72ced`(A~C) · `9e99cb7`(D) · `3fe7e98`(E 1/2) · `4dae904`(E 2/2) · `6062c5a`(회귀 2건 수정)
+  - **A. 설정 (§2.4·§15.3)**: `MANAGER_JUDGE_TIMEOUT_MS`(100000)·`MANAGER_JUDGE_REASONING_EFFORT`(low)를 **단계 6에만**. 단계 3·4는 45초·무설정 유지
+  - **B. 부분 손실 fallback (§7.6·§11.2)**: `fillMissingStances`. `stanceSurvival`은 **보충 전** 값을 기록한다(보충 후를 적으면 손실이 지표에서 사라진다). `stancesFilled` 신설
+  - **C. 진행 이벤트 (§12.2)**: `agenda.progress` 신설. 단계 4는 조건부라 실제 호출 분기 안에서만 알린다
+  - **D. 재검토 (§10)**: 프롬프트·포트·어댑터·`pipeline/recheck.ts`(§11-8). PATCH `recheck`·`retry_recheck`. §10.6 전이, 실패 시 `recheck_requested` 유지·기회 미소진
+  - **E. web 재배선 (§12.5)**: `applyAgendas`를 **Agenda 갱신의 단일 지점**으로 두고 마감 규칙을 거기 하나만 뒀다. 서버 경로에서 `buildMockAgendas` 완전 제거(`?scenario=`에만 잔존). SSE 종료 판정을 `.done` 접미사 규칙으로 교체. `onAcceptStance`가 stance 전체를 넘겨 **서버에는 `sourceRef`만** 보낸다. 서버 경로는 **응답을 받은 뒤** 제거한다(낙관적 제거 시 409를 되돌려야 하고 사용자는 반영됐다고 믿는다)
+    - **`recheck_requested` 출구 추가**: 예전에는 `footer = null`이라 **호출 실패 시 스피너만 남고 나갈 버튼이 없었다.** [다시 시도]·[선택한 입장 채택]·[내 결정]·[내용 제외] 넷을 붙였다(결정 11)
+    - **`reanswered`에서 "이 결과로 결정" 제거 (§10.1)**: 재검토 답변은 판단 재료이지 답이 아니다. 그 버튼은 재검토 답변이 최종 답변에 들어간다고 읽히는데 실제로는 원문 섹션이 들어가 기대와 어긋난다. 3열에서 입장을 고르게 바꿔 원문이 들어가는 것이 당연해지게 했다
+    - **E-4 인용 표시**: "원문 근거 N건" + 인용문 + 출처(`Claude · rec-s2`). 0개면 "원문 인용 없음" 명시 — §10.1이 0개를 허용했으므로 표시가 없으면 근거 없는 것이 근거 있는 것처럼 읽힌다
+  - **⚠️ 브라우저 회귀에서 발견·수정한 회귀 2건** (둘 다 E에서 서버 경로를 새로 만들며 Mock 경로에만 있던 처리가 안 옮겨진 것)
+    1. **완료가 서버에 영속화되지 않았다** — `markQuestionCompleted`가 Mock 경로에만 있어 화면만 `completed`가 되고 DB는 `review_required`로 남았다. 새로고침하면 되돌아오고 미완료 1개 제약도 안 풀린다. §12.1대로 `applyAgendas`에서 호출하도록 고쳤다
+    2. **새로고침 시 Agenda가 복원되지 않았다** — 마운트 복원이 `loadSourceAnswers`만 부르고 `loadAgendas`를 부르지 않았다. §12.3의 GET·adapter는 이미 있었고 배선만 빠져 있었다
+  - **F. 브라우저 회귀 (테스트 계정, 실제 3사 + 실제 Manager, 3사 실행 1회/상한 8회)**
+
+    | # | 항목 | 결과 |
+    |---|---|---|
+    | 1 | 질문→3사→Manager→충돌 해소→FinalAnswer→노트→completed | ✅ 전 구간 |
+    | 2 | **진행 표시** | ✅ 3사 완료 후 "쟁점 분류 중…" → "쟁점 판정 중… 1/4". **70초 무음 구간 사라짐** |
+    | 3 | 판정 조기 표시 | ⚠️ 이벤트는 건별로 오지만 판정이 4건 중 3건이 60초 이후 몰려 육안으로는 거의 동시에 보였다. 배선은 정상 |
+    | 4 | 재검토 | ✅ `reanswered` · `disagreement_type` 보존 · `revised_type` null(1차 타당) · **citations 3건** · `user_accepted_after_recheck` + 실제 `sourceRef` |
+    | 5 | 재검토 실패 | ❌ **미수행** |
+    | 6 | 새로고침 복원 | ✅ 수정 후 Agenda 복원 확인. FinalAnswer·DecisionNote는 브라우저 Mock이라 복원 안 됨(SPEC-AI-003 범위, 알려진 한계) |
+    | 7 | 충돌 0건 | ❌ **미수행** (이번 질문은 충돌 1건이 나왔다) |
+    | 8 | 자동 통과 표기 | ✅ 완료 뷰가 **"공통 권장 사항 (3)"**(자동 통과)과 **"결정 사항 · 사용자 판단 우선 적용 (1)"**로 갈렸다 |
+    | 9 | `?scenario=` 4종 | ❌ **미수행** |
+
+  - **G. 실측 (n=1, 실사용 경로)** — ⚠️ **분위수 n=1이라 참고값이다**
+
+    | 항목 | 값 |
+    |---|---|
+    | 단계 6 쟁점당 | 17.5 · 63.6 · 103.0 · 115.1초 → **p50 83.3 · p90 110.7 · 최대 115.1** |
+    | 단계 6 출력 토큰 | 901 · 3447 · 5621 · 6321 |
+    | 단계 3 | 65.7초 (단계 4 미실행) |
+    | Manager 전체 | 약 181초 |
+    | **타임아웃 발생** | **0건** — 103.0초·115.1초 호출은 45초였다면 둘 다 타임아웃+재시도였다. §2.4 변경이 실효를 냈다 |
+    | `stanceSurvival` | 2/2 · 3/3 · 3/3 · 3/3 — **부분 손실 0건**, `stancesFilled` 0 |
+    | `empty_quotes` | **0** — T-019.3.1의 사건이 재현되지 않았다 |
+    | `agendaDropRate` | 0% |
+    | `quoteRejectRate` | 4.5% (임계 10% 미만) |
+    | `disagreementTypeDist` | `main_answer` 1/4 = 25% (임계 5% 상회) |
+
+    **`effort: low` 되돌림 판단은 불가하다.** p50 83.3초가 §14.5의 fixture p50 39.4초보다 나쁘지만 **입력이 다른 실제 질문 n=1**이라 통제된 비교가 아니다. 같은 fixture로 재봐야 판단할 수 있다
+  - **H. AC 점검 미완** (F가 부분 수행이라 AC10·AC11·AC12 일부를 닫을 수 없다)
+  - **검증**: 루트 typecheck·lint(web만)·build 통과. `--grounding-test` 14/14. 콘솔 오류 없음
+- **T-019.4 이어가기 2 (2026-07-31)** — 타임아웃 결함 수정 + F-5·9 완료 + §12.5 분류 결함 수정. 커밋 `5786814` · `068a638`
+  - **⚠️ 타임아웃이 작동하지 않고 있었다 (§2.4.1)** — G 실측의 "100초 설정인데 103초 호출이 타임아웃 0건"이 모순이 아니라 **버그**였다
+    - `fetch`는 응답 **헤더**가 도착하면 resolve하는데 `clearTimeout`을 `finally`로 그 직후에 걸어, 생성 시간 전부가 들어가는 `response.text()` 구간이 무방비였다
+    - **실증**: 수정 전 3초 타임아웃으로 호출했는데 **156.5초 만에 정상 반환**(추론 토큰 8,531개). 수정 후 같은 프로브가 **3.0초에 `PROVIDER_TIMEOUT`**으로 중단된다
+    - **§2.4의 이전 서술이 틀렸다**: "45초로는 40~45%가 초과해 **재시도되어** 지연이 배가됐다"는 추론은 사실이 아니었다. 초과한 것은 맞지만 타임아웃된 적도 재시도된 적도 없다. 45→100초 상향도 실효가 없었다(둘 다 걸리지 않는 값)
+    - **§2.4.2 적용**: 단계 6·재검토 타임아웃은 **재시도하지 않고** §2.5 fallback stance로 직행한다. 이 수정으로 비로소 타임아웃이 걸리기 시작하므로, 재시도가 살아 있으면 그동안 "일어나고 있다"고 믿었던 배가가 진짜로 시작된다. 값은 **120초 잠정**
+    - **같은 함정을 두 번 밟았다** — T-019.3.1의 지연 오측정도 원인이 같았다. 그때는 프로브였고 이번엔 프로덕션 코드였다
+  - **F-5 재검토 실패 — 통과.** 두 실패 모드가 **동일한 처리**를 받는다
+    - 프롬프트 로드 실패(`RECHECKER_PROMPT_VERSION=nonexistent`) → 502 · `recheck_requested` 유지 · `reanswered_at` null(기회 미소진). **이전 세션의 "호출 전에 터져 오류 처리 범위 밖일 수 있다"는 우려는 기우였다** — `renderManagerPrompt`가 `rechecker.recheck()` 안이고 그게 try 블록 안이다
+    - 잘못된 `OPENROUTER_API_KEY`(실제 API 오류) → 동일하게 502 · 상태 유지
+    - `retry_recheck` → 같은 처리. 정상 env 복구 후 [다시 시도] 클릭 시 **실제로 재호출되어 `reanswered` + citations 7건**
+    - **`recheck_requested`에서 채택 → `user_accepted`** (`_after_recheck` 미부착) ✓ §10.6
+    - UI: [다시 시도]·[선택한 입장 채택]·[내 결정]·[내용 제외] 4버튼 전부 표시. 예전 `footer = null` 이던 갇힘 해소 확인
+  - **F-9 `?scenario=` — 통과.** provider-excluded(제외 배너 2건·충돌 2·자동 통과 1) · all-rejected · single-source-fallback 확인. happy-path는 서버 경로라 F-1에서 확인. MockValidationBanner 미발생, 콘솔 오류 없음
+  - **⚠️ §12.5 분류 결함 발견·수정** — F-9에서 드러났다
+    - **`auto_single_source`가 "결정 사항 · 사용자 판단 우선 적용"으로 분류되고 노트 bullet에 "— 내 결정 반영"이 붙었다.** 사용자가 판단한 적 없는 항목이 결정 사항으로 기록되는 것으로, §12.5가 "표현 정교화가 아니라 정확성 문제"로 못박은 지점이다
+    - 원인 두 곳 모두 `auto_consensus`만 보고 `auto_single_source`를 빠뜨렸다 — `FinalAnswerBlock`의 완료 뷰 그룹, `buildMockDecisionNote`의 bullet 분류
+    - 추가로 `noteBulletOf`가 Mock 템플릿의 "…— 내 결정 반영" 문구를 자동 통과 항목에도 그대로 쓰고 있었다. 자동 통과면 제목만 쓰도록 고쳤다(서버 경로는 제목이 템플릿과 매칭되지 않아 이미 중립 — **Mock 경로 전용 결함**)
+    - T-019.1에서 "문구가 약간 어색"으로 미뤄뒀던 항목인데, 실제로는 **분류 자체가 틀린 것**이었다
+  - **F-7(충돌 0건) 미수행** · **H(AC 점검) 미완**
+  - **env 원복 확인**: 주입은 전부 프로세스 환경변수로만 했고 `.env` 파일은 처음부터 미변경(`grep` 0건). 정상 env로 재기동해 확인
+  - **검증**: 루트 typecheck·lint(web만)·build 통과
+- **T-019.4 완료 (2026-07-31)** — F 전체 통과, H(AC) 점검 완료. 커밋 `5786814`·`068a638`·`d789c3b` + 본 항목
+  - **F-7 충돌 0건 경로 — 통과** (`MANAGER_CONFLICT_TYPES=__never_matches__` 주입, 3사 1회)
+    - Question이 **`review_required`를 거치지 않고** `processing → completed`. 갇히지 않았다(§12.1)
+    - 쟁점 4건 전부 `passed` — `auto_consensus` 1 · `auto_single_source` 3
+    - 완료 뷰 **"자동 통과 4건"**, "결정 사항" 그룹 없음. 새로고침 복원 후에도 동일(§12.5)
+    - `manager_meta.conflictTypes`에 `["__never_matches__"]` 스탬프 — 판정 시점 설정이 남아 재현 가능(AC4)
+  - **120초 타임아웃 첫 실측 — `judgeFailRate` 0%, 타임아웃 0건**
+    - 단계 6 쟁점당 **29.7초 · 88.3초** (호출 2회; 나머지 3건은 `single_source`라 미호출) → **p50 59.0 · p90 82.4 · 최대 88.3초**
+    - 최대 88.3초로 120초 안에 들어왔다. **판단 기준(≤20%)을 충족하므로 120초 유지가 타당하다**
+    - ⚠️ 다만 **호출 2회짜리 표본**이다. 이전 세션 관측(p90 111초·최대 115초)과 프로브 156.5초를 함께 보면 여유가 크지 않다 — 축적 후 재판단 필요
+    - 단계 3 38.7초 · 단계 6 wall-clock 88.6초
+  - **⚠️ 같은 실행에서 관측된 품질 이상**: `quoteRejectRate` **40%**(임계 10%의 4배) · `agendaDropRate` **20%**(임계 5%의 4배)
+    - `stanceSurvival`에 **`{participants:2, survived:0}`** 이 찍혔고 `stancesDiscarded`는 전부 0 → **`quotes: []`가 아니라 인용이 전부 검증에서 탈락**해 쟁점이 폐기됐다. §11.2가 규정한 최소 의역 계열로 보인다
+    - T-019.3.1과 달리 **이번엔 원인이 지표로 즉시 읽힌다** — `stanceSurvival`·`stancesDiscarded` 계측이 의도대로 작동했다
+    - `stancesFilled` 0 — 생존 0이면 §11-4로 쟁점 폐기가 우선이고 부분 손실 보충은 적용되지 않는다(설계대로)
+  - **H. Acceptance Criteria 점검**
+
+    | AC | 상태 | 근거 / 남은 것 |
+    |---|---|---|
+    | AC1 재현성 | ✅ | `Math.random` 실사용 0건(주석 언급뿐). `manager_meta`에 pivot·`pivotSelectionReason`·`shuffleSeed`·모델·프롬프트 버전·`conflictTypes` 스탬프. T-019.3.2에서 같은 fixture 재실행 시 pivot·seed 완전 동일 |
+    | AC2 분류 | ⚠️ 부분 | 배정·leftover 승격·제목 중립화는 T-019.2에서 실측. **단계 3b 누락 회수 경로 미확인** — 특정 섹션만 누락시킬 수단이 없다 |
+    | AC3 참여 수 계산 | ✅ | `countParticipants`가 코드로 셈. `participantCount <= 1` → 단계 6 건너뛰고 `single_source`+`auto_single_source`(F-7에서 3건 실측). `kind`는 `disagreementType`만 보므로 2:1 다수결 통과 경로가 없다 |
+    | AC4 판정 | ✅ | 동시성 3 병렬, `disagreementType` 5유형 저장. `kind`가 설정 기반임을 F-7 주입으로 실증. 판정 시점 `conflictTypes` 스탬프로 저장분 불변 |
+    | AC5 근거 검증 | ✅ | `--grounding-test` **14/14**(날조 주입 8 + `empty_quotes` 4 + fallback 2). 실 데이터에서 자연 발생 날조 폐기 확인. `quoteRejectRate` 기록 |
+    | AC6 selectedContent | ✅ | §9.2 규칙표대로 코드가 채우고 개정 CHECK 통과. `finalize.ts`에 `NO_VALUE` 없음 — Manager는 만들지 않는다 |
+    | AC7 저장·복원 | ✅ | `adminClient`(시스템 쓰기)/`userClient`(사용자 행동) 분리. `GET .../agendas` 복원(이번 태스크에서 배선 누락 수정). 무토큰 401·미소유 404·위조 `userId` 무시 실측 |
+    | AC8 SSE | ✅ | 실측 이벤트 순서 `updated`×6 → `done` → `progress` → `created` → `judged`×N → `agenda.done`. heartbeat 12회가 Manager 구간에도 유지. `*.done` 없이 닫히면 GET 화해 구현 |
+    | AC9 사용자 판단 | ✅ | `conflicted` 4액션 · `recheck_requested` 4액션([다시 시도] 포함) · `reanswered` 3액션. `_after_recheck`는 `reanswered`에서만 부착(실측). 허용 안 된 전이 409 |
+    | AC10 실패 경로 | ⚠️ **부분·결함 1건** | 재검토 실패는 ✅ 실증(프롬프트 로드 실패·API 오류 둘 다 `recheck_requested` 유지·기회 미소진). 단계 6 실패 fallback은 **코드만 확인, 실측 미발생**(타임아웃 0건). **단계 3·4 모두 실패 → 고정 문구 + `completed`는 미구현** ↓ |
+    | AC11 web 재배선 | ✅ | 서버 경로에서 `buildMockAgendas` 제거(`?scenario=`에만 잔존), 4액션 회귀 없음, [다시 시도] 추가, `?scenario=` 4종 통과 |
+    | AC12 검증 | ✅ | 루트 typecheck·build 통과, lint는 **web만**(api에 script 없음 — 명시). 3사 성공·부분 실패·단일 성공·재검토·재검토 실패 시나리오 확인. `.env` 미변경, 키 미노출 |
+
+  - **⚠️ AC10 미구현 결함 (코드 추적으로 확인, 미수정)** — 단계 3·4가 **모두** 실패하면 서버가 `drafts: []`를 반환하는데(`agendas.service.ts` 452~468행), web의 `applyAgendas`는 `agendas.length > 0`이어야 마감 판단을 하므로 **아무 일도 일어나지 않고 Question이 `processing`에 갇힌다.** `applyServerSnapshot`의 `allFailed` 분기는 **3사 전멸**만 처리하며, "3사 성공 + Manager 완전 실패"는 다른 경로다
+    - §2.5·§6.2는 이 경우 "고정 안내 문구로 마무리 + `completed`"를 요구한다. 서버 주석도 "고정 문구 처리는 호출부가"라고 적혀 있으나 **호출부에 그 처리가 없다**
+    - **고정 안내 문구의 내용은 제품 문구 결정이라 임의로 만들지 않았다.** 3사 전멸용 `allProvidersFailedContent`와는 상황이 달라(원문은 멀쩡히 있고 비교만 실패) 그대로 쓸 수 없다
+  - **env 원복 확인**: 주입은 전부 프로세스 환경변수로만 했고 `.env` 파일 미변경(`grep` 0건, `git status` 변경 없음). 정상 재기동 후 프로세스에 주입값 잔존 0건 확인
+  - **예산**: 3사 질문 1회 / Manager 약 7회 (상한 3사 1 · Manager 20)
+- **T-019.5 완료 (2026-07-31)** — 폐기 인용 진단 기록 + Manager 완전 실패 처리. 커밋 `88b3324`·`8766ebd`
+  - **A. 폐기 인용의 차이 기록 (§14.2)** — **진단 불능을 영구히 없앴다**
+    - `RejectedQuote`에서 `quote` 전문을 빼고 `sectionId`·`diff`를 넣었다. 전문을 남기면 "거의 원문과 같은 문장"이 쌓일 뿐이고 진단 가치는 차이에 있다(§11.2)
+    - `describeDiff` — 편집 거리 라이브러리 없이, quote와 가장 길게 일치하는 원문 구간을 찾아 첫 불일치를 `"와→과 (idx 12)"`로 남긴다. 유사 구간이 없으면 `"원문에 유사 구간 없음"`으로 **실제 날조와 의역을 가른다**
+    - `other_provider`는 사유로 이미 드러나므로 차이 계산을 하지 않는다
+    - `manager_meta.metrics.rejectedQuotes`에 저장. **쟁점당 5건 상한**, 초과분은 `rejectedQuotesOmitted`로 함께 남긴다(조용한 절단 금지). §16.3 예외임을 주석에 명시
+    - 결정론적 테스트 4건 추가 — **18/18 통과**(LLM 0회): 조사 차이·마크다운 제거·실제 날조·타 provider
+  - **B. Manager 완전 실패 (AC10) — 구조를 바꿔 같은 계열을 끊었다**
+    - **서버는 수정 불필요**였다. 확인 결과 `agenda.created`는 안 보내고 **`agenda.done: []`은 보내며**, `markReviewRequired`가 `conflictCount > 0`일 때만 호출되므로 `review_required`로 가지 않는다
+    - ⚠️ **`applyAgendas`에서 `agendas.length > 0`을 마감 조건에서 뺐다.** 같은 계열 갇힘이 세 번 나왔고(T-019.1 충돌 0건 · T-019.4 Manager 완전 실패 · 이번), 원인은 매번 **마감 판단이 "무언가 있다"는 전제에 매달려** 있던 것이다. `every`는 빈 배열에서 true이므로 0건도 자연스럽게 마감이 된다
+    - 확정 시점(`final`)에만 0건을 완전 실패로 본다 — 진행 중인 빈 배열과 섞이면 정상 실행을 실패로 오판한다
+    - **세 경로가 같은 처리로 수렴한다**: `agenda.done: []` / GET 화해 / **새로고침 복원**. 마운트 복원은 `applyAgendas`를 아예 거치지 않아 경로 C가 구멍이었다
+  - **C-2. Manager 완전 실패 실증** (`CLASSIFIER_PROMPT_VERSION=nonexistent`, 3사 1회)
+
+    | 확인 | 결과 |
+    |---|---|
+    | Question 갇힘 | ❌ 갇히지 않음 — `processing → completed` |
+    | **DB 영속화** | ✅ `questions.status = completed` (psql 확인) |
+    | `lastError` | `"단계 3·4 모두 실패 — Manager 분류 불가"` |
+    | 고정 문구 | ✅ 화면·DecisionNote 양쪽 |
+    | **3열 원문** | ✅ "AI 별 답변 보기"로 Claude·ChatGPT·Gemini 전문 접근 |
+    | 쟁점 목록 | ✅ 없음 — 없는 판정을 만들지 않았다 |
+    | 새로고침 | ✅ (수정 후) 고정 문구·노트 유지 |
+
+    ⚠️ **경로 C가 처음엔 미달이었다.** 마운트 복원 조건에 `status !== "completed"` 가드를 뒀는데 Manager 완전 실패는 **이미 `completed`로 저장돼 있어** 그 가드에 걸렸다. 새로고침하면 고정 문구가 사라지고 아무 설명 없는 빈 카드가 됐다. 판단 기준을 상태가 아니라 **"복원할 FinalAnswer가 없는가"**로 바꿔 해결(`8766ebd`)
+  - **C-3. 40% 원인 데이터 — ⚠️ 이번 회차에서 재현되지 않았다** (정상 실행 1회)
+    - `quoteRejectRate` **0%** · `agendaDropRate` 0% · `rejectedQuotes` **빈 배열** · `stanceSurvival` 전부 완전 생존(1/1·3/3·1/1·3/3·3/3) · `stancesFilled` 0 · `judgeFailRate` 0
+    - **계열 분류표를 만들 표본이 없다.** 폐기가 0건이므로 §11.2 개정 판단의 근거가 아직 없다
+    - **관측 이력으로 본 추정**: 지금까지 8회 관측에서 폐기 1건 이상이 나온 회차는 6회(8.3% · 33.3% · 10.5% · 3.3% · 4.5% · 40%), 0건이 2회. 회당 발생률 약 70%, 발생 시 1~4건이므로 **회당 기대 1~2건**이다. 계열 분류에 필요한 5~10건을 모으려면 **5~7회 더 실행**하면 된다고 본다
+    - **다만 강제 재실행은 필요 없다.** 계측이 이제 상시 작동하므로 **앞으로의 모든 실행에서 자동 축적된다** — T-019.3.1·T-019.4처럼 "원인을 알려고 일부러 다시 돌리는" 일이 더는 없다. 이번 태스크의 1번 목적은 달성됐다
+  - **env 원복 확인**: 주입은 프로세스 환경변수로만, `.env` 미변경(`grep` 0건), 재기동 후 잔존 0건
+  - **검증**: 루트 typecheck·lint(web만)·build 통과. `--grounding-test` 18/18. 3사 질문 2회 / Manager 약 12회 (상한 3사 2 · Manager 20)
+- **T-019.6 완료 (2026-07-31)** — "충돌 해결 완료" 배지가 vacuous truth로 뜨던 문제 수정
+  - **원인**: `isAllResolved = unresolved.length === 0`. **빈 배열도 참**이라 "해결할 게 없었다"가 "해결을 완료했다"로 뒤집혔다. 두 경우가 여기로 떨어졌다
+    - Manager 완전 실패: 쟁점 0건인데 "✓ 충돌 해결 완료" — **바로 옆 고정 문구는 "비교 결과를 만들지 못했습니다"라고 말해 서로 모순**이었다
+    - 충돌 0건 자동 통과(F-7): 전부 자동 통과라 사용자가 해결한 것이 없다
+  - **수정**: `hadConflicts = conflictAgendas.length > 0`를 조건에 추가하고 3갈래로 나눴다 — 충돌이 없으면 배지도 `(0/0)` 카운터도 띄우지 않는다. **상태(`completed`)로 분기하지 않았다** — 확인할 것은 "해결한 충돌이 있었는가"이지 "완료 상태인가"가 아니다. 두 경우가 이 조건 하나로 함께 처리된다
+  - **⚠️ 수정이 만들 뻔한 회귀를 함께 막았다**: 충돌 목록 블록이 `{!isAllResolved && ...}`로 감싸여 있어, `isAllResolved`를 좁히면 **빈 목록과 함께 "각 충돌을 해결하면…"이 뜬다.** 조건을 `unresolved.length > 0`으로 바꿔 `isAllResolved` 재정의에 영향받지 않게 했다
+  - **자동 통과 요약 점검(지시 추가분)**: `{!question.finalAnswer && autoPassedAgendas.length > 0 && ...}`로 이미 막혀 있어 **같은 vacuous truth 함정이 없었다**. Manager 완전 실패에서 "자동 통과 0건"이 뜨지 않는다
+  - **확인 (3사 호출 0회, 기존 데이터·시나리오)**
+
+    | 경우 | 배지 | 자동 통과 요약 |
+    |---|---|---|
+    | Manager 완전 실패 | ✅ 없음 — 고정 문구·"AI 별 답변 보기"만 | ✅ 없음 |
+    | 충돌 0건 자동 통과(F-7) | ✅ 없음 | ✅ "자동 통과 4건" 정상 |
+    | 정상 흐름(충돌 1건 해결) | ✅ "✓ 충돌 해결 완료" 유지 | ✅ "자동 통과 3건" 정상 |
+    | `?scenario=provider-excluded` | ✅ "충돌 지점 (2/2)" 카운터 정상 | ✅ "자동 통과 1건" |
+    | `?scenario=single-source-fallback` | ✅ 없음(자동 통과만) | ✅ "공통 권장 사항 (2)"·중립 bullet 유지 |
+
+  - **후속 — "판단할 충돌 없음" 문구 추가 (같은 날)**: 자동 통과만 있는 경우 카드 상단이 비어 있어 중립 문구를 넣었다. **갈래가 4개가 된다**
+
+    | 조건 | 표시 | 이유 |
+    |---|---|---|
+    | `agendas.length === 0` | 없음 | Manager 완전 실패. 충돌이 없는 게 아니라 **판정을 못 한 것**이라 "판단할 충돌 없음"이 거짓이 된다. 고정 문구가 설명한다 |
+    | `!hadConflicts` | **"판단할 충돌 없음"**(중립) | ✓를 쓰지 않는다 — 해결한 게 아니라 할 일이 없었던 것 |
+    | `hadConflicts && isAllResolved` | "✓ 충돌 해결 완료" | 기존 |
+    | `hadConflicts && !isAllResolved` | "충돌 지점 (n/m)" | 기존 |
+
+    첫 조건은 상태가 아니라 **"판정 결과가 존재하는가"**라는 내용 판단이다(`hasJudgement`).
+    ⚠️ 문구에 **"일치"·"합의"를 쓰지 않았다** — `single_source`만 있는 경우는 일치한 게 아니라 **비교 상대가 없었던 것**이라 거짓이 된다(domain-policy 5.3·§8.4의 "합의를 사실 판정이 아니라 비교 결과로만 표현한다").
+    Badge `variant="neutral"`(회색)로 success와 시각적으로 구분했다.
+  - **검증**: 루트 typecheck·lint(web만)·build 통과. 3사 호출 0회. 4갈래 + `?scenario=` 2종 브라우저 확인
+- **T-020.1 진행 (2026-07-31)** — SPEC-AI-003 서버 구간. **구현 완료, 실호출 검증 미수행.** 커밋 `ddb496d`·`d9f15f3`·`a9efc44` + 대체 노트 테스트
+  - **§4 모드 판정 (LLM 0회)**: `decideGenerationMode` — **판단 순서를 지킨다.** 전부 rejected가 먼저다. 순서를 뒤집으면 "단일 provider인데 전부 rejected"가 `single_source_fallback`으로 잘못 분류돼 부를 필요 없는 AI를 부른다. §5.3의 "정확히 하나"를 그대로(2개 이상은 `multi_source`). `excludedFromComparison`은 성공으로 세지 않는다
+  - **§2.1 트리거 — `composeIfSettled` 하나뿐이다**. `runManagerForQuestion`(충돌 0건, await + SSE)과 `applyUserDecision`(사용자 판단, fire-and-forget) 양쪽이 이것을 호출하며 **조건을 복사하지 않는다.** SPEC-AI-002에서 같은 계열 갇힘이 네 번 나온 원인이 매번 조건 분산이었다
+  - **§3 생성**: `FinalAnswerComposer` 포트(ADR-005 7번째) + OpenRouter 어댑터. `openRouterCall.ts` 재사용 — §2.4.1의 타임아웃 수정이 거기 있어 **새로 만들면 3초 설정에 156.5초 걸리던 함정에 다시 빠진다**. 출력 스키마는 `finalAnswer`가 앞(§3.2). `reasoning` 무설정으로 시작(§3.4)
+  - **§5.2 대체 노트**: AI가 두 번 실패해도 코드가 최소한을 만든다. ⚠️ **어느 항목에도 판단 주체를 표기하지 않는다** — 자동 통과에 "내 결정 반영"을 붙이던 T-019.6 결함의 재발 여지를 구조적으로 없앴다
+  - **§6 저장·전이**: `final_answers` → `decision_notes` → `completed` 순서. §5.4 재생성 금지는 **저장된 것에만**(명시적 요청 409, 트리거 경로는 조용히 null). `markCompleted`는 멱등 — T-020.1 시점에는 web 전이가 아직 살아 있어 둘 다 시도할 수 있다
+  - **§7 Context — Epic 5 완성**: 배선은 원래 있었지만 재료가 web Mock이라 DB에 없었다. 서버가 구성하도록 연결했고 상한 초과분은 `omittedNoteCount`로 기록한다(조용한 절단 금지)
+  - **§8 SSE**: `final_answer.progress`·`done`을 기존 스트림에 이어 발신. §8.1의 두 경로를 구분 — **PATCH는 생성을 기다리지 않는다**(30~60초라 HTTP 타임아웃 위험). PATCH 응답 계약은 바꾸지 않았다
+  - **검증 (LLM 0회)**: 루트 typecheck·lint(web만)·build 통과. `npm run final:compose -- --mode-test` **16/16**(모드 판정 6 + 확정 판정 5 + 대체 노트 5)
+    - ⚠️ 대체 노트 테스트에서 **내 fixture 때문에 한 번 실패**했다 — 쟁점 제목에 "자동 **합의** 항목"을 써서 정규식이 코드가 덧붙인 문구가 아니라 제목을 잡았다. 제목을 중립 단어로 바꿔 검사 대상을 바로잡았다
+  - **⚠️ 미수행 — 실호출 검증 전부**
+    - **H-2 실호출**: `multi_source`·`single_source_fallback` 실제 생성, 중복 409, DecisionNote 재시도 경로
+    - **H-3 psql**: UNIQUE 통과, `completed_at` 기록, `context_snapshot` 실데이터
+    - **H-4 실측**: 생성 지연 분위수, `completion_tokens`/`reasoning_tokens`, 타임아웃 건수, `generationModeDist`
+    - 예산(3사 2회 / 호출 30회)은 **전혀 쓰지 않았다**
+  - **T-020.2 잔여**: web 재배선(`buildMockFinalAnswer`·`buildMockDecisionNote` 제거, GET 폴링, **web의 기존 `completed` 전이 제거**)
+- **T-020.1 검증 (2026-07-31)** — 실호출 검증. **1~5 통과, 6·7 부분/미수행.** 3사 실행 **0회**, FinalAnswer 호출 **2회**(상한 3사 2 / 호출 30)
+  - **1. `multi_source` 생성 (`19f77a22`, 기존 Agenda 재사용)**
+
+    | 항목 | 결과 |
+    |---|---|
+    | 한 호출로 FinalAnswer+DecisionNote | ✅ compose 1회 |
+    | §3.1 입력 | ✅ 키가 `question · passed · rejected · mode · excludedProviders` 뿐 — **stances·quotes·rawContent·이전 Context 전부 미포함** |
+    | 저장·전이 | ✅ `status=completed` · `completed_at` 기록 |
+    | 실측 | **32.6초** · completion 1,704 · reasoning 1,349 (**79%**) |
+
+    FinalAnswer는 AI 출처 언급 없이 자연스러운 글로 나왔고, DecisionNote는 그 요약이었다.
+  - **2. 409 · 멱등 전이** — ✅ 재요청 `409 ALREADY_EXISTS`. 이미 `completed`인 행에 `markCompleted` 재호출 시 **오류 없고 `completed_at`도 보존**된다(web 전이가 아직 살아 있어 동시 시도가 실제로 일어난다)
+  - **3. `all_agendas_rejected`** — ✅ **AI 미호출**(`durationMs`·토큰 전부 null), 고정 문구가 FinalAnswer·DecisionNote에 **동일하게** 저장, `prompt_version=null`
+  - **5. 대체 노트 (§5.2, 스텁 주입, LLM 0회)** — ✅ `decisionNote:""` 주입 → **재시도 1회**(`composeNoteOnly`) → 그것도 실패 → 대체 노트 생성 → **`completed`. 갇히지 않는다.** `decisionNoteFallback=true`, `prompt_version="fallback"`, 판단 주체 표기 없음
+  - **4. `single_source_fallback`** — ✅ 모드 판정·금지 표현 검사 통과. **15.2초** · completion 761 · reasoning 332
+    - ⚠️ **입력이 비현실적이다.** `excluded_from_comparison`으로 2건을 뺐지만 **Agenda에는 여전히 3사 stance가 남아 있다.** 실제 `single_source_fallback`은 Agenda 자체가 단일 provider 기반이라 상황이 다르다. 다만 그만큼 **더 강한 시험**이었다 — 입력에 3사 근거가 보이는데도 "합의"·"일치"를 쓰지 않았다
+  - **6. Context (§7) — 단위 검증만. AC9 부분 충족**
+    - `buildContext` **6/6**: 직전은 FinalAnswer 전문 · 직전의 노트는 미사용 · 이전은 DecisionNote · 상한 5 적용 · **생략 건수 정확(7−5=2)** · `context_version=v1`
+    - ❌ **미검증**: `context_snapshot`에 실데이터가 담기는지, "이전 DecisionNote들" 경로, 상한 초과 실사례. Question 3건 이상이 필요해 **T-020.2의 web 데모 흐름에서 자연히 채워진다**
+  - **7. SSE (충돌 0건 경로) — ❌ 미수행.** 새 질문 1회가 필요한데 데이터 복원에 시간을 써 남기지 못했다. 코드 경로는 `runManagerForQuestion`에 배선돼 있으나 **실제 이벤트 도착은 확인 안 됨**
+  - **8. 실측 (H-4)** — 표본 2건이라 분위수는 참고값이다
+
+    | 항목 | 값 |
+    |---|---|
+    | 생성 지연 | 15.2s · 32.6s → **p50 23.9 · 최대 32.6** (n=2, p90 산출 불가) |
+    | `completion_tokens` | 761 · 1,704 |
+    | `reasoning_tokens` | 332 · 1,349 (**비중 44%·79%**) |
+    | 타임아웃 | **0건** (120초 대비 여유 있음) |
+    | `generationModeDist` | multi 1 · single 1 · all_rejected 1 (검증 실행 기준) |
+
+    §2.2의 추정(30~60초) 하단에 들어왔다. **`reasoning` 무설정 유지가 타당해 보인다** — 지연이 예산 안이고 단계 6(92%)보다 추론 비중이 낮다. 다만 n=2라 결론은 아니다
+  - **주입 지점 추가(승인 범위)**: `composeForQuestion`·`composeIfSettled`에 `composer?` 선택 파라미터. **기본값은 레지스트리 조회**이고 프로덕션은 아무것도 넘기지 않으며, 주석에 "테스트 주입용"을 명시했다. 스텁은 하네스에만 두고 **레지스트리에 등록하지 않았다**(하네스는 삭제됨)
+  - **⚠️ 검증 중 내 실수 2건 (둘 다 복구함)**
+    1. 스크래치 Question 스냅샷에 **`selected_content`를 빠뜨렸다.** 테스트 3에서 그것을 null로 만들어 복원이 CHECK(`agendas_passed_content_ck`)에 걸렸다. `selected_source_ref`가 가리키는 섹션 원문에서 §9.2와 같은 방식으로 되살렸다
+    2. 테스트 3 준비 시 `kind='single_source'`인데 `resolution_reason`만 `user_rejected`로 바꿔 **계약 검증에 걸렸다.** `AgendaSchema`의 superRefine이 잘못된 테스트 데이터를 잡아준 것이다
+    - **최종 복원 검증**: Agenda 4건(status/reason/kind/content) · SourceAnswer 3건 · Question 상태·`completed_at` 전부 원본 스냅샷과 **정확히 일치** 확인
+  - **검증**: 루트 typecheck·lint(web만)·build 통과. `--mode-test` 16/16
+- **T-020.2 완료 (2026-07-31)** — web이 서버 FinalAnswer·DecisionNote를 소비. 3사 실행 **2회**(상한 2), Manager 호출은 그에 딸린 분량
+  - **1. 공급원 단일화** — `applyAgendas`가 Agenda·FinalAnswer 공급을 결정하는 **유일한 지점**이다. 우선순위: 서버 `composed` → Manager 전멸 고정 문구 → `serverBacked`인데 아직 없음(**만들지 않고 폴링에 맡긴다**) → `?scenario=` Mock. 세 호출부가 각각 분기하던 구조를 없앴다
+  - **2. 두 경로** — 충돌 0건은 SSE `final_answer.progress`→`done`, 충돌 있는 경로는 PATCH 즉시 반환 + `GET .../final-answer` 폴링(3초 × 40 = 120초). **폴링 시작 조건은 상태가 아니라 내용**이다 — "모든 Agenda 확정 && FinalAnswer 없음 && serverBacked". 상한 도달 시 조용히 멈추지 않고 "생성이 지연되고 있습니다"를 띄운다
+  - **3. 전이 이관** — `applyAgendas`에서 `markQuestionCompleted`를 제거했다(§6.3은 서버 소유). Mock 경로(`resolveAgenda`)와 3사 전멸 경로에는 남겼다 — 서버가 전이시킬 대상이 없는 경우다
+  - **4. 새로고침 복원** — 마운트 시 sourceAnswers·agendas에 더해 **FinalAnswer도 GET**한 뒤 `applyAgendas`를 통과시킨다. 경로 A(SSE)·B(폴링)·C(복원)가 같은 함수로 수렴한다
+  - **GET 계약**: **404는 Question이 없거나 미소유, 200 + `{finalAnswer:null, decisionNote:null}`은 아직 미생성.** 미생성을 404로 주면 폴링이 그것을 오류로 다룬다
+  - **브라우저 회귀 (실서버)**
+
+    | 시나리오 | 결과 |
+    |---|---|
+    | 새로고침 복원 (`19f77a22`, 3사 0회) | ✅ 서버 FinalAnswer 본문 + 우측 노트 복원. T-019.4 때 "충돌을 모두 해결하면…"이던 자리다 |
+    | SSE·충돌 0건 (`699999fd`, `MANAGER_CONFLICT_TYPES` 주입) | ✅ "판단할 충돌 없음" 배지 + 본문. `completed`·`multi_source` |
+    | PATCH+폴링 (`970d48ef`, 3사 0회 — 기존 미해결 질문 재사용) | ✅ "충돌 해결 완료" + "최종 답변 생성 중…" → 본문 도착, 스피너 소멸, 목록의 미완료 점 소멸 |
+    | 폴링 경로 새로고침 | ✅ 동일 복원 |
+  - **AC9 충족** — `699999fd`의 `context_snapshot`에 직전 확정 FinalAnswer **전문**이 담겼고, 생성된 답변이 실제로 이전 결정(Supabase)을 이어받았다. T-020.1에서 단위 검증만 했던 부분이 실데이터로 채워졌다
+  - **§9.3 표시 (Mock, 3사 0회)** — `single-source-fallback`: "합의"·"일치" 없음 · "하나의 답변만을 기반으로" 고지 · 출처 Claude 단독 / `all-rejected`: 본문 없이 고정 문구만, 노트도 동일 / `recheck-path`: 재검색 결과 박스 · "원문 인용 없음" 표시 · "선택한 입장 채택"
+  - **⚠️ 내 실수 1건** — `?scenario=happy-path`를 Mock인 줄 알고 골랐는데 **happy-path가 곧 서버 경로**(`serverBacked = id === "happy-path"`)여서 3사를 1회 더 썼다. 그 질문(`1f399b86`)은 `review_required`로 남겨뒀다
+  - **알려진 표시 문제 2건 (T-020.2 범위 밖, 기존 동작)**
+    1. 단일 소스인데 섹션 헤더가 **"공통 권장 사항"**으로 나온다. §9.3 금지어는 아니지만 어색하다
+    2. FinalAnswer 본문의 `**강조**` 마크다운이 **원문 그대로** 보인다(2번째 질문). AnswerCard가 평문 렌더다
+  - **검증**: 루트 typecheck·lint(web만)·build 통과. 커밋 `92c2e36`
+- **T-020.3 완료 (2026-07-31)** — T-020.2가 남긴 표시 정확성 2건. 3사 실행 **1회**
+  - **1. FinalAnswer 평문 강제 (프롬프트)** — `final/v1.md`·`finalNote/v1.md`에 마크다운 금지를 넣었다. **렌더러를 넣지 않은 이유**: `selectedContent`에는 사용자가 직접 쓴 `user_composed`가 섞여 화면에 나가므로 마크다운 렌더는 sanitize를 요구한다. 평문이 안전하고 Export에도 지장이 없다
+    - `finalNote/v1.md`는 `finalAnswer`를 **그대로 되돌려 담는** 프롬프트라, 금지가 `decisionNote`에만 걸린다고 명시했다. 안 그러면 확정된 본문을 모델이 고쳐 쓸 여지가 생긴다
+    - 실측(`사내 문서 검색…`, 충돌 0건): `**`·`#`·`-`·`1.` **전부 0건**(FinalAnswer 1,278자·DecisionNote 441자, 정규식 검사)
+  - **2. 단일 소스 헤더 정정** — `generationMode === "single_source_fallback"`이면 **"자동 통과 항목"**, 아니면 기존 "공통 권장 사항". 하나만 답한 것을 "공통"이라 부르면 **하지 않은 일을 한 것처럼 표시**하는 T-019.6 계열의 문제다
+    - **상태가 아니라 `generationMode`로 판단한다.** 상태로 분기하면 "3사가 답했는데 이 쟁점만 한 곳이 다뤘다"와 "애초에 한 곳만 답했다"를 구분하지 못한다
+  - **회귀 (4종, 분기 양쪽 모두)**
+
+    | 경로 | 헤더 |
+    |---|---|
+    | `single-source-fallback` (Mock) | ✅ "자동 통과 항목 (2)" — 공통·합의·일치 없음 |
+    | `multi_source` (서버 실질문) | ✅ "공통 권장 사항 (8)" 유지 |
+    | `recheck-path` (Mock, multi) | ✅ "공통 권장 사항 (1)" + "결정 사항 (2)" |
+    | `all-rejected` (Mock) | ✅ 고정 문구만 — 헤더 이전에 early return |
+  - **3. 데모 데이터 정리** — Chat 2건 삭제(FK CASCADE로 하위 정리): `872be2e2`(검증 부산물 `1f399b86` 보유) · `a986b4e7`. 둘 다 `review_required`이고 FinalAnswer가 없어 잃을 확정 결과가 없었다
+    - ⚠️ **정리 범위 밖으로 남은 것 9건**: `processing` 8 · `review_required` 1 (2026-07-23~30 부산물). 지시 대상이 아니라 건드리지 않았다
+  - ⚠️ **`v1`을 제자리 수정했다** — 지시대로 버전을 올리지 않았으므로, 이미 저장된 `prompt_version="v1"` 행들은 **금지 지시가 없던 시점의 출력**이다. 프롬프트 버전으로는 둘을 구분할 수 없다
+  - **검증**: 루트 typecheck·lint(web만)·build 통과
+- **T-021 구현·검증 완료 (2026-07-31, 커밋 대기)** — SPEC-EXPORT-001. Story 4-3(노트 Zip)·4-4(전체 대화 MD). **3사 0회 · Manager 0회 · 서버 변경 0건**
+  - **구성** — `exportMarkdown.ts`(순수: MD·파일명) / `buildZip.ts`(JSZip) / `downloadBlob.ts`(DOM) 3분할. 검증 스크립트가 MD 함수만 불러도 jszip이 딸려오지 않도록 **파일로 나눴다**(동적 import보다 명확). 검증 코드는 `apps/web/scripts/`에 둬 빌드 그래프에서 뺐다
+  - **`buildFullMarkdown(chat, notes, exportedAt)`** — DecisionNote는 `question_id`만 갖고 Chat에 매달려 있지 않아(`domain-policy` §6) **별도 배열로 받아 잇는다.** `chat`만 받으면 전체 MD에서 결정 기록이 통째로 빠진다
+  - **`safeFileName`이 `usedNames`를 스스로 변이시킨다** — 호출자에게 `add`를 맡기면 한 번 빠뜨렸을 때 **Zip에서 앞 파일이 조용히 덮어써진다.** 순수성보다 사고 방지를 택했고 JSDoc에 명시했다
+  - **Chat 제목도 정규화한다** — 사용자 입력이라 `/`·`:`가 들어가면 다운로드 파일명이 깨진다(§7). 정규화(2~4단계)를 내부 헬퍼로 공유하고 중복 번호(5단계)는 Zip 엔트리에만 건다. 빈 제목 대체어는 `chat`
+  - **비활성은 데이터 유무로만 판단한다**(§4.2) — Zip은 노트 0건, 전체 MD는 Question 0건. `chat.status`를 보지 않는다
+  - **E-1 순수 함수 35/35 PASS** (`npx tsx apps/web/scripts/exportCheck.ts`, 브라우저 없이)
+    - ⚠️ **첫 실행에서 중복 테스트 3건이 FAIL했는데 코드가 아니라 테스트 입력이 틀렸다.** 세 질문의 앞 30자가 실제로는 달라 **중복 상황 자체가 만들어지지 않았다** — `-3`과 Zip 엔트리 중복이 검증 안 된 채 통과할 뻔했다. 입력을 앞 30자가 같은 것으로 고쳐 `-2`·`-3`을 실제로 확인했다
+  - **E-2 브라우저 (3사 0회, 기존 Chat만 사용)**
+
+    | 확인 | 결과 |
+    |---|---|
+    | Zip 다운로드 → **실제 압축 해제** | ✅ `01_…`·`02_…` 2건, §2.2 형식·본문 일치 |
+    | 전체 MD | ✅ 질문 2건이 화면과 같은 순서, 최종 답변+결정 기록 |
+    | 미완료 Chat(§3.3) | ✅ 건너뛰지 않고 "아직 진행 중입니다", 빈 헤더 없음 |
+    | 비활성 분기(AC5) | ✅ 같은 Chat에서 **Zip 비활성 · 전체 MD 활성**으로 갈렸다 |
+    | `?scenario=` 회귀 | ✅ Mock 흐름·노트·헤더 정상, Mock 데이터로도 Zip 생성 |
+  - ⚠️ **macOS 기본 `unzip`(Info-ZIP 6.00)에서 한글 엔트리명이 깨진다.** Zip 자체는 정상이다 — **UTF-8 플래그(bit 11)가 켜져 있고** Finder 엔진(`ditto`)·Python `zipfile`은 올바로 읽는다. 구식 CLI가 플래그를 무시하는 알려진 문제이며 생성 측에서 고칠 여지가 없다
+  - **검증**: 루트 typecheck·lint·build 통과
+- 이후: T-021 커밋 · 폐기 인용 차이 축적 후 §11.2 개정 판단 · G 통제 재측정(effort:low) · AC2(단계 3b). BYOK 키 입력 UI는 설정 Spec 후보(SPEC-SETTINGS-001)
 - 상시 미결정 4건 중 "계정 삭제"는 DB-001에서 RESTRICT 유지로 최소 확정. 나머지 3건(전 Provider 실패·좌초 복구·단일 SourceAnswer Agenda)은 AI Spec 착수 시 확정

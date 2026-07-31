@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { NO_VALUE } from "@decision-log/shared";
 import type {
   Agenda,
   AgendaResolutionReason,
@@ -12,6 +13,7 @@ import type {
 } from "./types";
 import { hasIncompleteQuestion, isSourceAnswerSettled } from "./types";
 import { validateWorkspaceEntities } from "./mockValidation";
+import type { DecisionNote as ServerDecisionNote } from "@decision-log/shared";
 import { getActiveScenario } from "./scenarios";
 import {
   loadChatsWithQuestions,
@@ -20,13 +22,18 @@ import {
   markQuestionCompleted,
   ApiStorageError,
   type StoredChat,
+  loadAgendas,
+  loadFinalAnswer,
   loadSourceAnswers,
+  patchAgenda,
   startSourceAnswers,
+  type AgendaPatchBody,
 } from "../../lib/apiStorageAdapter";
 import type { SourceAnswerEvent } from "./scenarios";
 import type { MockAgendaTemplate } from "./mockData";
 import {
   allProvidersFailedContent,
+  managerFailedContent,
   allRejectedFinalAnswerContent,
   mockAgendaTemplates,
   mockFinalAnswerContent,
@@ -35,6 +42,10 @@ import {
   mockSummaryByProvider,
   providerMeta,
 } from "./mockData";
+
+/** SPEC-AI-003 §8.1 — 폴링 간격·상한. 생성이 15~33초라 3초×40회(120초)면 충분하다. */
+const FINAL_ANSWER_POLL_INTERVAL_MS = 3000;
+const FINAL_ANSWER_POLL_MAX = 40;
 
 export const QUESTION_MAX_LENGTH = 1000;
 
@@ -97,7 +108,7 @@ function buildMockAgendas(
       .map((answer) => [answer.provider, answer]),
   );
 
-  return templates.map((template) => {
+  return templates.map((template, index) => {
     const stances = template.stances
       .filter((stance) => succeededByProvider.has(stance.provider))
       .map((stance) => {
@@ -105,6 +116,8 @@ function buildMockAgendas(
         return {
           provider: stance.provider,
           text: stance.text,
+          // 원문에서 잘라낸 부분 문자열(§11). 템플릿이 실제 섹션 content 기준으로 채운다.
+          quotes: stance.quotes,
           sourceRefs: stance.sectionIds
             .map((sectionId) => resolveSectionId(answer, sectionId))
             .filter((sectionId): sectionId is string => sectionId !== null)
@@ -115,18 +128,27 @@ function buildMockAgendas(
         };
       });
 
+    // 자동 통과·사용자 채택 시 selectedSourceRef로 쓸 실제 참조(§9.2). 첫 stance의 첫 참조.
+    const firstSourceRef = stances[0]?.sourceRefs[0] ?? null;
+
     const now = nowIso();
     const draft: Agenda = {
       id: crypto.randomUUID(),
       questionId,
       status: "draft",
       resolutionReason: null,
+      kind: template.kind,
       title: template.title,
       summary: template.summary,
       selectedContent: null,
+      selectedSourceRef: null,
       userNote: null,
-      // 계약상 자유형(unknown[]). Mock은 stance가 참조한 Section 참조를 담는다.
+      // SourceRef[]. Mock은 stance가 참조한 Section 참조를 담는다.
       sourceRefs: stances.flatMap((stance) => stance.sourceRefs),
+      disagreementType: null,
+      revisedType: null,
+      confidence: null,
+      displayOrder: index,
       recheckRequest: null,
       recheckResult: null,
       recheckRequestedAt: null,
@@ -144,6 +166,19 @@ function buildMockAgendas(
         status: "passed" as const,
         resolutionReason: "auto_consensus" as const,
         selectedContent: template.selectedContent,
+        selectedSourceRef: firstSourceRef,
+        resolvedAt: now,
+      };
+    }
+    if (template.kind === "single_source") {
+      // draft → passed(auto_single_source): 단일 소스 Agenda 자동 통과(§3.4·§9.2).
+      // "합의"가 아니라 단일 답변 근거임을 라벨·selectedSourceRef로 드러낸다.
+      return {
+        ...draft,
+        status: "passed" as const,
+        resolutionReason: "auto_single_source" as const,
+        selectedContent: stances[0]?.text ?? template.selectedContent,
+        selectedSourceRef: firstSourceRef,
         resolvedAt: now,
       };
     }
@@ -201,6 +236,21 @@ function buildMockFinalAnswer(
  * 이어 content에 저장하고 bullets 배열은 표시용 파생 필드로만 뷰에 유지한다.
  * seq·sources는 결정 2-1에 따라 저장하지 않는다.
  */
+/**
+ * 자동 통과인가 — `resolutionReason` 기준(§12.5).
+ *
+ * ⚠️ **`auto_single_source`를 빼먹으면 안 된다.** 그러면 단일 소스 자동 통과가
+ * "사용자 판단" 쪽으로 떨어져 노트에 "— 내 결정 반영"이 붙는다. 사용자가 판단한 적
+ * 없는 항목에 그렇게 적으면 **노트가 사실과 달라진다.** §12.5가 표현 정교화가 아니라
+ * 정확성 문제로 다루라고 못박은 지점이다.
+ */
+function isAutoPassed(agenda: Agenda): boolean {
+  return (
+    agenda.resolutionReason === "auto_consensus" ||
+    agenda.resolutionReason === "auto_single_source"
+  );
+}
+
 function buildMockDecisionNote(
   chatId: string,
   chatTitle: string,
@@ -210,22 +260,29 @@ function buildMockDecisionNote(
 ): DecisionNote {
   // Agenda 제목으로 활성 시나리오 템플릿의 개조식 noteBullet을 찾는다
   const templates = getActiveScenario().agendaTemplates;
-  const noteBulletOf = (agenda: Agenda): string =>
-    templates.find((template) => template.title === agenda.title)?.noteBullet ??
-    agenda.title;
+  const noteBulletOf = (agenda: Agenda): string => {
+    // §12.5 — 자동 통과 항목에는 사용자 판단 문구를 쓰지 않는다.
+    // Mock 템플릿의 noteBullet 은 "…— 내 결정 반영"처럼 **사용자가 판단했을 때**의
+    // 문구다. 같은 쟁점이 단일 소스로 자동 통과하는 시나리오에서 그대로 쓰면
+    // 사용자가 판단한 적 없는 항목에 "내 결정 반영"이 붙어 노트가 사실과 달라진다.
+    // (서버 경로는 제목이 템플릿과 매칭되지 않아 agenda.title 로 떨어지므로 이미 중립이다.)
+    if (isAutoPassed(agenda)) return agenda.title;
+    return (
+      templates.find((template) => template.title === agenda.title)
+        ?.noteBullet ?? agenda.title
+    );
+  };
 
   const bullets =
     finalAnswer.generationMode === "all_agendas_rejected"
       ? [finalAnswer.content]
       : [
           ...agendas
-            .filter((agenda) => agenda.resolutionReason === "auto_consensus")
+            .filter((agenda) => isAutoPassed(agenda))
             .map((agenda) => noteBulletOf(agenda)),
           ...agendas
             .filter(
-              (agenda) =>
-                agenda.status === "passed" &&
-                agenda.resolutionReason !== "auto_consensus",
+              (agenda) => agenda.status === "passed" && !isAutoPassed(agenda),
             )
             .map((agenda) => noteBulletOf(agenda)),
         ].filter((bullet) => bullet.length > 0);
@@ -299,6 +356,8 @@ function buildContextNextQuestionState(): ChatWorkspaceState {
             status: "passed" as const,
             resolutionReason: "user_accepted" as const,
             selectedContent: agenda.stances[0]?.text ?? null,
+            // 사용자 채택 → 채택한 stance의 실제 참조(§9.2)
+            selectedSourceRef: agenda.stances[0]?.sourceRefs[0] ?? null,
             resolvedAt: nowIso(),
             updatedAt: nowIso(),
           }
@@ -409,6 +468,30 @@ export function useChatWorkspace() {
    * 실제 SourceAnswer 배열은 succeeded일 때 structuredContent가 있어야 계약을 만족하므로,
    * 스트리밍 중에는 이 파생 상태만 갱신하고 배열은 done 시점에 한 번에 반영한다.
    */
+  /**
+   * Manager 진행 표시(§12.2). 화면 전용이며 저장하지 않는다.
+   * 이것이 없으면 `source_answer.done` 이후 쟁점이 나올 때까지 화면이 비어 있다.
+   */
+  const [managerProgress, setManagerProgress] = useState<
+    Record<
+      string,
+      {
+        stage: "classify" | "leftover" | "finalize" | "judge";
+        done: number | null;
+        total: number | null;
+      }
+    >
+  >({});
+  /** 폴링 중인 questionId — "최종 답변 생성 중…" 표시용. */
+  const [composingQuestionIds, setComposingQuestionIds] = useState<Set<string>>(
+    new Set(),
+  );
+  /** 폴링 상한을 넘긴 questionId — 조용히 멈추지 않고 지연을 알린다. */
+  const [delayedQuestionIds, setDelayedQuestionIds] = useState<Set<string>>(
+    new Set(),
+  );
+  /** 중복 폴링 방지. 렌더와 무관하므로 ref 로 둔다. */
+  const pollingRef = useRef<Set<string>>(new Set());
   const [liveStatuses, setLiveStatuses] = useState<
     Record<string, Partial<Record<Provider, SourceAnswerStatus>>>
   >({});
@@ -425,6 +508,15 @@ export function useChatWorkspace() {
         // SourceAnswer 스냅샷도 함께 복원한다(새로고침·재진입, SPEC-AI-001 4장).
         // 조회 실패한 Question은 빈 배열로 두고 나머지 복원을 막지 않는다.
         const answersByQuestion = new Map<string, SourceAnswer[]>();
+        // §12.3 — Agenda 스냅샷도 함께 복원한다. 이것이 없으면 새로고침 후 3열 비교와
+        // 충돌 목록이 사라지고, 사용자는 판단할 대상을 잃는다.
+        const agendasByQuestion = new Map<string, Agenda[]>();
+        // SPEC-AI-003 §9 — **FinalAnswer·DecisionNote 도 복원한다.**
+        // T-019.5에서 Agenda 복원 배선이 빠져 새로고침 시 갇혔던 자리와 같은 종류다.
+        const finalByQuestion = new Map<
+          string,
+          { finalAnswer: FinalAnswer; decisionNote: ServerDecisionNote } | null
+        >();
         await Promise.all(
           stored.flatMap(({ chat, questions }) =>
             questions.map(async (question) => {
@@ -436,6 +528,34 @@ export function useChatWorkspace() {
               } catch (error) {
                 console.error(
                   "[apiStorage] SourceAnswer 복원 실패:",
+                  error instanceof Error ? error.message : error,
+                );
+              }
+              try {
+                agendasByQuestion.set(
+                  question.id,
+                  await loadAgendas(chat.id, question.id),
+                );
+              } catch (error) {
+                console.error(
+                  "[apiStorage] Agenda 복원 실패:",
+                  error instanceof Error ? error.message : error,
+                );
+              }
+              try {
+                const bundle = await loadFinalAnswer(chat.id, question.id);
+                finalByQuestion.set(
+                  question.id,
+                  bundle.finalAnswer && bundle.decisionNote
+                    ? {
+                        finalAnswer: bundle.finalAnswer,
+                        decisionNote: bundle.decisionNote,
+                      }
+                    : null,
+                );
+              } catch (error) {
+                console.error(
+                  "[apiStorage] FinalAnswer 복원 실패:",
                   error instanceof Error ? error.message : error,
                 );
               }
@@ -453,10 +573,56 @@ export function useChatWorkspace() {
                 ...question,
                 sourceAnswers:
                   answersByQuestion.get(question.id) ?? question.sourceAnswers,
+                agendas: agendasByQuestion.get(question.id) ?? question.agendas,
               })),
             };
           }),
         }));
+
+        /**
+         * 경로 C — 새로고침 복원도 **확정 스냅샷**이다(§12.1).
+         *
+         * ⚠️ 이 호출이 없으면 `agenda.done`(경로 A)에서만 마감이 판단되고, 새로고침하는
+         * 순간 다시 갇힌다. SSE로 왔든 GET으로 왔든 **확정된 0건은 같은 처리로 수렴**해야
+         * 한다. 대상을 0건으로 좁히는 이유는 비어 있지 않은 복원이 이미 정상 동작하고
+         * 있어(T-019.4 F-6), 다시 태우면 DecisionNote가 중복 생성될 수 있기 때문이다.
+         */
+        for (const { chat, questions } of stored) {
+          for (const question of questions) {
+            const restored = agendasByQuestion.get(question.id) ?? [];
+            const managerRan = (answersByQuestion.get(question.id) ?? []).some(
+              (answer) => answer.status === "succeeded",
+            );
+            // ⚠️ `status !== "completed"` 로 막으면 안 된다 — Manager 완전 실패는 이미
+            // completed 로 저장돼 있어 그 가드에 걸리고, 새로고침 시 고정 문구가 사라져
+            // **아무 설명도 없는 빈 카드**가 된다. 판단 기준은 상태가 아니라 "복원할
+            // FinalAnswer 가 없는가"다.
+            if (restored.length === 0 && managerRan) {
+              applyAgendas(chat.id, question.id, [], { final: true });
+              continue;
+            }
+
+            /**
+             * SPEC-AI-003 §8.1 — **새로고침 후에도 같은 조건으로 수렴한다.**
+             * 조건은 상태가 아니라 내용이다: 모든 Agenda 확정 && FinalAnswer 없음.
+             * 있으면 복원해 붙이고, 없으면 폴링을 다시 시작한다(새로고침으로 끊겼으므로).
+             */
+            const composed = finalByQuestion.get(question.id) ?? null;
+            const settled =
+              restored.length > 0 &&
+              restored.every(
+                (a) => a.status === "passed" || a.status === "rejected",
+              );
+            if (composed) {
+              applyAgendas(chat.id, question.id, restored, {
+                final: true,
+                composed,
+              });
+            } else if (settled && managerRan) {
+              startFinalAnswerPolling(chat.id, question.id);
+            }
+          }
+        }
       })
       .catch((error) => {
         console.error(
@@ -467,6 +633,9 @@ export function useChatWorkspace() {
     return () => {
       cancelled = true;
     };
+    // 마운트 1회 복원이다. applyAgendas는 매 렌더 새로 만들어지므로 의존성에 넣으면
+    // 복원이 반복 실행된다 — 의도적으로 제외한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverBacked]);
 
   const activeChat =
@@ -531,66 +700,121 @@ export function useChatWorkspace() {
     provider: Provider,
     event: SourceAnswerEvent,
   ) {
-    updateQuestion(chatId, questionId, (question) => {
-      const sourceAnswers = question.sourceAnswers.map((answer) => {
-        if (answer.provider !== provider) {
-          return answer;
-        }
-        const isSucceeded = event.status === "succeeded";
-        const isFailed = event.status === "failed";
-        const isProcessing = event.status === "processing";
-        const excludedFromComparison =
-          event.excludedFromComparison ?? answer.excludedFromComparison;
-        const timestamp = nowIso();
+    // updateQuestion 대신 setState를 직접 쓴다 — settle 시 충돌 0건이면 같은 갱신에서
+    // FinalAnswer·DecisionNote(별도 state)까지 만들어야 하기 때문이다.
+    setState((prev) => {
+      let createdNote: DecisionNote | null = null;
+      const chats = prev.chats.map((chat) => {
+        if (chat.id !== chatId) return chat;
         return {
-          ...answer,
-          status: event.status,
-          retryCount: event.retryCount ?? answer.retryCount,
-          excludedFromComparison,
-          // 6장: failed면 errorCode 필수 / succeeded면 성공이므로 코드 제거
-          errorCode: isSucceeded
-            ? null
-            : isFailed
-              ? (event.errorCode ?? answer.errorCode ?? "PROVIDER_TIMEOUT")
-              : answer.errorCode,
-          // 6장: succeeded면 structuredContent 필수 (Mock Section을 채운다)
-          structuredContent: isSucceeded
-            ? {
-                summary: mockSummaryByProvider[provider],
-                sections: [...mockSectionsByProvider[provider]],
+          ...chat,
+          questions: chat.questions.map((question) => {
+            if (question.id !== questionId) return question;
+            const sourceAnswers = question.sourceAnswers.map((answer) => {
+              if (answer.provider !== provider) {
+                return answer;
               }
-            : answer.structuredContent,
-          startedAt:
-            isProcessing && answer.startedAt === null
-              ? timestamp
-              : answer.startedAt,
-          completedAt:
-            isSucceeded || isFailed ? timestamp : answer.completedAt,
-          // 6장: excludedFromComparison=true면 excludedAt 필수
-          excludedAt:
-            excludedFromComparison && answer.excludedAt === null
-              ? timestamp
-              : answer.excludedAt,
-          updatedAt: timestamp,
-        };
-      });
+              const isSucceeded = event.status === "succeeded";
+              const isFailed = event.status === "failed";
+              const isProcessing = event.status === "processing";
+              const excludedFromComparison =
+                event.excludedFromComparison ?? answer.excludedFromComparison;
+              const timestamp = nowIso();
+              return {
+                ...answer,
+                status: event.status,
+                retryCount: event.retryCount ?? answer.retryCount,
+                excludedFromComparison,
+                // 6장: failed면 errorCode 필수 / succeeded면 성공이므로 코드 제거
+                errorCode: isSucceeded
+                  ? null
+                  : isFailed
+                    ? (event.errorCode ?? answer.errorCode ?? "PROVIDER_TIMEOUT")
+                    : answer.errorCode,
+                // 6장: succeeded면 structuredContent 필수 (Mock Section을 채운다)
+                structuredContent: isSucceeded
+                  ? {
+                      summary: mockSummaryByProvider[provider],
+                      sections: [...mockSectionsByProvider[provider]],
+                    }
+                  : answer.structuredContent,
+                startedAt:
+                  isProcessing && answer.startedAt === null
+                    ? timestamp
+                    : answer.startedAt,
+                completedAt:
+                  isSucceeded || isFailed ? timestamp : answer.completedAt,
+                // 6장: excludedFromComparison=true면 excludedAt 필수
+                excludedAt:
+                  excludedFromComparison && answer.excludedAt === null
+                    ? timestamp
+                    : answer.excludedAt,
+                updatedAt: timestamp,
+              };
+            });
 
-      // 세 Provider가 모두 최종 상태면 Mock Manager 결과(Agenda)를 만들고
-      // Question은 검토 단계로 전이한다 (0.4 상태 전이)
-      const allSettled = sourceAnswers.every(isSourceAnswerSettled);
-      const startsReview = allSettled && question.status === "processing";
-      return {
-        ...question,
-        sourceAnswers,
-        agendas: startsReview
-          ? buildMockAgendas(
+            // 세 Provider가 모두 최종 상태가 되기 전에는 SourceAnswer만 갱신한다.
+            const allSettled = sourceAnswers.every(isSourceAnswerSettled);
+            const startsReview =
+              allSettled && question.status === "processing";
+            if (!startsReview) {
+              return { ...question, sourceAnswers, updatedAt: nowIso() };
+            }
+
+            // 모두 최종 → Mock Manager 결과(Agenda)를 만든다 (0.4 상태 전이).
+            const agendas = buildMockAgendas(
               sourceAnswers,
               getActiveScenario().agendaTemplates,
               questionId,
-            )
-          : question.agendas,
-        status: startsReview ? "review_required" : question.status,
-        updatedAt: nowIso(),
+            );
+            // 충돌이 하나도 없이 전부 자동 통과(단일 소스 fallback 등)면 사용자 판단
+            // 트리거가 없으므로 여기서 바로 FinalAnswer·DecisionNote를 만들고 완료한다.
+            const allAgendasAutoFinal =
+              agendas.length > 0 &&
+              agendas.every(
+                (agenda) =>
+                  agenda.status === "passed" || agenda.status === "rejected",
+              );
+            if (allAgendasAutoFinal) {
+              const settledQuestion = { ...question, sourceAnswers, agendas };
+              const finalAnswer = buildMockFinalAnswer(
+                agendas,
+                sourceAnswers,
+                questionId,
+              );
+              createdNote = buildMockDecisionNote(
+                chat.id,
+                chat.title,
+                settledQuestion,
+                agendas,
+                finalAnswer,
+              );
+              const now = nowIso();
+              return {
+                ...settledQuestion,
+                finalAnswer,
+                status: "completed" as const,
+                completedAt: now,
+                updatedAt: now,
+              };
+            }
+            // 충돌이 있으면 검토 단계로 전이해 사용자 판단을 기다린다.
+            return {
+              ...question,
+              sourceAnswers,
+              agendas,
+              status: "review_required" as const,
+              updatedAt: nowIso(),
+            };
+          }),
+        };
+      });
+      return {
+        ...prev,
+        chats,
+        decisionNotes: createdNote
+          ? [...prev.decisionNotes, createdNote]
+          : prev.decisionNotes,
       };
     });
   }
@@ -608,7 +832,10 @@ export function useChatWorkspace() {
     chatId: string,
     questionId: string,
     agendaId: string,
-    resolutionReason: Exclude<AgendaResolutionReason, null | "auto_consensus">,
+    resolutionReason: Exclude<
+      AgendaResolutionReason,
+      null | "auto_consensus" | "auto_single_source"
+    >,
     selectedContent: string | null,
   ) {
     const isRejected =
@@ -655,20 +882,35 @@ export function useChatWorkspace() {
               return question;
             }
             const resolvedAt = nowIso();
-            const agendas = question.agendas.map((agenda) =>
-              agenda.id === agendaId
-                ? {
-                    ...agenda,
-                    status: isRejected
-                      ? ("rejected" as const)
-                      : ("passed" as const),
-                    resolutionReason,
-                    selectedContent: isRejected ? null : selectedContent,
-                    resolvedAt,
-                    updatedAt: resolvedAt,
-                  }
-                : agenda,
-            );
+            const isAccepted =
+              resolutionReason === "user_accepted" ||
+              resolutionReason === "user_accepted_after_recheck";
+            const agendas = question.agendas.map((agenda) => {
+              if (agenda.id !== agendaId) {
+                return agenda;
+              }
+              // §9.2: 채택이면 채택 stance의 실제 참조, 직접 입력·제외면 NO_VALUE.
+              // 재검토 결과 채택(user_accepted_after_recheck)은 stance와 매칭되지 않으므로
+              // 해당 Agenda의 첫 stance 참조로 근거를 유지한다(최소 전환, 인용 UI는 T-019.4).
+              const selectedSourceRef = isAccepted
+                ? (agenda.stances.find(
+                    (stance) => stance.text === selectedContent,
+                  )?.sourceRefs[0] ??
+                  agenda.stances[0]?.sourceRefs[0] ??
+                  null)
+                : NO_VALUE;
+              return {
+                ...agenda,
+                status: isRejected
+                  ? ("rejected" as const)
+                  : ("passed" as const),
+                resolutionReason,
+                selectedContent: isRejected ? null : selectedContent,
+                selectedSourceRef,
+                resolvedAt,
+                updatedAt: resolvedAt,
+              };
+            });
 
             // 모든 Agenda가 passed/rejected면 FinalAnswer 자동 생성 (Step 7, 1회만)
             const allFinal =
@@ -752,9 +994,6 @@ export function useChatWorkspace() {
           ...chat,
           questions: chat.questions.map((question) => {
             if (question.id !== questionId) return question;
-            const startsReview =
-              allSettled && !allFailed && question.status === "processing";
-
             // 3사 전멸(6.2): 고정 문구를 FinalAnswer로 만들고 같은 문구를 노트로도 저장한다.
             // 완료 조건은 FinalAnswer + DecisionNote 둘 다이므로 노트 없이 completed로 가지 않는다.
             if (allFailed && question.finalAnswer === null) {
@@ -789,17 +1028,13 @@ export function useChatWorkspace() {
               };
             }
 
+            // ⚠️ 서버 경로는 여기서 Agenda를 만들지 않는다(§12.5).
+            // Manager가 SSE(agenda.*)로 보내주며, 그것을 applyAgendas 가 단독으로 받는다.
+            // 여기서 Mock을 만들면 잠시 뒤 서버 값으로 덮여 화면이 두 번 바뀐다.
+            // 상태 전이도 Agenda가 확정된 뒤 applyAgendas 가 판단한다.
             return {
               ...question,
               sourceAnswers,
-              agendas: startsReview
-                ? buildMockAgendas(
-                    sourceAnswers,
-                    getActiveScenario().agendaTemplates,
-                    questionId,
-                  )
-                : question.agendas,
-              status: startsReview ? "review_required" : question.status,
               updatedAt: nowIso(),
             };
           }),
@@ -814,6 +1049,334 @@ export function useChatWorkspace() {
           : prev.decisionNotes,
       };
     });
+  }
+
+  /**
+   * 서버 경로의 사용자 판단(§12.4). PATCH 결과 Agenda를 그대로 반영한다.
+   *
+   * 낙관적 갱신을 하지 않는 이유: `selectedContent`·`selectedSourceRef`는 서버가 §9.2
+   * 규칙표대로 채우고 `accept`의 내용은 **서버가 원문에서 되읽는다.** 화면에서 미리
+   * 만들어 두면 서버 값과 어긋난 상태가 남고, 그것이 그대로 DecisionNote에 실린다.
+   */
+  async function resolveAgendaOnServer(
+    chatId: string,
+    questionId: string,
+    agendaId: string,
+    body: AgendaPatchBody,
+  ): Promise<void> {
+    const updated = await patchAgenda(chatId, questionId, agendaId, body);
+    applyJudgedAgenda(chatId, questionId, updated);
+  }
+
+  /**
+   * 서버 경로의 재검토 요청·재시도(§10).
+   *
+   * 실패해도 상태를 되돌리지 않는다 — 서버가 `recheck_requested`를 유지하므로(§10.6)
+   * 화면에서 임의로 `conflicted`로 돌리면 서버와 어긋나고 [다시 시도] 버튼이 사라진다.
+   * 실패 후 현재 상태는 GET으로 화해한다.
+   */
+  async function requestRecheckOnServer(
+    chatId: string,
+    questionId: string,
+    agendaId: string,
+    recheckRequest: string,
+    retry: boolean,
+  ): Promise<void> {
+    const trimmed = recheckRequest.trim();
+    try {
+      const updated = await patchAgenda(chatId, questionId, agendaId, {
+        action: retry ? "retry_recheck" : "recheck",
+        recheckRequest: trimmed.length > 0 ? trimmed : null,
+      });
+      applyJudgedAgenda(chatId, questionId, updated);
+    } catch (error) {
+      console.error(
+        "[agendas] 재검토 실패:",
+        error instanceof ApiStorageError
+          ? `${error.code}: ${error.message}`
+          : error,
+      );
+      // 서버가 recheck_requested 를 유지하고 있다. 그 상태를 그대로 가져와 [다시 시도]를 남긴다.
+      try {
+        applyAgendas(chatId, questionId, await loadAgendas(chatId, questionId));
+      } catch {
+        /* 화해까지 실패하면 다음 갱신에 맡긴다 */
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * SPEC-AI-003 §8.1 — FinalAnswer 폴링.
+   *
+   * ⚠️ **시작 조건을 상태로 잡지 않는다.** `question.status === "review_required"` 같은
+   * 가드는 T-019.5에서 새 경로를 막았던 그 함정이다. 조건은 내용이다 —
+   * **"모든 Agenda 확정 && FinalAnswer 없음 && serverBacked"**. 그래야 SSE 경로든
+   * PATCH 후든 **새로고침 후든** 같은 조건으로 수렴한다.
+   *
+   * 생성이 15~33초다(T-020.1 실측). 3초 × 40회(120초)면 충분하고, 상한을 넘기면
+   * **조용히 멈추지 않고** 지연 사실을 표시한다.
+   */
+  function startFinalAnswerPolling(chatId: string, questionId: string): void {
+    if (!serverBacked) return;
+    if (pollingRef.current.has(questionId)) return; // 중복 시작 방지
+    pollingRef.current.add(questionId);
+    setComposingQuestionIds((prev) => new Set(prev).add(questionId));
+
+    let attempts = 0;
+    const tick = async (): Promise<void> => {
+      attempts += 1;
+      try {
+        const bundle = await loadFinalAnswer(chatId, questionId);
+        if (bundle.finalAnswer && bundle.decisionNote) {
+          pollingRef.current.delete(questionId);
+          setComposingQuestionIds((prev) => {
+            const next = new Set(prev);
+            next.delete(questionId);
+            return next;
+          });
+          // 공급원 단일 지점으로 되돌린다 — 여기서 화면을 직접 만들지 않는다.
+          applyAgendas(chatId, questionId, (prev) => prev, {
+            final: true,
+            composed: {
+              finalAnswer: bundle.finalAnswer,
+              decisionNote: bundle.decisionNote,
+            },
+          });
+          return;
+        }
+      } catch (error) {
+        console.error(
+          "[finalAnswers] 폴링 실패:",
+          error instanceof Error ? error.message : error,
+        );
+      }
+      if (attempts >= FINAL_ANSWER_POLL_MAX) {
+        pollingRef.current.delete(questionId);
+        setComposingQuestionIds((prev) => {
+          const next = new Set(prev);
+          next.delete(questionId);
+          return next;
+        });
+        setDelayedQuestionIds((prev) => new Set(prev).add(questionId));
+        return;
+      }
+      window.setTimeout(() => void tick(), FINAL_ANSWER_POLL_INTERVAL_MS);
+    };
+    window.setTimeout(() => void tick(), FINAL_ANSWER_POLL_INTERVAL_MS);
+  }
+
+  /**
+   * 판정된 쟁점 한 건을 교체한다(§12.2 조기 표시).
+   * 교체 후 마감 판단은 `applyAgendas`가 하도록 넘긴다 — 규칙을 두 곳에 두지 않는다.
+   */
+  function applyJudgedAgenda(
+    chatId: string,
+    questionId: string,
+    judged: Agenda,
+  ) {
+    // 병합만 정의하고 마감 판단은 applyAgendas 에 맡긴다 — 규칙을 두 곳에 두지 않는다.
+    applyAgendas(chatId, questionId, (prev) =>
+      prev.some((a) => a.id === judged.id)
+        ? prev.map((a) => (a.id === judged.id ? judged : a))
+        : [...prev, judged],
+    );
+  }
+
+  /**
+   * **Agenda 집합이 갱신되는 단 하나의 지점** (§12.5·§12.1).
+   *
+   * 공급원이 서버(SSE `agenda.*` / GET 복원)든 `?scenario=` Mock이든, Agenda가 정해지면
+   * 반드시 여기를 지난다. 세 곳에서 각각 "scenario면 Mock, 아니면 서버"로 분기하면
+   * 반드시 어긋나므로, 공급원 판단은 호출부가 하고 **마감 규칙은 여기 하나만 둔다.**
+   *
+   * 마감 규칙(§12.1): 전부 `passed`/`rejected`면 FinalAnswer·DecisionNote를 만들고
+   * `completed`로 전이한다. **충돌 0건 경로가 여기로 뚫려 있어야 한다** — 사용자가 누를
+   * 것이 없으면 사용자 행동이 트리거가 될 수 없어 Question이 `review_required`에 갇힌다.
+   * 그래서 "사용자 행동"이 아니라 "Agenda 집합 갱신"에 매달아 둔다(T-019.1 회귀).
+   */
+  function applyAgendas(
+    chatId: string,
+    questionId: string,
+    next: Agenda[] | ((prev: Agenda[]) => Agenda[]),
+    /**
+     * **Agenda 집합이 확정된 시점인가.** `agenda.done`·GET 화해·새로고침 복원이 true다.
+     * `agenda.created`(draft 목록)·`agenda.judged`(진행 중)는 false다.
+     *
+     * 0건을 "Manager 완전 실패"로 볼 수 있는 것은 확정 시점뿐이다 — 아직 오는 중인
+     * 빈 배열과 섞이면 정상 실행을 실패로 오판한다.
+     */
+    options?: {
+      final?: boolean;
+      /**
+       * SPEC-AI-003 §9 — **서버가 만든 FinalAnswer·DecisionNote.**
+       *
+       * 공급원을 결정하는 곳은 여기 하나다. 위쪽 호출부(SSE `final_answer.done` ·
+       * GET 폴링 · 새로고침 복원)는 **Mock 인지 서버인지 모른다.** T-019.4에서
+       * `buildMockAgendas` 3곳을 각각 고치려다 분기가 어긋날 뻔한 것을 되풀이하지 않는다.
+       */
+      composed?: {
+        finalAnswer: FinalAnswer;
+        /** 서버 계약(`packages/shared`). web 의 UI 파생 타입과 다르다 — 아래에서 보강한다. */
+        decisionNote: ServerDecisionNote;
+      };
+    },
+  ) {
+    let needsPolling = false;
+    setState((prev) => {
+      let createdNote: DecisionNote | null = null;
+      const chats = prev.chats.map((chat) => {
+        if (chat.id !== chatId) return chat;
+        return {
+          ...chat,
+          questions: chat.questions.map((question) => {
+            if (question.id !== questionId) return question;
+            // completed 라도 **FinalAnswer 가 없으면** 아직 복원할 것이 남았다.
+            // FinalAnswer·DecisionNote 는 브라우저 Mock 이라 서버에서 돌아오지 않으므로,
+            // 새로고침 직후에는 `completed + finalAnswer null` 조합이 정상적으로 생긴다.
+            if (question.status === "completed" && question.finalAnswer !== null) {
+              return question;
+            }
+
+            const agendas =
+              typeof next === "function" ? next(question.agendas) : next;
+
+            /**
+             * ⚠️ **`agendas.length > 0`을 조건에서 뺐다.**
+             *
+             * 같은 계열의 갇힘이 세 번 나왔다 — T-019.1(충돌 0건), T-019.4(Manager 완전
+             * 실패), 그리고 이번. 원인은 매번 **마감 판단이 "무언가 있다"는 전제에 매달려**
+             * 있었던 것이다. `every`는 빈 배열에서 true이므로 **0건도 자연스럽게 마감**이
+             * 되고, 그래야 같은 계열이 또 안 나온다.
+             */
+            const allFinal = agendas.every(
+              (agenda) =>
+                agenda.status === "passed" || agenda.status === "rejected",
+            );
+            // Manager가 쟁점을 하나도 만들지 못한 경우(§2.5 완전 실패). 확정 시점에만 판단한다.
+            const managerProducedNothing =
+              (options?.final ?? false) && agendas.length === 0;
+
+            if (!allFinal) {
+              // 아직 판단할 것이 남았다. 충돌이 하나라도 있으면 사용자 판단을 기다린다.
+              const hasConflict = agendas.some(
+                (agenda) => agenda.status === "conflicted",
+              );
+              return {
+                ...question,
+                agendas,
+                status: hasConflict
+                  ? ("review_required" as const)
+                  : question.status,
+                updatedAt: nowIso(),
+              };
+            }
+
+            // 아직 확정 전인 0건(진행 중)은 건드리지 않는다 — 정상 실행을 실패로 오판한다.
+            if (agendas.length === 0 && !managerProducedNothing) {
+              return question;
+            }
+
+            /**
+             * §9 공급원 결정 — **이 순서가 전부다.**
+             *
+             * 1) 서버가 준 것(`composed`)                → 그대로 쓴다
+             * 2) Manager 완전 실패                        → 고정 문구(§2.5)
+             * 3) `serverBacked` 인데 아직 안 옴           → **만들지 않는다.** 폴링이 채운다
+             * 4) `?scenario=` 개발 경로                   → 기존 Mock (AC10)
+             */
+            if (
+              !options?.composed &&
+              !managerProducedNothing &&
+              serverBacked
+            ) {
+              // 서버가 생성 중이다. Mock 을 만들면 잠시 뒤 서버 값으로 덮여 화면이 두 번 바뀌고,
+              // 그 사이 사용자는 **서버에 없는 답변**을 본다.
+              needsPolling = true;
+              return { ...question, agendas, updatedAt: nowIso() };
+            }
+
+            // 전부 마감됨 → FinalAnswer·DecisionNote 확정.
+            const settledQuestion = { ...question, agendas };
+            const now0 = nowIso();
+            /**
+             * §2.5·§6.2 — Manager 완전 실패. **3사 전멸과 다르다.**
+             * 원문 세 개는 그대로 살아 있으므로 `sourceAnswers`를 건드리지 않고,
+             * 없는 판정을 있는 것처럼 보이지 않게 쟁점 목록도 만들지 않는다.
+             */
+            const finalAnswer: FinalAnswer = options?.composed
+              ? options.composed.finalAnswer
+              : managerProducedNothing
+              ? {
+                  id: crypto.randomUUID(),
+                  questionId,
+                  content: managerFailedContent,
+                  // 비교 결과가 없다는 뜻을 기존 enum으로 표기한다(전용 값은 AI-003 재검토).
+                  generationMode: "all_agendas_rejected",
+                  createdAt: now0,
+                }
+              : buildMockFinalAnswer(
+                  agendas,
+                  question.sourceAnswers,
+                  questionId,
+                );
+            createdNote = options?.composed
+              ? {
+                  ...options.composed.decisionNote,
+                  chatId: chat.id,
+                  title: chat.title,
+                  bullets: [options.composed.decisionNote.content],
+                }
+              : managerProducedNothing
+              ? {
+                  id: crypto.randomUUID(),
+                  questionId,
+                  content: managerFailedContent,
+                  createdAt: now0,
+                  updatedAt: now0,
+                  chatId: chat.id,
+                  title: chat.title,
+                  bullets: [managerFailedContent],
+                }
+              : buildMockDecisionNote(
+                  chat.id,
+                  chat.title,
+                  settledQuestion,
+                  agendas,
+                  finalAnswer,
+                );
+            const now = nowIso();
+            return {
+              ...settledQuestion,
+              finalAnswer,
+              status: "completed" as const,
+              completedAt: now,
+              updatedAt: now,
+            };
+          }),
+        };
+      });
+      return {
+        ...prev,
+        chats,
+        decisionNotes: createdNote
+          ? [...prev.decisionNotes, createdNote]
+          : prev.decisionNotes,
+      };
+    });
+
+    /**
+     * ⚠️ **`completed` 전이를 여기서 하지 않는다** (SPEC-AI-003 §6.3).
+     *
+     * FinalAnswer·DecisionNote 저장 후 **서버가 전이를 소유한다.** web 이 함께 시도하면
+     * 둘 다 전이하려 들고, 서버가 아직 저장 전인데 web 이 먼저 `completed` 로 만들면
+     * 데이터 없이 완료된 Question 이 생긴다. 서버는 `neq('status','completed')` 로
+     * 멱등하게 처리한다.
+     *
+     * (Mock 경로 `resolveAgenda`·전멸 경로 `applyServerSnapshot` 의 전이는 서버가
+     *  FinalAnswer 를 만들지 않는 경로라 그대로 둔다.)
+     */
+    if (needsPolling) startFinalAnswerPolling(chatId, questionId);
   }
 
   /**
@@ -863,6 +1426,7 @@ export function useChatWorkspace() {
   async function runLiveSourceAnswers(chatId: string, questionId: string) {
     const context = buildContext(chatId);
     let applied = false;
+    let agendasApplied = false;
 
     try {
       const { done } = await startSourceAnswers(
@@ -880,8 +1444,61 @@ export function useChatWorkspace() {
             }));
             return;
           }
-          applyServerSnapshot(chatId, questionId, event.sourceAnswers);
-          applied = true;
+          if (event.type === "source_answer.done") {
+            applyServerSnapshot(chatId, questionId, event.sourceAnswers);
+            applied = true;
+            return;
+          }
+          // --- Manager 구간 (§12.2) ---
+          if (event.type === "agenda.progress") {
+            // 결과가 아니라 경과다. 저장하지 않고 진행 표시에만 쓴다.
+            setManagerProgress((prev) => ({
+              ...prev,
+              [questionId]: {
+                stage: event.stage,
+                done: event.done,
+                total: event.total,
+              },
+            }));
+            return;
+          }
+          if (event.type === "agenda.created") {
+            // draft 목록. 아직 판정 전이므로 마감 판단은 일어나지 않는다.
+            applyAgendas(chatId, questionId, event.agendas);
+            return;
+          }
+          if (event.type === "agenda.judged") {
+            // **판정되는 대로 한 건씩 교체한다.** 모아두면 조기 표시가 사라진다.
+            applyJudgedAgenda(chatId, questionId, event.agenda);
+            return;
+          }
+          // --- SPEC-AI-003 §8.1 충돌 0건 경로: 스트림이 아직 열려 있다 ---
+          if (event.type === "final_answer.progress") {
+            setComposingQuestionIds((prev) => new Set(prev).add(questionId));
+            return;
+          }
+          if (event.type === "final_answer.done") {
+            setComposingQuestionIds((prev) => {
+              const next = new Set(prev);
+              next.delete(questionId);
+              return next;
+            });
+            // 공급원 단일 지점으로 넘긴다 — SSE 도 GET 도 여기로 수렴한다.
+            applyAgendas(chatId, questionId, (prev) => prev, {
+              final: true,
+              composed: {
+                finalAnswer: event.finalAnswer,
+                decisionNote: event.decisionNote,
+              },
+            });
+            return;
+          }
+          if (event.type === "agenda.done") {
+            // 확정 스냅샷 — 0건이면 Manager 완전 실패다(§2.5).
+            applyAgendas(chatId, questionId, event.agendas, { final: true });
+            agendasApplied = true;
+            return;
+          }
         },
       );
 
@@ -889,6 +1506,20 @@ export function useChatWorkspace() {
       if (!done && !applied) {
         const snapshot = await loadSourceAnswers(chatId, questionId);
         applyServerSnapshot(chatId, questionId, snapshot);
+      }
+      // §12.2 — Agenda 쪽 최종 스냅샷을 못 받았으면 GET으로 화해한다.
+      // 특정 이벤트 이름이 아니라 "스냅샷을 받았는가"로 판단한다.
+      if (!agendasApplied) {
+        try {
+          applyAgendas(chatId, questionId, await loadAgendas(chatId, questionId), {
+            final: true,
+          });
+        } catch (error) {
+          console.error(
+            "[agendas] 스냅샷 화해 실패:",
+            error instanceof Error ? error.message : error,
+          );
+        }
       }
     } catch (error) {
       console.error(
@@ -904,6 +1535,11 @@ export function useChatWorkspace() {
       }
     } finally {
       setLiveStatuses((prev) => {
+        const next = { ...prev };
+        delete next[questionId];
+        return next;
+      });
+      setManagerProgress((prev) => {
         const next = { ...prev };
         delete next[questionId];
         return next;
@@ -1093,7 +1729,7 @@ export function useChatWorkspace() {
           if (agenda.id !== agendaId || agenda.status !== "recheck_requested") {
             return agenda;
           }
-          const recheckResult =
+          const recheckResponse =
             getActiveScenario().agendaTemplates.find(
               (template) => template.title === agenda.title,
             )?.recheckResult ??
@@ -1102,7 +1738,13 @@ export function useChatWorkspace() {
           return {
             ...agenda,
             status: "reanswered" as const,
-            recheckResult,
+            // SPEC-AI-002: recheckResult는 { response, citations, revisedType } 객체.
+            // 최소 전환 — citations는 빈 배열, 재분류(revisedType)는 없음(T-019.4에서 채운다).
+            recheckResult: {
+              response: recheckResponse,
+              citations: [],
+              revisedType: null,
+            },
             reansweredAt,
             updatedAt: reansweredAt,
           };
@@ -1131,9 +1773,20 @@ export function useChatWorkspace() {
     mockValidationError,
     /** live SSE 진행 상태(questionId → provider → status) — 로딩 말풍선 점등용 */
     liveStatuses,
+    /** Manager 진행 표시(questionId → 단계·N/M). 무음 구간을 없앤다(§12.2) */
+    managerProgress,
+    /** 최종 답변 생성 중인 questionId (SPEC-AI-003 §8.1 폴링) */
+    composingQuestionIds,
+    /** 폴링 상한(120초)을 넘긴 questionId — 조용히 멈추지 않는다 */
+    delayedQuestionIds,
+    /** 서버 Agenda를 쓰는가 — UI가 Mock 경로와 서버 경로를 가르는 유일한 신호 */
+    serverBacked,
     submitQuestion,
     resolveAgenda,
     requestRecheck,
+    /** 서버 경로 전용(§12.4). Mock 경로는 resolveAgenda 를 그대로 쓴다 */
+    resolveAgendaOnServer,
+    requestRecheckOnServer,
     selectChat,
     startNewChat,
   };

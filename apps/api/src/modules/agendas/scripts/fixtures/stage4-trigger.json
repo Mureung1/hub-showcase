@@ -1,0 +1,85 @@
+{
+  "questionId": "33333333-3333-4333-8333-333333333333",
+  "questionMessage": "Supabase RLS 정책을 어디에 작성하고 키는 어떻게 다뤄야 하나요?",
+  "sourceAnswers": [
+    {
+      "id": "10101010-0000-4000-8000-000000000001",
+      "questionId": "33333333-3333-4333-8333-333333333333",
+      "provider": "claude",
+      "model": "fixture",
+      "status": "succeeded",
+      "structuredContent": {
+        "summary": "정책 관리 위치·키 취급·검증 방법을 다룬다.",
+        "sections": [
+          {
+            "sectionId": "claude-s1",
+            "title": "정책 작성 위치",
+            "content": "정책은 SQL 마이그레이션 파일로 작성해 버전 관리하는 것을 권장한다. 대시보드 임시 정책은 환경 간 불일치를 만든다.",
+            "order": 0,
+            "kind": "practice"
+          },
+          {
+            "sectionId": "claude-s2",
+            "title": "service_role 키를 반드시 서버에서만 써야 하는 이유",
+            "content": "service_role 키는 RLS를 우회하므로 클라이언트에 노출하면 전체 데이터가 위험하다. 그래서 반드시 서버 환경에서만 사용해야 한다.",
+            "order": 1,
+            "kind": "caution"
+          },
+          {
+            "sectionId": "claude-s3",
+            "title": "검증 방법",
+            "content": "정책을 만든 뒤에는 다른 사용자 계정으로 접근 시나리오를 테스트해 정책이 의도대로 동작하는지 확인하라.",
+            "order": 2,
+            "kind": "verification"
+          }
+        ]
+      },
+      "responseMeta": null,
+      "errorCode": null,
+      "errorMessage": null,
+      "retryCount": 0,
+      "excludedFromComparison": false,
+      "excludedAt": null,
+      "startedAt": "2026-07-30T00:00:00.000+00:00",
+      "completedAt": "2026-07-30T00:00:01.000+00:00",
+      "createdAt": "2026-07-30T00:00:00.000+00:00",
+      "updatedAt": "2026-07-30T00:00:01.000+00:00"
+    },
+    {
+      "id": "20202020-0000-4000-8000-000000000002",
+      "questionId": "33333333-3333-4333-8333-333333333333",
+      "provider": "gemini",
+      "model": "fixture",
+      "status": "succeeded",
+      "structuredContent": {
+        "summary": "정책 관리와 성능 인덱스를 다룬다.",
+        "sections": [
+          {
+            "sectionId": "gemini-s1",
+            "title": "정책 관리",
+            "content": "정책은 SQL 파일로 관리하되 select/insert/update/delete를 나눠 정의하는 것을 권장한다.",
+            "order": 0,
+            "kind": "practice"
+          },
+          {
+            "sectionId": "gemini-s2",
+            "title": "성능과 인덱스",
+            "content": "RLS 정책 조건에 사용되는 컬럼에는 인덱스를 만들어 성능 저하를 예방하라. 복잡한 정책은 함수로 감싸 캐시하는 패턴을 고려하라.",
+            "order": 1,
+            "kind": "performance"
+          }
+        ]
+      },
+      "responseMeta": null,
+      "errorCode": null,
+      "errorMessage": null,
+      "retryCount": 0,
+      "excludedFromComparison": false,
+      "excludedAt": null,
+      "startedAt": "2026-07-30T00:00:00.000+00:00",
+      "completedAt": "2026-07-30T00:00:01.000+00:00",
+      "createdAt": "2026-07-30T00:00:00.000+00:00",
+      "updatedAt": "2026-07-30T00:00:01.000+00:00"
+    }
+  ]
+}

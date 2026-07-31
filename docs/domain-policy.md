@@ -309,6 +309,18 @@ recheck_requested
 → reanswered
 ```
 
+재검토 호출이 실패하면 상태를 되돌리지 않고 `recheck_requested`를 유지한다. 이 상태에서 사용자는 네 가지 중 하나를 선택할 수 있다 (SPEC-AI-002 결정 10·11).
+
+```text
+recheck_requested
+├── 다시 시도 → recheck_requested 유지
+├── 기존 AI 내용 채택 → passed
+├── 사용자 채택 내용 직접 입력 → passed
+└── 제외 → rejected
+```
+
+`recheck_requested`에서 채택·제외로 빠져나간 경우에는 재검토 결과를 본 적이 없으므로 `resolution_reason`에 `_after_recheck` 접미사를 붙이지 않는다.
+
 재검토 결과 확인 후:
 
 ```text
@@ -326,10 +338,12 @@ reanswered
 
 Agenda별 재검토는 최대 1회만 허용한다.
 
-- 프론트엔드는 `conflicted` 상태에서만 재검토 버튼을 표시한다.
-- Express Service는 현재 상태가 `conflicted`일 때만 재검토 요청을 허용한다.
-- `recheck_requested`, `reanswered`, `passed`, `rejected` 상태에서는 추가 재검토를 거절한다.
-- 중복 재검토 요청은 `409 Conflict`로 처리할 수 있다.
+**1회 제한은 사용자의 요청 횟수가 아니라 성공한 재검토 횟수로 센다** (SPEC-AI-002 결정 10).
+
+- 프론트엔드는 `conflicted` 상태에서 재검토 버튼을, `recheck_requested` 상태에서 [다시 시도] 버튼을 표시한다.
+- Express Service는 `conflicted`에서 새 재검토 요청을, `recheck_requested`에서 실패한 호출의 재시도를 허용한다.
+- **성공한 재검토가 한 번 끝난 뒤**(`reanswered`) 또는 최종 상태(`passed`·`rejected`)에서는 재검토를 거절한다.
+- 거절은 `409 Conflict`로 처리할 수 있다.
 
 ### 4.4 Resolution Reason
 
@@ -338,6 +352,7 @@ Agenda 상태는 한 축으로 유지하되, 최종 상태가 된 이유를 `res
 | 값 | 의미 |
 |---|---|
 | `auto_consensus` | Manager AI가 Consensus로 판단하여 자동 Passed 처리 |
+| `auto_single_source` | 하나의 Provider만 언급한 쟁점이라 비교 없이 자동 Passed 처리. **합의가 아니므로 `auto_consensus`를 쓰지 않는다** |
 | `user_accepted` | Conflict 상태에서 사용자가 채택 |
 | `user_accepted_after_recheck` | 재검토 결과 또는 기존 AI 내용을 사용자가 채택 |
 | `user_composed` | Conflict 상태에서 사용자가 채택 내용을 직접 입력 |
@@ -428,7 +443,7 @@ generation_mode = single_source_fallback
 
 두 개 이상의 Provider가 성공한 경우에는 `multi_source`로 생성한다. `single_source_fallback`은 정확히 하나의 Provider만 성공한 경우에만 사용한다.
 
-단일 SourceAnswer 기반 Agenda 처리 방식과 `resolution_reason`은 Manager AI Spec에서 구체화한다.
+단일 SourceAnswer 기반 Agenda 처리 방식과 `resolution_reason`은 **SPEC-AI-002에서 확정되었다**: 각 Section을 그대로 Agenda로 만들고 `resolution_reason = auto_single_source`로 자동 통과시킨다. 합의한 적이 없으므로 `auto_consensus`를 쓰지 않으며, 화면에서도 '합의'·'Consensus' 표현을 쓰지 않는다.
 
 ### 5.4 재생성 금지
 
@@ -445,7 +460,10 @@ generation_mode = single_source_fallback
 DecisionNote는 Question의 최종 결론을 요약한 결정 기록이다.
 
 - Question당 정확히 하나를 저장한다.
-- MVP에서는 FinalAnswer 확정 직후 Manager AI가 FinalAnswer를 근거로 요약을 자동 생성해 저장한다.
+- MVP에서는 Manager AI가 FinalAnswer를 **근거로** 요약을 자동 생성해 저장한다.
+
+> **개정 (2026-07-31, SPEC-AI-003 결정 2)**: 초판은 "FinalAnswer 확정 **직후**"였다. SPEC-AI-003이 FinalAnswer와 DecisionNote를 **한 번의 AI 호출**로 받기로 하면서 "직후"를 완화한다. "**근거로**"는 그대로 지켜진다 — 출력 스키마에서 `finalAnswer`가 앞에 오므로 모델은 자기가 방금 쓴 글을 요약한다. 오히려 별도 호출보다 일관성이 높다.
+> 근거: 충돌 0건 경로에서는 사용자 판단 없이 대기가 이어지므로 호출 1회를 아끼는 것이 체감에 직접 작용한다.
 - 모든 Agenda가 `rejected`인 경우에는 고정 문구 FinalAnswer를 그대로 DecisionNote로 저장하고 Question을 완료 처리한다.
 - 사용자 편집·수정·삭제 기능은 MVP에서 제공하지 않는다.
 - 사용자 입력 기반 작성·수정 기능은 후속 버전에서 추가한다.
@@ -482,6 +500,9 @@ MVP에서는 Chat 삭제와 보관 기능을 제공하지 않는다.
 2. SourceAnswer는 실패 시 한 번만 재시도한다. 재시도 후에도 실패하면 비교에서 제외하고 성공한 SourceAnswer만으로 처리를 계속한다.
 3. Question은 FinalAnswer와 DecisionNote가 모두 생성되어야 `completed`가 된다.
 4. 다음 Question Context는 직전 Question의 FinalAnswer와 그보다 이전 Question들의 DecisionNote로 구성한다.
+   - DecisionNote는 **최근 N개까지만** 포함한다(기본 5, 설정값). 컨텍스트가 무한히 자라면 3사 호출 입력이 비대해진다.
+   - 상한에 걸려 생략된 건수를 `questions.context_snapshot`에 기록한다. **조용히 자르지 않는다.**
+   - 구성 규칙이 바뀌면 `context_version`을 올린다. (SPEC-AI-003 §7)
 5. Chat 삭제 기능은 제공하지 않는다.
 6. FinalAnswer는 Question당 한 번만 생성하며 재생성을 허용하지 않는다.
 7. `conflicted`와 `reanswered` 상태에서 사용자는 채택 내용을 직접 입력할 수 있다. 직접 입력한 내용은 `selected_content`에 저장하고 Agenda를 `passed`로 변경한다.

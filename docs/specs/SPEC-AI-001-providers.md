@@ -265,7 +265,7 @@ response_meta (jsonb)
 - [x] AC4. 부분 실패 시 성공 답변만으로 진행하고 제외를 표시한다. **3사 전멸 시 고정 안내 문구로 마무리+완료**된다(6.2).
 - [x] AC5. BYOK: 사용자 키 있으면 그 키, 없으면 앱 키(플래그 ON). **하나라도 키 없으면 생성 시작을 차단하고 없는 Provider를 안내**한다. 플래그 OFF면 앱 키를 쓰지 않는다. 평문 키는 프론트·로그·에러에 노출되지 않는다.
 - [x] AC6. StructuredContent 확장(`summary`·`order`·`kind`)이 공통 계약·Mock·web에 반영되고, `kind`는 자유 문자열로 저장된다.
-- [x] AC7. web이 Mock SourceAnswer 생성을 멈추고 서버 실호출로 대체한다. **Agenda~FinalAnswer~DecisionNote는 실제 SourceAnswer를 입력으로 한 브라우저 Mock으로 끝까지 동작**한다(회귀 없음).
+- [x] AC7. web이 Mock SourceAnswer 생성을 멈추고 서버 실호출로 대체한다. ~~Agenda~FinalAnswer~DecisionNote는 브라우저 Mock으로 끝까지 동작한다~~ → **후속 Spec이 상회 대체함**: Agenda는 SPEC-AI-002 §12.2(서버 SSE), FinalAnswer·DecisionNote는 SPEC-AI-003 §8.1(서버 생성)로 구현됐다. AC의 취지("끝까지 관통한다")는 충족되며, Mock 경로는 `?scenario=` 회귀 확인용으로만 남아 있다. **(2026-07-31 정정)**
 - [x] AC8. 루트 `typecheck`·`build` 통과, `lint`(web) 통과. 실호출 실측(3사 성공/부분 실패/전멸/키 없음) 시나리오 확인. `.env` 키·비밀값 미노출·미커밋.
 
 ---
@@ -287,6 +287,7 @@ response_meta (jsonb)
 
 | 일자 | 내용 |
 |---|---|
+| 2026-07-31 | AC7 정정 — 브라우저 Mock 전제가 SPEC-AI-002·AI-003의 서버 구현으로 대체됐다. AC 전수 재검증(subagent 5개 병렬)에서 STALE로 지적된 항목이다 |
 | 2026-07-22 | 최초 작성(뼈대). Step 1~7 사용자 결정 반영(1장 표). 비동기+SSE, 명시적 생성, 타임아웃 45초·재시도 구분, 전멸=고정문구+완료, 좌초=미룸, BYOK 하이브리드(플래그 기본 ON·사전 점검), 관측 메타 JSONB, StructuredContent 확장(summary·order·kind 자유), provider별 프롬프트, Context=web 전달(임시). 어젠다 분류·충돌 판단 기준은 AI-002로 명시(사용자 제기) |
 | 2026-07-22 | 모듈 경계 반영(ADR-005). §2.3 추가 — AI 파이프라인 5개 포트(ProviderClient·AnswerPromptTemplate·AnswerNormalizer·AgendaClassifier·ConflictComparator), 설정 선택 + 버전 스탬프로 교체·재현. AI-001 구현=provider/prompt/normalizer, 분류/비교=AI-002. 기준 문서·§12 반영 |
 | 2026-07-22 | **완료** (T-016.1·2a·2b·3 구현·실측 PASS). 서버 provider 포트·어댑터·정규화·프롬프트·BYOK·저장(2a) → SSE 전환·GET 복원·최소모델 고정(2b) → web 재배선·SSE 구독·복원·Context·전멸 처리(3). AC1~8 전부 PASS. 실제 3사 SSE 스트리밍이 브라우저에서 관통. Cowork 완료 처리 |

@@ -1,0 +1,309 @@
+import { z } from "zod";
+import { ERROR_CODES } from "@decision-log/shared";
+
+import { loadEnv } from "../../../shared/config/env.js";
+import { ManagerCallError } from "../agendas.types.js";
+import type { ClassifiableSection } from "../ports/agendaClassifier.port.js";
+
+/**
+ * OpenRouter 호출 공통부 (SPEC-AI-002 §15.3).
+ *
+ * AgendaClassifier(단계 3·4)와 ConflictComparator(단계 6) 두 어댑터가 같은 호출 규약을 쓴다 —
+ * 재사용이 실제로 확인된 시점에 분리했다(CLAUDE.md 4장·13장 7).
+ *
+ * OpenRouter의 `provider` 라우팅·`require_parameters`는 OpenAI SDK 표면이 아니므로
+ * fetch로 직접 호출하고 요청 body를 명시적으로 타이핑한다(any 금지). 호출 설정은 §15.3:
+ * `response_format: json_schema strict` · `provider.require_parameters` · **max_tokens 미설정**.
+ *
+ * ⚠️ 구조화 출력이 거부되면 **프롬프트-JSON으로 우회하지 않는다.** 응답 형식 보장이 사라지면
+ * §11 검증 체계가 무너지므로, 관련 오류는 비재시도로 즉시 드러낸다. 모델 교체는 사용자 판단.
+ */
+
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+
+// --- 요청 body (OpenRouter 표면을 명시적으로 정의) ---
+interface JsonSchemaResponseFormat {
+  type: "json_schema";
+  json_schema: { name: string; strict: true; schema: Record<string, unknown> };
+}
+export interface OpenRouterRequestBody {
+  model: string;
+  messages: { role: "user"; content: string }[];
+  response_format: JsonSchemaResponseFormat;
+  provider: { require_parameters: true };
+  /**
+   * §15.3 — **단계 6·재검토에만** 넣는다. 단계 3·4는 넣지 않는다(실측 역효과).
+   * 넣으면 그 파라미터를 지원하는 프로바이더로만 라우팅된다는 점에 유의.
+   */
+  reasoning?: { effort: "low" | "medium" | "high" };
+  // max_tokens는 넣지 않는다(Qwen JSON 잘림 방지, §15.3).
+}
+
+/** 구조화 출력을 요구하는 요청 body를 만든다. 호출부는 스키마와 이름만 정하면 된다. */
+export function buildRequestBody(input: {
+  model: string;
+  prompt: string;
+  schemaName: string;
+  schema: Record<string, unknown>;
+  /** §15.3 — 빈 문자열·미지정이면 넣지 않는다. 단계 3·4는 항상 미지정이다. */
+  reasoningEffort?: string;
+}): OpenRouterRequestBody {
+  const body: OpenRouterRequestBody = {
+    model: input.model,
+    messages: [{ role: "user", content: input.prompt }],
+    response_format: {
+      type: "json_schema",
+      json_schema: { name: input.schemaName, strict: true, schema: input.schema },
+    },
+    provider: { require_parameters: true },
+  };
+  const effort = input.reasoningEffort;
+  if (effort === "low" || effort === "medium" || effort === "high") {
+    body.reasoning = { effort };
+  }
+  return body;
+}
+
+// --- 응답 봉투 (외부 데이터 → Zod 검증) ---
+const OpenRouterResponseSchema = z.object({
+  choices: z
+    .array(
+      z.object({
+        message: z.object({ content: z.string().nullish() }).nullish(),
+        finish_reason: z.string().nullish(),
+      }),
+    )
+    .nullish(),
+  usage: z
+    .object({
+      prompt_tokens: z.number().nullish(),
+      completion_tokens: z.number().nullish(),
+      /**
+       * §14.4 — `completion_tokens`의 88~94%가 이것이다. 우리가 읽지도 저장하지도
+       * 않는 확장 사고 토큰이며, 지연이 여기에 정비례한다. SPEC-AI-003 §11이
+       * `reasoning` 설정 판단 재료로 요구한다.
+       */
+      completion_tokens_details: z
+        .object({ reasoning_tokens: z.number().nullish() })
+        .nullish(),
+    })
+    .nullish(),
+  error: z
+    .object({ message: z.string(), code: z.union([z.string(), z.number()]).nullish() })
+    .nullish(),
+});
+
+/** 구조화 출력 미지원으로 보이는 오류 문구. 이 경우 우회하지 않고 보고한다. */
+function looksLikeStructuredOutputRejection(message: string): boolean {
+  return /json_schema|response_format|structured output|require_parameters|no (allowed )?providers?|no endpoints|does(n't| not) support|not supported/i.test(
+    message,
+  );
+}
+
+/** §16.2 구분 블록으로 감싼 섹션 목록. 비신뢰 입력을 데이터로 선언한다. */
+export function formatSections(sections: ClassifiableSection[]): string {
+  return sections
+    .map(
+      (s) =>
+        `<ai_answer provider="${s.provider}" section="${s.id}" title="${s.title}">\n${s.content}\n</ai_answer>`,
+    )
+    .join("\n\n");
+}
+
+/** 쟁점 앵커 목록 (라벨 + 제목). */
+export function formatAgendas(
+  agendas: { id: string; title: string }[],
+): string {
+  if (agendas.length === 0) return "(없음)";
+  return agendas.map((a) => `- ${a.id}: ${a.title}`).join("\n");
+}
+
+/**
+ * OpenRouter 호출 1회. 타임아웃·상태코드를 errorCode 5종으로 분류한다(§2.4).
+ * 구조화 출력 거부는 비재시도(재시도해도 소용없다)로 명확히 드러낸다.
+ */
+export interface CallOptions {
+  /** §2.4 — 단계별로 다르다. 미지정이면 분류 기준(45초). */
+  timeoutMs?: number;
+  /**
+   * §2.4.2 — 타임아웃을 재시도할 것인가. **단계 6·재검토는 false**다.
+   *
+   * 타임아웃은 "이 호출이 오래 걸린다"는 뜻이고 같은 입력·같은 모델로 다시 부르면
+   * 비슷하게 오래 걸린다. 기대값은 낮은데 지연은 확실히 배가된다. 대신 §2.5의
+   * fallback stance로 직행하면 사용자가 3열 원문으로 판단하므로 정보 손실이 없다.
+   */
+  retryOnTimeout?: boolean;
+}
+
+export async function callOpenRouter(
+  body: OpenRouterRequestBody,
+  options: CallOptions = {},
+): Promise<{
+  content: string;
+  outputTokens: number | null;
+  reasoningTokens: number | null;
+}> {
+  const env = loadEnv();
+  const { timeoutMs, retryOnTimeout = true } = options;
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort(),
+    timeoutMs ?? env.MANAGER_TIMEOUT_MS,
+  );
+
+  const asTimeout = (): ManagerCallError =>
+    new ManagerCallError(
+      ERROR_CODES.PROVIDER_TIMEOUT,
+      retryOnTimeout,
+      "Manager가 제한 시간 안에 응답하지 않았습니다.",
+    );
+
+  /**
+   * ⚠️ **타이머를 여기서 해제하지 않는다** (§2.4.1).
+   *
+   * `fetch`는 응답 **헤더가 도착하면** resolve하고, 생성 시간 전부는 아래
+   * `response.text()`에 들어간다. 예전에는 `finally`로 여기서 타이머를 껐고,
+   * 그 결과 3초 타임아웃을 걸어도 156.5초 만에 정상 반환했다 — 생성 구간 전체가
+   * 무방비였다. 해제는 **본문을 다 읽은 뒤** 한 번만 한다.
+   */
+  let response: Response;
+  try {
+    response = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    clearTimeout(timer);
+    if (error instanceof Error && error.name === "AbortError") throw asTimeout();
+    throw new ManagerCallError(
+      ERROR_CODES.NETWORK_ERROR,
+      true,
+      "Manager 호출 중 네트워크 오류가 발생했습니다.",
+    );
+  }
+
+  let text: string;
+  try {
+    // 여기가 실제 생성 구간이다. abort되면 AbortError가 여기서 난다.
+    text = await response.text();
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") throw asTimeout();
+    throw new ManagerCallError(
+      ERROR_CODES.NETWORK_ERROR,
+      true,
+      "Manager 응답을 읽는 중 오류가 발생했습니다.",
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+
+  let parsed: z.infer<typeof OpenRouterResponseSchema>;
+  try {
+    parsed = OpenRouterResponseSchema.parse(JSON.parse(text));
+  } catch {
+    // 상태코드로만 분류한다(원문은 남기지 않는다, §16.3).
+    if (!response.ok) throw classifyStatus(response.status, "");
+    throw new ManagerCallError(
+      ERROR_CODES.SCHEMA_VALIDATION_FAILED,
+      true,
+      "Manager 응답 봉투를 해석하지 못했습니다.",
+    );
+  }
+
+  const apiErrorMessage = parsed.error?.message ?? "";
+  if (parsed.error || !response.ok) {
+    if (apiErrorMessage && looksLikeStructuredOutputRejection(apiErrorMessage)) {
+      throw new ManagerCallError(
+        ERROR_CODES.PROVIDER_ERROR,
+        false,
+        "Manager 모델이 구조화 출력(json_schema/strict)을 거부했습니다. 우회하지 않고 보고합니다 — 모델 교체가 필요할 수 있습니다.",
+        true,
+      );
+    }
+    throw classifyStatus(response.ok ? 502 : response.status, apiErrorMessage);
+  }
+
+  const content = parsed.choices?.[0]?.message?.content ?? "";
+  if (content.trim().length === 0) {
+    throw new ManagerCallError(
+      ERROR_CODES.SCHEMA_VALIDATION_FAILED,
+      true,
+      "Manager가 빈 응답을 반환했습니다.",
+    );
+  }
+
+  return {
+    content,
+    outputTokens: parsed.usage?.completion_tokens ?? null,
+    reasoningTokens:
+      parsed.usage?.completion_tokens_details?.reasoning_tokens ?? null,
+  };
+}
+
+/** HTTP 상태 → errorCode 5종. 5xx·429는 재시도, 그 외 4xx는 즉시 실패(§2.4). */
+function classifyStatus(status: number, apiMessage: string): ManagerCallError {
+  if (apiMessage && looksLikeStructuredOutputRejection(apiMessage)) {
+    return new ManagerCallError(
+      ERROR_CODES.PROVIDER_ERROR,
+      false,
+      "Manager 모델이 구조화 출력을 거부했습니다. 우회하지 않고 보고합니다.",
+      true,
+    );
+  }
+  if (status === 429 || status >= 500) {
+    return new ManagerCallError(
+      ERROR_CODES.PROVIDER_ERROR,
+      true,
+      `Manager 호출이 실패했습니다(status ${status}).`,
+    );
+  }
+  return new ManagerCallError(
+    ERROR_CODES.PROVIDER_ERROR,
+    false,
+    `Manager 호출이 실패했습니다(status ${status}).`,
+  );
+}
+
+/** 일시적 오류·스키마 검증 실패면 1회 재시도(§2.4). 비재시도 오류는 그대로 던진다. */
+export async function withOneRetry<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (error instanceof ManagerCallError && error.retryable) {
+      return await fn();
+    }
+    throw error;
+  }
+}
+
+/** 응답 본문 → Zod 검증. 실패는 재시도 대상(§2.4)이며 원문은 남기지 않는다(§16.3). */
+export function parseOutput<T>(
+  content: string,
+  schema: z.ZodType<T>,
+  label: string,
+): T {
+  let json: unknown;
+  try {
+    json = JSON.parse(content);
+  } catch {
+    throw new ManagerCallError(
+      ERROR_CODES.SCHEMA_VALIDATION_FAILED,
+      true,
+      `Manager ${label} 출력이 JSON이 아닙니다.`,
+    );
+  }
+  const result = schema.safeParse(json);
+  if (!result.success) {
+    throw new ManagerCallError(
+      ERROR_CODES.SCHEMA_VALIDATION_FAILED,
+      true,
+      `Manager ${label} 출력이 스키마를 만족하지 않습니다.`,
+    );
+  }
+  return result.data;
+}

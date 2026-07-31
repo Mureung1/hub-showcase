@@ -1,0 +1,142 @@
+{
+  "questionId": "11111111-1111-4111-8111-111111111111",
+  "questionMessage": "Supabase에서 Row Level Security를 안전하게 설계하려면 무엇을 지켜야 하나요?",
+  "sourceAnswers": [
+    {
+      "id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "questionId": "11111111-1111-4111-8111-111111111111",
+      "provider": "claude",
+      "model": "fixture",
+      "status": "succeeded",
+      "structuredContent": {
+        "summary": "RLS는 켜는 것 자체가 아니라 정책을 어떻게 쓰느냐가 보안을 결정한다.",
+        "sections": [
+          {
+            "sectionId": "claude-s1",
+            "title": "기본 원칙",
+            "content": "가장 중요한 원칙은 기본 거부다. 모든 public 스키마 테이블에 RLS를 기본 ON으로 켜고 필요한 접근만 정책으로 명시적으로 허용하라. 정책이 하나도 없는 테이블은 어떤 클라이언트도 읽거나 쓸 수 없는 안전한 출발점이 된다.",
+            "order": 0,
+            "kind": "principle"
+          },
+          {
+            "sectionId": "claude-s2",
+            "title": "정책 작성 위치",
+            "content": "정책은 SQL 마이그레이션 파일로 작성해 버전 관리하는 것을 권장한다. 대시보드에서 임시로 만든 정책은 환경 간 불일치를 만들기 쉽고 코드 리뷰를 거치지 않아 실수를 놓치기 쉽다.",
+            "order": 1,
+            "kind": "practice"
+          },
+          {
+            "sectionId": "claude-s3",
+            "title": "service_role 키 취급",
+            "content": "service_role 키는 RLS를 우회하므로 반드시 서버 환경에서만 사용해야 한다. 뷰와 함수도 RLS를 우회할 수 있으므로 우회 경로를 목록화해 점검하라.",
+            "order": 2,
+            "kind": "caution"
+          },
+          {
+            "sectionId": "claude-s4",
+            "title": "검증 방법",
+            "content": "정책을 만든 뒤에는 반드시 다른 사용자 계정으로 접근 시나리오를 테스트하라. 특정 사용자로 가장한 쿼리를 실행해 정책이 의도대로 동작하는지 확인할 수 있다.",
+            "order": 3,
+            "kind": "verification"
+          }
+        ]
+      },
+      "responseMeta": null,
+      "errorCode": null,
+      "errorMessage": null,
+      "retryCount": 0,
+      "excludedFromComparison": false,
+      "excludedAt": null,
+      "startedAt": "2026-07-30T00:00:00.000+00:00",
+      "completedAt": "2026-07-30T00:00:01.000+00:00",
+      "createdAt": "2026-07-30T00:00:00.000+00:00",
+      "updatedAt": "2026-07-30T00:00:01.000+00:00"
+    },
+    {
+      "id": "bbbbbbbb-0000-4000-8000-000000000002",
+      "questionId": "11111111-1111-4111-8111-111111111111",
+      "provider": "openai",
+      "model": "fixture",
+      "status": "succeeded",
+      "structuredContent": {
+        "summary": "RLS 활성화와 정책 작성을 한 작업 단위로 다루고 역할을 구분하라.",
+        "sections": [
+          {
+            "sectionId": "openai-s1",
+            "title": "RLS 활성화",
+            "content": "RLS를 켜면 정책이 정의되기 전까지 모든 행 접근이 막힌다. 따라서 RLS 활성화와 정책 작성은 하나의 작업 단위로 취급해야 하며, 켜기만 하고 정책을 잊으면 데이터를 전혀 읽지 못하는 장애처럼 보인다.",
+            "order": 0,
+            "kind": "summary"
+          },
+          {
+            "sectionId": "openai-s2",
+            "title": "정책 관리 위치",
+            "content": "처음이라면 대시보드 템플릿으로 시작하는 것이 빠르다. 다만 검증을 마친 정책은 최종적으로 마이그레이션 파일로 옮겨 관리하는 것이 안전하다.",
+            "order": 1,
+            "kind": "operations"
+          },
+          {
+            "sectionId": "openai-s3",
+            "title": "역할 구분",
+            "content": "익명 사용자(anon)와 인증 사용자(authenticated) 역할을 구분해 정책을 작성해야 의도치 않은 공개를 막을 수 있다. 역할별로 필요한 최소 권한만 여는 것을 기본으로 하라.",
+            "order": 2,
+            "kind": "caution"
+          }
+        ]
+      },
+      "responseMeta": null,
+      "errorCode": null,
+      "errorMessage": null,
+      "retryCount": 0,
+      "excludedFromComparison": false,
+      "excludedAt": null,
+      "startedAt": "2026-07-30T00:00:00.000+00:00",
+      "completedAt": "2026-07-30T00:00:01.000+00:00",
+      "createdAt": "2026-07-30T00:00:00.000+00:00",
+      "updatedAt": "2026-07-30T00:00:01.000+00:00"
+    },
+    {
+      "id": "cccccccc-0000-4000-8000-000000000003",
+      "questionId": "11111111-1111-4111-8111-111111111111",
+      "provider": "gemini",
+      "model": "fixture",
+      "status": "succeeded",
+      "structuredContent": {
+        "summary": "RLS는 DB 계층에서 행 단위 접근을 강제하는 수단이므로 역할·키 경계를 지켜라.",
+        "sections": [
+          {
+            "sectionId": "gemini-s1",
+            "title": "정책 관리",
+            "content": "public 테이블에 RLS를 켜고 정책은 SQL 파일로 관리하되, select/insert/update/delete를 나눠 정의하는 것을 권장한다. 정책 이름에 대상 역할과 목적을 담아 두면 감사를 수행하기 쉽다.",
+            "order": 0,
+            "kind": "practice"
+          },
+          {
+            "sectionId": "gemini-s2",
+            "title": "역할과 키",
+            "content": "service_role 키를 클라이언트에 노출하면 안 되며 프론트엔드에는 공개 가능한 키만 두어야 한다. 공개 키로 접근하는 요청은 anon 또는 authenticated 역할로 실행된다.",
+            "order": 1,
+            "kind": "security"
+          },
+          {
+            "sectionId": "gemini-s3",
+            "title": "점검 체크리스트",
+            "content": "배포 전에 모든 public 테이블에 RLS가 켜져 있는지, 정책 없는 테이블이 의도된 것인지, 비밀 키가 클라이언트 번들에 포함되지 않았는지 점검하라.",
+            "order": 2,
+            "kind": "checklist"
+          }
+        ]
+      },
+      "responseMeta": null,
+      "errorCode": null,
+      "errorMessage": null,
+      "retryCount": 0,
+      "excludedFromComparison": false,
+      "excludedAt": null,
+      "startedAt": "2026-07-30T00:00:00.000+00:00",
+      "completedAt": "2026-07-30T00:00:01.000+00:00",
+      "createdAt": "2026-07-30T00:00:00.000+00:00",
+      "updatedAt": "2026-07-30T00:00:01.000+00:00"
+    }
+  ]
+}

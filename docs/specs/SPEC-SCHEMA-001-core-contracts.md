@@ -86,7 +86,7 @@ packages/shared/
 | `QuestionStatusSchema` | `draft` `processing` `review_required` `completed` |
 | `SourceAnswerStatusSchema` | `pending` `processing` `succeeded` `failed` |
 | `AgendaStatusSchema` | `draft` `conflicted` `recheck_requested` `reanswered` `passed` `rejected` |
-| `AgendaResolutionReasonSchema` | `auto_consensus` `user_accepted` `user_accepted_after_recheck` `user_composed` `user_composed_after_recheck` `user_rejected` `user_rejected_after_recheck` |
+| `AgendaResolutionReasonSchema` | `auto_consensus` `auto_single_source` `user_accepted` `user_accepted_after_recheck` `user_composed` `user_composed_after_recheck` `user_rejected` `user_rejected_after_recheck` |
 | `FinalAnswerGenerationModeSchema` | `multi_source` `single_source_fallback` `all_agendas_rejected` |
 | `AiProviderSchema` | `claude` `openai` `gemini` |
 
@@ -136,6 +136,8 @@ packages/shared/
 | `excludedFromComparison` | boolean | 기본 false |
 | `excludedAt`? | string? | ISO 8601 |
 | `startedAt`? / `completedAt`? | string? | ISO 8601 |
+| `responseMeta`? | ResponseMeta? | 토큰·지연 등 관측 메타. SPEC-AI-001에서 추가 |
+| `promptVersion`? | string? | 사용한 프롬프트 버전 스탬프 |
 | `createdAt` / `updatedAt` | string | ISO 8601 |
 
 #### 5.3.1 `StructuredContentSchema` (최소 골격)
@@ -166,9 +168,15 @@ Section
 | `summary` | string | |
 | `selectedContent`? | string? | 6장 정합 규칙 |
 | `userNote`? | string? | |
-| `sourceRefs` | unknown[] | **자유형(결정 2-2)** — 정식 모양은 SPEC-AI-002에서 |
+| `kind`? | AgendaKind? | `consensus`·`conflict`·`single_source`. draft 시점엔 null (SPEC-AI-002) |
+| `stances` | AgendaStance[] | `{ provider, text, quotes[], sourceRefs[] }` (SPEC-AI-002에서 승격) |
+| `sourceRefs` | SourceRef[] | `{ sourceAnswerId, sectionId }`. 비교한 모든 근거 보존 |
+| `selectedSourceRef`? | SourceRef \| "NO_VALUE" \| null | 6장 정합 규칙 (SPEC-AI-002) |
+| `disagreementType`? / `revisedType`? | AgendaDisagreementType? | 차이 유형 5종 |
+| `confidence`? | number? | 0~1, 관측용 |
+| `displayOrder` | number | 표시 순서 |
 | `recheckRequest`? | string? | |
-| `recheckResult`? | unknown? | 자유형 — SPEC-AI-002에서 |
+| `recheckResult`? | AgendaRecheckResult? | `{ response, citations[], revisedType }` (SPEC-AI-002에서 확정) |
 | `recheckRequestedAt`? / `reansweredAt`? / `resolvedAt`? | string? | ISO 8601 |
 | `createdAt` / `updatedAt` | string | ISO 8601 |
 
@@ -267,7 +275,7 @@ Section
 | 항목 | 다루는 곳 |
 |---|---|
 | API 봉투(envelope)·HTTP 에러 응답 형식 | API Spec (SPEC-AUTH-003 이후) |
-| `sourceRefs`·`recheckResult` 정식 모양, stance 계약 승격 | SPEC-AI-002 (Manager) |
+| ~~`sourceRefs`·`recheckResult` 정식 모양, stance 계약 승격~~ | **SPEC-AI-002에서 확정 완료 (2026-07-29)** |
 | `StructuredContent` 확장 필드 | SPEC-AI-001 (Provider) |
 | 엔티티에 `userId` 포함 여부 | SPEC-AUTH-001~003 |
 | snake_case 변환 구현, DB 응답 검증 | SPEC-DB-001 |
@@ -283,3 +291,4 @@ Section
 | 2026-07-18 | 9장 보강 — web 중첩 집합체 뷰는 shared 타입 조합으로 유지(A안), Mock 검증은 엔티티 개별 parse로 명확화 (T-011 계획 검토 시 확정) |
 | 2026-07-20 | shared 패키지 export 방식 개정 (T-014.1). 기존 "소스 전용 export(`exports: ./src/index.ts`)"에서 **조건부 exports**로 전환 — 타입검사는 소스(`types → ./src/index.ts`, 무빌드 유지), 런타임은 빌드 산출물(`import/default → ./dist/index.js`). `tsc` emit(dist) + `prepare` 스크립트 도입, 루트 build를 shared→api→web 순서로. 목적: api가 shared를 런타임에 소비하면서 `node dist` 프로덕션 실행 가능화(SPEC-AUTH-003 알려진 제한 해소). 계약 내용·소스 구조·zod 단일 의존은 불변 |
 | 2026-07-22 | StructuredContent 확장 반영 (SPEC-AI-001 T-016.1 구현) — `SectionSchema` `order`·`kind`, `StructuredContentSchema` `summary` 추가. 5.3.1이 예고한 'AI-001에서 확장'을 실현. packages/shared/src/schemas/sourceAnswer.ts, 커밋 68ce226 |
+| 2026-07-29 | **결정 2-2 해소 (SPEC-AI-002 T-019.1 구현).** `stances`·`SourceRef`·`recheckResult`가 자유형에서 정식 스키마로 승격되어 web의 UI 전용 파생 타입이 제거됐다. `AgendaSchema`에 `kind`·`selectedSourceRef`·`disagreementType`·`revisedType`·`confidence`·`displayOrder` 추가, superRefine 4규칙 추가. `AgendaResolutionReasonSchema`에 `auto_single_source`(8번째). SSE 계약은 `questionStream.ts`로 분리되며 `SourceAnswerEventSchema` → `QuestionStreamEventSchema`로 개명되고 `done` → `source_answer.done` + Manager 이벤트 3종이 추가됐다 |

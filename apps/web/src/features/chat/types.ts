@@ -18,15 +18,20 @@ import type {
 } from "@decision-log/shared";
 
 // 계약 그대로 재노출 (별칭 포함) — 컴포넌트는 이 이름들로 계속 import한다.
+// SourceRef·AgendaStance는 SPEC-AI-002에서 정식 계약으로 승격됐다(로컬 재정의 제거).
 export type {
   AiProvider,
   QuestionStatus,
   SourceAnswerStatus,
   AgendaStatus,
   AgendaResolutionReason,
+  AgendaKind,
+  AgendaDisagreementType,
   FinalAnswerGenerationMode,
   FinalAnswer,
   Section,
+  SourceRef,
+  AgendaStance,
 } from "@decision-log/shared";
 
 /** 내부 provider 식별자. 표시 라벨(Claude·ChatGPT·Gemini)은 mockData의 providerMeta에 둔다. */
@@ -35,32 +40,14 @@ export type Provider = AiProvider;
 /** SourceAnswer 구조화 응답의 Section 별칭 (Mock Section 데이터에서 사용). */
 export type AnswerSection = Section;
 
-/**
- * Agenda 근거가 된 SourceAnswer·Section 참조 (UI 전용 파생).
- * SPEC-AI-002(Manager)에서 정식 계약(source_refs)으로 승격 예정.
- */
-export interface AgendaSourceRef {
-  sourceAnswerId: string;
-  sectionId: string;
-}
-
-/**
- * 충돌 입장(stance) — AI별 입장과 그 근거 (UI 전용 파생).
- * SPEC-AI-002에서 정식 계약으로 승격 예정이므로 shared로 옮기지 않는다.
- */
-export interface AgendaStance {
-  provider: Provider;
-  text: string;
-  sourceRefs: AgendaSourceRef[];
-}
-
 /** SourceAnswer 뷰 — 현재는 계약 엔티티 그대로 (UI 추가 필드 없음). */
 export type SourceAnswer = SourceAnswerEntity;
 
-/** Agenda 뷰 = 계약 엔티티 + UI 전용 stances. */
-export type Agenda = AgendaEntity & {
-  stances: AgendaStance[];
-};
+/**
+ * Agenda 뷰 = 계약 엔티티 그대로.
+ * stances는 SPEC-AI-002에서 계약(AgendaSchema)에 포함됐으므로 교차 타입이 불필요하다.
+ */
+export type Agenda = AgendaEntity;
 
 /** Question 뷰 = 계약 엔티티 + 중첩 집합체(UI 전용 파생). */
 export type Question = QuestionEntity & {
@@ -87,11 +74,11 @@ export type DecisionNote = DecisionNoteEntity & {
 };
 
 /**
- * 자유형(unknown) recheckResult를 표시·채택용 문자열로 좁힌다.
- * 정식 모양은 SPEC-AI-002에서 확정된다 (결정 2-2). Mock은 문자열을 저장한다.
+ * recheckResult(AgendaRecheckResult)에서 표시·채택용 응답 본문을 꺼낸다.
+ * SPEC-AI-002에서 recheckResult가 { response, citations, revisedType } 객체로 확정됐다.
  */
 export function agendaRecheckText(agenda: Agenda): string | null {
-  return typeof agenda.recheckResult === "string" ? agenda.recheckResult : null;
+  return agenda.recheckResult?.response ?? null;
 }
 
 /** 아직 사용자 판단이 남은 Agenda (conflicted·recheck_requested·reanswered) */
