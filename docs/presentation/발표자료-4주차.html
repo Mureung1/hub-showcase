@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>대학생 동행자 매칭 서비스 — 4주차 최종 발표</title>
+<style>
+  :root {
+    --bg: #15100D;
+    --bg-alt: #1D1512;
+    --ink: #F5ECE7;
+    --ink-soft: #A99287;
+    --accent: #FF4B6E;
+    --accent-soft: rgba(255, 75, 110, 0.14);
+    --gold: #E3AC4E;
+    --green: #4CAF7D;
+    --line: rgba(245, 236, 231, 0.12);
+    --mono: 'Courier New', ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: 'Pretendard', -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+    color: var(--ink);
+  }
+
+  .deck {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: clamp(56px, 8vh, 84px) clamp(40px, 7vw, 110px);
+    opacity: 0;
+    transform: translateY(16px);
+    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    overflow-y: auto;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .ghost-num {
+    position: absolute;
+    top: clamp(-10px, -2vh, 10px);
+    right: clamp(16px, 3vw, 44px);
+    font-family: var(--mono);
+    font-size: clamp(120px, 17vw, 240px);
+    font-weight: 800;
+    color: rgba(245, 236, 231, 0.035);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+  }
+
+  .content { position: relative; z-index: 1; max-width: 760px; width: 100%; }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: clamp(11px, 1vw, 13px);
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: clamp(14px, 2vh, 22px);
+  }
+
+  .eyebrow .bar { width: 22px; height: 2px; background: var(--accent); }
+
+  h1.headline {
+    font-size: clamp(20px, 2.5vw, 34px);
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    margin: 0 0 clamp(14px, 2vh, 22px);
+    white-space: nowrap;
+  }
+
+  p.lede {
+    font-size: clamp(13.5px, 1.3vw, 16.5px);
+    line-height: 1.65;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  .lede-strong { color: var(--ink); font-weight: 700; }
+
+  /* ---------- Cover ---------- */
+  .brand-mark { display: flex; align-items: center; gap: 12px; margin-bottom: clamp(24px, 4.5vh, 44px); justify-content: center; }
+
+  .brand-mark .icon {
+    width: 40px; height: 40px; border-radius: 11px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  .brand-mark .name { font-size: 16px; font-weight: 800; color: var(--ink-soft); letter-spacing: 0.04em; }
+
+  .slide-cover h1 {
+    font-size: clamp(26px, 3.6vw, 44px);
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    margin: 0 0 14px;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .slide-cover .subtitle {
+    font-size: clamp(13px, 1.4vw, 18px);
+    color: var(--accent);
+    font-weight: 700;
+    line-height: 1.5;
+    margin: 0 0 clamp(26px, 4.5vh, 44px);
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .slide-cover .meta {
+    display: flex; gap: 24px; flex-wrap: wrap; justify-content: center;
+    font-size: 12.5px; color: var(--ink-soft);
+    font-family: var(--mono);
+  }
+
+  /* ---------- tag row ---------- */
+  .tag-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: clamp(18px, 3vh, 28px); }
+
+  .tag {
+    font-size: 12px; font-weight: 700; color: var(--ink);
+    background: var(--bg-alt);
+    border: 1px solid var(--line);
+    padding: 7px 14px; border-radius: 999px;
+  }
+
+  .tag.tag-accent { color: var(--accent); border-color: var(--accent-soft); background: var(--accent-soft); }
+
+  /* ---------- 문제정의: scene ---------- */
+  .scene {
+    margin-top: clamp(18px, 3vh, 28px);
+    background: var(--bg-alt);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: clamp(16px, 2vw, 24px) clamp(18px, 2.2vw, 28px);
+  }
+
+  .scene .who {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12.5px; font-weight: 700; color: var(--ink-soft);
+    margin-bottom: 10px; font-family: var(--mono);
+  }
+
+  .scene .who .avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--gold); }
+  .scene p { margin: 0; font-size: clamp(13.5px, 1.3vw, 16px); line-height: 1.6; color: var(--ink); text-align: left; }
+  .scene .highlight { color: var(--accent); font-weight: 700; }
+
+  .benefit-row { display: flex; gap: 12px; margin-top: clamp(12px, 2vh, 18px); }
+
+  .benefit-chip {
+    flex: 1; display: flex; align-items: center; gap: 12px;
+    border-left: 2px solid var(--accent);
+    padding: 4px 0 4px 14px;
+    text-align: left;
+  }
+
+  .benefit-title { font-size: 12.5px; font-weight: 800; color: var(--ink); }
+  .benefit-desc { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
+
+  /* ---------- 핵심 기능 / steps ---------- */
+  .steps { display: flex; flex-direction: column; gap: 0; margin-top: clamp(16px, 2.6vh, 26px); }
+
+  .step { display: flex; gap: 20px; padding: clamp(13px, 1.8vw, 19px) 0; border-bottom: 1px solid var(--line); text-align: left; }
+  .step:last-child { border-bottom: none; }
+
+  .step .badge {
+    flex: 0 0 auto; width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-weight: 800; font-size: 15px;
+    color: var(--accent); border: 1px solid var(--accent-soft); border-radius: 10px;
+  }
+
+  .step .body h3 { margin: 0 0 5px; font-size: clamp(14.5px, 1.4vw, 17.5px); font-weight: 800; }
+  .step .body p { margin: 0; font-size: clamp(12px, 1.05vw, 13.5px); color: var(--ink-soft); line-height: 1.5; }
+
+  /* ---------- 그 외 기능들: grid ---------- */
+  .feature-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    margin-top: clamp(18px, 3vh, 28px);
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+
+  .feature-cell { background: var(--bg); padding: clamp(14px, 1.6vw, 19px) clamp(14px, 1.6vw, 18px); text-align: left; }
+  .feature-cell .fi { font-family: var(--mono); font-size: 11px; font-weight: 800; color: var(--accent); margin-bottom: 7px; }
+  .feature-cell h4 { margin: 0 0 5px; font-size: clamp(13px, 1.15vw, 14.5px); font-weight: 800; }
+  .feature-cell p { margin: 0; font-size: 11.5px; color: var(--ink-soft); line-height: 1.5; }
+
+  /* ---------- 리스크 대응 ---------- */
+  .risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(10px, 1.4vw, 16px); margin-top: clamp(18px, 3vh, 28px); }
+
+  .risk-card { background: var(--bg-alt); border: 1px solid var(--line); border-radius: 12px; padding: clamp(13px, 1.5vw, 17px); text-align: left; }
+  .risk-card .risk-label { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; color: var(--ink-soft); margin-bottom: 7px; }
+  .risk-card h3 { margin: 0 0 9px; font-size: clamp(12.5px, 1.1vw, 14px); font-weight: 800; line-height: 1.4; }
+  .risk-card .response { display: flex; gap: 7px; align-items: flex-start; padding-top: 9px; border-top: 1px dashed var(--line); }
+  .risk-card .response .arrow { color: var(--green); font-weight: 800; flex: 0 0 auto; font-family: var(--mono); }
+  .risk-card .response p { margin: 0; font-size: 11px; line-height: 1.5; color: var(--ink-soft); }
+
+  /* ---------- 어떻게 동작하는지 (단순화, 3분할 제거) ---------- */
+  .stack-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: clamp(16px, 2.6vh, 24px); justify-content: flex-start; }
+
+  .stack-pill { font-family: var(--mono); font-size: 11.5px; font-weight: 700; color: var(--ink); background: var(--bg-alt); border: 1px solid var(--line); padding: 5px 12px; border-radius: 999px; }
+
+  .arch-flow {
+    margin-top: clamp(16px, 2.6vh, 24px);
+    font-family: var(--mono);
+    font-size: clamp(13px, 1.2vw, 15.5px);
+    font-weight: 700;
+    color: var(--accent);
+    text-align: left;
+  }
+
+  .arch-flow .role { color: var(--ink-soft); font-weight: 600; font-size: 0.72em; }
+
+  /* ---------- 문제해결 방식 ---------- */
+  .concept-cloud { display: flex; flex-wrap: wrap; gap: 8px; margin-top: clamp(16px, 2.6vh, 24px); justify-content: flex-start; }
+
+  .concept-chip { font-size: 12px; font-weight: 600; color: var(--ink-soft); border: 1px solid var(--line); padding: 6px 13px; border-radius: 999px; }
+  .concept-chip.hi { color: var(--accent); border-color: var(--accent-soft); background: var(--accent-soft); font-weight: 700; }
+
+
+  /* ---------- 서비스 시연 ---------- */
+  .demo-url {
+    margin-top: clamp(18px, 2.8vh, 26px);
+    background: var(--bg-alt);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: clamp(13px, 1.6vw, 17px) clamp(18px, 2.2vw, 24px);
+    font-family: var(--mono);
+    font-size: clamp(12.5px, 1.3vw, 16px);
+    font-weight: 700;
+    color: var(--accent);
+    display: inline-block;
+  }
+
+  .scenario-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: clamp(16px, 2.4vh, 24px); justify-content: flex-start; }
+
+  .scenario-chip { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 8px 15px; font-size: 12px; font-weight: 700; }
+  .scenario-chip .n { font-family: var(--mono); font-size: 10.5px; font-weight: 800; color: var(--accent); }
+  .demo-sub { margin-top: clamp(12px, 2vh, 18px); font-size: 12px; color: var(--ink-soft); font-style: italic; text-align: left; }
+
+  /* ---------- 느낀점 ---------- */
+  .reflect-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px, 3vw, 40px); margin-top: clamp(18px, 3vh, 28px); }
+
+  .reflect-col .reflect-title { font-family: var(--mono); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; text-align: left; }
+  .reflect-col ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  .reflect-col li { font-size: clamp(11.5px, 1vw, 13px); line-height: 1.5; color: var(--ink-soft); padding-left: 16px; position: relative; text-align: left; }
+  .reflect-col li::before { content: '—'; position: absolute; left: 0; color: var(--ink-soft); opacity: 0.5; }
+
+  /* ---------- Closing ---------- */
+  .link-row { display: flex; gap: 10px; margin-top: clamp(18px, 2.8vh, 26px); flex-wrap: wrap; justify-content: center; }
+
+  .link-pill { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); border: 1px solid var(--line); padding: 9px 16px; border-radius: 999px; font-family: var(--mono); }
+
+  /* ---------- Nav chrome ---------- */
+  .chrome { position: fixed; left: 0; right: 0; bottom: clamp(14px, 2.6vh, 26px); display: flex; align-items: center; justify-content: center; gap: 8px; z-index: 20; }
+
+  .dot-btn { width: 6px; height: 6px; border-radius: 999px; background: var(--line); border: none; cursor: pointer; padding: 0; transition: width 0.2s ease, background 0.2s ease; }
+  .dot-btn.active { width: 22px; background: var(--accent); }
+
+  .arrow-btn {
+    position: fixed; top: 50%; transform: translateY(-50%);
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--bg-alt); color: var(--ink);
+    font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    z-index: 20; opacity: 0.5; transition: opacity 0.2s ease;
+  }
+
+  .arrow-btn:hover { opacity: 1; }
+  .arrow-btn:focus-visible, .dot-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .arrow-btn.prev { left: clamp(10px, 2vw, 24px); }
+  .arrow-btn.next { right: clamp(10px, 2vw, 24px); }
+
+  .counter { position: fixed; top: clamp(14px, 2.6vh, 24px); right: clamp(20px, 3vw, 40px); font-size: 11px; font-weight: 700; color: var(--ink-soft); font-family: var(--mono); letter-spacing: 0.04em; z-index: 20; }
+
+
+  @media (prefers-reduced-motion: reduce) { .slide { transition: none; } }
+
+  @media (max-width: 780px) {
+    .feature-grid { grid-template-columns: 1fr; }
+    .risk-grid { grid-template-columns: 1fr; }
+    .reflect-grid { grid-template-columns: 1fr; }
+    .ghost-num { display: none; }
+    h1.headline, .slide-cover h1, .slide-cover .subtitle { white-space: normal; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- Slide 0: Cover -->
+  <section class="slide slide-cover active" data-slide>
+    <div class="brand-mark">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+          <circle cx="8" cy="10" r="6" fill="#fff" opacity="0.9"/>
+          <circle cx="15" cy="10" r="6" fill="#fff" opacity="0.55"/>
+          <circle cx="17.5" cy="17.5" r="5.5" fill="#fff"/>
+          <text x="17.5" y="20.3" font-size="7" font-weight="800" text-anchor="middle" fill="#8C0E22">₩</text>
+        </svg>
+      </span>
+      <span class="name">RIDESPLIT</span>
+    </div>
+    <h1>대학생 동행자 매칭 서비스</h1>
+    <p class="subtitle">같은 방향, 같은 시간. 택시를 나눠 타는 가장 쉬운 방법</p>
+    <div class="meta">
+      <span>AI AGENT CHALLENGE · 4주차 최종 데모</span>
+      <span>장규영</span>
+    </div>
+  </section>
+
+  <!-- Slide 1: 문제정의 -->
+  <section class="slide" data-slide>
+    <div class="ghost-num">01</div>
+    <div class="content">
+      <span class="eyebrow"><span class="bar"></span>문제 정의</span>
+      <h1 class="headline">분명 같은 방향인데, 나만 모른다</h1>
+      <p class="lede">대학생은 이동이 필요한 순간 주변에 방향이 겹치는 동행자가 있어도 이를 알 방법이 없어서, 택시 동승으로 아낄 수 있는 <span class="lede-strong">돈과 시간</span>을 그냥 놓치고 있습니다.</p>
+      <div class="scene">
+        <div class="who"><span class="avatar"></span>정문 · 20:30 · 대구역 방향</div>
+        <p>이 시간, 이 방향으로 가는 학생이 나 말고도 <span class="highlight">셋이나 더</span> 있었다. 각자 따로 잡느라 나눠 낼 수 있었던 돈도, 같이 갔다면 아꼈을 시간도 모두 놓쳤다.</p>
+      </div>
+      <div class="benefit-row">
+        <div class="benefit-chip">
+          <div>
+            <div class="benefit-title">시간 이점</div>
+            <div class="benefit-desc">택시는 가장 빠른 길로 데려다줍니다</div>
+          </div>
+        </div>
+        <div class="benefit-chip">
+          <div>
+            <div class="benefit-title">금전 이점</div>
+            <div class="benefit-desc">인원수만큼 택시비를 나눠 아낍니다</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 2: 핵심 기능 2가지 -->
+  <section class="slide" data-slide>
+    <div class="ghost-num">02</div>
+    <div class="content">
+      <span class="eyebrow"><span class="bar"></span>솔루션</span>
+      <h1 class="headline">핵심 기능 2가지</h1>
+      <div class="steps">
+        <div class="step">
+          <span class="badge">A</span>
+          <div class="body">
+            <h3>매칭 알고리즘</h3>
+            <p>같은 거점 조합 + 희망 시간 ±10분 이내인 사용자를 자동으로 그룹핑해 후보로 보여줍니다.</p>
+          </div>
+        </div>
+        <div class="step">
+          <span class="badge">B</span>
+          <div class="body">
+            <h3>동행 신청 · 수락 플로우</h3>
+            <p>후보 확인 → 신청 → 상대 수락 → 그룹 확정까지 이어지는 절차입니다. 후보를 보여주는 것만으로는 그룹이 만들어지지 않기 때문에, 잠재 수요를 실제 실행으로 전환시킵니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 3: 그 외 기능들 -->
+  <section class="slide" data-slide>
+    <div class="ghost-num">03</div>
+    <div class="content">
+      <span class="eyebrow"><span class="bar"></span>그 외 기능들</span>
+      <h1 class="headline">핵심 절차를 받쳐주는 기능들</h1>
+      <div class="feature-grid">
+        <div class="feature-cell"><div class="fi">01</div><h4>그룹 채팅</h4><p>만남 장소·시간을 실시간에 가깝게 조율</p></div>
+        <div class="feature-cell"><div class="fi">02</div><h4>비용 1/N 계산</h4><p>인원 확정에 따라 예상 택시비를 자동 갱신</p></div>
+        <div class="feature-cell"><div class="fi">03</div><h4>성별 선호 필터</h4><p>동성끼리만 매칭을 원하면 선택 가능</p></div>
+        <div class="feature-cell"><div class="fi">04</div><h4>그룹장 전용 탑승 확인</h4><p>대표 1인이 확인하면 전원에게 반영</p></div>
+        <div class="feature-cell"><div class="fi">05</div><h4>평점 · 노쇼 페널티</h4><p>미평가 시 1시간 후 자동 평가 처리</p></div>
+        <div class="feature-cell"><div class="fi">06</div><h4>비밀번호 · 게스트 로그인</h4><p>학교 인증 없이도 바로 체험 가능</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 4: 리스크 대응 -->
+  <section class="slide" data-slide>
+    <div class="ghost-num">04</div>
+    <div class="content">
+      <span class="eyebrow"><span class="bar"></span>리스크 대응</span>
+      <h1 class="headline">만들면서 미리 생각한 것들</h1>
+      <div class="risk-grid">
+        <div class="risk-card">
+          <div class="risk-label">안전</div>
+          <h3>모르는 사람과 동승 — 특히 심야·이성 매칭이 불안하다</h3>
+          <div class="response"><span class="arrow">→</span><p>동성끼리만 매칭 선호 필터, 상대방 활동 상태 표시로 신뢰 신호 제공</p></div>
+        </div>
+        <div class="risk-card">
+          <div class="risk-label">법적 모호성</div>
+          <h3>택시 합승은 여객자동차운수사업법상 회색지대다</h3>
+          <div class="response"><span class="arrow">→</span><p>앱은 매칭·정보 제공까지만 담당, 실제 탑승 여부는 사용자 자율 판단</p></div>
+        </div>
+        <div class="risk-card">
+          <div class="risk-label">정원 분쟁</div>
+          <h3>자리가 부족하면 누굴 먼저 태울지 다툼이 생긴다</h3>
+          <div class="response"><span class="arrow">→</span><p>도착 소요시간이 짧은 사람부터 우선순위로 정렬해 자동 판단</p></div>
+        </div>
+        <div class="risk-card">
+          <div class="risk-label">콜드스타트</div>
+          <h3>초기엔 사용자가 적어 매칭 밀도가 낮을 수 있다</h3>
+          <div class="response"><span class="arrow">→</span><p>거점을 정문·북문 등 소수로 좁혀 같은 곳에 등록이 몰리게 설계</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 5: 어떻게 동작하는지 -->
+  <section class="slide" data-slide>
+    <div class="ghost-num">05</div>
+    <div class="content">
+      <span class="eyebrow"><span class="bar"></span>어떻게 동작하는지</span>
+      <h1 class="headline">FE - BE - DB</h1>
+      <p class="lede">화면(React)이 요청을 보내면 서버(Express)가 매칭·정원·인가 같은 규칙을 판단하고, 그 결과를 Supabase(Postgres)에 저장합니다. 로그인·프로필만 예외적으로 화면이 Supabase에 직접 연결됩니다.</p>
+      <div class="stack-row">
+        <span class="stack-pill">React</span>
+        <span class="stack-pill">Vite</span>
+        <span class="stack-pill">Express</span>
+        <span class="stack-pill">Supabase (Postgres + Auth)</span>
+        <span class="stack-pill">Vitest</span>
+      </div>
+      <div class="arch-flow">React <span class="role">(화면)</span> → Express <span class="role">(규칙)</span> → Supabase <span class="role">(저장)</span></div>
+    </div>
+  </section>
+
+  <!-- Slide 6: 문제해결 방식 -->
+  <section class="slide" data-slide>
+    <div class="ghost-num">06</div>
+    <div class="content">
+      <span class="eyebrow"><span class="bar"></span>문제해결 방식</span>
+      <h1 class="headline">코드는 AI가, 이해는 제가 채웠습니다</h1>
+      <p class="lede">구현 자체는 AI Agent가 담당했지만, 왜 이렇게 동작하는지 모르는 개념이 나올 때마다 멈추고 직접 채워나갔습니다. 결과물을 그대로 받는 게 아니라, 개념의 공백을 스스로 메우면서 흐름을 이해하려 했습니다.</p>
+      <div class="concept-cloud">
+        <span class="concept-chip hi">React 상태 · 이펙트</span>
+        <span class="concept-chip">CORS · 배포 브랜치</span>
+        <span class="concept-chip hi">외래키 제약</span>
+        <span class="concept-chip">RLS 권한 정책</span>
+        <span class="concept-chip hi">REST API 설계</span>
+        <span class="concept-chip">상태 설계의 함정</span>
+        <span class="concept-chip">TDD 사이클</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 7: 서비스 시연 -->
+  <section class="slide" data-slide>
+    <div class="ghost-num">07</div>
+    <div class="content">
+      <span class="eyebrow"><span class="bar"></span>직접 보기</span>
+      <h1 class="headline">서비스 시연</h1>
+      <div class="demo-url">ridesplit-git-work-gyu-young.vercel.app</div>
+      <div class="scenario-row">
+        <span class="scenario-chip"><span class="n">1</span>게스트 로그인</span>
+        <span class="scenario-chip"><span class="n">2</span>이동 등록</span>
+        <span class="scenario-chip"><span class="n">3</span>매칭 후보</span>
+        <span class="scenario-chip"><span class="n">4</span>그룹 채팅</span>
+        <span class="scenario-chip"><span class="n">5</span>탑승 확인</span>
+        <span class="scenario-chip"><span class="n">6</span>평가</span>
+      </div>
+      <p class="demo-sub">실제 계정으로, 실제 서버·DB에서 동작합니다.</p>
+    </div>
+  </section>
+
+  <!-- Slide 8: 느낀점 -->
+  <section class="slide" data-slide>
+    <div class="ghost-num">08</div>
+    <div class="content">
+      <span class="eyebrow"><span class="bar"></span>느낀점</span>
+      <h1 class="headline">혼자였다면 몰랐을 것들</h1>
+      <div class="reflect-grid">
+        <div class="reflect-col">
+          <div class="reflect-title">흥미로웠던 것</div>
+          <ul>
+            <li>기획부터 배포까지 풀스택 경험을 직접 해볼 수 있었습니다</li>
+            <li>Agent를 어떻게 활용하는지가 결과물을 크게 좌우한다는 걸 깨달았습니다</li>
+            <li>같은 요청도 프롬프트에 따라 결과가 달라진다는 걸 체감했습니다</li>
+            <li>일정한 결과를 위해 스킬·에이전트를 미리 만들어둔다는 접근을 배웠습니다</li>
+          </ul>
+        </div>
+        <div class="reflect-col">
+          <div class="reflect-title">아쉬운 점</div>
+          <ul>
+            <li>생각했던 대로 구현하기 어려운 기능들이 있었습니다</li>
+            <li>끝내 만들지 못한 기능이 여러 개 남았습니다</li>
+            <li>AI Agent에게 의존을 많이 한 것 같다는 생각이 듭니다</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Slide 9: Closing -->
+  <section class="slide slide-closing" data-slide>
+    <div class="content" style="text-align:center;">
+      <span class="eyebrow"><span class="bar"></span>마무리</span>
+      <h1 class="headline">감사합니다</h1>
+      <p class="lede" style="margin: 0 auto;">같은 방향인데 몰라서 놓치는 택시비, RideSplit이 대신 찾아드립니다.</p>
+      <div class="link-row">
+        <span class="link-pill">배포 · ridesplit-git-work-gyu-young.vercel.app</span>
+        <span class="link-pill">소스 · github.com/gyu-young-04/hub</span>
+        <span class="link-pill">영상 · loom.com/share/0aa5ea2ed3494593aacaddb3eba2ef6f</span>
+      </div>
+      <p class="lede" style="margin-top: 22px; font-weight: 800; color: var(--ink);">Q&amp;A</p>
+    </div>
+  </section>
+
+  <button class="arrow-btn prev" id="prevBtn" aria-label="이전 슬라이드">‹</button>
+  <button class="arrow-btn next" id="nextBtn" aria-label="다음 슬라이드">›</button>
+  <div class="counter" id="counter">1 / 1</div>
+  <div class="chrome" id="dots"></div>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('[data-slide]'));
+  const dotsEl = document.getElementById('dots');
+  const counterEl = document.getElementById('counter');
+  let current = 0;
+
+  slides.forEach((_, i) => {
+    const b = document.createElement('button');
+    b.className = 'dot-btn' + (i === 0 ? ' active' : '');
+    b.setAttribute('aria-label', 'slide ' + (i + 1));
+    b.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(b);
+  });
+  const dotButtons = Array.from(dotsEl.children);
+  counterEl.textContent = '1 / ' + slides.length;
+
+  function goTo(i) {
+    if (i < 0 || i >= slides.length) return;
+    slides[current].classList.remove('active');
+    dotButtons[current].classList.remove('active');
+    current = i;
+    slides[current].classList.add('active');
+    dotButtons[current].classList.add('active');
+    counterEl.textContent = (current + 1) + ' / ' + slides.length;
+  }
+
+  document.getElementById('prevBtn').addEventListener('click', () => goTo(current - 1));
+  document.getElementById('nextBtn').addEventListener('click', () => goTo(current + 1));
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); goTo(current + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goTo(current - 1); }
+  });
+
+  let touchStartX = null;
+  window.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+  window.addEventListener('touchend', (e) => {
+    if (touchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) goTo(current + (dx < 0 ? 1 : -1));
+    touchStartX = null;
+  });
+</script>
+</body>
+</html>
