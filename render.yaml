@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: pyeonbang
+    env: python
+    rootDir: pyeonbang/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false

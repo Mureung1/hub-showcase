@@ -2,3 +2,10 @@ venv/
 pyeonbang/venv/
 *.pyc
 __pycache__/
+.env
+pyeonbang/backend/.env
+pyeonbang/images/*
+!pyeonbang/images/.gitkeep
+*.db
+*.log
+.DS_Store

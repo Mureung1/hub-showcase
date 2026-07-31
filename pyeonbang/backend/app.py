@@ -54,6 +54,9 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Ensure database table is initialized on startup
+init_db()
+
 def calculate_grade(price, protein):
     """
     3단계 가성비 검증 로직
