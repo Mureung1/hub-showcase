@@ -3,12 +3,18 @@ package com.punchman.devpulse.kafka;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.listener.CommonErrorHandler;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.util.backoff.FixedBackOff;
 
+/**
+ * !prod 전용 — prod 프로필(무료 배포 환경)엔 Kafka 브로커 자체가 없어 토픽 자동생성/에러
+ * 핸들러 둘 다 불필요하다.
+ */
 @Configuration
+@Profile("!prod")
 public class KafkaTopicConfig {
 
     @Bean

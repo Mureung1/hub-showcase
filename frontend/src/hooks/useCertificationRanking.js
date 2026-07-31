@@ -1,6 +1,5 @@
 import { useState } from 'react'
-
-const API_BASE_URL = 'http://localhost:8080'
+import { API_BASE_URL } from '../config.js'
 
 function useCertificationRanking() {
   const [jobTitle, setJobTitle] = useState('')

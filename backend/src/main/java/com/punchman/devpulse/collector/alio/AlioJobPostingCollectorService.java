@@ -1,16 +1,14 @@
 package com.punchman.devpulse.collector.alio;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.punchman.devpulse.kafka.JobPostingCollectedEvent;
-import com.punchman.devpulse.kafka.KafkaTopics;
+import com.punchman.devpulse.kafka.JobPostingEventPublisher;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,17 +18,17 @@ public class AlioJobPostingCollectorService {
     private static final long RECENT_MONTHS = 3;
 
     private final AlioRecruitInquiryClient alioRecruitInquiryClient;
-    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final JobPostingEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
     private final String apiKey;
 
     public AlioJobPostingCollectorService(
             AlioRecruitInquiryClient alioRecruitInquiryClient,
-            KafkaTemplate<String, String> kafkaTemplate,
+            JobPostingEventPublisher eventPublisher,
             ObjectMapper objectMapper,
             @Value("${devpulse.alio.api-key}") String apiKey) {
         this.alioRecruitInquiryClient = alioRecruitInquiryClient;
-        this.kafkaTemplate = kafkaTemplate;
+        this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
         this.apiKey = apiKey;
     }
@@ -134,11 +132,6 @@ public class AlioJobPostingCollectorService {
                 item.pbancBgngYmd(),
                 item.pbancEndYmd()
         );
-        try {
-            String payload = objectMapper.writeValueAsString(event);
-            kafkaTemplate.send(KafkaTopics.JOBPOSTING_COLLECTED, payload);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("JobPostingCollectedEvent 직렬화 실패", e);
-        }
+        eventPublisher.publish(event);
     }
 }

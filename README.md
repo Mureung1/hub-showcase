@@ -24,7 +24,7 @@
   - Java 그래프 알고리즘 — 자격증 취득 경로 최적화 (위상 정렬)
   - Kafka — 공고 수집→정규화→집계 파이프라인 비동기 분리
   - Feign — ALIO Open API, 무료 LLM API 호출
-- **DB**: PostgreSQL, Flyway
+- **DB**: PostgreSQL 16, Flyway
 - **데이터 소스**: ALIO(공공기관 채용정보 공개시스템) Open API — 커뮤니티 게시글 크롤링은 하지 않음
 
 ## 실행 방법

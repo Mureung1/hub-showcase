@@ -3,7 +3,7 @@
   "title": "자격증 취득 경로 플래너",
   "summary": "실제 채용공고 데이터를 근거로 목표 직무에 필요한 자격증을 걸러주고, 최적의 취득 순서를 계산해주는 서비스입니다.",
   "githubUser": "punchman340(조민훈)",
-  "demoUrl": "",
+  "demoUrl": "https://devpulse-two-gamma.vercel.app/",
   "demoVideoUrl": "https://youtu.be/l2JOsT6L2wU",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
