@@ -37,7 +37,15 @@ export function AuthProvider({ children }) {
       user,
       isLoggedIn: Boolean(user),
 
-      signUpWithEmail: (email, password) => supabase.auth.signUp({ email, password }),
+      // 확인 메일의 링크가 돌아올 곳을 현재 도메인으로 명시한다.
+      // 지정하지 않으면 Supabase의 Site URL(기본 localhost)로 돌아가 배포본에서 연결 거부가 난다.
+      // (이 주소는 Supabase Auth의 Redirect URLs 허용 목록에도 있어야 한다 — docs/DEPLOY.md 참조)
+      signUpWithEmail: (email, password) =>
+        supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin },
+        }),
       signInWithEmail: (email, password) => supabase.auth.signInWithPassword({ email, password }),
       signInWithProvider: (provider) =>
         supabase.auth.signInWithOAuth({
