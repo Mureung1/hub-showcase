@@ -8,10 +8,10 @@
   "thumbnail": "thumbnail.png",
   "screenshots": [
     "screenshots/1_login.png",
-    "screenshots/2_dashboard.png",
+    "screenshots/2_portal.png",
     "screenshots/3_timetable.png",
     "screenshots/4_analytics.png",
-    "screenshots/5_report.png"
+    "screenshots/5_semester_grades.png"
   ],
   "problem": "편입생이나 다전공 수강생들의 경우, 각각 다르게 적용되는 복잡한 교양 및 전공 졸업 요건을 스스로 진단하기 매우 어렵고, 모의 수강신청 시간표 배정과 성적표 분석을 여러 시스템에서 분산 처리해야 하는 수고가 있습니다.",
   "targetUsers": [
