@@ -63,8 +63,11 @@ function EditorPage() {
   const auth = useAuth()
 
   const template = getTemplate(templateId)
-  const challenge = getChallenge(searchParams.get('challenge'))
   const draftParam = searchParams.get('draft')
+  // 챌린지 참가 여부는 URL(?challenge=)에서 시작하지만, 초안을 다시 열 때는 URL에 그 파라미터가 없다.
+  // 문서에 기록된 challengeId로 복원하지 않으면 이어서 발행할 때 채점 기준이 빠져 점수가 안 나온다.
+  const [challengeId, setChallengeId] = useState(() => searchParams.get('challenge') ?? null)
+  const challenge = getChallenge(challengeId)
 
   // 문서 식별자는 서버가 발급한 uuid 하나로 통일한다(신규는 null, 첫 저장 때 채워짐).
   const [docId, setDocId] = useState(null)
@@ -115,6 +118,8 @@ function EditorPage() {
         setCategory(doc.category ?? '')
         setFeedbackWanted(doc.feedbackWanted ?? false)
         setSections(doc.sections ?? [])
+        // 초안이 챌린지 제출용이면 그 참가 상태를 되살린다(URL에 challenge가 있으면 그쪽을 우선).
+        if (doc.challengeId && !searchParams.get('challenge')) setChallengeId(doc.challengeId)
         // 방금 불러온 내용은 이미 저장된 상태다. 스냅샷을 맞춰두지 않으면
         // 로딩 직후 "변경됨"으로 오인해 자동저장이 곧바로 돈다.
         lastSavedRef.current = makeSnapshot({
@@ -164,6 +169,8 @@ function EditorPage() {
           gameTag,
           systemTag,
           category,
+          // 초안 단계에서도 소속 챌린지를 남긴다. 그래야 나중에 이어서 발행해도 채점 기준이 붙는다.
+          challengeId: challenge?.id ?? null,
           feedbackWanted,
           sections,
           editPassword: editPassword || undefined,
@@ -194,6 +201,7 @@ function EditorPage() {
     template,
     editPassword,
     auth.isLoggedIn,
+    challenge?.id,
   ])
 
   if (!template) {
@@ -288,6 +296,7 @@ function EditorPage() {
         gameTag,
         systemTag,
         category,
+        challengeId: challenge?.id ?? null,
         feedbackWanted,
         sections,
         editPassword: editPassword || undefined,
