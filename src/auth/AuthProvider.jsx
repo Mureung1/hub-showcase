@@ -4,12 +4,22 @@ import { toFriendlyAuthError } from "./authErrorMessages.js";
 import { normalizeUsername, usernameToAuthEmail } from "./authIdentity.js";
 
 export const AuthContext = createContext(null);
+const GUEST_DEMO_SESSION_KEY = "uniradar.guest-demo.active";
+
+function readGuestDemoSession() {
+  try {
+    return window.sessionStorage.getItem(GUEST_DEMO_SESSION_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const [isGuestDemo, setIsGuestDemo] = useState(readGuestDemoSession);
 
   useEffect(() => {
     if (!supabase) {
@@ -55,6 +65,26 @@ export function AuthProvider({ children }) {
       setAuthError(message);
       throw new Error(message);
     }
+    exitGuestDemo();
+  }
+
+  function startGuestDemo() {
+    try {
+      window.sessionStorage.setItem(GUEST_DEMO_SESSION_KEY, "true");
+    } catch {
+      // The demo still works for the current render when sessionStorage is unavailable.
+    }
+    setAuthError(null);
+    setIsGuestDemo(true);
+  }
+
+  function exitGuestDemo() {
+    try {
+      window.sessionStorage.removeItem(GUEST_DEMO_SESSION_KEY);
+    } catch {
+      // Storage cleanup should not block returning to the sign-in screen.
+    }
+    setIsGuestDemo(false);
   }
 
   async function signUp({ username, password }) {
@@ -72,6 +102,7 @@ export function AuthProvider({ children }) {
       setAuthError(message);
       throw new Error(message);
     }
+    exitGuestDemo();
     return { needsEmailConfirmation: !data.session };
   }
 
@@ -90,12 +121,15 @@ export function AuthProvider({ children }) {
     authError,
     isAuthLoading,
     isConfigured: supabaseAuthConfigured,
+    isGuestDemo,
+    exitGuestDemo,
     session,
     signIn,
     signOut,
     signUp,
+    startGuestDemo,
     user,
-  }), [authError, isAuthLoading, session, user]);
+  }), [authError, isAuthLoading, isGuestDemo, session, user]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

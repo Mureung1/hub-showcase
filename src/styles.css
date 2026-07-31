@@ -2729,3 +2729,21 @@ select:focus {
   margin-left: auto;
   color: var(--muted, #667085);
 }
+.guest-demo-panel {
+  align-items: center;
+  background: var(--color-primary-soft);
+  border: 1px solid #cfe0ff;
+  border-radius: 8px;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.guest-demo-panel strong { color: var(--color-primary-strong); }
+.guest-demo-panel p { margin: 4px 0 0; }
+
+@media (max-width: 640px) {
+  .guest-demo-panel { align-items: stretch; flex-direction: column; }
+  .guest-demo-panel .secondary-button { width: 100%; }
+}

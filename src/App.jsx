@@ -37,6 +37,13 @@ import { useAuth } from "./auth/useAuth.js";
 import { getUsernameFromUser } from "./auth/authIdentity.js";
 import { useUserSettings } from "./settings/useUserSettings.js";
 import { UserSettingsProvider } from "./settings/UserSettingsProvider.jsx";
+import { analyzeGuestDemoNotice, createGuestDemoScan, guestDemoProfile, guestDemoSource } from "./data/guestDemo.js";
+import {
+  deleteGuestDemoAnalysis,
+  guestDemoStorage,
+  readGuestDemoSavedAnalyses,
+  saveGuestDemoAnalysis,
+} from "./storage/guestDemoStore.js";
 import { analyzeNoticeLinks } from "./services/analyzeNoticeLinks.js";
 import { rematchAnalysisResult } from "./services/rematchAnalysisResult.js";
 import {
@@ -167,15 +174,15 @@ function getErrorMessage(error) {
 }
 
 
-function createInitialConfig() {
+function createInitialConfig(initialSource = null) {
   return {
     allNoticesPerSource: DEFAULT_ALL_NOTICES_PER_SOURCE,
     htmlSource: "",
     linkSelector: "a[href]",
-    selectedSourceId: "custom",
-    sourceMode: "live",
-    sourceName: "",
-    targetUrl: "",
+    selectedSourceId: initialSource?.id || "custom",
+    sourceMode: initialSource?.sourceMode || "live",
+    sourceName: initialSource?.name || "",
+    targetUrl: initialSource?.targetUrl || "",
   };
 }
 
@@ -718,14 +725,20 @@ function NoticeBriefPanel({ analysisProgress, briefs }) {
 }
 
 function Topbar({ health, user }) {
-  const { signOut } = useAuth();
+  const { exitGuestDemo, isGuestDemo, signOut } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const provider = providerLabels[health?.aiProvider] ?? health?.aiProvider ?? "server";
-  const modeLabel = health
-    ? health.liveAIEnabled
-      ? `${provider} 실제 분석 모드`
-      : "mock 분석 모드"
-    : "서버 확인 중";
+  const modeLabel = isGuestDemo
+    ? "게스트 mock 시연"
+    : health
+      ? health.liveAIEnabled
+        ? `${provider} 실제 분석 모드`
+        : "mock 분석 모드"
+      : "서버 확인 중";
+
+  function handleExitGuestDemo() {
+    exitGuestDemo();
+  }
 
   async function handleSignOut() {
     if (isSigningOut) return;
@@ -761,10 +774,12 @@ function Topbar({ health, user }) {
             <span>김</span>
             <div>
               <strong>{user ? getUsernameFromUser(user) : "게스트"}</strong>
-              <small>{user ? "로그인됨" : "로그인 필요"}</small>
+              <small>{user ? "로그인됨" : isGuestDemo ? "시연 모드" : "로그인 필요"}</small>
             </div>
           </div>
-          {user ? (
+          {isGuestDemo ? (
+            <button aria-label="게스트 시연 종료" className="secondary-button compact-button topbar-logout-button" onClick={handleExitGuestDemo} type="button">시연 종료</button>
+          ) : user ? (
             <button
               aria-label="현재 계정 로그아웃"
               className="secondary-button compact-button topbar-logout-button"
@@ -917,18 +932,28 @@ function CategoryStrip() {
   );
 }
 
+function GuestDemoFeaturePanel() {
+  return (
+    <section className="saved-opportunities-empty" aria-label="게스트 시연 안내">
+      <strong>게스트 시연에서는 예시 공고 흐름을 제공합니다.</strong>
+      <p>대시보드에서 예시 공고를 스캔하고 mock 분석, 저장 공고, 마감 태스크를 체험할 수 있습니다. 실제 사이트 추천과 외부 공지 탐색은 로그인 후 이용할 수 있습니다.</p>
+    </section>
+  );
+}
+
 function OpportunityAgentWorkbench() {
-  const { isAuthLoading, isConfigured: isAuthConfigured, session, user } = useAuth();
+  const { isAuthLoading, isConfigured: isAccountAuthConfigured, isGuestDemo, session, user } = useAuth();
+  const isAuthConfigured = isAccountAuthConfigured && !isGuestDemo;
   const { settings: userSettings } = useUserSettings();
   const noticeHistoryStore = useMemo(
-    () => createScopedNoticeHistoryStore(isAuthConfigured ? user?.id : ""),
-    [isAuthConfigured, user?.id],
+    () => createScopedNoticeHistoryStore(isAuthConfigured ? user?.id : isGuestDemo ? "guest-demo" : ""),
+    [isAuthConfigured, isGuestDemo, user?.id],
   );
   const [customSources, setCustomSources] = useState([]);
   const [isSavingSource, setIsSavingSource] = useState(false);
   const [initialScan] = useState(() => noticeHistoryStore.readLastScanResult());
   const [config, setConfig] = useState(() => ({
-    ...createInitialConfig(),
+    ...createInitialConfig(isGuestDemo ? guestDemoSource : null),
     allNoticesPerSource: initialScan?.allNoticesPerSource ?? DEFAULT_ALL_NOTICES_PER_SOURCE,
   }));
   const [knownLinks, setKnownLinks] = useState([]);
@@ -938,12 +963,14 @@ function OpportunityAgentWorkbench() {
   const [noticeMessage, setNoticeMessage] = useState(() =>
     initialScan
       ? "마지막 스캔 결과(" + formatScanTime(initialScan.fetchedAt) + ")를 복원했습니다."
-      : "서버 프록시와 로컬 기록으로 공지 링크를 수집합니다.",
+      : isGuestDemo
+        ? "예시 공고로 스캔, 분석, 저장 흐름을 체험할 수 있습니다."
+        : "서버 프록시와 로컬 기록으로 공지 링크를 수집합니다.",
   );
   const [displayMode, setDisplayMode] = useState("latest");
   const [health, setHealth] = useState(null);
   const [legacyProfile, setLegacyProfile] = useState(() =>
-    isAuthConfigured ? null : readUserProfile(),
+    isAuthConfigured ? null : (isGuestDemo ? readUserProfile(guestDemoStorage) || guestDemoProfile : readUserProfile()),
   );
   const [userProfile, setUserProfile] = useState(null);
   const [profileOwnerId, setProfileOwnerId] = useState(null);
@@ -975,13 +1002,13 @@ function OpportunityAgentWorkbench() {
   const isRunning = status === "running" || status === "analyzing";
   const resolvedTargetUrl = resolveTargetUrl(config.targetUrl);
   const sourceOptions = useMemo(
-    () => [...defaultNoticeSources, ...customSources].map((source) => ({
+    () => [...(isGuestDemo ? [guestDemoSource] : defaultNoticeSources), ...customSources].map((source) => ({
       ...source,
       html: "",
       linkSelector: "a[href]",
-      sourceMode: "live",
+      sourceMode: source.sourceMode ?? "live",
     })),
-    [customSources],
+    [customSources, isGuestDemo],
   );
 
   const sourceSummary = useMemo(() => {
@@ -1002,9 +1029,11 @@ function OpportunityAgentWorkbench() {
     () => createNoticeBriefsFromLinks(displayLinks, noticeAnalysisByUrl),
     [displayLinks, noticeAnalysisByUrl],
   );
-  const canUseSavedStorage = isAuthConfigured
-    ? Boolean(user && session?.access_token)
-    : Boolean(health?.storageConfigured);
+  const canUseSavedStorage = isGuestDemo
+    ? true
+    : isAuthConfigured
+      ? Boolean(user && session?.access_token)
+      : Boolean(health?.storageConfigured);
   const loadSavedAnalyses = useCallback(async () => {
     if (!canUseSavedStorage) {
       setSavedAnalyses([]);
@@ -1015,6 +1044,12 @@ function OpportunityAgentWorkbench() {
     setIsLoadingSavedAnalyses(true);
     setSavedAnalysesError("");
 
+    if (isGuestDemo) {
+      setSavedAnalyses(readGuestDemoSavedAnalyses());
+      setIsLoadingSavedAnalyses(false);
+      return;
+    }
+
     try {
       const response = await getSavedOpportunities(isAuthConfigured ? session?.access_token : undefined);
       setSavedAnalyses(response.items || []);
@@ -1023,14 +1058,14 @@ function OpportunityAgentWorkbench() {
     } finally {
       setIsLoadingSavedAnalyses(false);
     }
-  }, [canUseSavedStorage, isAuthConfigured, session?.access_token]);
+  }, [canUseSavedStorage, isAuthConfigured, isGuestDemo, session?.access_token]);
 
 
   useEffect(() => {
     let cancelled = false;
 
     if (!isAuthConfigured) {
-      setCustomSources(readCustomSources());
+      setCustomSources(readCustomSources(isGuestDemo ? guestDemoStorage : undefined));
       return undefined;
     }
 
@@ -1069,7 +1104,7 @@ function OpportunityAgentWorkbench() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthConfigured, session?.access_token, user?.id]);
+  }, [isAuthConfigured, isGuestDemo, session?.access_token, user?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1123,7 +1158,7 @@ function OpportunityAgentWorkbench() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthConfigured, legacyProfile, session?.access_token, user?.id]);
+  }, [isAuthConfigured, isGuestDemo, legacyProfile, session?.access_token, user?.id]);
 
   useEffect(() => {
     const restoredScan = noticeHistoryStore.readLastScanResult();
@@ -1139,8 +1174,10 @@ function OpportunityAgentWorkbench() {
     setNoticeAnalysisProgress(null);
     setNoticeMessage(restoredScan
       ? `마지막 스캔 결과(${formatScanTime(restoredScan.fetchedAt)})를 복원했습니다.`
-      : "서버 프록시와 로컬 기록으로 공지 링크를 수집합니다.");
-  }, [noticeHistoryStore]);
+      : isGuestDemo
+        ? "예시 공고로 스캔, 분석, 저장 흐름을 체험할 수 있습니다."
+        : "서버 프록시와 로컬 기록으로 공지 링크를 수집합니다.");
+  }, [isGuestDemo, noticeHistoryStore]);
   useEffect(() => {
     let isCancelled = false;
 
@@ -1208,7 +1245,7 @@ function OpportunityAgentWorkbench() {
   }
 
   async function persistProfile(candidate) {
-    if (!isAuthConfigured) return saveUserProfile(candidate);
+    if (!isAuthConfigured) return saveUserProfile(candidate, isGuestDemo ? guestDemoStorage : undefined);
     if (!session?.access_token) throw new Error("로그인 상태를 확인하지 못했습니다. 다시 로그인해 주세요.");
     const response = await saveProfile(candidate, session.access_token);
     return response.profile;
@@ -1247,8 +1284,8 @@ function OpportunityAgentWorkbench() {
     setProfileError("");
     try {
       const savedProfile = await persistProfile(legacyProfile);
-      clearUserProfile();
-      setLegacyProfile(null);
+      clearUserProfile(isGuestDemo ? guestDemoStorage : undefined);
+        setLegacyProfile(null);
       setUserProfile(savedProfile);
       setProfileOwnerId(isAuthConfigured ? user?.id ?? null : null);
       setProfileDraft(profileToDraft(savedProfile));
@@ -1268,8 +1305,8 @@ function OpportunityAgentWorkbench() {
         if (!session?.access_token) throw new Error("로그인 상태를 확인하지 못했습니다. 다시 로그인해 주세요.");
         await deleteProfile(session.access_token);
       } else {
-        clearUserProfile();
-        setLegacyProfile(null);
+        clearUserProfile(isGuestDemo ? guestDemoStorage : undefined);
+      setLegacyProfile(null);
       }
       setUserProfile(null);
       setProfileOwnerId(null);
@@ -1294,7 +1331,9 @@ function OpportunityAgentWorkbench() {
     setIsSavingAnalysis(true);
 
     try {
-      const response = await saveOpportunity(result, isAuthConfigured ? session?.access_token : undefined);
+      const response = isGuestDemo
+        ? { item: saveGuestDemoAnalysis(result) }
+        : await saveOpportunity(result, isAuthConfigured ? session?.access_token : undefined);
       const savedItem = response.item;
       setSavedAnalyses((currentItems) => [
         savedItem,
@@ -1327,7 +1366,11 @@ function OpportunityAgentWorkbench() {
     setDeletingSavedAnalysisId(storageId);
     setSavedAnalysesError("");
     try {
-      await deleteSavedOpportunity(storageId, isAuthConfigured ? session?.access_token : undefined);
+      if (isGuestDemo) {
+        deleteGuestDemoAnalysis(storageId);
+      } else {
+        await deleteSavedOpportunity(storageId, isAuthConfigured ? session?.access_token : undefined);
+      }
       setSavedAnalyses((currentItems) => currentItems.filter((item) => (item.storageId || item.id) !== storageId));
       setSelectedSavedAnalysisId((currentId) => currentId === storageId ? null : currentId);
     } catch (error) {
@@ -1357,11 +1400,13 @@ function OpportunityAgentWorkbench() {
 
 
     try {
-      const result = await analyzeOpportunity({
-        profile: activeUserProfile,
-        rawText: "",
-        sourceUrl: url,
-      }, session?.access_token);
+      const result = isGuestDemo
+        ? analyzeGuestDemoNotice(link, activeUserProfile)
+        : await analyzeOpportunity({
+          profile: activeUserProfile,
+          rawText: "",
+          sourceUrl: url,
+        }, session?.access_token);
       if (autoSave) {
         await saveAnalysisIfEnabled(result);
       }
@@ -1569,7 +1614,7 @@ function OpportunityAgentWorkbench() {
       }
     }
 
-    const { source: savedSource, sources } = upsertCustomSource(source);
+    const { source: savedSource, sources } = upsertCustomSource(source, isGuestDemo ? guestDemoStorage : undefined);
     setCustomSources(sources);
     applySavedSource(savedSource);
     if (!silent) setNoticeMessage(`${savedSource.name} 출처를 이 브라우저에 저장했습니다.`);
@@ -1599,6 +1644,10 @@ function OpportunityAgentWorkbench() {
   }
 
   async function maybeAutoSaveCurrentSource() {
+    if (isGuestDemo) {
+      return { autoSaved: false, source: guestDemoSource };
+    }
+
     const source = createSourceFromConfig();
     const savedDefaultSource = findSourceByUrl(defaultNoticeSources, source.targetUrl);
     const savedCustomSource = findSourceByUrl(customSources, source.targetUrl);
@@ -1647,7 +1696,7 @@ function OpportunityAgentWorkbench() {
         await deleteNoticeSource(sourceId, session.access_token);
         setCustomSources((currentSources) => currentSources.filter((item) => item.id !== sourceId));
       } else {
-        const result = removeCustomSource(sourceId);
+        const result = removeCustomSource(sourceId, isGuestDemo ? guestDemoStorage : undefined);
         if (!result.source) throw new Error("저장된 출처를 삭제하지 못했습니다.");
         deletedSource = result.source;
         setCustomSources(result.sources);
@@ -1683,14 +1732,16 @@ function OpportunityAgentWorkbench() {
     const fallbackUrls = source.knownUrls ?? [];
     const currentKnownLinks = noticeHistoryStore.readNoticeHistory(source.targetUrl, fallbackUrls);
     const previousScanLinks = noticeHistoryStore.readScanSnapshot(source.targetUrl);
-    const result = await runNoticeLinkScan({
-      accessToken: isAuthConfigured ? session?.access_token : undefined,
-      html: source.html ?? "",
-      knownUrls: currentKnownLinks,
-      linkSelector: source.linkSelector,
-      sourceMode: source.sourceMode,
-      targetUrl: source.targetUrl,
-    });
+    const result = isGuestDemo
+      ? createGuestDemoScan(source)
+      : await runNoticeLinkScan({
+        accessToken: isAuthConfigured ? session?.access_token : undefined,
+        html: source.html ?? "",
+        knownUrls: currentKnownLinks,
+        linkSelector: source.linkSelector,
+        sourceMode: source.sourceMode,
+        targetUrl: source.targetUrl,
+      });
     const latestLinks = previousScanLinks.length
       ? findNewPostLinks(result.allLinks, previousScanLinks, result.targetUrl)
       : result.allLinks;
@@ -1778,6 +1829,9 @@ function OpportunityAgentWorkbench() {
       setStatus("analyzing");
       setNoticeAnalysisProgress({ completed: 0, failedCount: 0, total: latestLinks.length });
       const summary = await analyzeNoticeLinks({
+        analyze: isGuestDemo
+          ? async ({ url }) => analyzeGuestDemoNotice({ url }, activeUserProfile)
+          : async ({ profile, url }) => analyzeOpportunity({ profile, rawText: "", sourceUrl: url }, session?.access_token),
         links: latestLinks,
         profile: activeUserProfile,
         onProgress: ({ completed, entry, failedCount, total }) => {
@@ -2043,8 +2097,14 @@ function OpportunityAgentWorkbench() {
 
           {activeView === "recommendations" ? (
             <div className="view-page recommendations-view">
-              <SiteRecommendations accessToken={session?.access_token} key={isAuthConfigured ? user?.id || "unauthenticated" : "local"} onAddSource={addRecommendedSource} profile={activeUserProfile} savedSources={sourceOptions} settings={userSettings} />
-              <NoticeDiscovery accessToken={session?.access_token} />
+              {isGuestDemo ? (
+                <GuestDemoFeaturePanel />
+              ) : (
+                <>
+                  <SiteRecommendations accessToken={session?.access_token} key={isAuthConfigured ? user?.id || "unauthenticated" : "local"} onAddSource={addRecommendedSource} profile={activeUserProfile} savedSources={sourceOptions} settings={userSettings} />
+                  <NoticeDiscovery accessToken={session?.access_token} />
+                </>
+              )}
             </div>
           ) : null}
 
@@ -2064,7 +2124,7 @@ function OpportunityAgentWorkbench() {
                     onRefresh={loadSavedAnalyses}
                     onSelect={handleSelectSavedAnalysis}
                     selectedId={selectedSavedAnalysisId}
-                    storageLabel={isAuthConfigured ? "내 계정 저장소" : health?.storageLabel}
+                    storageLabel={isGuestDemo ? "게스트 브라우저 저장소" : isAuthConfigured ? "내 계정 저장소" : health?.storageLabel}
                   />
                   <section className="saved-opportunity-detail" aria-label="저장 공고 상세">
                     {selectedSavedAnalysis ? (
@@ -2121,7 +2181,7 @@ function OpportunityAgentWorkbench() {
 
           {activeView === "settings" ? (
             <div className="view-page settings-view">
-              {isAuthConfigured && !user ? <ProfileAccessPanel /> : isAuthConfigured ? <UserSettingsForm /> : (
+              {isGuestDemo ? <GuestDemoFeaturePanel /> : isAuthConfigured && !user ? <ProfileAccessPanel /> : isAuthConfigured ? <UserSettingsForm /> : (
                 <div className="saved-opportunities-empty">
                   <strong>개인 설정은 로그인 모드에서 사용할 수 있습니다.</strong>
                   <p>Supabase 인증 설정을 완료한 뒤 로그인해 주세요.</p>
@@ -2135,11 +2195,11 @@ function OpportunityAgentWorkbench() {
   );
 }
 export default function OpportunityAgentIntro() {
-  const { user } = useAuth();
+  const { isGuestDemo, user } = useAuth();
 
   return (
     <AuthGate>
-      <UserSettingsProvider key={user?.id || "anonymous"}>
+      <UserSettingsProvider key={isGuestDemo ? "guest-demo" : user?.id || "anonymous"}>
         <OpportunityAgentWorkbench />
       </UserSettingsProvider>
     </AuthGate>
