@@ -2069,7 +2069,7 @@ function OpportunityAgentWorkbench() {
 
           {activeView === "profile" ? (
             <div className="view-page profile-view">
-              <AuthPanel />
+              {!isGuestDemo ? <AuthPanel /> : null}
               {isAuthConfigured && user && !activeUserProfile && legacyProfile ? (
                 <LegacyProfileMigrationPanel isImporting={isImportingLegacyProfile} onImport={handleImportLegacyProfile} />
               ) : null}
