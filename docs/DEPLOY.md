@@ -18,6 +18,20 @@
 - Vercel Hobby가 `Co-Authored-By` 트레일러를 "협업 커밋"으로 보고 차단 → 단일 작성자 커밋 + 커밋 이메일을 GitHub에 인증해 해결.
 - Vercel이 기본 `main`을 배포 → `main`을 최신 브랜치로 fast-forward 하여 최신 코드 배포.
 
+## ⚠️ 배포 도메인에서 회원가입이 localhost로 튄다면 (2026-07-31 발생)
+
+**증상**: 배포본에서 이메일로 회원가입 → 확인 메일의 링크를 누르면 `localhost에서 연결을 거부했습니다`(ERR_CONNECTION_REFUSED).
+
+**원인**: Supabase 프로젝트가 `mailer_autoconfirm: false`(가입 시 확인 메일 발송)인데, 확인 링크의 복귀 주소가 **Supabase의 Site URL**로 정해진다. Site URL이 개발용 `http://localhost:5173`으로 남아 있으면 배포본 가입자도 localhost로 돌아온다. 구글 로그인도 같은 이유로 실패한다(허용 목록에 없으면 Site URL로 폴백).
+
+**조치 (둘 다 필요)**
+1. **Supabase 대시보드 → Authentication → URL Configuration** *(코드로는 못 고치는 부분)*
+   - `Site URL` = `https://respec-gamma.vercel.app`
+   - `Redirect URLs`에 추가: `https://respec-gamma.vercel.app/**`, `http://localhost:5173/**`(로컬 개발용 유지)
+2. **코드**: `signUp`에 `options.emailRedirectTo = window.location.origin`을 명시(2026-07-31 반영). OAuth·비밀번호 재설정은 이미 `redirectTo`를 넘기고 있다. 단, **허용 목록에 없는 주소는 무시되고 Site URL로 폴백**하므로 1번이 선행되어야 한다.
+
+> 급할 때의 우회: 대시보드에서 `Email` 프로바이더의 **Confirm email을 끄면**(자동 확인) 가입 즉시 로그인되어 링크 자체가 필요 없다. 검증 단계를 없애는 것이므로 데모용으로만 쓴다.
+
 **남은 것**
 - Supabase Auth **Redirect URL / Site URL**에 `https://respec-gamma.vercel.app` 등록(프로덕션 로그인용). 프론트가 OAuth를 `redirectTo: window.location.origin`으로 부르므로, 이 등록 없이는 배포 도메인에서 소셜 로그인이 돌아오지 못한다.
 - 배포 후 CORS를 Vercel 도메인으로 제한(현재 전체 허용) — **데모 이후로 미룸**(데모 주간에 배포 리스크를 만들지 않는다).
