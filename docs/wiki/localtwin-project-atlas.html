@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="LocalTwin의 데이터, 분석, 지도, 3D, 배포 구조를 한 장으로 설명하는 프로젝트 아틀라스"
+    />
+    <title>LocalTwin Project Atlas</title>
+    <style>
+      :root {
+        --ink: #123125;
+        --muted: #5b7167;
+        --mint: #00c878;
+        --mint-dark: #008f58;
+        --mint-pale: #e6faef;
+        --paper: #f7fbf8;
+        --white: #ffffff;
+        --line: #cbe3d6;
+        --amber: #f4b740;
+        --coral: #ef6b5b;
+        --blue: #4f83e1;
+        --purple: #8a68cb;
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        min-width: 320px;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 90% 2%, rgba(0, 200, 120, 0.16), transparent 28rem),
+          linear-gradient(rgba(18, 49, 37, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(18, 49, 37, 0.035) 1px, transparent 1px),
+          var(--paper);
+        background-size: auto, 28px 28px, 28px 28px, auto;
+        font-family: Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+        line-height: 1.65;
+      }
+
+      a { color: inherit; text-underline-offset: 3px; }
+      .shell { width: min(1240px, calc(100% - 36px)); margin: 0 auto; padding: 28px 0 80px; }
+      .eyebrow { margin: 0; color: var(--mint-dark); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.13em; text-transform: uppercase; }
+      .display { font-family: Georgia, "Noto Serif KR", serif; letter-spacing: -0.045em; }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+        gap: 24px;
+        align-items: stretch;
+        padding: 44px 0 28px;
+        border-bottom: 1px solid var(--line);
+      }
+      .hero h1 { max-width: 850px; margin: 10px 0 18px; font-size: clamp(2.6rem, 6vw, 5.5rem); line-height: 0.98; }
+      .hero h1 span { color: var(--mint-dark); }
+      .hero p { max-width: 700px; margin: 0; color: var(--muted); font-size: 1.08rem; }
+      .hero-card { display: grid; gap: 14px; align-content: space-between; padding: 26px; border: 1px solid var(--line); background: rgba(255,255,255,0.78); box-shadow: 8px 8px 0 rgba(0, 143, 88, 0.11); }
+      .hero-card strong { font-size: 1.2rem; line-height: 1.35; }
+      .hero-card code { display: block; padding: 12px; color: var(--mint-dark); background: var(--mint-pale); font-size: 0.83rem; overflow-wrap: anywhere; }
+
+      .jump { display: flex; flex-wrap: wrap; gap: 8px; padding: 20px 0; }
+      .jump a { padding: 7px 11px; border: 1px solid var(--line); background: rgba(255,255,255,0.7); color: var(--muted); font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+      .jump a:hover, .jump a:focus-visible { color: var(--mint-dark); border-color: var(--mint); outline: 2px solid transparent; }
+
+      section { padding: 50px 0; border-bottom: 1px solid var(--line); }
+      section h2 { margin: 0 0 8px; font-size: clamp(1.75rem, 3.5vw, 3rem); line-height: 1.1; }
+      section > p.lead { max-width: 780px; margin: 0 0 26px; color: var(--muted); }
+      .section-number { color: var(--mint-dark); font-family: Georgia, serif; font-size: 1rem; font-style: italic; }
+
+      .pipeline { display: grid; grid-template-columns: repeat(7, minmax(118px, 1fr)); gap: 8px; align-items: stretch; }
+      .node { position: relative; display: grid; min-height: 152px; align-content: space-between; padding: 16px; border: 1px solid var(--line); background: var(--white); }
+      .node:not(:last-child)::after { position: absolute; z-index: 2; top: 50%; right: -8px; width: 16px; height: 16px; content: ""; border-top: 2px solid var(--mint-dark); border-right: 2px solid var(--mint-dark); background: var(--paper); transform: translateY(-50%) rotate(45deg); }
+      .node b { font-size: 1rem; line-height: 1.3; }
+      .node small { color: var(--muted); line-height: 1.35; }
+      .node .tag { color: var(--mint-dark); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; }
+      .node.source { background: #fffaf0; } .node.canonical { background: #eef5ff; } .node.runtime { background: var(--mint-pale); }
+
+      .two-up { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+      .panel { padding: 24px; border-top: 4px solid var(--mint); background: var(--white); }
+      .panel h3 { margin: 0 0 10px; font-size: 1.1rem; }
+      .panel p { margin: 0; color: var(--muted); }
+      .quote { margin: 18px 0 0; padding: 18px 20px; border-left: 4px solid var(--amber); background: #fffaf0; font-weight: 700; }
+
+      .table-wrap { overflow-x: auto; border: 1px solid var(--line); background: var(--white); }
+      table { width: 100%; min-width: 720px; border-collapse: collapse; text-align: left; }
+      th, td { padding: 13px 15px; border-bottom: 1px solid #e6efe9; vertical-align: top; }
+      th { color: var(--mint-dark); background: var(--mint-pale); font-size: 0.84rem; letter-spacing: 0.04em; }
+      td { font-size: 0.92rem; }
+      code { color: #0d6e45; font-family: "SFMono-Regular", Consolas, monospace; font-size: 0.9em; }
+
+      .entity-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+      .entity { min-height: 116px; padding: 15px; border: 1px solid var(--line); background: rgba(255,255,255,0.82); }
+      .entity h3 { margin: 0 0 6px; color: var(--mint-dark); font: 700 1rem "SFMono-Regular", Consolas, monospace; }
+      .entity p { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
+
+      .flow { display: grid; grid-template-columns: 0.78fr 34px 1.1fr 34px 1.1fr 34px 0.9fr; align-items: center; gap: 0; }
+      .flow-card { min-height: 190px; padding: 21px; border: 1px solid var(--line); background: var(--white); }
+      .flow-card h3 { margin: 0 0 10px; font-size: 1.1rem; }
+      .flow-card ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 0.9rem; }
+      .arrow { height: 2px; background: var(--mint-dark); position: relative; }
+      .arrow::after { position: absolute; right: 0; top: -4px; content: ""; width: 9px; height: 9px; border-top: 2px solid var(--mint-dark); border-right: 2px solid var(--mint-dark); transform: rotate(45deg); }
+
+      .split { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
+      .compare { border: 1px solid var(--line); background: var(--white); }
+      .compare header { padding: 15px 18px; border-bottom: 1px solid var(--line); font-weight: 800; }
+      .compare.old header { color: #a4483e; background: #fff0ed; }
+      .compare.new header { color: var(--mint-dark); background: var(--mint-pale); }
+      .compare .inside { padding: 18px; }
+      .marker-list { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; margin: 14px 0; }
+      .marker-list i { display: block; aspect-ratio: 1; border-radius: 50%; background: var(--coral); }
+      .gpu-sheet { display: grid; place-items: center; min-height: 92px; border: 1px dashed var(--mint-dark); background: linear-gradient(135deg, var(--mint-pale), #f9fffb); color: var(--mint-dark); font-weight: 800; text-align: center; }
+      .compare p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+
+      .three-flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+      .three-step { position: relative; min-height: 150px; padding: 17px; border: 1px solid var(--line); background: var(--white); }
+      .three-step b { display: block; margin-bottom: 8px; color: var(--mint-dark); font-size: 1.05rem; }
+      .three-step p { margin: 0; color: var(--muted); font-size: 0.86rem; line-height: 1.45; }
+      .three-step::before { display: block; margin-bottom: 12px; color: var(--amber); font: 800 0.8rem Georgia, serif; content: attr(data-step); }
+
+      .tech-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+      .tech { padding: 18px; border: 1px solid var(--line); background: rgba(255,255,255,0.84); }
+      .tech strong { display: block; margin-bottom: 5px; color: var(--mint-dark); }
+      .tech span { color: var(--muted); font-size: 0.88rem; }
+      .tech .dot { display: inline-block; width: 9px; height: 9px; margin-right: 7px; border-radius: 50%; background: var(--mint); }
+
+      .score-map { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+      .score { min-height: 156px; padding: 16px; border: 1px solid var(--line); background: var(--white); }
+      .score::before { display: block; width: 34px; height: 6px; margin-bottom: 18px; content: ""; background: var(--mint); }
+      .score:nth-child(2)::before { background: var(--coral); } .score:nth-child(3)::before { background: var(--amber); } .score:nth-child(4)::before { background: var(--blue); }
+      .score h3 { margin: 0 0 7px; font-size: 1.02rem; }
+      .score p { margin: 0; color: var(--muted); font-size: 0.86rem; line-height: 1.45; }
+
+      .safety { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 12px; align-items: center; }
+      .safety-card { padding: 22px; background: var(--white); border: 1px solid var(--line); }
+      .safety-card strong { display: block; margin-bottom: 6px; color: var(--mint-dark); }
+      .safety-card p { margin: 0; color: var(--muted); font-size: 0.88rem; }
+      .safety-arrow { color: var(--mint-dark); font-size: 1.6rem; font-weight: 700; }
+
+      .finish { padding: 38px; background: var(--ink); color: #f6fff9; }
+      .finish h2 { margin: 0 0 20px; color: #ffffff; }
+      .finish ol { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 32px; margin: 0; padding-left: 21px; }
+      .finish li { padding-left: 6px; color: #d5eadc; }
+      .finish li::marker { color: var(--mint); font-weight: 800; }
+      .sources { margin-top: 20px; color: var(--muted); font-size: 0.84rem; }
+
+      @media (max-width: 980px) {
+        .hero, .two-up, .split { grid-template-columns: 1fr; }
+        .pipeline { grid-template-columns: repeat(4, minmax(140px, 1fr)); }
+        .node:nth-child(4)::after { display: none; }
+        .entity-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .three-flow { grid-template-columns: repeat(3, 1fr); }
+        .score-map { grid-template-columns: repeat(2, 1fr); }
+      }
+      @media (max-width: 700px) {
+        .shell { width: min(100% - 24px, 1240px); padding-top: 16px; }
+        .pipeline, .entity-grid, .three-flow, .tech-grid, .finish ol { grid-template-columns: 1fr; }
+        .node::after { display: none; }
+        .flow { grid-template-columns: 1fr; gap: 8px; }
+        .arrow { width: 2px; height: 20px; margin: 0 auto; }
+        .arrow::after { right: -4px; top: auto; bottom: 0; transform: rotate(135deg); }
+        .safety { grid-template-columns: 1fr; }
+        .safety-arrow { text-align: center; transform: rotate(90deg); }
+        .hero { padding-top: 28px; }
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .node, .panel, .entity, .flow-card, .three-step, .tech, .score { transition: transform 160ms ease, box-shadow 160ms ease; }
+        .node:hover, .panel:hover, .entity:hover, .flow-card:hover, .three-step:hover, .tech:hover, .score:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(18,49,37,0.08); }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Project explainer · 2026.07</p>
+          <h1 class="display">공공데이터를<br /><span>공간적 판단</span>으로<br />바꾸는 법.</h1>
+          <p>LocalTwin은 연남·홍대·합정 상권의 점포·경쟁·매출·유동인구를 분석하고, 지도와 선택 점포 3D 탐색으로 창업·입지 판단의 근거를 보여주는 서비스입니다.</p>
+        </div>
+        <aside class="hero-card" aria-label="프로젝트 핵심 문장">
+          <p class="eyebrow">The core</p>
+          <strong>지도를 예쁘게 보이는 서비스가 아니라, 공공 데이터를 공간적으로 이해시키는 분석 도구입니다.</strong>
+          <code>공공 데이터 → 근거 있는 비교 → 사용자 판단</code>
+        </aside>
+      </header>
+
+      <nav class="jump" aria-label="문서 내 이동">
+        <a href="#data">01 데이터 흐름</a><a href="#database">02 데이터 모델</a><a href="#analysis">03 분석</a><a href="#map">04 지도·3D</a><a href="#stack">05 기술 선택</a><a href="#operations">06 운영</a>
+      </nav>
+
+      <section id="data">
+        <p class="section-number">01 / Data lineage</p>
+        <h2 class="display">원본을 바로 화면에 쓰지 않습니다.</h2>
+        <p class="lead">서로 다른 기관의 데이터를 정제·검증하고, 반복 가능한 기준본을 거쳐 서비스 DB로 올립니다. 이 과정이 숫자의 신뢰성과 재현성을 만듭니다.</p>
+        <div class="pipeline" role="img" aria-label="공공 원천 데이터부터 사용자 화면까지의 데이터 흐름">
+          <div class="node source"><span class="tag">01 INPUT</span><b>서울시 · KOSIS<br />공공 원천 데이터</b><small>점포, 상권, 매출, 유동인구, 인구</small></div>
+          <div class="node source"><span class="tag">02 PREPARE</span><b>수집 · 정제<br />형식 통일</b><small>컬럼, 기간, 좌표계, 결측값을 맞춤</small></div>
+          <div class="node canonical"><span class="tag">03 BASELINE</span><b>SQLite<br />기준 데이터</b><small>재적재와 품질 검사의 기준선</small></div>
+          <div class="node canonical"><span class="tag">04 CHECK</span><b>품질 검사<br />migration · seed</b><small>수량·키·좌표·기간·출처 검증</small></div>
+          <div class="node runtime"><span class="tag">05 RUNTIME DB</span><b>Supabase<br />PostgreSQL</b><small>개발과 운영 환경을 분리</small></div>
+          <div class="node runtime"><span class="tag">06 API</span><b>Render<br />FastAPI</b><small>분석 규칙, DB 조회, 근거 응답</small></div>
+          <div class="node runtime"><span class="tag">07 EXPERIENCE</span><b>Vercel<br />React 웹</b><small>사용자 선택, 비교, 지도 탐색</small></div>
+        </div>
+        <div class="two-up" style="margin-top: 18px">
+          <article class="panel"><h3><code>data_sources</code>가 하는 일</h3><p>원천 제공처, 수집시점, 기준 기간, 행 수, 원본 URL, SHA-256 hash를 남깁니다. 분석 숫자가 어디서 왔는지 나중에도 추적할 수 있습니다.</p></article>
+          <article class="panel"><h3>SQLite를 먼저 쓰는 이유</h3><p>운영 DB에서 import를 반복하지 않고, 로컬 기준본에서 중복·누락·공간 연결을 먼저 검증합니다. SQLite는 임시 DB가 아니라 재현 가능한 기준 시료입니다.</p></article>
+        </div>
+        <p class="quote">“이 숫자가 어디에서, 언제 왔는가?”를 <code>data_sources</code>로 답할 수 있게 설계했습니다.</p>
+      </section>
+
+      <section id="database">
+        <p class="section-number">02 / Database map</p>
+        <h2 class="display">점포, 상권, 통계는 서로 다른 단위입니다.</h2>
+        <p class="lead">개별 가게를 뜻하는 <code>store_id</code>와 분석 공간을 뜻하는 <code>market_code</code>를 분리하고, 연결 테이블로 “어느 상권 안의 어느 점포인가”를 표현합니다.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>질문</th><th>테이블</th><th>기준 키</th><th>담당 데이터</th></tr></thead>
+            <tbody>
+              <tr><td>이 점포는 무엇인가?</td><td><code>store_points</code></td><td><code>store_id</code></td><td>점포명, 주소, 업종 대·중·소분류, 좌표</td></tr>
+              <tr><td>이 지역은 어떤 상권인가?</td><td><code>markets</code></td><td><code>market_code</code></td><td>상권명, 행정구역, 면적</td></tr>
+              <tr><td>점포는 어느 상권에 속하는가?</td><td><code>store_market_links</code></td><td><code>store_id → market_code</code></td><td>point-in-polygon 결과, 경계 여부</td></tr>
+              <tr><td>분기별 업종 현황은?</td><td><code>store_metrics</code></td><td><code>market + period + category</code></td><td>점포·유사점포·프랜차이즈·개폐업</td></tr>
+              <tr><td>소비와 사람 흐름은?</td><td><code>sales_metrics</code> / <code>flow_metrics</code></td><td>분기·업종 또는 분기·상권</td><td>매출, 결제 건수, 6개 시간대 값</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="entity-grid" style="margin-top: 18px" aria-label="전체 데이터베이스 테이블 구성">
+          <article class="entity"><h3>data_sources</h3><p>모든 원천 snapshot의 계보</p></article><article class="entity"><h3>markets</h3><p>상권 기본 정보</p></article><article class="entity"><h3>market_geometries</h3><p>상권 polygon과 중심 좌표</p></article><article class="entity"><h3>store_points</h3><p>개별 점포와 대표 좌표</p></article>
+          <article class="entity"><h3>store_market_links</h3><p>점포와 상권의 공간 연결</p></article><article class="entity"><h3>store_metrics</h3><p>분기·업종별 점포 집계</p></article><article class="entity"><h3>sales_metrics</h3><p>분기·업종별 매출</p></article><article class="entity"><h3>flow_metrics</h3><p>분기·상권별 유동인구</p></article>
+          <article class="entity"><h3>permit_businesses</h3><p>인허가 사업장 상태</p></article><article class="entity"><h3>admin_area_population</h3><p>행정동·연령·성별 인구</p></article><article class="entity"><h3>market_admin_area_crosswalk</h3><p>상권과 행정동 근거 매핑</p></article><article class="entity"><h3>admin_area_business_metrics</h3><p>행정동 사업체·종사자</p></article>
+          <article class="entity"><h3>market_population_metrics</h3><p>상권 주민·직장인구·세대수</p></article>
+        </div>
+      </section>
+
+      <section id="analysis">
+        <p class="section-number">03 / Analysis journey</p>
+        <h2 class="display">분석은 예측이 아니라, 근거 있는 비교입니다.</h2>
+        <p class="lead">사용자가 고른 상권·업종·분기를 기준으로 공식 지표를 조회하고, 수요·경쟁·매출·안정성을 나누어 보여줍니다.</p>
+        <div class="flow" role="img" aria-label="상권 분석 요청의 처리 흐름">
+          <article class="flow-card"><h3>사용자 선택</h3><ul><li>홍대입구역 상권</li><li>카페</li><li>2025년 4분기</li></ul></article><span class="arrow" aria-hidden="true"></span>
+          <article class="flow-card"><h3>FastAPI 조회</h3><ul><li>조건을 typed API로 전달</li><li>분석 규칙 적용</li><li>출처·기간·단위 조합</li></ul></article><span class="arrow" aria-hidden="true"></span>
+          <article class="flow-card"><h3>Supabase 응답</h3><ul><li>점포·경쟁 통계</li><li>매출·소비 지표</li><li>유동인구·배경 수요</li></ul></article><span class="arrow" aria-hidden="true"></span>
+          <article class="flow-card"><h3>판단 화면</h3><ul><li>분석 카드</li><li>근거·기간 표시</li><li>지도 layer·범례</li></ul></article>
+        </div>
+        <div class="score-map" style="margin-top: 22px">
+          <article class="score"><h3>점포 · 경쟁</h3><p>동종 점포, 프랜차이즈, 공간 분포를 통해 과밀 가능성을 읽습니다.</p></article>
+          <article class="score"><h3>개 · 폐업 안정성</h3><p>개업·폐업 수와 비율로 업종의 진입·이탈 흐름을 확인합니다.</p></article>
+          <article class="score"><h3>매출 · 소비</h3><p>월 추정매출, 결제 건수, 평일·주말과 시간대별 매출을 봅니다.</p></article>
+          <article class="score"><h3>유동 · 배경 수요</h3><p>상권 유동인구와 주민·직장인구를 함께 보며 수요 성격을 해석합니다.</p></article>
+        </div>
+        <p class="quote">LocalTwin은 “여기서 창업하면 성공한다”를 단정하지 않습니다. 수요·경쟁·매출·안정성의 근거를 한 화면에 모아 사용자가 판단하도록 돕습니다.</p>
+      </section>
+
+      <section id="map">
+        <p class="section-number">04 / Map &amp; 3D</p>
+        <h2 class="display">전체는 빠르게, 선택은 깊게.</h2>
+        <p class="lead">지도는 많은 점포를 빠르게 탐색하도록 하고, 3D는 사용자가 고른 한 점포에만 공간적 집중을 제공합니다.</p>
+        <div class="split">
+          <article class="compare old"><header>이전: DOM Marker를 점포 수만큼 생성</header><div class="inside"><div class="marker-list" aria-label="수백 개의 개별 마커를 상징하는 점"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><p>점포 755개라면 HTML 버튼·이벤트·위치 계산도 755개씩 관리해야 합니다.</p></div></article>
+          <article class="compare new"><header>현재: GeoJSON 하나를 MapLibre GPU layer로 렌더링</header><div class="inside"><div class="gpu-sheet">점포 좌표·업종 데이터 1개<br />↓<br />GPU가 cluster · 점 · icon을 함께 그림</div><p style="margin-top:14px">멀리서는 cluster, 확대하면 개별 icon. hover는 하나의 GPU halo filter만 변경합니다.</p></div></article>
+        </div>
+        <div class="three-flow" style="margin-top: 22px" role="img" aria-label="선택 점포의 3D 표현 과정">
+          <article class="three-step" data-step="STEP 01"><b>업종 선택</b><p>카페, 미용, 음식점 등 현재 선택 업종의 점포만 지도 후보로 둡니다.</p></article>
+          <article class="three-step" data-step="STEP 02"><b>지도 확대</b><p>cluster가 풀리고 개별 icon을 통해 공간적 분포를 파악합니다.</p></article>
+          <article class="three-step" data-step="STEP 03"><b>점포 하나 선택</b><p><code>selected store</code> state에 선택 점포의 ID·좌표·업종을 저장합니다.</p></article>
+          <article class="three-step" data-step="STEP 04"><b>Prefab 재사용</b><p>매 클릭마다 모델을 새로 만들지 않고, 업종별 3D asset을 재사용합니다.</p></article>
+          <article class="three-step" data-step="STEP 05"><b>Spotlight 표현</b><p>선택 점포 위치에 3D 오브젝트 한 개, halo, popup을 함께 표시합니다.</p></article>
+        </div>
+      </section>
+
+      <section id="stack">
+        <p class="section-number">05 / Technology choices</p>
+        <h2 class="display">기술은 기능의 문제를 나누어 해결합니다.</h2>
+        <p class="lead">한 도구가 모든 일을 맡지 않습니다. 데이터 신뢰성, 서비스 운영, 대량 지도 렌더링, 선택 점포 몰입감을 각각 적합한 계층에 배치했습니다.</p>
+        <div class="tech-grid">
+          <article class="tech"><strong><span class="dot"></span>React + TypeScript</strong><span>필터, 선택, popup, 지도 상태를 컴포넌트와 타입으로 관리</span></article>
+          <article class="tech"><strong><span class="dot"></span>MapLibre GL</strong><span>벡터 지도, 3D 건물, cluster, GeoJSON GPU layer</span></article>
+          <article class="tech"><strong><span class="dot"></span>Three.js</strong><span>선택 점포의 업종별 오브젝트와 spotlight</span></article>
+          <article class="tech"><strong><span class="dot"></span>FastAPI</strong><span>Python 데이터 처리와 typed API를 연결, 비밀값을 브라우저에서 격리</span></article>
+          <article class="tech"><strong><span class="dot"></span>SQLAlchemy + Alembic</strong><span>코드와 DB schema를 함께 관리하고 환경 간 구조를 맞춤</span></article>
+          <article class="tech"><strong><span class="dot"></span>SQLite</strong><span>수집·정제·재현 검증의 기준본</span></article>
+          <article class="tech"><strong><span class="dot"></span>Supabase PostgreSQL</strong><span>운영 DB, backup과 접근 제어 기반을 갖춘 관리형 PostgreSQL</span></article>
+          <article class="tech"><strong><span class="dot"></span>Render</strong><span>FastAPI를 항상 실행하는 공개 API runtime</span></article>
+          <article class="tech"><strong><span class="dot"></span>Vercel</strong><span>React 정적 웹과 문서를 빠르게 배포</span></article>
+        </div>
+      </section>
+
+      <section id="operations">
+        <p class="section-number">06 / Quality &amp; operations</p>
+        <h2 class="display">기준본에서 검증하고, 운영 환경으로 승격합니다.</h2>
+        <p class="lead">로컬 SQLite 검증은 화면이 뜨는지 보는 과정이 아닙니다. 공공 원천 데이터를 서비스 DB로 옮겨도 숫자·관계·좌표·기간·출처가 깨지지 않는지 확인하는 품질 단계입니다.</p>
+        <div class="safety" role="img" aria-label="SQLite, Supabase development, Supabase production의 승격 흐름">
+          <article class="safety-card"><strong>SQLite 기준 시료</strong><p>중복·누락, 키 관계, 좌표 범위, 분기, 시간대 값, 원천 hash를 검증합니다.</p></article><span class="safety-arrow" aria-hidden="true">→</span>
+          <article class="safety-card"><strong>Supabase Development</strong><p>migration·seed·FastAPI·React 통합 smoke를 실제 DB 환경에서 확인합니다.</p></article><span class="safety-arrow" aria-hidden="true">→</span>
+          <article class="safety-card"><strong>Supabase Production</strong><p>검증된 schema와 적재 절차만 승격해 공개 Render API가 조회합니다.</p></article>
+        </div>
+        <div class="two-up" style="margin-top: 18px">
+          <article class="panel"><h3>반드시 구분해 표시할 숫자</h3><p>현재 점포 위치 기반 수, 분기별 공식 통계, 반경 조건의 주변 점포 수는 계산 기준이 다릅니다. 값뿐 아니라 기준시점·공간 범위·출처를 함께 보여야 합니다.</p></article>
+          <article class="panel"><h3>3D Gaussian Splatting의 위치</h3><p>사진·영상 기반 3DGS는 현장 탐색 가능성을 검증하는 실험 기능입니다. 핵심 분석 기능과 분리하며, 저장소·GPU·개인정보 처리 조건을 별도 운영합니다.</p></article>
+        </div>
+      </section>
+
+      <footer class="finish">
+        <p class="eyebrow">The four lines to remember</p>
+        <h2 class="display">LocalTwin을 설명하는 네 문장</h2>
+        <ol>
+          <li>공공데이터를 정제하고 출처까지 기록합니다.</li>
+          <li>Supabase에는 서비스가 조회할 검증된 데이터를 넣습니다.</li>
+          <li>FastAPI가 분석 규칙과 DB 조회를 맡고, React는 결과를 이해하기 쉬운 화면으로 바꿉니다.</li>
+          <li>지도는 전체를 빠르게 보여주고, 선택 점포만 3D로 자세히 탐색합니다.</li>
+        </ol>
+        <p class="sources">근거 문서: <a href="../development/architecture.md">시스템 아키텍처</a> · <a href="../data/database-structure.md">데이터베이스 구조와 ERD</a> · <a href="../features/market-analysis.md">상권 분석</a> · <a href="../features/market-map-experience.md">지도·3D 경험</a></p>
+      </footer>
+    </main>
+  </body>
+</html>

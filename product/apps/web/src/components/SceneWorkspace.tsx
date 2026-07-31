@@ -35,7 +35,7 @@ const SCENE_DEMO_ASSETS: SceneDemoAsset[] = [
   {
     id: "jongmyo",
     label: "종묘",
-    splatUrl: `${import.meta.env.BASE_URL}splats/jongmyo.ply`,
+    splatUrl: `${import.meta.env.BASE_URL}splats/jongmyo.spz`,
     driveFileId: googleDriveFileId(
       import.meta.env.VITE_JONGMYO_DRIVE_FILE_ID,
       "1q0CR2OPkk1kYjSV5TDWFlKOoRlSc8w8s",
@@ -44,7 +44,7 @@ const SCENE_DEMO_ASSETS: SceneDemoAsset[] = [
   {
     id: "gwanpyeong",
     label: "관평동 거리",
-    splatUrl: `${import.meta.env.BASE_URL}splats/Gwanpyeong-dong.ply`,
+    splatUrl: `${import.meta.env.BASE_URL}splats/Gwanpyeong-dong.spz`,
     driveFileId: googleDriveFileId(
       import.meta.env.VITE_GWANPYEONG_DRIVE_FILE_ID,
       "1F-pyWGG_knL45BcsQ2OXgismPhqefMtt",
