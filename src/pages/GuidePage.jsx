@@ -24,10 +24,20 @@ const GUIDE_SECTIONS = [
     image: '/guide/result.png',
     items: [
       '지금 지원할 수 있는 공고가 몇 %인지 한눈에 보여드려요.',
-      '무엇을 보완하면 좋을지 알려주는 안내가 처음에 한 번 떠요.',
+      '무엇을 보완하면 좋을지 알려주는 안내가 처음에 한 번 떠요. 스펙 상태에 따라 다른 내용으로 뜨기 때문에, 이걸 보면 지금 나한테 뭐가 부족한지 바로 알 수 있어요.',
       '전체 / 지원 가능 / 부족한 공고만 나눠 보거나, 원하는 순서로 정렬할 수 있어요.',
       '공고를 누르면 어떤 부분이 충족되고 부족한지 자세히 보여줘요. 부족한 부분에는 준비할 수 있는 사이트 링크도 같이 있어요.',
       '체크 아이콘을 누르면 관심 공고로 저장돼요. 이건 로그인 후에 쓸 수 있어요.',
+    ],
+  },
+  {
+    title: '③-1. 인사이트 팝업 종류 (예시)',
+    items: ['지금 스펙 상태에 따라 아래 4가지 중 하나가 떠요.'],
+    insightGallery: [
+      { image: '/guide/insight-single-gap.png', caption: '항목 1개만 채우면 지원 가능한 공고가 늘어나는 경우' },
+      { image: '/guide/insight-all-matched.png', caption: '이미 모든 항목을 다 갖춘 경우' },
+      { image: '/guide/insight-multi-gap.png', caption: '여러 항목을 함께 보완해야 하는 경우' },
+      { image: '/guide/insight-empty.png', caption: '조건에 맞는 공고가 아예 없는 경우' },
     ],
   },
   {
@@ -68,6 +78,16 @@ function GuidePage() {
                 <li key={index}>{item}</li>
               ))}
             </ul>
+            {section.insightGallery && (
+              <div className="insight-gallery">
+                {section.insightGallery.map((sample) => (
+                  <figure className="insight-gallery-item" key={sample.image}>
+                    <img src={sample.image} alt={sample.caption} />
+                    <figcaption>{sample.caption}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       ))}
