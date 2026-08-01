@@ -7,6 +7,8 @@ import {
   createStoreFeatureCollection,
   STORE_CATEGORY_ICON_LAYER_ID,
   STORE_CATEGORY_LABEL_LAYER_ID,
+  STORE_CLUSTER_CIRCLE_LAYER_ID,
+  STORE_CLUSTER_COUNT_LAYER_ID,
   STORE_HOVER_HALO_LAYER_ID,
   STORE_POINT_HIT_LAYER_ID,
   STORE_POINT_LAYER_ID,
@@ -89,7 +91,12 @@ function useStoreSourcePerformance(
     if (!map || !visible) return;
     const complete = () => {
       const pending = pendingRef.current;
-      if (!pending || pending.complete || !map.isSourceLoaded(STORE_POINT_SOURCE_ID)) return;
+      if (
+        !pending ||
+        pending.complete ||
+        !map.getSource(STORE_POINT_SOURCE_ID) ||
+        !map.isSourceLoaded(STORE_POINT_SOURCE_ID)
+      ) return;
       pending.complete = true;
       performance.mark(`store-source-ready:${pending.id}`);
       performance.measure(`store-source-apply:${pending.id}`, `store-source-start:${pending.id}`, `store-source-ready:${pending.id}`);
@@ -114,7 +121,13 @@ function useStoreSourcePerformance(
     performance.mark(`store-source-start:${id}`);
     requestAnimationFrame(() => {
       const pending = pendingRef.current;
-      if (!pending || pending.id !== id || pending.complete || !map.isSourceLoaded(STORE_POINT_SOURCE_ID)) return;
+      if (
+        !pending ||
+        pending.id !== id ||
+        pending.complete ||
+        !map.getSource(STORE_POINT_SOURCE_ID) ||
+        !map.isSourceLoaded(STORE_POINT_SOURCE_ID)
+      ) return;
       pending.complete = true;
       performance.mark(`store-source-ready:${id}`);
       performance.measure(`store-source-apply:${id}`, `store-source-start:${id}`, `store-source-ready:${id}`);
@@ -137,6 +150,8 @@ function useStorePointLayerOrder(
 
     const arrange = () => {
       for (const layerId of [
+        STORE_CLUSTER_CIRCLE_LAYER_ID,
+        STORE_CLUSTER_COUNT_LAYER_ID,
         STORE_POINT_LAYER_ID,
         STORE_HOVER_HALO_LAYER_ID,
         STORE_CATEGORY_ICON_LAYER_ID,

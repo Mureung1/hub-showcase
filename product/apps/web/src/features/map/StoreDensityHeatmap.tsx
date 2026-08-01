@@ -48,7 +48,7 @@ export function StoreDensityHeatmap({ stores, visible }: StoreDensityHeatmapProp
         paint={{
           "heatmap-weight": 1,
           "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 13, 0.75, 17, 1.15],
-          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 13, 20, 17, 38],
+          "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 10, 72, 13, 56, 15, 42, 17, 30],
           "heatmap-opacity": [
             "interpolate",
             ["linear"],
