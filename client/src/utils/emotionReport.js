@@ -43,7 +43,7 @@ export function buildEmotionReport(checkins) {
       `${dateRange} 동안 ${sorted.length}개의 기록을 남겼어요.`,
       moods[0] ? `가장 자주 선택한 기분은 ${moods[0].mood} ${moods[0].count}회였어요.` : '',
       recent[0]?.emotion ? `최근 정리된 감정은 ${recent[0].emotion}이에요.` : '',
-      actions[0] ? `최근 작은 행동은 “${actions[0]}”이에요.` : '',
+      actions[0] ? `최근 작은 행동에는 “${actions[0]}”라는 기록이 있어요.` : '',
     ].filter(Boolean).join(' ')
     : ''
 
