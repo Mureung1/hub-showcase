@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { loadNearbyStores, NearbyApiError, type NearbyRequest } from "./nearbyApi";
 import type { NearbyStoreResponse } from "./types";
@@ -7,9 +7,10 @@ export type NearbyStoreState = "loading" | "ready" | "empty" | "unsupported" | "
 
 export function useNearbyStores(request: NearbyRequest, enabled = true) {
   const [retryToken, setRetryToken] = useState(0);
+  const responseCache = useRef(new Map<string, NearbyStoreResponse>());
   const [longitude, latitude] = request.center;
-  const { category, marketId, radius, scope } = request;
-  const requestKey = [longitude, latitude, radius, category, scope, marketId].join(":");
+  const { category, marketId, radius, scope, taxonomyNodeId } = request;
+  const requestKey = [longitude, latitude, radius, category, scope, marketId, taxonomyNodeId].join(":");
   const [result, setResult] = useState<{
     requestKey: string | null;
     state: NearbyStoreState;
@@ -21,14 +22,24 @@ export function useNearbyStores(request: NearbyRequest, enabled = true) {
       setResult({ requestKey, state: "loading", data: null });
       return;
     }
+    const cached = responseCache.current.get(requestKey);
+    if (cached) {
+      setResult({
+        requestKey,
+        state: cached.total_count === 0 ? "empty" : "ready",
+        data: cached,
+      });
+      return;
+    }
     const controller = new AbortController();
-    setResult({ requestKey, state: "loading", data: null });
+    setResult((current) => ({ requestKey, state: "loading", data: current.data }));
     void loadNearbyStores(
-      { center: [longitude, latitude], radius, category, scope, marketId },
+      { center: [longitude, latitude], radius, category, scope, marketId, taxonomyNodeId },
       controller.signal,
     )
       .then((response) => {
         if (controller.signal.aborted) return;
+        responseCache.current.set(requestKey, response);
         setResult({
           requestKey,
           state: response.total_count === 0 ? "empty" : "ready",
@@ -44,13 +55,19 @@ export function useNearbyStores(request: NearbyRequest, enabled = true) {
         });
       });
     return () => controller.abort();
-  }, [category, enabled, marketId, radius, requestKey, retryToken, scope, latitude, longitude]);
+  }, [category, enabled, marketId, radius, requestKey, retryToken, scope, latitude, longitude, taxonomyNodeId]);
 
   const isCurrentRequest = result.requestKey === requestKey;
+  const isStale =
+    !isCurrentRequest ||
+    Boolean(
+      result.data && result.data.category_coverage.requested_category !== category,
+    );
 
   return {
     state: isCurrentRequest ? result.state : "loading",
-    data: isCurrentRequest ? result.data : null,
+    data: result.data,
+    isStale,
     retry: () => setRetryToken((current) => current + 1),
   };
 }

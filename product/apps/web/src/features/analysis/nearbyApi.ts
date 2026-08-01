@@ -7,6 +7,7 @@ export type NearbyRequest = {
   category: string;
   scope: "radius" | "market";
   marketId: string;
+  taxonomyNodeId?: string | null;
 };
 
 export class NearbyApiError extends Error {
@@ -41,6 +42,7 @@ export async function loadNearbyStores(request: NearbyRequest, signal: AbortSign
     scope: request.scope,
   });
   if (request.scope === "market") parameters.set("market_id", request.marketId);
+  if (request.taxonomyNodeId) parameters.set("taxonomy_node_id", request.taxonomyNodeId);
   const response = await fetch(apiUrl(`/api/v1/stores/nearby?${parameters}`), { signal });
   if (!response.ok) throw new NearbyApiError(response.status);
   const payload: unknown = await response.json();
