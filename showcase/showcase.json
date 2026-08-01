@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 1,
+  "title": "SURVIVE STUDY — 30일 집중 생존 스터디",
+  "summary": "매일 목표를 세우고 30분 집중·회고·인증을 반복하며 학습 습관을 만드는 서바이벌형 스터디 챌린지입니다.",
+  "githubUser": "solvedacuser(정환)",
+  "demoUrl": "",
+  "demoVideoUrl": "",
+  "thumbnail": "screenshots/capture 1.png",
+  "screenshots": [
+    "screenshots/capture 1.png",
+    "screenshots/capture 2.png"
+  ],
+  "problem": "큰 목표와 의지만으로는 공부를 매일 시작하고 지속하기 어렵습니다. 학습 과정이 흩어져 있으면 무엇을 얼마나 했는지 확인하기도 어렵습니다. SURVIVE STUDY는 목표, 집중, 회고, 인증, 동료와 보상을 하나의 생존 루프로 연결해 매일 다시 시작해야 하는 부담을 줄입니다.",
+  "targetUsers": [
+    "혼자서는 학습 루틴을 꾸준히 유지하기 어려운 사람",
+    "자격증·독서·코딩 등 매일 30분 집중 습관을 만들고 싶은 사람",
+    "명확한 마감과 동료의 생존 기록으로 동기부여를 얻고 싶은 사람"
+  ],
+  "features": [
+    "오늘의 목표를 적고 웹 타이머로 학습 시간을 측정해 서버에 확정합니다.",
+    "학습 시간을 채운 뒤 회고와 비공개 증빙을 제출해 하루의 생존 인증을 완료합니다.",
+    "포인트로 공식·사용자 챌린지에 참가하고 나만의 규칙으로 챌린지를 개설합니다.",
+    "실시간 생존 순위, 연속 인증, 돌발 미션, 배지와 학습 리포트로 성취를 보여줍니다.",
+    "마감 미인증자를 자동 탈락 처리하고 예치 포인트를 완주자에게 원자적으로 정산합니다."
+  ],
+  "featureTags": [
+    "30일 챌린지",
+    "집중 타이머",
+    "생존 인증",
+    "포인트 보상",
+    "실시간 순위"
+  ],
+  "techStack": [
+    "Next.js",
+    "React",
+    "TypeScript",
+    "Supabase",
+    "PostgreSQL",
+    "Drizzle ORM",
+    "GSAP",
+    "Three.js",
+    "Vitest",
+    "fast-check"
+  ],
+  "techHighlights": [
+    "Next.js App Router와 Supabase Auth·Realtime·Storage로 인증, 실시간 순위, 비공개 증빙 업로드를 연결했습니다.",
+    "Drizzle 트랜잭션과 PostgreSQL CHECK·UNIQUE·FK·RLS로 포인트 차감, 탈락, 정산의 무결성을 보장합니다.",
+    "Vercel Cron에서 마감 미인증 탈락과 챌린지 정산을 자동 처리하고 중복 실행에도 안전하도록 설계했습니다.",
+    "fast-check 기반 속성 테스트로 포인트·정산 보존 법칙, 보상 상한, 동시 참가 제약을 검증합니다.",
+    "GSAP ScrollTrigger와 Three.js로 30일 생존 여정을 몰입감 있는 인터랙티브 화면으로 구현했습니다."
+  ],
+  "developmentWithAI": "저는 학습 지속이라는 문제와 생존형 챌린지의 핵심 규칙을 정했습니다. AI와 함께 requirements-first 방식으로 요구사항, 설계, 구현 과제를 순서대로 구체화하고 데이터 무결성이 중요한 도메인 로직과 웹 애플리케이션을 분리했습니다. 구현 후에는 단위·통합·속성 테스트와 타입 검사를 반복하며 포인트 차감, 탈락, 정산처럼 실패 비용이 큰 흐름을 점검했고, 실제 화면을 확인하면서 콘텐츠와 인터랙션을 다듬었습니다.",
+  "agent": {
+    "summary": "요구사항 정의부터 설계, 구현, 테스트 점검까지 AI Agent와 Skill을 연결해 단계적으로 개발했습니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "Kiro Spec Agent",
+        "purpose": "핵심 도메인과 웹 앱의 요구사항, 설계, 구현 작업을 requirements-first 방식으로 구조화합니다."
+      },
+      {
+        "type": "skill",
+        "name": "도메인 무결성 설계 Skill",
+        "purpose": "포인트와 예치금의 원자적 처리, 동시성 제어, 정산 보존 법칙을 데이터 제약과 트랜잭션으로 설계합니다."
+      },
+      {
+        "type": "skill",
+        "name": "속성 기반 테스트 Skill",
+        "purpose": "fast-check로 다양한 입력을 생성해 포인트 보존, 보상 상한, 탈락 풀 합산 같은 불변식을 검증합니다."
+      },
+      {
+        "type": "skill",
+        "name": "UI 구현 점검 Skill",
+        "purpose": "디자인 의도를 Next.js, GSAP, Three.js 코드로 옮기고 화면 흐름과 접근성을 점검합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "Core 무결성 개발 Workflow",
+        "steps": [
+          "사용자 스토리와 인수 조건 작성",
+          "도메인 모델과 트랜잭션 경계 설계",
+          "DB 제약과 서버 로직 구현",
+          "속성·통합 테스트 실행",
+          "실패 사례를 반영해 설계 보완"
+        ]
+      },
+      {
+        "name": "Web 경험 구현 Workflow",
+        "steps": [
+          "화면별 요구사항과 사용자 흐름 정의",
+          "CoreAdapter 경계와 DTO 설계",
+          "Next.js 페이지와 Server Action 구현",
+          "타입 검사와 웹 테스트 실행",
+          "화면과 인터랙션 검토 후 개선"
+        ]
+      }
+    ]
+  }
+}
