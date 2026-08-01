@@ -5,6 +5,7 @@ import { NearbyStoreList } from "./NearbyStoreList";
 import { resolveCategoryPresentation } from "./categoryPresentation";
 import { TermHelp } from "./TermHelp";
 import type { ProductCategory } from "../../services/productCatalog";
+import type { IndustryTaxonomy } from "../../services/industryTaxonomy";
 import type { NearbyStoreState } from "../analysis/useNearbyStores";
 import type {
   AnalysisTopic,
@@ -158,6 +159,8 @@ type MarketFiltersProps = {
   onReset: () => void;
   onMarketChange: (market: MarketKey) => void;
   onCategoryChange: (category: Category) => void;
+  taxonomy?: IndustryTaxonomy | null;
+  onTaxonomyCategoryChange?: (name: string, nodeId: string, capability: "FULL" | "PARTIAL" | "NONE") => void;
   onLayerChange: (layer: LayerMode) => void;
   onTopicChange: (topic: AnalysisTopic) => void;
   onBoundaryVisibleChange: (visible: boolean) => void;
@@ -186,6 +189,8 @@ export function MarketFilters({
   onReset,
   onMarketChange,
   onCategoryChange,
+  taxonomy,
+  onTaxonomyCategoryChange,
   onLayerChange,
   onTopicChange,
   onBoundaryVisibleChange,
@@ -303,6 +308,26 @@ export function MarketFilters({
             />
           )}
         </div>
+        {taxonomy?.nodes?.length && (
+          <label className="select-label taxonomy-select">
+            <span className="select-label-title">전체 업종 탐색 <small>247개 원천 소분류</small></span>
+            <select
+              value={categorySelection.code && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(categorySelection.code) ? categorySelection.code : ""}
+              onChange={(event) => {
+                const node = taxonomy.nodes.find((candidate) => candidate.id === event.target.value);
+                if (node && onTaxonomyCategoryChange) onTaxonomyCategoryChange(node.name, node.id, node.capability);
+              }}
+            >
+              <option value="">Top 7 추천 업종 선택</option>
+              {taxonomy.nodes.filter((node) => node.is_leaf).map((node) => (
+                <option key={node.id} value={node.id}>
+                  {node.path_key.replaceAll("/", " › ")} · {node.name}
+                </option>
+              ))}
+            </select>
+            <small>전체 원천 업종은 지도·점포 탐색을 지원하며, 분석 지표 범위는 선택 업종에 따라 달라집니다.</small>
+          </label>
+        )}
       </div>
       <div className="filter-group filter-section">
         <div className="filter-section-heading">

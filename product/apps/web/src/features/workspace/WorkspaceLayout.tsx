@@ -27,6 +27,7 @@ export function WorkspaceLayout({
     marketData,
     storefronts,
     actions,
+    taxonomy,
     apiReadiness,
   } = model;
   const { market, nearby, marketAnalysis } = marketData;
@@ -61,6 +62,7 @@ export function WorkspaceLayout({
           marketKey={selection.marketKey}
           markets={catalogState.markets}
           supportedCategories={catalog.categories}
+          taxonomy={taxonomy}
           catalogState={catalogDisplayState}
           onCatalogRetry={onCatalogRetry}
           category={selection.categorySelection.name}
@@ -83,6 +85,10 @@ export function WorkspaceLayout({
           onCategoryChange={(nextCategory) => {
             viewport.setStorefront3dUnavailable(false);
             actions.chooseCategory(nextCategory);
+          }}
+          onTaxonomyCategoryChange={(name, nodeId, capability) => {
+            viewport.setStorefront3dUnavailable(false);
+            actions.chooseTaxonomyCategory(name, nodeId, capability);
           }}
           onLayerChange={actions.chooseLayer}
           onTopicChange={(topic) => {
