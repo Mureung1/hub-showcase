@@ -8,9 +8,11 @@ from pathlib import Path
 
 from alembic.config import Config
 from sqlalchemy.engine import make_url
+from sqlalchemy.orm import Session
 
 from alembic import command
 from localtwin_api.database import create_database_engine
+from localtwin_api.industry_taxonomy import materialize_current_taxonomy
 from localtwin_api.kosis_business_census import import_business_census_snapshot
 from localtwin_api.kosis_population import import_population_snapshot
 from localtwin_api.market_population_import import import_market_population
@@ -79,6 +81,15 @@ def alembic_config(database_url: str) -> Config:
     return config
 
 
+def materialize_published_taxonomy(engine: object) -> str:
+    """Publish taxonomy only after canonical point data has been verified."""
+
+    with Session(engine) as session:  # type: ignore[arg-type]
+        run_id = materialize_current_taxonomy(session)
+        session.commit()
+        return run_id
+
+
 def promote_production_database(
     database_url: str,
     project_ref: str,
@@ -92,6 +103,7 @@ def promote_production_database(
     engine = create_database_engine(database_url)
     try:
         canonical = seed_canonical(inputs.canonical_database, engine)
+        materialize_published_taxonomy(engine)
         population = import_population_snapshot(inputs.kosis_population_snapshot, engine)
         business = import_business_census_snapshot(inputs.kosis_business_snapshot, engine)
         market_population = import_market_population(

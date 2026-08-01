@@ -97,6 +97,11 @@ def test_promotion_runs_migration_then_all_idempotent_imports(
     )
     monkeypatch.setattr(
         promotion,
+        "materialize_published_taxonomy",
+        lambda engine: calls.append("taxonomy") or "test-run",
+    )
+    monkeypatch.setattr(
+        promotion,
         "import_population_snapshot",
         lambda snapshot, engine: (
             calls.append("population")
@@ -124,6 +129,7 @@ def test_promotion_runs_migration_then_all_idempotent_imports(
         "migration:head",
         "engine",
         "canonical",
+        "taxonomy",
         "population",
         "business",
         "market-population:20251",

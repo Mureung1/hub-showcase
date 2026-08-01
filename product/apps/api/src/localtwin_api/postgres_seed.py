@@ -13,10 +13,12 @@ from urllib.parse import urlparse
 from sqlalchemy import Connection, Engine, func, select
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.orm import Session
 
 from localtwin_api.config import get_settings
 from localtwin_api.database import create_database_engine
 from localtwin_api.db_models import CANONICAL_MODELS, SalesMetric, StoreMetric
+from localtwin_api.industry_taxonomy import materialize_current_taxonomy
 from localtwin_api.seoul_open_data import repository_root
 
 TABLE_ORDER = tuple(model.__tablename__ for model in CANONICAL_MODELS)
@@ -239,6 +241,9 @@ def main() -> None:
             chunk_size=arguments.chunk_size,
             tables=arguments.tables,
         )
+        with Session(engine) as session:
+            materialize_current_taxonomy(session)
+            session.commit()
     finally:
         engine.dispose()
     for table, count in report.target_counts.items():

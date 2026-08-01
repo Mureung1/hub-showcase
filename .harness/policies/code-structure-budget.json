@@ -3,7 +3,12 @@
     "webFunctionLines": 200,
     "pythonFunctionLines": 80
   },
-  "webFunctionBudgets": {},
+  "webFunctionBudgets": {
+    "product/apps/web/src/features/market/MarketFilters.tsx#MarketFilters": {
+      "maxLines": 205,
+      "reason": "Top 7 preset과 published taxonomy selector가 같은 접근성 filter panel 상태를 공유한다."
+    }
+  },
   "pythonFunctionBudgets": {
     "product/apps/api/src/localtwin_api/market_score.py#_cluster_result": {
       "maxLines": 127,
@@ -24,6 +29,10 @@
     "product/scripts/run_gpu_scene_validation.py#main": {
       "maxLines": 89,
       "reason": "SCENE-008에서 CLI orchestration과 worker 검증 단계를 분리한다."
+    },
+    "product/apps/api/src/localtwin_api/industry_taxonomy.py#materialize_current_taxonomy": {
+      "maxLines": 137,
+      "reason": "하나의 transaction 안에서 version, nodes, assignments, publication을 원자적으로 생성한다."
     }
   },
   "literalBudgets": {
