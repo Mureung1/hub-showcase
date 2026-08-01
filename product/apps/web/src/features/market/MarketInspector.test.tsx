@@ -180,7 +180,7 @@ describe("MarketInspector population evidence", () => {
   it("explains when the selected quarter has no time-of-day footfall data", () => {
     renderInspector(null, "ready", null, "flow", "ready", "unavailable");
 
-    expect(screen.getByText("시간대별 활동성")).toBeInTheDocument();
+    expect(screen.getByText("시간대별 유동인구")).toBeInTheDocument();
     expect(screen.getByText(/선택한 분기에는 시간대별 유동인구 자료가 없습니다/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /유동인구 상대값/ })).not.toBeInTheDocument();
   });
@@ -231,7 +231,7 @@ describe("MarketInspector population evidence", () => {
     expect(screen.getByText("개·폐업 현황")).toBeInTheDocument();
     expect(screen.getByText("2025년 1분기")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "개업 12개, 폐업 7개" })).toBeInTheDocument();
-    expect(screen.getByText("순증 +5개")).toBeInTheDocument();
+    expect(screen.getByText("5개 증가")).toBeInTheDocument();
     expect(screen.getByText(/월별 변화가 아닌 선택 분기 합계/)).toBeInTheDocument();
     expect(screen.queryByText("개·폐업 추이")).not.toBeInTheDocument();
   });
@@ -257,7 +257,7 @@ describe("MarketInspector population evidence", () => {
     expect(screen.getByText("개업 8개")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "2025년 1분기" }));
     expect(screen.getByText("개업 5개")).toBeInTheDocument();
-    expect(screen.getByText("순증 +3개")).toBeInTheDocument();
+    expect(screen.getAllByText("3개 증가")).toHaveLength(2);
   });
 
   it("renders the six source time buckets without inventing times after 24:00", () => {
@@ -290,7 +290,7 @@ describe("MarketInspector population evidence", () => {
     );
 
     expect(
-      screen.getByText(/서울시 추정 길단위인구의 선택 분기 집계입니다/),
+      screen.getByText(/서울시 길단위인구 기반 유동인구 추정치/),
     ).toBeInTheDocument();
     expect(screen.getByText("1명/분기")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /유동인구 상대값|데이터 없음/ })).toHaveLength(6);
