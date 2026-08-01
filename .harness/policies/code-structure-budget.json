@@ -3,12 +3,7 @@
     "webFunctionLines": 200,
     "pythonFunctionLines": 80
   },
-  "webFunctionBudgets": {
-    "product/apps/web/src/features/market/MarketFilters.tsx#MarketFilters": {
-      "maxLines": 205,
-      "reason": "Top 7 preset과 published taxonomy selector가 같은 접근성 filter panel 상태를 공유한다."
-    }
-  },
+  "webFunctionBudgets": {},
   "pythonFunctionBudgets": {
     "product/apps/api/src/localtwin_api/market_score.py#_cluster_result": {
       "maxLines": 127,
