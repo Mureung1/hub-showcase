@@ -12,11 +12,16 @@ SWIM은 하루를 대표하는 음악 한 곡과 짧은 감정을 기록하고, 
 
 | 구분 | 주소·상태 |
 |---|---|
+<<<<<<< HEAD
 | Frontend | Vercel 비공개 배포 완료 |
+=======
+| Frontend | (https://swim-self-pi.vercel.app/) |
+>>>>>>> origin/N122_이권석
 | Backend | [Render API](https://swim-scy0.onrender.com) |
 | Health Check | [`GET /health`](https://swim-scy0.onrender.com/health) 응답 확인 |
 | Demo Video | [Google Drive에서 보기](https://drive.google.com/file/d/1MmuMuZEwLBEagwL7WjqxmIBOhFn5Ak8E/view?usp=drive_link) |
 
+<<<<<<< HEAD
 2026년 8월 2일 사용자 확인 기준으로 Vercel Frontend와 Render Backend 배포를 완료했습니다. 배포 환경에서 React 화면, Render `/health`, Frontend에서 Backend로의 API 연결, Supabase 인증·데이터 저장·조회, Spotify 음악 검색과 저장된 음악 카드 조회를 확인했습니다.
 
 Frontend는 비공개 배포로 운영하며 Vercel URL은 저장소와 showcase에 기록하지 않았습니다. 외부 시연은 위 Demo Video로 제공합니다.
@@ -30,6 +35,14 @@ Frontend는 비공개 배포로 운영하며 Vercel URL은 저장소와 showcase
 | 원격 RLS 직접 접근 차단 | 미검증 |
 | Spotify OAuth·플레이리스트 중복 방지 | 미검증 |
 | 테마·모바일·Console | 미검증 |
+=======
+- 회원가입·로그인·세션 유지와 음악 기록 저장·조회
+- 두 계정의 사용자 검색·팔로우·피드·좋아요 상태 분리
+- 원격 Supabase RLS의 다른 사용자 데이터 쓰기 차단
+- Spotify 계정 연결과 Monthly Recap 플레이리스트 내보내기
+- 라이트·다크·시스템 테마와 데스크톱·모바일 화면
+- 브라우저 Console·Network 오류와 민감정보 비노출
+>>>>>>> origin/N122_이권석
 
 ## 프로젝트가 해결하는 문제
 
