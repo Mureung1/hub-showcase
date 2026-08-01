@@ -58,6 +58,24 @@ function ReportView({ checkins, isLoading, onRefresh }) {
       </div>
 
       <section className="report-section">
+        <h3>한눈에 보는 요약</h3>
+        <p className="report-overview">{report.overviewText}</p>
+      </section>
+
+      <section className="report-section">
+        <h3>최근 기록 흐름</h3>
+        <div className="report-timeline">
+          {report.timeline.map((checkin) => (
+            <article key={checkin.id}>
+              <span className="timeline-mood" aria-hidden="true">{checkin.mood || '📝'}</span>
+              <time dateTime={checkin.createdAt}>{shortDate(checkin.createdAt)}</time>
+              <strong>{checkin.emotion || 'AI 미정리'}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="report-section">
         <h3>기분 분포</h3>
         {report.moods.length ? (
           <div className="mood-report-list">

@@ -23,6 +23,7 @@ export function buildEmotionReport(checkins) {
     .sort((left, right) => right.count - left.count)
   const actions = [...new Set(organized.map(({ action }) => action).filter(Boolean))].slice(0, 5)
   const recent = organized.slice(0, 3)
+  const timeline = sorted.slice(0, 7).reverse()
   const dateRange = sorted.length
     ? `${shortDate(sorted.at(-1).createdAt)} ~ ${shortDate(sorted[0].createdAt)}`
     : ''
@@ -37,6 +38,14 @@ export function buildEmotionReport(checkins) {
   const actionText = actions.length
     ? actions.map((action) => `- ${action}`).join('\n')
     : '- 저장된 작은 행동 없음'
+  const overviewText = sorted.length
+    ? [
+      `${dateRange} 동안 ${sorted.length}개의 기록을 남겼어요.`,
+      moods[0] ? `가장 자주 선택한 기분은 ${moods[0].mood} ${moods[0].count}회였어요.` : '',
+      recent[0]?.emotion ? `최근 정리된 감정은 ${recent[0].emotion}이에요.` : '',
+      actions[0] ? `최근 작은 행동은 “${actions[0]}”이에요.` : '',
+    ].filter(Boolean).join(' ')
+    : ''
 
   return {
     total: sorted.length,
@@ -45,8 +54,12 @@ export function buildEmotionReport(checkins) {
     moods,
     recent,
     actions,
+    timeline,
+    overviewText,
     copyText: [
       '나의 감정 리포트',
+      overviewText,
+      '',
       dateRange ? `기록 기간: ${dateRange}` : '기록 기간: 기록 없음',
       `전체 기록: ${sorted.length}개`,
       `AI 정리 기록: ${organized.length}개`,

@@ -39,6 +39,10 @@ describe('감정 리포트', () => {
       ],
       actions: ['목차를 세 줄로 적기', '제출 링크 확인하기'],
     })
+    expect(report.timeline.map(({ id }) => id)).toEqual(['1', '2', '3'])
+    expect(report.overviewText).toContain('3개의 기록')
+    expect(report.overviewText).toContain('😐 2회')
+    expect(report.overviewText).toContain('최근 정리된 감정은 긴장')
     expect(report.copyText).toContain('전체 기록: 3개')
     expect(report.copyText).toContain('발표 준비')
   })
@@ -50,6 +54,8 @@ describe('감정 리포트', () => {
       moods: [],
       recent: [],
       actions: [],
+      timeline: [],
+      overviewText: '',
     })
   })
 })
