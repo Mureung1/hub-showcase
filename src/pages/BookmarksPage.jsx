@@ -77,6 +77,11 @@ function BookmarksPage() {
       {status === 'loading' && (
         <div className="loading-screen">
           <div className="spinner" />
+          <p className="loading-text">북마크한 공고를 다시 불러오는 중이에요…</p>
+          <p className="loading-hint">
+            한동안 사용하지 않았던 서버라면 깨어나는 데 30초~1분 정도 걸릴 수 있어요. 평소보다 오래 걸려도
+            정상이니 조금만 기다려주세요!
+          </p>
         </div>
       )}
 
