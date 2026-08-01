@@ -857,6 +857,14 @@ h1 {
   font-size: 13px;
   line-height: 1.7;
 }
+.reference-site-links a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.reference-site-links a:hover {
+  text-decoration: underline;
+}
 .reference-site-note {
   margin: 4px 0 0;
   font-size: 12px;
