@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useMap } from "react-map-gl/maplibre";
 
 import type { MarketStore } from "../../market/types";
+import { resolveCategorySemanticGroup } from "../../market/categorySemantics";
 import {
   createStoreFeatureCollection,
   STORE_CATEGORY_ICON_LAYER_ID,
@@ -26,6 +27,7 @@ const UNCLUSTERED_STORE_FILTER = ["!", ["has", "point_count"]];
 type StorePointLayersProps = {
   stores: MarketStore[];
   selected: MarketStore | null;
+  selectedCategoryName: string;
   visible: boolean;
   densityMode: boolean;
   storefrontMode: boolean;
@@ -60,9 +62,8 @@ function useStoreHover(
     const handleMove = (event: MouseEvent) => {
       const bounds = canvas.getBoundingClientRect();
       const point: [number, number] = [event.clientX - bounds.left, event.clientY - bounds.top];
-      const feature = map.queryRenderedFeatures(point, {
-        layers: [STORE_CATEGORY_ICON_LAYER_ID, STORE_POINT_HIT_LAYER_ID],
-      })[0];
+      const layers = [STORE_CATEGORY_ICON_LAYER_ID, STORE_POINT_HIT_LAYER_ID].filter((layerId) => map.getLayer(layerId));
+      const feature = layers.length > 0 ? map.queryRenderedFeatures(point, { layers })[0] : undefined;
       const featureId = feature?.properties?.featureId;
       applyHover(typeof featureId === "string" ? featureId : NO_HOVERED_STORE);
     };
@@ -86,6 +87,14 @@ function useStoreSourcePerformance(
   const generationRef = useRef(0);
   const pendingRef = useRef<{ id: number; complete: boolean } | null>(null);
 
+  const sourceIsReady = (map: { getSource: (id: string) => unknown; isSourceLoaded: (id: string) => boolean } | undefined) => {
+    try {
+      return Boolean(map?.getSource(STORE_POINT_SOURCE_ID) && map.isSourceLoaded(STORE_POINT_SOURCE_ID));
+    } catch {
+      return false;
+    }
+  };
+
   useEffect(() => {
     const map = mapRef?.getMap();
     if (!map || !visible) return;
@@ -94,8 +103,7 @@ function useStoreSourcePerformance(
       if (
         !pending ||
         pending.complete ||
-        !map.getSource(STORE_POINT_SOURCE_ID) ||
-        !map.isSourceLoaded(STORE_POINT_SOURCE_ID)
+        !sourceIsReady(map)
       ) return;
       pending.complete = true;
       performance.mark(`store-source-ready:${pending.id}`);
@@ -125,8 +133,7 @@ function useStoreSourcePerformance(
         !pending ||
         pending.id !== id ||
         pending.complete ||
-        !map.getSource(STORE_POINT_SOURCE_ID) ||
-        !map.isSourceLoaded(STORE_POINT_SOURCE_ID)
+        !sourceIsReady(map)
       ) return;
       pending.complete = true;
       performance.mark(`store-source-ready:${id}`);
@@ -173,10 +180,11 @@ function useStorePointLayerOrder(
   }, [mapRef, selected, visible]);
 }
 
-export function StorePointLayers({ stores, selected, visible, densityMode, storefrontMode }: StorePointLayersProps) {
+export function StorePointLayers({ stores, selected, selectedCategoryName, visible, densityMode, storefrontMode }: StorePointLayersProps) {
   const { current: mapRef } = useMap();
-  const data = useMemo(() => createStoreFeatureCollection(stores), [stores]);
-  const selectedData = useMemo(() => createStoreFeatureCollection(selected ? [selected] : []), [selected]);
+  const categoryGroup = resolveCategorySemanticGroup(selectedCategoryName);
+  const data = useMemo(() => createStoreFeatureCollection(stores, categoryGroup), [categoryGroup, stores]);
+  const selectedData = useMemo(() => createStoreFeatureCollection(selected ? [selected] : [], categoryGroup), [categoryGroup, selected]);
   const selectedFeatureId = selected ? storeFeatureIdentity(selected) : NO_SELECTED_STORE;
   useStoreHover(mapRef, visible, selectedFeatureId);
   useStoreSourcePerformance(mapRef, data, visible);

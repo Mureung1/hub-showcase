@@ -1,4 +1,4 @@
-import { resolveCategorySemanticGroup } from "../../market/categorySemantics";
+import { resolveCategorySemanticGroup, type CategorySemanticGroup } from "../../market/categorySemantics";
 import type { MarketStore } from "../../market/types";
 
 export const STORE_POINT_SOURCE_ID = "localtwin-store-points";
@@ -21,7 +21,10 @@ export function storeSelectionKey(store: MarketStore) {
   return store.id ?? store.name;
 }
 
-export function createStoreFeatureCollection(stores: MarketStore[]) {
+export function createStoreFeatureCollection(
+  stores: MarketStore[],
+  categoryGroupOverride?: CategorySemanticGroup,
+) {
   return {
     type: "FeatureCollection" as const,
     features: stores.map((store) => ({
@@ -32,7 +35,7 @@ export function createStoreFeatureCollection(stores: MarketStore[]) {
         storeKey: storeSelectionKey(store),
         name: store.name,
         category: store.category,
-        categoryGroup: resolveCategorySemanticGroup(store.category),
+        categoryGroup: categoryGroupOverride ?? resolveCategorySemanticGroup(store.category),
       },
       geometry: {
         type: "Point" as const,
