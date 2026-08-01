@@ -12,21 +12,24 @@ SWIM은 하루를 대표하는 음악 한 곡과 짧은 감정을 기록하고, 
 
 | 구분 | 주소·상태 |
 |---|---|
-| Frontend | Vercel 배포 설정 문서화 — 공개 URL 및 배포 상태 확인 필요 |
+| Frontend | Vercel 비공개 배포 완료 |
 | Backend | [Render API](https://swim-scy0.onrender.com) |
 | Health Check | [`GET /health`](https://swim-scy0.onrender.com/health) 응답 확인 |
 | Demo Video | [Google Drive에서 보기](https://drive.google.com/file/d/1MmuMuZEwLBEagwL7WjqxmIBOhFn5Ak8E/view?usp=drive_link) |
 
-현재 저장소에서 확인할 수 있는 배포 검증 근거는 Render의 `/health` 응답입니다. 타입 검사, 자동 테스트와 프로덕션 빌드는 로컬에서 통과했습니다.
+2026년 8월 2일 사용자 확인 기준으로 Vercel Frontend와 Render Backend 배포를 완료했습니다. 배포 환경에서 React 화면, Render `/health`, Frontend에서 Backend로의 API 연결, Supabase 인증·데이터 저장·조회, Spotify 음악 검색과 저장된 음악 카드 조회를 확인했습니다.
 
-Vercel 공개 URL은 아직 저장소에 기록하지 않았으며, 배포 환경의 브라우저 전체 흐름도 최종 검증 전입니다. URL을 공개할 때는 `showcase/showcase.json`의 `demoUrl`과 위 표에 같은 주소를 추가하고 다음 항목을 실제 환경에서 확인해야 합니다.
+Frontend는 비공개 배포로 운영하며 Vercel URL은 저장소와 showcase에 기록하지 않았습니다. 외부 시연은 위 Demo Video로 제공합니다.
 
-- 회원가입·로그인·세션 유지와 음악 기록 저장·조회
-- 두 계정의 사용자 검색·팔로우·피드·좋아요 상태 분리
-- 원격 Supabase RLS의 다른 사용자 데이터 쓰기 차단
-- Spotify 계정 연결과 Monthly Recap 플레이리스트 내보내기
-- 라이트·다크·시스템 테마와 데스크톱·모바일 화면
-- 브라우저 Console·Network 오류와 민감정보 비노출
+| 검증 구분 | 상태 |
+|---|---|
+| Backend `/health` | PASS |
+| 회원가입·로그인 | 사용자 확인 PASS |
+| 음악 검색·저장·조회 | 사용자 확인 PASS |
+| 두 계정 팔로우·좋아요 상태 분리 | 미검증 |
+| 원격 RLS 직접 접근 차단 | 미검증 |
+| Spotify OAuth·플레이리스트 중복 방지 | 미검증 |
+| 테마·모바일·Console | 미검증 |
 
 ## 프로젝트가 해결하는 문제
 
@@ -286,11 +289,11 @@ APP_TIME_ZONE=Asia/Seoul
 
 환경변수를 변경하면 해당 서비스를 다시 배포해야 합니다. Spotify Developer Dashboard의 Redirect URI도 Render callback 주소와 일치해야 합니다.
 
-### 현재 배포 제한사항
+### 현재 배포 제한사항과 보안 보완
 
-- Express는 아직 `cors()` 기본 설정을 사용하므로 배포 환경의 CORS origin allowlist가 적용되지 않았습니다.
+- **배포 후 보안 보완 필요:** Express는 아직 `cors()` 기본 설정을 사용하므로 운영 Vercel origin allowlist가 적용되지 않았습니다.
 - 최신 SQL과 RLS가 원격 Supabase에서 실제로 동작하는지 두 계정으로 검증해야 합니다.
-- Vercel 공개 URL에서 회원가입부터 Spotify 플레이리스트 내보내기까지 브라우저 E2E 검증이 필요합니다.
+- Spotify 실제 계정의 OAuth 재연결·해제와 월간 플레이리스트 중복 내보내기는 QA 문서의 수동 절차로 추가 검증해야 합니다.
 - 데스크톱·모바일의 라이트·다크·시스템 테마와 Console·Network 결과가 아직 수동 검증되지 않았습니다.
 
 ## API 요약
@@ -361,17 +364,19 @@ npm test
 npm run build
 ```
 
-2026-07-30 기준:
+2026-08-02 기준:
 
 - TypeScript 타입 검사 통과
 - Vitest 프론트엔드 테스트 143개 통과
 - Node 서버 테스트 98개 통과
 - Vite 프로덕션 빌드 통과
 - Render `/health` 응답 확인
+- Vercel Frontend와 Render Backend 배포 완료
+- 배포 환경의 Supabase 인증·데이터 저장·조회와 Spotify 음악 검색 확인
 
 자동 테스트는 인증, 입력 검증, 하루 한 기록, 닉네임 검색, 팔로우, 피드, 좋아요, 공개 프로필, Monthly Recap, Spotify OAuth, 플레이리스트 복구·중복 방지와 테마 저장·전환을 포함합니다.
 
-배포 환경의 두 계정 사용자 흐름, 원격 RLS, Spotify 실제 플레이리스트, 테마 시각 검증은 아직 완료되지 않았습니다. 상세 재현 절차와 `BLOCKED` 상태는 [QA 문서](docs/qa-report.md)에 기록되어 있습니다.
+핵심 배포 흐름은 확인했지만, 두 계정의 원격 RLS 권한 경계, Spotify 중복 내보내기, 테마·반응형 전체 화면은 [QA 문서](docs/qa-report.md)의 수동 절차로 추가 검증해야 합니다.
 
 ## MVP 범위
 
