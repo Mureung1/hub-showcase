@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import multer from 'multer'
 import { getCheckins, createCheckin, deleteCheckin } from '../services/checkinService.js'
-import { createSummary } from '../services/summaryService.js'
+import { createReportAnalysis, createSummary } from '../services/summaryService.js'
 import { uploadCheckinPhoto } from '../services/storageService.js'
 import { isDemoMode } from '../config/runtimeMode.js'
 
@@ -72,6 +72,24 @@ function getRawText(body) {
   return rawText.trim()
 }
 
+function getReportText(body) {
+  const reportText = body.reportText
+
+  if (typeof reportText !== 'string' || !reportText.trim()) {
+    const error = new Error('AI로 정리할 리포트가 없습니다.')
+    error.status = 400
+    throw error
+  }
+
+  if (reportText.length > 10000) {
+    const error = new Error('AI로 정리할 리포트가 너무 깁니다.')
+    error.status = 400
+    throw error
+  }
+
+  return reportText.trim()
+}
+
 router.get('/', requireDemoStorage, asyncHandler(async (req, res) => {
   const checkins = await getCheckins()
   res.json(checkins)
@@ -82,6 +100,13 @@ router.post('/preview', asyncHandler(async (req, res) => {
   const summary = await createSummary(rawText)
 
   res.json({ rawText, ...summary })
+}))
+
+router.post('/report-analysis', asyncHandler(async (req, res) => {
+  const reportText = getReportText(req.body)
+  const analysis = await createReportAnalysis(reportText)
+
+  res.json(analysis)
 }))
 
 router.post('/photo', requireDemoStorage, upload.single('photo'), asyncHandler(async (req, res) => {

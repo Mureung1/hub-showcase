@@ -1,4 +1,6 @@
-import { describe, expect, test } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, test, vi } from 'vitest'
+import ReportView from './ReportView'
 import { buildEmotionReport } from '../utils/emotionReport'
 
 describe('감정 리포트', () => {
@@ -58,5 +60,38 @@ describe('감정 리포트', () => {
       timeline: [],
       overviewText: '',
     })
+  })
+
+  test('별도 동의 후 현재 리포트 요약만 AI 분석에 보낸다', async () => {
+    const onAnalyze = vi.fn().mockResolvedValue({
+      overview: '최근 기록에서는 긴장 뒤 안도가 나타났어요.',
+      pattern: '발표 준비가 원인으로 반복됐어요.',
+      nextFocus: '긴장이 줄어든 날의 행동을 살펴볼까요?',
+    })
+
+    render(
+      <ReportView
+        checkins={[{
+          id: '1',
+          mood: '😐',
+          emotion: '긴장',
+          cause: '발표 준비',
+          action: '목차 적기',
+          createdAt: '2026-07-30T03:00:00.000Z',
+        }]}
+        isLoading={false}
+        onRefresh={() => {}}
+        onAnalyze={onAnalyze}
+      />,
+    )
+
+    const analyzeButton = screen.getByRole('button', { name: 'AI로 전체 흐름 정리' })
+    expect(analyzeButton).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('checkbox'))
+    fireEvent.click(analyzeButton)
+
+    expect(onAnalyze).toHaveBeenCalledWith(expect.stringContaining('전체 기록: 1개'))
+    expect(await screen.findByText('최근 기록에서는 긴장 뒤 안도가 나타났어요.')).toBeInTheDocument()
   })
 })

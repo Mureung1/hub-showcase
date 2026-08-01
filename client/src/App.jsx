@@ -271,6 +271,14 @@ function App() {
     }
   }
 
+  function analyzeReport(reportText) {
+    return requestJson('/api/checkins/report-analysis', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reportText }),
+    })
+  }
+
   function handleSave() {
     return saveCheckin(summary)
   }
@@ -494,7 +502,12 @@ function App() {
         )}
 
         {screen === 'report' && (
-          <ReportView checkins={checkins} isLoading={isLoadingRecords} onRefresh={loadCheckins} />
+          <ReportView
+            checkins={checkins}
+            isLoading={isLoadingRecords}
+            onRefresh={loadCheckins}
+            onAnalyze={analyzeReport}
+          />
         )}
 
         {error && <p className="feedback feedback-error" role="alert">{error}</p>}
