@@ -4,8 +4,7 @@
 
 ## 📄 Documents
 
-- [Wiki](https://github.com/YunTaeYong/hub/wiki)
-- [Project Plan](smartff-agent/docs/PROJECT_PLAN.md)
+- [Project Plan](smartff-agent/docs/plan.md)
 - [Discussion](smartff-agent/docs/DISCUSSION.md)
 - [GitHub Issues](https://github.com/YunTaeYong/hub/issues)
 ## Repository
