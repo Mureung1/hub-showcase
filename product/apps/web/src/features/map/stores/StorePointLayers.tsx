@@ -6,9 +6,13 @@ import type { MarketStore } from "../../market/types";
 import {
   createStoreFeatureCollection,
   STORE_CATEGORY_ICON_LAYER_ID,
+  STORE_CATEGORY_LABEL_LAYER_ID,
   STORE_HOVER_HALO_LAYER_ID,
   STORE_POINT_HIT_LAYER_ID,
+  STORE_POINT_LAYER_ID,
   STORE_POINT_SOURCE_ID,
+  STORE_SELECTED_HALO_LAYER_ID,
+  STORE_SELECTED_POINT_LAYER_ID,
   storeFeatureIdentity,
 } from "./storeGeoJson";
 import { SelectedStorePointSource, StorePointSource } from "./StorePointSources";
@@ -122,6 +126,38 @@ function useStoreSourcePerformance(
   }, [data, mapRef, visible]);
 }
 
+function useStorePointLayerOrder(
+  mapRef: ReturnType<typeof useMap>["current"],
+  visible: boolean,
+  selected: MarketStore | null,
+) {
+  useEffect(() => {
+    const map = mapRef?.getMap();
+    if (!map || !visible) return;
+
+    const arrange = () => {
+      for (const layerId of [
+        STORE_POINT_LAYER_ID,
+        STORE_HOVER_HALO_LAYER_ID,
+        STORE_CATEGORY_ICON_LAYER_ID,
+        STORE_CATEGORY_LABEL_LAYER_ID,
+        ...(selected ? [STORE_SELECTED_HALO_LAYER_ID, STORE_SELECTED_POINT_LAYER_ID] : []),
+      ]) {
+        if (map.getLayer(layerId)) map.moveLayer(layerId);
+      }
+    };
+
+    let secondFrame: number | null = null;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(arrange);
+    });
+    return () => {
+      cancelAnimationFrame(firstFrame);
+      if (secondFrame !== null) cancelAnimationFrame(secondFrame);
+    };
+  }, [mapRef, selected, visible]);
+}
+
 export function StorePointLayers({ stores, selected, visible, densityMode, storefrontMode }: StorePointLayersProps) {
   const { current: mapRef } = useMap();
   const data = useMemo(() => createStoreFeatureCollection(stores), [stores]);
@@ -129,6 +165,7 @@ export function StorePointLayers({ stores, selected, visible, densityMode, store
   const selectedFeatureId = selected ? storeFeatureIdentity(selected) : NO_SELECTED_STORE;
   useStoreHover(mapRef, visible, selectedFeatureId);
   useStoreSourcePerformance(mapRef, data, visible);
+  useStorePointLayerOrder(mapRef, visible, selected);
 
   if (!visible || stores.length === 0) return null;
   return <>
