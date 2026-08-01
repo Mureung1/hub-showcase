@@ -12,37 +12,11 @@ SWIM은 하루를 대표하는 음악 한 곡과 짧은 감정을 기록하고, 
 
 | 구분 | 주소·상태 |
 |---|---|
-<<<<<<< HEAD
-| Frontend | Vercel 비공개 배포 완료 |
-=======
 | Frontend | (https://swim-self-pi.vercel.app/) |
->>>>>>> origin/N122_이권석
 | Backend | [Render API](https://swim-scy0.onrender.com) |
-| Health Check | [`GET /health`](https://swim-scy0.onrender.com/health) 응답 확인 |
-| Demo Video | [Google Drive에서 보기](https://drive.google.com/file/d/1MmuMuZEwLBEagwL7WjqxmIBOhFn5Ak8E/view?usp=drive_link) |
+| Health Check | [`GET /health`](https://swim-scy0.onrender.com/health) |
 
-<<<<<<< HEAD
-2026년 8월 2일 사용자 확인 기준으로 Vercel Frontend와 Render Backend 배포를 완료했습니다. 배포 환경에서 React 화면, Render `/health`, Frontend에서 Backend로의 API 연결, Supabase 인증·데이터 저장·조회, Spotify 음악 검색과 저장된 음악 카드 조회를 확인했습니다.
-
-Frontend는 비공개 배포로 운영하며 Vercel URL은 저장소와 showcase에 기록하지 않았습니다. 외부 시연은 위 Demo Video로 제공합니다.
-
-| 검증 구분 | 상태 |
-|---|---|
-| Backend `/health` | PASS |
-| 회원가입·로그인 | 사용자 확인 PASS |
-| 음악 검색·저장·조회 | 사용자 확인 PASS |
-| 두 계정 팔로우·좋아요 상태 분리 | 미검증 |
-| 원격 RLS 직접 접근 차단 | 미검증 |
-| Spotify OAuth·플레이리스트 중복 방지 | 미검증 |
-| 테마·모바일·Console | 미검증 |
-=======
-- 회원가입·로그인·세션 유지와 음악 기록 저장·조회
-- 두 계정의 사용자 검색·팔로우·피드·좋아요 상태 분리
-- 원격 Supabase RLS의 다른 사용자 데이터 쓰기 차단
-- Spotify 계정 연결과 Monthly Recap 플레이리스트 내보내기
-- 라이트·다크·시스템 테마와 데스크톱·모바일 화면
-- 브라우저 Console·Network 오류와 민감정보 비노출
->>>>>>> origin/N122_이권석
+배포 환경에서 Vercel의 React 화면, Render 상태 확인 API, Vercel에서 Render로 보내는 API 요청, Supabase 인증과 데이터 저장·조회, Spotify 음악 검색과 저장된 음악카드 조회를 확인했습니다.
 
 ## 프로젝트가 해결하는 문제
 
@@ -217,8 +191,6 @@ APP_FRONTEND_URL=http://localhost:5173
 APP_TIME_ZONE=Asia/Seoul
 ```
 
-`APP_TIME_ZONE`은 선택 항목이며, 설정하지 않으면 서버가 `Asia/Seoul`을 기본값으로 사용합니다.
-
 `VITE_SUPABASE_ANON_KEY`는 브라우저에서 사용하는 공개 anon key입니다. `SUPABASE_SERVICE_ROLE_KEY`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_TOKEN_ENCRYPTION_KEY`는 `VITE_` 환경변수로 만들거나 Git에 커밋하면 안 됩니다.
 
 `SPOTIFY_TOKEN_ENCRYPTION_KEY`는 32바이트 base64 값이어야 합니다. 예:
@@ -292,7 +264,7 @@ VITE_SUPABASE_ANON_KEY=your-public-anon-key
 | Production Branch | `main` |
 | Health Check Path | `/health` |
 
-Render에는 앞에서 설명한 Backend 환경변수를 모두 등록하고, 다음 항목은 운영 주소와 값으로 설정합니다.
+Render에는 Backend 환경변수를 등록하고 다음 운영 주소를 사용합니다.
 
 ```env
 SPOTIFY_REDIRECT_URI=https://swim-scy0.onrender.com/api/spotify/callback
@@ -302,12 +274,7 @@ APP_TIME_ZONE=Asia/Seoul
 
 환경변수를 변경하면 해당 서비스를 다시 배포해야 합니다. Spotify Developer Dashboard의 Redirect URI도 Render callback 주소와 일치해야 합니다.
 
-### 현재 배포 제한사항과 보안 보완
-
-- **배포 후 보안 보완 필요:** Express는 아직 `cors()` 기본 설정을 사용하므로 운영 Vercel origin allowlist가 적용되지 않았습니다.
-- 최신 SQL과 RLS가 원격 Supabase에서 실제로 동작하는지 두 계정으로 검증해야 합니다.
-- Spotify 실제 계정의 OAuth 재연결·해제와 월간 플레이리스트 중복 내보내기는 QA 문서의 수동 절차로 추가 검증해야 합니다.
-- 데스크톱·모바일의 라이트·다크·시스템 테마와 Console·Network 결과가 아직 수동 검증되지 않았습니다.
+현재 Express는 `cors()` 기본 설정으로 교차 출처 요청을 허용합니다. 공개 범위를 더 엄격히 운영할 때는 Vercel 프로덕션 주소를 환경변수로 관리하고 CORS origin allowlist로 제한해야 합니다.
 
 ## API 요약
 
@@ -377,19 +344,18 @@ npm test
 npm run build
 ```
 
-2026-08-02 기준:
+2026-07-30 기준:
 
 - TypeScript 타입 검사 통과
 - Vitest 프론트엔드 테스트 143개 통과
 - Node 서버 테스트 98개 통과
 - Vite 프로덕션 빌드 통과
 - Render `/health` 응답 확인
-- Vercel Frontend와 Render Backend 배포 완료
-- 배포 환경의 Supabase 인증·데이터 저장·조회와 Spotify 음악 검색 확인
+- 배포 환경의 로그인, 음악 검색, 음악 기록 저장·조회 확인
 
 자동 테스트는 인증, 입력 검증, 하루 한 기록, 닉네임 검색, 팔로우, 피드, 좋아요, 공개 프로필, Monthly Recap, Spotify OAuth, 플레이리스트 복구·중복 방지와 테마 저장·전환을 포함합니다.
 
-핵심 배포 흐름은 확인했지만, 두 계정의 원격 RLS 권한 경계, Spotify 중복 내보내기, 테마·반응형 전체 화면은 [QA 문서](docs/qa-report.md)의 수동 절차로 추가 검증해야 합니다.
+상세 재현 절차와 수동 검증 항목은 [QA 문서](docs/qa-report.md)에 기록되어 있습니다.
 
 ## MVP 범위
 
