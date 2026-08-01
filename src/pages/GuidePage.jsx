@@ -1,4 +1,35 @@
 import { useNavigate } from 'react-router-dom'
+import { getReferenceLink, getReferenceCaption } from '../constants/referenceLinks'
+import { FOREIGN_LANG_TEST_OPTIONS } from '../constants/specOptions'
+
+function siteName(url) {
+  return new URL(url).hostname.replace(/^www\./, '')
+}
+
+// 실제 링크는 referenceLinks.js(결과 화면 상세 모달이 쓰는 것과 동일)에서 그대로 가져온다 —
+// 안내 페이지 문구가 실제 링크와 따로 놀지 않도록 URL을 여기서 다시 적지 않는다.
+const REFERENCE_SITE_GUIDE = [
+  {
+    label: '외국어 성적',
+    entries: FOREIGN_LANG_TEST_OPTIONS.map((test) => ({ name: `${test} (${siteName(getReferenceLink('foreignLanguage', test))})`, link: getReferenceLink('foreignLanguage', test) })),
+    note: '시험 종류별 공식 사이트로 연결돼요.',
+  },
+  {
+    label: '경력',
+    entries: [{ name: `링커리어 (${siteName(getReferenceLink('career'))})`, link: getReferenceLink('career') }],
+    note: getReferenceCaption('career'),
+  },
+  {
+    label: '자격증/면허',
+    entries: [{ name: `큐넷 (${siteName(getReferenceLink('certificates'))})`, link: getReferenceLink('certificates') }],
+    note: getReferenceCaption('certificates'),
+  },
+  {
+    label: '학력',
+    entries: [{ name: `학점은행제 (${siteName(getReferenceLink('education'))})`, link: getReferenceLink('education') }],
+    note: getReferenceCaption('education'),
+  },
+]
 
 // 기능이 늘어나면서(로그인/북마크/참고링크 등) 랜딩 화면의 4단계 요약만으로는 "뭘 누르면 뭐가 나오는지"가
 // 잘 안 보인다는 피드백으로 추가한 상세 안내 페이지. 개발자 관점(라우트 경로, 판정 로직 등)이 아니라
@@ -39,6 +70,11 @@ const GUIDE_SECTIONS = [
       { image: '/guide/insight-multi-gap.png', caption: '여러 항목을 함께 보완해야 하는 경우' },
       { image: '/guide/insight-empty.png', caption: '조건에 맞는 공고가 아예 없는 경우' },
     ],
+  },
+  {
+    title: '③-2. 항목별 참고 사이트',
+    items: ['부족한 항목을 준비할 수 있는 사이트예요. 공고 상세에서 미충족 항목을 누르면 바로 연결돼요.'],
+    linkList: REFERENCE_SITE_GUIDE,
   },
   {
     title: '④ 로그인하고 저장한 공고 보기',
@@ -85,6 +121,26 @@ function GuidePage() {
                     <img src={sample.image} alt={sample.caption} />
                     <figcaption>{sample.caption}</figcaption>
                   </figure>
+                ))}
+              </div>
+            )}
+            {section.linkList && (
+              <div className="reference-site-list">
+                {section.linkList.map((row) => (
+                  <div className="reference-site-row" key={row.label}>
+                    <span className="reference-site-label">{row.label}</span>
+                    <span className="reference-site-links">
+                      {row.entries.map((entry, index) => (
+                        <span key={entry.link}>
+                          {index > 0 && ' · '}
+                          <a href={entry.link} target="_blank" rel="noopener noreferrer">
+                            {entry.name}
+                          </a>
+                        </span>
+                      ))}
+                    </span>
+                    {row.note && <p className="reference-site-note">{row.note}</p>}
+                  </div>
                 ))}
               </div>
             )}
