@@ -58,6 +58,7 @@ def test_ranked_categories_use_unique_stores_and_per_market_counts() -> None:
         )
 
     session = MagicMock()
+    session.scalar.return_value = None
     session.execute.return_value.all.return_value = [
         (store("C1", "카페"), "3110562"),
         (store("C2", "커피 전문점"), "3120103"),
