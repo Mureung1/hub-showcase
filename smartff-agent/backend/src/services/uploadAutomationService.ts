@@ -21,6 +21,7 @@ export interface AutomationResult {
   missingFiles?: string[];
   etl?: EtlResult;
   parseStats?: FileParseStat;
+  parseError?: string;
   error?: string;
 }
 
@@ -38,6 +39,16 @@ export function buildSalesWasteFilename(
   month: number
 ): string {
   return `${category}_${String(month).padStart(2, '0')}_${productCategory}.xlsx`;
+}
+
+// 같은 카테고리+월+상품군 조합의 파일이 이미 있는지 확인 — 프론트가 덮어쓰기 전 사용자에게 확인받는 데 사용
+export function salesWasteFileExists(
+  category: 'sales' | 'waste',
+  productCategory: string,
+  month: number
+): boolean {
+  const filename = buildSalesWasteFilename(category, productCategory, month);
+  return fs.existsSync(path.join(REPO_ROOT, 'data/raw', category, filename));
 }
 
 // 해당 월에 sales/waste 4개 카테고리 파일이 전부 있는지 확인 —
@@ -72,10 +83,12 @@ export async function processSalesWasteUpload(
   // 월 세트가 아직 안 채워졌어도 방금 올린 파일의 파싱 통계는 바로 보여준다
   const soloParseStep = await runSingleParser(category);
   const parseStats = soloParseStep.ok ? findParseStat(soloParseStep, filename) : undefined;
+  // 파서 자체가 실패했을 때(예: python3/pandas 미설치) 원인을 응답에 남겨 프론트가 침묵하지 않게 한다
+  const parseError = !soloParseStep.ok ? soloParseStep.error : undefined;
 
   const missingFiles = findMissingFiles(month);
   if (missingFiles.length > 0) {
-    return { success: true, filename, status: 'waiting', missingFiles, parseStats };
+    return { success: true, filename, status: 'waiting', missingFiles, parseStats, parseError };
   }
 
   const etl = await runSalesWasteEtl();
@@ -96,5 +109,5 @@ export async function processSalesWasteUpload(
   await patternService.reloadData();
   await persistToSupabase();
 
-  return { success: true, filename, status: 'complete', etl, parseStats };
+  return { success: true, filename, status: 'complete', etl, parseStats, parseError };
 }
