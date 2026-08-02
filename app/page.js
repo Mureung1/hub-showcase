@@ -126,6 +126,24 @@ export default function Home() {
     localStorage.setItem("kok-theme", theme);
   }, [theme]);
 
+  // T23: 며칠 만에 다시 왔는지 확인해 복귀 환영 문구를 보여준다. 마지막 방문일을
+  // localStorage에 남겨두고, 오늘과 날짜만(시간 무시) 비교한다.
+  const [returningMessage, setReturningMessage] = useState(null);
+  useEffect(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastVisit = localStorage.getItem("kok-last-visit");
+    if (lastVisit) {
+      const gapDays = Math.round(
+        (new Date(todayStr) - new Date(lastVisit)) / 86400000
+      );
+      if (gapDays >= 2) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 1회 계산
+        setReturningMessage(`${gapDays}일 만이네, 반가워`);
+      }
+    }
+    localStorage.setItem("kok-last-visit", todayStr);
+  }, []);
+
   // T18: Zero-Input 온보딩. null=아직 확인 전, true=연동 정상, false=미설정(온보딩 화면 표시).
   // 마운트 후 한 번만 /api/notion-health로 확인하고, "확인했어요" 버튼으로 재확인할 수 있다.
   const [notionReady, setNotionReady] = useState(null);
@@ -647,7 +665,7 @@ export default function Home() {
         onSubmit={handleSubmit}
         isLoading={isSplitting}
         error={splitError}
-        prompt={followUpQuestion ?? undefined}
+        prompt={followUpQuestion ?? returningMessage ?? undefined}
         notice={brainDumpNotice}
         onGoHome={followUpQuestion ? goHome : undefined}
       />
