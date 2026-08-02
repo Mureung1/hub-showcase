@@ -4,11 +4,13 @@
 
 ```
 RootLayout (app/layout.js)
-└── Home (app/page.js)  — step: "input" | "review" | "preview" | "focus" | "timer" | "timer-confirm"
-                          | "complete" | "reason" | "proposal" | "rest"
+└── Home (app/page.js)  — step: "input" | "stats" | "review" | "preview" | "focus" | "timer"
+                          | "timer-confirm" | "complete" | "reason" | "proposal" | "rest"
     ├── [onboarding]    OnboardingGuide  (app/components/OnboardingGuide.js) — T18, step 상태와
     │                   무관하게 notionReady===false면 다른 화면보다 먼저 렌더링됨
     ├── [input]         BrainDumpInput   (app/components/BrainDumpInput.js)
+    ├── [stats]         StatsScreen      (app/components/StatsScreen.js) — T26, 입력 화면의
+    │                   "이번 주 통계 보기" 링크로 진입, /api/stats 실데이터 조회
     ├── [review]        MicrostepReview  (app/components/MicrostepReview.js) — T17, 아직 Notion에
     │                   저장 전인 마이크로스텝 전체 목록(삭제·다시 쪼개기 가능)
     ├── [preview]       TaskPreview      (app/components/TaskPreview.js)
@@ -38,7 +40,8 @@ input → review(다시 쪼개기 가능) → (이대로 시작하기: Notion �
 
 | 컴포넌트 | props | 콜백 → 다음 step |
 |---|---|---|
-| `BrainDumpInput` | — | `onSubmit(text)` → `review` |
+| `BrainDumpInput` | `onViewStats`(T26) | `onSubmit(text)` → `review`, `onViewStats()` → `stats` |
+| `StatsScreen` | `daysCompleted`, `week`, `isLoading`, `error` | (없음, `onGoHome`으로만 나감) |
 | `MicrostepReview` | `microsteps`, `isReshuffling`, `isSaving`, `error` | `onDelete(index)` → 로컬에서만 제거, `onReshuffle()` → `/api/brain-dump` 재호출 후 `review` 유지, `onConfirm()` → `/api/steps/save` 저장 후 `preview` |
 | `TaskPreview` | `task` | `onReady()` → `focus` |
 | `OneFocusView` | `task`, `deadlineExtraMinutes`, `onExtendDeadline`(T19: 마감 표시+연장), `theme`·`onThemeChange`(T22: 화이트노이즈 테마), `intensity`·`onIntensityChange`·`soundEnabled`·`onToggleSound`(T24: 감각 강도 조절, `SensoryControl`·`ThemeSound` 내부 사용), `showPresence`·`onDismissPresence`(T25: 장식용 동시접속 표시, `PresenceIndicator` 내부 사용) | `onStart()` → `timer`, `onStruggle()` → `reason` |
