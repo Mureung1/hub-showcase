@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ThingDong | 프로젝트 소개</title>
+    <style>
+      :root { --ink:#10261c; --green:#166534; --leaf:#49a35d; --mint:#e7f4e9; --cream:#fbf8f0; --line:#d9e4da; --gray:#667085; --orange:#f28c3a; }
+      * { box-sizing:border-box; }
+      body { margin:0; min-height:100vh; background:#e7ebe5; color:var(--ink); font-family:"Pretendard","Noto Sans KR","Malgun Gothic",sans-serif; }
+      .deck { width:min(1180px, calc(100vw - 32px)); aspect-ratio:16/9; margin:32px auto 16px; position:relative; overflow:hidden; border-radius:24px; background:var(--cream); box-shadow:0 20px 60px rgba(16,38,28,.18); }
+      .slide { display:none; position:absolute; inset:0; padding:5.8% 6.6%; background:var(--cream); }
+      .slide.active { display:block; animation:fade .28s ease; }
+      @keyframes fade { from { opacity:0; transform:translateX(12px) } to { opacity:1; transform:translateX(0) } }
+      .eyebrow { color:var(--green); font-size:clamp(10px,1vw,14px); font-weight:800; letter-spacing:.03em; margin:0 0 14px; }
+      h1 { font-size:clamp(32px,4.2vw,66px); line-height:1.08; margin:0; letter-spacing:-.06em; }
+      h2 { font-size:clamp(25px,3vw,44px); line-height:1.15; letter-spacing:-.05em; margin:0 0 14px; }
+      h3 { margin:0 0 10px; font-size:clamp(16px,1.65vw,24px); }
+      p, li { font-size:clamp(13px,1.3vw,19px); line-height:1.55; color:var(--gray); }
+      .lead { max-width:900px; margin:0 0 32px; }
+      .brand { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+      .cover-note { position:absolute; top:6%; right:6%; padding:14px 18px; border-radius:16px; background:rgba(255,255,255,.85); font-size:clamp(11px,1.1vw,16px); font-weight:800; }
+      .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:22px; margin-top:38px; }
+      .grid.four { grid-template-columns:repeat(4,1fr); }
+      .card { min-height:170px; padding:23px; border:1px solid var(--line); border-radius:20px; background:#fff; }
+      .card.accent { background:var(--mint); }
+      .tag { display:inline-block; padding:5px 11px; margin-bottom:14px; border-radius:999px; background:var(--mint); color:var(--green); font-size:clamp(10px,1vw,13px); font-weight:800; }
+      .num { display:grid; place-items:center; width:36px; height:36px; margin-bottom:14px; border-radius:50%; color:#fff; background:var(--green); font-weight:800; }
+      .split { display:grid; grid-template-columns:1.25fr .75fr; gap:38px; height:72%; align-items:center; }
+      .split img { width:100%; max-height:100%; object-fit:contain; border-radius:20px; background:#f2f4ef; }
+      .steps { display:flex; align-items:stretch; gap:10px; margin-top:60px; }
+      .step { flex:1; padding:18px 12px; border:1px solid var(--line); border-radius:16px; background:#fff; text-align:center; font-size:clamp(11px,1.2vw,17px); font-weight:800; }
+      .arrow { align-self:center; color:var(--leaf); font-size:26px; }
+      .roles { display:grid; grid-template-columns:1fr 1fr; gap:54px; margin-top:30px; }
+      .role-list { margin:0; padding:0; list-style:none; }
+      .role-list li { padding:10px 16px; margin:9px 0; border:1px solid var(--line); border-radius:999px; background:#fff; color:var(--ink); }
+      .architecture { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:64px; }
+      .node { width:20%; min-height:142px; padding:24px 14px; border:1px solid var(--line); border-radius:18px; background:#fff; text-align:center; }
+      .node strong { display:block; font-size:clamp(17px,2vw,27px); margin-bottom:12px; }
+      .node small { color:var(--gray); font-size:clamp(11px,1vw,15px); line-height:1.45; }
+      .highlight { color:var(--green); font-weight:800; }
+      .bottom { position:absolute; bottom:5%; left:6.6%; right:6.6%; display:flex; justify-content:space-between; color:var(--gray); font-size:12px; }
+      .controls { width:min(1180px, calc(100vw - 32px)); display:flex; align-items:center; justify-content:space-between; margin:0 auto 34px; }
+      button { border:0; border-radius:999px; padding:12px 20px; background:var(--green); color:white; font:inherit; font-weight:800; cursor:pointer; }
+      button:disabled { opacity:.35; cursor:not-allowed; }
+      .hint { color:#53655b; font-size:14px; }
+      @media (max-width:720px) { .deck { aspect-ratio:auto; min-height:680px; } .slide { min-height:680px; padding:42px 30px; } .grid,.grid.four { grid-template-columns:1fr; gap:12px; margin-top:20px; } .card { min-height:auto; padding:16px; } .split,.roles { grid-template-columns:1fr; gap:18px; } .split img { max-height:240px; } .steps,.architecture { flex-wrap:wrap; margin-top:24px; } .step,.node { min-width:42%; } .arrow { display:none; } }
+    </style>
+  </head>
+  <body>
+    <main class="deck" aria-label="ThingDong 프로젝트 소개 슬라이드">
+      <section class="slide active"><img class="brand" src="./project-introduction-assets/thumbnail.jpg" alt="ThingDong 위치 기반 공동구매 웹서비스" /><div class="cover-note">PROJECT INTRODUCTION<br />2026 · Web MVP</div></section>
+
+      <section class="slide"><p class="eyebrow">01 · PROBLEM</p><h2>혼자 사면, 대용량은 싸도 끝까지 쓰기 어렵습니다.</h2><p class="lead">가격은 낮추고 싶지만 보관·소진·함께 살 사람 찾기가 부담이 되는 문제에서 시작했습니다.</p><div class="grid"><article class="card"><span class="tag">1인 가구</span><h3>대용량의 부담</h3><p>필요한 양보다 큰 상품을 사면 남기거나 보관 공간이 부족해집니다.</p></article><article class="card"><span class="tag">기존 방식</span><h3>텍스트 공지의 한계</h3><p>채팅방에서는 현재 인원, 입금 여부, 픽업 일정을 한눈에 보기 어렵습니다.</p></article><article class="card"><span class="tag">운영 부담</span><h3>방장에게 쏠리는 관리</h3><p>계좌 안내와 입금 확인, 주문·픽업 공지가 반복됩니다.</p></article></div></section>
+
+      <section class="slide"><p class="eyebrow">02 · SOLUTION</p><h2>게시글 하나를 “상태가 보이는 공동구매 흐름”으로 바꿨습니다.</h2><p class="lead">모집 인원부터 입금, 주문, 픽업까지 다음 행동을 화면에서 확인할 수 있게 설계했습니다.</p><div class="grid"><article class="card"><div class="num">1</div><h3>가까운 글 탐색</h3><p>위치·카테고리·거리·찜으로 필요한 공동구매를 찾습니다.</p></article><article class="card accent"><div class="num">2</div><h3>모집과 입금 관리</h3><p>정원이 차면 계좌를 안내하고, 참여자 신고와 방장 확인을 기록합니다.</p></article><article class="card"><div class="num">3</div><h3>상태 따라 픽업</h3><p>주문 완료부터 수령 완료까지 역할별 행동을 보여 줍니다.</p></article></div></section>
+
+      <section class="slide"><p class="eyebrow">03 · MVP SCOPE</p><h2>기획은 실제로 만들 수 있는 MVP 범위로 다듬었습니다.</h2><div class="grid" style="grid-template-columns:1fr 1fr"><article class="card accent"><h3>현재 구현된 범위</h3><p>개발용 로그인 · 글 등록 · 대표 이미지 · 직접 참여 · 모집 완료 · 계좌 안내 · 입금 확인 · 주문/픽업 상태 · 찜 · 마이페이지 · 배포</p></article><article class="card"><h3>다음 단계</h3><p>실제 OAuth · 실결제 · 웹 푸시 · 입금 리마인드 · 노쇼 방지 · 대기열 · AI 추천</p></article></div></section>
+
+      <section class="slide"><p class="eyebrow">04 · LIVE DEMO</p><h2>방장이 열고, 참여자가 채우고, 함께 수령하는 흐름을 시연합니다.</h2><p class="lead">민지(방장)와 서준(참여자) 프로필을 바꿔가며 같은 공동구매를 완성합니다.</p><div class="grid"><article class="card"><div class="num">1</div><h3>민지 로그인</h3><p>글 등록과 대표 이미지, 지도·계좌 입력</p></article><article class="card"><div class="num">2</div><h3>서준 참여</h3><p>마지막 참여로 모집 완료와 계좌 안내</p></article><article class="card"><div class="num">3</div><h3>입금·주문·픽업</h3><p>입금 신고와 확인, 상태 전환, 수령 완료</p></article></div></section>
+
+      <section class="slide"><p class="eyebrow">05 · HOME</p><h2>홈 화면에서 “무엇을, 어디서, 얼마에” 살지 빠르게 판단합니다.</h2><div class="split"><img src="./project-introduction-assets/home.png" alt="ThingDong 홈 화면" /><div><h3>카드 정보</h3><p>대표 이미지, 가격, 현재/목표 인원, 마감 정보를 보여 줍니다.</p><h3>탐색 보조</h3><p>카테고리 필터와 찜으로 필요한 글을 다시 찾습니다.</p><h3>위치 연동</h3><p>기본 위치와 픽업 좌표를 비교해 거리 정보를 제공합니다.</p></div></div></section>
+
+      <section class="slide"><p class="eyebrow">06 · CREATE & DETAIL</p><h2>글 작성부터 상세 확인까지, 실제 입력값이 DB에 저장됩니다.</h2><div class="split"><img src="./project-introduction-assets/detailpage.png" alt="ThingDong 공동구매 상세 화면" /><div><h3>방장 등록 항목</h3><p>사진 최대 5장과 대표 이미지, 상품 URL, 총 금액과 목표 인원, 지도 핀, 상세 주소, 픽업 시간, 입금 계좌를 입력합니다.</p></div></div></section>
+
+      <section class="slide"><p class="eyebrow">07 · USER FLOW</p><h2>방장과 참여자가 같은 공동구매를 서로 다른 행동으로 완성합니다.</h2><div class="roles"><div><span class="tag">방장 · 민지</span><ul class="role-list"><li>1. 글 등록</li><li>2. 참여자 모집</li><li>3. 입금 확인</li><li>4. 주문 완료</li><li>5. 픽업 가능</li><li>6. 공동구매 종료</li></ul></div><div><span class="tag">참여자 · 서준</span><ul class="role-list"><li>1. 글 탐색</li><li>2. 바로 참여</li><li>3. 계좌 확인</li><li>4. 입금 완료 신고</li><li>5. 픽업</li><li>6. 수령 완료</li></ul></div></div></section>
+
+      <section class="slide"><p class="eyebrow">08 · STATE MODEL</p><h2>공동구매는 5단계 상태로 진행 상황을 공유합니다.</h2><div class="steps"><div class="step">RECRUITING<br /><span class="highlight">모집 중</span></div><span class="arrow">→</span><div class="step">COMPLETED<br /><span class="highlight">모집 완료</span></div><span class="arrow">→</span><div class="step">ORDERED<br /><span class="highlight">주문 완료</span></div><span class="arrow">→</span><div class="step">WAITING_PICKUP<br /><span class="highlight">픽업 대기</span></div><span class="arrow">→</span><div class="step">FINISHED<br /><span class="highlight">종료</span></div></div><p style="margin-top:44px">모집 중에는 참여 취소가 가능하고, 정원 달성 뒤에는 방장이 주문·픽업 상태를 변경합니다. 모든 참여자가 수령 완료를 기록하면 종료할 수 있습니다.</p></section>
+
+      <section class="slide"><p class="eyebrow">09 · MY PAGE</p><h2>마이페이지에서는 내가 만든 것과 참여한 것을 한곳에서 관리합니다.</h2><div class="split"><img src="./project-introduction-assets/pages.png" alt="ThingDong 마이페이지" /><div><h3>내 공동구매 활동</h3><p>내가 만든 글과 참여한 글을 실제 DB 조회 결과로 표시합니다.</p><h3>개인 위치</h3><p>기본 주소와 좌표는 게시글 카드의 거리 계산에 사용됩니다.</p><h3>찜한 목록</h3><p>하트로 저장한 공동구매를 다시 확인합니다.</p></div></div></section>
+
+      <section class="slide"><p class="eyebrow">10 · ARCHITECTURE</p><h2>화면의 클릭은 API를 거쳐 MySQL 데이터로 저장되고 다시 화면에 반영됩니다.</h2><div class="architecture"><div class="node"><strong>Browser</strong><small>React 화면<br />TanStack Query</small></div><span class="arrow">→</span><div class="node"><strong>Vercel</strong><small>Vite 빌드<br />프론트엔드 배포</small></div><span class="arrow">→</span><div class="node"><strong>Render</strong><small>Express API<br />JWT · 상태 규칙</small></div><span class="arrow">→</span><div class="node"><strong>Railway</strong><small>MySQL 8<br />Sequelize</small></div></div><p style="margin-top:44px">개발 DB는 Docker MySQL을 사용했고, 운영 DB는 Railway MySQL로 분리했습니다.</p></section>
+
+      <section class="slide"><p class="eyebrow">11 · AGENT COLLABORATION</p><h2>AI는 대신 결정하는 사람이 아니라, 작업을 작게 만들고 검증을 돕는 동료였습니다.</h2><div class="steps"><div class="step">나<br /><span class="highlight">문제·우선순위 결정</span></div><span class="arrow">→</span><div class="step">feature-slice<br />작업 분할</div><span class="arrow">→</span><div class="step">test-first-generator<br />TDD 시나리오</div><span class="arrow">→</span><div class="step">feature-verify<br />코드·테스트 검증</div><span class="arrow">→</span><div class="step">내 확인<br />브라우저·DB·배포</div></div><p style="margin-top:44px">필요할 때 mock-data-auditor로 목업을 점검하고, vertical-slice-auditor로 FE–BE–DB 연결을 확인했습니다.</p></section>
+
+      <section class="slide"><p class="eyebrow">12 · MY WORKFLOW</p><h2>나만의 워크플로우는 “작게 정하고, 먼저 검증하고, 끝까지 확인하기”입니다.</h2><div class="steps"><div class="step">입력<br />사용자 문제</div><span class="arrow">→</span><div class="step">계획<br />기능 분할</div><span class="arrow">→</span><div class="step">테스트<br />Red → Green</div><span class="arrow">→</span><div class="step">구현<br />FE → API → DB</div><span class="arrow">→</span><div class="step">검증<br />테스트·브라우저·DB</div><span class="arrow">→</span><div class="step">기록<br />커밋·PR·회고</div></div><p style="margin-top:44px">문제는 화면 → Network/API → 서버 로그 → DB → 배포 환경변수 순서로 나눠 확인합니다.</p></section>
+
+      <section class="slide"><p class="eyebrow">13 · RETROSPECTIVE</p><h2>기능보다 “끝까지 연결하는 경험”이 더 중요하다는 것을 배웠습니다.</h2><div class="grid"><article class="card"><div class="num">1</div><h3>수직 슬라이스</h3><p>화면·서버·DB를 한 번에 연결해야 진짜 동작을 알 수 있었습니다.</p></article><article class="card"><div class="num">2</div><h3>AI 협업</h3><p>AI의 초안은 출발점이고, 범위와 완료 기준을 판단하는 일은 제 몫이었습니다.</p></article><article class="card"><div class="num" style="background:var(--orange)">3</div><h3>오류 해석</h3><p>Vite·CORS·DB 접속 오류를 해결하며 로그를 읽는 순서가 생겼습니다.</p></article></div></section>
+
+      <section class="slide"><p class="eyebrow">14 · CLOSING</p><h1>ThingDong</h1><p class="lead" style="font-size:clamp(20px,2.2vw,30px);color:var(--green);font-weight:800">가까운 이웃과 필요한 만큼 함께 사는<br />위치 기반 공동구매 웹서비스</p><p>현재 MVP는 게시글 등록부터 참여, 입금 확인, 주문과 픽업 상태 관리까지 화면·서버·DB가 연결된 하나의 흐름을 완성했습니다.</p><p class="highlight" style="margin-top:42px">NEXT · 실제 OAuth · 실결제 · 노쇼 방지 · 대기열</p></section>
+
+      <div class="bottom"><span>ThingDong · 위치 기반 공동구매 웹서비스</span><span id="page">1 / 15</span></div>
+    </main>
+    <nav class="controls" aria-label="슬라이드 이동"><button id="prev" type="button">← 이전</button><span class="hint">키보드 ← → 또는 버튼으로 넘길 수 있어요.</span><button id="next" type="button">다음 →</button></nav>
+    <script>
+      const slides = [...document.querySelectorAll('.slide')]; let index = 0;
+      const page = document.querySelector('#page'); const prev = document.querySelector('#prev'); const next = document.querySelector('#next');
+      function render() { slides.forEach((slide, i) => slide.classList.toggle('active', i === index)); page.textContent = `${index + 1} / ${slides.length}`; prev.disabled = index === 0; next.disabled = index === slides.length - 1; }
+      prev.addEventListener('click', () => { index = Math.max(0, index - 1); render(); });
+      next.addEventListener('click', () => { index = Math.min(slides.length - 1, index + 1); render(); });
+      window.addEventListener('keydown', (event) => { if (event.key === 'ArrowRight' || event.key === ' ') next.click(); if (event.key === 'ArrowLeft') prev.click(); });
+      render();
+    </script>
+  </body>
+</html>
