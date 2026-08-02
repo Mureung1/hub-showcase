@@ -41,8 +41,8 @@ input → review(다시 쪼개기 가능) → (이대로 시작하기: Notion �
 | `BrainDumpInput` | — | `onSubmit(text)` → `review` |
 | `MicrostepReview` | `microsteps`, `isReshuffling`, `isSaving`, `error` | `onDelete(index)` → 로컬에서만 제거, `onReshuffle()` → `/api/brain-dump` 재호출 후 `review` 유지, `onConfirm()` → `/api/steps/save` 저장 후 `preview` |
 | `TaskPreview` | `task` | `onReady()` → `focus` |
-| `OneFocusView` | `task`, `deadlineExtraMinutes`, `onExtendDeadline`(T19: 마감 표시+연장), `theme`·`onThemeChange`(T22: 화이트노이즈 테마, `ThemeSwitcher`·`ThemeDecoration` 내부 사용) | `onStart()` → `timer`, `onStruggle()` → `reason` |
-| `FocusTimer` | `durationMinutes`, `startedAt`, `caption`(연장 이유, 선택), `theme`(T22: OneFocusView에서 고른 테마를 이어받음, `ThemeDecoration` 내부 사용) | `onFinish()` → `timer-confirm` |
+| `OneFocusView` | `task`, `deadlineExtraMinutes`, `onExtendDeadline`(T19: 마감 표시+연장), `theme`·`onThemeChange`(T22: 화이트노이즈 테마), `intensity`·`onIntensityChange`·`soundEnabled`·`onToggleSound`(T24: 감각 강도 조절, `SensoryControl`·`ThemeSound` 내부 사용) | `onStart()` → `timer`, `onStruggle()` → `reason` |
+| `FocusTimer` | `durationMinutes`, `startedAt`, `caption`(연장 이유, 선택), `theme`(T22: OneFocusView에서 고른 테마를 이어받음), `intensity`·`soundEnabled`(T24: 마찬가지로 이어받기만, 조절 UI는 없음) | `onFinish()` → `timer-confirm` |
 | `TimerConfirm` | `isLoading`, `error` | `onYes()` → 완료 처리(`complete`/다음 `preview`), `onNo()` → Agent 연장 판단 후 `timer` |
 | `CompleteScreen` | `completedCount` | (없음, 종착 화면) |
 | `ReasonChips` | — | `onSelect(chip)` → `proposal` |
@@ -61,4 +61,5 @@ input → review(다시 쪼개기 가능) → (이대로 시작하기: Notion �
 ## 지금은 mock/미완인 부분 (설계 시 참고)
 
 - 타이머 연장(T15) 도중 새로고침하면 연장된 시간(`timerDurationMinutes`)은 저장되지 않아 원래 예상 시간 기준으로 복원된다. C04/C15 어느 쪽에도 명시된 요구사항은 아니라 지금은 그대로 둔다.
+- 소리 on/off(T24)는 값 자체는 새로고침해도 유지되지만, 새로고침 직후 실제 재생은 브라우저 자동재생 정책 때문에 사용자 동작(스피커 아이콘 클릭) 없이는 시작되지 않는다. `ThemeSound`가 `play()` 실패를 조용히 무시하므로 에러는 안 나고, 스피커 아이콘을 다시 누르면 정상 재생된다.
 - `review`(T17) 화면에서 새로고침하면 목록 자체는 복원되지만 `pendingBrainDumpParams`는 저장되지 않아 "전부 다시 쪼개기"가 그 시점부턴 동작하지 않는다(삭제·확인은 그대로 됨). C17에 명시된 요구사항은 아니라 지금은 그대로 둔다.
