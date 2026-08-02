@@ -194,9 +194,23 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack, onLogo
         </label>
       </div>
 
+      {isEdit && (
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 20 }}>
+          {existingProfile?.rating_count ? (
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#C98A1F" }}>
+              ★ {existingProfile.rating.toFixed(1)}{" "}
+              <span style={{ fontWeight: 600, color: "#8A7A76" }}>({existingProfile.rating_count}회 평가)</span>
+            </span>
+          ) : (
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#2F8F5B" }}>NEW · 아직 평가 이력이 없어요</span>
+          )}
+        </div>
+      )}
+
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>이름</div>
+        <label htmlFor="profile-name" style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>이름</label>
         <input
+          id="profile-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(36,21,18,0.12)", fontSize: 14, boxSizing: "border-box" }}
@@ -204,10 +218,11 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack, onLogo
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>
+        <label htmlFor="profile-nickname" style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>
           닉네임 (선택, 후보 목록에 이름 대신 보여요)
-        </div>
+        </label>
         <input
+          id="profile-nickname"
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
           placeholder="예: 아침러너"
@@ -221,8 +236,9 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack, onLogo
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>단과대</div>
+        <label htmlFor="profile-college" style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>단과대</label>
         <input
+          id="profile-college"
           value={college}
           onChange={(e) => setCollege(e.target.value)}
           placeholder="예: 경영학과"
@@ -236,6 +252,8 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack, onLogo
           {GENDER_OPTIONS.map((opt) => (
             <button
               key={opt.value}
+              type="button"
+              aria-pressed={gender === opt.value}
               onClick={() => setGender(opt.value)}
               style={{
                 flex: 1,
@@ -257,10 +275,11 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack, onLogo
 
       {!isGuest && isEdit && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>
+          <label htmlFor="profile-password" style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#8A7A76", marginBottom: 8 }}>
             비밀번호 변경 (선택)
-          </div>
+          </label>
           <input
+            id="profile-password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -282,8 +301,12 @@ function ProfileScreen({ userId, email, existingProfile, onSaved, onBack, onLogo
           marginBottom: 20,
         }}
       >
-        <span style={{ fontSize: 13, fontWeight: 600 }}>다른 사람에게 성별 비공개</span>
+        <span style={{ fontSize: 13, fontWeight: 600 }} id="profile-hide-gender-label">다른 사람에게 성별 비공개</span>
         <button
+          type="button"
+          role="switch"
+          aria-checked={hideGender}
+          aria-labelledby="profile-hide-gender-label"
           onClick={() => setHideGender(!hideGender)}
           style={{
             width: 40,

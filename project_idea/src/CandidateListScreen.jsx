@@ -288,6 +288,11 @@ function CandidateListScreen({ myRequest, myProfile, existingJoin, onBack, onJoi
                 {c.activity?.isActive && (
                   <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#2F8F5B", display: "inline-block" }} />
                 )}
+                {c.profile?.gender && (
+                  <span style={{ fontSize: 11, color: "#8A7A76", fontWeight: 600 }}>
+                    {c.profile.gender === "male" ? "남" : "여"}
+                  </span>
+                )}
                 <RatingBadge rating={c.profile?.rating} ratingCount={c.profile?.ratingCount} />
                 {c.profile?.noshow_count > 0 && (
                   <span style={{ fontSize: 11, color: "#C8102E", fontWeight: 700 }}>⚠️ 노쇼 {c.profile.noshow_count}회</span>

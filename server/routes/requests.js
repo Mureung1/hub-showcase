@@ -13,16 +13,26 @@ import {
 
 const router = Router()
 
-// 평점을 실제로 기록하고, 같은 그룹의 나머지 멤버들 프로필 평점에 반영
-async function applyRatingSubmission(requestId, stars, noshowReported) {
-  const { data: target, error: fetchError } = await supabase
+// 동행자 한 명에게 평점을 기록하고, 그 사람의 프로필 평점에 반영 (그룹원 각각 개별 평가)
+async function applyRatingSubmission(requestId, targetRequestId, stars, noshowReported) {
+  const { data: rater, error: raterError } = await supabase
     .from('matching_requests')
     .select('group_id')
     .eq('id', requestId)
     .single()
 
-  if (fetchError) {
-    return { error: fetchError.message }
+  if (raterError) {
+    return { error: raterError.message }
+  }
+
+  const { data: target, error: targetError } = await supabase
+    .from('matching_requests')
+    .select('user_id')
+    .eq('id', targetRequestId)
+    .single()
+
+  if (targetError || !target?.user_id) {
+    return { error: targetError?.message ?? '동행자를 찾을 수 없어요' }
   }
 
   // 노쇼 신고면 실제 입력한 별점 대신 1점으로 강제 반영
@@ -30,7 +40,13 @@ async function applyRatingSubmission(requestId, stars, noshowReported) {
 
   const { data: rating, error: insertError } = await supabase
     .from('ratings')
-    .insert({ request_id: requestId, group_id: target.group_id, stars, noshow_reported: !!noshowReported })
+    .insert({
+      request_id: requestId,
+      target_request_id: targetRequestId,
+      group_id: rater.group_id,
+      stars,
+      noshow_reported: !!noshowReported,
+    })
     .select()
     .single()
 
@@ -38,45 +54,33 @@ async function applyRatingSubmission(requestId, stars, noshowReported) {
     return { error: insertError.message }
   }
 
-  if (target.group_id) {
-    const { data: otherMembers } = await supabase
-      .from('matching_requests')
-      .select('id, user_id')
-      .eq('group_id', target.group_id)
-      .neq('id', requestId)
+  const { data: user } = await supabase
+    .from('users')
+    .select('rating, rating_count, noshow_count')
+    .eq('id', target.user_id)
+    .single()
 
-    for (const member of otherMembers ?? []) {
-      if (!member.user_id) continue
+  if (user) {
+    const { rating: newRating, count: newCount } = applyRating(user.rating, user.rating_count, effectiveStars)
 
-      const { data: user } = await supabase
-        .from('users')
-        .select('rating, rating_count, noshow_count')
-        .eq('id', member.user_id)
-        .single()
-
-      if (!user) continue
-
-      const { rating: newRating, count: newCount } = applyRating(user.rating, user.rating_count, effectiveStars)
-
-      await supabase
-        .from('users')
-        .update({
-          rating: newRating,
-          rating_count: newCount,
-          noshow_count: noshowReported ? (user.noshow_count ?? 0) + 1 : user.noshow_count,
-        })
-        .eq('id', member.user_id)
-    }
+    await supabase
+      .from('users')
+      .update({
+        rating: newRating,
+        rating_count: newCount,
+        noshow_count: noshowReported ? (user.noshow_count ?? 0) + 1 : user.noshow_count,
+      })
+      .eq('id', target.user_id)
   }
 
   return { rating }
 }
 
-// 탑승 후 1시간 넘게 평가가 없는 트립은 불만 없음으로 보고 자동 5점 처리
+// 탑승 후 1시간 넘게 평가가 없는 트립은 불만 없음으로 보고, 그룹원 각각에게 자동 5점 처리
 async function sweepAutoRatings() {
   const { data: boarded } = await supabase
     .from('matching_requests')
-    .select('id, boarded_at')
+    .select('id, group_id, boarded_at')
     .not('boarded_at', 'is', null)
 
   const overdue = (boarded ?? []).filter((r) => isOverdueForAutoRating(r.boarded_at))
@@ -87,8 +91,17 @@ async function sweepAutoRatings() {
   const ratedIds = new Set((existingRatings ?? []).map((r) => r.request_id))
 
   for (const row of overdue) {
-    if (ratedIds.has(row.id)) continue
-    await applyRatingSubmission(row.id, 5, false)
+    if (ratedIds.has(row.id) || !row.group_id) continue
+
+    const { data: companions } = await supabase
+      .from('matching_requests')
+      .select('id')
+      .eq('group_id', row.group_id)
+      .neq('id', row.id)
+
+    for (const companion of companions ?? []) {
+      await applyRatingSubmission(row.id, companion.id, 5, false)
+    }
   }
 }
 
@@ -197,15 +210,18 @@ router.get('/', async (req, res) => {
     destination_hub_name: hubNameById[r.destination_hub_id] ?? null,
   }))
 
-  // 같은 group_id끼리는 "이미 모인 방" 하나로 묶는다. group_id가 없는 요청은 자기 혼자만의 방 취급.
+  // 같은 group_id끼리는 "이미 모인 방"으로 묶는다. group_id가 없는 요청은 아직 방을 안 만든 상태라 후보로 안 보여줌.
   const roomsByKey = new Map()
   for (const row of withHubNames) {
-    const key = row.group_id ?? row.id
+    if (!row.group_id) continue
+    const key = row.group_id
     if (!roomsByKey.has(key)) {
       roomsByKey.set(key, { representative: row, memberIds: [] })
     }
     roomsByKey.get(key).memberIds.push(row.id)
   }
+
+  const boardedAtByRequestId = Object.fromEntries(data.map((r) => [r.id, r.boarded_at]))
 
   const rooms = [...roomsByKey.values()]
     .map(({ representative, memberIds }) => ({
@@ -216,6 +232,8 @@ router.get('/', async (req, res) => {
     .filter((room) => room.groupCount < 4)
     // 마지막 활동(하트비트)이 오래된 방은 후보 목록에서 제외 (방장이 떠나고 안 돌아온 방 정리)
     .filter((room) => !isRoomStale(room.last_seen_at))
+    // 이미 탑승(출발)한 방은 더 이상 참여할 수 없으므로 후보 목록에서 제외
+    .filter((room) => !room.memberIds.some((id) => boardedAtByRequestId[id]))
 
   const { myRequestId } = req.query
   const me = myRequestId ? data.find((r) => r.id === myRequestId) : null
@@ -228,7 +246,7 @@ router.get('/', async (req, res) => {
   const userIds = [...new Set([me?.user_id, ...rooms.map((r) => r.user_id), ...allMemberUserIds].filter(Boolean))]
   const { data: userRows } = await supabase
     .from('users')
-    .select('id, gender, name, nickname, college, avatar_url, rating, rating_count, noshow_count')
+    .select('id, gender, name, nickname, college, avatar_url, rating, rating_count, noshow_count, hide_gender')
     .in('id', userIds.length ? userIds : [''])
   const genderById = Object.fromEntries((userRows ?? []).map((u) => [u.id, u.gender]))
   const userById = Object.fromEntries((userRows ?? []).map((u) => [u.id, u]))
@@ -242,6 +260,8 @@ router.get('/', async (req, res) => {
         rating: u.rating,
         ratingCount: u.rating_count,
         noshow_count: u.noshow_count,
+        // 성별 비공개 설정을 했으면 후보 목록에도 성별을 안 보여줌
+        gender: u.hide_gender ? null : u.gender,
       },
     ])
   )
@@ -263,13 +283,16 @@ router.get('/', async (req, res) => {
     }
   }
 
+  // 대표자의 계정이 이미 삭제된(고아) 요청은 후보 목록에서 제외
+  const validRooms = rooms.filter((room) => profileById[room.user_id])
+
   if (!me) {
-    return res.json(rooms.map(withExtras))
+    return res.json(validRooms.map(withExtras))
   }
 
   const myGenderInfo = { gender: genderById[me.user_id] ?? 'unknown', genderOnly: me.gender_only }
 
-  const filteredRooms = rooms.filter((room) => {
+  const filteredRooms = validRooms.filter((room) => {
     const candidateGenderInfo = { gender: genderById[room.user_id] ?? 'unknown', genderOnly: room.gender_only }
     return passesGenderFilter(myGenderInfo, candidateGenderInfo)
   })
@@ -345,7 +368,7 @@ router.post('/:id/create-room', async (req, res) => {
 
   const { error } = await supabase
     .from('matching_requests')
-    .update({ group_id: groupId })
+    .update({ group_id: groupId, is_leader: true })
     .eq('id', id)
 
   if (error) {
@@ -463,7 +486,27 @@ router.get('/group/:groupId', async (req, res) => {
 
   // 대기(pending) 인원이 여러 명일 때, 도착 소요시간이 짧은 사람부터 보이도록 우선순위 정렬
   const sorted = sortByArrivalPriority(data)
-  res.json(sorted.map((row) => ({ ...row, activity: describeActivity(row.last_seen_at) })))
+
+  // 각 멤버의 프로필(닉네임/평점)을 users 테이블에서 한 번에 조회
+  const memberUserIds = [...new Set(data.map((r) => r.user_id).filter(Boolean))]
+  const { data: userRows } = await supabase
+    .from('users')
+    .select('id, name, nickname, avatar_url, rating, rating_count, noshow_count')
+    .in('id', memberUserIds.length ? memberUserIds : [''])
+  const profileById = Object.fromEntries(
+    (userRows ?? []).map((u) => [
+      u.id,
+      { name: u.nickname || u.name, avatar_url: u.avatar_url, rating: u.rating, ratingCount: u.rating_count, noshow_count: u.noshow_count },
+    ])
+  )
+
+  res.json(
+    sorted.map((row) => ({
+      ...row,
+      activity: describeActivity(row.last_seen_at),
+      profile: profileById[row.user_id] ?? null,
+    }))
+  )
 })
 
 router.get('/group/:groupId/messages', async (req, res) => {
@@ -551,7 +594,7 @@ router.post('/:id/leave', async (req, res) => {
 
   const { error } = await supabase
     .from('matching_requests')
-    .update({ group_id: null, status: 'open' })
+    .update({ group_id: null, status: 'open', is_leader: false })
     .eq('id', id)
 
   if (error) {
@@ -589,13 +632,20 @@ router.post('/:id/board', async (req, res) => {
     return res.status(404).json({ error: '요청을 찾을 수 없어요' })
   }
 
+  if (!target.is_leader) {
+    return res.status(403).json({ error: '그룹장만 탑승 확인을 할 수 있어요' })
+  }
+
   const boardedAt = new Date()
   const result = classifyBoarding(target.desired_time, new Date(target.created_at), boardedAt)
 
+  // 그룹장이 탑승을 확인하면 그룹 전체(매칭된 멤버 전원 + 아직 아무도 안 들어와 status가
+  // 'open'으로 남아있는 혼자인 그룹장 자신)에게 반영
   const { error: updateError } = await supabase
     .from('matching_requests')
     .update({ boarded_at: boardedAt.toISOString() })
-    .eq('id', id)
+    .eq('group_id', target.group_id)
+    .or('status.eq.matched,is_leader.eq.true')
 
   if (updateError) {
     return res.status(500).json({ error: updateError.message })
@@ -606,19 +656,29 @@ router.post('/:id/board', async (req, res) => {
 
 router.post('/:id/rating', async (req, res) => {
   const { id } = req.params
-  const { stars, noshow } = req.body
+  const { ratings } = req.body
 
-  if (!stars || stars < 1 || stars > 5) {
-    return res.status(400).json({ error: '별점을 선택해주세요' })
+  if (!Array.isArray(ratings) || ratings.length === 0) {
+    return res.status(400).json({ error: '평가할 동행자가 없어요' })
   }
 
-  const { rating, error } = await applyRatingSubmission(id, stars, !!noshow)
-
-  if (error) {
-    return res.status(500).json({ error })
+  for (const entry of ratings) {
+    if (!entry.targetRequestId || !entry.stars || entry.stars < 1 || entry.stars > 5) {
+      return res.status(400).json({ error: '별점을 선택해주세요' })
+    }
   }
 
-  res.status(201).json(rating)
+  const results = []
+  for (const entry of ratings) {
+    const { rating, error } = await applyRatingSubmission(id, entry.targetRequestId, entry.stars, !!entry.noshow)
+
+    if (error) {
+      return res.status(500).json({ error })
+    }
+    results.push(rating)
+  }
+
+  res.status(201).json(results)
 })
 
 export default router

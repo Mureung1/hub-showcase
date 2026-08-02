@@ -150,11 +150,12 @@ function LoginScreen() {
               margin: "14px 0",
             }}
           >
-            <div style={{ fontSize: 11, color: "#8A7A76", marginBottom: 6, fontWeight: 600 }}>
+            <label htmlFor="login-email" style={{ display: "block", fontSize: 11, color: "#8A7A76", marginBottom: 6, fontWeight: 600 }}>
               학교 이메일
-            </div>
+            </label>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <input
+                id="login-email"
                 type="email"
                 required
                 pattern=".+\.ac\.kr"
@@ -189,10 +190,11 @@ function LoginScreen() {
               margin: "0 0 14px",
             }}
           >
-            <div style={{ fontSize: 11, color: "#8A7A76", marginBottom: 6, fontWeight: 600 }}>
+            <label htmlFor="login-password" style={{ display: "block", fontSize: 11, color: "#8A7A76", marginBottom: 6, fontWeight: 600 }}>
               비밀번호
-            </div>
+            </label>
             <input
+              id="login-password"
               type="password"
               required
               minLength={6}
@@ -214,10 +216,11 @@ function LoginScreen() {
                   margin: "0 0 14px",
                 }}
               >
-                <div style={{ fontSize: 11, color: "#8A7A76", marginBottom: 6, fontWeight: 600 }}>
+                <label htmlFor="signup-name" style={{ display: "block", fontSize: 11, color: "#8A7A76", marginBottom: 6, fontWeight: 600 }}>
                   이름
-                </div>
+                </label>
                 <input
+                  id="signup-name"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -235,10 +238,11 @@ function LoginScreen() {
                   margin: "0 0 14px",
                 }}
               >
-                <div style={{ fontSize: 11, color: "#8A7A76", marginBottom: 6, fontWeight: 600 }}>
+                <label htmlFor="signup-college" style={{ display: "block", fontSize: 11, color: "#8A7A76", marginBottom: 6, fontWeight: 600 }}>
                   단과대
-                </div>
+                </label>
                 <input
+                  id="signup-college"
                   value={college}
                   onChange={(e) => setCollege(e.target.value)}
                   placeholder="예: 경영학과"
@@ -255,6 +259,7 @@ function LoginScreen() {
                     <button
                       key={opt.value}
                       type="button"
+                      aria-pressed={gender === opt.value}
                       onClick={() => setGender(opt.value)}
                       style={{
                         flex: 1,
@@ -286,9 +291,12 @@ function LoginScreen() {
                   marginBottom: 14,
                 }}
               >
-                <span style={{ fontSize: 13, fontWeight: 600 }}>다른 사람에게 성별 비공개</span>
+                <span style={{ fontSize: 13, fontWeight: 600 }} id="hide-gender-label">다른 사람에게 성별 비공개</span>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={hideGender}
+                  aria-labelledby="hide-gender-label"
                   onClick={() => setHideGender(!hideGender)}
                   style={{
                     width: 40,

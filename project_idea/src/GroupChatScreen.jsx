@@ -9,6 +9,22 @@ function formatMessageTime(iso) {
   return new Date(iso).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" });
 }
 
+const BOARDING_GRACE_MINUTES = 5;
+
+// server/matching.js의 classifyBoarding과 동일한 규칙. 그룹장이 아닌 멤버는 서버 응답을 못 받으므로
+// 폴링으로 받은 자신의 desired_time/boarded_at으로 같은 결과를 직접 계산함
+function classifyBoarding(desiredTime, referenceDate, boardedAt) {
+  const [hours, minutes, seconds] = desiredTime.split(":").map(Number);
+  const scheduled = new Date(referenceDate);
+  scheduled.setUTCHours(hours, minutes, seconds ?? 0, 0);
+
+  const diffMinutes = Math.round((boardedAt - scheduled) / 60000);
+  if (diffMinutes <= BOARDING_GRACE_MINUTES) {
+    return { status: "on_time", minutesLate: Math.max(0, diffMinutes) };
+  }
+  return { status: "late", minutesLate: diffMinutes };
+}
+
 function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onLeave }) {
   const groupId = candidate?.groupId ?? null;
   const [members, setMembers] = useState([]);
@@ -16,14 +32,7 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
   const [leaving, setLeaving] = useState(false);
   const [respondError, setRespondError] = useState(null);
   const [boarding, setBoarding] = useState(false);
-  // '이전'으로 나갔다가 돌아와도 이 화면 상태가 초기화되지 않도록, App.jsx의 candidate 객체에 백업해둔 값에서 복원함
-  const [boardingResult, setBoardingResultState] = useState(candidate?.boardingResult ?? null);
   const [boardingError, setBoardingError] = useState(null);
-
-  function setBoardingResult(value) {
-    setBoardingResultState(value);
-    onUpdateCandidate?.({ boardingResult: value });
-  }
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
   const [sending, setSending] = useState(false);
@@ -95,9 +104,23 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
   }
 
   const me = members.find((m) => m.id === myRequestId);
-  const matchedMembers = members.filter((m) => m.status === "matched");
+  // 방장은 아무도 참여하기 전엔 status가 'open'으로 남아있어서(누가 들어와야 'matched'로 바뀜),
+  // 혼자인 상태에서도 인원수·동의 카운트에 포함되도록 is_leader도 함께 조건에 넣음
+  const matchedMembers = members.filter((m) => m.status === "matched" || m.is_leader);
+
+  // 실시간 폴링으로 알게 된 인원수를 App.jsx의 candidate에도 반영해, '이전'으로 돌아가도 최신 값이 보이게 함
+  useEffect(() => {
+    if (matchedMembers.length > 0) {
+      onUpdateCandidate?.({ groupCount: matchedMembers.length });
+    }
+  }, [matchedMembers.length]);
+
   const pendingOthers = members.filter((m) => m.status === "pending" && m.id !== myRequestId);
   const iAmPending = me?.status === "pending";
+  const isLeader = !!me?.is_leader;
+  const boardingResult = me?.boarded_at
+    ? classifyBoarding(me.desired_time, me.created_at, new Date(me.boarded_at))
+    : null;
 
   const count = matchedMembers.length || candidate?.groupCount || 1;
   const isFull = count >= 4;
@@ -162,7 +185,9 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
         setBoardingError(body.error ?? "탑승 확인에 실패했어요.");
         return;
       }
-      setBoardingResult(body);
+      // 그룹 전체에 반영된 걸 다음 폴링까지 기다리지 않도록, 매칭된 멤버 전원의 boarded_at을 미리 채워둠
+      const boardedAtIso = new Date().toISOString();
+      setMembers((prev) => prev.map((m) => (m.status === "matched" || m.is_leader ? { ...m, boarded_at: boardedAtIso } : m)));
     } catch {
       setBoardingError("탑승 확인에 실패했어요. 서버가 켜져 있는지 확인해주세요.");
     } finally {
@@ -376,7 +401,13 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
         </p>
       )}
 
-      {!iAmPending && boardingError && (
+      {!iAmPending && !boardingResult && !isLeader && (
+        <p style={{ fontSize: 12, color: "#8A7A76", textAlign: "center", margin: "0 0 10px" }}>
+          그룹장이 탑승을 확인하면 알려드릴게요.
+        </p>
+      )}
+
+      {!iAmPending && isLeader && boardingError && (
         <p style={{ fontSize: 12, color: "#C8102E", margin: "0 0 10px", textAlign: "center" }}>{boardingError}</p>
       )}
 
@@ -415,7 +446,7 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
         >
           다음으로
         </button>
-      ) : (
+      ) : isLeader ? (
         <button
           onClick={handleBoard}
           disabled={!canBoard || boarding}
@@ -435,7 +466,7 @@ function GroupChatScreen({ candidate, onBack, onComplete, onUpdateCandidate, onL
         >
           {boarding ? "확인 중..." : "탑승 확인"}
         </button>
-      ))}
+      ) : null)}
     </div>
   );
 }
