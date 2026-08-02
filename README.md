@@ -37,7 +37,6 @@
 | [`campus-bus-congestion-dashboard/`](./campus-bus-congestion-dashboard/) | Campus Flow 웹 애플리케이션 소스 |
 | [`campus-bus-congestion-dashboard/src/`](./campus-bus-congestion-dashboard/src/) | 대시보드 UI·데이터·상호작용 코드 |
 | [`campus-bus-congestion-dashboard/project/`](./campus-bus-congestion-dashboard/project/) | 초기 디자인 및 기획 참고 자료 |
-| [`docs/github-pr-workflow.md`](./docs/github-pr-workflow.md) | public 전환 후 새 fork로 PR을 올리는 방법 |
 | [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) | 기존 주간 프로젝트 계획 |
 
 ## 실행 방법

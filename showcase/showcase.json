@@ -1,9 +1,12 @@
 {
   "schemaVersion": 1,
   "title": "Campus Flow",
-  "summary": "전국 거점국립대 정류장의 방향별·시간대별 이용 집중도를 지도와 그래프로 비교하는 대시보드입니다.",
+  "summary": "4주간 공공데이터 조사, 정류장 매핑, 지도 UI 개선, 검증과 배포까지 반복하며 만든 전국 거점국립대 정류장 이용 집중도 대시보드입니다.",
   "githubUser": "busandangam(김진영)",
   "demoUrl": "https://campus-flow-national-live-kr.kjh62879078.chatgpt.site",
+  "sourceUrl": "https://github.com/busandangam/hub-1/tree/N056_%EA%B9%80%EC%A7%84%EC%98%81",
+  "videoUrl": "TODO: 네이버 파일 영상 공유 링크 입력",
+  "presentationUrl": "TODO: 네이버 파일 PPTX 공유 링크 입력",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
@@ -42,9 +45,9 @@
     "정류장별 이용량을 방향별로 분리하고 캠퍼스 공통 P95 기준으로 0~100점에 정규화합니다.",
     "OSRM 경로를 사전 생성해 런타임 외부 라우팅 호출 없이 실제 도로선을 렌더링합니다."
   ],
-  "developmentWithAI": "저는 대학별 정류장 후보와 방향 배정 기준을 검토하고, 데이터가 부족한 경우 대체 기준을 결정했습니다. AI Agent는 공공데이터 API 검증, 매핑 JSON 설계, UI 구현, 실제 도로 경로 생성, PR 문서 정리를 함께 수행했습니다. 결과는 lint, build, 데이터 검증 스크립트로 반복 확인했습니다.",
+  "developmentWithAI": "4주 동안 저는 대학별 정류장 후보와 방향 배정 기준을 검토하고, 데이터가 부족한 경우 대체 기준을 결정했습니다. AI Agent는 요구사항 정리, 공공데이터 API 검증, 매핑 JSON 설계, UI 구현, 실제 도로 경로 생성, 배포와 PR 문서 정리를 함께 수행했습니다. 결과는 lint, build, 데이터 검증 스크립트로 반복 확인했습니다.",
   "agent": {
-    "summary": "Codex와 함께 데이터 조사, 정류장 매핑, 방향별 혼잡도 계산, 지도 UI, PR 문서화를 반복적으로 구현했습니다.",
+    "summary": "Codex와 함께 4주간 데이터 조사, 정류장 매핑, 방향별 혼잡도 계산, 지도 UI, 배포, 최종 쇼케이스 문서화를 반복적으로 구현했습니다.",
     "agentTools": [
       {
         "type": "agent",
