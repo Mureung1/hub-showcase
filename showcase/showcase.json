@@ -9,6 +9,7 @@
   "screenshots": [
     "screenshots/input.webp",
     "screenshots/brain-dump-followup.webp",
+    "screenshots/review.webp",
     "screenshots/preview.webp",
     "screenshots/one-focus.webp",
     "screenshots/reason-chips.webp",
@@ -16,7 +17,12 @@
     "screenshots/timer.webp",
     "screenshots/timer-pause.webp",
     "screenshots/timer-confirm.webp",
-    "screenshots/complete.webp"
+    "screenshots/complete.webp",
+    "screenshots/theme-night.webp",
+    "screenshots/theme-forest.webp",
+    "screenshots/theme-cafe.webp",
+    "screenshots/sensory-control.webp",
+    "screenshots/stats.webp"
   ],
   "problem": "ADHD 특성이 있으면 할 일이 커 보일수록 시작 자체가 안 되고, 미룬 걸 벌점처럼 보여주는 앱은 오히려 이탈로 이어집니다. 콕은 Agent가 대신 작게 쪼개고, 미룬 것도 죄책감 없이 다시 배치해주는 방식으로 이 문제를 완화합니다.",
   "targetUsers": [
@@ -28,15 +34,21 @@
     "오늘 할 일 하나에만 집중하는 One-Focus View와 남은 시간 비율만큼 물이 차오르는 타이머를 보여주고, 오늘 마감까지 남은 시간과 연장 버튼을 함께 제공합니다.",
     "타이머 진행 중 전화 등 외부 방해로 잠깐 멈춰야 하면 일시정지할 수 있고, 멈춘 시간만큼 제외하고 이어집니다. 타이머가 끝나면 완료 여부를 확인하고, 아직이면 Agent가 연장 시간을 직접 판단합니다.",
     "별도 DB 없이 Notion을 데이터 저장소로 써서, 완료 여부·소요 시간·일시정지 이력까지 Notion에 영구적으로 기록합니다.",
-    "\"나 지금 힘들어\" 버튼을 누르면 Agent가 이유(막막해요/지루해요/지쳤어요/그냥 그래요)와 최근 개입 이력을 보고 8가지 대응(쪼개기·순서 변경·휴식·목표 축소·다른 할 일로 전환·미루기·격려·오늘 종료) 중 하나를 제안하고, 거절하면 이력 반영해 다시 판단합니다."
+    "\"나 지금 힘들어\" 버튼을 누르면 Agent가 이유(막막해요/지루해요/지쳤어요/그냥 그래요)와 최근 개입 이력을 보고 8가지 대응(쪼개기·순서 변경·휴식·목표 축소·다른 할 일로 전환·미루기·격려·오늘 종료) 중 하나를 제안하고, 거절하면 이력 반영해 다시 판단합니다.",
+    "쪼갠 마이크로스텝 전체 목록을 검토해 필요 없는 항목은 삭제하고, 마음에 안 들면 전부 다시 쪼갤 수 있습니다. 확정한 목록만 그 시점에 Notion에 저장됩니다.",
+    "집중 화면에서 낮/밤·숲·카페 테마와 배경음을 고르고, 색·움직임·소리 강도를 다이얼 하나로 조절할 수 있습니다. 이번 주 완료 현황도 숫자 하나로 확인합니다."
   ],
   "featureTags": [
     "Brain Dump 자동 분할",
     "Brain Dump 멀티턴 확인",
+    "마이크로스텝 검토·삭제",
     "One-Focus View",
     "타이머 일시정지·연장",
     "Notion 연동",
-    "Agent 개입 루프"
+    "Agent 개입 루프",
+    "화이트노이즈 테마",
+    "감각 강도 조절",
+    "이번 주 통계"
   ],
   "techStack": [
     "Next.js",
