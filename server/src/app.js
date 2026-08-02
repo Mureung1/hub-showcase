@@ -4,6 +4,7 @@ import cors from 'cors';
 import session from 'express-session';
 import authRouter from './routes/auth.js';
 import chatRouter from './routes/chat.js';
+import logsRouter from './routes/logs.js';
 import { initDb } from './data/db.js';
 import { errorHandler } from './utils/errors.js';
 
@@ -22,6 +23,7 @@ app.use(
 
 app.use('/v1/auth', authRouter);
 app.use('/v1/chat', chatRouter);
+app.use('/v1/logs', logsRouter);
 
 app.use(errorHandler);
 

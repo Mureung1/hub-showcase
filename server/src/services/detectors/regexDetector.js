@@ -66,8 +66,10 @@ export function detectWithRegex(text) {
   for (const { type, pattern, mask } of PATTERNS) {
     // 캡처 그룹까지 그대로 넘겨서 mask가 매치를 다시 파싱하지 않게 한다.
     maskedText = maskedText.replace(pattern, (...args) => {
-      detections.push({ type, value: args[0], source: 'regex' });
-      return mask(...args);
+      const maskedValue = mask(...args);
+      // value(원문)는 화면 표시용, masked는 로그 저장용 (로그에 원문을 남기지 않는다).
+      detections.push({ type, value: args[0], masked: maskedValue, source: 'regex' });
+      return maskedValue;
     });
   }
 

@@ -4,6 +4,7 @@ import { chatRateLimit } from '../services/rateLimit/rateLimiter.js';
 import { uploadFiles } from '../services/files/upload.js';
 import { extractTextFromFile } from '../services/files/extractText.js';
 import { detectWithRegex } from '../services/detectors/regexDetector.js';
+import { recordLog } from '../services/logs/logService.js';
 import { getProvider } from '../providers/index.js';
 import { AppError } from '../utils/errors.js';
 
@@ -42,12 +43,20 @@ router.post('/', requireAuth, chatRateLimit, uploadFiles, async (req, res, next)
 
     const { detections, maskedText } = inspect({ prompt, files });
     const masked = detections.length > 0;
+    const action = masked ? 'masked' : 'pass';
 
     const provider = getProvider();
     const content = await provider.sendMessage(maskedText);
 
+    // 판정 결과를 로그인 사용자 기준으로 적재. 로그 실패가 채팅 응답을 막지 않도록 분리.
+    try {
+      await recordLog({ userId: req.session.userId, action, provider: provider.name, detections });
+    } catch (logErr) {
+      console.error('로그 적재 실패:', logErr);
+    }
+
     res.json({
-      result: masked ? 'masked' : 'pass',
+      result: action,
       content,
       detections,
       files: files.map((f) => f.originalname),
