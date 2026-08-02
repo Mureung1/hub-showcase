@@ -2,8 +2,9 @@ services:
   - type: web
     name: smartff-backend
     runtime: docker
-    dockerfilePath: backend/Dockerfile
-    dockerContext: .
+    plan: free
+    dockerfilePath: smartff-agent/backend/Dockerfile
+    dockerContext: smartff-agent
     healthCheckPath: /health
     envVars:
       - key: FRONTEND_ORIGIN
@@ -11,4 +12,6 @@ services:
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: PORT
         sync: false
