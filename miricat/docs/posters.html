@@ -2,152 +2,327 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>미리캣 — A3 포스터 2장</title>
+<title>미리캣 — 부스 포스터 A3 2장</title>
 <style>
   :root{
     --ink:#33261A; --paper:#FBF6EE; --mist:#ECE1CF; --slate:#8B7863;
     --signal:#E4572E; --signal-soft:#FCE8DF;
     --route:#3E7CB1; --route-soft:#E9F1F8;
     --good:#5B8A5A; --good-soft:#E9F1E6;
-    --fur:#DCA96E; --fur-light:#F2DDB6; --fur-dark:#4A3423;
+    --fur:#DCA96E; --fur-light:#F2DDB6; --fur-dark:#4A3423; --chat:#2E2823;
   }
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'IBM Plex Sans KR','Apple SD Gothic Neo',sans-serif;color:var(--ink);background:#888;word-break:keep-all}
-  .poster{
-    width:297mm;height:420mm;background:var(--paper);
-    padding:14mm 14mm 12mm;display:flex;flex-direction:column;
-    margin:10px auto;position:relative;overflow:hidden;
-  }
+  .poster{width:297mm;height:420mm;background:var(--paper);padding:13mm 15mm 10mm;
+    display:flex;flex-direction:column;margin:10px auto;position:relative;overflow:hidden}
   @page{size:A3 portrait;margin:0}
-  @media print{
-    body{background:none}
-    .poster{margin:0;page-break-after:always}
-  }
-  .head{text-align:center;margin-bottom:4mm}
-  .head .paw{font-size:34pt;line-height:1}
-  .head h1{font-size:44pt;letter-spacing:.02em}
-  .head .tag{font-size:16pt;color:var(--slate);margin-top:1mm}
-  .foot{margin-top:auto;text-align:center;font-size:13.5pt;color:var(--slate);padding-top:3mm}
-  .foot b{color:var(--ink)}
+  @media print{body{background:none}.poster{margin:0;page-break-after:always}}
   .mono{font-family:'IBM Plex Mono',monospace}
-  .arrow-down{text-align:center;font-size:26pt;color:var(--slate);font-weight:700;line-height:1.2}
+  .foot{margin-top:auto;text-align:center;font-size:14pt;color:var(--slate);padding-top:2mm}
+  .foot b{color:var(--ink)}
+  .sec{display:flex;align-items:center;gap:4mm;margin:8mm 0 3mm}
+  .sec .badge{background:var(--signal);color:#fff;border-radius:20mm;padding:1.5mm 6mm;font-size:16pt;font-weight:800}
+  .sec .cap{font-size:22pt;font-weight:800}
+  .cap em{font-style:normal;color:var(--signal)}
+  .scene{background:#fff;border:1mm solid var(--mist);border-radius:7mm;overflow:hidden}
+  .scene svg{display:block;width:100%}
 
-  /* 화면 캡처 프레임 */
-  .shot{background:#fff;border:1mm solid var(--mist);border-radius:6mm;overflow:hidden;
-    box-shadow:0 2mm 6mm rgba(74,52,35,.10)}
-  .shot img{display:block;width:100%}
-  .cap{display:flex;align-items:center;gap:4mm;margin:0 0 2.5mm}
-  .cap .n{width:11mm;height:11mm;border-radius:50%;background:var(--route);color:#fff;
-    font-size:17pt;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
-  .cap.red .n{background:var(--signal)}
-  .cap.green .n{background:var(--good)}
-  .cap .t{font-size:19pt;font-weight:800}
+  /* 포스터1 타이틀 */
+  .t1{display:flex;align-items:center;justify-content:center;gap:8mm}
+  .t1 svg{width:44mm;height:44mm}
+  .t1 h1{font-size:66pt;letter-spacing:.02em}
+  .t1 .tag{font-size:21pt;color:var(--slate);margin-top:2mm}
 
-  /* 포스터 1 */
-  .solve{background:var(--fur-light);border:1mm solid var(--fur);border-radius:6mm;
-    padding:4.5mm;text-align:center;margin-bottom:5mm}
-  .solve .t{font-size:20pt;font-weight:800}
-  .solve .t small{font-weight:400;font-size:15pt;color:var(--fur-dark)}
-  .duo{display:flex;gap:6mm}
-  .duo>div{flex:1}
+  /* 동작 스텝 */
+  .steps{display:flex;align-items:flex-start;justify-content:space-between;gap:2mm;padding:2mm 2mm 0}
+  .step{flex:1;text-align:center}
+  .step svg{width:36mm;height:36mm}
+  .step .w{font-size:19pt;font-weight:800;margin-top:2mm;line-height:1.3}
+  .step .s{font-size:13pt;color:var(--slate)}
+  .feats{display:flex;gap:5mm;justify-content:center;margin-top:9mm}
+  .feat{background:#fff;border:0.9mm solid var(--mist);border-radius:20mm;padding:3.5mm 8mm;font-size:16.5pt;font-weight:700}
+  .sarr{font-size:28pt;color:var(--slate);font-weight:700;align-self:center;padding-top:11mm}
 
-  /* 포스터 2 */
-  .srcs{display:flex;flex-wrap:wrap;gap:2.5mm;justify-content:center;margin-bottom:1mm}
-  .chip{background:#fff;border:0.7mm solid var(--mist);border-radius:20mm;padding:2.5mm 6.5mm;font-size:15pt;font-weight:600}
+  /* 포스터2 */
+  .p2 .head{text-align:center;margin-bottom:4mm}
+  .p2 .head h1{font-size:46pt}
+  .p2 .head .tag{font-size:18pt;color:var(--slate);margin-top:1.5mm}
+  .srcs{display:flex;flex-wrap:wrap;gap:2.5mm;justify-content:center}
+  .chip{background:#fff;border:0.7mm solid var(--mist);border-radius:20mm;padding:2.2mm 6mm;font-size:14.5pt;font-weight:600}
   .chip.nat{border-color:#C98A00;background:#FBEFD2}
-  .flowwrap{position:relative;width:195mm;margin:0 auto}
-  .fnode{background:#fff;border:1.3mm solid var(--mist);border-radius:7mm;padding:8mm;text-align:center}
-  .fnode .t{font-size:27pt;font-weight:800}
-  .fnode .d{font-size:17pt;color:var(--slate);margin-top:1.5mm}
+  .arrow-down{text-align:center;font-size:22pt;color:var(--slate);font-weight:700;line-height:1.25}
+  .flowwrap{position:relative;width:214mm;margin:0 auto}
+  .fnode{background:#fff;border:1.3mm solid var(--mist);border-radius:8mm;padding:5.5mm;text-align:center}
+  .fnode .t{font-size:23pt;font-weight:800}
+  .fnode .d{font-size:15.5pt;color:var(--slate);margin-top:1.5mm}
+  .fnode.trig{border-color:var(--fur);background:var(--fur-light)}
   .fnode.blue{border-color:var(--route);background:var(--route-soft)}
+  .fnode.red{border-color:var(--signal);background:var(--signal-soft)}
   .fnode.green{border-color:var(--good);background:var(--good-soft)}
   .diamond-wrap{display:flex;justify-content:center}
-  .diamond{width:62mm;height:38mm;background:var(--signal-soft);border:1.2mm solid var(--signal);
-    display:flex;align-items:center;justify-content:center;font-size:19pt;font-weight:800;
-    clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);}
+  .diamond{width:54mm;height:32mm;background:var(--signal-soft);border:1.3mm solid var(--signal);
+    display:flex;align-items:center;justify-content:center;font-size:18pt;font-weight:800;
+    clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+  .split{display:flex;gap:8mm}
+  .split>.fnode{flex:1}
+  .split-arrows{display:flex;justify-content:space-around;font-size:22pt;color:var(--slate);font-weight:700}
+  .watcher{position:absolute;left:-34mm;bottom:2mm;width:30mm}
+  .dev-label{text-align:center;font-size:18pt;font-weight:800;color:var(--fur-dark);margin:7mm 0 3mm}
+  .al{font-size:13.5pt;color:var(--slate);font-weight:700}
+  .who{display:inline-block;background:var(--good-soft);color:var(--good);border-radius:4mm;padding:0.5mm 3.5mm;font-size:12.5pt;font-weight:800;margin-left:3mm;vertical-align:middle}
+  .verify-note{text-align:center;font-size:14pt;color:var(--signal);font-weight:700;margin-top:1.5mm;line-height:1.5}
+  .trouble{background:#FBEFD2;border:1mm solid #C98A00;border-radius:7mm;padding:5mm 6mm;margin:8mm auto 0;width:252mm}
+  .trouble .tt{font-size:17.5pt;font-weight:800;color:#7A5600;text-align:center}
+  .tflow{display:flex;justify-content:center;align-items:center;gap:3mm;margin-top:3mm;flex-wrap:nowrap}
+  .tc{background:#fff;border-radius:5mm;padding:2mm 4mm;font-size:12.5pt;font-weight:600;white-space:nowrap}
+  .ta{font-size:15pt;font-weight:800;color:#C98A00}
+  .run-strip{display:flex;align-items:center;justify-content:center;gap:2mm}
+  .run{background:#fff;border:0.9mm solid var(--mist);border-radius:6mm;padding:2.5mm 4mm;font-size:13.5pt;font-weight:800;text-align:center}
+  .run small{display:block;font-weight:400;font-size:10pt;color:var(--slate)}
+  .run.trig2{background:var(--fur-light);border-color:var(--fur)}
+  .run.hot{background:var(--signal-soft);border-color:var(--signal)}
+  .run.red2{background:var(--signal-soft);border-color:var(--signal)}
+  .run.green2{background:var(--good-soft);border-color:var(--good)}
+  .run-arr{font-size:15pt;color:var(--slate);font-weight:700}
+  .dev-strip{display:flex;align-items:stretch;justify-content:center;gap:3mm;width:230mm;margin:0 auto}
+  .dev{flex:1;background:#fff;border:0.9mm solid var(--mist);border-radius:6mm;padding:4mm;text-align:center}
+  .dev .dt{font-size:16.5pt;font-weight:800}
+  .dev .dd{font-size:12.5pt;color:var(--slate);margin-top:1.5mm;line-height:1.45}
+  .dev-arr{font-size:20pt;color:var(--slate);font-weight:700;align-self:center}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><g id="miricat"><path d="M155 365 C 75 345, 48 265, 72 195" stroke="#DCA96E" stroke-width="36" fill="none" stroke-linecap="round"/><circle cx="74" cy="190" r="23" fill="#4A3423"/><path d="M152 240 C 128 320, 138 388, 210 388 C 282 388, 292 320, 268 240 Z" fill="#DCA96E"/><ellipse cx="210" cy="318" rx="47" ry="60" fill="#F5E3C0"/><path d="M184 262 C 180 288, 180 302, 184 316" stroke="#C48F55" stroke-width="17" fill="none" stroke-linecap="round"/><path d="M236 262 C 240 288, 240 302, 236 316" stroke="#C48F55" stroke-width="17" fill="none" stroke-linecap="round"/><ellipse cx="178" cy="384" rx="21" ry="10" fill="#C48F55"/><ellipse cx="242" cy="384" rx="21" ry="10" fill="#C48F55"/><ellipse cx="205" cy="394" rx="95" ry="9" fill="#33261A" opacity=".08"/><g><path d="M198 66 C 200 52, 206 46, 210 42 C 211 50, 210 56, 209 62 Z" fill="#C48F55"/><path d="M212 62 C 216 50, 224 46, 230 44 C 228 52, 224 60, 219 66 Z" fill="#C48F55"/><circle cx="97" cy="102" r="25" fill="#C48F55"/><circle cx="323" cy="102" r="25" fill="#C48F55"/><circle cx="94" cy="102" r="12" fill="#4A3423"/><circle cx="326" cy="102" r="12" fill="#4A3423"/><ellipse cx="210" cy="152" rx="102" ry="93" fill="#DCA96E"/><ellipse cx="164" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(-7 164 140)"/><ellipse cx="256" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(7 256 140)"/><circle cx="165" cy="142" r="25" fill="#FFF8EC"/><circle cx="255" cy="142" r="25" fill="#FFF8EC"/><circle cx="165" cy="143" r="19" fill="#8A5A2B"/><circle cx="255" cy="143" r="19" fill="#8A5A2B"/><circle cx="165" cy="143" r="10" fill="#2A1B0F"/><circle cx="255" cy="143" r="10" fill="#2A1B0F"/><circle cx="159" cy="134" r="7" fill="#FFFFFF"/><circle cx="249" cy="134" r="7" fill="#FFFFFF"/><circle cx="172" cy="151" r="3" fill="#FFFFFF" opacity=".9"/><circle cx="262" cy="151" r="3" fill="#FFFFFF" opacity=".9"/><ellipse cx="210" cy="196" rx="44" ry="32" fill="#F5E3C0"/><ellipse cx="210" cy="182" rx="11" ry="8" fill="#3A2A1B"/><path d="M210 190 V 200" stroke="#3A2A1B" stroke-width="4" stroke-linecap="round"/><path d="M192 202 Q 210 216 228 202" stroke="#3A2A1B" stroke-width="4.5" fill="none" stroke-linecap="round"/><ellipse cx="126" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/><ellipse cx="294" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/></g></g>
+  <g id="miricat-face"><path d="M198 66 C 200 52, 206 46, 210 42 C 211 50, 210 56, 209 62 Z" fill="#C48F55"/><path d="M212 62 C 216 50, 224 46, 230 44 C 228 52, 224 60, 219 66 Z" fill="#C48F55"/><circle cx="97" cy="102" r="25" fill="#C48F55"/><circle cx="323" cy="102" r="25" fill="#C48F55"/><circle cx="94" cy="102" r="12" fill="#4A3423"/><circle cx="326" cy="102" r="12" fill="#4A3423"/><ellipse cx="210" cy="152" rx="102" ry="93" fill="#DCA96E"/><ellipse cx="164" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(-7 164 140)"/><ellipse cx="256" cy="140" rx="37" ry="44" fill="#4A3423" transform="rotate(7 256 140)"/><circle cx="165" cy="142" r="25" fill="#FFF8EC"/><circle cx="255" cy="142" r="25" fill="#FFF8EC"/><circle cx="165" cy="143" r="19" fill="#8A5A2B"/><circle cx="255" cy="143" r="19" fill="#8A5A2B"/><circle cx="165" cy="143" r="10" fill="#2A1B0F"/><circle cx="255" cy="143" r="10" fill="#2A1B0F"/><circle cx="159" cy="134" r="7" fill="#FFFFFF"/><circle cx="249" cy="134" r="7" fill="#FFFFFF"/><circle cx="172" cy="151" r="3" fill="#FFFFFF" opacity=".9"/><circle cx="262" cy="151" r="3" fill="#FFFFFF" opacity=".9"/><ellipse cx="210" cy="196" rx="44" ry="32" fill="#F5E3C0"/><ellipse cx="210" cy="182" rx="11" ry="8" fill="#3A2A1B"/><path d="M210 190 V 200" stroke="#3A2A1B" stroke-width="4" stroke-linecap="round"/><path d="M192 202 Q 210 216 228 202" stroke="#3A2A1B" stroke-width="4.5" fill="none" stroke-linecap="round"/><ellipse cx="126" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/><ellipse cx="294" cy="182" rx="15" ry="9" fill="#F2A9A0" opacity=".75"/></g>
+</svg>
 
-<!-- ════ 포스터 1 · 기획/주제 — 데모 화면 중심 ════ -->
+<!-- ═══ 포스터 1 · 프로젝트 소개 ═══ -->
 <section class="poster">
-  <div class="head">
-    <div class="paw">🐾</div>
-    <h1>미리캣</h1>
-    <div class="tag">내 출근길의 보초 — 이동 경로 상시 감시 에이전트</div>
-  </div>
-
-  <div class="solve">
-    <div class="t">우회 · 통제 공지는 게시판에 한 번 올라오고 묻힌다<br>
-    → 게시판 확인을 에이전트에게 맡긴다 &nbsp;<small>이상 없으면 한 줄 보고 · 영향 있으면 근거 있는 경보</small></div>
-  </div>
-
-  <div class="cap"><div class="n">1</div><div class="t">평소 다니는 경로를 한 번 등록하면</div></div>
-  <div class="shot"><img src="poster-assets/register.png" alt="경로 등록 화면"></div>
-
-  <div style="height:4mm"></div>
-  <div class="duo">
+  <div class="t1">
+    <svg viewBox="58 12 304 250" preserveAspectRatio="xMidYMid meet"><use href="#miricat-face"/></svg>
     <div>
-      <div class="cap red"><div class="n">2</div><div class="t">영향 있는 날만 디스코드 경보</div></div>
-      <div class="shot"><img src="poster-assets/discord.png" alt="디스코드 경보"></div>
-    </div>
-    <div>
-      <div class="cap green"><div class="n">3</div><div class="t">지도 리포트로 확인</div></div>
-      <div class="shot"><img src="poster-assets/report-card.png" alt="리포트 화면"></div>
+      <h1>미리캣</h1>
+      <div class="tag">내 출근길의 보초 — 이동 경로 상시 감시 에이전트</div>
     </div>
   </div>
 
-  <div style="height:4mm"></div>
-  <div class="cap"><div class="n">🗺</div><div class="t">경보에 붙는 실제 지도 — 빨간 핀이 영향 지점</div></div>
-  <div class="shot"><img src="poster-assets/map.png" alt="경보 지도" style="max-height:88mm;object-fit:cover"></div>
+  <div class="sec"><span class="badge">문제</span><span class="cap">우회 · 통제 공지는 게시판에 한 번 올라오고, <em>묻힙니다</em></span></div>
+  <div class="scene">
+    <svg viewBox="0 0 1000 292">
+      <!-- 흐린 지도 배경 -->
+      <g stroke="#F0E8DA" stroke-width="3">
+        <path d="M0 70 H1000 M0 160 H1000 M180 0 V260 M420 0 V260 M660 0 V260 M860 0 V260" fill="none"/>
+      </g>
+      <path d="M60 260 C 200 180, 380 200, 520 120 S 820 60, 980 30" stroke="#E9F1F8" stroke-width="14" fill="none"/>
+      <!-- 흩어진 게시판들 -->
+      <g font-family="'IBM Plex Sans KR','Apple SD Gothic Neo',sans-serif" font-weight="700" text-anchor="middle">
+        <g transform="translate(90,38) rotate(-4)">
+          <rect width="150" height="98" rx="10" fill="#fff" stroke="#ECE1CF" stroke-width="3"/>
+          <rect x="10" y="10" width="130" height="18" rx="5" fill="#E9F1F8"/>
+          <rect x="10" y="38" width="112" height="8" rx="4" fill="#ECE1CF"/>
+          <rect x="10" y="54" width="120" height="8" rx="4" fill="#ECE1CF"/>
+          <rect x="10" y="70" width="96" height="8" rx="4" fill="#ECE1CF"/>
+          <text x="75" y="125" font-size="19" fill="#8B7863">서울시 게시판</text>
+        </g>
+        <g transform="translate(300,96) rotate(3)">
+          <rect width="150" height="98" rx="10" fill="#fff" stroke="#ECE1CF" stroke-width="3"/>
+          <rect x="10" y="10" width="130" height="18" rx="5" fill="#E9F1F8"/>
+          <rect x="10" y="38" width="120" height="8" rx="4" fill="#ECE1CF"/>
+          <rect x="10" y="54" width="102" height="8" rx="4" fill="#ECE1CF"/>
+          <rect x="10" y="70" width="118" height="8" rx="4" fill="#ECE1CF"/>
+          <text x="75" y="125" font-size="19" fill="#8B7863">버스조합 게시판</text>
+        </g>
+        <g transform="translate(510,30) rotate(-2)">
+          <rect width="150" height="98" rx="10" fill="#fff" stroke="#ECE1CF" stroke-width="3"/>
+          <rect x="10" y="10" width="130" height="18" rx="5" fill="#E9F1F8"/>
+          <rect x="10" y="38" width="110" height="8" rx="4" fill="#ECE1CF"/>
+          <rect x="10" y="54" width="124" height="8" rx="4" fill="#ECE1CF"/>
+          <rect x="10" y="70" width="90" height="8" rx="4" fill="#ECE1CF"/>
+          <text x="75" y="125" font-size="19" fill="#8B7863">교통공사 게시판</text>
+        </g>
+        <!-- 묻히는 빨간 공지 -->
+        <g transform="translate(462,172)">
+          <g transform="rotate(-6)">
+            <rect width="180" height="64" rx="8" fill="#FCE8DF" stroke="#E4572E" stroke-width="3"/>
+            <text x="90" y="28" font-size="21" fill="#E4572E">⚠ 107번 우회 공지</text>
+            <rect x="14" y="40" width="112" height="8" rx="4" fill="#F2B5A0"/>
+          </g>
+          <g transform="translate(-16,26) rotate(5)" opacity="0.92">
+            <rect width="190" height="52" rx="8" fill="#fff" stroke="#ECE1CF" stroke-width="3"/>
+            <rect x="12" y="12" width="140" height="9" rx="4" fill="#ECE1CF"/>
+            <rect x="12" y="30" width="120" height="9" rx="4" fill="#ECE1CF"/>
+          </g>
+          <g transform="translate(30,44) rotate(-3)" opacity="0.96">
+            <rect width="190" height="46" rx="8" fill="#fff" stroke="#ECE1CF" stroke-width="3"/>
+            <rect x="12" y="12" width="150" height="9" rx="4" fill="#ECE1CF"/>
+            <rect x="12" y="28" width="110" height="9" rx="4" fill="#ECE1CF"/>
+          </g>
+        </g>
+      </g>
+      <!-- 버스 정류장의 사람 -->
+      <g transform="translate(790,52)">
+        <rect x="66" y="0" width="8" height="180" rx="4" fill="#8B7863"/>
+        <rect x="30" y="0" width="120" height="44" rx="10" fill="#3E7CB1"/>
+        <text x="90" y="29" font-size="22" fill="#fff" font-weight="800" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">버스</text>
+        <circle cx="130" cy="108" r="20" fill="#DCA96E"/>
+        <path d="M130 128 C 108 132, 102 156, 104 182 L 156 182 C 158 156, 152 132, 130 128 Z" fill="#4A3423"/>
+        <g transform="translate(158,66)">
+          <path d="M0 22 a22 22 0 1 1 34 18 l -6 8 h 14 l 20 -14" fill="none"/>
+          <circle cx="24" cy="20" r="26" fill="#fff" stroke="#ECE1CF" stroke-width="3"/>
+          <text x="24" y="30" font-size="30" font-weight="800" fill="#E4572E" text-anchor="middle">?</text>
+        </g>
+      </g>
+      <text x="500" y="284" font-size="20" fill="#8B7863" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">게시판은 전국에 흩어져 있고, 매일 들여다보는 사람은 없습니다</text>
+    </svg>
+  </div>
+
+  <div class="sec"><span class="badge" style="background:var(--good)">해결</span><span class="cap">경로를 한 번 등록하면, <em>매일 아침 에이전트가 대신 확인합니다</em></span></div>
+  <div class="scene">
+    <svg viewBox="0 0 1000 330">
+      <!-- 언덕 + 보초 미어캣 -->
+      <ellipse cx="180" cy="312" rx="170" ry="26" fill="#F2DDB6"/>
+      <g transform="translate(60,30) scale(0.68)"><use href="#miricat"/></g>
+      <!-- 시선: 게시판 3곳으로 점선 -->
+      <g stroke="#8B7863" stroke-width="3.5" stroke-dasharray="9 8" fill="none" opacity="0.8">
+        <path d="M290 120 C 360 80, 400 66, 452 58"/>
+        <path d="M295 145 C 370 140, 420 138, 470 140"/>
+        <path d="M290 170 C 360 200, 402 212, 452 220"/>
+      </g>
+      <!-- 미니 게시판 3 -->
+      <g>
+        <g transform="translate(455,30)"><rect width="96" height="56" rx="8" fill="#fff" stroke="#ECE1CF" stroke-width="3"/><rect x="8" y="8" width="80" height="10" rx="4" fill="#E9F1F8"/><rect x="8" y="26" width="66" height="7" rx="3" fill="#ECE1CF"/><rect x="8" y="39" width="74" height="7" rx="3" fill="#ECE1CF"/></g>
+        <g transform="translate(462,114)"><rect width="96" height="56" rx="8" fill="#fff" stroke="#ECE1CF" stroke-width="3"/><rect x="8" y="8" width="80" height="10" rx="4" fill="#FCE8DF"/><rect x="8" y="26" width="70" height="7" rx="3" fill="#F2B5A0"/><rect x="8" y="39" width="58" height="7" rx="3" fill="#ECE1CF"/></g>
+        <g transform="translate(455,196)"><rect width="96" height="56" rx="8" fill="#fff" stroke="#ECE1CF" stroke-width="3"/><rect x="8" y="8" width="80" height="10" rx="4" fill="#E9F1F8"/><rect x="8" y="26" width="62" height="7" rx="3" fill="#ECE1CF"/><rect x="8" y="39" width="76" height="7" rx="3" fill="#ECE1CF"/></g>
+      </g>
+      <!-- 화살표 -->
+      <g stroke="#33261A" stroke-width="7" fill="none" stroke-linecap="round">
+        <path d="M580 160 H 660"/><path d="M642 140 L 664 160 L 642 180"/>
+      </g>
+      <text x="620" y="136" font-size="18" fill="#8B7863" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif" font-weight="700">영향 있을 때만</text>
+      <!-- 폰 + 경보 -->
+      <g transform="translate(700,12)">
+        <rect width="230" height="306" rx="26" fill="#2E2823"/>
+        <rect x="82" y="10" width="66" height="9" rx="4.5" fill="#4A4238"/>
+        <g transform="translate(16,34)">
+          <rect width="198" height="196" rx="10" fill="#3A342E"/>
+          <rect width="7" height="196" rx="3.5" fill="#E4572E"/>
+          <text x="18" y="30" font-size="17" font-weight="800" fill="#F3A093" font-family="'IBM Plex Sans KR',sans-serif">🚨 경보 — 경로 영향 공지</text>
+          <rect x="18" y="44" width="150" height="9" rx="4" fill="#6B6156"/>
+          <rect x="18" y="60" width="120" height="9" rx="4" fill="#6B6156"/>
+          <g transform="translate(18,80)">
+            <rect width="162" height="92" rx="8" fill="#E9F1F8"/>
+            <path d="M12 74 C 44 58, 66 62, 92 40 S 132 22, 152 14" stroke="#3E7CB1" stroke-width="7" fill="none" stroke-linecap="round"/>
+            <circle cx="38" cy="62" r="11" fill="#E4572E"/><circle cx="38" cy="62" r="4.5" fill="#fff"/>
+            <circle cx="146" cy="18" r="9" fill="#5B8A5A"/>
+          </g>
+        </g>
+        <g transform="translate(16,242)">
+          <rect width="198" height="48" rx="10" fill="#3A342E"/>
+          <rect width="7" height="48" rx="3.5" fill="#5B8A5A"/>
+          <text x="16" y="29" font-size="14.5" font-weight="700" fill="#9DBB9C" font-family="'IBM Plex Sans KR',sans-serif">🐾 오늘은 이상 없음 · 7곳 확인</text>
+        </g>
+      </g>
+      <text x="350" y="318" font-size="20" fill="#8B7863" text-anchor="middle" font-family="'IBM Plex Sans KR',sans-serif">이상 없는 날에도 "오늘 확인했어요" 한 줄은 옵니다</text>
+    </svg>
+  </div>
+
+  <div class="sec"><span class="badge" style="background:var(--route)">동작</span><span class="cap">네 단계면 끝납니다</span></div>
+  <div class="steps">
+    <div class="step">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#E9F1F8"/><path d="M50 24 C 36 24, 27 34, 27 46 C 27 62, 50 80, 50 80 C 50 80, 73 62, 73 46 C 73 34, 64 24, 50 24 Z" fill="#3E7CB1"/><circle cx="50" cy="46" r="9" fill="#fff"/></svg>
+      <div class="w">경로 등록</div><div class="s">실제 노선 · 도로 검색</div>
+    </div>
+    <div class="sarr">→</div>
+    <div class="step">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#FBEFD2"/><circle cx="50" cy="50" r="27" fill="none" stroke="#C98A00" stroke-width="7"/><path d="M50 50 L 50 32 M50 50 L 62 56" stroke="#C98A00" stroke-width="7" stroke-linecap="round"/></svg>
+      <div class="w">매일 아침 순찰</div><div class="s">07:30 자동 실행</div>
+    </div>
+    <div class="sarr">→</div>
+    <div class="step">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#E9F1E6"/><path d="M20 62 C 34 52, 44 56, 56 44 S 74 32, 82 28" stroke="#5B8A5A" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="44" cy="46" r="16" fill="none" stroke="#33261A" stroke-width="6"/><path d="M56 58 L 68 70" stroke="#33261A" stroke-width="7" stroke-linecap="round"/></svg>
+      <div class="w">내 경로와 대조</div><div class="s">노선·정류장·도로·반경</div>
+    </div>
+    <div class="sarr">→</div>
+    <div class="step">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#FCE8DF"/><path d="M50 22 C 38 22, 32 32, 32 42 L 32 56 L 26 64 L 74 64 L 68 56 L 68 42 C 68 32, 62 22, 50 22 Z" fill="#E4572E"/><circle cx="50" cy="72" r="6" fill="#E4572E"/></svg>
+      <div class="w">경보 · 보고</div><div class="s">디스코드로 도착</div>
+    </div>
+  </div>
+
+  <div class="feats">
+    <span class="feat">🔁 추출이 틀리면 스스로 다시 확인</span>
+    <span class="feat">📎 모든 경보에 원문 출처</span>
+    <span class="feat">🗺 경보에는 지도가 붙는다</span>
+  </div>
 
   <div class="foot"><b class="mono">hub-pi-lime.vercel.app</b> &nbsp;·&nbsp; N157 정재현 · Naver AI Agent Challenge</div>
 </section>
 
-<!-- ════ 포스터 2 · AI 에이전트 워크플로우 ════ -->
-<section class="poster">
+<!-- ═══ 포스터 2 · AI 에이전트 워크플로우 (개발 사이클) ═══ -->
+<section class="poster p2">
   <div class="head">
-    <div class="paw">🐾</div>
-    <h1 style="font-size:40pt">에이전트 워크플로우</h1>
-    <div class="tag">매일 아침 07:30 · 국내 서버 · LangGraph</div>
+    <h1>AI 에이전트 워크플로우</h1>
+    <div class="tag">미리캣을 만든 개발 사이클 — 규칙 · Skill · Agent가 이 순서로 돈다</div>
   </div>
 
-  <div class="srcs">
-    <span class="chip">서울 TOPIS</span><span class="chip">경기 GBIS</span><span class="chip">대전광역시</span>
-    <span class="chip">대전 버스조합</span><span class="chip">세종교통공사</span><span class="chip">부산 BIMS</span>
-    <span class="chip nat">국가교통정보센터 · 전국 돌발</span>
-  </div>
-  <div class="arrow-down">↓</div>
+  <div class="flowwrap">
+    <svg id="loopsvg" style="position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none"></svg>
 
-  <div class="flowwrap"><svg id="loopsvg" style="position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none"></svg>
-    <div class="fnode">
-      <div class="t">수집</div>
-      <div class="d">게시판 7곳의 새 공지</div>
+    <div class="fnode trig" id="n-rule">
+      <div class="t">📜 규칙 문서 — CLAUDE.md</div>
+      <div class="d">"예측하지 않는다 · 화면에 개발 용어 금지" 같은 원칙과 아키텍처 — 모든 세션에 항상 로드</div>
     </div>
-    <div class="arrow-down">↓</div>
-    <div class="fnode blue" id="n-extract">
-      <div class="t">추출</div>
-      <div class="d">LLM이 노선 · 정류장 · 기간을 뽑는다</div>
-    </div>
-    <div class="arrow-down">↓</div>
-    <div class="diamond-wrap">
-      <div class="diamond" id="n-check">원문과<br>일치?</div>
-    </div>
-    <div class="arrow-down">↓ <span style="font-size:13pt">예</span></div>
-    <div class="fnode blue">
-      <div class="t">매칭</div>
-      <div class="d">노선 · 정류장 · 도로명 · 반경 300m</div>
-    </div>
-    <div class="arrow-down">↓</div>
+    <div class="arrow-down">↓ <span class="al">이 규칙 아래에서, 하루의 작업이 시작된다</span></div>
+
     <div class="fnode green">
-      <div class="t">알림</div>
-      <div class="d">🚨 경보(사건당 한 번) 또는 🐾 이상 없음 한 줄</div>
+      <div class="t">🤖 miri-planner<span class="who">Agent</span></div>
+      <div class="d">티켓(MIRI-N)을 작업 단위로 쪼개고 완료 조건을 정한다<br><span style="font-size:13.5pt">기능만이 아니라 실사용 제보도 티켓이 된다 — 예: 서울 경로에 대전 공지가 간 오탐</span></div>
+    </div>
+    <div class="arrow-down">↓</div>
+
+    <div class="fnode blue" id="n-impl">
+      <div class="t">⌨️ 구현<span class="who">개발자 + 클로드</span></div>
+      <div class="d">Skill <b>/miri</b> 루틴 — 코드 전에 전체 지도부터, 핵심 코드는 개발자가 직접 타이핑</div>
+    </div>
+    <div class="arrow-down">↓</div>
+
+    <div class="diamond-wrap">
+      <div class="diamond" id="n-verify">완료 조건<br>통과?</div>
+    </div>
+    <div class="verify-note">판정 도구 — miri-verifier<span class="who">Agent</span>가 직접 실행해 판정 (코드는 안 고침)<br>LLM 추출은 평가셋으로 회귀 테스트 — 실공지 16항목, 프롬프트 바꿀 때마다 재채점</div>
+    <div class="arrow-down">↓ <span class="al">예</span></div>
+
+    <div class="fnode">
+      <div class="t">✅ 커밋 · 자동 배포 + 학습 노트</div>
+      <div class="d">Skill <b>/miri-commit</b> 규약대로 커밋하면 Vercel · Render가 자동 배포<br><span style="font-size:13.5pt">새로 배운 개념은 학습 노트로, 잡은 오탐은 평가셋 케이스로 박제</span></div>
+    </div>
+    <div class="arrow-down">↓</div>
+
+    <div class="fnode" id="n-mem" style="border-color:var(--fur)">
+      <div class="t">🧠 Memory</div>
+      <div class="d">결정 · 일정 · 받은 피드백을 저장 — 세션이 바뀌어도 이어진다</div>
     </div>
   </div>
 
-  <div style="height:6mm"></div>
-  <div class="cap green"><div class="n">🐾</div><div class="t">지금도 근무 중 — 서비스 화면의 실제 보초 상태</div></div>
-  <div class="shot"><img src="poster-assets/sentry-strip.png" alt="보초 상태"></div>
+  <div class="trouble">
+    <div class="tt">⚠️ 시행착오 — 같은 공지를 줬는데, 결과가 매번 달랐다</div>
+    <div class="tflow">
+      <span class="tc">0건 · 5건 · 9건으로 읽힘</span><span class="ta">→</span>
+      <span class="tc">AI 대답이 매번 달라서</span><span class="ta">→</span>
+      <span class="tc"><b>실제 공지 정답지</b>로 매번 채점</span>
+    </div>
+  </div>
+
+  <div class="dev-label">같은 패턴이 서비스 안에도 — 완성된 미리캣의 매일 아침</div>
+  <div class="run-strip">
+    <span class="run trig2">⏰ 07:30</span><span class="run-arr">→</span>
+    <span class="run">수집<small>게시판 7곳</small></span><span class="run-arr">→</span>
+    <span class="run">추출<small>LLM</small></span><span class="run-arr">⇄</span>
+    <span class="run hot">검증<small>틀리면 재추출</small></span><span class="run-arr">→</span>
+    <span class="run">매칭<small>4단계 대조</small></span><span class="run-arr">→</span>
+    <span class="run red2">🚨 경보<small>겹치면</small></span><span class="run green2">🐾 보고<small>이상 없으면</small></span>
+  </div>
+  <svg style="position:absolute;right:7mm;bottom:8mm;width:22mm" viewBox="15 30 370 380"><use href="#miricat"/></svg>
 
   <div class="foot"><b class="mono">github.com/jaehyun429/hub</b> &nbsp;·&nbsp; N157 정재현</div>
 </section>
@@ -156,19 +331,33 @@
 (function(){
   const svg = document.getElementById('loopsvg');
   const wrap = svg.parentElement.getBoundingClientRect();
-  const ex = document.getElementById('n-extract').getBoundingClientRect();
-  const di = document.getElementById('n-check').getBoundingClientRect();
-  const x1 = di.right - wrap.left + 4, y1 = di.top + di.height/2 - wrap.top;
-  const x2 = ex.right - wrap.left + 4, y2 = ex.top + ex.height/2 - wrap.top;
-  const xr = Math.max(x1, x2) + 66;
+  const rule = document.getElementById('n-rule').getBoundingClientRect();
+  const impl = document.getElementById('n-impl').getBoundingClientRect();
+  const ver = document.getElementById('n-verify').getBoundingClientRect();
+  const mem = document.getElementById('n-mem').getBoundingClientRect();
+  // 왼쪽: 아니오 → 다시 구현
+  const lx1 = ver.left - wrap.left - 4, ly1 = ver.top + ver.height/2 - wrap.top;
+  const lx2 = impl.left - wrap.left - 4, ly2 = impl.top + impl.height/2 - wrap.top;
+  const xl = Math.min(lx1, lx2) - 52;
+  // 오른쪽: Memory → 다음 세션 → 규칙
+  const rx1 = mem.right - wrap.left + 4, ry1 = mem.top + mem.height/2 - wrap.top;
+  const rx2 = rule.right - wrap.left + 4, ry2 = rule.top + rule.height/2 - wrap.top;
+  const xr = Math.max(rx1, rx2) + 52;
   svg.innerHTML =
-    '<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">' +
-    '<path d="M0,0 L10,5 L0,10 z" fill="#E4572E"/></marker></defs>' +
-    '<path d="M ' + x1 + ' ' + y1 + ' H ' + (xr-16) + ' Q ' + xr + ' ' + y1 + ' ' + xr + ' ' + (y1-16) +
-    ' V ' + (y2+16) + ' Q ' + xr + ' ' + y2 + ' ' + (xr-16) + ' ' + y2 + ' H ' + (x2+10) + '"' +
-    ' fill="none" stroke="#E4572E" stroke-width="5" marker-end="url(#ah)"/>' +
-    '<text x="' + (xr+12) + '" y="' + ((y1+y2)/2 - 6) + '" fill="#E4572E" font-size="17" font-weight="700">아니오</text>' +
-    '<text x="' + (xr+12) + '" y="' + ((y1+y2)/2 + 16) + '" fill="#E4572E" font-size="17" font-weight="700">다시 추출</text>';
+    '<defs>' +
+    '<marker id="ahr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#E4572E"/></marker>' +
+    '<marker id="aha" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#C98A00"/></marker>' +
+    '</defs>' +
+    '<path d="M ' + lx1 + ' ' + ly1 + ' H ' + (xl+16) + ' Q ' + xl + ' ' + ly1 + ' ' + xl + ' ' + (ly1-16) +
+    ' V ' + (ly2+16) + ' Q ' + xl + ' ' + ly2 + ' ' + (xl+16) + ' ' + ly2 + ' H ' + (lx2-10) + '"' +
+    ' fill="none" stroke="#E4572E" stroke-width="4.5" marker-end="url(#ahr)"/>' +
+    '<text x="' + (xl-14) + '" y="' + ((ly1+ly2)/2 - 6) + '" fill="#E4572E" font-size="15" font-weight="700" text-anchor="end">아니오</text>' +
+    '<text x="' + (xl-14) + '" y="' + ((ly1+ly2)/2 + 14) + '" fill="#E4572E" font-size="15" font-weight="700" text-anchor="end">다시 구현</text>' +
+    '<path d="M ' + rx1 + ' ' + ry1 + ' H ' + (xr-16) + ' Q ' + xr + ' ' + ry1 + ' ' + xr + ' ' + (ry1-16) +
+    ' V ' + (ry2+16) + ' Q ' + xr + ' ' + ry2 + ' ' + (xr-16) + ' ' + ry2 + ' H ' + (rx2+10) + '"' +
+    ' fill="none" stroke="#C98A00" stroke-width="4.5" stroke-dasharray="11 8" marker-end="url(#aha)"/>' +
+    '<text x="' + (xr+11) + '" y="' + ((ry1+ry2)/2 - 6) + '" fill="#C98A00" font-size="15" font-weight="700">다음</text>' +
+    '<text x="' + (xr+11) + '" y="' + ((ry1+ry2)/2 + 14) + '" fill="#C98A00" font-size="15" font-weight="700">세션</text>';
 })();
 </script>
 </body>
