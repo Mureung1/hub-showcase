@@ -1,6 +1,9 @@
 // 화면 하단에 자리잡는 토끼 캐릭터. docs/prototype/design-board.html의 .companion 원본 CSS 값을 그대로 옮겼다.
 // closed: true면 웃는 눈(곡선), false(기본)면 뜬 눈(점)
-export default function Character({ closed = false }) {
+// color: "rose"(기본) | "forest" — 숲 테마일 때만 몸통 색이 바뀐다(T22, whitenoise-themes.html 근거)
+export default function Character({ closed = false, color = "rose" }) {
+  const bodyColor = color === "forest" ? "var(--forest)" : "var(--rose)";
+  const bodyLine = color === "forest" ? "var(--forest-line)" : "var(--rose-line)";
   return (
     <div
       aria-hidden="true"
@@ -21,8 +24,8 @@ export default function Character({ closed = false }) {
           left: "20px",
           width: "34px",
           height: "46px",
-          background: "var(--rose)",
-          border: "1px solid var(--rose-line)",
+          background: bodyColor,
+          border: `1px solid ${bodyLine}`,
           borderRadius: "50% 50% 45% 45%",
         }}
       />
@@ -33,8 +36,8 @@ export default function Character({ closed = false }) {
           right: "20px",
           width: "34px",
           height: "46px",
-          background: "var(--rose)",
-          border: "1px solid var(--rose-line)",
+          background: bodyColor,
+          border: `1px solid ${bodyLine}`,
           borderRadius: "50% 50% 45% 45%",
         }}
       />
@@ -45,8 +48,8 @@ export default function Character({ closed = false }) {
           left: "2px",
           width: "16px",
           height: "12px",
-          background: "var(--rose)",
-          border: "1px solid var(--rose-line)",
+          background: bodyColor,
+          border: `1px solid ${bodyLine}`,
           borderRadius: "50% 50% 20% 20%",
         }}
       />
@@ -57,8 +60,8 @@ export default function Character({ closed = false }) {
           right: "2px",
           width: "16px",
           height: "12px",
-          background: "var(--rose)",
-          border: "1px solid var(--rose-line)",
+          background: bodyColor,
+          border: `1px solid ${bodyLine}`,
           borderRadius: "50% 50% 20% 20%",
         }}
       />
@@ -69,8 +72,8 @@ export default function Character({ closed = false }) {
           left: "14px",
           right: "14px",
           height: "52px",
-          background: "var(--rose)",
-          border: "1px solid var(--rose-line)",
+          background: bodyColor,
+          border: `1px solid ${bodyLine}`,
           borderBottom: "none",
           borderRadius: "50% 50% 0 0 / 65% 65% 0 0",
         }}

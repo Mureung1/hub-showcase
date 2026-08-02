@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Character from "./Character";
+import ThemeSwitcher from "./ThemeSwitcher";
+import ThemeDecoration from "./ThemeDecoration";
+import ThemeSound from "./ThemeSound";
+import SensoryControl from "./SensoryControl";
+import PresenceIndicator from "./PresenceIndicator";
+import { themeBackgroundColor, themeTextColor, intensityToSaturate } from "@/app/lib/theme";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -27,12 +33,21 @@ function formatDeadlineStatus(now, deadlineExtraMinutes) {
 // onStart: "집중 시작" 버튼 클릭 시 호출
 // onStruggle: "나 지금 힘들어" 버튼 클릭 시 호출
 // deadlineExtraMinutes/onExtendDeadline: 오늘 마감까지 남은 시간 표시 + 연장 버튼(T19)
+// theme/onThemeChange: 화이트노이즈 테마(T22). 여기서 고른 테마가 이후 FocusTimer에도 이어진다.
 export default function OneFocusView({
   task,
   onStart,
   onStruggle,
   deadlineExtraMinutes = 0,
   onExtendDeadline,
+  theme = "daynight",
+  onThemeChange,
+  intensity = 60,
+  onIntensityChange,
+  soundEnabled = false,
+  onToggleSound,
+  showPresence = false,
+  onDismissPresence,
 }) {
   const [now, setNow] = useState(() => new Date());
 
@@ -56,9 +71,44 @@ export default function OneFocusView({
         textAlign: "center",
         position: "relative",
         overflow: "hidden",
+        background: themeBackgroundColor(theme, now),
       }}
     >
-      <h1 style={{ fontSize: "34px", lineHeight: 1.4 }}>{task}</h1>
+      <ThemeSound theme={theme} enabled={soundEnabled} volume={intensity / 100} />
+      <div style={{ filter: `saturate(${intensityToSaturate(intensity)}%)` }}>
+        <ThemeDecoration theme={theme} />
+      </div>
+      {onThemeChange && (
+        <div style={{ position: "absolute", top: "16px", left: "50%", transform: "translateX(-50%)" }}>
+          <ThemeSwitcher theme={theme} onChange={onThemeChange} />
+        </div>
+      )}
+      {onIntensityChange && (
+        <div style={{ position: "absolute", top: "16px", right: "16px" }}>
+          <SensoryControl
+            intensity={intensity}
+            onIntensityChange={onIntensityChange}
+            soundEnabled={soundEnabled}
+            onToggleSound={onToggleSound}
+          />
+        </div>
+      )}
+      {showPresence && (
+        <div style={{ position: "absolute", top: "16px", left: "16px" }}>
+          <PresenceIndicator onDismiss={onDismissPresence} />
+        </div>
+      )}
+      <h1
+        style={{
+          fontSize: "34px",
+          lineHeight: 1.4,
+          color: themeTextColor(theme, now),
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        {task}
+      </h1>
 
       {onExtendDeadline && (
         <div
@@ -67,7 +117,9 @@ export default function OneFocusView({
             alignItems: "center",
             gap: "8px",
             fontSize: "13px",
-            color: "var(--ink-soft)",
+            color: themeTextColor(theme, now),
+            position: "relative",
+            zIndex: 1,
           }}
         >
           <span>
@@ -91,7 +143,7 @@ export default function OneFocusView({
         </div>
       )}
 
-      <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+      <div style={{ display: "flex", gap: "12px", marginTop: "8px", position: "relative", zIndex: 1 }}>
         <button
           onClick={onStart}
           style={{
@@ -123,7 +175,9 @@ export default function OneFocusView({
           나 지금 힘들어
         </button>
       </div>
-      <Character />
+      <div style={{ filter: `saturate(${intensityToSaturate(intensity)}%)` }}>
+        <Character color={theme === "forest" ? "forest" : "rose"} />
+      </div>
     </main>
   );
 }

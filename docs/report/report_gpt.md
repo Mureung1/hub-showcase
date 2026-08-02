@@ -108,7 +108,7 @@
 - 검증: `npm run verify` 재현 통과. `app/layout.js:18`의 기존 외부 폰트 권고 경고 1건 외에 lint 오류는 없고 Next.js production build도 성공했습니다.
 - 계약 위반: `app/api/struggle/route.js:89-97` — S2 거절 tool 재선택 금지 위반. `app/api/struggle/route.js:107-112`, `app/page.js:213-229` — C08 및 S2의 shrink_step 실행 보장 미충족. `docs/checklist.md:28`, `app/lib/agentlog.js:5-17` — C05의 7-property 완료조건 불일치. `app/lib/agentlog.js:40-42` — S4의 이미 done/not_done인 로그를 건드리지 않는 멱등 계약 위반.
 - 권고: 종결 응답은 거절된 tool을 `proposedTool`로 재사용하지 않는 별도 출력 상태로 계약·코드를 맞추고, `shrink_step`일 때 `revisedTitle`을 조건부 필수로 검증하며 저장 성공 후에만 UI를 갱신하세요. C05의 property 수를 실제 8개 스키마에 맞춰 동기화하고, `markOutcomeDone`은 pending 여부를 확인한 경우에만 갱신하세요.
-- 확인: [ ]
+- 확인: [x] 2026-08-01 22:30 Claude — report_claude.md 2026-07-26(GPT 리뷰 수정요청 4건 반영) 항목에서 반영 완료, 이후 2차 리뷰에서 T09 해결 확인. 뒤늦게 체크(T17 착수 전 정리)
 
 ## 2026-07-26 22:11 | T05·T07·T08·T09 리뷰 반영 2차 · feat/onefocus-notion-sync · d092ca39 | 수정요청
 - 발견: 높음 — T08의 누락 안전망 `app/api/struggle/route.js:168-176`은 `shrink_step`에 `revisedTitle`이 없으면 무조건 `encourage`를 반환합니다. 그러나 `encourage`가 이미 `rejectedTools`에 포함된 요청에서도 같은 값을 반환할 수 있어 S2의 거절 tool 재선택 금지를 위반합니다. 대체값은 현재 `toolChoices`에서 `shrink_step`을 제외한 미거절 후보로 골라야 합니다.
@@ -119,7 +119,7 @@
 - 검증: `npm run verify` 재현 통과. `app/layout.js:18`의 기존 외부 폰트 권고 경고 1건 외에 lint 오류는 없고 Next.js production build도 성공했습니다.
 - 계약 위반: `app/api/struggle/route.js:168-176` — S2의 `rejectedTools` 재선택 금지 위반 가능. `app/api/struggle/route.js:89-98`, `docs/skills.md:37-41` — 종결 시 `proposedTool:null`인 실제 출력과 S2의 `proposedTool: tool`/고정 8개 제약 불일치.
 - 권고: 누락 대체 tool을 `toolChoices`의 미거절 후보에서 선택하고, S2 출력은 `final:true`일 때 `proposedTool:null`을 허용하는 판별 가능한 형태로 명시하세요. C06의 “8개 중 하나” 보장에도 final 종결 예외를 동기화하세요.
-- 확인: [ ]
+- 확인: [x] 2026-08-01 22:30 Claude — report_claude.md 2026-07-26(GPT 재검토 수정요청 4건 반영 2차) 항목에서 반영 완료, 이후 3차 리뷰에서 확인. 뒤늦게 체크(T17 착수 전 정리)
 
 ## 2026-07-26 22:17 | T07·T08 리뷰 반영 3차 · feat/onefocus-notion-sync · 126d4699 | 수정요청
 - 발견: 높음 — `app/api/struggle/route.js:71-72`에서 모든 tool이 거절되면 `candidates`가 빈 배열이 되지만, `:103`이 이를 `TOOLS` 전체로 되돌립니다. 이후 `shrink_step`에 `revisedTitle`이 없으면 `:171-185`의 fallback도 복원된 `toolChoices`에서 고르므로 이미 거절된 tool을 다시 반환합니다. 따라서 보고한 “후보가 아예 없으면 `null+final` 종결”은 실제 빈 후보 경로에서 성립하지 않으며 S2 재선택 금지를 위반합니다.
@@ -128,7 +128,7 @@
 - 검증: `npm run verify` 재현 통과. `app/layout.js:18`의 기존 외부 폰트 권고 경고 1건 외에 lint 오류는 없고 Next.js production build도 성공했습니다.
 - 계약 위반: `app/api/struggle/route.js:71-72,103,171-185` — 후보 0개일 때 거절 tool을 복원·재선택할 수 있어 S2 위반. `docs/skills.md:37-41`, `docs/checklist.md:34` — `proposedTool:null` 종결 출력과 고정 8개 중 하나라는 제약·완료조건이 불일치.
 - 권고: 모델 호출 전에 `candidates.length === 0`이면 즉시 `{ proposedTool:null, final:true }`로 종결하고, 빈 후보를 `TOOLS`로 복원하지 마세요. S2 제약과 C06은 `final !== true`일 때만 고정 8개 중 하나라는 예외를 명시하세요.
-- 확인: [ ]
+- 확인: [x] 2026-08-01 22:30 Claude — report_claude.md 2026-07-26(GPT 재검토 수정요청 2건 반영 4차) 항목에서 근본 버그 수정 완료, 이후 4차 리뷰에서 승인 확인. 뒤늦게 체크(T17 착수 전 정리)
 
 ## 2026-07-26 22:22 | T07 후보 소진 리뷰 반영 4차 · feat/onefocus-notion-sync · bd08636f | 승인
 - 발견: 없음. `app/api/struggle/route.js:71-72`는 거절된 tool을 먼저 제외하고, `:84-87`은 시간 부족 수렴 시 그 후보를 postpone/end로 추가 축소합니다. 이후 공통 분기 `:89-100`이 `isConverging` 여부와 무관하게 빈 후보를 즉시 `{ proposedTool:null, final:true }`로 종결하며, `:102`는 남은 후보를 그대로 사용해 이전의 TOOLS 전체 복원 경로가 제거됐습니다. `shrink_step`의 `revisedTitle` 누락 시에도 `:167-184`가 미거절 후보에서 대체하거나 후보가 없으면 null+final로 종결합니다.

@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import Character from "./Character";
 import SpeechBubble from "./SpeechBubble";
+import ThemeDecoration from "./ThemeDecoration";
+import ThemeSound from "./ThemeSound";
+import { themeBackgroundColor, intensityToSaturate } from "@/app/lib/theme";
 
 // durationMinutes: 타이머 길이(분). 기본 25분.
 // startedAt: 이 스텝을 시작한 시각(Date). 남은 시간은 이 시각 기준으로 매번 다시 계산한다.
@@ -13,7 +16,17 @@ import SpeechBubble from "./SpeechBubble";
 // SpeechBubble과 같은 위치(bottom: 225px)를 써서 캐릭터와의 배치가 화면마다 일관되게 한다.
 // onPause: 있으면 오른쪽 위에 일시정지 버튼을 보여준다(T20). 할 일 자체와 무관한 이유로
 // 잠깐 멈출 때를 위한 것이라, 이 버튼은 focus/timer 흐름 안에서만 예외적으로 노출한다.
-export default function FocusTimer({ durationMinutes = 25, startedAt, onFinish, caption, onPause }) {
+// theme: 화이트노이즈 테마(T22). OneFocusView에서 고른 테마를 그대로 이어받아 배경·캐릭터에 반영.
+export default function FocusTimer({
+  durationMinutes = 25,
+  startedAt,
+  onFinish,
+  caption,
+  onPause,
+  theme = "daynight",
+  intensity = 60,
+  soundEnabled = false,
+}) {
   const [remainingSeconds, setRemainingSeconds] = useState(durationMinutes * 60);
 
   useEffect(() => {
@@ -46,8 +59,13 @@ export default function FocusTimer({ durationMinutes = 25, startedAt, onFinish, 
         minHeight: "100vh",
         position: "relative",
         overflow: "hidden",
+        background: themeBackgroundColor(theme),
       }}
     >
+      <ThemeSound theme={theme} enabled={soundEnabled} volume={intensity / 100} />
+      <div style={{ filter: `saturate(${intensityToSaturate(intensity)}%)` }}>
+        <ThemeDecoration theme={theme} />
+      </div>
       <div
         style={{
           width: "220px",
@@ -69,7 +87,7 @@ export default function FocusTimer({ durationMinutes = 25, startedAt, onFinish, 
             width: "100%",
             height: `${remainingRatio * 100}%`,
             background: "var(--sky)",
-            transition: "height 1s linear",
+            transition: intensity < 30 ? "none" : "height 1s linear",
           }}
         />
         <span
@@ -123,7 +141,9 @@ export default function FocusTimer({ durationMinutes = 25, startedAt, onFinish, 
           {caption}
         </SpeechBubble>
       )}
-      <Character closed />
+      <div style={{ filter: `saturate(${intensityToSaturate(intensity)}%)` }}>
+        <Character closed color={theme === "forest" ? "forest" : "rose"} />
+      </div>
     </main>
   );
 }

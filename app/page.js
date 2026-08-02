@@ -2,10 +2,12 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import BrainDumpInput from "./components/BrainDumpInput";
+import MicrostepReview from "./components/MicrostepReview";
 import TaskPreview from "./components/TaskPreview";
 import OneFocusView from "./components/OneFocusView";
 import FocusTimer from "./components/FocusTimer";
 import CompleteScreen from "./components/CompleteScreen";
+import StatsScreen from "./components/StatsScreen";
 import RestSuggestion from "./components/RestSuggestion";
 import ReasonChips from "./components/ReasonChips";
 import ProposalCard from "./components/ProposalCard";
@@ -19,7 +21,7 @@ import OnboardingGuide from "./components/OnboardingGuide";
 // 저장한다 - "reason"/"proposal"(힘들어 루프 중) 화면을 다시 그리는 데 필요한 정보(reasonChip,
 // 제안 내용 등)는 저장하지 않으므로, 그 상태에서 새로고침하면 "focus"로 안전하게 되돌린다.
 const STORAGE_KEY = "kok-session";
-const RESTORABLE_STEPS = ["preview", "focus", "timer", "complete"];
+const RESTORABLE_STEPS = ["review", "preview", "focus", "timer", "complete"];
 
 // 서버 렌더링 시점엔 localStorage가 없으므로 항상 null(= 저장된 것 없음)로 취급한다.
 // microsteps가 비어있으면(저장 안 됐거나 손상) 복원하지 않는다.
@@ -74,6 +76,13 @@ export default function Home() {
   const [clarifications, setClarifications] = useState([]);
   const [brainDumpTurn, setBrainDumpTurn] = useState(0);
   const [brainDumpNotice, setBrainDumpNotice] = useState(null);
+  // T17: 검토 화면(review). pendingBrainDumpParams는 지금 microsteps를 만든 원래 요청값
+  // ({text, turn, clarifications}) - "전부 다시 쪼개기"가 같은 값으로 재호출하는 데 쓴다.
+  // 새로고침으로 사라져도(재적용 안 됨) 화면 자체는 review로 복원되므로 삭제/확인은 그대로 된다.
+  const [pendingBrainDumpParams, setPendingBrainDumpParams] = useState(null);
+  const [isReshuffling, setIsReshuffling] = useState(false);
+  const [isSavingSteps, setIsSavingSteps] = useState(false);
+  const [saveStepsError, setSaveStepsError] = useState(null);
 
   const [reasonChip, setReasonChip] = useState(null);
   const [rejectedTools, setRejectedTools] = useState([]);
@@ -107,6 +116,83 @@ export default function Home() {
   // T19: 연장 버튼으로 자정 마감을 뒤로 미룬 분. 재판단 시간 게이트(T07)의 remainingTimeMinutes
   // 계산에도 그대로 반영된다.
   const [deadlineExtraMinutes, setDeadlineExtraMinutes] = useState(0);
+
+  // T22: 화이트노이즈 테마. focus/timer 화면 SSR은 항상 hasMounted 게이트 뒤에서만 실제로
+  // 그려지므로(§effectiveStep), 초기값을 localStorage에서 바로 읽어도 하이드레이션 불일치가 없다.
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") return "daynight";
+    return localStorage.getItem("kok-theme") || "daynight";
+  });
+  useEffect(() => {
+    localStorage.setItem("kok-theme", theme);
+  }, [theme]);
+
+  // T24: 감각 강도 다이얼(0~100, 차분~생기)과 소리 on/off. 마운트 하이드레이션 안전성은
+  // theme과 같은 이유(§theme)로 초기값을 localStorage에서 바로 읽어도 문제없다.
+  const [intensity, setIntensity] = useState(() => {
+    if (typeof window === "undefined") return 60;
+    const saved = localStorage.getItem("kok-intensity");
+    return saved ? Number(saved) : 60;
+  });
+  useEffect(() => {
+    localStorage.setItem("kok-intensity", String(intensity));
+  }, [intensity]);
+
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("kok-sound-enabled") === "true";
+  });
+  useEffect(() => {
+    localStorage.setItem("kok-sound-enabled", String(soundEnabled));
+  }, [soundEnabled]);
+
+  // T25: 장식용 동시접속 표시. "혼자 할래요"를 누르면 계속 숨긴다.
+  const [presenceDismissed, setPresenceDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("kok-presence-dismissed") === "true";
+  });
+  useEffect(() => {
+    if (presenceDismissed) localStorage.setItem("kok-presence-dismissed", "true");
+  }, [presenceDismissed]);
+
+  // T26: 통계 화면. 입력 화면에서 "이번 주 통계 보기"를 누르면 그 시점에 조회한다.
+  const [statsData, setStatsData] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState(null);
+
+  async function handleViewStats() {
+    setStep("stats");
+    setStatsLoading(true);
+    setStatsError(null);
+    try {
+      const response = await fetch("/api/stats");
+      if (!response.ok) throw new Error("통계를 불러오지 못했어요");
+      const data = await response.json();
+      setStatsData(data);
+    } catch (err) {
+      setStatsError(err.message);
+    } finally {
+      setStatsLoading(false);
+    }
+  }
+
+  // T23: 며칠 만에 다시 왔는지 확인해 복귀 환영 문구를 보여준다. 마지막 방문일을
+  // localStorage에 남겨두고, 오늘과 날짜만(시간 무시) 비교한다.
+  const [returningMessage, setReturningMessage] = useState(null);
+  useEffect(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const lastVisit = localStorage.getItem("kok-last-visit");
+    if (lastVisit) {
+      const gapDays = Math.round(
+        (new Date(todayStr) - new Date(lastVisit)) / 86400000
+      );
+      if (gapDays >= 2) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- 마운트 시 1회 계산
+        setReturningMessage(`${gapDays}일 만이네, 반가워`);
+      }
+    }
+    localStorage.setItem("kok-last-visit", todayStr);
+  }, []);
 
   // T18: Zero-Input 온보딩. null=아직 확인 전, true=연동 정상, false=미설정(온보딩 화면 표시).
   // 마운트 후 한 번만 /api/notion-health로 확인하고, "확인했어요" 버튼으로 재확인할 수 있다.
@@ -213,7 +299,76 @@ export default function Home() {
       setClarifications([]);
       setBrainDumpTurn(0);
 
-      // 방금 응답을 그대로 쓰지 않고, Notion에 실제로 저장된 목록을 다시 읽어온다
+      // T17: 아직 Notion에 저장하지 않는다. 검토 화면에서 삭제·다시 쪼개기까지 끝내고
+      // 확정한 목록만 handleConfirmReview가 그 시점에 저장한다.
+      setPendingBrainDumpParams({
+        text: textForApi,
+        turn: turnForApi,
+        clarifications: clarificationsForApi,
+      });
+      setMicrosteps(data.microsteps);
+      setCurrentIndex(0);
+      setStep("review");
+    } catch (err) {
+      setSplitError(err.message);
+    } finally {
+      setIsSplitting(false);
+    }
+  }
+
+  // T17: 검토 화면에서 항목 하나를 로컬 목록에서만 제거한다(아직 Notion에 없음).
+  function handleDeleteMicrostep(index) {
+    setMicrosteps((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  // T17: "전부 다시 쪼개기" — 같은 입력으로 Brain Dump API를 재호출해 검토 목록을 교체한다.
+  async function handleReshuffle() {
+    if (!pendingBrainDumpParams) return;
+    setIsReshuffling(true);
+    setSaveStepsError(null);
+    try {
+      const response = await fetch("/api/brain-dump", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pendingBrainDumpParams),
+      });
+      if (!response.ok) throw new Error("다시 쪼개는 데 실패했어요, 다시 시도해줘");
+
+      const data = await response.json();
+
+      if (data.followUpQuestion) {
+        // 드물게 다시 쪼개도 기한이 또 불명확한 경우: 입력 화면으로 돌아가 되묻기부터 처리한다.
+        setPendingText(pendingBrainDumpParams.text);
+        setClarifications(pendingBrainDumpParams.clarifications);
+        setBrainDumpTurn(pendingBrainDumpParams.turn + 1);
+        setFollowUpQuestion(data.followUpQuestion);
+        setPendingBrainDumpParams(null);
+        setStep("input");
+        return;
+      }
+
+      setMicrosteps(data.microsteps);
+      setCurrentIndex(0);
+    } catch (err) {
+      setSaveStepsError(err.message);
+    } finally {
+      setIsReshuffling(false);
+    }
+  }
+
+  // T17: "이대로 시작하기" — 검토 화면에서 확정한(삭제 반영된) 목록을 그 시점에 Notion에 저장.
+  async function handleConfirmReview() {
+    setIsSavingSteps(true);
+    setSaveStepsError(null);
+    try {
+      const saveResponse = await fetch("/api/steps/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ microsteps }),
+      });
+      if (!saveResponse.ok) throw new Error("저장에 실패했어요, 다시 시도해줘");
+
+      // 방금 보낸 응답을 그대로 쓰지 않고, Notion에 실제로 저장된 목록을 다시 읽어온다
       // (완료 처리에 필요한 Notion 페이지 id가 이 목록에만 있음).
       const stepsResponse = await fetch("/api/steps");
       const { steps } = await stepsResponse.json();
@@ -222,16 +377,20 @@ export default function Home() {
         // 확정된 기한이 전부 오늘 이후라 오늘 목록엔 하나도 안 잡히는 경우(T14가 처음 만드는
         // 상황) - preview로 넘어가면 currentStep이 없어 깨지므로, 입력 화면에 안내만 띄운다.
         setBrainDumpNotice("오늘 할 일은 없어요, 정한 날짜가 되면 다시 보여줄게");
+        setMicrosteps([]);
+        setPendingBrainDumpParams(null);
+        setStep("input");
         return;
       }
 
       setMicrosteps(steps);
       setCurrentIndex(0);
+      setPendingBrainDumpParams(null);
       setStep("preview");
     } catch (err) {
-      setSplitError(err.message);
+      setSaveStepsError(err.message);
     } finally {
-      setIsSplitting(false);
+      setIsSavingSteps(false);
     }
   }
 
@@ -556,9 +715,37 @@ export default function Home() {
         onSubmit={handleSubmit}
         isLoading={isSplitting}
         error={splitError}
-        prompt={followUpQuestion ?? undefined}
+        prompt={followUpQuestion ?? returningMessage ?? undefined}
         notice={brainDumpNotice}
         onGoHome={followUpQuestion ? goHome : undefined}
+        onViewStats={followUpQuestion ? undefined : handleViewStats}
+      />
+    );
+  }
+
+  if (effectiveStep === "stats") {
+    return (
+      <StatsScreen
+        daysCompleted={statsData?.daysCompleted ?? 0}
+        week={statsData?.week ?? []}
+        isLoading={statsLoading}
+        error={statsError}
+        onGoHome={goHome}
+      />
+    );
+  }
+
+  if (effectiveStep === "review") {
+    return (
+      <MicrostepReview
+        microsteps={microsteps}
+        onDelete={handleDeleteMicrostep}
+        onReshuffle={handleReshuffle}
+        onConfirm={handleConfirmReview}
+        isReshuffling={isReshuffling}
+        isSaving={isSavingSteps}
+        error={saveStepsError}
+        onGoHome={goHome}
       />
     );
   }
@@ -578,6 +765,14 @@ export default function Home() {
         onStruggle={() => setStep("reason")}
         deadlineExtraMinutes={deadlineExtraMinutes}
         onExtendDeadline={extendDeadline}
+        theme={theme}
+        onThemeChange={setTheme}
+        intensity={intensity}
+        onIntensityChange={setIntensity}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => setSoundEnabled((v) => !v)}
+        showPresence={!presenceDismissed}
+        onDismissPresence={() => setPresenceDismissed(true)}
       />
     );
   }
@@ -626,6 +821,9 @@ export default function Home() {
         onFinish={handleTimerFinish}
         caption={extendReason}
         onPause={handlePause}
+        theme={theme}
+        intensity={intensity}
+        soundEnabled={soundEnabled}
       />
     );
   }
@@ -669,7 +867,7 @@ export default function Home() {
   }
 
   if (effectiveStep === "complete") {
-    return <CompleteScreen task={task} onGoHome={goHome} />;
+    return <CompleteScreen completedCount={microsteps.length} onGoHome={goHome} />;
   }
 
   if (effectiveStep === "rest") {

@@ -167,3 +167,60 @@
 - 검증: `npm run verify` 통과(lint+build). 화면에서 시계가 실시간으로 도는 것과 "+1시간" 버튼을 누르면 남은 시간이 늘어나는 것은 사용자가 직접 확인. `docs/checklist.md` C19 2개 전부 체크, `docs/backlog.md` T19 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신(T14/T20/T19 반영).
 - 미결: `deadlineExtraMinutes`는 새로고침 시 리셋된다(T04 localStorage 세션에 포함 안 함) — C19에 명시된 요구사항은 아니라 지금은 그대로 둠.
 - 확인: [ ]
+
+## 2026-08-02 | T17 | 마이크로스텝 검토·삭제 화면 구현
+- 구조 변경(백로그 명시 사항): Brain Dump 확정 시점에 바로 Notion에 저장하던 것을 제거(`app/api/brain-dump/route.js`에서 `saveMicrostep`/`createPage` 호출 삭제)하고, 사용자가 검토 화면에서 확정한 뒤에만 저장하도록 저장 시점을 뒤로 미뤘다. `docs/skills.md` S1을 이 변경에 맞춰 수정하고, 신규 계약 S1-save(`POST /api/steps/save`)를 추가했다.
+- 신규 화면: `app/components/MicrostepReview.js` — 전체 마이크로스텝 목록, 카테고리 한글 태그, 총 예상 시간 합계, 항목별 삭제(로컬 상태만 변경), "전부 다시 쪼개기"(같은 입력으로 `/api/brain-dump` 재호출), "이대로 시작하기"(확정 목록을 `/api/steps/save`로 저장 후 `GET /api/steps` 재조회) 버튼을 갖췄다.
+- `app/page.js`: `handleSubmit`이 확정 시 저장 없이 `"review"` step으로 이동하도록 변경. `handleDeleteMicrostep`/`handleReshuffle`/`handleConfirmReview` 신규. `RESTORABLE_STEPS`에 `"review"` 추가(새로고침 시 검토 화면 복원, 단 다시 쪼개기용 원본 입력값은 미보존 — 알려진 제한으로 문서화).
+- `CompleteScreen`: `task`(마지막 완료 텍스트) prop을 `completedCount`(그 배치의 전체 완료 개수, `microsteps.length`)로 교체.
+- 검증: `npm run verify` 통과. 실제 동작 확인 — (1) `/api/brain-dump` 호출 후 `/api/steps` 조회로 저장 안 됨 확인, (2) 12개 중 2개만 남기고 `/api/steps/save` 호출 → Notion에 정확히 2개만 추가됨을 API로 확인, (3) 실제 화면에서 삭제 시 총 시간 합계 재계산(17분→15분) 스크린샷 확인, (4) "전부 다시 쪼개기" 클릭 시 목록·합계가 다른 결과로 교체되는 것 확인, (5) "이대로 시작하기" 클릭 후 저장 + `preview` 전환 확인, (6) localStorage로 `complete` 상태를 재현해 "N개 해냈다" 렌더 확인. 테스트 중 생성된 Notion 행은 전부 정리(archive)해 실제 데이터(영상 촬영분 10개)는 그대로 유지했다.
+- 문서: `docs/checklist.md` C17 전체 체크, `docs/backlog.md` T17 완료 처리, `docs/etc/component-tree.md`에 `review` step·`MicrostepReview` 반영, `CLAUDE.md` 현재 구현 상태 갱신.
+- 확인: [ ]
+
+## 2026-08-02 | T22 | 화이트노이즈 테마 (낮/밤 동기화·숲·카페) 구현
+- Phase 2 백로그 항목을 우선순위(A→B→D→E→C)를 벗어나 먼저 진행(사용자 결정, 디자인 작업 우선). GitHub 이슈 #56 등록 후 backlog.md/checklist.md/dev-prompts.md 문서 먼저 갱신.
+- `app/lib/theme.js` 신규: `isNightTime`(6~18시를 낮으로 판정), `themeBackgroundColor`, `themeTextColor`(밤 배경에서 기본 --ink 텍스트가 안 보이는 문제 때문에 추가).
+- `app/components/ThemeSwitcher.js`, `app/components/ThemeDecoration.js` 신규: 3개 원형 토글, 테마별 코너 장식(해/달, 나뭇잎+새, 커피잔+김). 중앙 콘텐츠와 안 겹치는 코너에만 배치해 z-index 계산 없이 안전하게 그림.
+- `app/components/Character.js`: `color` prop 추가(기본 rose, forest 테마일 때만 forest로 교체) — docs/prototype/whitenoise-themes.html 근거.
+- `app/components/OneFocusView.js`/`FocusTimer.js`: `theme` prop으로 배경색 적용, `ThemeDecoration` 렌더. `OneFocusView`에만 `ThemeSwitcher`(선택은 여기서만, `FocusTimer`는 이어받기만). `app/globals.css`에 forest/night/coffee 계열 CSS 토큰 추가(design.md에 이미 문서화돼 있던 값 그대로).
+- `app/page.js`: `theme` state 추가, `localStorage`(`kok-theme`)로 새로고침해도 유지.
+- 검증: `npm run verify` 통과. 실제 화면에서 Date를 14시/22시로 모킹해 낮/밤 배경·장식·텍스트 전환 확인, 숲/카페 토글 클릭으로 배경·장식·캐릭터 색 전환 확인, 숲 테마 선택 후 새로고침해도 유지되는 것 확인. 검증 중 밤 배경에서 기본 텍스트 색 대비가 나쁜 실제 버그를 발견해 `themeTextColor`로 수정.
+- 문서: checklist.md C22 전체 체크, backlog.md T22 완료 처리, component-tree.md props 표 갱신, CLAUDE.md 현재 구현 상태 갱신, README.md/CLAUDE.md/instructions.md/commit-rules.md의 Task/Checklist 총 개수 표기를 T01~T22/C01~C22로 갱신.
+- 확인: [ ]
+
+## 2026-08-02 | T21, T23 | T21 이슈 등록·완료조건 정의 + T23 복귀 환영 메시지 구현
+- T21(Notion Public Integration + OAuth): GitHub 이슈 #57 등록, docs/backlog.md에 이슈 번호·선행조건(T18 완료) 반영, docs/checklist.md C21 정의(4항목). 실제 구현(OAuth 코드 작성)은 Phase 2 백로그 완료 후 별도 진행하기로 결정(260802) — 지금은 착수 절차만 완료.
+- T23(다시 시작해도 괜찮아): GitHub 이슈 #58 등록. `app/page.js`에 마지막 방문일(`kok-last-visit`, localStorage)과 오늘 날짜 차이를 계산하는 로직 추가, 2일 이상이면 `returningMessage` state를 채워 `BrainDumpInput`의 기존 캐릭터 말풍선(`prompt`)을 "N일 만이네, 반가워"로 교체. Notion 조회 없이 클라이언트에서만 판단(간단한 스코프 유지).
+- 검증: `npm run verify` 통과. 실제 화면에서 (1) 첫 방문(기록 없음) → 기본 문구, (2) localStorage에 3일 전 방문 기록 주입 → "3일 만이네, 반가워" 노출, (3) 같은 날 재방문(새로고침) → 기본 문구로 복귀, 3가지 케이스 스크린샷으로 확인.
+- 겸사겸사 dev-plan.md의 "2분 스타터" 백로그 항목을 T02(Brain Dump 분할)+T03(One-Focus View)로 이미 충족된 것으로 판단해 제외 처리(사용자 확인 후).
+- 문서: checklist.md C21(미체크, 착수 전)·C23(전체 체크) 반영, backlog.md T21/T23 반영, CLAUDE.md 현재 구현 상태 갱신.
+- 확인: [ ]
+
+## 2026-08-02 | T24 | 감각 강도 조절 + 테마별 배경음 구현
+- 디자인 근거: `docs/prototype/feature-proposals.html` 03번 프레임(다이얼+색상 견본). 사용자 판단으로 다이얼(색+움직임 통합)과 소리(별도 스피커 아이콘)를 분리해서 컨트롤 디테일을 높임.
+- 실제 배경음 4개(Mixkit 무료 라이선스, 상업적 이용·저작자 표시 불필요) 확보해 `public/sounds/`에 추가: `day.mp3`(새소리), `night.mp3`(귀뚜라미), `forest.mp3`(숲속 새소리), `cafe.mp3`(카페 웅성거림). Mixkit 사이트에서 Envato Elements 프리미엄 미리보기(로그인 필요)와 진짜 무료 항목이 섞여있어, Playwright로 실제 DOM의 `data-audio-player-preview-url-value` 속성을 읽어 "View on Envato" 링크가 없는(=진짜 무료) 항목만 선별.
+- `app/lib/theme.js`: `themeSoundSrc`(테마·낮/밤별 파일 경로), `intensityToSaturate`(0~100 → 40~140% 채도) 추가.
+- `app/components/ThemeSound.js` 신규: 화면에 안 그려지는 `<audio loop>` 관리 컴포넌트. 브라우저 자동재생 정책 때문에 `play()` 실패는 조용히 무시(스피커 아이콘 재클릭으로 복구 가능).
+- `app/components/SensoryControl.js` 신규: 톱니 아이콘 → 팝오버(다이얼+색상 견본 3개+캡션+스피커 토글), 프로토타입 CSS 값 그대로 이식.
+- `app/components/OneFocusView.js`/`FocusTimer.js`: `intensity`/`soundEnabled` prop 추가, `Character`·`ThemeDecoration`에 `saturate()` filter 적용, `FocusTimer`의 물 차오르는 `transition`을 intensity<30이면 `none`으로.
+- `app/page.js`: `intensity`(기본 60)·`soundEnabled` state + localStorage(`kok-intensity`, `kok-sound-enabled`) 유지.
+- 검증: `npm run verify` 통과. 실제 화면에서 (1) 패널 열기·다이얼 드래그(10→95) 시 캐릭터 채도·캡션 변화 스크린샷 확인, (2) intensity=15에서 타이머 water-fill div의 `transition` 값이 `none`인 것 코드 레벨로 확인, (3) 스피커 토글 클릭 시 `<audio>`가 올바른 테마 파일로 `paused:false` 재생되고 `volume`이 intensity와 일치하는 것 확인, (4) localStorage 값이 새로고침 후에도 유지되는 것 확인(단 오디오 자동재생 자체는 브라우저 정책상 별도 동작 필요 — 알려진 제한으로 문서화).
+- 문서: checklist.md C24 전체 체크, backlog.md T24 완료 처리, component-tree.md props·알려진 제한 반영, CLAUDE.md 현재 구현 상태 갱신.
+- 확인: [ ]
+
+## 2026-08-02 | T25 | 같이 있어요 (장식용 동시접속 표시) 구현
+- 디자인 근거: `docs/prototype/feature-proposals.html` 04번 프레임(헤드라인+점 묶음+"혼자 할래요" 링크, 화면 중앙 배치).
+- 구현 중 레이아웃 문제 발견: `Character`가 `position:absolute`+큰 `scale(2.2)`로 화면 하단을 넓게 차지해서, 프로토타입처럼 중앙 하단에 배치하면 완전히 가려짐(Playwright로 "혼자 할래요" 버튼 클릭이 안 되는 것으로 재현·확인). 화면 상단 좌측(SensoryControl의 반대쪽)에 점+숫자+닫기(×) 버튼만 있는 작은 알약으로 압축해서 재배치 — 오히려 원래 의도("아주 작은 점 몇 개로만 존재")에 더 맞음.
+- `app/components/PresenceIndicator.js` 신규: 날짜 문자열을 시드로 한 고정 가짜 인원수(80~200명), 점 5개(그 중 하나는 "나"), hover 툴팁으로 "이름도 채팅도 없다" 안내.
+- `app/page.js`: `presenceDismissed` state + localStorage(`kok-presence-dismissed`) 유지.
+- 검증: `npm run verify` 통과. 실제 화면에서 (1) 기본 노출 스크린샷, (2) × 클릭 후 사라짐, (3) 새로고침 후에도 계속 안 보이는 것 확인.
+- 문서: checklist.md C25 전체 체크, backlog.md T25 완료 처리(프로토타입 대비 레이아웃 변경 사유 기록), component-tree.md props 반영, CLAUDE.md 현재 구현 상태 갱신.
+- 확인: [ ]
+
+## 2026-08-02 | T26 | 통계 화면 (이번 주 완료 현황) 구현
+- 디자인 근거: `docs/prototype/design-board.html` 07번 프레임("대시보드 대신 숫자 하나") — 큰 숫자 + 캡션 + 요일별 점 7개, 그래프/표 없음.
+- `app/api/stats/route.js` 신규: Steps DB를 `Done=true`·`CompletedAt on_or_after(6일 전)`으로 조회해 최근 7일 중 완료 기록이 있는 날짜 집합을 만들고, 오늘 기준 7일치 boolean 배열(`week`)과 완료한 날 수(`daysCompleted`)를 반환.
+- `app/components/StatsScreen.js` 신규, `app/components/BrainDumpInput.js`에 `onViewStats` 링크("이번 주 통계 보기") 추가. `app/page.js`에 `"stats"` step + `handleViewStats`(진입 시 조회) 추가.
+- 검증: `npm run verify` 통과. 실제 Notion 데이터로 먼저 확인(현재 0/7, 실제로 완료 기록이 없어서 정확), 이후 임시로 완료 기록 3개(오늘·2일 전·5일 전)를 만들어 `daysCompleted:3`과 정확한 위치의 점이 채워지는 것을 API 응답과 스크린샷 둘 다로 확인 → 즉시 정리(archive)해 실제 데이터는 원래 0/7 상태로 복원. 화면 진입("이번 주 통계 보기")과 복귀(홈 버튼)도 스크린샷으로 확인.
+- 문서: checklist.md C26 전체 체크, backlog.md T26 완료 처리, component-tree.md에 `stats` step·`StatsScreen` 반영, CLAUDE.md 갱신. 겸사겸사 dev-plan.md의 Phase 2 백로그 목록 중 이미 완료된 항목(T18·T22~T26)을 취소선으로 정리(그동안 미반영이었던 것 포함).
+- 확인: [ ]
