@@ -7,6 +7,7 @@ import TaskPreview from "./components/TaskPreview";
 import OneFocusView from "./components/OneFocusView";
 import FocusTimer from "./components/FocusTimer";
 import CompleteScreen from "./components/CompleteScreen";
+import StatsScreen from "./components/StatsScreen";
 import RestSuggestion from "./components/RestSuggestion";
 import ReasonChips from "./components/ReasonChips";
 import ProposalCard from "./components/ProposalCard";
@@ -153,6 +154,27 @@ export default function Home() {
   useEffect(() => {
     if (presenceDismissed) localStorage.setItem("kok-presence-dismissed", "true");
   }, [presenceDismissed]);
+
+  // T26: 통계 화면. 입력 화면에서 "이번 주 통계 보기"를 누르면 그 시점에 조회한다.
+  const [statsData, setStatsData] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState(null);
+
+  async function handleViewStats() {
+    setStep("stats");
+    setStatsLoading(true);
+    setStatsError(null);
+    try {
+      const response = await fetch("/api/stats");
+      if (!response.ok) throw new Error("통계를 불러오지 못했어요");
+      const data = await response.json();
+      setStatsData(data);
+    } catch (err) {
+      setStatsError(err.message);
+    } finally {
+      setStatsLoading(false);
+    }
+  }
 
   // T23: 며칠 만에 다시 왔는지 확인해 복귀 환영 문구를 보여준다. 마지막 방문일을
   // localStorage에 남겨두고, 오늘과 날짜만(시간 무시) 비교한다.
@@ -696,6 +718,19 @@ export default function Home() {
         prompt={followUpQuestion ?? returningMessage ?? undefined}
         notice={brainDumpNotice}
         onGoHome={followUpQuestion ? goHome : undefined}
+        onViewStats={followUpQuestion ? undefined : handleViewStats}
+      />
+    );
+  }
+
+  if (effectiveStep === "stats") {
+    return (
+      <StatsScreen
+        daysCompleted={statsData?.daysCompleted ?? 0}
+        week={statsData?.week ?? []}
+        isLoading={statsLoading}
+        error={statsError}
+        onGoHome={goHome}
       />
     );
   }

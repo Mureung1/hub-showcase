@@ -20,6 +20,7 @@ export default function BrainDumpInput({
   prompt = DEFAULT_PROMPT,
   notice = null,
   onGoHome,
+  onViewStats,
 }) {
   const [text, setText] = useState("");
 
@@ -95,6 +96,22 @@ export default function BrainDumpInput({
           <p style={{ color: "var(--ink-soft)", fontSize: "14px" }}>{notice}</p>
         )}
         {onGoHome && <HomeButton onClick={onGoHome} />}
+        {onViewStats && (
+          <button
+            onClick={onViewStats}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: "12px",
+              color: "var(--ink-faint)",
+              textDecoration: "underline",
+              cursor: "pointer",
+              marginTop: "4px",
+            }}
+          >
+            이번 주 통계 보기
+          </button>
+        )}
       </div>
       <SpeechBubble
         style={{
