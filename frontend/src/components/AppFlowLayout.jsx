@@ -62,10 +62,12 @@ function AppFlowLayout() {
           </span>
           <span>FirstPR</span>
         </Link>
-        <Link to="/history" className="flow-history" aria-label="전체 검색 이력">
-          <HistoryIcon />
-          <span>이력</span>
-        </Link>
+        {githubId && (
+          <Link to="/history" className="flow-history" aria-label="전체 검색 이력">
+            <HistoryIcon />
+            <span>이력</span>
+          </Link>
+        )}
       </div>
 
       {activeIndex !== undefined && (

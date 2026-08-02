@@ -11,6 +11,67 @@
 
 ---
 
+## 프로젝트 마무리 요약 (2026-08-02 작성)
+
+네이버 AI Agent Challenge 4주(2026-07-06 ~ 07-31) 진행분 정리.
+
+### 만든 것
+GitHub 활동을 분석해 첫 오픈소스 기여에 맞는 이슈를 추천하는 서비스. GitHub ID 입력 → 프로필 분석(언어 비율·실력 수준) → 선호 조건 선택 → 추천 목록 → 이슈 상세(LLM 요약·기여 가이드)의 7화면 흐름.
+
+- 프론트: React 19 + Vite + TanStack Query, GitHub Pages 배포
+- 백엔드: Node.js + Express + Prisma, Supabase(PostgreSQL), Render 배포
+- LLM: Google Gemini (`gemini-flash-lite-latest`) — 이슈 분석·추천 재순위
+
+### 숫자
+- 커밋 212개 · 업스트림 PR 19건(18 머지 + #2556 오픈)
+- 결정 기록 22건([decisions.md](decisions.md))
+- 테스트: 백엔드 유닛·통합 6파일(Vitest + Supertest, GitHub은 mock·DB는 실제 Supabase), 프론트 유닛 1파일, E2E 2파일(Playwright)
+- 프로젝트 전용 Skill 8개([.claude/skills](../.claude/skills/README.md))
+
+### 설계상 핵심이었던 것
+- **추천 3단 구조** — 문턱(레포 건강도, 하드 필터) → 규칙 점수(언어·난이도 정량 매칭) → LLM 재순위(흥미·이슈 명확성). 사실 검증은 규칙이, 정성 판단은 LLM이 맡아 LLM 실패가 서비스 실패로 번지지 않는 폴백이 공짜로 확보됨
+- **레포 우선 검색** — 이슈부터 검색하면 레포 품질 조건을 걸 수 없어 유령 레포가 상위에 오는 문제. 첫 기여자에게 중요한 건 이슈 신선도가 아니라 리뷰해 줄 메인테이너의 생존이라 판단해 파이프라인을 뒤집음
+- **성공만 캐시하는 폴백** — LLM 실패(null)를 캐시하지 않는 규칙 하나로, 별도 재시도 로직 없이 "다음 조회가 곧 재시도"가 되는 복원력 확보
+
+### 남은 것
+- PR #2556 머지 확인
+- 2026-07-31(최종 발표일) 로그 내용 — 커밋·PR이 없어 근거 없음
+- `preferences.test.js`의 `TODO(human)` 폴백 3케이스
+- 프론트 테스트를 CI/배포 게이트에 연결하는 방안 (지금은 수동 실행만)
+- cron-job.org 무료 플랜 750시간 한도가 다른 프로젝트와 겹치는지 확인
+- 향후 확장 후보: 매니페스트 기반 기술스택 매칭(타당성 검증만 하고 보류), 임베딩 기반 재순위(현 규모에선 불필요로 결론)
+
+---
+
+### 2026-08-02
+- 진행한 작업:
+  - **fork 재설정** — 업스트림(`connect-AIAgentChallenge-26-1/hub`)이 public으로 전환되며 fork 연결이 끊긴 것을 확인. 기존 `kimsunho2000/hub`는 삭제하지 않고 `hub-old`로 rename해 보존하고, 업스트림을 다시 fork해 `kimsunho2000/hub`를 재생성(parent 링크 정상 확인). `upstream` 원격을 새로 등록
+  - fork 마이그레이션 시 브랜치별 대조: `N034_김선호`는 이미 업스트림에 머지된 상태(PR #2443)라 로컬을 fast-forward만으로 맞춤 — 강제 push 불필요. 업스트림에 없는 개인 브랜치 `dev`/`gh-pages`는 새 fork에 없어서 `hub-old`에서 따로 push
+  - 저장소 rename이 GitHub Pages URL까지 바꾼 것(`/hub/` → `/hub-old/`)을 발견해 새 fork에서 Pages를 재설정, 데모 링크 복구
+  - `AppFlowLayout.jsx`: 상단바 "이력" 링크를 `githubId`가 있을 때만 렌더링하도록 수정. `History.jsx`는 이미 `githubId` 없으면 안내 화면으로 막고 `useQuery`도 `enabled`로 차단하고 있었는데, 진입 링크만 조건 없이 노출돼 있었다. URL 직접 진입은 여전히 가능하므로 화면 쪽 가드는 유지
+  - `showcase.json` 정합성 수정 — 스크린샷이 파일은 6장인데 JSON엔 3장만 등록, `agentTools`엔 존재하지 않는 `code-convention` 스킬 기재(컨벤션은 `.claude/rules/`의 경로 기반 규칙이라 Skill이 아님), 실제 있는 `submission-check`는 누락. 즐겨찾기·검색 이력·재추천 다양화가 README·checklist엔 완료인데 `features`에만 빠져 있던 것도 반영
+  - `showcase.json` 내용 보강 — `decisions.md`의 결정 기록을 소재로 `techHighlights`를 3개 → 6개(레포 우선 검색 전환, 언어 비율 커밋 가중, 성공만 캐시하는 폴백)로 확장. `problem`에 문턱 필터의 근거(메인테이너 생존)를 추가. 구어체 어미와 대시 공식을 서술체로 통일
+  - PR [#2556](https://github.com/connect-AIAgentChallenge-26-1/hub/pull/2556) 생성
+  - 노션 Daily Log 정리 — PR 링크 10건(7/10·7/20~7/30)과 완료 체크가 비어 있던 것을 GitHub PR 목록과 대조해 채우고, 본문이 비어 있던 7/27~7/30 4일치를 이 로그 기준으로 작성. 8/2 행 신설
+- 이슈/막힌 점:
+  - Chrome 자동화 스크린샷이 6회 연속 `Script injection timed out`으로 실패(`javascript_tool`은 정상 동작) — 07-27에도 같은 증상이 있었던 반복 이슈. 누락 화면(분석 중·전체 이력) 캡처는 포기하고 스크린샷 6장 유지
+  - `Desktop\네이버 ai 첼린지\screenshots\`의 7장은 7/8자 프로토타입(브랜딩 `First-pr`, 목업 데이터)이라 현재 앱 스크린샷보다 후퇴하는 것으로 판단, 사용하지 않음
+- 다음 할 일:
+  - PR #2556 머지 확인
+  - 7/31(최종 발표일) 로그 내용 확정 — 커밋·PR이 없어 근거가 없음
+
+---
+
+### 2026-07-31
+- 진행한 작업:
+  - 대회 최종일 (발표 & 데모). 저장소 커밋·PR 없음 — 상세 내용 미확인
+- 이슈/막힌 점:
+  - (기록 없음)
+- 다음 할 일:
+  - (대회 종료)
+
+---
+
 ### 2026-07-30
 - 진행한 작업:
   - 밀려 있던 브랜치 반영: 로컬 `dev`를 `N034_김선호`로 fast-forward(65커밋). `main`은 손대지 않음
@@ -20,6 +81,7 @@
   - `frontend/src/utils/preferences.test.js` 신설 — `buildDefaultPreferences`가 프로필 화면 칩 초기값과 첫 추천 요청 입력을 결정하는데 테스트가 없었음. skillLevel→difficulty 매핑 케이스 작성(폴백 3케이스는 `TODO(human)`으로 남김)
   - **`npm run test:frontend`가 계속 실패 상태였던 것을 발견·수정**: `vite.config.js`에 Vitest `include`가 없어 기본 패턴이 `frontend/e2e/*.spec.js`(Playwright)까지 잡아 무조건 2건 실패했다. `include: ['src/**/*.test.{js,jsx}']`로 좁힘. 배포 게이트(`render.yaml`)가 백엔드 `npm test`만 걸어서 아무 자동화 경로도 이 명령을 실행하지 않아 그동안 드러나지 않았음
   - `security-review`로 백엔드 전체 보안 감사 — 신뢰도 8/10 이상 발견 0건. 검색 qualifier 인젝션(`LANGUAGE_PATTERN` + sink에서 재차 따옴표 제거), GraphQL 별칭 인젝션(`JSON.stringify` 인코딩), 원시 SQL 부재, 경로 탐색(Octokit 파라미터 바인딩), 시크릿 로깅(SHA-256 12자 절단만 기록), CORS·에러 응답 전부 클린 확인
+  - (저녁) 백엔드 통합테스트 타임아웃을 15초로 상향 — Render 빌드가 테스트 단계에서 실패하고 있었다. 실제 Supabase에 붙는 통합테스트라 로컬보다 네트워크 지연이 커서 기본 타임아웃(5초)을 넘긴 것
 - 이슈/막힌 점:
   - `POST /api/analysis` 캐시 테스트가 처음 실패 — `upsert`의 `update` 분기에 `analyzedAt`만 넣어서 앞 테스트가 남긴 행의 `languages`가 그대로 남았다. 실제 Supabase를 쓰는 테스트 정책의 대가라, `create`/`update` 양쪽을 같은 값으로 채워 픽스처를 고정
 - 다음 할 일:
@@ -59,6 +121,24 @@
   - Week3 항목 전부 마감 — `submission-check` 스킬로 제출 전 최종 점검 실행
   - cron-job.org 무료 플랜 월 750시간 한도 — 다른 프로젝트와 Render 무료 가동시간 겹치는지 확인 필요
   - 오늘 변경분(analysisService 폴백/테스트/README/log 아카이빙/submission-check 스킬) 커밋 + dev→main 반영
+
+---
+
+### 2026-07-27
+> 당시 로그가 누락돼 2026-08-02에 PR [#2051](https://github.com/connect-AIAgentChallenge-26-1/hub/pull/2051)·`checklist.md`·커밋 기록을 근거로 재구성했습니다. 세부 사항은 실제 진행과 다를 수 있습니다.
+
+- 진행한 작업:
+  - Week3에서 이월된 배포·E2E 항목을 한번에 마감
+  - **재추천 다양화** — 같은 조건으로 다시 요청하면 매번 같은 목록이 나오던 문제 해결. 매칭 점수를 1순위로 두고 동점일 때만 안 본 이슈를 우선하는 `compareForDiversification` 방식(점수를 직접 깎지 않은 이유는 추천 품질 자체를 떨어뜨리지 않기 위해서). 하루(UTC) 동일 조건 3회 상한 도달 시 에러 대신 캐시된 결과 반환
+  - **즐겨찾기 + 전체 검색 이력** — 로드맵 항목이었으나 조기 착수. `Favorite` 모델 추가, `GET /api/recommendations` 이력 조회, `/history` 화면(언어 필터·최신순/점수순 정렬·페이지네이션). 필터는 언어 하나만 남김 — 주제까지 더하니 복잡하다는 피드백 반영
+  - **배포** — 백엔드 Render, 프론트 GitHub Pages. 프론트는 해시 라우터를 써서 `/hub/` 하위 경로 배포에 대응
+  - E2E 테스트(Playwright) 도입
+  - 코드리뷰 반영: 즐겨찾기 해제로 목록이 줄면 `totalPages`도 줄어드는데 `page` state가 그대로 남아 존재하지 않는 페이지를 가리키던 문제(빈 화면 + 못 돌아옴) 수정 — 렌더 도중 `setState` 대신 파생값(`safePage`) 계산으로 처리. `IssueCard`가 즐겨찾기 토글 함수를 `await` 없이 호출해 실패가 unhandled rejection으로 묻히던 것도 함께 수정
+  - (저녁) `analysisService` 캐시 stale 폴백, README 전면 개정, `log.md` 아카이빙 체계 도입, `submission-check` 스킬 신설 — 상세는 07-28 항목 참고
+- 이슈/막힌 점:
+  - (기록 없음)
+- 다음 할 일:
+  - (07-28로 이어짐)
 
 ---
 
