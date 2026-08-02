@@ -24,7 +24,7 @@ WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="hub",
+    title="PAPERHUB",
     description="arXiv 논문을 스스로 판단해 골라 읽고 요약하는 LLM 에이전트",
 )
 
