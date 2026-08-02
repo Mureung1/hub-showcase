@@ -1,5 +1,5 @@
 const MAX_RECEIPT_BYTES = 10 * 1024 * 1024;
-const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
+const ACCEPTED_IMAGE_TYPES = new Set(["image/jpeg", "image/png"]);
 
 export function validateReceiptFile(file) {
   const type = String(file?.type || "").toLowerCase();

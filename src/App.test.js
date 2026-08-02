@@ -64,6 +64,36 @@ test("비로그인 사용자가 홈에서 리뷰작성을 누르면 로그인 �
   expect(await screen.findByRole("heading", { name: "다시 만나서 반가워요" })).toBeInTheDocument();
 });
 
+test("홈 영수증 스캔으로 업체를 찾아 인증된 리뷰 작성 화면으로 이동한다", async () => {
+  const originalFetch = global.fetch;
+  const originalCreateObjectURL = URL.createObjectURL;
+  URL.createObjectURL = jest.fn(() => "blob:scan-receipt");
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      place: { id: "place-scan", title: "메가MGC커피 강남중앙점", category: "카페", address: "서울 강남구", x: 127.03, y: 37.49 },
+      receipt: { id: "receipt-scan", merchantName: "메가MGC커피 강남중앙점", paidAt: "2026-08-01T14:32:00+09:00", totalAmount: 5000, approvalNumber: "****5678" },
+    }),
+  });
+  mockAuthUser = { id: "user-1", email: "test@example.com", user_metadata: { display_name: "테스터" } };
+  window.history.pushState({}, "", "/");
+  render(<App />);
+
+  fireEvent.click(await screen.findByRole("button", { name: "영수증 스캔하기" }));
+  const receiptFile = new File(["receipt"], "receipt.png", { type: "image/png" });
+  fireEvent.change(screen.getByLabelText("스캔할 영수증 선택"), { target: { files: [receiptFile] } });
+  fireEvent.click(screen.getByRole("button", { name: "영수증 스캔하기" }));
+
+  expect(await screen.findByRole("heading", { name: "메가MGC커피 강남중앙점" })).toBeInTheDocument();
+  expect(screen.getByText("인증 완료")).toBeInTheDocument();
+
+  global.fetch = originalFetch;
+  URL.createObjectURL = originalCreateObjectURL;
+  mockAuthUser = null;
+  sessionStorage.removeItem("jigeum-review:selected-place");
+  sessionStorage.removeItem("jigeum-review:scanned-receipt");
+});
+
 test("업체 상세에서 지도로 돌아오면 이전 검색 결과를 복원한다", () => {
   sessionStorage.setItem("jigeum-review:map-screen", JSON.stringify({
     searchInput: "성수 카페",
@@ -120,10 +150,12 @@ test("모바일에서 직접 선택한 영수증으로 인증 과정을 완료�
   const originalRevokeObjectURL = URL.revokeObjectURL;
   URL.createObjectURL = jest.fn(() => "blob:mobile-receipt");
   URL.revokeObjectURL = jest.fn();
-  global.fetch = jest.fn().mockResolvedValue({
+  global.fetch = jest.fn().mockImplementation(async (url) => ({
     ok: true,
-    json: async () => ({ analysis: { bucket: "very_positive", score: 1, confidence: 0.98, keywords: ["커피"] } }),
-  });
+    json: async () => String(url).includes("/api/receipts/verify")
+      ? { receipt: { id: "receipt-1", merchantName: "메가MGC커피 강남중앙점", paidAt: "2026-08-01T14:32:00+09:00", totalAmount: 5000, approvalNumber: "****5678" } }
+      : { review: { id: "review-1", bucket: "very_positive", score: 1, confidence: 0.98, keywords: ["커피"], content: "커피가 맛있고 매장이 깔끔해서 다시 방문하고 싶어요.", createdAt: new Date().toISOString() } },
+  }));
   mockAuthUser = { id: "user-1", email: "test@example.com", user_metadata: { display_name: "테스트" } };
   sessionStorage.setItem("jigeum-review:selected-place", JSON.stringify({
     id: "mega-gangnam",

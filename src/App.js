@@ -12,6 +12,7 @@ const PLACE_STORAGE_KEY = "jigeum-review:selected-place";
 const MAP_SCREEN_STORAGE_KEY = "jigeum-review:map-screen";
 const AUTH_RETURN_STORAGE_KEY = "jigeum-review:auth-return";
 const HOME_GPS_STORAGE_KEY = "jigeum-review:home-gps";
+const SCANNED_RECEIPT_STORAGE_KEY = "jigeum-review:scanned-receipt";
 const TEST_ANALYSIS_STORAGE_KEY = "jigeum-review:test-analyses";
 const SENTIMENT_LABELS = {
   very_positive: "매우 좋음",
@@ -63,9 +64,10 @@ function resetAndGoHome(event) {
 
 async function apiRequest(path, options = {}) {
   const { data: { session } } = await supabase.auth.getSession();
+  const isFormData = options.body instanceof FormData;
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
-      "Content-Type": "application/json",
+      ...(!isFormData ? { "Content-Type": "application/json" } : {}),
       ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
       ...(options.headers || {}),
     },
@@ -116,6 +118,7 @@ function getRoute() {
   if (window.location.pathname === "/login") return { name: "login" };
   if (window.location.pathname === "/mypage") return { name: "mypage" };
   if (window.location.pathname === "/saved") return { name: "saved" };
+  if (window.location.pathname === "/scan") return { name: "scan" };
   const reviewMatch = window.location.pathname.match(/^\/places\/([^/]+)\/reviews\/new$/);
   if (reviewMatch) return { name: "review", placeId: decodeURIComponent(reviewMatch[1]) };
   const match = window.location.pathname.match(/^\/places\/([^/]+)$/);
@@ -128,6 +131,9 @@ function App() {
   const [authStatus, setAuthStatus] = useState("loading");
   const [selectedPlace, setSelectedPlace] = useState(() => {
     try { return JSON.parse(sessionStorage.getItem(PLACE_STORAGE_KEY)) || null; } catch { return null; }
+  });
+  const [scannedReceipt, setScannedReceipt] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem(SCANNED_RECEIPT_STORAGE_KEY)) || null; } catch { return null; }
   });
 
   useEffect(() => {
@@ -179,6 +185,20 @@ function App() {
     navigate("/login");
   }
 
+  function openReceiptScanner() {
+    if (user) return navigate("/scan");
+    sessionStorage.setItem(AUTH_RETURN_STORAGE_KEY, "/scan");
+    navigate("/login");
+  }
+
+  function completeReceiptScan({ place, receipt }) {
+    setSelectedPlace(place);
+    setScannedReceipt(receipt);
+    sessionStorage.setItem(PLACE_STORAGE_KEY, JSON.stringify(place));
+    sessionStorage.setItem(SCANNED_RECEIPT_STORAGE_KEY, JSON.stringify(receipt));
+    navigate(`/places/${encodeURIComponent(place.id)}/reviews/new`);
+  }
+
   function handleAuthenticated(nextUser) {
     setUser(nextUser);
     const fallbackPath = route.name === "review" ? window.location.pathname : "/";
@@ -193,7 +213,7 @@ function App() {
     navigate("/");
   }
 
-  const shared = { user, authStatus, onLogin: () => { sessionStorage.setItem(AUTH_RETURN_STORAGE_KEY, window.location.pathname); navigate("/login"); }, onLogout: logout, onProfile: openMyPage, onSavedPlaces: openSavedPlaces };
+  const shared = { user, authStatus, onLogin: () => { sessionStorage.setItem(AUTH_RETURN_STORAGE_KEY, window.location.pathname); navigate("/login"); }, onLogout: logout, onProfile: openMyPage, onSavedPlaces: openSavedPlaces, onScanReceipt: openReceiptScanner };
   if (route.name === "login") return <AuthPage user={user} onAuthenticated={handleAuthenticated} onBack={() => navigate("/")} />;
   if (route.name === "mypage") {
     if (authStatus === "loading") return <main className="route-empty"><strong>로그인 상태를 확인하고 있습니다.</strong></main>;
@@ -205,11 +225,16 @@ function App() {
     if (!user) return <AuthPage user={user} onAuthenticated={handleAuthenticated} onBack={() => navigate("/")} />;
     return <SavedPlacesPage onBack={() => navigate("/")} onOpenPlace={openPlace} onProfile={openMyPage} />;
   }
+  if (route.name === "scan") {
+    if (authStatus === "loading") return <main className="route-empty"><strong>로그인 상태를 확인하고 있습니다.</strong></main>;
+    if (!user) return <AuthPage user={user} onAuthenticated={handleAuthenticated} onBack={() => navigate("/")} />;
+    return <ReceiptScanPage onBack={() => navigate("/")} onComplete={completeReceiptScan} />;
+  }
   if (route.name === "review") {
     const reviewPlace = selectedPlace?.id === route.placeId ? selectedPlace : null;
     if (authStatus === "loading") return <main className="route-empty"><strong>로그인 상태를 확인하고 있습니다.</strong></main>;
     if (!user) return <AuthPage user={user} onAuthenticated={handleAuthenticated} onBack={() => navigate(`/places/${encodeURIComponent(route.placeId)}`)} />;
-    return <ReviewWritePage place={reviewPlace} user={user} onBack={() => navigate(`/places/${encodeURIComponent(route.placeId)}`)} />;
+    return <ReviewWritePage initialReceipt={scannedReceipt} place={reviewPlace} user={user} onBack={() => navigate(`/places/${encodeURIComponent(route.placeId)}`)} />;
   }
   if (route.name === "detail") return <PlaceDetailPage {...shared} place={selectedPlace?.id === route.placeId ? selectedPlace : null} onBack={() => navigate("/")} onWriteReview={openReview} />;
   return <MapSearchPage {...shared} onOpenPlace={openPlace} />;
@@ -234,11 +259,21 @@ function MyPage({ user, selectedPlace, onBack, onLogout, onSavedPlaces, onUserUp
   const [pendingDeleteId, setPendingDeleteId] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
   const [reviewRevision, setReviewRevision] = useState(0);
-  const reviews = loadAllTestAnalyses().filter((review) => review.testOnly && review.userId === user.id);
+  const reviews = loadAllTestAnalyses().filter((review) => review.userId === user.id);
   const sortedReviews = [...reviews].sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
   const placeName = (review) => review.placeTitle || (selectedPlace?.id === review.placeId ? selectedPlace.title : "작성한 업체");
 
-  function deleteReview(reviewId) {
+  async function deleteReview(reviewId) {
+    const review = reviews.find((item) => item.id === reviewId);
+    if (!review?.testOnly) {
+      try {
+        await apiRequest(`/api/reviews/${encodeURIComponent(reviewId)}`, { method: "DELETE" });
+      } catch (error) {
+        setReviewMessage(error.message);
+        setPendingDeleteId("");
+        return;
+      }
+    }
     if (!deleteOwnTestAnalysis(reviewId, user.id)) {
       setReviewMessage("본인이 작성한 리뷰만 삭제할 수 있습니다.");
       setPendingDeleteId("");
@@ -547,8 +582,8 @@ function MapSearchPage({ onOpenPlace, ...accountProps }) {
           {places.map((place) => <button aria-label={`${place.title} 상세 보기`} className={`place-list-item ${selectedPlaceId === place.id ? "is-selected" : ""}`} key={place.id} onClick={() => openPlaceAndPreserveMap(place)} type="button"><span className="place-list-item__pin">⌖</span><span className="place-list-item__content"><strong>{place.title}</strong><span>{place.category}</span><small>{place.address || "주소 정보 없음"}</small></span><span aria-hidden="true">›</span></button>)}
         </div>
       </aside>
-      <section className="map-canvas" aria-label="카카오맵 영역"><div className="kakao-map" ref={mapElementRef} aria-label="카카오맵" />{mapStatus !== "ready" && <section className="map-state-panel"><h2>{mapStatus === "missing-key" ? "지도 키가 필요합니다" : "지도를 불러오는 중입니다"}</h2><p>{mapError || "카카오맵 연결을 확인하고 있습니다."}</p></section>}<button aria-label="현재 위치로 이동" className={`map-current-location${locationStatus === "loading" ? " is-loading" : ""}`} onClick={moveToCurrentLocation} type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /><circle className="map-current-location-dot" cx="12" cy="12" r="1.5" /></svg></button></section>
-      <nav className="mobile-bottom-nav" aria-label="모바일 메뉴"><button className="is-active" onClick={resetAndGoHome} type="button"><span>⌂</span><small>홈</small></button><button onClick={accountProps.onSavedPlaces} type="button"><span>♡</span><small>저장</small></button><button onClick={handleMobileReviewAction} type="button"><span>✎</span><small>리뷰작성</small></button><button onClick={accountProps.onProfile} type="button"><span>♙</span><small>내정보</small></button></nav>
+      <section className="map-canvas" aria-label="카카오맵 영역"><div className="kakao-map" ref={mapElementRef} aria-label="카카오맵" />{mapStatus !== "ready" && <section className="map-state-panel"><h2>{mapStatus === "missing-key" ? "지도 키가 필요합니다" : "지도를 불러오는 중입니다"}</h2><p>{mapError || "카카오맵 연결을 확인하고 있습니다."}</p></section>}<button aria-label="현재 위치로 이동" className={`map-current-location${locationStatus === "loading" ? " is-loading" : ""}`} onClick={moveToCurrentLocation} type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /><circle className="map-current-location-dot" cx="12" cy="12" r="1.5" /></svg></button><button className="map-receipt-scan" onClick={accountProps.onScanReceipt} type="button"><span>▣</span> 영수증 스캔하기</button></section>
+      <nav className="mobile-bottom-nav" aria-label="모바일 메뉴"><button className="is-active" onClick={resetAndGoHome} type="button"><span>⌂</span><small>홈</small></button><button onClick={accountProps.onSavedPlaces} type="button"><span>♡</span><small>저장</small></button><button aria-label="영수증 스캔하기" className="receipt-scan-nav" onClick={accountProps.onScanReceipt} type="button"><span>▣</span><small>스캔</small></button><button onClick={handleMobileReviewAction} type="button"><span>✎</span><small>리뷰작성</small></button><button onClick={accountProps.onProfile} type="button"><span>♙</span><small>내정보</small></button></nav>
     </main>
   );
 }
@@ -661,7 +696,47 @@ function PlaceDetailPage({ place, user, authStatus, onLogin, onLogout, onProfile
   );
 }
 
-function ReviewWritePage({ place, user, onBack }) {
+function ReceiptScanPage({ onBack, onComplete }) {
+  const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+
+  useEffect(() => () => {
+    if (previewUrl.startsWith("blob:") && typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
+  function selectFile(event) {
+    const nextFile = event.target.files?.[0];
+    setError("");
+    if (!nextFile) return;
+    if (!["image/jpeg", "image/png"].includes(nextFile.type)) return setError("JPG 또는 PNG 영수증 이미지를 선택해 주세요.");
+    if (nextFile.size > 10 * 1024 * 1024) return setError("영수증 이미지는 10MB 이하만 사용할 수 있습니다.");
+    if (previewUrl.startsWith("blob:") && typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(previewUrl);
+    setFile(nextFile);
+    setPreviewUrl(URL.createObjectURL(nextFile));
+  }
+
+  async function scanReceipt(event) {
+    event.preventDefault();
+    if (!file) return setError("영수증 이미지를 먼저 선택해 주세요.");
+    setStatus("processing");
+    setError("");
+    try {
+      const formData = new FormData();
+      formData.append("receipt", file);
+      const payload = await apiRequest("/api/receipts/scan", { method: "POST", body: formData });
+      onComplete(payload);
+    } catch (scanError) {
+      setError(scanError.message);
+      setStatus("idle");
+    }
+  }
+
+  return <main className="receipt-scan-page"><header><button onClick={onBack} type="button">← 홈</button><strong>영수증 스캔</strong><span /></header><form onSubmit={scanReceipt}><div className="receipt-scan-intro"><span className="receipt-scan-icon">▣</span><h1>영수증으로 장소 찾기</h1><p>상호명과 결제일이 잘 보이는 사진을 올리면 방문한 업체를 찾아 리뷰 작성 화면으로 이동합니다.</p></div><label className={`receipt-scan-upload ${previewUrl ? "has-preview" : ""}`}><input accept="image/jpeg,image/png" aria-label="스캔할 영수증 선택" onChange={selectFile} type="file" />{previewUrl ? <img alt="스캔할 영수증 미리보기" src={previewUrl} /> : <span>카메라로 촬영하거나 사진 선택</span>}</label>{error && <p className="review-form-message is-error" role="alert">{error}</p>}<Button disabled={status === "processing" || !file} type="submit">{status === "processing" ? "상호명과 장소를 찾는 중..." : "영수증 스캔하기"}</Button></form></main>;
+}
+
+function ReviewWritePage({ place, user, onBack, initialReceipt }) {
   const draftKey = place ? `jigeum-review:review-draft:${place.id}` : "";
   const [content, setContent] = useState(() => {
     if (!draftKey) return "";
@@ -672,8 +747,9 @@ function ReviewWritePage({ place, user, onBack }) {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState("idle");
-  const [verificationResult, setVerificationResult] = useState(null);
+  const [verificationStatus, setVerificationStatus] = useState(initialReceipt ? "verified" : "idle");
+  const [verificationResult, setVerificationResult] = useState(initialReceipt || null);
+  const [verifiedReceiptId, setVerifiedReceiptId] = useState(initialReceipt?.id || "");
 
   useEffect(() => () => { if (previewUrl.startsWith("blob:") && typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
@@ -683,26 +759,32 @@ function ReviewWritePage({ place, user, onBack }) {
     const file = event.target.files?.[0];
     setError(""); setSaved(false);
     if (!file) return;
-    const acceptedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
-    if (!acceptedTypes.includes(file.type.toLowerCase())) { setError("영수증은 JPG, PNG, WEBP, HEIC 이미지로 선택해 주세요."); event.target.value = ""; return; }
+    const acceptedTypes = ["image/jpeg", "image/png"];
+    if (!acceptedTypes.includes(file.type.toLowerCase())) { setError("영수증은 JPG 또는 PNG 이미지로 선택해 주세요."); event.target.value = ""; return; }
     if (file.size > 10 * 1024 * 1024) { setError("영수증 이미지는 10MB 이하만 사용할 수 있습니다."); event.target.value = ""; return; }
     if (previewUrl.startsWith("blob:") && typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(previewUrl);
     setReceiptFile(file);
     setPreviewUrl(URL.createObjectURL(file));
     setVerificationStatus("selected");
     setVerificationResult(null);
+    setVerifiedReceiptId("");
   }
 
-  function verifyDemoReceipt() {
+  async function verifyReceipt() {
     setError("");
     setVerificationStatus("processing");
-    window.setTimeout(() => {
-      const normalizedPlaceName = place.title.toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
-      const matched = normalizedPlaceName.includes("메가mgc커피강남중앙점");
-      setVerificationResult({ merchantName: "메가MGC커피 강남중앙점", paidAt: "2026-07-30 14:32", total: "5,000원", approvalNumber: "12345678" });
-      setVerificationStatus(matched ? "verified" : "rejected");
-      if (!matched) setError("영수증 상호명과 선택한 업체가 일치하지 않습니다. 메가MGC커피 강남중앙점을 선택해 주세요.");
-    }, 1200);
+    try {
+      const formData = new FormData();
+      formData.append("receipt", receiptFile);
+      formData.append("place", JSON.stringify(place));
+      const payload = await apiRequest("/api/receipts/verify", { method: "POST", body: formData });
+      setVerificationResult(payload.receipt);
+      setVerifiedReceiptId(payload.receipt.id);
+      setVerificationStatus("verified");
+    } catch (verificationError) {
+      setVerificationStatus("rejected");
+      setError(verificationError.message);
+    }
   }
 
   async function saveDraft(event) {
@@ -711,19 +793,16 @@ function ReviewWritePage({ place, user, onBack }) {
     if (content.trim().length < 10) return setError("리뷰 내용을 10자 이상 작성해 주세요.");
     setSubmitting(true);
     try {
-      const payload = await apiRequest("/api/reviews/analyze", { method: "POST", body: JSON.stringify({ content: content.trim() }) });
+      const payload = await apiRequest("/api/reviews", { method: "POST", body: JSON.stringify({ receiptId: verifiedReceiptId, content: content.trim() }) });
       const entry = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        ...payload.review,
         placeId: place.id,
         placeTitle: place.title,
         userId: user.id,
-        content: content.trim(),
-        ...payload.analysis,
-        testOnly: true,
-        createdAt: new Date().toISOString(),
       };
       saveTestAnalysis(entry);
       sessionStorage.removeItem(draftKey);
+      sessionStorage.removeItem(SCANNED_RECEIPT_STORAGE_KEY);
       setSaved(entry);
     } catch (submitError) {
       setError(submitError.message);
@@ -739,10 +818,10 @@ function ReviewWritePage({ place, user, onBack }) {
         <div className="review-write-intro"><Badge>방문 인증</Badge><h1>{place.title}</h1><p>영수증으로 실제 방문을 확인한 뒤 리뷰가 등록됩니다.</p></div>
         <section className="receipt-step">
           <div><span className="step-number">1</span><div><h2>영수증 이미지</h2><p>상호명과 결제일이 잘 보이도록 촬영해 주세요.</p></div></div>
-          <label className={`receipt-upload ${previewUrl ? "has-preview" : ""}`}><input aria-label="영수증 이미지 업로드" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={selectReceipt} type="file" /><span>{previewUrl ? "다른 이미지 선택" : "촬영하거나 이미지 선택"}</span>{previewUrl && <img alt="선택한 영수증 미리보기" src={previewUrl} />}</label>
-          <div className="receipt-demo-actions">{receiptFile && <Button disabled={verificationStatus === "processing" || verificationStatus === "verified"} onClick={verifyDemoReceipt} type="button">{verificationStatus === "processing" ? "OCR 분석 중..." : verificationStatus === "verified" ? "인증 완료" : "영수증 인증"}</Button>}</div>
+          <label className={`receipt-upload ${previewUrl ? "has-preview" : ""}`}><input aria-label="영수증 이미지 업로드" accept="image/jpeg,image/png" onChange={selectReceipt} type="file" /><span>{previewUrl ? "다른 이미지 선택" : "촬영하거나 이미지 선택"}</span>{previewUrl && <img alt="선택한 영수증 미리보기" src={previewUrl} />}</label>
+          <div className="receipt-demo-actions">{receiptFile && <Button disabled={verificationStatus === "processing" || verificationStatus === "verified"} onClick={verifyReceipt} type="button">{verificationStatus === "processing" ? "OCR 분석 중..." : verificationStatus === "verified" ? "인증 완료" : "영수증 인증"}</Button>}</div>
           <div className={`receipt-readiness is-${verificationStatus}`} aria-live="polite" role={verificationStatus === "processing" ? "status" : undefined}><div><strong>{verificationStatus === "processing" ? "영수증을 분석하고 있어요" : verificationStatus === "verified" ? "방문 인증이 완료됐어요" : receiptFile ? "이미지 사전 확인 완료" : "영수증 인증 준비"}</strong><Badge>{verificationStatus === "verified" ? "인증 완료" : verificationStatus === "processing" ? "OCR 분석 중" : receiptFile ? "OCR 연결 대기" : "업로드 필요"}</Badge></div><p>{receiptFile ? `${receiptFile.name} · ${(receiptFile.size / 1024 / 1024).toFixed(1)}MB` : "JPG, PNG, WEBP, HEIC · 최대 10MB"}</p><ul><li className={receiptFile ? "is-complete" : ""}>이미지 형식과 용량 확인</li><li className={["processing", "verified"].includes(verificationStatus) ? "is-complete" : ""}>OCR로 상호명·결제일 추출</li><li className={verificationStatus === "verified" ? "is-complete" : ""}>업체 일치·30일 이내·중복 영수증 검증</li></ul>{receiptFile && verificationStatus === "selected" && <small>선택한 이미지로 영수증 인증을 시작해 주세요.</small>}</div>
-          {verificationStatus === "verified" && verificationResult && <div className="receipt-result"><div><strong>인식 결과</strong><Badge>확인 완료</Badge></div><dl><div><dt>상호명</dt><dd>{verificationResult.merchantName}</dd></div><div><dt>결제일</dt><dd>{verificationResult.paidAt}</dd></div><div><dt>결제 금액</dt><dd>{verificationResult.total}</dd></div><div><dt>승인번호</dt><dd>{verificationResult.approvalNumber}</dd></div></dl></div>}
+          {verificationStatus === "verified" && verificationResult && <div className="receipt-result"><div><strong>인식 결과</strong><Badge>확인 완료</Badge></div><dl><div><dt>상호명</dt><dd>{verificationResult.merchantName}</dd></div><div><dt>결제일</dt><dd>{new Date(verificationResult.paidAt).toLocaleString("ko-KR")}</dd></div><div><dt>결제 금액</dt><dd>{verificationResult.totalAmount == null ? "확인되지 않음" : `${verificationResult.totalAmount.toLocaleString()}원`}</dd></div><div><dt>승인번호</dt><dd>{verificationResult.approvalNumber}</dd></div></dl></div>}
         </section>
         <section className="review-text-step"><div><span className="step-number">2</span><div><h2>방문 경험</h2><p>메뉴, 서비스, 분위기처럼 직접 경험한 내용을 알려주세요.</p></div></div><label><span className="sr-only">리뷰 내용</span><textarea maxLength="1000" onChange={(event) => { setContent(event.target.value); setSaved(false); }} placeholder="이 장소에서 어떤 경험을 하셨나요?" value={content} /></label><small>{content.length}/1000자 · 최소 10자</small></section>
         {error && <p className="review-form-message is-error" role="alert">{error}</p>}
