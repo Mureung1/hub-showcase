@@ -14,11 +14,25 @@ REGIONS = {
     "daejeon_sejong": {"min_x": 127.15, "max_x": 127.65, "min_y": 36.10, "max_y": 36.75},
     "sudogwon":       {"min_x": 126.35, "max_x": 127.85, "min_y": 36.85, "max_y": 38.35},
     "busan":          {"min_x": 128.60, "max_x": 129.40, "min_y": 34.95, "max_y": 35.50},
+    "gwangju":        {"min_x": 126.55, "max_x": 127.10, "min_y": 34.95, "max_y": 35.40},
+    "jeju":           {"min_x": 126.10, "max_x": 127.00, "min_y": 33.10, "max_y": 33.60},
+    "daegu":          {"min_x": 128.30, "max_x": 128.80, "min_y": 35.60, "max_y": 36.05},
+    "changwon":       {"min_x": 128.45, "max_x": 128.90, "min_y": 35.05, "max_y": 35.35},
+    "ulsan":          {"min_x": 129.00, "max_x": 129.47, "min_y": 35.40, "max_y": 35.72},
+    "incheon":        {"min_x": 126.35, "max_x": 126.85, "min_y": 37.20, "max_y": 37.65},
+    "jeonju":         {"min_x": 126.95, "max_x": 127.30, "min_y": 35.72, "max_y": 35.92},
 }
 SOURCE_REGION = {
     "daejeon_bus": "daejeon_sejong", "daejeon_city": "daejeon_sejong", "sejong_sctc": "daejeon_sejong",
     "seoul_topis": "sudogwon", "gbis_route": "sudogwon",
     "busan_bims": "busan",
+    "gwangju_bus": "gwangju",
+    "jeju_bus": "jeju",
+    "daegu_bus": "daegu",
+    "changwon_bus": "changwon",
+    "ulsan_its": "ulsan",
+    "incheon_bus": "incheon",
+    "jeonju_its": "jeonju",
 }
 
 def same_region(route, source_id):
@@ -38,12 +52,14 @@ def _norm(s):
     return "".join(ch for ch in s if ch not in " 번")
 
 
+_ROUTE_NUM = re.compile(r"^\d+(-\d+)?$")   # 버스 노선번호: 숫자 또는 "348-1"·"320-2" 같은 갈래번호
+
 def _hit(value, token):
     a, b = _norm(value), _norm(token)
     if not a or not b:
         return False
-    if a.isdigit() and b.isdigit():
-        return a == b                   # 숫자 노선은 정확일치만 — "46" ⊂ "462" 오탐 방지
+    if _ROUTE_NUM.match(a) and _ROUTE_NUM.match(b):
+        return a == b                   # 노선번호는 정확일치만 — "46"⊂"462", "48"⊂"348-1" 오탐 방지
     return a == b or a in b or b in a   # 문자 섞인 것(B1·급행2·정류장명)만 부분일치 허용
 
 _DATE_RE = re.compile(r"(\d{4})[.\-]\s*(\d{1,2})[.\-]\s*(\d{1,2})")  # 연도 포함 완전 날짜
@@ -100,9 +116,12 @@ def analyze(route, extraction):
     for ev in (extraction or {}).get("events", []):
         targets = [*(ev.get("affected_lines") or []), *(ev.get("affected_stops") or [])]
         hits = {v for v in targets for t in mine if _hit(v, t)}
-        # 3층: 도로명 — 공지의 위치 문구(location·사건명)에 내 경유 도로가 등장하는가 (자가용)
-        hay = _norm(f"{ev.get('location') or ''} {ev.get('event_name') or ''}")
-        hits |= {r for r in roads if _norm(r) and _norm(r) in hay}
+        # 3층: 도로명 — 공지의 위치 문구(location·사건명)에 내 경유 도로가 등장하는가 (자가용).
+        # 좌표 있는 사건(ITS 돌발)은 건너뛴다 — 경부고속도로처럼 긴 도로는 이름만 겹치면
+        # 구간이 수백 km 떨어져도 걸린다(서초IC 공사 ↔ 대전 경로 오탐). 위치를 알면 4층(반경)으로만 판정.
+        if not (ev.get("x") and ev.get("y")):
+            hay = _norm(f"{ev.get('location') or ''} {ev.get('event_name') or ''}")
+            hits |= {r for r in roads if _norm(r) and _norm(r) in hay}
         # 4층: 반경 — 사건 좌표(ITS 돌발 등)가 내 경로에서 300m 이내인가
         if ev.get("x") and ev.get("y") and path and _near_route(ev["x"], ev["y"], path):
             hits.add(ev.get("event_name") or "경로 인근 사건")

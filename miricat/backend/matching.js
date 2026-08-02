@@ -6,7 +6,8 @@ const norm = (s) => (s || '').toLowerCase().replace(/노선/g, '').replace(/[\s�
 const hit = (value, token) => {
   const a = norm(value), b = norm(token);
   if (!a || !b) return false;
-  if (/^\d+$/.test(a) && /^\d+$/.test(b)) return a === b;   // 숫자 노선은 정확일치만 ("46"⊂"462" 오탐 방지)
+  const routeNum = /^\d+(-\d+)?$/;   // 버스 노선번호: 숫자 또는 "348-1" 갈래번호
+  if (routeNum.test(a) && routeNum.test(b)) return a === b;   // 노선번호는 정확일치만 ("46"⊂"462", "48"⊂"348-1" 오탐 방지)
   return a === b || a.includes(b) || b.includes(a);
 };
 
@@ -48,11 +49,25 @@ const REGIONS = {
   daejeon_sejong: { minX: 127.15, maxX: 127.65, minY: 36.10, maxY: 36.75 },
   sudogwon: { minX: 126.35, maxX: 127.85, minY: 36.85, maxY: 38.35 },
   busan: { minX: 128.60, maxX: 129.40, minY: 34.95, maxY: 35.50 },
+  gwangju: { minX: 126.55, maxX: 127.10, minY: 34.95, maxY: 35.40 },
+  jeju: { minX: 126.10, maxX: 127.00, minY: 33.10, maxY: 33.60 },
+  daegu: { minX: 128.30, maxX: 128.80, minY: 35.60, maxY: 36.05 },
+  changwon: { minX: 128.45, maxX: 128.90, minY: 35.05, maxY: 35.35 },
+  ulsan: { minX: 129.00, maxX: 129.47, minY: 35.40, maxY: 35.72 },
+  incheon: { minX: 126.35, maxX: 126.85, minY: 37.20, maxY: 37.65 },
+  jeonju: { minX: 126.95, maxX: 127.30, minY: 35.72, maxY: 35.92 },
 };
 const SOURCE_REGION = {
   daejeon_bus: 'daejeon_sejong', daejeon_city: 'daejeon_sejong', sejong_sctc: 'daejeon_sejong',
   seoul_topis: 'sudogwon', gbis_route: 'sudogwon',
   busan_bims: 'busan',
+  gwangju_bus: 'gwangju',
+  jeju_bus: 'jeju',
+  daegu_bus: 'daegu',
+  changwon_bus: 'changwon',
+  ulsan_its: 'ulsan',
+  incheon_bus: 'incheon',
+  jeonju_its: 'jeonju',
 };
 function sameRegion(route, sourceId) {
   const region = REGIONS[SOURCE_REGION[sourceId]];

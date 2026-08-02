@@ -136,17 +136,21 @@ def reporter_node(state: State) -> dict:
 
     fields.append({"name": "원문 공지", "value": source_url})
     report_base = os.environ.get("REPORT_BASE_URL", "http://localhost:5173")
+    route_id = (state.get("route") or {}).get("id")
+    # 리포트 링크에 ?route=<id> — 어느 경로 기준의 경보인지 싣는다.
+    # (없으면 리포트 페이지가 경로를 추측하다 엉뚱한 첫 경로로 폴백하는 오류)
+    report_url = (f"{report_base}/report/{found['id']}"
+                  + (f"?route={route_id}" if route_id else "")) if found else source_url
     embed = {
         "title": (f"🚨 경보 — {state['route']['name']}에 영향 공지"
                   if (state.get("route") or {}).get("name")
                   else "🚨 경보 — 내 출근 경로에 영향 공지"),   # 경로가 여럿이면 어느 경로인지 밝힌다
-        "url": f"{report_base}/report/{found['id']}" if found else source_url,             # 제목 클릭 = 원문으로 (출처 원칙)
+        "url": report_url,            # 제목 클릭 = 리포트 (공지 저장 전이면 원문으로)
         "color": 0xE4572E,            # 미리캣 경보 빨강
         "fields": fields,
         "footer": {"text": "제목을 눌러 미리캣 리포트를 확인하세요"},
     }
     # 경보에 실지도 이미지 — 경로 id가 있을 때만 (백엔드의 Static Map 프록시가 그려준다)
-    route_id = (state.get("route") or {}).get("id")
     if route_id:
         api_base = os.environ.get("API_BASE_URL", "https://miricat-api.onrender.com")
         hit_values = sorted({v for m in analysis.get("matched", []) for v in m.get("matched", [])})

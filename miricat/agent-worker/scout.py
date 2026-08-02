@@ -1,6 +1,8 @@
 """정해진 게시판(sources.py)에서 공지 목록을 긁어온다. (MIRI-13)"""
 
 import re
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import requests
 from bs4 import BeautifulSoup
 
@@ -51,8 +53,157 @@ def _topis_fetch_body(source, seq):
     return " ".join(text.split())
 
 
+_daegu_cache = {}   # 대구도 목록 JSON에 본문(bodyNote)이 같이 온다
+
+
+def _daegu_fetch_list(source):
+    """대구 BIS 전용: 내부 JSON API 3개(공지 C·정류소 조정 A·우회운행 detourList)를 합쳐 수집."""
+    base = "https://businfo.daegu.go.kr:8095/dbms_web_api"
+    boards = [("C", f"{base}/boardC"), ("A", f"{base}/boardA"), ("D", f"{base}/detourList")]
+    items = []
+    for tag, url in boards:
+        try:
+            rows = requests.get(url, headers=HEADERS, timeout=10,
+                                verify=source.get("verify_ssl", True)).json().get("body", [])
+        except Exception:
+            continue                     # 게시판 하나 죽어도 나머지는 수집
+        for row in rows[:MAX_ITEMS_PER_RUN]:
+            seq = f"{tag}{row.get('no')}"          # 게시판 구분 + 글번호 = 합성 id
+            _daegu_cache[seq] = row
+            items.append((seq, " ".join((row.get("ttle") or "").split())))
+    return items[:MAX_ITEMS_PER_RUN * 2]           # 게시판 3개 합산이라 상한 완화
+
+
+def _daegu_fetch_body(source, seq):
+    row = _daegu_cache.get(str(seq))
+    if not row:
+        return ""
+    import html as _html
+    text = re.sub(r"<[^>]+>", " ", row.get("bodyNote") or "")
+    return " ".join(_html.unescape(text).split())
+
+
+_changwon_session = None   # 창원은 목록 API가 세션 쿠키 + CSRF 토큰을 요구한다
+
+
+def _changwon_fetch_list(source):
+    """창원 BIS 전용: notice.do에서 세션·토큰을 받고 getNotice.do(JSON)를 조회."""
+    global _changwon_session
+    _changwon_session = requests.Session()
+    page = _changwon_session.get("https://bus.changwon.go.kr/info/notice.do",
+                                 headers=HEADERS, timeout=10, verify=False).text
+    m = re.search(r'name="CSRFToken" value="([a-f0-9]+)"', page)
+    if not m:
+        return []
+    resp = _changwon_session.post("https://bus.changwon.go.kr/info/getNotice.do",
+                                  data={"pageIndex": "1", "searchKeyword": "", "CSRFToken": m.group(1)},
+                                  headers={**HEADERS, "X-Requested-With": "XMLHttpRequest"},
+                                  timeout=10, verify=False)
+    items = []
+    for row in resp.json().get("rows", []):
+        items.append((str(row.get("noticeNo")), " ".join((row.get("noticeSj") or "").split())))
+    return items[:MAX_ITEMS_PER_RUN]
+
+
+def _changwon_fetch_body(source, seq):
+    sess = _changwon_session or requests
+    resp = sess.get(f"https://bus.changwon.go.kr/info/noticeView.do?seq={seq}",
+                    headers=HEADERS, timeout=10, verify=False)
+    soup = BeautifulSoup(resp.text, "html.parser")
+    box = soup.select_one("article")
+    return box.get_text(" ", strip=True) if box else ""
+
+
+_ulsan_cache = {}   # 울산도 목록 JSON에 본문(notcCtnt)이 같이 온다
+
+
+def _ulsan_fetch_list(source):
+    """울산 ITS 전용: 그리드 API(POST JSON)가 공지 목록+본문을 함께 준다."""
+    body = {
+        "postData": {"serviceName": "noticeService"},
+        "paging": {"firstPageOnPageList": 0, "lastPageOnPageList": 0,
+                   "recordCountPerPage": 10, "pageIndex": 1, "totalPage": 0, "countPerPage": 10},
+        "record": {"notcType": [{"value": "B"}]},
+        "sorting": {},
+    }
+    resp = requests.post("https://its.ulsan.kr/grid/getGridList.json", json=body,
+                         headers={**HEADERS, "X-Requested-With": "XMLHttpRequest"}, timeout=10)
+    items = []
+    for row in resp.json().get("rows", []):
+        seq = str(row.get("notcNo"))
+        _ulsan_cache[seq] = row
+        items.append((seq, " ".join((row.get("notcTitl") or "").split())))
+    return items[:MAX_ITEMS_PER_RUN]
+
+
+def _ulsan_fetch_body(source, seq):
+    row = _ulsan_cache.get(str(seq))
+    if not row:
+        return ""
+    import html as _html
+    text = re.sub(r"<[^>]+>", " ", row.get("notcCtnt") or "")
+    return " ".join(_html.unescape(text).split())
+
+
+_incheon_cache = {}   # 인천도 목록 JSON에 본문(bbscontent)이 같이 온다
+
+
+def _incheon_fetch_list(source):
+    """인천 BIS 전용: 게시판 API(POST)가 목록+본문을 함께 준다."""
+    resp = requests.post("https://bus.incheon.go.kr/bbs/selectBbsList.do",
+                         data={"searchWord": "", "searchType": "", "top_flag": "N",
+                               "page": "0", "rowcnt": "10", "bbstpcd": "1"},
+                         headers={**HEADERS, "X-Requested-With": "XMLHttpRequest"}, timeout=10)
+    items = []
+    for row in resp.json().get("resultList", []):
+        seq = str(row.get("bbsno"))
+        _incheon_cache[seq] = row
+        items.append((seq, " ".join((row.get("title") or "").split())))
+    return items[:MAX_ITEMS_PER_RUN]
+
+
+def _incheon_fetch_body(source, seq):
+    row = _incheon_cache.get(str(seq))
+    if not row:
+        return ""
+    import html as _html
+    text = re.sub(r"<[^>]+>", " ", row.get("bbscontent") or "")
+    return " ".join(_html.unescape(text).split())
+
+
+_JEONJU_REFERER = {"Referer": "https://its.jeonju.go.kr/its/notice.view"}   # 방화벽이 Referer 없는 요청을 차단
+
+
+def _jeonju_fetch_list(source):
+    """전주 ITS 전용: 게시판 목록 API(POST). Referer 헤더가 없으면 방화벽에 막힌다."""
+    resp = requests.post("https://its.jeonju.go.kr/bbs/selectRfcComtnbbsdataList.do",
+                         data={"search_normal": "y"},
+                         headers={**HEADERS, **_JEONJU_REFERER, "X-Requested-With": "XMLHttpRequest"},
+                         timeout=10)
+    items = []
+    for row in resp.json().get("resultList", []):
+        items.append((str(row.get("DATA_SUID")), " ".join((row.get("DATA_TITLE") or "").split())))
+    return items[:MAX_ITEMS_PER_RUN]
+
+
+def _jeonju_fetch_body(source, seq):
+    resp = requests.post("https://its.jeonju.go.kr/bbs/selectRfcComtnbbsdataContent.do",
+                         data={"data_sid": seq},
+                         headers={**HEADERS, **_JEONJU_REFERER, "X-Requested-With": "XMLHttpRequest"},
+                         timeout=10)
+    row = resp.json().get("result") or {}
+    import html as _html
+    text = re.sub(r"<[^>]+>", " ", row.get("DATA_CONTENT") or "")
+    return " ".join(_html.unescape(text).split())
+
+
 # 표준(HTML+정규식) 틀을 못 따르는 소스들의 전용 페처 (목록 함수, 본문 함수)
 FETCHERS = {
+    "jeonju": (_jeonju_fetch_list, _jeonju_fetch_body),
+    "incheon": (_incheon_fetch_list, _incheon_fetch_body),
+    "ulsan": (_ulsan_fetch_list, _ulsan_fetch_body),
+    "changwon": (_changwon_fetch_list, _changwon_fetch_body),
+    "daegu": (_daegu_fetch_list, _daegu_fetch_body),
     "gbis_route_change": (_gbis_fetch_list, _gbis_fetch_body),
     "topis": (_topis_fetch_list, _topis_fetch_body),
 }
@@ -63,11 +214,12 @@ def fetch_list(source):
     custom = FETCHERS.get(source.get("fetcher"))
     if custom:
         return custom[0](source)
-    resp = requests.get(source["list_url"], headers=HEADERS, timeout=10)
+    resp = requests.get(source["list_url"], headers=HEADERS, timeout=10,
+                        verify=source.get("verify_ssl", True))   # 제주 등 중간 인증서 누락 사이트 예외
     resp.encoding = resp.apparent_encoding      # 인코딩 자동 감지 (한글 깨짐 방지)
 
     items = re.findall(source["list_pattern"], resp.text)
-    items = [(seq, " ".join(title.split())) for seq, title in items]   # 제목의 개행·탭 정리
+    items = [(seq, " ".join(title.replace("&nbsp;", " ").split())) for seq, title in items]   # 제목의 개행·탭·&nbsp; 정리
 
     # 교통 공지만 통과 (시정 소식·공모전 섞인 게시판용) — title_filter 없으면 전부 통과
     title_filter = source.get("title_filter")
@@ -83,7 +235,8 @@ def fetch_body(source, seq):
         return custom[1](source, seq)
 
     url = source["view_url"].format(id=seq)      # ① 틀에 글번호 끼우기
-    resp = requests.get(url, headers=HEADERS, timeout=10)
+    resp = requests.get(url, headers=HEADERS, timeout=10,
+                        verify=source.get("verify_ssl", True))
     resp.encoding = resp.apparent_encoding
 
     soup = BeautifulSoup(resp.text, "html.parser")  # ② HTML 파싱

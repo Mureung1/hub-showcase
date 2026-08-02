@@ -4,6 +4,7 @@ import { useState } from "react";
 import Field from "./Field";
 import StationPicker from "./StationPicker";
 import RouteOption from "./RouteOption";
+import InvestOverlay from "./InvestOverlay";
 
 // 경로 등록: 출발/도착을 고르면 미리캣이 실제 경로 후보를 찾아온다.
 // 대중교통은 노선·정류장, 자가용은 경유 도로명이 저장돼 이후 공지 매칭의 근거가 된다.
@@ -17,6 +18,7 @@ export default function RouteRegister({ onSaved }) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [finding, setFinding] = useState(false);
   const [saved, setSaved] = useState(null);
+  const [investCheck, setInvestCheck] = useState(null);   // 조사 연출 중이면 check 결과를 담는다 (null=연출 안 함)
   const [formKey, setFormKey] = useState(0);   // 저장 후 픽커를 통째로 리마운트(검색 잔상 제거)
 
   // 출발/도착/이동수단이 바뀌면 이전 후보는 무효 — 파생 데이터는 원본과 함께 비운다
@@ -59,17 +61,34 @@ export default function RouteRegister({ onSaved }) {
     const data = await res.json();
     if (res.ok) {
       addMyRoute(data.route.id);   // 이 브라우저의 "내 경로"로 기억
-      setSaved({ ...data.route, check: data.check });   // check = 즉시 첫 점검 결과
       onSaved?.();   // 저장 성공 → 부모에게 알려 목록 자동 갱신
-      // 다음 등록을 위해 폼 초기화 (저장됨 메시지는 남긴다)
-      setOrigin(null); setDest(null); setDepartTime(""); setCandidates(null);
-      setFormKey((k) => k + 1);   // key가 바뀌면 React가 픽커를 새 컴포넌트로 갈아끼움 → 내부 상태(검색어·결과)도 초기화
+      // 조사 연출을 먼저 띄운다. check 결과는 연출이 끝난 뒤 오버레이가 공개하고,
+      // "확인"을 누르면 investComplete가 기존 저장 결과 화면으로 넘긴다.
+      setInvestCheck({ route: data.route, check: data.check });
     } else {
       setSaved({ error: data.error ?? "저장 실패" });
     }
   }
 
+  // 조사 연출 종료 → 실제 저장 결과를 확정하고 폼 초기화
+  function investComplete() {
+    const { route, check } = investCheck;
+    setSaved({ ...route, check });
+    setInvestCheck(null);
+    setOrigin(null); setDest(null); setDepartTime(""); setCandidates(null);
+    setFormKey((k) => k + 1);   // 픽커 리마운트로 검색 잔상 제거
+  }
+
   const stationLabel = mode === "driving" ? "(가까운 정류장 기준)" : "정류장";
+
+  // 조사 연출 중이면 폼 대신 오버레이만 보여준다 (등록 흐름의 클라이맥스)
+  if (investCheck) {
+    return (
+      <div className="reg-side">
+        <InvestOverlay check={investCheck.check} onDone={investComplete} />
+      </div>
+    );
+  }
 
   return (
     <div className="reg-side">
@@ -134,7 +153,7 @@ export default function RouteRegister({ onSaved }) {
             )}
             {saved.check && !saved.check.covered && (
               <p style={{ color: "#C98A00" }}>
-                📍 도로 돌발상황은 전국을 확인해요. 다만 이 지역 버스 게시판은 아직 감시 전이에요 (현재 서울·경기·대전·세종·부산).
+                📍 도로 돌발상황은 전국을 확인해요. 다만 이 지역 버스 게시판은 아직 감시 전이에요 (현재 서울·인천·경기·대전·세종·대구·울산·광주·부산·창원·전주·제주).
               </p>
             )}
           </div>

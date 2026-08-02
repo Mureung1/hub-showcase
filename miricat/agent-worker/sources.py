@@ -53,6 +53,86 @@ SOURCES = [
                 "상세는 원래 POST(go_post)지만 GET ?seq= 도 동작 확인.",
     },
     {
+        "id": "gwangju_bus",
+        "name": "광주 버스운행정보 공지사항",
+        "active": True,                     # 2026-07-30 검증 완료 (정적 HTML, GET 상세 동작)
+        "list_url": "https://bus.gwangju.go.kr/guide/notice/noticeList",
+        "list_pattern": r"fnView\('(\d+)'\)\"[^>]*>\s*([^<]{5,60})",
+        "view_url": "https://bus.gwangju.go.kr/guide/notice/noticeView?B_IDX={id}",
+        "body_selector": "#gj_content",
+        "note": "광주시 BIS 공지 — 감차·우회·시간변경 전용 게시판이라 필터 불필요. "
+                "상세는 원래 POST(fnView)지만 GET ?B_IDX= 도 동작 확인.",
+    },
+    {
+        "id": "jeju_bus",
+        "name": "제주 버스정보시스템 공지사항",
+        "active": True,                     # 2026-07-30 검증 (정적 HTML, 상세 GET 동작)
+        "list_url": "https://bus.jeju.go.kr/notice/list",
+        "list_pattern": r"goDetail\('(\d+)'\)[^>]*>\s*<span[^>]*>\s*([^<]{5,70})",
+        "view_url": "https://bus.jeju.go.kr/notice/detail?noticeId={id}",
+        "body_selector": ".notice_detail_info",
+        "verify_ssl": False,                # 서버가 중간 인증서를 안 내려줌 — 검증 예외
+        "note": "제주 BIS 공지 — 감차·우회·안내 게시판. 결행 전용 게시판(/busCancellationInfo)은 "
+                "글이 결행 당일에만 올라와 공지 게시판만 수집.",
+    },
+    {
+        "id": "daegu_bus",
+        "name": "대구 버스정보시스템 공지",
+        "active": True,                     # 2026-07-30 검증 (내부 JSON API — 본문 동봉)
+        "fetcher": "daegu",
+        "list_url": "https://businfo.daegu.go.kr:8095/dbms_web_api/boardC",   # 대표 URL(기록용)
+        "list_pattern": None,
+        "view_url": "https://businfo.daegu.go.kr/",   # 원문 링크는 메인(게시판이 SPA 내부)
+        "verify_ssl": False,
+        "note": "브라우저 네트워크 추적으로 내부 API 발굴(:8095/dbms_web_api). 공지(boardC)·"
+                "정류소 조정(boardA)·우회운행(detourList) 3보드 병합 수집. 저상버스 대체(boardB)는 "
+                "차량 단위 일일 소음이라 제외.",
+    },
+    {
+        "id": "changwon_bus",
+        "name": "창원 버스정보시스템 공지",
+        "active": True,                     # 2026-07-31 검증 (세션+CSRF 목록 API, 상세 GET)
+        "fetcher": "changwon",
+        "list_url": "https://bus.changwon.go.kr/info/notice.do",   # 대표 URL(기록용)
+        "list_pattern": None,
+        "view_url": "https://bus.changwon.go.kr/info/noticeView.do?seq={id}",
+        "note": "목록은 CSRF 토큰 필요(POST getNotice.do) — 세션으로 해결. "
+                "운행계통 변경·노선 시간표 임시변경 등 교통 공지 전용 게시판.",
+    },
+    {
+        "id": "ulsan_its",
+        "name": "울산 교통정보센터 공지",
+        "active": True,                     # 2026-07-31 검증 (그리드 JSON API — 본문 동봉)
+        "fetcher": "ulsan",
+        "list_url": "https://its.ulsan.kr/noti/notice.do",   # 대표 URL(기록용)
+        "list_pattern": None,
+        "view_url": "https://its.ulsan.kr/noti/notice.do",   # SPA라 목록 페이지가 원문 링크
+        "note": "울산 ITS 공지 — 사고 발생·처리 같은 실시간성 공지 포함. "
+                "그리드 API(POST /grid/getGridList.json) 역공학으로 수집.",
+    },
+    {
+        "id": "incheon_bus",
+        "name": "인천 버스정보시스템 공지",
+        "active": True,                     # 2026-07-31 검증 (게시판 API — 본문 동봉)
+        "fetcher": "incheon",
+        "list_url": "https://bus.incheon.go.kr/bis/notice.view",   # 대표 URL(기록용)
+        "list_pattern": None,
+        "view_url": "https://bus.incheon.go.kr/bis/notice.view",   # 상세가 POST 폼이라 목록이 원문 링크
+        "note": "도로통제 임시우회·행사 임시운행 등 교통 공지. 목록 API(POST /bbs/selectBbsList.do)에 "
+                "본문 동봉이라 재요청 없음.",
+    },
+    {
+        "id": "jeonju_its",
+        "name": "전주 교통정보센터 공지",
+        "active": True,                     # 2026-07-31 검증 (목록·본문 API, Referer 필수)
+        "fetcher": "jeonju",
+        "list_url": "https://its.jeonju.go.kr/its/notice.view",   # 대표 URL(기록용)
+        "list_pattern": None,
+        "view_url": "https://its.jeonju.go.kr/its/notice.view",   # 상세가 POST 폼이라 목록이 원문 링크
+        "note": "전주시 교통정보센터 공지 — 시내버스 노선조정 등. 웹방화벽이 Referer 없는 "
+                "요청을 막아서 헤더 고정. 게시 빈도는 낮은 편.",
+    },
+    {
         "id": "seoul_topis",
         "name": "서울 TOPIS 교통소식",
         "active": True,                     # 2026-07-28 검증 완료 (JSON 목록+본문 동봉·원문 링크 렌더)
