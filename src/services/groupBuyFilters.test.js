@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { matchesGroupBuyFilter } from "./groupBuyFilters.js";
-import { matchesGroupBuyCategory } from "./groupBuyFilters.js";
+import { getSavedStorageKey, matchesGroupBuyCategory, matchesGroupBuyFilter, reconcileSavedIds } from "./groupBuyFilters.js";
 
 test("내 참여 필터는 서버에서 참여했다고 알려준 공동구매만 보여준다", () => {
   assert.equal(matchesGroupBuyFilter({ id: "joined", userJoined: true }, "mine"), true);
@@ -12,4 +11,18 @@ test("카테고리 필터는 선택한 카테고리의 공동구매만 보여준
   assert.equal(matchesGroupBuyCategory({ category: "식품" }, "식품"), true);
   assert.equal(matchesGroupBuyCategory({ category: "생활" }, "식품"), false);
   assert.equal(matchesGroupBuyCategory({ category: "생활" }, "all"), true);
+});
+
+test("삭제된 공동구매 ID는 찜 목록과 개수에서 제거한다", () => {
+  const savedIds = ["existing", "deleted"];
+  const items = [{ id: "existing" }, { id: "other" }];
+
+  assert.deepEqual(reconcileSavedIds(savedIds, items), ["existing"]);
+});
+
+test("찜 저장소는 로그인 계정마다 분리한다", () => {
+  assert.equal(getSavedStorageKey("user-a"), "campus-cart-saved:user-a");
+  assert.equal(getSavedStorageKey("user-b"), "campus-cart-saved:user-b");
+  assert.notEqual(getSavedStorageKey("user-a"), getSavedStorageKey("user-b"));
+  assert.equal(getSavedStorageKey(null), "campus-cart-saved:guest");
 });

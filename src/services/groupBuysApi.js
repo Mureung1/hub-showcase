@@ -51,7 +51,14 @@ function normalizeLocationInput(input, addressField, latitudeField, longitudeFie
   if (address.length < 2 || address.length > 80) {
     throw new Error("Location address must be between 2 and 80 characters.");
   }
-  const hasCoordinatePair = Number.isFinite(input[latitudeField]) && Number.isFinite(input[longitudeField]);
+  const latitude = input[latitudeField];
+  const longitude = input[longitudeField];
+  const hasCoordinatePair = Number.isFinite(latitude)
+    && latitude >= -90
+    && latitude <= 90
+    && Number.isFinite(longitude)
+    && longitude >= -180
+    && longitude <= 180;
   return {
     ...input,
     [addressField]: address,

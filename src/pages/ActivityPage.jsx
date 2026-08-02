@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { getGroupBuys } from "../services/groupBuysApi";
+import { getSavedStorageKey } from "../services/groupBuyFilters";
 
 function ids(key) { try { return JSON.parse(localStorage.getItem(key) ?? "[]"); } catch { return []; } }
 
-function ActivityPage({ onNavigate }) {
+function ActivityPage({ onNavigate, user }) {
   const [items, setItems] = useState([]);
   const joined = useMemo(() => ids("campus-cart-joined"), []);
-  const saved = useMemo(() => ids("campus-cart-saved"), []);
+  const saved = useMemo(() => ids(getSavedStorageKey(user?.id)), [user?.id]);
   useEffect(() => { getGroupBuys().then(setItems).catch(() => setItems([])); }, []);
   const joinedItems = items.filter((item) => joined.includes(item.id));
   const savedItems = items.filter((item) => saved.includes(item.id));

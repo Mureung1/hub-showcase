@@ -63,6 +63,47 @@ test("Given an owner location without coordinates, when participant coordinates 
   ]);
 });
 
+test("Given one owner and two participants at distinct coordinates, then all three positions affect candidate ranking", () => {
+  const pickupLocations = [
+    { startLocation: "Owner", latitude: 37.5665, longitude: 126.9780 },
+    { startLocation: "P1", latitude: 37.5651, longitude: 126.9895 },
+    { startLocation: "P2", latitude: 37.5700, longitude: 126.9820 },
+  ];
+
+  assert.deepEqual(findPickupCandidates(pickupLocations), ["P2", "Owner", "P1"]);
+  assert.deepEqual(findPickupCandidateDetails(pickupLocations), [
+    { name: "P2", latitude: 37.57, longitude: 126.982 },
+    { name: "Owner", latitude: 37.566, longitude: 126.978 },
+    { name: "P1", latitude: 37.565, longitude: 126.99 },
+  ]);
+});
+
+test("Given duplicate addresses, when only the first entry has coordinates, then the candidate details keep those coordinates", () => {
+  const participants = [
+    { startLocation: "媛쒖꽕??異쒕컻 ?꾩튂", latitude: 37.501, longitude: 127.001 },
+    { startLocation: "媛쒖꽕??異쒕컻 ?꾩튂", latitude: null, longitude: null },
+    { startLocation: "李몄뿬 A", latitude: 35.11, longitude: 128.11 },
+  ];
+
+  assert.deepEqual(findPickupCandidateDetails(participants), [
+    { name: "媛쒖꽕??異쒕컻 ?꾩튂", latitude: 37.501, longitude: 127.001 },
+    { name: "李몄뿬 A", latitude: 35.11, longitude: 128.11 },
+  ]);
+});
+
+test("Given duplicate addresses with a later coordinate-bearing entry, then the valid coordinates are promoted deterministically", () => {
+  const participants = [
+    { startLocation: "媛쒖꽕??異쒕컻 ?꾩튂", latitude: null, longitude: null },
+    { startLocation: "媛쒖꽕??異쒕컻 ?꾩튂", latitude: 37.502, longitude: 127.002 },
+    { startLocation: "李몄뿬 A", latitude: 35.11, longitude: 128.11 },
+  ];
+
+  assert.deepEqual(findPickupCandidateDetails(participants), [
+    { name: "媛쒖꽕??異쒕컻 ?꾩튂", latitude: 37.502, longitude: 127.002 },
+    { name: "李몄뿬 A", latitude: 35.11, longitude: 128.11 },
+  ]);
+});
+
 test("map candidate details follow vote order and lower coordinate precision", () => {
   const participants = [
     { startLocation: "북문 카페", latitude: 35.10004, longitude: 128.10004 },
