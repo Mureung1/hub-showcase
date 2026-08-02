@@ -6,6 +6,7 @@ import ThemeSwitcher from "./ThemeSwitcher";
 import ThemeDecoration from "./ThemeDecoration";
 import ThemeSound from "./ThemeSound";
 import SensoryControl from "./SensoryControl";
+import PresenceIndicator from "./PresenceIndicator";
 import { themeBackgroundColor, themeTextColor, intensityToSaturate } from "@/app/lib/theme";
 
 function pad2(n) {
@@ -45,6 +46,8 @@ export default function OneFocusView({
   onIntensityChange,
   soundEnabled = false,
   onToggleSound,
+  showPresence = false,
+  onDismissPresence,
 }) {
   const [now, setNow] = useState(() => new Date());
 
@@ -88,6 +91,11 @@ export default function OneFocusView({
             soundEnabled={soundEnabled}
             onToggleSound={onToggleSound}
           />
+        </div>
+      )}
+      {showPresence && (
+        <div style={{ position: "absolute", top: "16px", left: "16px" }}>
+          <PresenceIndicator onDismiss={onDismissPresence} />
         </div>
       )}
       <h1 style={{ fontSize: "34px", lineHeight: 1.4, color: themeTextColor(theme, now) }}>{task}</h1>

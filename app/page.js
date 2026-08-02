@@ -145,6 +145,15 @@ export default function Home() {
     localStorage.setItem("kok-sound-enabled", String(soundEnabled));
   }, [soundEnabled]);
 
+  // T25: 장식용 동시접속 표시. "혼자 할래요"를 누르면 계속 숨긴다.
+  const [presenceDismissed, setPresenceDismissed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("kok-presence-dismissed") === "true";
+  });
+  useEffect(() => {
+    if (presenceDismissed) localStorage.setItem("kok-presence-dismissed", "true");
+  }, [presenceDismissed]);
+
   // T23: 며칠 만에 다시 왔는지 확인해 복귀 환영 문구를 보여준다. 마지막 방문일을
   // localStorage에 남겨두고, 오늘과 날짜만(시간 무시) 비교한다.
   const [returningMessage, setReturningMessage] = useState(null);
@@ -727,6 +736,8 @@ export default function Home() {
         onIntensityChange={setIntensity}
         soundEnabled={soundEnabled}
         onToggleSound={() => setSoundEnabled((v) => !v)}
+        showPresence={!presenceDismissed}
+        onDismissPresence={() => setPresenceDismissed(true)}
       />
     );
   }
