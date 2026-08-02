@@ -98,6 +98,60 @@ describe('recommendCurriculum use case', () => {
     )
   })
 
+  it('keeps the existing plan id and passes real progress into follow-up recommendations', async () => {
+    const recommendationProvider = vi.fn(async () => recommendation)
+    const previousPlan = {
+      id: 'backend-existing-plan',
+      goal: 'I want to learn backend development',
+      title: 'Backend Basics',
+      summary: 'Learn HTTP fundamentals first.',
+      estimatedDuration: '3 weeks',
+      focusRole: 'Backend Development',
+      todayMission: {
+        title: 'HTTP Practice',
+        detail: 'Handle a GET request.',
+        durationMinutes: 30,
+        fileName: 'main.py',
+        mode: 'python',
+      },
+      steps: [
+        {
+          id: 'be-01-01',
+          title: 'HTTP Basics',
+          detail: 'Understand request and response flow.',
+          outcome: 'Can explain HTTP lifecycle.',
+          durationLabel: '1 week',
+        },
+      ],
+      sources: [],
+    }
+    const progressContext = {
+      missionId: 'generated-mission-backend-existing-plan',
+      activeStepOffset: 1,
+      completedStepIds: ['be-01-01'],
+      completedAt: null,
+      lastTestResult: { passed: 3, total: 3, ranAt: '2026-07-29T12:00:00.000Z' },
+    }
+
+    const plan = await recommendCurriculum({
+      goal: previousPlan.goal,
+      followUpInstruction: 'Continue from yesterday.',
+      previousPlan,
+      progressContext,
+      tracks,
+      config: { apiKey: 'test-key' },
+      recommendationProvider,
+    })
+
+    expect(plan.id).toBe('backend-existing-plan')
+    expect(recommendationProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        previousPlan,
+        progressContext,
+      }),
+    )
+  })
+
   it('rejects empty goals', async () => {
     await expect(
       recommendCurriculum({ goal: ' ', tracks, config: {}, recommendationProvider: vi.fn() }),

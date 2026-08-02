@@ -13,6 +13,9 @@ import {
   useGeneratedCurriculumStore,
 } from '../curriculum/model/useGeneratedCurriculumStore'
 import { persistGeneratedCurriculum } from '../curriculum/model/persistGeneratedCurriculum'
+import { createCurriculumProgressContext } from '../curriculum/model/curriculumProgressContext'
+import { getTodayProgress } from '../learning-progress/api/learningProgressClient'
+import { useLearningProgressStore } from '../learning-progress/model/useLearningProgressStore'
 import {
   createGeneratedMissionId,
   createWorkspaceMissionHref,
@@ -70,12 +73,14 @@ export function TodayLearningGoalPage() {
   const savedGoal = generatedCurriculum?.goal ?? generatedPlan.goal
   const isGoalDraftChanged = careerGoal.trim().length > 0 && careerGoal.trim() !== savedGoal
   const isGenerating = generationStatus === 'generating'
+  const showCurriculumWorkspace =
+    generationStatus === 'ready' || (isGenerating && Boolean(generatedCurriculum))
   const generatedAtLabel = formatGeneratedAt(generatedCurriculum?.generatedAt)
   const generatedStateLabel = generatedCurriculum
     ? '최근 생성한 커리큘럼'
     : '프로필 기준 기본 커리큘럼'
 
-  function startCurriculumGeneration(goal: string, followUpInstruction?: string) {
+  async function startCurriculumGeneration(goal: string, followUpInstruction?: string) {
     const trimmedGoal = goal.trim()
     const trimmedFollowUp = followUpInstruction?.trim()
 
@@ -88,46 +93,69 @@ export function TodayLearningGoalPage() {
     setGoalError('')
     setGenerationStatus('generating')
 
-    void recommendCurriculum(
-      {
+    try {
+      const previousSnapshot = trimmedFollowUp ? generatedCurriculum : null
+      const previousPlan = previousSnapshot?.plan
+      let progressContext
+
+      if (previousPlan) {
+        const missionId = createGeneratedMissionId(previousPlan.id)
+        const progress = shouldUseServerApi()
+          ? (await getTodayProgress()).missions[missionId]
+          : useLearningProgressStore.getState().getMissionProgress(missionId)
+        progressContext = createCurriculumProgressContext(previousPlan, progress)
+      }
+
+      const { plan: recommendedPlan } = await recommendCurriculum(
+        {
         goal: trimmedGoal,
         followUpInstruction: trimmedFollowUp || undefined,
-        previousPlan: trimmedFollowUp ? generatedCurriculum?.plan : undefined,
-      },
-      { mode: shouldUseServerApi() ? 'server' : 'mock' },
-    )
-      .then(async ({ plan }) => {
-        setCareerGoal(trimmedGoal)
-        await persistGeneratedCurriculum({
-          goal: trimmedGoal,
-          plan,
-          serverMode: shouldUseServerApi(),
-          saveServer: () =>
-            saveGeneratedCurriculumApi(
-              { goal: trimmedGoal, plan, generatedAt: new Date().toISOString() },
-              { mode: 'server' },
-            ),
-          saveLocal: saveGeneratedCurriculum,
-          hydrate: hydrateGeneratedCurriculum,
-        })
-        setHasFollowUpRevision(Boolean(trimmedFollowUp))
-        setGenerationStatus('ready')
+          previousPlan,
+          progressContext,
+        },
+        { mode: shouldUseServerApi() ? 'server' : 'mock' },
+      )
+      const plan = previousPlan
+        ? { ...recommendedPlan, id: previousPlan.id }
+        : recommendedPlan
+      const now = new Date().toISOString()
+
+      setCareerGoal(trimmedGoal)
+      await persistGeneratedCurriculum({
+        goal: trimmedGoal,
+        plan,
+        serverMode: shouldUseServerApi(),
+        saveServer: () =>
+          saveGeneratedCurriculumApi(
+            {
+              id: plan.id,
+              goal: trimmedGoal,
+              plan,
+              generatedAt: previousSnapshot?.generatedAt ?? now,
+              updatedAt: now,
+            },
+            { mode: 'server' },
+          ),
+        saveLocal: saveGeneratedCurriculum,
+        hydrate: hydrateGeneratedCurriculum,
       })
-      .catch(() => {
-        setGoalError('커리큘럼을 생성하지 못했습니다. 잠시 후 다시 시도해보세요.')
-        setGenerationStatus('idle')
-      })
+      setHasFollowUpRevision(Boolean(trimmedFollowUp))
+      setGenerationStatus('ready')
+    } catch {
+      setGoalError('커리큘럼을 생성하지 못했습니다. 잠시 후 다시 시도해보세요.')
+      setGenerationStatus('idle')
+    }
   }
 
   function handleGenerateCurriculum(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    startCurriculumGeneration(careerGoal)
+    void startCurriculumGeneration(careerGoal)
   }
 
   function handleFollowUpSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!followUpText.trim()) return
-    startCurriculumGeneration(careerGoal, followUpText)
+    void startCurriculumGeneration(careerGoal, followUpText)
     setFollowUpText('')
   }
 
@@ -200,25 +228,34 @@ export function TodayLearningGoalPage() {
               </p>
             ) : null}
 
-            {generationStatus === 'idle' ? (
-              <section className={styles.curriculumIntro} aria-label="커리큘럼 생성 안내">
-                <span>01</span>
-                <div>
-                  <strong>한 줄 목표를 입력해 주세요.</strong>
-                  <p>코듀가 학습 순서와 오늘 바로 시작할 미션을 먼저 제안합니다.</p>
-                </div>
-                <span>02</span>
-                <div>
-                  <strong>초안을 보고 답해 주세요.</strong>
-                  <p>한 번에 하나씩 묻는 후속 질문으로 기간과 학습 방식을 조정할 수 있습니다.</p>
-                </div>
-              </section>
-            ) : null}
+            <div
+              className={styles.generationStateSlot}
+              data-generation-state-slot={generationStatus}
+            >
+              {generationStatus === 'idle' ? (
+                <section className={styles.curriculumIntro} aria-label="커리큘럼 생성 안내">
+                  <span>01</span>
+                  <div>
+                    <strong>한 줄 목표를 입력해 주세요.</strong>
+                    <p>코듀가 학습 순서와 오늘 바로 시작할 미션을 먼저 제안합니다.</p>
+                  </div>
+                  <span>02</span>
+                  <div>
+                    <strong>초안을 보고 답해 주세요.</strong>
+                    <p>
+                      한 번에 하나씩 묻는 후속 질문으로 기간과 학습 방식을 조정할 수
+                      있습니다.
+                    </p>
+                  </div>
+                </section>
+              ) : null}
 
-            {isGenerating ? <CurriculumLoading /> : null}
-
-            {generationStatus === 'ready' ? (
-              <div className={styles.curriculumWorkspace}>
+              {showCurriculumWorkspace ? (
+                <div
+                  className={styles.curriculumWorkspace}
+                  aria-hidden={isGenerating || undefined}
+                  inert={isGenerating}
+                >
                 <aside className={styles.followUpPanel} aria-labelledby="follow-up-title">
                   <div className={styles.followUpHeading}>
                     <span>코듀의 맞춤 질문</span>
@@ -363,8 +400,15 @@ export function TodayLearningGoalPage() {
                     </button>
                   </footer>
                 </section>
-              </div>
-            ) : null}
+                </div>
+              ) : null}
+
+              {isGenerating ? (
+                <div className={styles.generationLoadingOverlay}>
+                  <CurriculumLoading />
+                </div>
+              ) : null}
+            </div>
           </div>
         </section>
       </section>

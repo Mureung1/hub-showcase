@@ -119,7 +119,7 @@ describe('curriculum routes', () => {
     expect(result).toMatchObject({ status: 500, body: { error: 'agent_configuration_error' } })
   })
 
-  it('persists recommended curriculum plan to repository and supports GET/DELETE /api/curriculum/generated', async () => {
+  it('keeps recommendation read-only until the client explicitly saves the generated plan', async () => {
     const recommendationProvider = vi.fn(async () => recommendation)
     const generatedCurriculumRepository = {
       stored: null,
@@ -147,6 +147,21 @@ describe('curriculum routes', () => {
     })
 
     expect(recommendResult).toMatchObject({ status: 200 })
+    expect(generatedCurriculumRepository.getLatest()).toBeNull()
+
+    const saveResult = await handleCurriculumApiRequest({
+      method: 'POST',
+      url: '/api/curriculum/generated',
+      bodyText: JSON.stringify({
+        id: recommendResult.body.plan.id,
+        goal: 'Learn Express APIs',
+        plan: recommendResult.body.plan,
+        generatedAt: '2026-07-30T00:00:00.000Z',
+      }),
+      generatedCurriculumRepository,
+    })
+
+    expect(saveResult).toMatchObject({ status: 200 })
     expect(generatedCurriculumRepository.getLatest()).toMatchObject({
       goal: 'Learn Express APIs',
       plan: { id: expect.stringMatching(/^backend-\d+-[a-z0-9]+$/) },

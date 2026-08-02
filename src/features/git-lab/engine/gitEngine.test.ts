@@ -87,6 +87,55 @@ describe('gitEngine', () => {
     expect(parseGitCommand('git merge feature')).toEqual({ type: 'merge', name: 'feature' })
     expect(parseGitCommand('git log')).toEqual({ type: 'log', oneline: false })
     expect(parseGitCommand('git log --oneline')).toEqual({ type: 'log', oneline: true })
+    expect(parseGitCommand('git remote add origin https://example.com/repo.git')).toEqual({
+      type: 'remoteAdd',
+      name: 'origin',
+      url: 'https://example.com/repo.git',
+    })
+    expect(parseGitCommand('git remote -v')).toEqual({ type: 'remoteList' })
+    expect(parseGitCommand('git push -u origin master')).toEqual({
+      type: 'push',
+      remote: 'origin',
+      branch: 'master',
+      setUpstream: true,
+    })
+    expect(parseGitCommand('git push origin iss53')).toEqual({
+      type: 'push',
+      remote: 'origin',
+      branch: 'iss53',
+      setUpstream: false,
+    })
+    expect(parseGitCommand('git fetch')).toEqual({ type: 'fetch', remote: 'origin' })
+    expect(parseGitCommand('git fetch origin')).toEqual({ type: 'fetch', remote: 'origin' })
+    expect(parseGitCommand('git branch -r')).toEqual({ type: 'branchRemoteList' })
+    expect(parseGitCommand('git tag v1.0')).toEqual({
+      type: 'tag',
+      name: 'v1.0',
+      annotated: false,
+    })
+    expect(parseGitCommand('git tag -a v1.0 -m "Release 1.0"')).toEqual({
+      type: 'tag',
+      name: 'v1.0',
+      annotated: true,
+      message: 'Release 1.0',
+    })
+    expect(parseGitCommand('git log --tags')).toEqual({ type: 'logTags' })
+    expect(parseGitCommand('git show HEAD~2')).toEqual({ type: 'show', ref: 'HEAD~2' })
+    expect(parseGitCommand('git log master..experiment')).toEqual({
+      type: 'logRange',
+      from: 'master',
+      to: 'experiment',
+    })
+    expect(parseGitCommand('git stash')).toEqual({ type: 'stashPush' })
+    expect(parseGitCommand('git stash push')).toEqual({ type: 'stashPush' })
+    expect(parseGitCommand('git stash pop')).toEqual({ type: 'stashPop' })
+    expect(parseGitCommand('git stash apply')).toEqual({ type: 'stashApply' })
+    expect(parseGitCommand('git stash list')).toEqual({ type: 'stashList' })
+    expect(parseGitCommand('git bisect start')).toEqual({ type: 'bisectStart' })
+    expect(parseGitCommand('git bisect bad')).toEqual({ type: 'bisectBad', ref: null })
+    expect(parseGitCommand('git bisect bad C7')).toEqual({ type: 'bisectBad', ref: 'C7' })
+    expect(parseGitCommand('git bisect good C0')).toEqual({ type: 'bisectGood', ref: 'C0' })
+    expect(parseGitCommand('git bisect reset')).toEqual({ type: 'bisectReset' })
   })
 
   it('handles boundary cases and normalizes input', () => {
@@ -415,5 +464,82 @@ describe('gitEngine', () => {
 
     expect(result.state).toBe(state)
     expect(result.logs).toEqual(['C0 <- root'])
+  })
+
+  it('initializes new engine state fields for remote/tag/stash/bisect', () => {
+    const state = createInitialGitState()
+
+    expect(state.remotes).toEqual([])
+    expect(state.remoteBranches).toEqual({})
+    expect(state.tags).toEqual([])
+    expect(state.stash).toEqual([])
+    expect(state.bisect).toBeNull()
+    expect(state.conflict).toBeNull()
+    expect(state.pendingMerge).toBeNull()
+    expect(state.lastResolvedRef).toBeNull()
+    expect(state.lastLogRangeResult).toBeNull()
+  })
+})
+
+describe('gitEngine merge conflicts', () => {
+  function buildConflictState(): GitEngineState {
+    const base = createInitialGitState('master', [
+      { id: 'C0', parents: [] },
+      { id: 'C1', parents: ['C0'] },
+      { id: 'C4', parents: ['C1'] },
+      { id: 'C3', parents: ['C1'] },
+    ])
+
+    return {
+      ...base,
+      branches: [
+        { name: 'master', commitId: 'C4' },
+        { name: 'iss53', commitId: 'C3' },
+      ],
+      indexCommitId: 'C4',
+      workingTreeCommitId: 'C4',
+      files: {
+        'index.html': {
+          content: '<div id="footer">contact : email.support@github.com</div>\n',
+          status: 'committed',
+          versions: {
+            C4: '<div id="footer">contact : email.support@github.com</div>\n',
+            C3: '<div id="footer">\n  please contact us at support@github.com\n</div>\n',
+          },
+        },
+      },
+    }
+  }
+
+  it('detects a conflict instead of auto-merging when both branches changed the same file differently', () => {
+    const state = buildConflictState()
+
+    const result = runGitCommand(state, 'git merge iss53')
+
+    expect(result.ok).toBe(false)
+    expect(result.logs.some((line) => line.includes('CONFLICT'))).toBe(true)
+    expect(result.state.conflict).toEqual({ filePath: 'index.html' })
+    expect(result.state.files['index.html'].status).toBe('conflicted')
+    expect(result.state.files['index.html'].content).toContain('<<<<<<<')
+  })
+
+  it('resolves the conflict via editFile and creates a two-parent merge commit on add + commit', () => {
+    const state = buildConflictState()
+
+    const conflicted = runGitCommand(state, 'git merge iss53').state
+    const edited = runGitCommand(conflicted, 'editFile index.html')
+
+    expect(edited.ok).toBe(true)
+    expect(edited.state.conflict).toBeNull()
+    expect(edited.state.files['index.html'].content).not.toContain('<<<<<<<')
+    expect(edited.state.files['index.html'].status).toBe('modified')
+
+    const added = runGitCommand(edited.state, 'git add index.html')
+    const committed = runGitCommand(added.state, 'git commit -m "Merge branch \'iss53\'"')
+
+    expect(committed.ok).toBe(true)
+    const newCommit = committed.state.commits.at(-1)
+    expect(newCommit?.parents).toEqual(['C4', 'C3'])
+    expect(committed.state.pendingMerge).toBeNull()
   })
 })

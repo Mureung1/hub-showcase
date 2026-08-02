@@ -1,7 +1,44 @@
+import {
+  branchRemoteList,
+  fetch,
+  push,
+  remoteAdd,
+  remoteList,
+} from './remoteCommands'
+import { logTags, tag } from './tagCommands'
+import { logRange, show } from './revisionCommands'
+import { stashApply, stashList, stashPop, stashPush } from './stashCommands'
+import { bisectBad, bisectGood, bisectReset, bisectStart } from './bisectCommands'
+
 export type GitCommit = {
   id: string
   parents: string[]
   message?: string
+  bugState?: 'good' | 'bad'
+}
+
+export type GitRemote = {
+  name: string
+  url: string
+}
+
+export type GitTag = {
+  name: string
+  commitId: string
+  message?: string
+}
+
+export type GitStashEntry = {
+  id: string
+  files: Record<string, string>
+}
+
+export type GitBisectState = {
+  goodCommitId: string | null
+  badCommitId: string | null
+  candidateCommitIds: string[]
+  currentCommitId: string | null
+  foundCommitId: string | null
 }
 
 export type GitBranch = {
@@ -12,11 +49,12 @@ export type GitBranch = {
 export type GitHead =
   { type: 'branch'; branchName: string } | { type: 'detached'; commitId: string | null }
 
-export type GitFileStatus = 'untracked' | 'modified' | 'staged' | 'committed'
+export type GitFileStatus = 'untracked' | 'modified' | 'staged' | 'committed' | 'conflicted'
 
 export type GitFile = {
   content: string
   status: GitFileStatus
+  versions?: Record<string, string>
 }
 
 export type GitResetMode = 'soft' | 'mixed' | 'hard'
@@ -36,6 +74,15 @@ export type GitEngineState = {
   indexCommitId: string | null
   workingTreeCommitId: string | null
   nextCommitIndex: number
+  remotes: GitRemote[]
+  remoteBranches: Record<string, string>
+  tags: GitTag[]
+  stash: GitStashEntry[]
+  bisect: GitBisectState | null
+  conflict: { filePath: string } | null
+  pendingMerge: { parents: string[] } | null
+  lastResolvedRef: string | null
+  lastLogRangeResult: string[] | null
 }
 
 export type GitCommand =
@@ -56,6 +103,24 @@ export type GitCommand =
   | { type: 'checkoutNewBranch'; name: string }
   | { type: 'merge'; name: string }
   | { type: 'log'; oneline: boolean }
+  | { type: 'remoteAdd'; name: string; url: string }
+  | { type: 'remoteList' }
+  | { type: 'push'; remote: string; branch: string; setUpstream: boolean }
+  | { type: 'fetch'; remote: string }
+  | { type: 'branchRemoteList' }
+  | { type: 'tag'; name: string; annotated: boolean; message?: string }
+  | { type: 'logTags' }
+  | { type: 'show'; ref: string }
+  | { type: 'logRange'; from: string; to: string }
+  | { type: 'stashPush' }
+  | { type: 'stashPop' }
+  | { type: 'stashApply' }
+  | { type: 'stashList' }
+  | { type: 'bisectStart' }
+  | { type: 'bisectBad'; ref: string | null }
+  | { type: 'bisectGood'; ref: string | null }
+  | { type: 'bisectReset' }
+  | { type: 'editFile'; path: string }
 
 export type GitCommandResult = {
   state: GitEngineState
@@ -79,6 +144,15 @@ export function createInitialGitState(
     indexCommitId: latestCommit,
     workingTreeCommitId: latestCommit,
     nextCommitIndex: commits.length,
+    remotes: [],
+    remoteBranches: {},
+    tags: [],
+    stash: [],
+    bisect: null,
+    conflict: null,
+    pendingMerge: null,
+    lastResolvedRef: null,
+    lastLogRangeResult: null,
   }
 }
 
@@ -91,6 +165,10 @@ export function createEmptyConfig(): GitConfig {
 
 export function parseGitCommand(input: string): GitCommand {
   const tokens = tokenizeCommand(input.trim().replace(/^\$\s*/, ''))
+
+  if (tokens[0] === 'editFile' && tokens.length === 2) {
+    return { type: 'editFile', path: tokens[1] }
+  }
 
   if (tokens[0] !== 'git') {
     throw new Error('Command must start with git.')
@@ -174,6 +252,30 @@ export function parseGitCommand(input: string): GitCommand {
     return { type: 'amendCommit', message: tokens.slice(4).join(' ') }
   }
 
+  if (tokens[1] === 'remote' && tokens[2] === 'add' && tokens.length === 5) {
+    return { type: 'remoteAdd', name: tokens[3], url: tokens[4] }
+  }
+
+  if (tokens[1] === 'remote' && tokens[2] === '-v' && tokens.length === 3) {
+    return { type: 'remoteList' }
+  }
+
+  if (tokens[1] === 'push' && tokens[2] === '-u' && tokens.length === 5) {
+    return { type: 'push', remote: tokens[3], branch: tokens[4], setUpstream: true }
+  }
+
+  if (tokens[1] === 'push' && tokens.length === 4) {
+    return { type: 'push', remote: tokens[2], branch: tokens[3], setUpstream: false }
+  }
+
+  if (tokens[1] === 'fetch' && tokens.length <= 3) {
+    return { type: 'fetch', remote: tokens[2] ?? 'origin' }
+  }
+
+  if (tokens[1] === 'branch' && tokens[2] === '-r' && tokens.length === 3) {
+    return { type: 'branchRemoteList' }
+  }
+
   if (tokens[1] === 'branch' && tokens[2] === '-d' && tokens.length === 4) {
     return { type: 'deleteBranch', name: tokens[3] }
   }
@@ -202,12 +304,65 @@ export function parseGitCommand(input: string): GitCommand {
     return { type: 'merge', name: tokens[2] }
   }
 
+  if (tokens[1] === 'log' && tokens.length === 3 && tokens[2].includes('..')) {
+    const [from, to] = tokens[2].split('..')
+    return { type: 'logRange', from, to }
+  }
+
+  if (tokens[1] === 'show' && tokens.length === 3) {
+    return { type: 'show', ref: tokens[2] }
+  }
+
   if (tokens[1] === 'log' && tokens.length === 2) {
     return { type: 'log', oneline: false }
   }
 
   if (tokens[1] === 'log' && tokens[2] === '--oneline' && tokens.length === 3) {
     return { type: 'log', oneline: true }
+  }
+
+  if (tokens[1] === 'log' && tokens[2] === '--tags' && tokens.length === 3) {
+    return { type: 'logTags' }
+  }
+
+  if (tokens[1] === 'tag' && tokens[2] === '-a' && tokens[4] === '-m' && tokens.length === 6) {
+    return { type: 'tag', name: tokens[3], annotated: true, message: tokens[5] }
+  }
+
+  if (tokens[1] === 'tag' && tokens.length === 3) {
+    return { type: 'tag', name: tokens[2], annotated: false }
+  }
+
+  if (tokens[1] === 'stash' && (tokens.length === 2 || (tokens[2] === 'push' && tokens.length === 3))) {
+    return { type: 'stashPush' }
+  }
+
+  if (tokens[1] === 'stash' && tokens[2] === 'pop' && tokens.length === 3) {
+    return { type: 'stashPop' }
+  }
+
+  if (tokens[1] === 'stash' && tokens[2] === 'apply' && tokens.length === 3) {
+    return { type: 'stashApply' }
+  }
+
+  if (tokens[1] === 'stash' && tokens[2] === 'list' && tokens.length === 3) {
+    return { type: 'stashList' }
+  }
+
+  if (tokens[1] === 'bisect' && tokens[2] === 'start' && tokens.length === 3) {
+    return { type: 'bisectStart' }
+  }
+
+  if (tokens[1] === 'bisect' && tokens[2] === 'bad' && tokens.length <= 4) {
+    return { type: 'bisectBad', ref: tokens[3] ?? null }
+  }
+
+  if (tokens[1] === 'bisect' && tokens[2] === 'good' && tokens.length <= 4) {
+    return { type: 'bisectGood', ref: tokens[3] ?? null }
+  }
+
+  if (tokens[1] === 'bisect' && tokens[2] === 'reset' && tokens.length === 3) {
+    return { type: 'bisectReset' }
   }
 
   throw new Error(`Unsupported git command: ${input}`)
@@ -262,6 +417,42 @@ export function executeGitCommand(state: GitEngineState, command: GitCommand): G
       return merge(state, command.name)
     case 'log':
       return log(state, command.oneline)
+    case 'remoteAdd':
+      return remoteAdd(state, command.name, command.url)
+    case 'remoteList':
+      return remoteList(state)
+    case 'push':
+      return push(state, command.remote, command.branch, command.setUpstream)
+    case 'fetch':
+      return fetch(state, command.remote)
+    case 'branchRemoteList':
+      return branchRemoteList(state)
+    case 'tag':
+      return tag(state, command.name, command.annotated, command.message)
+    case 'logTags':
+      return logTags(state)
+    case 'show':
+      return show(state, command.ref)
+    case 'logRange':
+      return logRange(state, command.from, command.to)
+    case 'stashPush':
+      return stashPush(state)
+    case 'stashPop':
+      return stashPop(state)
+    case 'stashApply':
+      return stashApply(state)
+    case 'stashList':
+      return stashList(state)
+    case 'bisectStart':
+      return bisectStart(state)
+    case 'bisectBad':
+      return bisectBad(state, command.ref)
+    case 'bisectGood':
+      return bisectGood(state, command.ref)
+    case 'bisectReset':
+      return bisectReset(state)
+    case 'editFile':
+      return editFile(state, command.path)
   }
 }
 
@@ -517,17 +708,18 @@ function add(state: GitEngineState, path: string): GitCommandResult {
   }
 }
 
-function commit(state: GitEngineState, message?: string): GitCommandResult {
+export function commit(state: GitEngineState, message?: string): GitCommandResult {
   if (!state.repoExists) {
     return failure(state, 'not a git repository')
   }
 
   const parentCommitId = getHeadCommitId(state)
+  const parents = state.pendingMerge ? state.pendingMerge.parents : parentCommitId ? [parentCommitId] : []
   const nextCommitId = `C${state.nextCommitIndex}`
   const headBranchName = state.head.type === 'branch' ? state.head.branchName : null
   const nextCommit: GitCommit = {
     id: nextCommitId,
-    parents: parentCommitId ? [parentCommitId] : [],
+    parents,
     ...(message ? { message } : {}),
   }
   const nextFiles = Object.fromEntries(
@@ -551,6 +743,7 @@ function commit(state: GitEngineState, message?: string): GitCommandResult {
       : state.branches,
     head: headBranchName ? state.head : { type: 'detached', commitId: nextCommitId },
     nextCommitIndex: state.nextCommitIndex + 1,
+    pendingMerge: null,
   }
 
   return {
@@ -758,6 +951,12 @@ function merge(state: GitEngineState, name: string): GitCommandResult {
     }
   }
 
+  const conflictingFilePath = findConflictingFile(state, currentBranch.commitId, sourceBranch.commitId)
+
+  if (conflictingFilePath) {
+    return createMergeConflict(state, conflictingFilePath, currentBranch.commitId, sourceBranch.commitId, name)
+  }
+
   const nextCommitId = `C${state.nextCommitIndex}`
   const nextCommit = {
     id: nextCommitId,
@@ -796,7 +995,7 @@ function log(state: GitEngineState, oneline: boolean): GitCommandResult {
   }
 }
 
-function getHeadCommitId(state: GitEngineState) {
+export function getHeadCommitId(state: GitEngineState) {
   if (state.head.type === 'detached') {
     return state.head.commitId
   }
@@ -806,7 +1005,7 @@ function getHeadCommitId(state: GitEngineState) {
   return state.branches.find((branchItem) => branchItem.name === headBranchName)?.commitId ?? null
 }
 
-function failure(state: GitEngineState, message: string): GitCommandResult {
+export function failure(state: GitEngineState, message: string): GitCommandResult {
   return {
     state,
     ok: false,
@@ -894,7 +1093,7 @@ function isAncestor(state: GitEngineState, ancestorId: string, commitId: string)
   return commit.parents.some((parentId) => isAncestor(state, ancestorId, parentId))
 }
 
-function getCommitById(state: GitEngineState, commitId: string | null) {
+export function getCommitById(state: GitEngineState, commitId: string | null) {
   return state.commits.find((commit) => commit.id === commitId)
 }
 
@@ -939,4 +1138,86 @@ function tokenizeCommand(input: string) {
 
 function uniqueCommitIds(commitIds: string[]) {
   return [...new Set(commitIds)]
+}
+
+function findConflictingFile(
+  state: GitEngineState,
+  currentCommitId: string,
+  sourceCommitId: string,
+): string | null {
+  const entry = Object.entries(state.files).find(([, file]) => {
+    const versions = file.versions
+
+    if (!versions) {
+      return false
+    }
+
+    const currentVersion = versions[currentCommitId]
+    const sourceVersion = versions[sourceCommitId]
+
+    return currentVersion !== undefined && sourceVersion !== undefined && currentVersion !== sourceVersion
+  })
+
+  return entry ? entry[0] : null
+}
+
+function createMergeConflict(
+  state: GitEngineState,
+  filePath: string,
+  currentCommitId: string,
+  sourceCommitId: string,
+  sourceBranchName: string,
+): GitCommandResult {
+  const file = state.files[filePath]
+  const headContent = file.versions?.[currentCommitId] ?? ''
+  const mergeContent = file.versions?.[sourceCommitId] ?? ''
+  const conflictContent = `<<<<<<< HEAD\n${headContent}=======\n${mergeContent}>>>>>>> ${sourceBranchName}\n`
+
+  const nextState: GitEngineState = {
+    ...state,
+    files: {
+      ...state.files,
+      [filePath]: { ...file, content: conflictContent, status: 'conflicted' },
+    },
+    conflict: { filePath },
+    pendingMerge: { parents: [currentCommitId, sourceCommitId] },
+  }
+
+  return {
+    state: nextState,
+    ok: false,
+    logs: [
+      `Auto-merging ${filePath}`,
+      `CONFLICT (content): Merge conflict in ${filePath}`,
+      'Automatic merge failed; fix conflicts and then commit the result.',
+      ...formatGitStateForConsole(nextState),
+    ],
+  }
+}
+
+function editFile(state: GitEngineState, path: string): GitCommandResult {
+  if (!state.conflict || state.conflict.filePath !== path) {
+    return failure(state, `${path} has no unresolved conflict to edit`)
+  }
+
+  const file = state.files[path]
+  const versions = file.versions ?? {}
+  const headContent = state.pendingMerge ? (versions[state.pendingMerge.parents[0]] ?? '') : ''
+  const mergeContent = state.pendingMerge ? (versions[state.pendingMerge.parents[1]] ?? '') : ''
+  const resolvedContent = `${headContent}${mergeContent}`.trim()
+
+  const nextState: GitEngineState = {
+    ...state,
+    files: {
+      ...state.files,
+      [path]: { ...file, content: resolvedContent, status: 'modified' },
+    },
+    conflict: null,
+  }
+
+  return {
+    state: nextState,
+    ok: true,
+    logs: [`resolved conflict markers in ${path}`, ...formatGitStateForConsole(nextState)],
+  }
 }

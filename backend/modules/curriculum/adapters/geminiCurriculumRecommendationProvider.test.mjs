@@ -69,6 +69,7 @@ describe('gemini curriculum recommendation provider', () => {
         goal: 'I want to learn backend development',
         followUpInstruction: 'Make this a three-week plan focused on practice.',
         previousPlan: {
+          id: 'backend-existing-plan',
           title: 'Backend Basics',
           summary: 'Learn HTTP fundamentals first.',
           todayMission: {
@@ -88,6 +89,17 @@ describe('gemini curriculum recommendation provider', () => {
             },
           ],
         },
+        progressContext: {
+          missionId: 'generated-mission-backend-existing-plan',
+          activeStepOffset: 1,
+          completedStepIds: ['be-01-01'],
+          completedAt: null,
+          lastTestResult: {
+            passed: 3,
+            total: 3,
+            ranAt: '2026-07-29T12:00:00.000Z',
+          },
+        },
         tracks,
         config: createAgentConfig({ GEMINI_API_KEY: 'test-key' }),
       }),
@@ -95,6 +107,7 @@ describe('gemini curriculum recommendation provider', () => {
       input: {
         followUpInstruction: 'Make this a three-week plan focused on practice.',
         previousPlanSummary: {
+          id: 'backend-existing-plan',
           title: 'Backend Basics',
           summary: 'Learn HTTP fundamentals first.',
           todayMission: {
@@ -113,6 +126,17 @@ describe('gemini curriculum recommendation provider', () => {
               durationLabel: '1 week',
             },
           ],
+        },
+        progressContext: {
+          missionId: 'generated-mission-backend-existing-plan',
+          activeStepOffset: 1,
+          completedStepIds: ['be-01-01'],
+          completedAt: null,
+          lastTestResult: {
+            passed: 3,
+            total: 3,
+            ranAt: '2026-07-29T12:00:00.000Z',
+          },
         },
       },
     })

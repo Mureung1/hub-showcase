@@ -1,7 +1,18 @@
 import { createEmptyConfig, type GitEngineState, type GitFileStatus } from '../engine/gitEngine'
 import type { GraphSnapshot } from '../engine/gitGraphAdapter'
 
-export type GitLabGoalKind = 'graph' | 'configState' | 'repoState' | 'fileStatus' | 'resetState'
+export type GitLabGoalKind =
+  | 'graph'
+  | 'configState'
+  | 'repoState'
+  | 'fileStatus'
+  | 'resetState'
+  | 'remoteState'
+  | 'tagState'
+  | 'conflictResolved'
+  | 'commandOutput'
+  | 'stashState'
+  | 'bisectResult'
 
 export type GitLabGoalCheck =
   | { type: 'configState'; description: string }
@@ -14,6 +25,23 @@ export type GitLabGoalCheck =
       workingTreeCommitId: string | null
       description: string
     }
+  | { type: 'remoteState'; requiredRemoteName?: string; requiredRemoteBranch?: string; description: string }
+  | { type: 'tagState'; tagName: string; commitId: string; description: string }
+  | { type: 'conflictResolved'; filePath: string; description: string }
+  | {
+      type: 'commandOutput'
+      expectedResolvedRef?: string
+      expectedLogResult?: string[]
+      description: string
+    }
+  | {
+      type: 'stashState'
+      expectedStashLength?: number
+      fileName?: string
+      fileStatus?: GitFileStatus
+      description: string
+    }
+  | { type: 'bisectResult'; commitId: string; description: string }
 
 export type PlayableGitLabLevel = {
   id: string
@@ -85,11 +113,17 @@ type CurriculumLevel = {
 type CurriculumState = {
   repoExists?: boolean
   config?: Partial<Record<keyof ReturnType<typeof createEmptyConfig>, string | null>>
-  files?: Record<string, { content?: string; status?: GitFileStatus }>
+  files?: Record<
+    string,
+    { content?: string; workingContent?: string; status?: GitFileStatus; versions?: Record<string, string> }
+  >
   index?: string
   workingDir?: string
   commits?: CurriculumCommit[]
   branches?: CurriculumBranch[]
+  remotes?: { name: string; url: string }[]
+  tags?: { name: string; commitId: string; message?: string }[]
+  stash?: { id: string; files: Record<string, string> }[]
   HEAD?: { type?: string; name?: string; commitId?: string | null } | null
 }
 
@@ -110,6 +144,7 @@ type CurriculumCommit = {
   parents?: string[]
   branch?: string
   message?: string
+  bugState?: 'good' | 'bad'
 }
 
 type CurriculumBranch = {
@@ -237,8 +272,9 @@ function createEngineStateFromCurriculumState(state: CurriculumState): GitEngine
       Object.entries(state.files ?? {}).map(([fileName, file]) => [
         fileName,
         {
-          content: file.content ?? '',
+          content: file.workingContent ?? file.content ?? '',
           status: file.status ?? 'committed',
+          ...(file.versions ? { versions: file.versions } : {}),
         },
       ]),
     ),
@@ -246,6 +282,7 @@ function createEngineStateFromCurriculumState(state: CurriculumState): GitEngine
       id: commit.id,
       parents: commit.parents ?? [],
       ...(commit.message ? { message: commit.message } : {}),
+      ...(commit.bugState ? { bugState: commit.bugState } : {}),
     })),
     branches,
     head: currentBranch
@@ -254,6 +291,15 @@ function createEngineStateFromCurriculumState(state: CurriculumState): GitEngine
     indexCommitId: parseTreeCommitId(state.index, headCommitId),
     workingTreeCommitId: parseTreeCommitId(state.workingDir, headCommitId),
     nextCommitIndex: getNextCommitIndex(state.commits ?? []),
+    remotes: state.remotes ?? [],
+    remoteBranches: {},
+    tags: state.tags ?? [],
+    stash: state.stash ?? [],
+    bisect: null,
+    conflict: null,
+    pendingMerge: null,
+    lastResolvedRef: null,
+    lastLogRangeResult: null,
   }
 }
 
@@ -290,6 +336,84 @@ function createGoalCheck(level: CurriculumLevel): GitLabGoalCheck | undefined {
       workingTreeCommitId: parseConditionTreeCommitId(condition, 'workingDir'),
       description,
     }
+  }
+
+  if (level.goal?.type === 'remoteState') {
+    const condition = level.goal.condition ?? ''
+    const remoteNameMatch = /remotes\.includes\('([^']+)'\)/.exec(condition)
+    const remoteBranchIncludesMatch = /remoteBranches\.includes\('([^']+)'\)/.exec(condition)
+    const remoteBranchKeyMatch = /remoteBranches\.(\w+)\s*===/.exec(condition)
+
+    return {
+      type: 'remoteState',
+      requiredRemoteName: remoteNameMatch?.[1],
+      requiredRemoteBranch:
+        remoteBranchIncludesMatch?.[1] ??
+        (remoteBranchKeyMatch
+          ? `${remoteNameMatch?.[1] ?? 'origin'}/${remoteBranchKeyMatch[1]}`
+          : undefined),
+      description,
+    }
+  }
+
+  if (level.goal?.type === 'tagState') {
+    const condition = level.goal.condition ?? ''
+    const nameMatch = /t\.name === '([^']+)'/.exec(condition)
+    const commitMatch = /t\.commitId === '([^']+)'/.exec(condition)
+
+    return {
+      type: 'tagState',
+      tagName: nameMatch?.[1] ?? '',
+      commitId: commitMatch?.[1] ?? '',
+      description,
+    }
+  }
+
+  if (level.goal?.type === 'commandOutput') {
+    const condition = level.goal.condition ?? ''
+    const resolvedRefMatch = /lastResolvedRef === '([^']+)'/.exec(condition)
+    const logResultMatch = /\[([^\]]+)\]\.sort\(\)\.join\(\)/.exec(condition)
+    const expectedLogResult = logResultMatch
+      ? logResultMatch[1].split(',').map((token) => token.trim().replace(/^'|'$/g, ''))
+      : undefined
+
+    return {
+      type: 'commandOutput',
+      expectedResolvedRef: resolvedRefMatch?.[1],
+      expectedLogResult,
+      description,
+    }
+  }
+
+  if (level.goal?.type === 'stashState') {
+    const condition = level.goal.condition ?? ''
+    const stashLengthMatch = /stash\.length === (\d+)/.exec(condition)
+    const fileMatch = /files\['([^']+)'\]\.status === '([^']+)'/.exec(condition)
+
+    return {
+      type: 'stashState',
+      expectedStashLength: stashLengthMatch ? Number(stashLengthMatch[1]) : undefined,
+      fileName: fileMatch?.[1],
+      fileStatus: isGitFileStatus(fileMatch?.[2]) ? fileMatch[2] : undefined,
+      description,
+    }
+  }
+
+  if (level.goal?.type === 'bisectResult') {
+    const match = /identifiedFirstBadCommit === '([^']+)'/.exec(level.goal.condition ?? '')
+
+    return { type: 'bisectResult', commitId: match?.[1] ?? '', description }
+  }
+
+  if (level.goal?.type === 'conflictResolved') {
+    const match = /files\['([^']+)'\]/.exec(level.goal.condition ?? '')
+    const filePath = match?.[1] ?? Object.keys(level.initialState?.files ?? {})[0]
+
+    if (!filePath) {
+      return undefined
+    }
+
+    return { type: 'conflictResolved', filePath, description }
   }
 
   return undefined
@@ -425,6 +549,18 @@ function getVisualMode(goalKind: GitLabGoalKind) {
       return 'file-status'
     case 'resetState':
       return 'reset-state'
+    case 'remoteState':
+      return 'remote-state'
+    case 'tagState':
+      return 'tag-state'
+    case 'conflictResolved':
+      return 'conflict-resolved'
+    case 'commandOutput':
+      return 'command-output'
+    case 'stashState':
+      return 'stash-state'
+    case 'bisectResult':
+      return 'bisect-result'
     case 'graph':
       return 'curriculum-graph'
   }
@@ -436,7 +572,13 @@ function isSupportedGoalType(goalType: string | undefined): goalType is GitLabGo
     goalType === 'configState' ||
     goalType === 'repoState' ||
     goalType === 'fileStatus' ||
-    goalType === 'resetState'
+    goalType === 'resetState' ||
+    goalType === 'remoteState' ||
+    goalType === 'tagState' ||
+    goalType === 'conflictResolved' ||
+    goalType === 'commandOutput' ||
+    goalType === 'stashState' ||
+    goalType === 'bisectResult'
   )
 }
 

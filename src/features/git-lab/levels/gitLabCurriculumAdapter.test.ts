@@ -7,8 +7,8 @@ describe('gitLabCurriculumAdapter', () => {
     const levels = createPlayableLevels(levelsData)
     const curriculumLevels = levels.filter((level) => /^\d+-\d+$/.test(level.id))
 
-    expect(levels).toHaveLength(23)
-    expect(curriculumLevels).toHaveLength(19)
+    expect(levels).toHaveLength(32)
+    expect(curriculumLevels).toHaveLength(28)
   })
 
   it('groups all imported curriculum levels by module with locked reasons for unsupported goals', () => {
@@ -17,10 +17,10 @@ describe('gitLabCurriculumAdapter', () => {
 
     expect(modules).toHaveLength(3)
     expect(items).toHaveLength(28)
-    expect(items.filter((item) => item.status === 'playable')).toHaveLength(19)
+    expect(items.filter((item) => item.status === 'playable')).toHaveLength(28)
     expect(items.find((item) => item.id === '1-2')?.playableLevel?.goalKind).toBe('fileStatus')
     expect(items.find((item) => item.id === '3-9')?.playableLevel?.goalKind).toBe('resetState')
-    expect(items.find((item) => item.id === '1-6')?.reason).toContain('remoteState')
+    expect(items.find((item) => item.id === '1-6')?.playableLevel?.goalKind).toBe('remoteState')
   })
 
   it('converts curriculum branch commitId values into graph snapshot head values', () => {
@@ -92,5 +92,129 @@ describe('gitLabCurriculumAdapter', () => {
     const level = levels.find((candidate) => candidate.id === '2-3')
 
     expect(level?.initialEngineState?.nextCommitIndex).toBe(5)
+  })
+
+  it('carries remotes, tags, stash, and bugState through to engine state', () => {
+    const [level] = createPlayableLevels({
+      levels: [],
+      curriculumModules: [
+        {
+          moduleId: 'm1',
+          moduleTitle: 'Module 1',
+          bookRef: 'ref',
+          levels: [
+            {
+              id: 'test-1',
+              title: 'test',
+              bookRef: 'ref',
+              description: 'desc',
+              allowedCommands: ['git tag'],
+              initialState: {
+                repoExists: true,
+                commits: [{ id: 'C0', parents: [], bugState: 'good' }],
+                branches: [{ name: 'master', commitId: 'C0' }],
+                tags: [{ name: 'v0.9', commitId: 'C0' }],
+                remotes: [{ name: 'origin', url: 'https://example.com/repo.git' }],
+                stash: [{ id: 'stash@{0}', files: { 'index.html': 'wip' } }],
+                HEAD: { type: 'branch', name: 'master' },
+              },
+              goal: { type: 'tagState', condition: "t.name === 'v1.0'" },
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(level.initialEngineState?.tags).toEqual([{ name: 'v0.9', commitId: 'C0' }])
+    expect(level.initialEngineState?.remotes).toEqual([
+      { name: 'origin', url: 'https://example.com/repo.git' },
+    ])
+    expect(level.initialEngineState?.stash).toEqual([
+      { id: 'stash@{0}', files: { 'index.html': 'wip' } },
+    ])
+    expect(level.initialEngineState?.commits[0].bugState).toBe('good')
+  })
+
+  it('parses remoteState goal conditions for both origin registration and remote branch existence', () => {
+    const [level1, level2] = createPlayableLevels({
+      levels: [],
+      curriculumModules: [
+        {
+          moduleId: 'm1',
+          moduleTitle: 'Module 1',
+          bookRef: 'ref',
+          levels: [
+            {
+              id: 'remote-origin',
+              title: 'origin',
+              bookRef: 'ref',
+              description: 'desc',
+              allowedCommands: ['git remote add'],
+              initialState: {
+                commits: [{ id: 'C0', parents: [] }],
+                branches: [{ name: 'master', commitId: 'C0' }],
+                HEAD: { type: 'branch', name: 'master' },
+              },
+              goal: {
+                type: 'remoteState',
+                condition: "remotes.includes('origin') && remoteBranches.master === localBranches.master",
+              },
+            },
+            {
+              id: 'remote-branch',
+              title: 'branch',
+              bookRef: 'ref',
+              description: 'desc',
+              allowedCommands: ['git push'],
+              initialState: {
+                commits: [{ id: 'C0', parents: [] }],
+                branches: [{ name: 'iss53', commitId: 'C0' }],
+                HEAD: { type: 'branch', name: 'iss53' },
+              },
+              goal: {
+                type: 'remoteState',
+                condition: "remoteBranches.includes('origin/iss53')",
+              },
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(level1.goalCheck).toMatchObject({
+      type: 'remoteState',
+      requiredRemoteName: 'origin',
+      requiredRemoteBranch: 'origin/master',
+    })
+    expect(level2.goalCheck).toMatchObject({
+      type: 'remoteState',
+      requiredRemoteBranch: 'origin/iss53',
+    })
+  })
+
+  it('wires the real 2-6 conflict lesson data end to end (adapter -> engine -> compareGitLabGoal)', () => {
+    const levels = createPlayableLevels(levelsData as never)
+    const level = levels.find((candidate) => candidate.id === '2-6')
+
+    expect(level).toBeDefined()
+    expect(level?.goalKind).toBe('conflictResolved')
+    expect(level?.initialEngineState?.files['index.html'].versions).toMatchObject({
+      C4: expect.any(String),
+      C3: expect.any(String),
+    })
+  })
+
+  it('unlocks all previously locked lessons (remote/tag/conflict/revision/stash/bisect)', () => {
+    const modules = createCurriculumNavigation(levelsData as never)
+    const previouslyLockedIds = ['1-6', '1-7', '2-6', '2-7', '3-1', '3-2', '3-4', '3-5', '3-12']
+    const items = modules.flatMap((module) => module.items)
+
+    for (const id of previouslyLockedIds) {
+      const item = items.find((candidate) => candidate.id === id)
+      expect(item?.status, `lesson ${id} should be playable`).toBe('playable')
+    }
+
+    const stillLocked = items.filter((item) => item.status === 'locked')
+    expect(stillLocked).toEqual([])
   })
 })

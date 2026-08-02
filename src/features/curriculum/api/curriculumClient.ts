@@ -1,11 +1,13 @@
 import { apiUrl } from '../../../app/apiUrl'
 import { generateMockCurriculum, type GeneratedCurriculumPlan } from '../model/curriculumGenerator'
+import type { CurriculumProgressContext } from '../model/curriculumProgressContext'
 import type { GeneratedCurriculumSnapshot } from '../model/useGeneratedCurriculumStore'
 
 export type CurriculumRecommendationRequest = {
   goal: string
   followUpInstruction?: string
   previousPlan?: GeneratedCurriculumPlan
+  progressContext?: CurriculumProgressContext
 }
 
 export type CurriculumRecommendationResponse = {

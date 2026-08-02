@@ -39,6 +39,18 @@ export default function RepositoryStatePanel({ state }: RepositoryStatePanelProp
           <span>Working Tree</span>
           <strong>{state.workingTreeCommitId ?? 'empty'}</strong>
         </div>
+        <div className={styles.summaryItem}>
+          <span>Remotes</span>
+          <strong>{state.remotes.length > 0 ? state.remotes.map((remote) => remote.name).join(', ') : 'None'}</strong>
+        </div>
+        <div className={styles.summaryItem}>
+          <span>Tags</span>
+          <strong>{state.tags.length > 0 ? state.tags.map((tagItem) => tagItem.name).join(', ') : 'None'}</strong>
+        </div>
+        <div className={styles.summaryItem}>
+          <span>Stash</span>
+          <strong>{state.stash.length}</strong>
+        </div>
       </div>
 
       <div className={styles.fileGrid}>

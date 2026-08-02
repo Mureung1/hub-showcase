@@ -119,27 +119,19 @@ export async function handleCurriculumApiRequest({
     ? parsedBody.value.followUpInstruction.trim()
     : undefined
   const previousPlan = parsedBody.value.previousPlan
+  const progressContext = parsedBody.value.progressContext
 
   try {
     const plan = await recommendCurriculum({
       goal,
       followUpInstruction,
       previousPlan,
+      progressContext,
       tracks,
       config,
       recommendationProvider,
       knowledgeChunks,
     })
-
-    if (generatedCurriculumRepository) {
-      await generatedCurriculumRepository.save({
-        id: plan.id,
-        goal,
-        plan,
-        generatedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-    }
 
     return { status: 200, body: { plan }, headers: createCorsHeaders() }
   } catch (error) {

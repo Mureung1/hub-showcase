@@ -55,6 +55,13 @@ describe('curriculumClient', () => {
 
   it('keeps follow-up requests tied to the previous plan in server mode', async () => {
     const plan = createFallbackCurriculumPlan('I want to build a FastAPI server')
+    const progressContext = {
+      missionId: `generated-mission-${plan.id}`,
+      activeStepOffset: 1,
+      completedStepIds: [plan.steps[0].id],
+      completedAt: null,
+      lastTestResult: null,
+    }
     const fetchImpl = vi.fn(async () => ({
       ok: true,
       json: async () => ({ plan }),
@@ -65,6 +72,7 @@ describe('curriculumClient', () => {
         goal: 'I want to build a FastAPI server',
         followUpInstruction: 'Make this a three-week practice plan.',
         previousPlan: plan,
+        progressContext,
       },
       { mode: 'server', fetchImpl },
     )
@@ -76,6 +84,7 @@ describe('curriculumClient', () => {
         goal: 'I want to build a FastAPI server',
         followUpInstruction: 'Make this a three-week practice plan.',
         previousPlan: plan,
+        progressContext,
       }),
     })
   })

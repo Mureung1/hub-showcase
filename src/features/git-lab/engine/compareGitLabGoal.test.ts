@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createGraphSnapshotFromEngineState } from './gitGraphAdapter'
-import { runGitCommand } from './gitEngine'
+import { commit, createInitialGitState, runGitCommand } from './gitEngine'
+import { push, remoteAdd } from './remoteCommands'
 import { compareGitLabGoal } from './compareGitLabGoal'
 import levelsData from '../levels/gitLabLevels.json'
 import { createPlayableLevels } from '../levels/gitLabCurriculumAdapter'
+import type { PlayableGitLabLevel } from '../levels/gitLabCurriculumAdapter'
 
 const levels = createPlayableLevels(levelsData)
 
@@ -64,6 +66,32 @@ describe('compareGitLabGoal', () => {
     expect(compareGitLabGoal(level, state, createGraphSnapshotFromEngineState(state)).cleared).toBe(
       true,
     )
+  })
+
+  it('clears a remoteState goal once origin is registered and pushed', () => {
+    const level = {
+      id: 'remote-origin',
+      goalKind: 'remoteState' as const,
+      goalCheck: {
+        type: 'remoteState' as const,
+        requiredRemoteName: 'origin',
+        requiredRemoteBranch: 'origin/master',
+        description: 'origin이 등록되고 master가 push된 상태',
+      },
+      goal: { commits: [], branches: [], currentBranch: null },
+    } as unknown as PlayableGitLabLevel
+
+    let state = createInitialGitState('master')
+    state = commit(state, 'first commit').state
+    state = remoteAdd(state, 'origin', 'https://example.com/repo.git').state
+
+    const beforePush = compareGitLabGoal(level, state, { commits: [], branches: [], currentBranch: null })
+    expect(beforePush.cleared).toBe(false)
+
+    state = push(state, 'origin', 'master', true).state
+
+    const afterPush = compareGitLabGoal(level, state, { commits: [], branches: [], currentBranch: null })
+    expect(afterPush.cleared).toBe(true)
   })
 })
 
