@@ -8,7 +8,7 @@
 
 ## 배포 사이트
 
-[Campus Flow 열기](https://campus-flow-bus-dashboard-kr.kjh62879078.chatgpt.site)
+[Campus Flow 열기](https://campus-flow-national-live-kr.kjh62879078.chatgpt.site)
 
 사이트는 현재 공유 대상만 접근할 수 있는 비공개 설정입니다.
 
