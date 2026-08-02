@@ -1,4 +1,5 @@
 import StatusBadge from './StatusBadge.jsx';
+import FeaturedBadge from './FeaturedBadge.jsx';
 import { HeartIcon, CheckCircleIcon, PinIcon, MapIcon, ClockIcon, CloseIcon, ExternalLinkIcon, PlusIcon } from './icons.jsx';
 import { naverMapSearchUrl } from '../utils/naverMapLink.js';
 
@@ -25,6 +26,7 @@ export default function BakeryDetailPopup({
         <div className="popup-title-body">
           <h4>
             <span className="popup-name">{bakery.name}</span>
+            {bakery.isFeatured && <FeaturedBadge comment={bakery.comment} />}
             <StatusBadge bakery={bakery} tag="status-chip" />
           </h4>
           {distanceKm != null && <span className="popup-distance">출발지에서 약 {distanceKm.toFixed(1)}km</span>}

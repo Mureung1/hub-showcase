@@ -19,6 +19,7 @@ export function normalize(row) {
     photoUrl: row.photo_url,
     busy: row.busy_hours,
     hasCoffee: row.has_coffee,
+    isFeatured: row.is_featured,
   };
 }
 
