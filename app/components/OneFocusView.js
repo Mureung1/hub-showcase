@@ -131,7 +131,7 @@ export default function OneFocusView({
         </div>
       )}
 
-      <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+      <div style={{ display: "flex", gap: "12px", marginTop: "8px", position: "relative", zIndex: 1 }}>
         <button
           onClick={onStart}
           style={{
