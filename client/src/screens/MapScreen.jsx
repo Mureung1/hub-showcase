@@ -10,6 +10,8 @@ import { PRICE_LABELS } from '../data/mockBakeryExtras.js';
 import NaverMapCanvas from '../components/NaverMapCanvas.jsx';
 import BakeryDetailPopup from '../components/BakeryDetailPopup.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
+import FeaturedBadge from '../components/FeaturedBadge.jsx';
+import OperatorPicks from '../components/OperatorPicks.jsx';
 import Mascot from '../components/Mascot.jsx';
 import { LocateIcon, CloseIcon, SearchIcon, ChevronDownIcon } from '../components/icons.jsx';
 
@@ -49,8 +51,12 @@ export default function MapScreen() {
 
   useEffect(() => {
     if (bakeriesStatus !== 'ready' || visibleIds) return;
-    const shuffled = [...bakeries].sort(() => Math.random() - 0.5);
-    setVisibleIds(new Set(shuffled.slice(0, MAP_BAKERY_COUNT).map((b) => b.id)));
+    // 운영자 추천은 무작위 표본에 밀려서 지도/리스트에서 빠지면 안 되니(캐러셀에서 눌러도 마커가
+    // 없으면 상세 팝업이 안 뜬다) 항상 먼저 포함시키고, 나머지 자리를 무작위로 채운다.
+    const featured = bakeries.filter((b) => b.isFeatured);
+    const rest = [...bakeries.filter((b) => !b.isFeatured)].sort(() => Math.random() - 0.5);
+    const combined = [...featured, ...rest].slice(0, MAP_BAKERY_COUNT);
+    setVisibleIds(new Set(combined.map((b) => b.id)));
   }, [bakeriesStatus, bakeries, visibleIds]);
 
   const visibleBakeries = useMemo(
@@ -104,6 +110,8 @@ export default function MapScreen() {
   return (
     <section className="screen-map">
       <aside className="browse-panel">
+        <OperatorPicks bakeries={bakeries} onSelect={openDetail} />
+
         <div className="browse-panel-head">
           <div className="browse-panel-title">빵집 둘러보기</div>
           <label className="search">
@@ -295,6 +303,7 @@ function BrowseItemRow({ bakery, isSelected, isActive, onOpen, onToggle }) {
       <div className="browse-item-main">
         <span className="browse-item-name">
           <span className="popup-name">{bakery.name}</span>
+          {bakery.isFeatured && <FeaturedBadge comment={bakery.comment} />}
           <StatusBadge bakery={bakery} tag="status-chip" />
         </span>
         <div className="browse-item-tags">

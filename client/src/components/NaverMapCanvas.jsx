@@ -52,6 +52,14 @@ function buildMarkerContent(bakery, { selected, dim, justClicked, isNew, popDela
   label.textContent = bakery.name;
   el.appendChild(label);
 
+  // 운영자 추천 표시 — status-bubble(위쪽)/label(아래쪽)이랑 안 겹치게 마커 우하단 모서리에 작게.
+  if (bakery.isFeatured) {
+    const star = document.createElement('span');
+    star.className = 'marker-featured-star';
+    star.innerHTML = '★';
+    el.appendChild(star);
+  }
+
   return el;
 }
 

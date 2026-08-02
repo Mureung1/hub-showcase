@@ -8,3 +8,10 @@ export async function fetchTopRoutes({ origin, bakeries }) {
   });
   return res.data.data.routes; // [{ order: [id, id, ...], distanceKm }, ...]
 }
+
+// points: [{lat, lng}, ...] — 이미 정해진 방문 순서(출발지 포함) 그대로. TMap 대중교통 API로 실제
+// 버스/지하철 소요시간을 구한다("버스" 모드 전용 — 도보/자동차는 여전히 거리 기반 근사치).
+export async function fetchTransitMinutes(points) {
+  const res = await api.post('/routes/transit-time', { points });
+  return res.data.data.minutes;
+}

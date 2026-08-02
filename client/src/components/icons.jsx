@@ -137,3 +137,9 @@ export const PlusIcon = (props) => (
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
 );
+
+export const StarIcon = (props) => (
+  <svg {...base} {...props}>
+    <path d="M12 2.5l2.9 6.3 6.6.7-4.9 4.6 1.3 6.7L12 17.4l-5.9 3.4 1.3-6.7-4.9-4.6 6.6-.7L12 2.5z" />
+  </svg>
+);

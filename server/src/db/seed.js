@@ -33,10 +33,10 @@ async function geocode(address) {
 function parseCsv(text) {
   const lines = text.trim().split('\n').slice(1); // 헤더 제외
   return lines.map((line) => {
-    const [name, address, signatureMenu, comment, priceRange, openHours, closedDays, busyHours] = line
+    const [name, address, signatureMenu, comment, priceRange, openHours, closedDays, busyHours, featured] = line
       .split(',')
       .map((v) => v.trim());
-    return { name, address, signatureMenu, comment, priceRange, openHours, closedDays, busyHours };
+    return { name, address, signatureMenu, comment, priceRange, openHours, closedDays, busyHours, isFeatured: featured === 'TRUE' };
   });
 }
 
@@ -47,7 +47,10 @@ async function seed() {
   for (const row of rows) {
     const { rows: existing } = await db.query('SELECT id FROM bakeries WHERE name = $1', [row.name]);
     if (existing.length) {
-      console.log(`  - ${row.name} — 이미 있음, 건너뜀`);
+      // 이미 있는 곳도 운영자추천 여부는 CSV 값 그대로 최신화한다(직접 수기로 편집하는 필드라
+      // list.csv를 고치고 다시 시드하면 바로 반영되게 하기 위함 — 나머지 필드는 건드리지 않음).
+      await db.query('UPDATE bakeries SET is_featured = $1 WHERE id = $2', [row.isFeatured, existing[0].id]);
+      console.log(`  - ${row.name} — 이미 있음, 운영자추천만 갱신(${row.isFeatured})`);
       continue;
     }
 
@@ -58,8 +61,8 @@ async function seed() {
     }
     const { open, close } = parseHourRange(row.openHours);
     await db.query(
-      `INSERT INTO bakeries (name, address, lat, lng, signature_menu, comment, price_range, open_hour, close_hour, closed_days, busy_hours)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      `INSERT INTO bakeries (name, address, lat, lng, signature_menu, comment, price_range, open_hour, close_hour, closed_days, busy_hours, is_featured)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         row.name,
         row.address,
@@ -72,6 +75,7 @@ async function seed() {
         close,
         row.closedDays || null,
         row.busyHours || null,
+        row.isFeatured,
       ]
     );
     console.log(`  ✓ ${row.name} (${coord.lat}, ${coord.lng})`);

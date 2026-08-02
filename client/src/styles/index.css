@@ -332,6 +332,13 @@ main{ flex: 1; position: relative; display: flex; flex-direction: column; }
   padding: 2px 7px; white-space: nowrap; box-shadow: var(--shadow-sm);
 }
 .map-marker .status-bubble{ position: absolute; left: 50%; top: -26px; transform: translateX(-50%); }
+.marker-featured-star{
+  position: absolute; right: -3px; bottom: -3px; z-index: 1;
+  width: 14px; height: 14px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #FFF6E0; border: 1.5px solid var(--surface); color: #A8760A;
+  font-size: 9px; line-height: 1; box-shadow: 0 2px 4px rgba(168,118,10,.3);
+}
 
 /* "내 위치" 마커 — 빵집 핀(teardrop)과 구분되는 원형 점 + 은은한 펄스 */
 .map-marker-me{ position: relative; width: 18px; height: 18px; }
@@ -424,6 +431,17 @@ main{ flex: 1; position: relative; display: flex; flex-direction: column; }
 }
 .status-chip.closing{ background: #E1596B; }
 .status-chip.quiet{ background: #3FA07D; }
+
+/* "운영자 PICK" 배지 — 마감임박/한산해요(상태색)나 담기 버튼(accent 오렌지)이랑은 다른 의미라
+   골드 톤으로 따로 둔다. FeaturedBadge.jsx에서 bakery.isFeatured일 때만 렌더링. */
+.featured-badge{
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.6rem; font-weight: 700; letter-spacing: 0.02em;
+  padding: 2px 7px; border-radius: 999px;
+  background: #FFF6E0; color: #A8760A; border: 1px solid #F0DBA0;
+  vertical-align: middle; cursor: default;
+}
+.featured-badge .icon{ stroke: #A8760A; fill: #A8760A; }
 /* 좌(빵집 둘러보기)/우(트레이) 패널 — 둘 다 flex-column이고 내부에 flex:1 스크롤 영역을 갖는다.
    min-height:0이 없으면 flex 아이템의 기본 min-height:auto(컨텐츠 기준) 때문에 내부 스크롤이
    실제로 동작하지 않고 패널 자체가 컨텐츠 높이만큼 계속 커져버린다(지도까지 같이 커지던 버그의 원인). */
@@ -452,7 +470,7 @@ main{ flex: 1; position: relative; display: flex; flex-direction: column; }
    칩은 항상 고정폭으로 안 줄어들게(flex-shrink:0), 이름 쪽만 한 줄로 말줄임(ellipsis)해서
    칩 위치를 항상 이름 옆으로 고정한다. */
 .popup-name{ overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.map-detail-popup-head h4 .status-chip{ flex-shrink: 0; }
+.map-detail-popup-head h4 .status-chip, .map-detail-popup-head h4 .featured-badge{ flex-shrink: 0; }
 
 .heart-btn{
   border: none; background: var(--surface); flex-shrink: 0;
@@ -517,8 +535,40 @@ main{ flex: 1; position: relative; display: flex; flex-direction: column; }
   box-shadow: var(--shadow-btn);
 }
 
+/* 운영자 추천 캐러셀 — 검색/필터보다 먼저, 좌측 패널 맨 위에 항상 노출(필터링 영향 안 받음). */
+.operator-picks{ flex-shrink: 0; margin-bottom: 22px; padding-bottom: 20px; border-bottom: 1px solid var(--border-soft); }
+.operator-picks-title{
+  display: flex; align-items: center; gap: 5px;
+  font-size: 0.78rem; font-weight: 700; color: #A8760A; margin-bottom: 10px;
+}
+.operator-picks-title .icon{ stroke: #A8760A; fill: #A8760A; }
+.operator-picks-scroll{
+  display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; margin: 0 -2px; padding-left: 2px;
+  scroll-snap-type: x proximity;
+}
+.operator-pick-card{
+  scroll-snap-align: start; flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  width: 68px; border: none; background: none; text-align: center;
+  transition: transform .15s ease;
+}
+.operator-pick-card:hover{ transform: translateY(-2px); }
+.operator-pick-card:active{ transform: translateY(0) scale(.95); }
+.operator-pick-thumb{
+  display: flex; align-items: center; justify-content: center;
+  width: 56px; height: 56px; border-radius: 50%; font-size: 1.5rem;
+  background: linear-gradient(135deg, #FFF6E0, #FBE7B4);
+  border: 2px solid var(--surface); box-shadow: 0 4px 12px rgba(168,118,10,0.22);
+  overflow: hidden;
+}
+.operator-pick-thumb img{ width: 100%; height: 100%; object-fit: cover; }
+.operator-pick-name{
+  font-size: 0.7rem; font-weight: 600; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+}
+
 .browse-panel-head{ flex-shrink: 0; margin-bottom: 10px; }
-.browse-panel-title{ font-size: 1.18rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 10px; }
+.browse-panel-title{ font-size: 1.18rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 14px; }
 
 .browse-list{ flex: 1; overflow-y: auto; min-height: 0; }
 .category-section{ border-bottom: 1px solid var(--border-soft); }
@@ -550,7 +600,7 @@ main{ flex: 1; position: relative; display: flex; flex-direction: column; }
 .browse-item.selected{ border-left-color: var(--accent); }
 .browse-item-main{ min-width: 0; flex: 1; }
 .browse-item-name{ display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 600; min-width: 0; }
-.browse-item-name .status-chip{ flex-shrink: 0; }
+.browse-item-name .status-chip, .browse-item-name .featured-badge{ flex-shrink: 0; }
 .browse-item-tags{ display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
 .browse-item-tags .tag{
   font-size: 0.66rem; font-weight: 600; color: var(--ink-soft);
@@ -697,7 +747,10 @@ main{ flex: 1; position: relative; display: flex; flex-direction: column; }
 .list-card .thumb{ width: 52px; height: 52px; border-radius: var(--radius-sm); background: linear-gradient(135deg, var(--accent-soft), var(--accent-line)); flex-shrink: 0; overflow: hidden; }
 .list-card .thumb img{ width: 100%; height: 100%; object-fit: cover; display: block; }
 .list-card .info{ flex: 1; min-width: 0; }
-.list-card .name{ font-weight: 600; font-size: 0.97rem; letter-spacing:-0.01em; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 3px; }
+/* 이름+뱃지 2개(운영자PICK/상태)까지 붙을 수 있어서, 이름을 말줄임하고 뱃지는 안 줄어들게 고정한다
+   (browse-item/마커 팝업에서 이미 겪었던 뱃지 줄바꿈 버그와 같은 이유). */
+.list-card .name{ font-weight: 600; font-size: 0.97rem; letter-spacing:-0.01em; display: flex; align-items: center; gap: 6px; min-width: 0; margin-bottom: 3px; }
+.list-card .name .status-chip, .list-card .name .featured-badge{ flex-shrink: 0; }
 .list-card .menu{ font-size: 0.8rem; color: var(--ink-soft); margin-bottom: 14px; line-height: 1.5; }
 .list-card .card-actions{ display: flex; align-items: center; gap: 8px; }
 .list-card .select-btn{
@@ -754,6 +807,8 @@ main{ flex: 1; position: relative; display: flex; flex-direction: column; }
 .rank-card-stats{ font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.76rem; color: var(--ink-soft); margin-bottom: 8px; }
 .rank-card-path{ font-size: 0.8rem; color: var(--ink-soft); line-height: 1.55; }
 
+/* RouteMapCanvas.jsx가 마운트하는 실제 네이버지도 — 예전엔 SVG로 그린 가짜 미니맵이었는데,
+   TMap 대중교통 연동 김에 실제 지도로 교체했다. */
 .route-map-center{
   flex: 1;
   min-width: 0;
@@ -761,28 +816,27 @@ main{ flex: 1; position: relative; display: flex; flex-direction: column; }
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
   overflow: hidden;
-  background:
-    linear-gradient(var(--border-soft) 1px, transparent 1px) 0 0 / 40px 40px,
-    linear-gradient(90deg, var(--border-soft) 1px, transparent 1px) 0 0 / 40px 40px,
-    var(--bg);
+  background: var(--bg);
 }
-.route-map-center svg.lines{ position: absolute; inset: 0; width: 100%; height: 100%; }
-.route-map-center svg.lines line{
-  stroke-dasharray: 1; stroke-dashoffset: 1;
-  animation: route-line-draw .35s ease forwards;
-}
-@keyframes route-line-draw{
-  to{ stroke-dashoffset: 0; }
-}
-.route-map-center .pin{
-  transform: translate(-50%, -50%);
-  animation: route-pin-pop .3s ease backwards;
-}
+/* 네이버 지도 SDK가 이 컨테이너의 inline position을 relative로 덮어써서 width/height를 명시해 방어한다
+   (MapScreen의 .map-mount와 같은 이유). */
+.route-map-mount{ position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.route-map-pin{ display: flex; flex-direction: column; align-items: center; animation: route-pin-pop .3s ease backwards; }
 @keyframes route-pin-pop{
-  from{ transform: translate(-50%, -50%) scale(.3); opacity: 0; }
-  to{ transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  from{ transform: scale(.3); opacity: 0; }
+  to{ transform: scale(1); opacity: 1; }
 }
-.route-map-center .pin .dot{ width: 24px; height: 24px; border-radius: 50%; transform: none; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:0.66rem; font-weight: 600; color:#fff; }
+.route-map-pin-dot{
+  width: 24px; height: 24px; border-radius: 50%;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono',monospace; font-size:0.66rem; font-weight: 600; color:#fff;
+  box-shadow: 0 3px 8px rgba(22,21,15,0.25);
+}
+.route-map-pin-label{
+  margin-top: 4px; font-size: 0.66rem; font-weight: 600; white-space: nowrap;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+  padding: 2px 6px; box-shadow: var(--shadow-sm);
+}
 
 /* 공유/저장 버튼 — 예전엔 우측 별도 칸에 있었는데, 그 칸을 없애면서 지도 위 플로팅 버튼으로
    옮겼다(MapScreen의 location-bar와 같은 패턴). */

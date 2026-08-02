@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '../store/useAppStore.js';
-import { fetchTopRoutes } from '../api/routes.js';
+import { fetchTopRoutes, fetchTransitMinutes } from '../api/routes.js';
 import { estimateMinutes, RANK_COLORS, MODES } from '../utils/routeCalc.js';
-import { normalizeToViewBox } from '../utils/geo.js';
 import RankCard from '../components/RankCard.jsx';
+import RouteMapCanvas from '../components/RouteMapCanvas.jsx';
 import Modal from '../components/Modal.jsx';
 import Mascot from '../components/Mascot.jsx';
 import { ClockIcon, ShareIcon, CloseIcon } from '../components/icons.jsx';
@@ -86,8 +86,36 @@ export default function RouteScreen() {
     () => ({ id: 'origin', name: userLocationLabel, lat: userLocation.lat, lng: userLocation.lng }),
     [userLocation, userLocationLabel]
   );
-  // 미니맵은 실제 축척 없이 상대적 배치만 보여주면 되므로 lat/lng을 0~100 뷰박스로 정규화해서 그린다.
-  const positioned = useMemo(() => (route ? normalizeToViewBox([origin, ...route.order]) : []), [route, origin]);
+  // 실제 지도(RouteMapCanvas)에 찍을 점들 — 출발지부터 방문 순서 그대로.
+  const routePoints = useMemo(
+    () => (route ? [{ ...origin, isOrigin: true }, ...route.order.map((b) => ({ ...b, isOrigin: false }))] : []),
+    [route, origin]
+  );
+  // 지도 위 선/핀 색은 지금 보고 있는 순위 카드와 같은 색으로 맞춰서, 카드와 동선이 바로 연결돼 보이게 한다.
+  const routeColor = RANK_COLORS[activeRankIdx % RANK_COLORS.length];
+
+  // "버스"(대중교통) 모드만 TMap 대중교통 API로 실제 소요시간을 구한다 — 도보/자동차는 여전히
+  // routeCalc.js의 거리 기반 근사치. 방문 순서(route)나 모드가 바뀌면 다시 계산.
+  const [transitStatus, setTransitStatus] = useState('idle'); // idle | loading | ready | error
+  const [transitMinutes, setTransitMinutes] = useState(null);
+  useEffect(() => {
+    if (mode !== 'bus' || !showModeTabs || !route) return;
+    let cancelled = false;
+    setTransitStatus('loading');
+    const points = [origin, ...route.order].map((p) => ({ lat: p.lat, lng: p.lng }));
+    fetchTransitMinutes(points)
+      .then((minutes) => {
+        if (cancelled) return;
+        setTransitMinutes(minutes);
+        setTransitStatus('ready');
+      })
+      .catch(() => {
+        if (!cancelled) setTransitStatus('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, showModeTabs, route, origin]);
 
   if (chosen.length < 2) {
     return (
@@ -204,47 +232,7 @@ export default function RouteScreen() {
         </aside>
 
         <div className="route-map-center">
-          <svg className="lines" viewBox="0 0 100 100" preserveAspectRatio="none">
-            {positioned.slice(0, -1).map((a, i) => {
-              const b = positioned[i + 1];
-              return (
-                <line
-                  key={`${a.id}-${b.id}`}
-                  x1={a.x}
-                  y1={a.y}
-                  x2={b.x}
-                  y2={b.y}
-                  stroke={RANK_COLORS[i % RANK_COLORS.length]}
-                  strokeWidth="0.8"
-                  pathLength="1"
-                  style={{ animationDelay: `${i * 0.35}s` }}
-                />
-              );
-            })}
-          </svg>
-          {positioned.map((p, i) => {
-            const isOrigin = i === 0;
-            return (
-              <div
-                className="pin"
-                key={p.id}
-                style={{ left: `${p.x}%`, top: `${p.y}%`, animationDelay: `${i * 0.35}s` }}
-              >
-                <span
-                  className="dot"
-                  style={{ background: isOrigin ? 'var(--ink)' : RANK_COLORS[(i - 1) % RANK_COLORS.length] }}
-                >
-                  {isOrigin ? (
-                    <svg viewBox="0 0 24 24" width="12" height="12" fill="#fff">
-                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z" />
-                    </svg>
-                  ) : (
-                    i
-                  )}
-                </span>
-              </div>
-            );
-          })}
+          <RouteMapCanvas points={routePoints} color={routeColor} />
 
           {/* 공유/저장은 예전엔 우측 별도 칸에 있었는데, 그 칸을 없애고 좌측바에 순위+선택목록을
               몰아넣으면서 지도 위 플로팅 버튼으로 옮겼다(MapScreen의 location-bar와 같은 패턴). */}
@@ -281,8 +269,33 @@ export default function RouteScreen() {
               ))}
             </div>
             <div className="mode-result">
-              {MODES.find(([v]) => v === mode)[1]} 이동 시 약 {estimateMinutes(route.dist, mode)}분 소요
-              <small>거리 기반 근사치입니다 (1차 구현). 이후 실제 API 연동 예정.</small>
+              {mode === 'bus' ? (
+                transitStatus === 'loading' ? (
+                  <>
+                    대중교통 경로 확인 중…
+                    <small>TMap 대중교통 API로 실제 소요시간을 조회하고 있어요.</small>
+                  </>
+                ) : transitStatus === 'ready' ? (
+                  <>
+                    버스 이동 시 약 {transitMinutes}분 소요
+                    <small>TMap 대중교통 API 기반 실제 소요시간입니다.</small>
+                  </>
+                ) : (
+                  <>
+                    버스 이동 시 약 {estimateMinutes(route.dist, mode)}분 소요
+                    <small>
+                      {transitStatus === 'error'
+                        ? '실제 대중교통 경로를 불러오지 못해 거리 기반 근사치로 대신 보여드려요.'
+                        : '거리 기반 근사치입니다.'}
+                    </small>
+                  </>
+                )
+              ) : (
+                <>
+                  {MODES.find(([v]) => v === mode)[1]} 이동 시 약 {estimateMinutes(route.dist, mode)}분 소요
+                  <small>거리 기반 근사치입니다. (도보/자동차는 아직 실제 API 미연동)</small>
+                </>
+              )}
             </div>
           </div>
         )}

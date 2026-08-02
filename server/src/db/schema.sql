@@ -28,6 +28,10 @@ CREATE TABLE IF NOT EXISTS bakeries (
 -- 필터링 시 NULL/false는 동일하게 취급한다(server/src/services/recommendService.js).
 ALTER TABLE bakeries ADD COLUMN IF NOT EXISTS has_coffee BOOLEAN;
 
+-- 운영자 추천("운영자 PICK" 배지 + 지도 화면 좌측 사이드바 캐러셀). list.csv의 운영자추천 컬럼(TRUE/빈칸)이
+-- 원본이고, db:seed가 그대로 반영한다. 직접 큐레이션하는 값이라 자동 배치/추천 로직에는 넣지 않는다.
+ALTER TABLE bakeries ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT FALSE;
+
 -- 회원가입 시 고르는 빵 취향 (다대다)
 CREATE TABLE IF NOT EXISTS user_tastes (
   user_id INTEGER NOT NULL REFERENCES users(id),
