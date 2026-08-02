@@ -176,3 +176,14 @@
 - 검증: `npm run verify` 통과. 실제 동작 확인 — (1) `/api/brain-dump` 호출 후 `/api/steps` 조회로 저장 안 됨 확인, (2) 12개 중 2개만 남기고 `/api/steps/save` 호출 → Notion에 정확히 2개만 추가됨을 API로 확인, (3) 실제 화면에서 삭제 시 총 시간 합계 재계산(17분→15분) 스크린샷 확인, (4) "전부 다시 쪼개기" 클릭 시 목록·합계가 다른 결과로 교체되는 것 확인, (5) "이대로 시작하기" 클릭 후 저장 + `preview` 전환 확인, (6) localStorage로 `complete` 상태를 재현해 "N개 해냈다" 렌더 확인. 테스트 중 생성된 Notion 행은 전부 정리(archive)해 실제 데이터(영상 촬영분 10개)는 그대로 유지했다.
 - 문서: `docs/checklist.md` C17 전체 체크, `docs/backlog.md` T17 완료 처리, `docs/etc/component-tree.md`에 `review` step·`MicrostepReview` 반영, `CLAUDE.md` 현재 구현 상태 갱신.
 - 확인: [ ]
+
+## 2026-08-02 | T22 | 화이트노이즈 테마 (낮/밤 동기화·숲·카페) 구현
+- Phase 2 백로그 항목을 우선순위(A→B→D→E→C)를 벗어나 먼저 진행(사용자 결정, 디자인 작업 우선). GitHub 이슈 #56 등록 후 backlog.md/checklist.md/dev-prompts.md 문서 먼저 갱신.
+- `app/lib/theme.js` 신규: `isNightTime`(6~18시를 낮으로 판정), `themeBackgroundColor`, `themeTextColor`(밤 배경에서 기본 --ink 텍스트가 안 보이는 문제 때문에 추가).
+- `app/components/ThemeSwitcher.js`, `app/components/ThemeDecoration.js` 신규: 3개 원형 토글, 테마별 코너 장식(해/달, 나뭇잎+새, 커피잔+김). 중앙 콘텐츠와 안 겹치는 코너에만 배치해 z-index 계산 없이 안전하게 그림.
+- `app/components/Character.js`: `color` prop 추가(기본 rose, forest 테마일 때만 forest로 교체) — docs/prototype/whitenoise-themes.html 근거.
+- `app/components/OneFocusView.js`/`FocusTimer.js`: `theme` prop으로 배경색 적용, `ThemeDecoration` 렌더. `OneFocusView`에만 `ThemeSwitcher`(선택은 여기서만, `FocusTimer`는 이어받기만). `app/globals.css`에 forest/night/coffee 계열 CSS 토큰 추가(design.md에 이미 문서화돼 있던 값 그대로).
+- `app/page.js`: `theme` state 추가, `localStorage`(`kok-theme`)로 새로고침해도 유지.
+- 검증: `npm run verify` 통과. 실제 화면에서 Date를 14시/22시로 모킹해 낮/밤 배경·장식·텍스트 전환 확인, 숲/카페 토글 클릭으로 배경·장식·캐릭터 색 전환 확인, 숲 테마 선택 후 새로고침해도 유지되는 것 확인. 검증 중 밤 배경에서 기본 텍스트 색 대비가 나쁜 실제 버그를 발견해 `themeTextColor`로 수정.
+- 문서: checklist.md C22 전체 체크, backlog.md T22 완료 처리, component-tree.md props 표 갱신, CLAUDE.md 현재 구현 상태 갱신, README.md/CLAUDE.md/instructions.md/commit-rules.md의 Task/Checklist 총 개수 표기를 T01~T22/C01~C22로 갱신.
+- 확인: [ ]
