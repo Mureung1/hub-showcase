@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import BrainDumpInput from "./components/BrainDumpInput";
+import MicrostepReview from "./components/MicrostepReview";
 import TaskPreview from "./components/TaskPreview";
 import OneFocusView from "./components/OneFocusView";
 import FocusTimer from "./components/FocusTimer";
@@ -19,7 +20,7 @@ import OnboardingGuide from "./components/OnboardingGuide";
 // 저장한다 - "reason"/"proposal"(힘들어 루프 중) 화면을 다시 그리는 데 필요한 정보(reasonChip,
 // 제안 내용 등)는 저장하지 않으므로, 그 상태에서 새로고침하면 "focus"로 안전하게 되돌린다.
 const STORAGE_KEY = "kok-session";
-const RESTORABLE_STEPS = ["preview", "focus", "timer", "complete"];
+const RESTORABLE_STEPS = ["review", "preview", "focus", "timer", "complete"];
 
 // 서버 렌더링 시점엔 localStorage가 없으므로 항상 null(= 저장된 것 없음)로 취급한다.
 // microsteps가 비어있으면(저장 안 됐거나 손상) 복원하지 않는다.
@@ -74,6 +75,13 @@ export default function Home() {
   const [clarifications, setClarifications] = useState([]);
   const [brainDumpTurn, setBrainDumpTurn] = useState(0);
   const [brainDumpNotice, setBrainDumpNotice] = useState(null);
+  // T17: 검토 화면(review). pendingBrainDumpParams는 지금 microsteps를 만든 원래 요청값
+  // ({text, turn, clarifications}) - "전부 다시 쪼개기"가 같은 값으로 재호출하는 데 쓴다.
+  // 새로고침으로 사라져도(재적용 안 됨) 화면 자체는 review로 복원되므로 삭제/확인은 그대로 된다.
+  const [pendingBrainDumpParams, setPendingBrainDumpParams] = useState(null);
+  const [isReshuffling, setIsReshuffling] = useState(false);
+  const [isSavingSteps, setIsSavingSteps] = useState(false);
+  const [saveStepsError, setSaveStepsError] = useState(null);
 
   const [reasonChip, setReasonChip] = useState(null);
   const [rejectedTools, setRejectedTools] = useState([]);
@@ -213,7 +221,76 @@ export default function Home() {
       setClarifications([]);
       setBrainDumpTurn(0);
 
-      // 방금 응답을 그대로 쓰지 않고, Notion에 실제로 저장된 목록을 다시 읽어온다
+      // T17: 아직 Notion에 저장하지 않는다. 검토 화면에서 삭제·다시 쪼개기까지 끝내고
+      // 확정한 목록만 handleConfirmReview가 그 시점에 저장한다.
+      setPendingBrainDumpParams({
+        text: textForApi,
+        turn: turnForApi,
+        clarifications: clarificationsForApi,
+      });
+      setMicrosteps(data.microsteps);
+      setCurrentIndex(0);
+      setStep("review");
+    } catch (err) {
+      setSplitError(err.message);
+    } finally {
+      setIsSplitting(false);
+    }
+  }
+
+  // T17: 검토 화면에서 항목 하나를 로컬 목록에서만 제거한다(아직 Notion에 없음).
+  function handleDeleteMicrostep(index) {
+    setMicrosteps((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  // T17: "전부 다시 쪼개기" — 같은 입력으로 Brain Dump API를 재호출해 검토 목록을 교체한다.
+  async function handleReshuffle() {
+    if (!pendingBrainDumpParams) return;
+    setIsReshuffling(true);
+    setSaveStepsError(null);
+    try {
+      const response = await fetch("/api/brain-dump", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pendingBrainDumpParams),
+      });
+      if (!response.ok) throw new Error("다시 쪼개는 데 실패했어요, 다시 시도해줘");
+
+      const data = await response.json();
+
+      if (data.followUpQuestion) {
+        // 드물게 다시 쪼개도 기한이 또 불명확한 경우: 입력 화면으로 돌아가 되묻기부터 처리한다.
+        setPendingText(pendingBrainDumpParams.text);
+        setClarifications(pendingBrainDumpParams.clarifications);
+        setBrainDumpTurn(pendingBrainDumpParams.turn + 1);
+        setFollowUpQuestion(data.followUpQuestion);
+        setPendingBrainDumpParams(null);
+        setStep("input");
+        return;
+      }
+
+      setMicrosteps(data.microsteps);
+      setCurrentIndex(0);
+    } catch (err) {
+      setSaveStepsError(err.message);
+    } finally {
+      setIsReshuffling(false);
+    }
+  }
+
+  // T17: "이대로 시작하기" — 검토 화면에서 확정한(삭제 반영된) 목록을 그 시점에 Notion에 저장.
+  async function handleConfirmReview() {
+    setIsSavingSteps(true);
+    setSaveStepsError(null);
+    try {
+      const saveResponse = await fetch("/api/steps/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ microsteps }),
+      });
+      if (!saveResponse.ok) throw new Error("저장에 실패했어요, 다시 시도해줘");
+
+      // 방금 보낸 응답을 그대로 쓰지 않고, Notion에 실제로 저장된 목록을 다시 읽어온다
       // (완료 처리에 필요한 Notion 페이지 id가 이 목록에만 있음).
       const stepsResponse = await fetch("/api/steps");
       const { steps } = await stepsResponse.json();
@@ -222,16 +299,20 @@ export default function Home() {
         // 확정된 기한이 전부 오늘 이후라 오늘 목록엔 하나도 안 잡히는 경우(T14가 처음 만드는
         // 상황) - preview로 넘어가면 currentStep이 없어 깨지므로, 입력 화면에 안내만 띄운다.
         setBrainDumpNotice("오늘 할 일은 없어요, 정한 날짜가 되면 다시 보여줄게");
+        setMicrosteps([]);
+        setPendingBrainDumpParams(null);
+        setStep("input");
         return;
       }
 
       setMicrosteps(steps);
       setCurrentIndex(0);
+      setPendingBrainDumpParams(null);
       setStep("preview");
     } catch (err) {
-      setSplitError(err.message);
+      setSaveStepsError(err.message);
     } finally {
-      setIsSplitting(false);
+      setIsSavingSteps(false);
     }
   }
 
@@ -563,6 +644,21 @@ export default function Home() {
     );
   }
 
+  if (effectiveStep === "review") {
+    return (
+      <MicrostepReview
+        microsteps={microsteps}
+        onDelete={handleDeleteMicrostep}
+        onReshuffle={handleReshuffle}
+        onConfirm={handleConfirmReview}
+        isReshuffling={isReshuffling}
+        isSaving={isSavingSteps}
+        error={saveStepsError}
+        onGoHome={goHome}
+      />
+    );
+  }
+
   if (effectiveStep === "preview") {
     return <TaskPreview task={task} onReady={() => setStep("focus")} onGoHome={goHome} />;
   }
@@ -669,7 +765,7 @@ export default function Home() {
   }
 
   if (effectiveStep === "complete") {
-    return <CompleteScreen task={task} onGoHome={goHome} />;
+    return <CompleteScreen completedCount={microsteps.length} onGoHome={goHome} />;
   }
 
   if (effectiveStep === "rest") {

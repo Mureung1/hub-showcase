@@ -1,9 +1,9 @@
 import Character from "./Character";
 import HomeButton from "./HomeButton";
 
-// task: 방금 끝낸 할 일 텍스트
+// completedCount: 오늘 이 배치에서 끝낸 마이크로스텝 전체 개수(T17)
 // onGoHome: 새 Brain Dump를 시작하러 홈으로 돌아가는 버튼
-export default function CompleteScreen({ task, onGoHome }) {
+export default function CompleteScreen({ completedCount, onGoHome }) {
   return (
     <main
       style={{
@@ -33,8 +33,8 @@ export default function CompleteScreen({ task, onGoHome }) {
       >
         ✓
       </div>
-      <p style={{ color: "var(--ink-soft)" }}>{task}</p>
-      <h1 style={{ fontSize: "24px" }}>오늘도 해냈다</h1>
+      <p style={{ color: "var(--ink-soft)" }}>오늘 마무리한 할 일</p>
+      <h1 style={{ fontSize: "24px" }}>{completedCount}개 해냈다</h1>
       {onGoHome && <HomeButton onClick={onGoHome} label="새 할 일 적으러 가기" />}
       <Character />
     </main>

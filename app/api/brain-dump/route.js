@@ -1,7 +1,6 @@
 import { generateObject } from "ai";
 import { z } from "zod";
 import { solar } from "@/app/lib/solar";
-import { createPage } from "@/app/lib/notion";
 import { sweepStaleLogs } from "@/app/lib/agentlog";
 
 // skills.md 고정 셋 (task_category, 7개). 한글 뜻: cleaning=청소/정리, contact=연락,
@@ -52,15 +51,6 @@ function dateStringFromToday(daysFromToday = 0) {
   return date.toISOString().slice(0, 10);
 }
 
-async function saveMicrostep(databaseId, microstep) {
-  return createPage(databaseId, {
-    Title: { title: [{ text: { content: microstep.title } }] },
-    EstimatedMinutes: { number: microstep.estimatedMinutes },
-    Category: { select: { name: microstep.category } },
-    ScheduledDate: { date: { start: microstep.scheduledDate } },
-  });
-}
-
 export async function POST(request) {
   const { text, turn = 0, clarifications = [] } = await request.json();
 
@@ -109,8 +99,7 @@ export async function POST(request) {
     scheduledDate,
   }));
 
-  const databaseId = process.env.NOTION_STEPS_DB_ID;
-  await Promise.all(microsteps.map((step) => saveMicrostep(databaseId, step)));
-
+  // T17: 여기서 바로 Notion에 저장하지 않는다. 사용자가 검토 화면에서 확정한 뒤
+  // POST /api/steps/save(S1-save)가 그 시점에 저장한다.
   return Response.json({ microsteps, followUpQuestion: null });
 }
