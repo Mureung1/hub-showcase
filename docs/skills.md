@@ -16,10 +16,17 @@
 - **경로**: `POST /api/brain-dump`
 - **입력**: `{ text: string, turn?: number, clarifications?: string[] }` (`text`가 비어있으면 400). `turn`은 지금까지 되물은 횟수(기본 0), `clarifications`는 그 질문들에 대한 사용자 답변을 순서대로 담은 배열(기본 []). 최초 제출은 `turn:0, clarifications:[]`.
 - **출력**: `{ microsteps: MicroStep[] | null, followUpQuestion: string | null }`, `MicroStep = { title: string, estimatedMinutes: int(1..25), category: task_category, scheduledDate: date }`
-  - `followUpQuestion`이 값이 있으면 `microsteps`는 `null`이고 아직 Notion에 저장되지 않은 상태다. 클라이언트는 이 질문을 사용자에게 보여주고, 답을 받아 `clarifications`에 추가하고 `turn`을 1 늘려 같은 `text`로 재호출한다.
-  - `followUpQuestion`이 `null`이면 `microsteps`가 채워져 있고 이미 Notion에 저장 완료된 상태다(기존과 동일한 저장 시점).
-- **제약**: `microsteps.length >= 1`(저장되는 경우). 각 스텝은 바로 실행 가능한 한 문장. 순서 = 실행 순서. `category`는 고정 셋 중 하나(`z.enum` 강제). `scheduledDate`는 서버가 계산해서 채운다 — 입력에 기한이 명확하면(첫 호출부터든 답변으로든) 그 날짜, 불명확하고 `turn < 2`면 모델이 되묻고, `turn >= 2`(질문을 이미 2번 한 뒤)면 더 묻지 않고 오늘 날짜를 기본값으로 강제 확정한다(`postpone_task` 실행 시에도 갱신됨, S2 참고).
+  - `followUpQuestion`이 값이 있으면 `microsteps`는 `null`이다. 클라이언트는 이 질문을 사용자에게 보여주고, 답을 받아 `clarifications`에 추가하고 `turn`을 1 늘려 같은 `text`로 재호출한다.
+  - `followUpQuestion`이 `null`이면 `microsteps`가 채워져 있다. **이 시점엔 아직 Notion에 저장되지 않는다**(T17) — 클라이언트가 검토 화면(항목 삭제·"전부 다시 쪼개기" 가능)을 보여주고, 사용자가 확정한 목록만 `POST /api/steps/save`(S1-save)로 그 시점에 저장한다.
+- **제약**: `microsteps.length >= 1`. 각 스텝은 바로 실행 가능한 한 문장. 순서 = 실행 순서. `category`는 고정 셋 중 하나(`z.enum` 강제). `scheduledDate`는 서버가 계산해서 채운다 — 입력에 기한이 명확하면(첫 호출부터든 답변으로든) 그 날짜, 불명확하고 `turn < 2`면 모델이 되묻고, `turn >= 2`(질문을 이미 2번 한 뒤)면 더 묻지 않고 오늘 날짜를 기본값으로 강제 확정한다(`postpone_task` 실행 시에도 갱신됨, S2 참고).
 - **모델**: Solar (`solar-pro2`) via `generateObject`. 마이크로스텝 분할과 기한 판단(명확한지, 불명확하면 되물을 질문·명확하면 오늘로부터 며칠 뒤인지)을 한 번의 호출로 같이 판단한다.
+
+### S1-save — 검토 확정 후 저장
+
+- **경로**: `POST /api/steps/save`
+- **입력**: `{ microsteps: MicroStep[] }` — 검토 화면에서 삭제 반영이 끝난, 사용자가 확정한 목록.
+- **출력**: `{ saved: int }` (저장된 개수). 클라이언트는 저장 후 기존 `GET /api/steps`로 오늘 목록(Notion 페이지 id 포함)을 다시 읽어온다.
+- **제약**: `microsteps.length >= 1`(0개면 400 — 빈 목록은 저장하지 않는다). 각 항목을 S1과 동일한 방식으로 Notion Steps DB에 `createPage`.
 
 ## S2 — "힘들어" 루프 판단
 
