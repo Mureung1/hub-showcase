@@ -167,3 +167,12 @@
 - 검증: `npm run verify` 통과(lint+build). 화면에서 시계가 실시간으로 도는 것과 "+1시간" 버튼을 누르면 남은 시간이 늘어나는 것은 사용자가 직접 확인. `docs/checklist.md` C19 2개 전부 체크, `docs/backlog.md` T19 완료로 변경, `CLAUDE.md` 현재 구현 상태 갱신(T14/T20/T19 반영).
 - 미결: `deadlineExtraMinutes`는 새로고침 시 리셋된다(T04 localStorage 세션에 포함 안 함) — C19에 명시된 요구사항은 아니라 지금은 그대로 둠.
 - 확인: [ ]
+
+## 2026-08-02 | T17 | 마이크로스텝 검토·삭제 화면 구현
+- 구조 변경(백로그 명시 사항): Brain Dump 확정 시점에 바로 Notion에 저장하던 것을 제거(`app/api/brain-dump/route.js`에서 `saveMicrostep`/`createPage` 호출 삭제)하고, 사용자가 검토 화면에서 확정한 뒤에만 저장하도록 저장 시점을 뒤로 미뤘다. `docs/skills.md` S1을 이 변경에 맞춰 수정하고, 신규 계약 S1-save(`POST /api/steps/save`)를 추가했다.
+- 신규 화면: `app/components/MicrostepReview.js` — 전체 마이크로스텝 목록, 카테고리 한글 태그, 총 예상 시간 합계, 항목별 삭제(로컬 상태만 변경), "전부 다시 쪼개기"(같은 입력으로 `/api/brain-dump` 재호출), "이대로 시작하기"(확정 목록을 `/api/steps/save`로 저장 후 `GET /api/steps` 재조회) 버튼을 갖췄다.
+- `app/page.js`: `handleSubmit`이 확정 시 저장 없이 `"review"` step으로 이동하도록 변경. `handleDeleteMicrostep`/`handleReshuffle`/`handleConfirmReview` 신규. `RESTORABLE_STEPS`에 `"review"` 추가(새로고침 시 검토 화면 복원, 단 다시 쪼개기용 원본 입력값은 미보존 — 알려진 제한으로 문서화).
+- `CompleteScreen`: `task`(마지막 완료 텍스트) prop을 `completedCount`(그 배치의 전체 완료 개수, `microsteps.length`)로 교체.
+- 검증: `npm run verify` 통과. 실제 동작 확인 — (1) `/api/brain-dump` 호출 후 `/api/steps` 조회로 저장 안 됨 확인, (2) 12개 중 2개만 남기고 `/api/steps/save` 호출 → Notion에 정확히 2개만 추가됨을 API로 확인, (3) 실제 화면에서 삭제 시 총 시간 합계 재계산(17분→15분) 스크린샷 확인, (4) "전부 다시 쪼개기" 클릭 시 목록·합계가 다른 결과로 교체되는 것 확인, (5) "이대로 시작하기" 클릭 후 저장 + `preview` 전환 확인, (6) localStorage로 `complete` 상태를 재현해 "N개 해냈다" 렌더 확인. 테스트 중 생성된 Notion 행은 전부 정리(archive)해 실제 데이터(영상 촬영분 10개)는 그대로 유지했다.
+- 문서: `docs/checklist.md` C17 전체 체크, `docs/backlog.md` T17 완료 처리, `docs/etc/component-tree.md`에 `review` step·`MicrostepReview` 반영, `CLAUDE.md` 현재 구현 상태 갱신.
+- 확인: [ ]
