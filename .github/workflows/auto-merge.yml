@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: "Merge pull request"
         uses: "actions/github-script@v7"
+        env:
+          AUTO_MERGE_MEMBER_LOGINS: ${{ vars.AUTO_MERGE_MEMBER_LOGINS }}
         with:
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
@@ -31,7 +33,6 @@ jobs:
                       headRefName
                       baseRefName
                       author { login }
-                      authorAssociation
                       repository { name }
                       mergeable
                       labels(first: 10) { nodes { name } }
@@ -43,6 +44,18 @@ jobs:
             }`
 
             const repo = { owner: context.repo.owner, repo: context.repo.repo };
+            const memberLogins = new Set(
+              (process.env.AUTO_MERGE_MEMBER_LOGINS || "")
+                .split(",")
+                .map(login => login.trim().toLowerCase())
+                .filter(Boolean)
+            );
+
+            if (memberLogins.size === 0) {
+              throw new Error("AUTO_MERGE_MEMBER_LOGINS 저장소 변수가 비어 있습니다.");
+            }
+
+            console.log(`자동 병합 허용 멤버 ${memberLogins.size}명 확인`);
 
             // ---------- low-level API helpers ----------
             async function comment(pr, body) {
@@ -72,7 +85,7 @@ jobs:
             const isChangesRequested = (pr) => pr.reviews?.nodes?.[0]?.state === "CHANGES_REQUESTED";
             const isConflicting      = (pr) => pr.mergeable === "CONFLICTING";
             const isUnknown          = (pr) => pr.mergeable === "UNKNOWN";
-            const isMember           = (pr) => pr.authorAssociation === "MEMBER" || pr.authorAssociation === "OWNER";
+            const isMember           = (pr) => memberLogins.has(pr.author?.login?.toLowerCase());
 
             // ---------- actions ----------
             async function closeMain(pr) {
