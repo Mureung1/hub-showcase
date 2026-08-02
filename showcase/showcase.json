@@ -7,7 +7,9 @@
   "demoVideoUrl": "https://youtu.be/RoEhmwYY1Vw",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
-    "screenshots/tasks.webp"
+    "screenshots/login.webp",
+    "screenshots/tasks.webp",
+    "screenshots/matches.webp"
   ],
   "problem": "팀 프로젝트를 할 때 언제 모일지 시간을 맞추는 것부터 누가 뭘 얼마나 했는지 파악하는 것까지 흩어진 도구(when2meet, 카톡, 각자 메모)를 오가야 해서 번거롭고, 무임승차가 생겨도 잘 드러나지 않습니다.",
   "targetUsers": [
