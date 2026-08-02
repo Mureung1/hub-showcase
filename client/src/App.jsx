@@ -4,6 +4,7 @@ import FlipCard from './components/FlipCard'
 import RecordCard from './components/RecordCard'
 import RecordDetail from './pages/RecordDetail'
 import CalendarView from './pages/CalendarView'
+import ReportView from './pages/ReportView'
 import EntryScreen from './components/EntryScreen'
 import { createGuestCheckinRepository, fileToDataUrl } from './services/guestCheckinRepository'
 import { createSupabaseCheckinRepository } from './services/supabaseCheckinRepository'
@@ -270,6 +271,14 @@ function App() {
     }
   }
 
+  function analyzeReport(reportText) {
+    return requestJson('/api/checkins/report-analysis', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reportText }),
+    })
+  }
+
   function handleSave() {
     return saveCheckin(summary)
   }
@@ -387,6 +396,11 @@ function App() {
           type="button"
           onClick={() => switchTab('calendar')}
         >기록</button>
+        <button
+          className={`tab-btn${screen === 'report' ? ' active' : ''}`}
+          type="button"
+          onClick={() => switchTab('report')}
+        >리포트</button>
       </nav>
 
       <section className="workspace" aria-live="polite">
@@ -485,6 +499,15 @@ function App() {
 
         {screen === 'detail' && selectedCheckin && (
           <RecordDetail checkin={selectedCheckin} onBack={backToList} onDelete={handleDeleteCheckin} />
+        )}
+
+        {screen === 'report' && (
+          <ReportView
+            checkins={checkins}
+            isLoading={isLoadingRecords}
+            onRefresh={loadCheckins}
+            onAnalyze={analyzeReport}
+          />
         )}
 
         {error && <p className="feedback feedback-error" role="alert">{error}</p>}
