@@ -27,6 +27,8 @@ const waiting: WaitingEntry = {
   status: "remote_waiting",
   queueOrder: 5,
   patientCount: 1,
+  arrivedPatientCount: 0,
+  calledPatientCount: 0,
   lookupTokenHash: null,
   patientDeferCount: 0,
   noShowMoveCount: 0,
@@ -262,7 +264,7 @@ describe("AutomaticNotificationService", () => {
     );
   });
 
-  it("현장 환자가 4번째가 되면 상태 변경 없이 임박 알림을 보낸다", async () => {
+  it("현장 환자는 내 앞 대기 인원이 입장 기준 이하가 되면 상태 변경 없이 임박 알림을 보낸다", async () => {
     const dependencies = createDependencies();
 
     const result = await dependencies.service.process(executor, {
@@ -273,7 +275,7 @@ describe("AutomaticNotificationService", () => {
         accountId: null,
         status: "onsite_waiting",
       },
-      currentPosition: 4,
+      currentPosition: 5,
     });
 
     expect(result?.waiting.status).toBe("onsite_waiting");
@@ -281,12 +283,12 @@ describe("AutomaticNotificationService", () => {
       executor,
       expect.objectContaining({
         notificationType: "onsite_near_turn",
-        dedupeKey: "onsite_near_turn",
-        variables: {
-          hospitalName: baseInput.hospitalName,
-          currentPosition: 4,
-        },
-      }),
-    );
+          dedupeKey: "onsite_near_turn",
+          variables: {
+            hospitalName: baseInput.hospitalName,
+            currentPosition: 5,
+          },
+        }),
+      );
   });
 });

@@ -32,6 +32,8 @@ export interface QueueEntry {
   inputMode: PatientInputMode;
   patientCounts: PatientCounts;
   patientCount: number;
+  arrivedPatientCount?: number | undefined;
+  calledPatientCount?: number | undefined;
   categorySnapshot: PatientCategoryDefinition[];
   status: WaitingStatus;
   registeredAt: string;
@@ -80,6 +82,18 @@ export interface QueuePosition {
   position: number | null;
   positionEnd: number | null;
   estimatedMinutes: number | null;
+}
+
+export interface QueuePatientSlot {
+  entry: MockQueueEntry;
+  teamNumber: number | null;
+  position: number | null;
+  estimatedMinutes: number | null;
+  patientSlotNumber: number | null;
+  patientSlotCount: number | null;
+  arrived: boolean;
+  called: boolean;
+  isFirstTeamSlot: boolean;
 }
 
 export interface MockPatientConfig {
@@ -178,7 +192,7 @@ export function decideAutomaticNotification({
 
   if (source === "onsite") {
     return status === "onsite_waiting" &&
-      currentPosition <= entryThreshold &&
+      currentPosition - 1 <= entryThreshold &&
       onsiteNearTurnNotifiedAt === null
       ? { notificationType: "onsite_near_turn", dedupeKey: "onsite_near_turn" }
       : null;
@@ -254,6 +268,53 @@ export function calculateQueuePositions(
     activeTeamNumber += 1;
 
     return { entry, teamNumber: activeTeamNumber, position, positionEnd, estimatedMinutes };
+  });
+}
+
+export function expandQueuePositionsToPatientSlots(
+  positions: QueuePosition[],
+  averageMinutesPerPatient = AVERAGE_TREATMENT_MINUTES,
+): QueuePatientSlot[] {
+  return positions.flatMap((position) => {
+    if (position.position === null || position.positionEnd === null) {
+      const inactiveSlot: QueuePatientSlot = {
+        entry: position.entry,
+        teamNumber: position.teamNumber,
+        position: null,
+        estimatedMinutes: null,
+        patientSlotNumber: null,
+        patientSlotCount: null,
+        arrived: false,
+        called: false,
+        isFirstTeamSlot: true,
+      };
+      return [inactiveSlot];
+    }
+
+    const arrivedPatientCount =
+      position.entry.arrivedPatientCount ??
+      (["onsite_waiting", "called"].includes(position.entry.status)
+        ? position.entry.patientCount
+        : 0);
+    const calledPatientCount =
+      position.entry.calledPatientCount ??
+      (position.entry.status === "called" ? position.entry.patientCount : 0);
+
+    return Array.from({ length: position.entry.patientCount }, (_, index): QueuePatientSlot => {
+      const patientPosition = position.position! + index;
+      const patientSlotNumber = index + 1;
+      return {
+        entry: position.entry,
+        teamNumber: position.teamNumber,
+        position: patientPosition,
+        estimatedMinutes: (patientPosition - 1) * averageMinutesPerPatient,
+        patientSlotNumber,
+        patientSlotCount: position.entry.patientCount,
+        arrived: patientSlotNumber <= arrivedPatientCount,
+        called: patientSlotNumber <= calledPatientCount,
+        isFirstTeamSlot: index === 0,
+      };
+    });
   });
 }
 

@@ -3,6 +3,7 @@ import type { QueueEntry } from "./queue.js";
 import {
   calculateQueuePositions,
   decideAutomaticNotification,
+  expandQueuePositionsToPatientSlots,
   queueSettingsSchema,
 } from "./queue.js";
 
@@ -53,13 +54,13 @@ describe("decideAutomaticNotification", () => {
     ).toBeNull();
   });
 
-  it("현장 환자가 4번째가 되면 현장 임박 알림을 결정한다", () => {
+  it("현장 환자는 내 앞 대기 인원이 입장 기준 이하가 되면 현장 임박 알림을 결정한다", () => {
     expect(
       decideAutomaticNotification({
         ...remoteContext,
         source: "onsite",
         status: "onsite_waiting",
-        currentPosition: 4,
+        currentPosition: 5,
       }),
     ).toEqual({
       notificationType: "onsite_near_turn",
@@ -132,6 +133,42 @@ describe("calculateQueuePositions", () => {
       position: 3,
       estimatedMinutes: 30,
     });
+  });
+
+  it("한 팀에 여러 명이 있으면 같은 팀 번호를 유지한 채 환자별 표시 슬롯으로 펼친다", () => {
+    const first = createEntry("1", 2);
+    const second = createEntry("2", 1);
+    const positions = calculateQueuePositions([first, second], 10);
+
+    expect(expandQueuePositionsToPatientSlots(positions, 10)).toEqual([
+      expect.objectContaining({
+        entry: first,
+        teamNumber: 1,
+        position: 1,
+        estimatedMinutes: 0,
+        patientSlotNumber: 1,
+        patientSlotCount: 2,
+        isFirstTeamSlot: true,
+      }),
+      expect.objectContaining({
+        entry: first,
+        teamNumber: 1,
+        position: 2,
+        estimatedMinutes: 10,
+        patientSlotNumber: 2,
+        patientSlotCount: 2,
+        isFirstTeamSlot: false,
+      }),
+      expect.objectContaining({
+        entry: second,
+        teamNumber: 2,
+        position: 3,
+        estimatedMinutes: 20,
+        patientSlotNumber: 1,
+        patientSlotCount: 1,
+        isFirstTeamSlot: true,
+      }),
+    ]);
   });
 });
 

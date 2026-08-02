@@ -1144,6 +1144,12 @@ button:disabled {
   border-top: 1px solid var(--bj-color-border);
   font-size: var(--bj-font-size-sm);
 }
+.queue-slot-count {
+  margin-left: var(--bj-space-2);
+  color: var(--bj-color-text-secondary);
+  font-size: var(--bj-font-size-xs);
+  font-weight: var(--bj-font-weight-semibold);
+}
 .queue-table tbody tr {
   cursor: pointer;
 }

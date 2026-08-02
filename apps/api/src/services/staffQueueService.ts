@@ -196,7 +196,7 @@ export class StaffQueueService implements StaffQueueOperations {
         metadata: { source: "onsite" },
       });
 
-      const statusUrl = `${this.options.patientWebOrigin}/onsite-status/${encodeURIComponent(lookupToken)}`;
+      const statusUrl = `${this.options.patientWebOrigin}/?onsiteStatus=${encodeURIComponent(lookupToken)}`;
       const notificationResult = await this.notificationSender.send(executor, {
         waitingEntryId: waiting.id,
         recipientPhone: waiting.phoneNumber,
@@ -271,12 +271,17 @@ export class StaffQueueService implements StaffQueueOperations {
           "현재 상태에서는 요청한 처리를 할 수 없습니다.",
         );
       }
-      const updated = await this.waitingRepository.transitionStatus(executor, {
-        waitingEntryId,
-        expectedVersion: current.version,
-        fromStatuses: allowedFrom[status],
-        toStatus: status,
-      });
+      const updated =
+        status === "onsite_waiting"
+          ? await this.waitingRepository.advanceArrival(executor, waitingEntryId, current.version)
+          : status === "called"
+            ? await this.waitingRepository.advanceCall(executor, waitingEntryId, current.version)
+            : await this.waitingRepository.transitionStatus(executor, {
+                waitingEntryId,
+                expectedVersion: current.version,
+                fromStatuses: allowedFrom[status],
+                toStatus: status,
+              });
       if (!updated) throw new ApiError(409, "QUEUE_CONFLICT", "다른 요청이 먼저 처리되었습니다.");
       const eventType = status === "onsite_waiting" ? "arrived" : status;
       await this.waitingEventRepository.create(executor, {
@@ -285,9 +290,21 @@ export class StaffQueueService implements StaffQueueOperations {
         actorType: actorAccountId ? "staff" : "system",
         eventType,
         fromStatus: current.status,
-        toStatus: status,
+        toStatus: updated.status,
         metadata: {
           ...(reason ? { reason } : {}),
+          ...(status === "onsite_waiting"
+            ? {
+                arrivedPatientCount: updated.arrivedPatientCount,
+                patientCount: updated.patientCount,
+              }
+            : {}),
+          ...(status === "called"
+            ? {
+                calledPatientCount: updated.calledPatientCount,
+                patientCount: updated.patientCount,
+              }
+            : {}),
           ...(actorAccountId ? {} : { developmentBypass: true }),
         },
       });
@@ -670,6 +687,8 @@ export class StaffQueueService implements StaffQueueOperations {
       inputMode,
       patientCounts,
       patientCount: waiting.patientCount,
+      arrivedPatientCount: waiting.arrivedPatientCount,
+      calledPatientCount: waiting.calledPatientCount,
       categorySnapshot: categories,
       status: waiting.status,
       registeredAt: waiting.createdAt.toISOString(),

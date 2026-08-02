@@ -248,10 +248,14 @@ insert into public.waiting_entries (
   ticket_number,
   status,
   queue_order,
-  patient_count
+  patient_count,
+  arrived_patient_count,
+  called_patient_count
 )
 select fixture.id, queue.id, fixture.account_id, fixture.source, fixture.phone_number,
-       fixture.ticket_number, fixture.status, fixture.queue_order, fixture.patient_count
+       fixture.ticket_number, fixture.status, fixture.queue_order, fixture.patient_count,
+       case when fixture.status in ('onsite_waiting', 'called') then fixture.patient_count else 0 end,
+       case when fixture.status = 'called' then fixture.patient_count else 0 end
 from public.daily_queues as queue
 cross join (
   values
@@ -269,7 +273,9 @@ set queue_id = excluded.queue_id,
     ticket_number = excluded.ticket_number,
     status = excluded.status,
     queue_order = excluded.queue_order,
-    patient_count = excluded.patient_count;
+    patient_count = excluded.patient_count,
+    arrived_patient_count = excluded.arrived_patient_count,
+    called_patient_count = excluded.called_patient_count;
 
 insert into public.waiting_entry_counts (waiting_entry_id, patient_category_id, count)
 values

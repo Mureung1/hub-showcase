@@ -1,6 +1,7 @@
 import type { NotificationReceipt } from "@baro-jinryo/shared";
 import { ExternalLink, MessageCircleMore } from "lucide-react";
 import { patientWebUrl } from "../config/publicUrls";
+import { toPatientStatusUrl } from "../utils/patientStatusUrl";
 
 interface NotificationReceiptModalProps {
   receipt: NotificationReceipt;
@@ -8,7 +9,7 @@ interface NotificationReceiptModalProps {
 }
 
 export function NotificationReceiptModal({ receipt, onClose }: NotificationReceiptModalProps) {
-  const statusUrl = toPatientStatusUrl(receipt.openPath);
+  const statusUrl = toPatientStatusUrl(receipt.openPath, patientWebUrl);
 
   return (
     <div className="modal-backdrop" role="presentation">
@@ -57,12 +58,4 @@ export function NotificationReceiptModal({ receipt, onClose }: NotificationRecei
       </section>
     </div>
   );
-}
-
-function toPatientStatusUrl(openPath: string): string {
-  try {
-    return new URL(openPath, patientWebUrl).toString();
-  } catch {
-    return openPath;
-  }
 }

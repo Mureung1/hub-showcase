@@ -211,6 +211,66 @@ describe("PgWaitingRepository", () => {
     expect(executor.calls[0]?.queryText).toContain("status = 'entry_requested'");
   });
 
+  it("팀 일부만 도착 처리되면 상태는 입장 요청으로 유지한다", async () => {
+    const now = new Date("2026-07-15T09:00:00.000Z");
+    const executor = new SequencedDatabaseExecutor([
+      [
+        {
+          ...waitingRow("f904537c-6d56-43bc-9cf4-f33af8d5be03", 1),
+          status: "entry_requested",
+          patient_count: 2,
+          arrived_patient_count: 1,
+          entry_requested_at: now,
+          arrival_deadline_at: now,
+        },
+      ],
+    ]);
+    const repository = new PgWaitingRepository();
+
+    const result = await repository.advanceArrival(
+      executor,
+      "f904537c-6d56-43bc-9cf4-f33af8d5be03",
+      1,
+    );
+
+    expect(result).toMatchObject({
+      status: "entry_requested",
+      arrivedPatientCount: 1,
+      patientCount: 2,
+    });
+    expect(executor.calls[0]?.queryText).toContain("arrived_patient_count + 1");
+    expect(executor.calls[0]?.queryText).toContain("status = 'entry_requested'");
+  });
+
+  it("팀 마지막 인원이 호출되면 팀 상태를 진료실 호출로 바꾼다", async () => {
+    const executor = new SequencedDatabaseExecutor([
+      [
+        {
+          ...waitingRow("f904537c-6d56-43bc-9cf4-f33af8d5be03", 1),
+          status: "called",
+          patient_count: 2,
+          arrived_patient_count: 2,
+          called_patient_count: 2,
+        },
+      ],
+    ]);
+    const repository = new PgWaitingRepository();
+
+    const result = await repository.advanceCall(
+      executor,
+      "f904537c-6d56-43bc-9cf4-f33af8d5be03",
+      1,
+    );
+
+    expect(result).toMatchObject({
+      status: "called",
+      calledPatientCount: 2,
+      patientCount: 2,
+    });
+    expect(executor.calls[0]?.queryText).toContain("called_patient_count + 1");
+    expect(executor.calls[0]?.queryText).toContain("status = 'onsite_waiting'");
+  });
+
   it("화면이 확인한 순서와 DB의 현재 순서가 다르면 순서 변경을 거절한다", async () => {
     const firstId = "f904537c-6d56-43bc-9cf4-f33af8d5be03";
     const secondId = "f904537c-6d56-43bc-9cf4-f33af8d5be04";
