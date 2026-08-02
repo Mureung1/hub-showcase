@@ -98,7 +98,17 @@ export default function OneFocusView({
           <PresenceIndicator onDismiss={onDismissPresence} />
         </div>
       )}
-      <h1 style={{ fontSize: "34px", lineHeight: 1.4, color: themeTextColor(theme, now) }}>{task}</h1>
+      <h1
+        style={{
+          fontSize: "34px",
+          lineHeight: 1.4,
+          color: themeTextColor(theme, now),
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        {task}
+      </h1>
 
       {onExtendDeadline && (
         <div
@@ -108,6 +118,8 @@ export default function OneFocusView({
             gap: "8px",
             fontSize: "13px",
             color: themeTextColor(theme, now),
+            position: "relative",
+            zIndex: 1,
           }}
         >
           <span>
