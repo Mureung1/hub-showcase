@@ -31,6 +31,7 @@ jobs:
                       headRefName
                       baseRefName
                       author { login }
+                      authorAssociation
                       repository { name }
                       mergeable
                       labels(first: 10) { nodes { name } }
@@ -71,6 +72,7 @@ jobs:
             const isChangesRequested = (pr) => pr.reviews?.nodes?.[0]?.state === "CHANGES_REQUESTED";
             const isConflicting      = (pr) => pr.mergeable === "CONFLICTING";
             const isUnknown          = (pr) => pr.mergeable === "UNKNOWN";
+            const isMember           = (pr) => pr.authorAssociation === "MEMBER" || pr.authorAssociation === "OWNER";
 
             // ---------- actions ----------
             async function closeMain(pr) {
@@ -87,6 +89,10 @@ jobs:
 
             async function skipReviewLabel(pr) {
               // 코멘트 없이 로그만 (기존 동작 유지)
+            }
+
+            async function skipExternal(pr) {
+              await comment(pr, "조직 멤버가 작성한 PR만 자동 병합합니다. 작성자 확인 후 수동으로 병합해주세요.");
             }
 
             async function skipUnknown(pr) {
@@ -117,6 +123,7 @@ jobs:
 
             // ---------- rules (배열 순서 = 우선순위) ----------
             const rules = [
+              { name: "외부 작성자 → 스킵", match: (pr) => !isMember(pr), run: skipExternal },
               { name: "main 브랜치 타겟 → close", match: isTargetingMain, run: closeMain },
               { name: "review 라벨 → 스킵", match: hasReviewLabel, run: skipReviewLabel },
               { name: "변경 요청 상태 → 연기", match: isChangesRequested, run: deferChangesRequested },
