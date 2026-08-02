@@ -135,7 +135,9 @@ def _daily_text(counts, ongoing):
         for o in ongoing:
             events = ", ".join(o["events"]) or o["notice"]["title"].strip()[:30]
             lines.append(f"⏳ 진행 중인 영향 · {o['route']['name']} — {events}")
-            lines.append(f"　　↳ 리포트: {base}/report/{o['notice']['id']}")
+            rid = o["route"].get("id")   # 어느 경로 기준인지 리포트에 싣는다 (경보 링크와 동일)
+            lines.append(f"　　↳ 리포트: {base}/report/{o['notice']['id']}"
+                         + (f"?route={rid}" if rid else ""))
         return "\n".join(lines)
     return f"🐾 이상 없음 — 등록된 경로에 영향 주는 공지가 없어요. (확인: {checked} · {now})"
 
