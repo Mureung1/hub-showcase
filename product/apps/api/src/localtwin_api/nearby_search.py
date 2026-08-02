@@ -5,13 +5,14 @@ from __future__ import annotations
 import json
 import math
 from collections import Counter
+from time import perf_counter
 from typing import Literal
 
 from pydantic import BaseModel
 from shapely import make_valid
 from shapely.errors import ShapelyError
 from shapely.geometry import Point, shape
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from localtwin_api.db_models import (
@@ -20,6 +21,12 @@ from localtwin_api.db_models import (
     MarketGeometry,
     StoreMarketLink,
     StorePoint,
+    StoreTaxonomyAssignment,
+)
+from localtwin_api.industry_taxonomy import (
+    published_assignment_run_id,
+    published_leaf_node_ids,
+    published_taxonomy_nodes,
 )
 from localtwin_api.product_catalog import (
     CATEGORY_FILTER_TERMS,
@@ -28,6 +35,7 @@ from localtwin_api.product_catalog import (
     SUPPORTED_RADII,
     NearbyRadius,
     classify_category_group,
+    published_leaf_ids_for_category,
 )
 
 ProductCategory = Literal["카페", "음식점", "베이커리", "편의점"]
@@ -205,6 +213,7 @@ def category_coverage(
 class NearbyStoreRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
+        self.server_timing: dict[str, float] = {}
 
     def supported_market_for_center(
         self, longitude: float, latitude: float
@@ -282,31 +291,112 @@ class NearbyStoreRepository:
         latitude: float,
         radius: NearbyRadius,
         category: str | None = None,
+        taxonomy_node_id: str | None = None,
     ) -> NearbyStoreResponse:
         if market_id not in SUPPORTED_MARKET_CODES:
             raise UnsupportedAnalysisAreaError
         market = self.session.get(Market, market_id)
         if market is None:
             raise UnsupportedAnalysisAreaError
+        run_id = published_assignment_run_id(self.session)
+        if not run_id:
+            # Production instances migrate and publish before serving. Retain a
+            # compatible fallback for an old database during a rolling deploy.
+            return self._legacy_market(market, longitude, latitude, radius, category)
+        selected_leaf_ids = self._selected_leaf_ids(run_id, category, taxonomy_node_id)
+        base = (
+            select(StorePoint)
+            .join(StoreMarketLink, StoreMarketLink.store_id == StorePoint.store_id)
+            .join(StoreTaxonomyAssignment, StoreTaxonomyAssignment.store_id == StorePoint.store_id)
+            .where(
+                StoreMarketLink.market_code == market_id,
+                StoreTaxonomyAssignment.assignment_run_id == run_id,
+                StorePoint.longitude.is_not(None),
+                StorePoint.latitude.is_not(None),
+            )
+        )
+        total_count = self._market_total_count(market_id, run_id)
+        selected = (
+            base.where(StoreTaxonomyAssignment.leaf_node_id.in_(selected_leaf_ids))
+            if selected_leaf_ids
+            else base.where(False)
+        )
+        db_started = perf_counter()
+        rows = self.session.scalars(selected).all()
+        self.server_timing["db"] = (perf_counter() - db_started) * 1000
+        build_started = perf_counter()
+        stores_with_distance = [
+            (haversine_distance_meters(longitude, latitude, store.longitude, store.latitude), store)
+            for store in rows
+            if store.longitude is not None and store.latitude is not None
+        ]
+        # Map point rendering has no distance-order requirement; only the visible
+        # shortlist is ordered deterministically after SQL filtering.
+        stores_with_distance.sort(key=lambda item: item[1].store_id)
+        response = self._response(
+            market=market,
+            center=(longitude, latitude),
+            radius=radius,
+            stores_with_distance=stores_with_distance,
+            category=category,
+            aggregation_scope="market",
+            max_returned_stores=None,
+        )
+        response = response.model_copy(
+            update={
+                "total_count": total_count,
+                "same_category_count": len(stores_with_distance),
+                "category_coverage": category_coverage(category, len(stores_with_distance)),
+            }
+        )
+        self.server_timing["build"] = (perf_counter() - build_started) * 1000
+        return response
+
+    def _market_total_count(self, market_id: str, run_id: str) -> int:
+        return int(
+            self.session.scalar(
+                select(func.count())
+                .select_from(StoreMarketLink)
+                .join(
+                    StoreTaxonomyAssignment,
+                    StoreTaxonomyAssignment.store_id == StoreMarketLink.store_id,
+                )
+                .where(
+                    StoreMarketLink.market_code == market_id,
+                    StoreTaxonomyAssignment.assignment_run_id == run_id,
+                )
+            )
+            or 0
+        )
+
+    def _selected_leaf_ids(
+        self, run_id: str, category: str | None, taxonomy_node_id: str | None
+    ) -> list[str]:
+        if taxonomy_node_id:
+            return published_leaf_node_ids(self.session, taxonomy_node_id)
+        if not category:
+            return [node.id for node in published_taxonomy_nodes(self.session) if node.is_leaf]
+        return published_leaf_ids_for_category(self.session, category)
+
+    def _legacy_market(
+        self,
+        market: Market,
+        longitude: float,
+        latitude: float,
+        radius: NearbyRadius,
+        category: str | None,
+    ) -> NearbyStoreResponse:
         linked_stores = self.session.scalars(
             select(StorePoint)
             .join(StoreMarketLink, StoreMarketLink.store_id == StorePoint.store_id)
             .where(
-                StoreMarketLink.market_code == market_id,
+                StoreMarketLink.market_code == market.market_code,
                 StorePoint.longitude.is_not(None),
                 StorePoint.latitude.is_not(None),
             )
         ).all()
         stores_with_distance = [
-            (
-                haversine_distance_meters(
-                    longitude,
-                    latitude,
-                    store.longitude,
-                    store.latitude,
-                ),
-                store,
-            )
+            (haversine_distance_meters(longitude, latitude, store.longitude, store.latitude), store)
             for store in linked_stores
             if store.longitude is not None and store.latitude is not None
         ]

@@ -83,7 +83,7 @@ describe("storefront prototype", () => {
     expect(hasStorefrontVariant("I21201")).toBe(true);
     expect(hasStorefrontVariant("I20107")).toBe(true);
     expect(hasStorefrontVariant("S20701")).toBe(true);
-    expect(hasStorefrontVariant("unknown-category-code")).toBe(false);
+    expect(hasStorefrontVariant("unknown-category-code")).toBe(true);
   });
 
   it("creates a neutral service storefront for an unmapped category", () => {
@@ -94,8 +94,8 @@ describe("storefront prototype", () => {
     disposeStorefront(storefront);
   });
 
-  it("keeps unreviewed commercial codes on the original gray building", () => {
-    expect(storefrontVisualStatus("Q10101")).toBe("generic");
+  it("uses a generic storefront when a commercial code has no reviewed prefab", () => {
+    expect(storefrontVisualStatus("Q10101")).toBe("mapped");
     expect(storefrontVisualStatus("I20107")).toBe("mapped");
   });
 

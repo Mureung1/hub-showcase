@@ -187,8 +187,10 @@ export function getStorefrontVariant(categoryCode: string) {
 }
 
 export function hasStorefrontVariant(categoryCode: string | null): categoryCode is string {
-  if (!categoryCode?.trim()) return false;
-  return getStorefrontVariant(categoryCode).attachment !== "none";
+  // Every classified source store receives a reusable base storefront. Special
+  // rooftop prefabs are optional; their absence must not remove the selected
+  // store's 3D focus and spotlight.
+  return Boolean(categoryCode?.trim());
 }
 
 export function storefrontVisualStatus(categoryCode: string | null) {

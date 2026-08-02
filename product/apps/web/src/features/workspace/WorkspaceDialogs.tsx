@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 
 import { DataPeriodSummary } from "../analysis/DataPeriodSummary";
+import { formatStoreChange } from "../market/formatStoreChange";
 import { CLUSTER_LABELS } from "../market/model";
 import type { ScoreDecisionBlocker } from "../../services/marketAnalysis";
 import type { ProductWorkspaceModel } from "./useProductWorkspaceModel";
@@ -251,7 +252,7 @@ function ComparisonDialog({ model }: { model: ProductWorkspaceModel }) {
                 <small>
                   유동{" "}
                   {flow == null ? "조회 전" : `${Math.round(flow).toLocaleString("ko-KR")}명/분기`}{" "}
-                  · 순증 {netOpening == null ? "—" : `${netOpening > 0 ? "+" : ""}${netOpening}`}
+                  · 점포 순변화 {netOpening == null ? "—" : formatStoreChange(netOpening)}
                 </small>
               </button>
             );

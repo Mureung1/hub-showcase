@@ -3,6 +3,7 @@ import { Coffee, DoorOpen, Target, UsersRound } from "lucide-react";
 import type { MarketAnalysis } from "../../services/marketAnalysis";
 import type { AnalysisState } from "./useMarketAnalysis";
 import type { CategorySelection, Market } from "./types";
+import { formatStoreChange } from "./formatStoreChange";
 
 function formatCount(value: number | null, suffix: string) {
   return value === null ? null : `${new Intl.NumberFormat("ko-KR").format(value)}${suffix}`;
@@ -100,7 +101,7 @@ export function MarketQuickMetrics({
           <b>
             {netTurnover === null
               ? metricValue(null, analysisState)
-              : `순증 ${netTurnover > 0 ? "+" : ""}${netTurnover}곳`}
+              : formatStoreChange(netTurnover, "곳")}
           </b>
         </div>
       </div>

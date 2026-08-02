@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from localtwin_api.db_models import StoreMarketLink, StorePoint
+from localtwin_api.industry_taxonomy import published_assignment_run_id, published_taxonomy_nodes
 
 AnalysisCategory = Literal["카페", "음식점", "베이커리", "편의점"]
 Category = AnalysisCategory
@@ -144,8 +145,41 @@ def classify_category_group(store: StorePoint) -> str | None:
     return None
 
 
+def published_leaf_ids_for_category(session: Session, category: str | None) -> list[str]:
+    """Resolve a legacy Top-7 preset from published raw taxonomy nodes.
+
+    Only the small taxonomy table is inspected here; the resulting IDs are used
+    in SQL against store assignments. This preserves the original small → middle
+    → large-name priority without rereading or classifying market store rows.
+    """
+
+    if not category:
+        return [node.id for node in published_taxonomy_nodes(session) if node.is_leaf]
+    nodes = published_taxonomy_nodes(session)
+    names_by_path = {node.path_key: node.display_name for node in nodes}
+    leaf_ids: list[str] = []
+    for node in nodes:
+        if not node.is_leaf:
+            continue
+        middle_path = node.parent_path_key
+        large_path = middle_path.rsplit("/", 1)[0] if middle_path and "/" in middle_path else None
+
+        class Candidate:
+            category_small_name = node.display_name
+            category_middle_name = names_by_path.get(middle_path) if middle_path else None
+            category_large_name = names_by_path.get(large_path) if large_path else None
+
+        if classify_category_group(Candidate()) == category:
+            leaf_ids.append(node.id)
+    return leaf_ids
+
+
 def rank_product_categories(session: Session, limit: int = 7) -> tuple[ProductCategory, ...]:
     """Rank groups globally and retain unique-store counts for each market."""
+
+    run_id = published_assignment_run_id(session)
+    if run_id:
+        return _rank_published_categories(session, run_id, limit)
 
     rows = session.execute(
         select(StorePoint, StoreMarketLink.market_code)
@@ -187,6 +221,31 @@ def rank_product_categories(session: Session, limit: int = 7) -> tuple[ProductCa
         )
         for index, name in enumerate(ranked_names, start=1)
     )
+
+
+def _rank_published_categories(session: Session, run_id: str, limit: int) -> tuple[ProductCategory, ...]:
+    from localtwin_api.db_models import StoreTaxonomyAssignment
+
+    stores: dict[str, set[str]] = defaultdict(set)
+    by_market: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+    for group in CATEGORY_FILTER_TERMS:
+        rows = session.execute(
+            select(StoreMarketLink.market_code, StoreTaxonomyAssignment.store_id)
+            .join(StoreTaxonomyAssignment, StoreTaxonomyAssignment.store_id == StoreMarketLink.store_id)
+            .where(StoreTaxonomyAssignment.assignment_run_id == run_id,
+                   StoreTaxonomyAssignment.leaf_node_id.in_(published_leaf_ids_for_category(session, group)),
+                   StoreMarketLink.market_code.in_(SUPPORTED_MARKET_CODES))
+        ).all()
+        for market_code, store_id in rows:
+            stores[group].add(store_id)
+            by_market[group][market_code].add(store_id)
+    names = sorted(stores, key=lambda name: (-len(stores[name]), name))[:limit]
+    return tuple(ProductCategory(name=name, codes=CATEGORY_CODES.get(name, ()),
+        coverage="full" if name in CATEGORY_CODES else "partial",
+        analysis_category=name if name in CATEGORY_CODES else None, rank=index, # type: ignore[arg-type]
+        store_count=len(stores[name]), market_count=len(by_market[name]),
+        store_counts_by_market={MARKET_BY_ID[key].key: len(value) for key, value in by_market[name].items() if key in MARKET_BY_ID})
+        for index, name in enumerate(names, start=1))
 
 
 def get_product_catalog(

@@ -91,6 +91,7 @@ const replacements: Record<string, string> = {
     "Compare candidate market areas under the same conditions.",
   유동: "Foot traffic",
   순증: "Net change",
+  "점포 순변화": "Net store change",
   "조회 전": "Not loaded",
   "데이터 기준 시점": "Data reference period",
   "이 화면의 숫자는 이렇게 읽습니다.": "How to read the numbers on this screen.",

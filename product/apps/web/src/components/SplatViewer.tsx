@@ -25,7 +25,7 @@ export function SplatViewer({
   crowdPositions = [],
   filterScaleOutliers = false,
   initialCamera = null,
-  lod = true,
+  lod = false,
 }: SplatViewerProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const canvasHostRef = useRef<HTMLDivElement>(null);

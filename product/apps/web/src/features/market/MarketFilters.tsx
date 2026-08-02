@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 
 import { MapLayerControls } from "./MapLayerControls";
@@ -5,6 +6,7 @@ import { NearbyStoreList } from "./NearbyStoreList";
 import { resolveCategoryPresentation } from "./categoryPresentation";
 import { TermHelp } from "./TermHelp";
 import type { ProductCategory } from "../../services/productCatalog";
+import type { IndustryTaxonomy } from "../../services/industryTaxonomy";
 import type { NearbyStoreState } from "../analysis/useNearbyStores";
 import type {
   AnalysisTopic,
@@ -137,6 +139,64 @@ function CategoryLoadingState({ selected }: { selected: Category }) {
   );
 }
 
+function TaxonomyCategorySelect({
+  taxonomy,
+  category,
+  categorySelection,
+  catalogState,
+  supportedCategories,
+  onCategoryChange,
+  onTaxonomyCategoryChange,
+}: Pick<
+  MarketFiltersProps,
+  "taxonomy" | "category" | "categorySelection" | "catalogState" | "supportedCategories" | "onCategoryChange" | "onTaxonomyCategoryChange"
+>) {
+  const lastRecommendedCategory = useRef<Category | null>(null);
+  const recommendedCategoryDescription =
+    catalogState === "ranked"
+      ? "추천 업종은 연남·홍대·합정 세 상권의 고유 점포 수 상위 7개입니다. 이 목록은 현재 상권의 점포 수로 다시 정렬됩니다."
+      : "추천 업종 순위는 데이터 연결이 완료되면 연남·홍대·합정 세 상권의 고유 점포 수 기준으로 표시됩니다.";
+
+  useEffect(() => {
+    if (category && supportedCategories.some((candidate) => candidate.name === category)) {
+      lastRecommendedCategory.current = category;
+    }
+  }, [category, supportedCategories]);
+
+  if (!taxonomy?.nodes?.length) return null;
+
+  return (
+    <label className="select-label taxonomy-select">
+      <span className="select-label-title">
+        전체 업종 탐색 <small>247개 원천 소분류</small>
+        <TermHelp term="추천 업종" description={recommendedCategoryDescription} />
+      </span>
+      <select
+        value={categorySelection.code && /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(categorySelection.code) ? categorySelection.code : ""}
+        onChange={(event) => {
+          const node = taxonomy.nodes.find((candidate) => candidate.id === event.target.value);
+          if (node && onTaxonomyCategoryChange) {
+            onTaxonomyCategoryChange(node.name, node.id, node.capability);
+            return;
+          }
+          const recommendedCategory =
+            supportedCategories.find((candidate) => candidate.name === lastRecommendedCategory.current)
+              ?.name ?? supportedCategories[0]?.name;
+          if (recommendedCategory) onCategoryChange(recommendedCategory);
+        }}
+      >
+        <option value="">추천 업종 보기 · 세부 업종 선택 해제</option>
+        {taxonomy.nodes.filter((node) => node.is_leaf).map((node) => (
+          <option key={node.id} value={node.id}>
+            {node.path_key.replaceAll("/", " › ")} · {node.name}
+          </option>
+        ))}
+      </select>
+      <small>{recommendedCategoryDescription}</small>
+    </label>
+  );
+}
+
 type MarketFiltersProps = {
   marketKey: MarketKey;
   markets: Record<MarketKey, Market>;
@@ -158,6 +218,8 @@ type MarketFiltersProps = {
   onReset: () => void;
   onMarketChange: (market: MarketKey) => void;
   onCategoryChange: (category: Category) => void;
+  taxonomy?: IndustryTaxonomy | null;
+  onTaxonomyCategoryChange?: (name: string, nodeId: string, capability: "FULL" | "PARTIAL" | "NONE") => void;
   onLayerChange: (layer: LayerMode) => void;
   onTopicChange: (topic: AnalysisTopic) => void;
   onBoundaryVisibleChange: (visible: boolean) => void;
@@ -186,6 +248,8 @@ export function MarketFilters({
   onReset,
   onMarketChange,
   onCategoryChange,
+  taxonomy,
+  onTaxonomyCategoryChange,
   onLayerChange,
   onTopicChange,
   onBoundaryVisibleChange,
@@ -303,6 +367,15 @@ export function MarketFilters({
             />
           )}
         </div>
+        <TaxonomyCategorySelect
+          taxonomy={taxonomy}
+          category={category}
+          categorySelection={categorySelection}
+          catalogState={catalogState}
+          supportedCategories={supportedCategories}
+          onCategoryChange={onCategoryChange}
+          onTaxonomyCategoryChange={onTaxonomyCategoryChange}
+        />
       </div>
       <div className="filter-group filter-section">
         <div className="filter-section-heading">

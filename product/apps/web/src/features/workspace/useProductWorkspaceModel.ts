@@ -19,6 +19,7 @@ import { useWorkspacePanels } from "./useWorkspacePanels";
 import type { ApiReadinessState } from "../system/useApiReadiness";
 import type { MarketSearchResult } from "../search/searchApi";
 import type { ProductCatalog, SupportedMarket } from "../../services/productCatalog";
+import { useIndustryTaxonomy } from "../market/useIndustryTaxonomy";
 
 type SelectionState = ReturnType<typeof useAnalysisSelection>;
 type PanelState = ReturnType<typeof useWorkspacePanels>;
@@ -127,6 +128,8 @@ function useWorkspaceMarketData(
       category: selection.categorySelection.name,
       scope: "market",
       marketId: catalogState.marketIdByKey[selection.marketKey],
+      taxonomyNodeId: /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(selection.categorySelection.code ?? "")
+        ? selection.categorySelection.code : null,
     },
     apiReady,
   );
@@ -138,11 +141,12 @@ function useWorkspaceMarketData(
   });
 
   useEffect(() => {
-    syncCategoryCoverage(nearby.data?.category_coverage);
-  }, [nearby.data?.category_coverage, syncCategoryCoverage]);
+    if (!nearby.isStale) syncCategoryCoverage(nearby.data?.category_coverage);
+  }, [nearby.data?.category_coverage, nearby.isStale, syncCategoryCoverage]);
 
   useEffect(() => {
     const responseMatchesCenter =
+      !nearby.isStale &&
       nearby.data &&
       Math.abs(nearby.data.center.longitude - selectedMarket.center[0]) < 0.000001 &&
       Math.abs(nearby.data.center.latitude - selectedMarket.center[1]) < 0.000001;
@@ -154,6 +158,7 @@ function useWorkspaceMarketData(
   }, [
     catalogState.marketKeyById,
     nearby.data,
+    nearby.isStale,
     selection.marketKey,
     setMarketKey,
     selectedMarket.center,
@@ -262,8 +267,9 @@ function useWorkspaceStorefronts(
     [selectedCategoryStores],
   );
   const selectedStorefront3d = storefrontBuildings3d[0] ?? null;
-  const sameCategoryCount = nearby.data?.same_category_count ?? 0;
+  const sameCategoryCount = nearby.isStale ? 0 : (nearby.data?.same_category_count ?? 0);
   const categoryCoverageReason =
+    !nearby.isStale &&
     nearby.data?.category_coverage.requested_category === selection.categorySelection.name
       ? nearby.data.category_coverage.status === "unavailable" &&
         nearby.data.same_category_count === 0
@@ -334,6 +340,15 @@ function useWorkspaceActions(
     storefronts.storeSelection.clearSelection();
     selection.chooseCategory(nextCategory);
   }
+  function chooseTaxonomyCategory(name: string, nodeId: string, capability: "FULL" | "PARTIAL" | "NONE") {
+    storefronts.storeSelection.clearSelection();
+    selection.applyCategorySelection({
+      name,
+      code: nodeId,
+      analysisCategory: null,
+      coverage: capability === "FULL" ? "full" : capability === "PARTIAL" ? "partial" : "unavailable",
+    });
+  }
   function chooseListedStore(storeName: string) {
     const store = storefronts.visibleStores.find((candidate) => candidate.name === storeName);
     storefronts.storeSelection.selectListedStore(storeName);
@@ -379,6 +394,7 @@ function useWorkspaceActions(
   return {
     chooseMarket,
     chooseCategory,
+    chooseTaxonomyCategory,
     chooseListedStore,
     chooseSearchResult,
     resetAnalysis,
@@ -393,6 +409,7 @@ export function useProductWorkspaceModel(
   apiReadiness: { state: ApiReadinessState; retry: () => void },
 ) {
   const compactMap = useCompactMap();
+  const taxonomy = useIndustryTaxonomy(useDemoData || apiReadiness.state === "ready");
   const catalogState = useWorkspaceCatalog(catalog);
   const initialAnalysisState = useMemo(
     () => restoreAnalysisSessionState(catalogState.initialAnalysisState, catalog),
@@ -446,6 +463,7 @@ export function useProductWorkspaceModel(
 
   return {
     catalog,
+    taxonomy,
     apiReadiness,
     compactMap,
     catalogState,

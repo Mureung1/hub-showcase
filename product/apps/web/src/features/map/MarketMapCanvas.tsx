@@ -313,6 +313,7 @@ function MapContents({
       <StorePointLayers
         stores={storePoints}
         selected={selected}
+        selectedCategoryName={selectedCategoryName}
         visible={storesVisible}
         densityMode={effectivePresentationMode === "analysis" && layer === "density"}
         storefrontMode={effectivePresentationMode === "storefront3d"}
@@ -455,14 +456,7 @@ export function MarketMapCanvas({
     () => mapStores.filter((store) => representedStoreIds.has(storefrontStoreIdentity(store))),
     [mapStores, representedStoreIds],
   );
-  const densityStores = useMemo(
-    () =>
-      mapStores.filter(
-        (store) =>
-          store.category === selectedCategoryName || store.category.includes(selectedCategoryName),
-      ),
-    [mapStores, selectedCategoryName],
-  );
+  const densityStores = mapStores;
   const selectedPresentation = resolveCategoryPresentation(selectedCategoryName);
   const selectedDistanceLabel = selected
     ? `${selectedPresentation.label} · 상권 중심에서 ${selected.distance}`
@@ -535,7 +529,7 @@ export function MarketMapCanvas({
           selectedDistanceLabel={selectedDistanceLabel}
           selectedPresentation={selectedPresentation}
           storefrontObjectHitStores={storefrontObjectHitStores}
-          storePoints={mapStores}
+          storePoints={densityStores}
           storesVisible={storesVisible}
           visibleStorefronts={visibleStorefronts}
         />

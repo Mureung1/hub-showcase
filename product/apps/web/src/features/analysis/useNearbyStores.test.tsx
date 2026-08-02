@@ -143,7 +143,7 @@ describe("useNearbyStores", () => {
     expect(result.current.data?.total_count).toBe(3);
   });
 
-  it("hides the previous category response as soon as the filter changes", async () => {
+  it("keeps the previous category response while the next category loads", async () => {
     const center: [number, number] = [126.9228, 37.5635];
     const pendingResponse = new Promise<ReturnType<typeof okResponse>>(() => undefined);
     const fetchMock = vi
@@ -167,6 +167,7 @@ describe("useNearbyStores", () => {
     rerender({ category: "미용" });
 
     expect(result.current.state).toBe("loading");
-    expect(result.current.data).toBeNull();
+    expect(result.current.data?.same_category_count).toBe(4);
+    expect(result.current.isStale).toBe(true);
   });
 });

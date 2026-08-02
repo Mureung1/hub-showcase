@@ -24,6 +24,10 @@
     "product/scripts/run_gpu_scene_validation.py#main": {
       "maxLines": 89,
       "reason": "SCENE-008에서 CLI orchestration과 worker 검증 단계를 분리한다."
+    },
+    "product/apps/api/src/localtwin_api/industry_taxonomy.py#materialize_current_taxonomy": {
+      "maxLines": 137,
+      "reason": "하나의 transaction 안에서 version, nodes, assignments, publication을 원자적으로 생성한다."
     }
   },
   "literalBudgets": {

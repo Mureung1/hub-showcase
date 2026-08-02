@@ -3,6 +3,7 @@ import { CircleHelp, FileText, Target, TrendingUp, UsersRound, X } from "lucide-
 
 import type { AdminAreaBackground } from "../../services/adminAreaBackground";
 import type { MarketAnalysis, MarketStoreTrend } from "../../services/marketAnalysis";
+import { formatStoreChange } from "./formatStoreChange";
 import { MetricGuide } from "./MetricGuide";
 import { TermHelp } from "./TermHelp";
 import type { AnalysisScope, AnalysisTopic, CategorySelection, Market, MarketStore } from "./types";
@@ -366,8 +367,7 @@ export function InspectorTurnoverAndSales({
               <div className="turnover-summary">
                 <span>선택 분기의 업종별 집계</span>
                 <b>
-                  순증 {openingCount - closureCount > 0 ? "+" : ""}
-                  {openingCount - closureCount}개
+                  {formatStoreChange(openingCount - closureCount)}
                 </b>
               </div>
             </>
@@ -487,8 +487,7 @@ export function InspectorStoreTrend({
         <span>개업 {opening}개</span>
         <span>폐업 {closure}개</span>
         <b>
-          순증 {net > 0 ? "+" : ""}
-          {net}개
+          {formatStoreChange(net)}
         </b>
       </div>
       <div className="trend-list">
@@ -499,14 +498,13 @@ export function InspectorStoreTrend({
               개업 {point.opening_count} · 폐업 {point.closure_count}
             </span>
             <strong>
-              순증 {point.net_opening_count > 0 ? "+" : ""}
-              {point.net_opening_count}
+              {formatStoreChange(point.net_opening_count)}
             </strong>
           </div>
         ))}
       </div>
       <p className="metric-note">
-        여러 분기를 고르면 개업·폐업·순증만 합산합니다. 분기별 점포 수와 매출·유동인구는 서로 다른
+        여러 분기를 고르면 개업·폐업·점포 순변화만 합산합니다. 분기별 점포 수와 매출·유동인구는 서로 다른
         시점의 값이므로 합산하지 않습니다.
       </p>
     </section>

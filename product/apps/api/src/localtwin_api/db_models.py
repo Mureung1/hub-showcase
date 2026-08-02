@@ -168,6 +168,88 @@ class StoreMarketLink(Base):
     )
 
 
+class IndustryTaxonomyVersion(Base):
+    __tablename__ = "industry_taxonomy_versions"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+    version_name: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False)
+    source_fingerprint: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class IndustryTaxonomyNode(Base):
+    __tablename__ = "industry_taxonomy_nodes"
+    __table_args__ = (
+        UniqueConstraint("taxonomy_version_id", "path_key"),
+        Index(
+            "ix_industry_taxonomy_nodes_version_parent", "taxonomy_version_id", "parent_path_key"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    taxonomy_version_id: Mapped[str] = mapped_column(
+        ForeignKey("industry_taxonomy_versions.id"), nullable=False
+    )
+    level: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_code: Mapped[str] = mapped_column(String, nullable=False)
+    source_name: Mapped[str] = mapped_column(String, nullable=False)
+    display_name: Mapped[str] = mapped_column(String, nullable=False)
+    parent_path_key: Mapped[str | None] = mapped_column(String)
+    path_key: Mapped[str] = mapped_column(String, nullable=False)
+    is_leaf: Mapped[bool] = mapped_column(Boolean, nullable=False)
+
+
+class StoreTaxonomyAssignmentRun(Base):
+    __tablename__ = "store_taxonomy_assignment_runs"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    source_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("data_sources.snapshot_id"), nullable=False
+    )
+    taxonomy_version_id: Mapped[str] = mapped_column(
+        ForeignKey("industry_taxonomy_versions.id"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String, nullable=False)
+    input_fingerprint: Mapped[str] = mapped_column(String, nullable=False, unique=True)
+    created_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class StoreTaxonomyAssignment(Base):
+    __tablename__ = "store_taxonomy_assignments"
+    __table_args__ = (
+        PrimaryKeyConstraint("assignment_run_id", "store_id"),
+        Index(
+            "ix_store_taxonomy_assignments_run_leaf_store",
+            "assignment_run_id",
+            "leaf_node_id",
+            "store_id",
+        ),
+    )
+
+    assignment_run_id: Mapped[str] = mapped_column(
+        ForeignKey("store_taxonomy_assignment_runs.id"), nullable=False
+    )
+    store_id: Mapped[str] = mapped_column(ForeignKey("store_points.store_id"), nullable=False)
+    leaf_node_id: Mapped[str] = mapped_column(
+        ForeignKey("industry_taxonomy_nodes.id"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class StoreCatalogPublication(Base):
+    __tablename__ = "store_catalog_publications"
+
+    publication_key: Mapped[str] = mapped_column(String, primary_key=True)
+    assignment_run_id: Mapped[str] = mapped_column(
+        ForeignKey("store_taxonomy_assignment_runs.id"), nullable=False
+    )
+    published_at: Mapped[str] = mapped_column(String, nullable=False)
+
+
 class PermitBusiness(Base):
     __tablename__ = "permit_businesses"
     __table_args__ = (PrimaryKeyConstraint("dataset", "management_no"),)

@@ -1,6 +1,24 @@
 @import "./tokens.css";
 @import url("https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.1/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css");
 
+:root {
+  --lt-space-1: 4px;
+  --lt-space-2: 8px;
+  --lt-space-3: 12px;
+  --lt-space-4: 16px;
+  --lt-space-5: 20px;
+  --lt-space-6: 24px;
+  --lt-text-xs: 10px;
+  --lt-text-sm: 12px;
+  --lt-text-md: 14px;
+  --lt-leading-xs: 16px;
+  --lt-leading-sm: 20px;
+  --lt-leading-md: 22px;
+  --lt-row-compact: 32px;
+  --lt-row-default: 40px;
+  --lt-control-default: 36px;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1537,7 +1555,7 @@ html.is-english .three-d {
   left: 20px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: var(--lt-space-6);
   min-height: 78px;
   padding: 13px 18px;
   border: 1px solid rgba(255, 255, 255, 0.86);
@@ -1550,43 +1568,50 @@ html.is-english .three-d {
 .quick-metrics-heading {
   display: grid;
   min-width: 124px;
-  gap: 4px;
+  gap: var(--lt-space-1);
 }
 
 .quick-metrics-heading b {
   color: #2a3b30;
-  font-size: 12px;
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-sm);
 }
 
 .quick-metrics-heading small {
   color: #829087;
-  font-size: 9px;
+  font-size: var(--lt-text-xs);
+  line-height: var(--lt-leading-xs);
 }
 
 .quick-metrics-list {
   display: grid;
   flex: 1;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--lt-space-3);
 }
 
 .quick-metrics-list > div {
   display: grid;
   grid-template-columns: auto 1fr;
-  column-gap: 7px;
+  min-height: var(--lt-row-default);
+  column-gap: var(--lt-space-2);
   align-items: center;
   min-width: 0;
 }
 
 .quick-metrics-list > div > span:not(.quick-metric-icon) {
   color: #6f7d74;
-  font-size: 9px;
+  font-size: var(--lt-text-xs);
+  line-height: var(--lt-leading-xs);
 }
 
 .quick-metrics-list b {
   grid-column: 2;
   color: #263c2c;
-  font-size: 14px;
+  font-size: var(--lt-text-md);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--lt-leading-md);
+  white-space: nowrap;
 }
 
 .quick-metric-icon {
@@ -2062,13 +2087,15 @@ html:not(.is-english) .evidence-button:focus-visible {
 .trend-summary {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: var(--lt-space-2);
   color: #637168;
-  font-size: 10px;
+  font-size: var(--lt-text-xs);
+  line-height: var(--lt-leading-xs);
 }
 
 .trend-summary b {
   color: #24743f;
+  font-variant-numeric: tabular-nums;
 }
 
 .trend-list {
@@ -2079,13 +2106,15 @@ html:not(.is-english) .evidence-button:focus-visible {
 .trend-list > div {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: 6px;
+  min-height: var(--lt-row-default);
+  gap: var(--lt-space-2);
   align-items: center;
-  padding: 7px 8px;
+  padding: var(--lt-space-2);
   border-radius: 6px;
   background: #f8faf8;
   color: #718077;
-  font-size: 10px;
+  font-size: var(--lt-text-xs);
+  line-height: var(--lt-leading-xs);
 }
 
 .trend-list b {
@@ -2094,18 +2123,22 @@ html:not(.is-english) .evidence-button:focus-visible {
 
 .trend-list strong {
   color: #24743f;
-  font-size: 10px;
+  font-size: var(--lt-text-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .section-title span {
   color: #2c392f;
-  font-size: 12px;
+  font-size: var(--lt-text-sm);
+  line-height: var(--lt-leading-sm);
   font-weight: 750;
 }
 
 .section-title small {
   color: #879188;
-  font-size: 10px;
+  font-size: var(--lt-text-xs);
+  line-height: var(--lt-leading-xs);
 }
 
 .competition-chart {
@@ -2184,9 +2217,11 @@ html:not(.is-english) .evidence-button:focus-visible {
   display: grid;
   grid-template-columns: 28px 1fr 34px;
   align-items: center;
-  gap: 7px;
+  min-height: var(--lt-row-compact);
+  gap: var(--lt-space-2);
   color: #66756c;
-  font-size: 10px;
+  font-size: var(--lt-text-xs);
+  line-height: var(--lt-leading-xs);
 }
 
 .turnover-bars i {
@@ -2213,21 +2248,26 @@ html:not(.is-english) .evidence-button:focus-visible {
 
 .turnover-bars strong {
   color: #405047;
+  font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
 .turnover-summary {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  padding-top: 8px;
+  min-height: var(--lt-row-compact);
+  gap: var(--lt-space-2);
+  padding-top: var(--lt-space-2);
   border-top: 1px solid #e6ece8;
   color: #78857c;
-  font-size: 10px;
+  font-size: var(--lt-text-xs);
+  line-height: var(--lt-leading-xs);
 }
 
 .turnover-summary b {
   color: #2b7e46;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .turnover-note {
