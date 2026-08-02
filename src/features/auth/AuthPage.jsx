@@ -33,6 +33,15 @@ export default function AuthPage() {
 
         {notice && mode === "login" && <p className="auth-page__notice">{notice}</p>}
 
+        {mode === "login" && (
+          <div className="auth-page__demo">
+            <span className="auth-page__demo-label">체험용 계정</span>
+            <span className="auth-page__demo-creds">
+              사번 <b>1</b> · 비밀번호 <b>12345678</b>
+            </span>
+          </div>
+        )}
+
         {mode === "login" ? (
           <LoginForm onSwitchToSignup={switchToSignup} />
         ) : (

@@ -39,19 +39,32 @@
   pointer-events: auto;
 }
 
-.chat-demo__empty,
 .chat-demo__loading {
   width: 100%;
   max-width: 900px;
   color: var(--color-text-muted);
-}
-
-.chat-demo__empty {
-  font-size: 14px;
-}
-
-.chat-demo__loading {
   font-size: 13px;
+}
+
+/* 빈 화면 안내: 채팅 폭에 맞춰 위쪽에 자연스럽게 (가운데 띄우지 않음) */
+.chat-demo__empty {
+  width: 100%;
+  max-width: 900px;
+  padding-top: var(--space-4);
+}
+
+.chat-demo__empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-2);
+}
+
+.chat-demo__empty-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  margin: 0;
 }
 
 .chat-exchange {

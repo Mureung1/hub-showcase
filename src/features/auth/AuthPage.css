@@ -64,3 +64,35 @@
   text-align: center;
   box-sizing: border-box;
 }
+
+/* 배포 데모에서 테스터가 바로 로그인할 수 있게 안내하는 체험 계정 박스 */
+.auth-page__demo {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  background: var(--color-accent-soft);
+  border: 1px dashed var(--color-accent);
+  border-radius: var(--radius-input);
+  padding: var(--space-3);
+  margin: 0 0 var(--space-4);
+  box-sizing: border-box;
+}
+
+.auth-page__demo-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-accent);
+}
+
+.auth-page__demo-creds {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.auth-page__demo-creds b {
+  color: var(--color-text-primary);
+}

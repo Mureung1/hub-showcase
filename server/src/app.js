@@ -6,6 +6,7 @@ import authRouter from './routes/auth.js';
 import chatRouter from './routes/chat.js';
 import logsRouter from './routes/logs.js';
 import { initDb } from './data/db.js';
+import { seedDemoUser } from './data/seed.js';
 import { errorHandler } from './utils/errors.js';
 
 const app = express();
@@ -31,6 +32,7 @@ const PORT = process.env.PORT || 4000;
 
 // DB(스키마) 준비가 끝난 뒤에 서버를 연다. 초기화 실패 시 그대로 종료해 원인을 드러낸다.
 initDb()
+  .then(() => seedDemoUser())
   .then(() => {
     app.listen(PORT, () => {
       console.log(`gateway server listening on port ${PORT}`);

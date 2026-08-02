@@ -120,7 +120,14 @@ export default function ChatDemo() {
     >
       <div className="chat-demo__thread">
         {messages.length === 0 && (
-          <p className="chat-demo__empty">프롬프트를 입력하거나 파일을 첨부해보세요.</p>
+          <div className="chat-demo__empty">
+            <p className="chat-demo__empty-title">채팅 데모</p>
+            <p className="chat-demo__empty-desc">
+              입력한 요청은 실제 LLM(현재 OpenAI GPT-4o mini)으로 나가기 전 게이트웨이가 검사합니다.
+              전화번호·API 키·사설 IP 같은 민감정보는 값만 가려지고 코드 로직은 그대로 전달됩니다.
+              텍스트를 입력하거나 파일을 첨부해 자유롭게 사용해보세요.
+            </p>
+          </div>
         )}
         {messages.map((m) =>
           m.error ? (
