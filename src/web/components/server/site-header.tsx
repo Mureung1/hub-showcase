@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getSession } from '../../auth/session';
+import { LogoutForm } from '../client/logout-form';
 
 export async function SiteHeader() {
   const session = await getSession();
@@ -18,6 +19,7 @@ export async function SiteHeader() {
               <Link href="/dashboard">내 학습</Link>
               <Link href="/wallet">Point</Link>
               <Link href="/profile">프로필</Link>
+              <LogoutForm />
             </>
           ) : (
             <>

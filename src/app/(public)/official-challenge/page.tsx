@@ -80,9 +80,9 @@ export default async function OfficialChallengePage() {
             <p className={styles.missionLabel}><span /> MISSION 001 · {statusLabel}</p>
             <p className={styles.heroOverline}>{challenge.title}</p>
             <h1 id="official-hero-title">
-              <span>30일 후,</span>
-              <span>공부를 계속하는</span>
-              <em>사람이 되어라.</em>
+              <span>30일의 생존 끝에,</span>
+              <span>공부는 결심이 아닌</span>
+              <em>습관이 된다</em>
             </h1>
             <p className={styles.heroDescription}>
               매일 {challenge.dailyMinutes}분의 집중과 한 번의 인증. 의지가 흔들리는 날에도 공부가 계속되는 구조를 만듭니다.
