@@ -6,6 +6,7 @@
   "demoUrl": "https://hub-rho-rosy.vercel.app/",
   "demoVideoUrl": "https://drive.google.com/file/d/1wnkBk6vFJVGt8ZlqHlyzJqsUxtLTFccn/view?usp=sharing",
   "thumbnail": "thumbnail.webp",
+  "projectIntroUrl" : "https://hub-rho-rosy.vercel.app/intro.html",
   "screenshots": [ "screenshots/home(2).webp",
                     "screenshots/course_basket.webp",
                     "screenshots/simulation.webp"
