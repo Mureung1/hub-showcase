@@ -7,7 +7,11 @@
   "demoVideoUrl": "https://drive.google.com/drive/folders/1VfiAl05IA56WRRBB7z5cflz1psx1_la9?usp=drive_link",
   "thumbnail": "thumbnail.png",
   "screenshots": [
-    "screenshots/home.png"
+    "screenshots/1_login.png",
+    "screenshots/2_portal.png",
+    "screenshots/3_timetable.png",
+    "screenshots/4_analytics.png",
+    "screenshots/5_semester_grades.png"
   ],
   "problem": "편입생이나 다전공 수강생들의 경우, 각각 다르게 적용되는 복잡한 교양 및 전공 졸업 요건을 스스로 진단하기 매우 어렵고, 모의 수강신청 시간표 배정과 성적표 분석을 여러 시스템에서 분산 처리해야 하는 수고가 있습니다.",
   "targetUsers": [
@@ -31,5 +35,53 @@
     "Express",
     "Supabase",
     "Jest"
-  ]
+  ],
+  "techHighlights": [
+    "Tesseract.js OCR 엔진을 활용한 성적표 이미지 스캔 및 교과목·학점·등급 정규식 패턴 자동 추출",
+    "Supabase PostgreSQL 데이터베이스 연동을 통한 대화 이력, 수강 시간표, 성적 내역의 영구 저장",
+    "React Router DOM 세션 제어 및 로컬 스토리지 분리를 활용한 다중 탭 세션 일관성 유지"
+  ],
+  "developmentWithAI": "Antigravity AI 코딩 에이전트와 페어 프로그래밍을 통해 기획, 스키마 설계, REST API 구현, 배포까지 신속하게 마쳤습니다. 에이전트가 제안한 OCR 추출 가이드와 DB 연동 코드를 적극 반영하였으며, 특히 로그인 화면 강제 설정 피드백에 대해 세션 초기화 흐름을 즉각 반영하여 편의성과 보안성을 크게 높였습니다.",
+  "agent": {
+    "summary": "학습 진단 및 시간표 모의 설계를 돕는 AI 어드바이저 챗봇 에이전트입니다. 사용자의 성적 데이터와 학적 상태를 바탕으로 최적의 추천 수강 로드맵을 가이드합니다.",
+    "agentTools": [
+      {
+        "type": "agent",
+        "name": "학업 어드바이저 Agent",
+        "purpose": "학생의 학적 상태(편입생 등)와 질문을 분석하여 맞춤형 과목을 추천하고 시간표에 자동 배치합니다."
+      },
+      {
+        "type": "skill",
+        "name": "성적표 OCR 판독 Skill",
+        "purpose": "Tesseract.js를 활용하여 성적표 이미지에서 교과목명, 학점, 등급을 자동으로 추출합니다."
+      },
+      {
+        "type": "skill",
+        "name": "성적 자가진단 리포트 내보내기 Skill",
+        "purpose": "진단 결과 데이터를 정밀하게 포맷팅하여 브라우저 로컬 파일(.txt)로 내보내기(Export) 합니다."
+      }
+    ],
+    "workflows": [
+      {
+        "name": "기능 개발 Workflow",
+        "steps": [
+          "수강신청 및 성적표 분석 요구사항 정의",
+          "Express 서버 연동 및 Supabase 테이블 설계",
+          "Tesseract.js OCR 기반 파싱 코드 구현",
+          "Blob API 연동 진단 리포트 다운로드 기능 이식",
+          "실서버 배포 및 CORS 연동 테스트"
+        ]
+      },
+      {
+        "name": "테스트 검증 Workflow",
+        "steps": [
+          "OCR 파싱 실패 및 예외 조건 정의",
+          "백엔드 API 단위 테스트 실행",
+          "Supabase 데이터 적재 통합 테스트",
+          "로그인 세션 만료 및 강제 초기화 흐름 검증",
+          "실제 배포 도메인 접속 최종 동작 테스트"
+        ]
+      }
+    ]
+  }
 }
