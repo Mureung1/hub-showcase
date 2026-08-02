@@ -6,7 +6,9 @@ const FOREIGN_LANG_LINKS = {
   OPIc: 'https://www.opic.or.kr/',
 }
 
-const CAREER_REFERENCE_LINK = 'https://www.saramin.co.kr/'
+// 이 서비스 이용자는 대부분 재학생이라 채용공고 사이트(사람인 등)보다 대외활동/공모전/인턴 모음 사이트가
+// 경력 기간을 실제로 채우는 데 더 현실적인 다음 행동이다.
+const CAREER_REFERENCE_LINK = 'https://linkareer.com/'
 const CERTIFICATE_REFERENCE_LINK = 'https://www.q-net.or.kr/'
 // 학점은행제(국가평생교육진흥원) — 학력을 실제로 올릴 수 있는 공식 제도. 학위 취득에 학기 단위 기간이
 // 걸리므로 경력/자격증(짧은 준비 기간)과 달리 JobDetailModal에서 별도 안내 캡션을 붙인다.
@@ -22,6 +24,7 @@ export function getReferenceLink(category, requirementValue) {
 }
 
 const REFERENCE_CAPTIONS = {
+  career: '인턴/대외활동/공모전 경력도 인정돼요.',
   certificates: '정확한 시행기관은 자격증마다 다를 수 있어요.',
   education: '학위 취득에는 보통 학기 단위의 기간이 걸려요.',
 }

@@ -37,6 +37,12 @@ function LoginPage() {
     <div className="screen">
       <h1>로그인</h1>
       <p className="sub">북마크 기능을 쓰려면 로그인이 필요해요. 갭 분석은 로그인 없이도 그대로 이용할 수 있어요.</p>
+      <div className="bookmark-insight-banner" style={{ marginBottom: 24 }}>
+        <span className="bookmark-insight-emoji">🔑</span>
+        <p className="bookmark-insight-text">
+          테스트 계정: abcd@gmail.com / abcd11
+        </p>
+      </div>
 
       <form className="form-card" onSubmit={handleSubmit}>
         <div className="field-grid">
