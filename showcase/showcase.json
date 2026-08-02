@@ -3,8 +3,8 @@
   "title": "포토 네비게이션 - SNS에서 본 그 구도, 지도에서 찾아 찍자",
   "summary": "SNS에서 본 사진 구도를 지도에서 찾고, 카메라 가이드로 따라 찍는 포토스팟 내비게이션 서비스입니다.",
   "githubUser": "yf560(김병조)",
-  "demoUrl": "",
-  "demoVideoUrl": "",
+  "demoUrl": "https://hub-blue-kappa.vercel.app/",
+  "demoVideoUrl": "https://drive.google.com/drive/folders/1k_UyIfzymPnyMO3jWNQFRpd_KiaKd-RH?usp=sharing",
   "thumbnail": "thumbnail.png",
   "screenshots": [
     "screenshots/search-map.png",
