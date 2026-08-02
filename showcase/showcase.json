@@ -3,12 +3,12 @@
   "title": "SWIM",
   "summary": "음악을 중심으로 하루를 기록하고 사람들과 감정을 공유하는 새로운 방식의 SNS입니다.",
   "githubUser": "lkslks4511(이권석)",
-  "demoUrl": "",
+  "demoUrl": "https://swim-self-pi.vercel.app/",
   "demoVideoUrl": "https://drive.google.com/file/d/1MmuMuZEwLBEagwL7WjqxmIBOhFn5Ak8E/view?usp=drive_link",
   "thumbnail": "thumbnail.webp",
   "screenshots": [
-    "Screenshots/main.webp",
-    "Screenshots/login.webp"
+    "screenshots/main.webp",
+    "screenshots/login.webp"
   ],
   "problem": "기존 SNS는 사진이나 긴 글을 중심으로 기록하는 경우가 많아 부담스럽고, 음악은 부가적인 요소로만 사용됩니다. 음악을 중심으로 하루를 기록하고 감정을 표현할 수 있는 서비스가 부족합니다.",
   "targetUsers": [
@@ -17,15 +17,14 @@
     "가볍게 하루를 기록하고 싶은 사용자"
   ],
   "features": [
-    "Supabase Auth로 회원가입하고 로그인합니다.",
+    "Spotify 계정으로 로그인합니다.",
     "오늘의 음악을 검색하고 선택합니다.",
     "음악과 함께 짧은 글을 작성하여 기록합니다.",
     "다른 사용자의 음악 기록을 피드에서 확인합니다.",
-    "기록한 음악을 Spotify에서 감상하고 월간 기록을 비공개 플레이리스트로 내보냅니다."
+    "기록한 음악을 Spotify에서 바로 감상할 수 있습니다."
   ],
 "featureTags": [
-  "Supabase 로그인",
-  "Spotify 계정 연결",
+  "Spotify 로그인",
   "음악 기록",
   "피드"
 ],
@@ -38,9 +37,8 @@
   ],
 "techHighlights": [
   "React와 Express를 REST API로 연결하여 프론트엔드와 백엔드를 분리했습니다.",
-  "Supabase Auth로 SWIM 로그인을 처리하고 Spotify OAuth는 사용자 계정 연결과 플레이리스트 접근에만 사용합니다.",
-  "Spotify Web API를 Express에서 호출해 음악 검색과 월간 플레이리스트 내보내기를 구현했습니다.",
-  "Supabase와 RLS를 활용해 사용자 정보와 음악 기록을 관리했습니다."
+  "Spotify OAuth와 Web API를 이용해 로그인 및 음악 검색 기능을 구현했습니다.",
+  "Supabase를 활용해 사용자 정보와 음악 기록을 관리했습니다."
 ],
   "developmentWithAI": "서비스 아이디어와 핵심 기능은 직접 기획했습니다. AI를 활용해 요구사항을 기능 단위로 정리하고, API와 DB 구조를 설계했으며, 구현 과정에서 코드 초안과 오류 해결 방향을 참고했습니다. 최종 구현과 테스트는 직접 진행하며 수정했습니다.",
   "agent": {

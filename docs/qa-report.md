@@ -2,9 +2,9 @@
 
 ## 실행 정보
 
-- 실행일: 2026-07-29
-- 브랜치: `codex/task-2-user-search`
-- 환경: Windows, Node.js, Vite, Express
+- 실행일: 2026-07-29(자동 검증), 2026-08-02(배포 환경 사용자 확인)
+- 브랜치: `main`
+- 환경: Windows, Node.js, Vite, Express, Vercel, Render
 - 대상: 공개 프로필부터 Spotify Recap 플레이리스트 내보내기까지 작업 1~8 통합 상태
 
 ## 자동 검증
@@ -64,7 +64,25 @@
 
 ## 실제 브라우저·Supabase 검증 상태
 
-저장소에 Supabase와 Spotify 환경변수는 설정돼 있지만 QA 전용 계정 정보는 저장돼 있지 않습니다. 비밀정보를 저장소나 QA 문서에 추가하지 않았습니다. 현재 QA 실행 환경에는 제어 가능한 브라우저가 연결돼 있지 않아 일반 창·시크릿 창 흐름과 Console·Network 확인을 수행하지 못했습니다.
+저장소에 Supabase와 Spotify 환경변수는 설정돼 있지만 QA 전용 계정 정보는 저장하지 않았습니다. 비밀정보는 이 문서와 Git에 기록하지 않습니다.
+
+### 2026-08-02 배포 환경 확인
+
+- 환경: Vercel Frontend(비공개 URL), Render Backend, 원격 Supabase
+- 확인 주체: 사용자 수동 확인
+- Console·Network 상세 확인: 미수행
+
+| 사용자 흐름 | 결과 | 확인 내용 |
+|---|---|---|
+| Vercel Frontend 접근 | PASS | React 화면 렌더링 |
+| Render Backend 연결 | PASS | `/health`와 Frontend API 연결 |
+| 회원가입·로그인 | PASS | Supabase Auth 인증 |
+| 음악 검색 | PASS | Express를 통한 Spotify 검색 |
+| 음악 기록 저장·조회 | PASS | 저장 후 음악 카드 표시 |
+| 두 계정 팔로우·좋아요 분리 | 미검증 | 두 QA 계정 결과 미기록 |
+| 원격 RLS 직접 접근 차단 | 미검증 | 두 사용자 token 필요 |
+| Spotify OAuth·중복 내보내기 | 미검증 | 실제 Spotify 계정 결과 미기록 |
+| 테마·반응형·Console | 미검증 | 전체 화면 결과 미기록 |
 
 2026-07-27에 설정된 공개 anon key로 원격 Supabase REST와 두 RPC를 읽기 전용으로 확인했습니다.
 
