@@ -88,3 +88,4 @@ design Skill 토큰을 재사용해 화면 스타일 일관성 유지 → featur
 - **개발 Task & 백로그**: [docs/backlog.md](./docs/backlog.md)
 - **아키텍처(Screen → Server → DB 데이터 흐름)**: [mermaid.md](./mermaid.md)
 - **쇼케이스**: [showcase/showcase.json](./showcase/showcase.json)
+- **PR 히스토리**: [docs/pr-history.md](./docs/pr-history.md)
