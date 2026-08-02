@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import GroupBuyEditor from "../components/GroupBuyEditor";
 import ProductImage from "../components/ProductImage";
 import { deleteGroupBuy, getGroupBuys, updateGroupBuy } from "../services/groupBuysApi";
-import { matchesGroupBuyCategory, matchesGroupBuyFilter } from "../services/groupBuyFilters";
+import { getSavedStorageKey, matchesGroupBuyCategory, matchesGroupBuyFilter, reconcileSavedIds } from "../services/groupBuyFilters";
 import { getGroupBuySearchResults } from "../services/groupBuyRecommendations";
 
 const filters = [["all", "전체"], ["open", "모집 중"], ["mine", "내 참여"], ["saved", "찜"]];
@@ -19,30 +19,41 @@ function sortItems(items, sort) {
 }
 
 function GroupBuysPage({ onNavigate, user }) {
+  const savedStorageKey = getSavedStorageKey(user?.id);
   const [items, setItems] = useState([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("recent");
   const [editingItem, setEditingItem] = useState(null);
-  const [savedIds, setSavedIds] = useState(() => storedIds("campus-cart-saved"));
+  const [savedIds, setSavedIds] = useState(() => storedIds(savedStorageKey));
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const applyItems = useCallback((nextItems) => {
+    setItems(nextItems);
+    const storedSavedIds = storedIds(savedStorageKey);
+    const reconciledIds = reconcileSavedIds(storedSavedIds, nextItems);
+    setSavedIds(reconciledIds);
+    if (reconciledIds.length !== storedSavedIds.length) {
+      localStorage.setItem(savedStorageKey, JSON.stringify(reconciledIds));
+    }
+  }, [savedStorageKey]);
+
   async function load() {
     setIsLoading(true);
-    try { setItems(await getGroupBuys()); setError(""); }
+    try { applyItems(await getGroupBuys()); setError(""); }
     catch (requestError) { setError(requestError.message); }
     finally { setIsLoading(false); }
   }
 
   useEffect(() => {
     getGroupBuys()
-      .then(setItems)
+      .then(applyItems)
       .catch((requestError) => setError(requestError.message))
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [applyItems]);
 
   const metrics = useMemo(() => ({
     open: items.filter((item) => item.status === "open").length,
@@ -76,7 +87,7 @@ function GroupBuysPage({ onNavigate, user }) {
   function toggleSaved(item) {
     const next = savedIds.includes(item.id) ? savedIds.filter((id) => id !== item.id) : [...savedIds, item.id];
     setSavedIds(next);
-    localStorage.setItem("campus-cart-saved", JSON.stringify(next));
+    localStorage.setItem(savedStorageKey, JSON.stringify(next));
   }
 
   async function remove(item) {

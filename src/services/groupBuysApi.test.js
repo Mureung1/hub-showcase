@@ -80,6 +80,40 @@ test("RED: incomplete join coordinates are normalized to null/null", async () =>
   });
 });
 
+test("RED: out-of-range coordinates are normalized to null/null", async () => {
+  const bodies = [];
+  globalThis.fetch = async (_url, options) => {
+    bodies.push(JSON.parse(options.body));
+    return new Response(JSON.stringify({ groupBuy: { id: "normalized" } }));
+  };
+
+  await api.updateGroupBuy("group-1", {
+    pickupLocation: "중앙도서관 북문",
+    pickupLatitude: 90.01,
+    pickupLongitude: 127.01021,
+  });
+  await api.joinGroupBuy("group-1", {
+    startLocation: "학생회관 1층",
+    latitude: 37.58234,
+    longitude: -180.01,
+    quantity: 1,
+  });
+
+  assert.deepEqual(bodies, [
+    {
+      pickupLocation: "중앙도서관 북문",
+      pickupLatitude: null,
+      pickupLongitude: null,
+    },
+    {
+      startLocation: "학생회관 1층",
+      latitude: null,
+      longitude: null,
+      quantity: 1,
+    },
+  ]);
+});
+
 test("RED: coordinate-only create is rejected before a request is sent", async () => {
   let requestCount = 0;
   globalThis.fetch = async () => {

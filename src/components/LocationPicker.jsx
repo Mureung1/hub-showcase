@@ -131,7 +131,7 @@ function LocationPicker({
   }
 
   function changeAddress(event) {
-    onChange(createLocationSelection(event.target.value, latitude, longitude));
+    onChange(createLocationSelection(event.target.value, null, null));
   }
 
   function clearPin() {

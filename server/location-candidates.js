@@ -7,17 +7,42 @@ function distanceBetween(first, second) {
   );
 }
 
+function mergeCandidate(existing, incoming) {
+  const existingHasCoordinates = Number.isFinite(existing.latitude) && Number.isFinite(existing.longitude);
+  const incomingHasCoordinates = Number.isFinite(incoming.latitude) && Number.isFinite(incoming.longitude);
+
+  if (!existingHasCoordinates && incomingHasCoordinates) {
+    return incoming;
+  }
+
+  return existing;
+}
+
+function uniqueParticipantsByAddress(participants) {
+  const unique = new Map();
+
+  for (const participant of participants) {
+    if (!participant.startLocation) continue;
+
+    const existing = unique.get(participant.startLocation);
+    if (!existing) {
+      unique.set(participant.startLocation, participant);
+      continue;
+    }
+
+    unique.set(participant.startLocation, mergeCandidate(existing, participant));
+  }
+
+  return [...unique.values()];
+}
+
 export function hasCompleteCoordinatePair({ latitude, longitude }) {
   return (latitude === null && longitude === null)
     || (Number.isFinite(latitude) && Number.isFinite(longitude));
 }
 
 export function findPickupCandidates(participants) {
-  const unique = [...new Map(
-    participants
-      .filter((participant) => participant.startLocation)
-      .map((participant) => [participant.startLocation, participant]),
-  ).values()];
+  const unique = uniqueParticipantsByAddress(participants);
   const located = unique.filter(
     (participant) => Number.isFinite(participant.latitude) && Number.isFinite(participant.longitude),
   );
@@ -40,9 +65,7 @@ export function findPickupCandidates(participants) {
 
 export function findPickupCandidateDetails(participants) {
   const uniqueByName = new Map(
-    participants
-      .filter((participant) => participant.startLocation)
-      .map((participant) => [participant.startLocation, participant]),
+    uniqueParticipantsByAddress(participants).map((participant) => [participant.startLocation, participant]),
   );
 
   return findPickupCandidates(participants).map((name) => {

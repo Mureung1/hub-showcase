@@ -82,9 +82,12 @@ test("raw creator coordinates are hidden from members but available for owner ed
     pickupLatitude: 37.5665,
     pickupLongitude: 126.978,
   };
+  const publicResult = presentGroupBuy(item, "");
   const memberResult = presentGroupBuy(item, "member-1");
   const ownerResult = presentGroupBuy(item, "owner-1");
 
+  assert.equal(Object.hasOwn(publicResult, "pickupLatitude"), false);
+  assert.equal(Object.hasOwn(publicResult, "pickupLongitude"), false);
   assert.equal(Object.hasOwn(memberResult, "pickupLatitude"), false);
   assert.equal(Object.hasOwn(memberResult, "pickupLongitude"), false);
   assert.equal(ownerResult.pickupLatitude, 37.5665);
