@@ -4,42 +4,6 @@
   "summary": "자취생이 냉장고 재고를 채우고 관리하며, 보유 재료로 만들 수 있는 요리를 추천받는 서비스입니다.",
   "githubUser": "baejh3333(배정현)",
   "demoUrl": "https://fridge-recipe-app-gl2n.onrender.com/",
-  "videoUrl": "",
-  "sourceUrl": "https://github.com/baejh3333-del/fridge-recipe-app",
-  "intro": "intro.md",
-  "introSlides": "intro-slides.pptx",
-  "links": [
-    {
-      "type": "demo",
-      "label": "서비스 배포 링크",
-      "url": "https://fridge-recipe-app-gl2n.onrender.com/",
-      "note": "Render 배포. 첫 접속 시 인스턴스가 깨어나느라 수십 초 걸릴 수 있습니다."
-    },
-    {
-      "type": "video",
-      "label": "시연 영상",
-      "url": "",
-      "note": "준비 중"
-    },
-    {
-      "type": "source",
-      "label": "소스 코드",
-      "url": "https://github.com/baejh3333-del/fridge-recipe-app",
-      "note": "공개 저장소입니다. 일자별 진행 과정(day3~day19 브랜치)은 챌린지 제출용 fork인 baejh3333-del/hub에 있습니다."
-    },
-    {
-      "type": "intro",
-      "label": "프로젝트 소개 자료",
-      "url": "intro.md",
-      "note": "3주간 AI와 어떤 순서로 일했는지(계획→검증→구현→리뷰→문서화) 정리한 문서. thumbnail·screenshots와 같이 showcase.json 기준 상대 경로입니다."
-    },
-    {
-      "type": "slides",
-      "label": "발표 자료",
-      "url": "intro-slides.pptx",
-      "note": "위 문서를 발표용으로 정리한 슬라이드입니다."
-    }
-  ],
   "thumbnail": "thumbnail.webp",
   "screenshots": [
     "screenshots/home.webp",
