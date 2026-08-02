@@ -1,19 +1,86 @@
-# React + Vite
+# Articles — 영문 뉴스로 배우는 해외주식 모의투자
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+초보자가 영문 경제 뉴스를 번역기 없이 완독하고, 스스로 투자 판단을 내린 뒤
+AI의 해석과 비교하며 배우는 웹 서비스입니다.
 
-Currently, two official plugins are available:
+## 링크
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **서비스 바로가기**: https://articles-client-nine.vercel.app
+- **시연 영상**: https://drive.google.com/file/d/1A21FGBx64WW0VvOSkl2lcWFrT_RLfH9U/view?usp=sharing
+- **프로젝트 소개 자료**: https://docs.google.com/presentation/d/1pIVBx4k-1KEi-nsugmjgC5km4sFiS-aD/edit?usp=sharing&ouid=110519828383942279237&rtpof=true&sd=true
 
-## React Compiler
+## 문제
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+해외 주식과 영문 뉴스를 처음 접하는 초보자는 번역기를 돌려도 낯선 금융 영어
+문장 구조를 이해하기 어렵고, 하루에도 쏟아지는 외신 중 어떤 뉴스가 주가에
+실질적인 영향을 미치는지 선별할 기준이 없어 쉽게 지치고 포기합니다.
 
-## Expanding the Oxlint configuration
+## 대상 사용자
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- 해외 주식 투자와 영문 뉴스 읽기가 모두 처음인 초보자
+- 번역기 없이 원문으로 경제 기사를 읽는 연습을 하고 싶은 학습자
+
+## 주요 기능
+
+- 리더뷰·인사이트 노트·단어장을 사이드바+마스터 리스트(30%)+상세 패널(70%)의
+  3분할 레이아웃으로 통일해, 목록과 본문을 오가며 볼 수 있습니다.
+- 해석이 막히는 문장만 탭하면 팝업 없이 문장 아래 아코디언으로 한글 번역이
+  열립니다.
+- AI가 문단을 3줄로 요약하고, 종목에 미치는 영향(insight)과 시장심리는 내가
+  Bullish/Neutral/Bearish로 판단하기 전까지 블라인드 처리합니다.
+- 판단 후 열리는 바텀시트에서 내 선택과 AI의 시장 해석을 비교하고, 선택적으로
+  판단 근거 한 줄 메모를 남길 수 있습니다. "인사이트 노트에 저장" 버튼을
+  눌러야만 저장되며, 닫기 버튼이나 바깥 클릭은 저장 없이 취소됩니다.
+- 기사 분석 시 자동으로 뽑힌 핵심 금융 용어 3~5개가 단어장에 최신순으로
+  쌓이고, 플래시카드를 탭하면 뒤집혀 원문 발췌 문장과 번역이 드러납니다.
+- CNBC RSS를 매일 자동 수집·선별해 오늘의 핵심 외신 3개를 난이도
+  뱃지(Easy/Medium/Hard)와 함께 대시보드에 큐레이션합니다.
+
+## 기술 스택
+
+React, Vite, Express, Supabase, Claude API (Anthropic)
+
+## 기술 하이라이트
+
+- Claude(claude-haiku-4-5) 호출을 fast lane(문장 번역+3줄요약)과 slow
+  lane(용어 선별+인사이트+시장심리)으로 분리해, 리더뷰 첫 렌더링 지연을
+  줄이고 나머지는 백그라운드에서 준비합니다.
+- CNBC RSS 수집 → 본문 분량 필터 → LLM 투자/가독성 점수 기반 3단계
+  파이프라인으로 대시보드의 '오늘의 핵심 기사'를 매일 자동 큐레이션합니다.
+- Supabase Auth/RLS로 사용자별 단어장·투자판단 기록을 격리하고, 완독과 판단
+  수행률을 article_reads 테이블로 분리 집계합니다.
+- articles 테이블에 분석 결과 캐시 컬럼을 추가해 같은 기사를 재방문해도
+  Claude를 다시 호출하지 않도록 해, 비결정적 LLM 출력으로 인한 단어장 중복
+  적재를 방지합니다.
+- FE는 Vercel, BE는 Render에 배포해 핵심 흐름·에러 처리·새로고침 유지를 실제
+  배포 환경에서 점검했습니다.
+
+## AI와 함께 개발하기
+
+저는 문제 정의, 핵심 기능 우선순위, 화면별 정책(블라인드 처리·저장 시점 등)을
+정했습니다. AI는 요구사항을 Task로 쪼개고(feature-slice 에이전트), 구현
+코드를 작성하고, 구현이 스펙과 실제로 일치하는지 코드와 실행 중인 서버를
+근거로 검증했습니다(feature-verify 에이전트). 저는 결과를 직접 실행하며 화면
+동작을 확인하고 우선순위를 조정했습니다.
+
+기획부터 작업 분해, 구현, 검증까지 전담 서브에이전트 2개와 Skill 2개를 함께
+사용했습니다.
+
+| 이름 | 종류 | 역할 |
+|---|---|---|
+| feature-slice | agent | 요구사항을 하루 안에 끝낼 수 있는 Task로 쪼개고 최우선/P0/P1 우선순위를 매깁니다. |
+| feature-verify | agent | 구현이 API 스펙·기획서·데이터 모델과 실제로 일치하는지 코드와 실행 중인 서버를 근거로 검증합니다. |
+| design | skill | 색상·타이포그래피·컴포넌트 스타일 등 디자인 시스템 규칙을 새 화면에 일관되게 적용합니다. |
+| testing | skill | Vitest 기반 단위 테스트를 기존 컨벤션에 맞춰 작성합니다. |
+
+**기능 개발 Workflow**: 기획서(docs/plan.md) 기준 요구사항 정리 →
+feature-slice 에이전트로 Task 분해 및 우선순위 부여 → GitHub Issue 등록 및
+마일스톤 배정 → 코드 작성 → feature-verify 에이전트로 스펙 대비 구현 검증 →
+docs/backlog.md에 진행 상황 기록
+
+**품질 점검 Workflow**: testing Skill 컨벤션에 따라 Vitest 단위 테스트 작성 →
+design Skill 토큰을 재사용해 화면 스타일 일관성 유지 → feature-verify
+에이전트로 라이브 동작까지 재확인
 
 ## 프로젝트 문서
 
@@ -21,3 +88,4 @@ If you are developing a production application, we recommend using TypeScript wi
 - **개발 Task & 백로그**: [docs/backlog.md](./docs/backlog.md)
 - **아키텍처(Screen → Server → DB 데이터 흐름)**: [mermaid.md](./mermaid.md)
 - **쇼케이스**: [showcase/showcase.json](./showcase/showcase.json)
+- **PR 히스토리**: [docs/pr-history.md](./docs/pr-history.md)
