@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/v1/:path*",
+      "destination": "https://YOUR-RENDER-APP.onrender.com/v1/:path*"
+    }
+  ]
+}

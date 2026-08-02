@@ -11,14 +11,30 @@ import { errorHandler } from './utils/errors.js';
 
 const app = express();
 
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+const isProd = process.env.NODE_ENV === 'production';
+
+// Render 등 프록시(HTTPS 종단) 뒤에서 secure 쿠키가 정상 발급되도록 신뢰 프록시 설정.
+app.set('trust proxy', 1);
+
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { httpOnly: true, maxAge: 1000 * 60 * 60 * 8 },
+    cookie: {
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 8,
+      // 배포(HTTPS)에서는 secure 필수. 프론트/백 도메인이 달라도 쿠키가 실리도록 sameSite=none.
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+    },
   })
 );
 
