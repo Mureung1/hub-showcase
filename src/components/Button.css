@@ -8,16 +8,26 @@
   padding: var(--space-3) var(--space-5);
   font-size: 14px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   cursor: pointer;
+  transition: var(--transition);
 }
 
 .btn--primary {
-  background: var(--color-accent);
+  background: var(--gradient-accent);
   color: #fff;
+  box-shadow: var(--shadow-accent);
 }
 
 .btn--primary:hover {
-  opacity: 0.9;
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(108, 99, 255, 0.4);
+}
+
+.btn--primary:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
 }
 
 .btn--ghost {
@@ -26,10 +36,18 @@
 }
 
 .btn--ghost:hover {
-  background: var(--color-bg);
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.btn:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-ring);
 }
 
 .btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
 }

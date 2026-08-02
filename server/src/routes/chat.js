@@ -1,28 +1,65 @@
 import { Router } from 'express';
 import { requireAuth } from '../services/auth/requireAuth.js';
+import { chatRateLimit } from '../services/rateLimit/rateLimiter.js';
+import { uploadFiles } from '../services/files/upload.js';
+import { extractTextFromFile } from '../services/files/extractText.js';
 import { detectWithRegex } from '../services/detectors/regexDetector.js';
+import { recordLog } from '../services/logs/logService.js';
 import { getProvider } from '../providers/index.js';
 import { AppError } from '../utils/errors.js';
 
 const router = Router();
 
-router.post('/', requireAuth, async (req, res, next) => {
+// 프롬프트와 첨부 파일 각각을 같은 정규식 탐지기에 태우고, 마스킹된 조각을 하나의
+// 텍스트로 합친다. 탐지 결과에는 어느 조각에서 나왔는지(origin) 붙여 로그·표시에 쓴다.
+function inspect({ prompt, files }) {
+  const parts = [];
+  if (prompt) parts.push({ origin: 'prompt', label: null, text: prompt });
+  for (const file of files) {
+    const { name, text } = extractTextFromFile(file);
+    parts.push({ origin: `file:${name}`, label: name, text });
+  }
+
+  const detections = [];
+  const maskedChunks = [];
+  for (const part of parts) {
+    const result = detectWithRegex(part.text);
+    for (const d of result.detections) detections.push({ ...d, origin: part.origin });
+    // 파일 조각은 어느 파일인지 라벨을 붙여 LLM에도 맥락을 준다.
+    maskedChunks.push(part.label ? `[첨부 파일: ${part.label}]\n${result.maskedText}` : result.maskedText);
+  }
+
+  return { detections, maskedText: maskedChunks.join('\n\n') };
+}
+
+router.post('/', requireAuth, chatRateLimit, uploadFiles, async (req, res, next) => {
   try {
-    const { prompt } = req.body;
-    if (!prompt) {
-      throw new AppError(400, 'invalid_request', 'prompt는 필수입니다.');
+    const prompt = req.body.prompt?.trim();
+    const files = req.files ?? [];
+
+    if (!prompt && files.length === 0) {
+      throw new AppError(400, 'invalid_request', 'prompt 또는 첨부 파일이 필요합니다.');
     }
 
-    const { detections, maskedText } = detectWithRegex(prompt);
+    const { detections, maskedText } = inspect({ prompt, files });
     const masked = detections.length > 0;
+    const action = masked ? 'masked' : 'pass';
 
     const provider = getProvider();
     const content = await provider.sendMessage(maskedText);
 
+    // 판정 결과를 로그인 사용자 기준으로 적재. 로그 실패가 채팅 응답을 막지 않도록 분리.
+    try {
+      await recordLog({ userId: req.session.userId, action, provider: provider.name, detections });
+    } catch (logErr) {
+      console.error('로그 적재 실패:', logErr);
+    }
+
     res.json({
-      result: masked ? 'masked' : 'pass',
+      result: action,
       content,
       detections,
+      files: files.map((f) => f.originalname),
       ...(masked && { masked_prompt: maskedText }),
     });
   } catch (err) {

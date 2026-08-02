@@ -1,14 +1,32 @@
+/* 뷰포트 높이로 고정해 페이지 전체가 스크롤되지 않게 한다. 그래야 사이드바가 항상
+   보이고, 스크롤은 각 화면 내부(채팅 스레드 / 로그 목록)에서만 일어난다. */
 .app-shell {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .app-content {
   flex: 1;
   min-width: 0;
+  min-height: 0; /* flex 자식이 내부 스크롤되도록 축소 허용 */
   display: flex;
   flex-direction: column;
   padding: var(--space-6);
+  overflow-y: auto; /* 로그뷰어처럼 내용이 길면 이 영역이 스크롤 (채팅은 스레드가 내부 스크롤) */
+}
+
+/* 활성 화면 컨테이너: ChatDemo가 채우도록 flex 컬럼을 그대로 전달한다. */
+.screen-pane {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen-pane--hidden {
+  display: none;
 }
 
 .app-loading {

@@ -4,16 +4,29 @@
   box-sizing: border-box;
 }
 
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 body {
   margin: 0;
-  font-family: "Pretendard Variable", "Inter", -apple-system, sans-serif;
+  font-family: "Pretendard Variable", "Pretendard", -apple-system, "Segoe UI", sans-serif;
   background: var(--color-bg);
   color: var(--color-text-primary);
+  letter-spacing: -0.011em;
 }
 
 button,
-input {
+input,
+textarea {
   font-family: inherit;
+}
+
+/* 포커스 표시는 키보드 이동 시에만 (마우스 클릭엔 안 뜨게) */
+:focus-visible {
+  outline: none;
 }
 
 #root {
