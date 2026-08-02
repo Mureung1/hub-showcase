@@ -187,3 +187,11 @@
 - 검증: `npm run verify` 통과. 실제 화면에서 Date를 14시/22시로 모킹해 낮/밤 배경·장식·텍스트 전환 확인, 숲/카페 토글 클릭으로 배경·장식·캐릭터 색 전환 확인, 숲 테마 선택 후 새로고침해도 유지되는 것 확인. 검증 중 밤 배경에서 기본 텍스트 색 대비가 나쁜 실제 버그를 발견해 `themeTextColor`로 수정.
 - 문서: checklist.md C22 전체 체크, backlog.md T22 완료 처리, component-tree.md props 표 갱신, CLAUDE.md 현재 구현 상태 갱신, README.md/CLAUDE.md/instructions.md/commit-rules.md의 Task/Checklist 총 개수 표기를 T01~T22/C01~C22로 갱신.
 - 확인: [ ]
+
+## 2026-08-02 | T21, T23 | T21 이슈 등록·완료조건 정의 + T23 복귀 환영 메시지 구현
+- T21(Notion Public Integration + OAuth): GitHub 이슈 #57 등록, docs/backlog.md에 이슈 번호·선행조건(T18 완료) 반영, docs/checklist.md C21 정의(4항목). 실제 구현(OAuth 코드 작성)은 Phase 2 백로그 완료 후 별도 진행하기로 결정(260802) — 지금은 착수 절차만 완료.
+- T23(다시 시작해도 괜찮아): GitHub 이슈 #58 등록. `app/page.js`에 마지막 방문일(`kok-last-visit`, localStorage)과 오늘 날짜 차이를 계산하는 로직 추가, 2일 이상이면 `returningMessage` state를 채워 `BrainDumpInput`의 기존 캐릭터 말풍선(`prompt`)을 "N일 만이네, 반가워"로 교체. Notion 조회 없이 클라이언트에서만 판단(간단한 스코프 유지).
+- 검증: `npm run verify` 통과. 실제 화면에서 (1) 첫 방문(기록 없음) → 기본 문구, (2) localStorage에 3일 전 방문 기록 주입 → "3일 만이네, 반가워" 노출, (3) 같은 날 재방문(새로고침) → 기본 문구로 복귀, 3가지 케이스 스크린샷으로 확인.
+- 겸사겸사 dev-plan.md의 "2분 스타터" 백로그 항목을 T02(Brain Dump 분할)+T03(One-Focus View)로 이미 충족된 것으로 판단해 제외 처리(사용자 확인 후).
+- 문서: checklist.md C21(미체크, 착수 전)·C23(전체 체크) 반영, backlog.md T21/T23 반영, CLAUDE.md 현재 구현 상태 갱신.
+- 확인: [ ]
