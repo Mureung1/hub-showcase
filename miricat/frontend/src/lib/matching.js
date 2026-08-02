@@ -128,11 +128,14 @@ export function matchNotice(notice, route) {
     for (const v of [...(ev.affected_lines || []), ...(ev.affected_stops || [])]) {
       for (const t of tokens) if (hit(v, t)) hits.add(v);
     }
-    // 3층: 도로명 — 공지의 위치 문구에 내 경유 도로가 등장하는가 (자가용)
-    const hay = norm(`${ev.location || ""} ${ev.event_name || ""}`);
-    for (const r of roads) {
-      const nr = norm(r);
-      if (nr && hay.includes(nr)) hits.add(r);
+    // 3층: 도로명 — 공지의 위치 문구에 내 경유 도로가 등장하는가 (자가용).
+    // 좌표 있는 사건(ITS 돌발)은 건너뜀 — 긴 도로는 이름만 겹치면 수백 km 밖 구간도 걸린다. 4층(반경)으로만 판정.
+    if (!(ev.x && ev.y)) {
+      const hay = norm(`${ev.location || ""} ${ev.event_name || ""}`);
+      for (const r of roads) {
+        const nr = norm(r);
+        if (nr && hay.includes(nr)) hits.add(r);
+      }
     }
     // 4층: 반경 — 사건 좌표(ITS 돌발 등)가 내 경로에서 300m 이내인가
     if (ev.x && ev.y && route?.path?.length && nearRoute(ev.x, ev.y, route.path)) {
