@@ -216,3 +216,11 @@
 - 검증: `npm run verify` 통과. 실제 화면에서 (1) 기본 노출 스크린샷, (2) × 클릭 후 사라짐, (3) 새로고침 후에도 계속 안 보이는 것 확인.
 - 문서: checklist.md C25 전체 체크, backlog.md T25 완료 처리(프로토타입 대비 레이아웃 변경 사유 기록), component-tree.md props 반영, CLAUDE.md 현재 구현 상태 갱신.
 - 확인: [ ]
+
+## 2026-08-02 | T26 | 통계 화면 (이번 주 완료 현황) 구현
+- 디자인 근거: `docs/prototype/design-board.html` 07번 프레임("대시보드 대신 숫자 하나") — 큰 숫자 + 캡션 + 요일별 점 7개, 그래프/표 없음.
+- `app/api/stats/route.js` 신규: Steps DB를 `Done=true`·`CompletedAt on_or_after(6일 전)`으로 조회해 최근 7일 중 완료 기록이 있는 날짜 집합을 만들고, 오늘 기준 7일치 boolean 배열(`week`)과 완료한 날 수(`daysCompleted`)를 반환.
+- `app/components/StatsScreen.js` 신규, `app/components/BrainDumpInput.js`에 `onViewStats` 링크("이번 주 통계 보기") 추가. `app/page.js`에 `"stats"` step + `handleViewStats`(진입 시 조회) 추가.
+- 검증: `npm run verify` 통과. 실제 Notion 데이터로 먼저 확인(현재 0/7, 실제로 완료 기록이 없어서 정확), 이후 임시로 완료 기록 3개(오늘·2일 전·5일 전)를 만들어 `daysCompleted:3`과 정확한 위치의 점이 채워지는 것을 API 응답과 스크린샷 둘 다로 확인 → 즉시 정리(archive)해 실제 데이터는 원래 0/7 상태로 복원. 화면 진입("이번 주 통계 보기")과 복귀(홈 버튼)도 스크린샷으로 확인.
+- 문서: checklist.md C26 전체 체크, backlog.md T26 완료 처리, component-tree.md에 `stats` step·`StatsScreen` 반영, CLAUDE.md 갱신. 겸사겸사 dev-plan.md의 Phase 2 백로그 목록 중 이미 완료된 항목(T18·T22~T26)을 취소선으로 정리(그동안 미반영이었던 것 포함).
+- 확인: [ ]
