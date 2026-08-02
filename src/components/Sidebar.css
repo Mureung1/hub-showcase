@@ -13,13 +13,15 @@
   width: 40px;
   height: 40px;
   border-radius: var(--radius-input);
-  background: var(--color-accent);
+  background: var(--gradient-accent);
+  box-shadow: var(--shadow-accent);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
+  letter-spacing: 0.02em;
 }
 
 .sidebar__nav {
@@ -32,21 +34,25 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-3);
+  padding: var(--space-3);
   border: none;
   border-radius: var(--radius-input);
   background: transparent;
   color: var(--color-text-secondary);
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   text-align: left;
+  transition: var(--transition);
 }
 
 .sidebar__item:hover {
-  background: var(--color-bg);
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
 }
 
-.sidebar__item--active {
+.sidebar__item--active,
+.sidebar__item--active:hover {
   background: var(--color-accent-soft);
   color: var(--color-accent);
   font-weight: 600;
@@ -84,10 +90,13 @@
   background: transparent;
   color: var(--color-text-secondary);
   font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   text-align: left;
+  transition: var(--transition);
 }
 
 .sidebar__logout:hover {
-  background: var(--color-bg);
+  background: var(--color-badge-block-bg);
+  color: var(--color-badge-block-text);
 }

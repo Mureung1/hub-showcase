@@ -248,23 +248,32 @@ function ChatExchange({ prompt, files, result }) {
 
         {result.status === "masked" && (
           <>
-            <p className="chat-exchange__masked-text">{result.maskedPrompt}</p>
-            <ResponseBody text={result.response} />
+            <div className="chat-exchange__section">
+              <span className="chat-exchange__section-label">마스킹되어 전달된 입력</span>
+              <p className="chat-exchange__masked-text">{result.maskedPrompt}</p>
+            </div>
+            <div className="chat-exchange__section chat-exchange__section--divider">
+              <span className="chat-exchange__section-label">LLM 응답</span>
+              <ResponseBody text={result.response} />
+            </div>
           </>
         )}
 
         {result.status === "pass" && <ResponseBody text={result.response} />}
 
         {result.detections?.length > 0 && (
-          <div className="chat-exchange__detections">
-            {result.detections.map((d, i) => (
-              <span key={i} className="chat-exchange__detection-tag">
-                {d.type}: {d.value}
-                {d.origin?.startsWith("file:") && (
-                  <span className="chat-exchange__detection-origin">{d.origin.slice(5)}</span>
-                )}
-              </span>
-            ))}
+          <div className="chat-exchange__section chat-exchange__section--divider">
+            <span className="chat-exchange__section-label">탐지 항목</span>
+            <div className="chat-exchange__detections">
+              {result.detections.map((d, i) => (
+                <span key={i} className="chat-exchange__detection-tag">
+                  {d.type}: {d.value}
+                  {d.origin?.startsWith("file:") && (
+                    <span className="chat-exchange__detection-origin">{d.origin.slice(5)}</span>
+                  )}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </Card>
