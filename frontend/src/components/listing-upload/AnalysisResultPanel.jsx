@@ -889,11 +889,6 @@ function AnalysisResultPanel({
         </section>
       )}
 
-      <a className="detail-jump-link" href="#analysis-detail-section">
-        상세정보 보기
-        <span aria-hidden="true" />
-      </a>
-
       <div className="detail-card-grid" id="analysis-detail-section">
         <DetailCard title="면적">
           <AreaVisual fields={fields} />

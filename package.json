@@ -1,0 +1,12 @@
+{
+  "name": "jiptokki-vercel",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build"
+  },
+  "dependencies": {
+    "@google/genai": "^2.13.0"
+  }
+}

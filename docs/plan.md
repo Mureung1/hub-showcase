@@ -1,4 +1,8 @@
 # 대학생 자취방 의사결정 도우미 - 집토끼
+- 배포 주소: https://ziptokki.vercel.app/
+- 개인 저장소: https://github.com/Potato-Love/hub
+- 기획 문서: https://github.com/Potato-Love/hub/wiki/기획
+
 ## 문제 정의
 대학생은 자취를 처음 시작하는 경우가 많고 부동산 계약에 익숙하지 않기 때문에 정보의 비대칭성으로 인한 다양한 문제가 발생합니다.
 - 가격이 지역의 시세 대비 적절한지 판단이 어려움.

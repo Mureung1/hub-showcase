@@ -795,33 +795,6 @@
   font-size: var(--font-size-label);
 }
 
-.detail-jump-link {
-  display: grid;
-  justify-items: center;
-  gap: var(--space-2);
-  width: fit-content;
-  margin: var(--space-2) auto 0;
-  color: var(--color-text-primary);
-  font-size: var(--font-size-step-title);
-  font-weight: var(--font-weight-medium);
-  text-decoration: none;
-}
-
-.detail-jump-link span,
-.detail-jump-link::after {
-  display: block;
-  width: var(--space-4);
-  height: var(--space-4);
-  border-right: 2px solid var(--color-text-primary);
-  border-bottom: 2px solid var(--color-text-primary);
-  content: "";
-  transform: rotate(45deg);
-}
-
-.detail-jump-link span {
-  margin-top: calc(var(--space-2) * -1);
-}
-
 .detail-card-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
