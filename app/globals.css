@@ -18,6 +18,18 @@
   --peach: #F5E1CE;
   --font-title: "Gowun Batang", serif;
   --font-body: "IBM Plex Sans KR", sans-serif;
+
+  /* 화이트노이즈 테마 확장 토큰(T22). .claude/skills/design-system/design.md 참고. */
+  --forest: #93A578;
+  --forest-line: #7A8F60;
+  --forest-deep: #5C6E45;
+  --forest-bg: #F1F0E4;
+  --night: #33304A;
+  --night-line: #4C4868;
+  --night-soft: #B9B4D6;
+  --coffee: #B4835A;
+  --coffee-line: #8E6440;
+  --cafe-bg: #F6EBDD;
 }
 
 html {

@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Character from "./Character";
+import ThemeSwitcher from "./ThemeSwitcher";
+import ThemeDecoration from "./ThemeDecoration";
+import { themeBackgroundColor, themeTextColor } from "@/app/lib/theme";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -27,12 +30,15 @@ function formatDeadlineStatus(now, deadlineExtraMinutes) {
 // onStart: "집중 시작" 버튼 클릭 시 호출
 // onStruggle: "나 지금 힘들어" 버튼 클릭 시 호출
 // deadlineExtraMinutes/onExtendDeadline: 오늘 마감까지 남은 시간 표시 + 연장 버튼(T19)
+// theme/onThemeChange: 화이트노이즈 테마(T22). 여기서 고른 테마가 이후 FocusTimer에도 이어진다.
 export default function OneFocusView({
   task,
   onStart,
   onStruggle,
   deadlineExtraMinutes = 0,
   onExtendDeadline,
+  theme = "daynight",
+  onThemeChange,
 }) {
   const [now, setNow] = useState(() => new Date());
 
@@ -56,9 +62,16 @@ export default function OneFocusView({
         textAlign: "center",
         position: "relative",
         overflow: "hidden",
+        background: themeBackgroundColor(theme, now),
       }}
     >
-      <h1 style={{ fontSize: "34px", lineHeight: 1.4 }}>{task}</h1>
+      <ThemeDecoration theme={theme} />
+      {onThemeChange && (
+        <div style={{ position: "absolute", top: "16px", left: "50%", transform: "translateX(-50%)" }}>
+          <ThemeSwitcher theme={theme} onChange={onThemeChange} />
+        </div>
+      )}
+      <h1 style={{ fontSize: "34px", lineHeight: 1.4, color: themeTextColor(theme, now) }}>{task}</h1>
 
       {onExtendDeadline && (
         <div
@@ -67,7 +80,7 @@ export default function OneFocusView({
             alignItems: "center",
             gap: "8px",
             fontSize: "13px",
-            color: "var(--ink-soft)",
+            color: themeTextColor(theme, now),
           }}
         >
           <span>
@@ -123,7 +136,7 @@ export default function OneFocusView({
           나 지금 힘들어
         </button>
       </div>
-      <Character />
+      <Character color={theme === "forest" ? "forest" : "rose"} />
     </main>
   );
 }

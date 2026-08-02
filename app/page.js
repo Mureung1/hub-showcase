@@ -116,6 +116,16 @@ export default function Home() {
   // 계산에도 그대로 반영된다.
   const [deadlineExtraMinutes, setDeadlineExtraMinutes] = useState(0);
 
+  // T22: 화이트노이즈 테마. focus/timer 화면 SSR은 항상 hasMounted 게이트 뒤에서만 실제로
+  // 그려지므로(§effectiveStep), 초기값을 localStorage에서 바로 읽어도 하이드레이션 불일치가 없다.
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") return "daynight";
+    return localStorage.getItem("kok-theme") || "daynight";
+  });
+  useEffect(() => {
+    localStorage.setItem("kok-theme", theme);
+  }, [theme]);
+
   // T18: Zero-Input 온보딩. null=아직 확인 전, true=연동 정상, false=미설정(온보딩 화면 표시).
   // 마운트 후 한 번만 /api/notion-health로 확인하고, "확인했어요" 버튼으로 재확인할 수 있다.
   const [notionReady, setNotionReady] = useState(null);
@@ -674,6 +684,8 @@ export default function Home() {
         onStruggle={() => setStep("reason")}
         deadlineExtraMinutes={deadlineExtraMinutes}
         onExtendDeadline={extendDeadline}
+        theme={theme}
+        onThemeChange={setTheme}
       />
     );
   }
@@ -722,6 +734,7 @@ export default function Home() {
         onFinish={handleTimerFinish}
         caption={extendReason}
         onPause={handlePause}
+        theme={theme}
       />
     );
   }
