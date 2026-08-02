@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "title": "논문 브리핑",
+  "title": "PAPERHUB",
   "summary": "주제를 입력하면 에이전트가 arXiv 논문을 스스로 골라 읽고 요약하며, 그 판단 과정을 실시간으로 보여주는 서비스입니다.",
   "githubUser": "leekwanhak(이관학)",
   "demoUrl": "https://hub-1rd5.onrender.com",
