@@ -41,7 +41,7 @@ input → review(다시 쪼개기 가능) → (이대로 시작하기: Notion �
 | `BrainDumpInput` | — | `onSubmit(text)` → `review` |
 | `MicrostepReview` | `microsteps`, `isReshuffling`, `isSaving`, `error` | `onDelete(index)` → 로컬에서만 제거, `onReshuffle()` → `/api/brain-dump` 재호출 후 `review` 유지, `onConfirm()` → `/api/steps/save` 저장 후 `preview` |
 | `TaskPreview` | `task` | `onReady()` → `focus` |
-| `OneFocusView` | `task`, `deadlineExtraMinutes`, `onExtendDeadline`(T19: 마감 표시+연장), `theme`·`onThemeChange`(T22: 화이트노이즈 테마), `intensity`·`onIntensityChange`·`soundEnabled`·`onToggleSound`(T24: 감각 강도 조절, `SensoryControl`·`ThemeSound` 내부 사용) | `onStart()` → `timer`, `onStruggle()` → `reason` |
+| `OneFocusView` | `task`, `deadlineExtraMinutes`, `onExtendDeadline`(T19: 마감 표시+연장), `theme`·`onThemeChange`(T22: 화이트노이즈 테마), `intensity`·`onIntensityChange`·`soundEnabled`·`onToggleSound`(T24: 감각 강도 조절, `SensoryControl`·`ThemeSound` 내부 사용), `showPresence`·`onDismissPresence`(T25: 장식용 동시접속 표시, `PresenceIndicator` 내부 사용) | `onStart()` → `timer`, `onStruggle()` → `reason` |
 | `FocusTimer` | `durationMinutes`, `startedAt`, `caption`(연장 이유, 선택), `theme`(T22: OneFocusView에서 고른 테마를 이어받음), `intensity`·`soundEnabled`(T24: 마찬가지로 이어받기만, 조절 UI는 없음) | `onFinish()` → `timer-confirm` |
 | `TimerConfirm` | `isLoading`, `error` | `onYes()` → 완료 처리(`complete`/다음 `preview`), `onNo()` → Agent 연장 판단 후 `timer` |
 | `CompleteScreen` | `completedCount` | (없음, 종착 화면) |
