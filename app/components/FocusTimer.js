@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Character from "./Character";
 import SpeechBubble from "./SpeechBubble";
 import ThemeDecoration from "./ThemeDecoration";
-import { themeBackgroundColor } from "@/app/lib/theme";
+import ThemeSound from "./ThemeSound";
+import { themeBackgroundColor, intensityToSaturate } from "@/app/lib/theme";
 
 // durationMinutes: 타이머 길이(분). 기본 25분.
 // startedAt: 이 스텝을 시작한 시각(Date). 남은 시간은 이 시각 기준으로 매번 다시 계산한다.
@@ -23,6 +24,8 @@ export default function FocusTimer({
   caption,
   onPause,
   theme = "daynight",
+  intensity = 60,
+  soundEnabled = false,
 }) {
   const [remainingSeconds, setRemainingSeconds] = useState(durationMinutes * 60);
 
@@ -59,7 +62,10 @@ export default function FocusTimer({
         background: themeBackgroundColor(theme),
       }}
     >
-      <ThemeDecoration theme={theme} />
+      <ThemeSound theme={theme} enabled={soundEnabled} volume={intensity / 100} />
+      <div style={{ filter: `saturate(${intensityToSaturate(intensity)}%)` }}>
+        <ThemeDecoration theme={theme} />
+      </div>
       <div
         style={{
           width: "220px",
@@ -81,7 +87,7 @@ export default function FocusTimer({
             width: "100%",
             height: `${remainingRatio * 100}%`,
             background: "var(--sky)",
-            transition: "height 1s linear",
+            transition: intensity < 30 ? "none" : "height 1s linear",
           }}
         />
         <span
@@ -135,7 +141,9 @@ export default function FocusTimer({
           {caption}
         </SpeechBubble>
       )}
-      <Character closed color={theme === "forest" ? "forest" : "rose"} />
+      <div style={{ filter: `saturate(${intensityToSaturate(intensity)}%)` }}>
+        <Character closed color={theme === "forest" ? "forest" : "rose"} />
+      </div>
     </main>
   );
 }

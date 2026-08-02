@@ -126,6 +126,25 @@ export default function Home() {
     localStorage.setItem("kok-theme", theme);
   }, [theme]);
 
+  // T24: 감각 강도 다이얼(0~100, 차분~생기)과 소리 on/off. 마운트 하이드레이션 안전성은
+  // theme과 같은 이유(§theme)로 초기값을 localStorage에서 바로 읽어도 문제없다.
+  const [intensity, setIntensity] = useState(() => {
+    if (typeof window === "undefined") return 60;
+    const saved = localStorage.getItem("kok-intensity");
+    return saved ? Number(saved) : 60;
+  });
+  useEffect(() => {
+    localStorage.setItem("kok-intensity", String(intensity));
+  }, [intensity]);
+
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("kok-sound-enabled") === "true";
+  });
+  useEffect(() => {
+    localStorage.setItem("kok-sound-enabled", String(soundEnabled));
+  }, [soundEnabled]);
+
   // T23: 며칠 만에 다시 왔는지 확인해 복귀 환영 문구를 보여준다. 마지막 방문일을
   // localStorage에 남겨두고, 오늘과 날짜만(시간 무시) 비교한다.
   const [returningMessage, setReturningMessage] = useState(null);
@@ -704,6 +723,10 @@ export default function Home() {
         onExtendDeadline={extendDeadline}
         theme={theme}
         onThemeChange={setTheme}
+        intensity={intensity}
+        onIntensityChange={setIntensity}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => setSoundEnabled((v) => !v)}
       />
     );
   }
@@ -753,6 +776,8 @@ export default function Home() {
         caption={extendReason}
         onPause={handlePause}
         theme={theme}
+        intensity={intensity}
+        soundEnabled={soundEnabled}
       />
     );
   }

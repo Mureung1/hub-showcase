@@ -20,3 +20,15 @@ export function themeTextColor(theme, date = new Date()) {
   if (theme === "daynight" && isNightTime(date)) return "var(--night-soft)";
   return "var(--ink)";
 }
+
+// T24: 테마별 배경음(Mixkit 무료 라이선스, public/sounds/). daynight만 낮/밤에 따라 다른 파일을 쓴다.
+export function themeSoundSrc(theme, date = new Date()) {
+  if (theme === "forest") return "/sounds/forest.mp3";
+  if (theme === "cafe") return "/sounds/cafe.mp3";
+  return isNightTime(date) ? "/sounds/night.mp3" : "/sounds/day.mp3";
+}
+
+// T24: 감각 강도 다이얼(0~100, 차분하게~생기있게) → 채도(%). 40(차분)~140(생기)% 범위.
+export function intensityToSaturate(intensity) {
+  return 40 + intensity;
+}

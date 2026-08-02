@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import Character from "./Character";
 import ThemeSwitcher from "./ThemeSwitcher";
 import ThemeDecoration from "./ThemeDecoration";
-import { themeBackgroundColor, themeTextColor } from "@/app/lib/theme";
+import ThemeSound from "./ThemeSound";
+import SensoryControl from "./SensoryControl";
+import { themeBackgroundColor, themeTextColor, intensityToSaturate } from "@/app/lib/theme";
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -39,6 +41,10 @@ export default function OneFocusView({
   onExtendDeadline,
   theme = "daynight",
   onThemeChange,
+  intensity = 60,
+  onIntensityChange,
+  soundEnabled = false,
+  onToggleSound,
 }) {
   const [now, setNow] = useState(() => new Date());
 
@@ -65,10 +71,23 @@ export default function OneFocusView({
         background: themeBackgroundColor(theme, now),
       }}
     >
-      <ThemeDecoration theme={theme} />
+      <ThemeSound theme={theme} enabled={soundEnabled} volume={intensity / 100} />
+      <div style={{ filter: `saturate(${intensityToSaturate(intensity)}%)` }}>
+        <ThemeDecoration theme={theme} />
+      </div>
       {onThemeChange && (
         <div style={{ position: "absolute", top: "16px", left: "50%", transform: "translateX(-50%)" }}>
           <ThemeSwitcher theme={theme} onChange={onThemeChange} />
+        </div>
+      )}
+      {onIntensityChange && (
+        <div style={{ position: "absolute", top: "16px", right: "16px" }}>
+          <SensoryControl
+            intensity={intensity}
+            onIntensityChange={onIntensityChange}
+            soundEnabled={soundEnabled}
+            onToggleSound={onToggleSound}
+          />
         </div>
       )}
       <h1 style={{ fontSize: "34px", lineHeight: 1.4, color: themeTextColor(theme, now) }}>{task}</h1>
@@ -136,7 +155,9 @@ export default function OneFocusView({
           나 지금 힘들어
         </button>
       </div>
-      <Character color={theme === "forest" ? "forest" : "rose"} />
+      <div style={{ filter: `saturate(${intensityToSaturate(intensity)}%)` }}>
+        <Character color={theme === "forest" ? "forest" : "rose"} />
+      </div>
     </main>
   );
 }
