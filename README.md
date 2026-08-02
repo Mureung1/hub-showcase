@@ -1,4 +1,20 @@
-2주차 주간계획 https://github.com/users/pkyungho/projects/1/views/1****
+# 오늘 뭐부터 공부하지?
+
+시험 기간에 과목별 우선순위를 계산해 오늘 먼저 공부할 과목을 추천하는 웹 서비스다.
+
+| | 링크 |
+|---|---|
+| **서비스 배포** | https://what-first.vercel.app |
+| **시연 영상** | https://youtu.be/rFA_218SjNY |
+| **소스 코드** | https://github.com/connect-AIAgentChallenge-26-1/hub/tree/N074_%EB%B0%95%EA%B2%BD%ED%98%B8 |
+| **프로젝트 소개 자료** | [`showcase/README.md`](showcase/README.md) |
+
+> API 서버는 Render 무료 플랜이라 15분간 요청이 없으면 잠든다. 첫 요청이 50초쯤 걸려도 고장이 아니다.
+
+2주차 주간계획: https://github.com/users/pkyungho/projects/1/views/1
+
+---
+
 ## 문제 정의 한 문장  
 
 여러 과목을 동시에 준비해야 하는 대학생이 시험기간에 과목별 우선순위를 판단하기 어려워 제한된 공부 시간을 비효율적으로 쓰게 된다.

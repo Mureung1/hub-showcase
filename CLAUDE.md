@@ -189,7 +189,8 @@ npm --prefix frontend run lint
 
 | 문서 | 내용 |
 |---|---|
-| `README.md` | 문제 정의, 사용자 흐름, 시스템 구조도, 데이터 흐름 |
+| `README.md` | 문제 정의, 사용자 흐름, 시스템 구조도, 데이터 흐름. 최상단에 배포·영상·소스·소개 자료 링크 |
+| `showcase/README.md` | **프로젝트 소개 자료** — 문제, 화면, 핵심 기능, 기술 구조, AI 협업 방식 |
 | `design-skill.md` | 디자인 원칙, 디자인 시스템 값, 컴포넌트 기준, 검토 체크리스트 |
 | `docs/data-model.md` | `subjects` 테이블 구조, 점수 계산식, 저장 방식 |
 | `docs/feature-completion-history.md` | 다음 기능(과목 완료 체크 · 히스토리) 설계 |
