@@ -195,3 +195,15 @@
 - 겸사겸사 dev-plan.md의 "2분 스타터" 백로그 항목을 T02(Brain Dump 분할)+T03(One-Focus View)로 이미 충족된 것으로 판단해 제외 처리(사용자 확인 후).
 - 문서: checklist.md C21(미체크, 착수 전)·C23(전체 체크) 반영, backlog.md T21/T23 반영, CLAUDE.md 현재 구현 상태 갱신.
 - 확인: [ ]
+
+## 2026-08-02 | T24 | 감각 강도 조절 + 테마별 배경음 구현
+- 디자인 근거: `docs/prototype/feature-proposals.html` 03번 프레임(다이얼+색상 견본). 사용자 판단으로 다이얼(색+움직임 통합)과 소리(별도 스피커 아이콘)를 분리해서 컨트롤 디테일을 높임.
+- 실제 배경음 4개(Mixkit 무료 라이선스, 상업적 이용·저작자 표시 불필요) 확보해 `public/sounds/`에 추가: `day.mp3`(새소리), `night.mp3`(귀뚜라미), `forest.mp3`(숲속 새소리), `cafe.mp3`(카페 웅성거림). Mixkit 사이트에서 Envato Elements 프리미엄 미리보기(로그인 필요)와 진짜 무료 항목이 섞여있어, Playwright로 실제 DOM의 `data-audio-player-preview-url-value` 속성을 읽어 "View on Envato" 링크가 없는(=진짜 무료) 항목만 선별.
+- `app/lib/theme.js`: `themeSoundSrc`(테마·낮/밤별 파일 경로), `intensityToSaturate`(0~100 → 40~140% 채도) 추가.
+- `app/components/ThemeSound.js` 신규: 화면에 안 그려지는 `<audio loop>` 관리 컴포넌트. 브라우저 자동재생 정책 때문에 `play()` 실패는 조용히 무시(스피커 아이콘 재클릭으로 복구 가능).
+- `app/components/SensoryControl.js` 신규: 톱니 아이콘 → 팝오버(다이얼+색상 견본 3개+캡션+스피커 토글), 프로토타입 CSS 값 그대로 이식.
+- `app/components/OneFocusView.js`/`FocusTimer.js`: `intensity`/`soundEnabled` prop 추가, `Character`·`ThemeDecoration`에 `saturate()` filter 적용, `FocusTimer`의 물 차오르는 `transition`을 intensity<30이면 `none`으로.
+- `app/page.js`: `intensity`(기본 60)·`soundEnabled` state + localStorage(`kok-intensity`, `kok-sound-enabled`) 유지.
+- 검증: `npm run verify` 통과. 실제 화면에서 (1) 패널 열기·다이얼 드래그(10→95) 시 캐릭터 채도·캡션 변화 스크린샷 확인, (2) intensity=15에서 타이머 water-fill div의 `transition` 값이 `none`인 것 코드 레벨로 확인, (3) 스피커 토글 클릭 시 `<audio>`가 올바른 테마 파일로 `paused:false` 재생되고 `volume`이 intensity와 일치하는 것 확인, (4) localStorage 값이 새로고침 후에도 유지되는 것 확인(단 오디오 자동재생 자체는 브라우저 정책상 별도 동작 필요 — 알려진 제한으로 문서화).
+- 문서: checklist.md C24 전체 체크, backlog.md T24 완료 처리, component-tree.md props·알려진 제한 반영, CLAUDE.md 현재 구현 상태 갱신.
+- 확인: [ ]
