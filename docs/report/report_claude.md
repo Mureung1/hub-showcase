@@ -207,3 +207,12 @@
 - 검증: `npm run verify` 통과. 실제 화면에서 (1) 패널 열기·다이얼 드래그(10→95) 시 캐릭터 채도·캡션 변화 스크린샷 확인, (2) intensity=15에서 타이머 water-fill div의 `transition` 값이 `none`인 것 코드 레벨로 확인, (3) 스피커 토글 클릭 시 `<audio>`가 올바른 테마 파일로 `paused:false` 재생되고 `volume`이 intensity와 일치하는 것 확인, (4) localStorage 값이 새로고침 후에도 유지되는 것 확인(단 오디오 자동재생 자체는 브라우저 정책상 별도 동작 필요 — 알려진 제한으로 문서화).
 - 문서: checklist.md C24 전체 체크, backlog.md T24 완료 처리, component-tree.md props·알려진 제한 반영, CLAUDE.md 현재 구현 상태 갱신.
 - 확인: [ ]
+
+## 2026-08-02 | T25 | 같이 있어요 (장식용 동시접속 표시) 구현
+- 디자인 근거: `docs/prototype/feature-proposals.html` 04번 프레임(헤드라인+점 묶음+"혼자 할래요" 링크, 화면 중앙 배치).
+- 구현 중 레이아웃 문제 발견: `Character`가 `position:absolute`+큰 `scale(2.2)`로 화면 하단을 넓게 차지해서, 프로토타입처럼 중앙 하단에 배치하면 완전히 가려짐(Playwright로 "혼자 할래요" 버튼 클릭이 안 되는 것으로 재현·확인). 화면 상단 좌측(SensoryControl의 반대쪽)에 점+숫자+닫기(×) 버튼만 있는 작은 알약으로 압축해서 재배치 — 오히려 원래 의도("아주 작은 점 몇 개로만 존재")에 더 맞음.
+- `app/components/PresenceIndicator.js` 신규: 날짜 문자열을 시드로 한 고정 가짜 인원수(80~200명), 점 5개(그 중 하나는 "나"), hover 툴팁으로 "이름도 채팅도 없다" 안내.
+- `app/page.js`: `presenceDismissed` state + localStorage(`kok-presence-dismissed`) 유지.
+- 검증: `npm run verify` 통과. 실제 화면에서 (1) 기본 노출 스크린샷, (2) × 클릭 후 사라짐, (3) 새로고침 후에도 계속 안 보이는 것 확인.
+- 문서: checklist.md C25 전체 체크, backlog.md T25 완료 처리(프로토타입 대비 레이아웃 변경 사유 기록), component-tree.md props 반영, CLAUDE.md 현재 구현 상태 갱신.
+- 확인: [ ]
